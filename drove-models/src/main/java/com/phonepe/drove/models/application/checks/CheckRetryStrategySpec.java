@@ -10,8 +10,5 @@ import java.time.Duration;
  */
 @Value
 public class CheckRetryStrategySpec {
-    @NotNull
-    Duration interval;
-    @NotNull
-    Duration timeout;
+
 }

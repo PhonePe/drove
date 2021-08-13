@@ -7,7 +7,7 @@ import lombok.Value;
  */
 @Value
 public class ExposureSpec {
-    String hostname;
+    String vhost;
     int portIndex;
     ExposureMode mode;
 }

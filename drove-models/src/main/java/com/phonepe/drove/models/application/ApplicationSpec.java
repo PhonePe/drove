@@ -35,6 +35,7 @@ public class ApplicationSpec {
     @Valid
     List<PortSpec> exposedPorts;
 
+    @Valid
     List<MountedVolume> volumes;
 
     @NotNull
@@ -63,6 +64,8 @@ public class ApplicationSpec {
     CheckSpec readiness;
 
     Map<String, String> tags;
+
+    Map<String, String> env;
 
     @Valid
     ExposureSpec exposureSpec;

@@ -11,12 +11,15 @@ import javax.validation.constraints.NotNull;
  */
 @Value
 public class CheckSpec {
-    @NotNull
-    Duration timeout;
 
     @Valid
     CheckModeSpec mode;
 
-    @Valid
-    CheckRetryStrategySpec retry;
+    @NotNull
+    Duration timeout;
+
+    @NotNull
+    Duration interval;
+
+    Duration initialDelay;
 }
