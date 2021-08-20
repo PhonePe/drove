@@ -11,7 +11,7 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class CPURequirement extends ResourceRequirement {
-    int count;
+    long count;
 
     public CPURequirement(int count) {
         super(ResourceRequirementType.CPU);

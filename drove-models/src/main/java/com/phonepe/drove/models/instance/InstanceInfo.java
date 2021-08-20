@@ -1,6 +1,6 @@
 package com.phonepe.drove.models.instance;
 
-import com.phonepe.drove.models.AppId;
+import com.phonepe.drove.models.application.AppId;
 import lombok.Value;
 
 import java.util.Date;
@@ -15,6 +15,7 @@ public class InstanceInfo {
     String instanceId;
     String hostname;
     InstanceState state;
+    Map<String, InstancePort> ports;
     Map<String, String> metadata;
     Date created;
     Date updated;

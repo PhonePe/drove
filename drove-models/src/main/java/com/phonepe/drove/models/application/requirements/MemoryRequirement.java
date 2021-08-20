@@ -11,7 +11,7 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class MemoryRequirement extends ResourceRequirement {
-    int sizeInMB;
+    long sizeInMB;
 
     public MemoryRequirement(int sizeInMB) {
         super(ResourceRequirementType.MEMORY);

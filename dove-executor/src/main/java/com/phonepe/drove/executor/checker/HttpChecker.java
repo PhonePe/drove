@@ -1,0 +1,111 @@
+package com.phonepe.drove.executor.checker;
+
+import com.google.common.base.Strings;
+import com.phonepe.drove.models.application.CheckResult;
+import com.phonepe.drove.models.application.checks.CheckMode;
+import com.phonepe.drove.models.application.checks.CheckSpec;
+import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Objects;
+
+/**
+ * Calls the provided http endpoint on the container
+ */
+@Slf4j
+public class HttpChecker implements Checker {
+    private final HttpClient httpClient;
+    private final HTTPCheckModeSpec httpSpec;
+    private final InstanceInfo instance;
+    private final URI uri;
+    private final Duration requestTimeout;
+
+
+    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, InstanceInfo instance) {
+        var connectionTimeout = Duration.ofMillis(
+                Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
+                                           io.dropwizard.util.Duration.seconds(1))
+                        .toMilliseconds());
+        httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .connectTimeout(connectionTimeout)
+                .build();
+        this.httpSpec = httpSpec;
+        this.instance = instance;
+        val portSpec = instance.getPorts().get(httpSpec.getPortName());
+        Objects.requireNonNull(portSpec, "Invalid port spec. No port of name '" + httpSpec.getPortName() + "' exists");
+        this.uri = URI.create(String.format("%s://localhost:%d%s",
+                                       httpSpec.getProtocol(),
+                                       portSpec.getHostPort(),
+                                       httpSpec.getPath()));
+        this.requestTimeout = Duration.ofMillis(
+                Objects.requireNonNullElse(checkSpec.getTimeout(), io.dropwizard.util.Duration.seconds(1))
+                        .toMilliseconds());
+        log.info("URI for healthcheck: {}", uri);
+    }
+
+    @Override
+    public CheckResult call() {
+        val requestBuilder = HttpRequest.newBuilder(uri);
+        switch (httpSpec.getVerb()) {
+
+            case GET: {
+                requestBuilder.GET();
+                break;
+            }
+            case POST: {
+                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
+                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+                }
+                else {
+                    requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
+                }
+                break;
+            }
+            case PUT: {
+                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
+                    requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+                }
+                else {
+                    requestBuilder.PUT(HttpRequest.BodyPublishers.noBody());
+                }
+                break;
+            }
+        }
+
+        val request = requestBuilder.timeout(requestTimeout)
+                .build();
+        try {
+            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (httpSpec.getSuccessCodes().contains(response.statusCode())) {
+                return CheckResult.healthy();
+            }
+            val responseBody = response.body();
+            log.error("HTTP check unhealthy. Status code: {} response: {}", response.statusCode(), responseBody);
+            return CheckResult.unhealthy(String.format("Response from %S: [%d] %s",
+                                                       uri,
+                                                       response.statusCode(),
+                                                       responseBody));
+        }
+        catch (IOException e) {
+            return CheckResult.unhealthy("Healthcheck error from " + uri + ":" + e.getMessage());
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return CheckResult.unhealthy("Healthcheck interrupted");
+    }
+
+    @Override
+    public CheckMode mode() {
+        return CheckMode.HTTP;
+    }
+}

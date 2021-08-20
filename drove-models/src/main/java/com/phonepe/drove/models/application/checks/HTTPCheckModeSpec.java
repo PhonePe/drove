@@ -1,10 +1,13 @@
 package com.phonepe.drove.models.application.checks;
 
 import com.phonepe.drove.models.common.HTTPVerb;
+import io.dropwizard.util.Duration;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.Set;
 
 /**
@@ -15,24 +18,35 @@ import java.util.Set;
 @ToString(callSuper = true)
 public class HTTPCheckModeSpec extends CheckModeSpec {
 
+    @NotEmpty
+    String protocol;
+    @NotEmpty
     String portName;
+    @NotEmpty
     String path;
+    @NotEmpty
     HTTPVerb verb;
+    @NotEmpty
+    @NotNull
     Set<Integer> successCodes;
     String payload;
+    Duration connectionTimeout;
 
     public HTTPCheckModeSpec(
-            String portName,
+            String protocol, String portName,
             String path,
             HTTPVerb verb,
             Set<Integer> successCodes,
-            String payload) {
+            String payload,
+            Duration connectionTimeout) {
         super(CheckMode.HTTP);
+        this.protocol = protocol;
         this.portName = portName;
         this.path = path;
         this.verb = verb;
         this.successCodes = successCodes;
         this.payload = payload;
+        this.connectionTimeout = connectionTimeout;
     }
 
     @Override

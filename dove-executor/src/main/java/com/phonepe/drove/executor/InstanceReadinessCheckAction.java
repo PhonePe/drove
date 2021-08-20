@@ -1,0 +1,84 @@
+package com.phonepe.drove.executor;
+
+import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.checker.Checker;
+import com.phonepe.drove.models.application.CheckResult;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.instance.InstanceState;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
+
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ *
+ */
+@Slf4j
+@NoArgsConstructor
+public class InstanceReadinessCheckAction extends InstanceAction {
+    private final AtomicBoolean stop = new AtomicBoolean();
+
+    @Override
+    public StateData<InstanceState, InstanceInfo> execute(
+            InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
+        val readinessCheckSpec = context.getInstanceSpec().getReadiness();
+        final Checker checker = Utils.createChecker(context, currentState.getData(), readinessCheckSpec);
+        val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
+                                                   io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
+        if(initDelay > 0) {
+            try {
+                Thread.sleep(readinessCheckSpec.getInitialDelay().toMilliseconds());
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        val retryPolicy = new RetryPolicy<CheckResult>()
+                .withDelay(Duration.ofMillis(readinessCheckSpec.getInterval().toMilliseconds()))
+                .withMaxAttempts(readinessCheckSpec.getAttempts())
+                .handle(Exception.class)
+                .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
+        try {
+            val result = Failsafe.with(retryPolicy)
+                    .onComplete(e -> {
+                        val failure = e.getFailure();
+                        if (failure != null) {
+                            log.error("Readiness checks completed with error: {}", failure.getMessage());
+                        }
+                        else {
+                            val checkResult = e.getResult();
+                            log.info("Readiness check result: {}", checkResult);
+                        }
+                    })
+                    .get(() -> {
+                        if(stop.get()) {
+                            return CheckResult.stopped();
+                        }
+                        return checker.call();
+                    });
+            switch (result.getStatus()) {
+                case HEALTHY:
+                    return StateData.create(InstanceState.READY, currentState.getData());
+                case STOPPED:
+                    return StateData.create(InstanceState.STOPPING, currentState.getData());
+                case UNHEALTHY:
+                default:
+                    return StateData.create(InstanceState.READINESS_CHECK_FAILED, currentState.getData());
+            }
+        }
+        catch (Exception e) {
+            return StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, e.getMessage());
+        }
+    }
+
+    @Override
+    public void stop() {
+        stop.set(true);
+    }
+
+}

@@ -11,6 +11,9 @@
 
     <modules>
         <module>drove-models</module>
+        <module>dove-executor</module>
+        <module>drove-internal-models</module>
+        <module>drove-common</module>
     </modules>
 
     <properties>
@@ -83,7 +86,6 @@
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
-                    <!-- attached to Maven test phase -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
