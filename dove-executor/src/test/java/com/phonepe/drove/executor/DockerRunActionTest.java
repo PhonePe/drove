@@ -2,6 +2,9 @@ package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.statemachine.actions.DockerPullAction;
+import com.phonepe.drove.executor.statemachine.actions.DockerRunAction;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.AppId;
 import com.phonepe.drove.models.application.PortSpec;
@@ -41,7 +44,7 @@ class DockerRunActionTest {
         val ctx = new InstanceActionContext(instanceSpec);
         new DockerPullAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState = new DockerRunAction().execute(ctx,
-                                                              StateData.create(PROVISIONING,
+                                                     StateData.create(PROVISIONING,
                                                       new InstanceInfo(instanceSpec.getAppId(),
                                                                        null,
                                                                        "",

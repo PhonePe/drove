@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor;
+package com.phonepe.drove.executor.statemachine.actions;
 
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.ExposedPort;
@@ -6,6 +6,8 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.statemachine.InstanceAction;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;

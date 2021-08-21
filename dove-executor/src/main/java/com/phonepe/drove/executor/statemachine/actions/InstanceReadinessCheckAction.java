@@ -1,7 +1,10 @@
-package com.phonepe.drove.executor;
+package com.phonepe.drove.executor.statemachine.actions;
 
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.checker.Checker;
+import com.phonepe.drove.executor.statemachine.InstanceAction;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -20,27 +23,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @NoArgsConstructor
-public class InstanceSingularHealthCheckAction extends InstanceAction {
+public class InstanceReadinessCheckAction extends InstanceAction {
     private final AtomicBoolean stop = new AtomicBoolean();
 
     @Override
     public StateData<InstanceState, InstanceInfo> execute(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
-        val healthcheck = context.getInstanceSpec().getHealthcheck();
-        final Checker checker = Utils.createChecker(context, currentState.getData(), healthcheck);
-        val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
+        val readinessCheckSpec = context.getInstanceSpec().getReadiness();
+        final Checker checker = Utils.createChecker(context, currentState.getData(), readinessCheckSpec);
+        val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
-        if (initDelay > 0) {
+        if(initDelay > 0) {
             try {
-                Thread.sleep(healthcheck.getInitialDelay().toMilliseconds());
+                Thread.sleep(readinessCheckSpec.getInitialDelay().toMilliseconds());
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
         val retryPolicy = new RetryPolicy<CheckResult>()
-                .withDelay(Duration.ofMillis(healthcheck.getInterval().toMilliseconds()))
-                .withMaxAttempts(3)
+                .withDelay(Duration.ofMillis(readinessCheckSpec.getInterval().toMilliseconds()))
+                .withMaxAttempts(readinessCheckSpec.getAttempts())
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
         try {
@@ -56,25 +59,23 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
                         }
                     })
                     .get(() -> {
-                        if (stop.get()) {
+                        if(stop.get()) {
                             return CheckResult.stopped();
                         }
                         return checker.call();
                     });
             switch (result.getStatus()) {
                 case HEALTHY:
-                    return StateData.create(InstanceState.HEALTHY, currentState.getData());
+                    return StateData.create(InstanceState.READY, currentState.getData());
                 case STOPPED:
-                case UNHEALTHY:
-                    log.info("Instance still unhealthy. Will be killing this.");
-                default:
                     return StateData.create(InstanceState.STOPPING, currentState.getData());
+                case UNHEALTHY:
+                default:
+                    return StateData.create(InstanceState.READINESS_CHECK_FAILED, currentState.getData());
             }
         }
         catch (Exception e) {
-            return StateData.errorFrom(currentState,
-                                       InstanceState.STOPPING,
-                                       "Error running health-checks: " + e.getMessage());
+            return StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, e.getMessage());
         }
     }
 

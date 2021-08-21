@@ -2,6 +2,7 @@ package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.AppId;
 import com.phonepe.drove.models.application.PortSpec;
