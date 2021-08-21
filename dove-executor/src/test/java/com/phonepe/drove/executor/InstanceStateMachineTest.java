@@ -33,7 +33,7 @@ class InstanceStateMachineTest {
     void test() {
         val instanceSpec = new InstanceSpec(new AppId("test", 1),
                                             new DockerCoordinates(
-                                                    "docker.io/santanusinha/test-service:0.1",
+                                                    "docker.io/santanusinha/test-servicesadasdas:0.1",
                                                     Duration.seconds(100)),
                                             ImmutableList.of(new CPURequirement(1),
                                                              new MemoryRequirement(512)),

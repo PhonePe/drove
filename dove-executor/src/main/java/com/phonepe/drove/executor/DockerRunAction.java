@@ -1,6 +1,8 @@
 package com.phonepe.drove.executor;
 
+import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.StateData;
@@ -16,6 +18,7 @@ import lombok.val;
 
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -23,6 +26,7 @@ import java.util.*;
  */
 @Slf4j
 public class DockerRunAction extends InstanceAction {
+
     @Override
     public StateData<InstanceState, InstanceInfo> execute(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
@@ -57,27 +61,50 @@ public class DockerRunAction extends InstanceAction {
                         }
                     }));
             val ports = new Ports();
-            val portEnv = new ArrayList<String>();
+            val env = new ArrayList<String>();
             val portMappings = new HashMap<String, InstancePort>();
-            portEnv.add("HOST=" + InetAddress.getLocalHost().getHostName());
+            env.add("HOST=" + InetAddress.getLocalHost().getHostName());
             instanceSpec.getPorts().forEach(
                     portSpec -> {
                         val freePort = findFreePort();
                         val specPort = portSpec.getPort();
                         ports.bind(new ExposedPort(specPort), Ports.Binding.bindPort(freePort));
-                        portEnv.add(String.format("PORT_%d=%d", specPort, freePort));
+                        env.add(String.format("PORT_%d=%d", specPort, freePort));
                         portMappings.put(portSpec.getName(), new InstancePort(portSpec.getPort(), freePort));
                     });
             hostConfig.withPortBindings(ports);
             val id = containerCmd
                     .withHostConfig(hostConfig)
-                    .withEnv(portEnv)
+                    .withEnv(env)
                     .exec()
                     .getId();
             log.debug("Created container id: {}", id);
             context.setDockerInstanceId(id);
             client.startContainerCmd(id)
                     .exec();
+            client.logContainerCmd(id)
+                    .withTailAll()
+                    .withFollowStream(true)
+                    .withStdOut(true)
+                    .withStdErr(true)
+                    .exec(new ResultCallback.Adapter<Frame>() {
+
+                        @Override
+                        public void onNext(Frame object) {
+                            switch (object.getStreamType())  {
+                                case STDOUT:
+                                    log.info(new String(object.getPayload(), Charset.defaultCharset()));
+                                    break;
+                                case STDERR:
+                                    log.error(new String(object.getPayload(), Charset.defaultCharset()));
+                                    break;
+                                case STDIN:
+                                case RAW:
+                                default:
+                                    break;
+                            }
+                        }
+                    });
             return StateData.create(InstanceState.UNREADY,
                                    new InstanceInfo(instanceSpec.getAppId(),
                                                     "id",

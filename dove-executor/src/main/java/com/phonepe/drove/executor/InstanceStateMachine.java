@@ -14,10 +14,6 @@ import java.util.List;
  *
  */
 public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction> {
-    /*    private static final InstanceStateMachine.Transition[] TRANSITIONS = new Transition[0]; *//*{
-            new InstanceStateMachine.Transition(InstanceState.STARTING, InstanceState.PROVISIONING, new DockerPullAction()),
-            new InstanceStateMachine.Transition(InstanceState.PENDING, InstanceState.PROVISIONING, new DockerPullAction()),
-    };*/
     private static final List<Transition<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction>> TRANSITIONS
             = List.of(
             new Transition<>(InstanceState.PROVISIONING,
@@ -48,10 +44,10 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
                              new DockerStopAction(),
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.PROVISIONING_FAILED,
-                             new InstanceDummyAction(InstanceState.PROVISIONING),
+                             new InstanceDummyAction(InstanceState.DEPROVISIONING),
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.START_FAILED,
-                             new InstanceDummyAction(InstanceState.PROVISIONING),
+                             new InstanceDummyAction(InstanceState.DEPROVISIONING),
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.DEPROVISIONING,
                              new DockerCleanupAction(),

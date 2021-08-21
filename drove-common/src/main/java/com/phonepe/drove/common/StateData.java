@@ -27,6 +27,6 @@ public class StateData<S extends Enum<S>, T> {
     }
 
     public static <S extends Enum<S>, T> StateData<S,T> from(StateData<S,T> old, S state) {
-        return create(state, old.getData(), old.error);
+        return create(state, old.getData(), old.getError());
     }
 }

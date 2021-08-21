@@ -17,8 +17,7 @@ public class DockerCleanupAction extends InstanceAction {
     public StateData<InstanceState, InstanceInfo> execute(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         if (Strings.isNullOrEmpty(context.getDockerImageId())) {
-            log.warn("No docker image id found for {}. Nothing to be cleaned up",
-                     currentState.getData().getInstanceId());
+            log.warn("No docker image id found. Nothing to be cleaned up.");
         }
         else {
             val dockerClient = context.getClient();
@@ -31,11 +30,11 @@ public class DockerCleanupAction extends InstanceAction {
                 return StateData.create(InstanceState.STOPPED, currentState.getData(), e.getMessage());
             }
         }
-        return StateData.create(InstanceState.STOPPED, currentState.getData());
+        return StateData.from(currentState, InstanceState.STOPPED);
     }
 
     @Override
     public void stop() {
-
+        //Nothing to do here
     }
 }

@@ -41,7 +41,7 @@ class DockerRunActionTest {
         val ctx = new InstanceActionContext(instanceSpec);
         new DockerPullAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState = new DockerRunAction().execute(ctx,
-                                                     StateData.create(PROVISIONING,
+                                                              StateData.create(PROVISIONING,
                                                       new InstanceInfo(instanceSpec.getAppId(),
                                                                        null,
                                                                        "",

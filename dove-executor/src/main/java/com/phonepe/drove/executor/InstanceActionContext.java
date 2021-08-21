@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.net.URI;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -23,6 +24,7 @@ public class InstanceActionContext extends ActionContext {
     private final InstanceSpec instanceSpec;
     private String dockerImageId;
     private String dockerInstanceId;
+    private Future<?> loggerFuture;
 
     public InstanceActionContext(InstanceSpec instanceSpec) {
         this.instanceSpec = instanceSpec;
