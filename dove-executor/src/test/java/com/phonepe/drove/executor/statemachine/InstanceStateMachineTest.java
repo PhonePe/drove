@@ -1,8 +1,7 @@
-package com.phonepe.drove.executor;
+package com.phonepe.drove.executor.statemachine;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.AppId;
 import com.phonepe.drove.models.application.PortSpec;
@@ -34,7 +33,7 @@ class InstanceStateMachineTest {
     void test() {
         val instanceSpec = new InstanceSpec(new AppId("test", 1),
                                             new DockerCoordinates(
-                                                    "docker.io/santanusinha/test-servicesadasdas:0.1",
+                                                    "docker.io/santanusinha/test-service:0.1",
                                                     Duration.seconds(100)),
                                             ImmutableList.of(new CPURequirement(1),
                                                              new MemoryRequirement(512)),

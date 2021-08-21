@@ -58,7 +58,7 @@ public class DockerRunAction extends InstanceAction {
 
                         @Override
                         public Void visit(MemoryRequirement memoryRequirement) {
-//                            hostConfig.withMemory(memoryRequirement.getSizeInMB() * (2^20));
+                            hostConfig.withMemory(memoryRequirement.getSizeInMB() * (1<<20));
                             return null;
                         }
                     }));
