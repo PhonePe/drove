@@ -2,8 +2,8 @@ package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.statemachine.actions.DockerPullAction;
-import com.phonepe.drove.executor.statemachine.actions.DockerRunAction;
+import com.phonepe.drove.executor.statemachine.actions.ExecutableFetchAction;
+import com.phonepe.drove.executor.statemachine.actions.InstanceRunAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.AppId;
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  *
  */
-class DockerRunActionTest {
+class InstanceRunActionTest {
 
     @Test
     void testRun() {
@@ -42,9 +42,9 @@ class DockerRunActionTest {
                                             null,
                                             Collections.emptyMap());
         val ctx = new InstanceActionContext(instanceSpec);
-        new DockerPullAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
-        val newState = new DockerRunAction().execute(ctx,
-                                                     StateData.create(PROVISIONING,
+        new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
+        val newState = new InstanceRunAction().execute(ctx,
+                                                       StateData.create(PROVISIONING,
                                                       new InstanceInfo(instanceSpec.getAppId(),
                                                                        null,
                                                                        "",

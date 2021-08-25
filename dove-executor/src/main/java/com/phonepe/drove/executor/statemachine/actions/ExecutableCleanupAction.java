@@ -13,7 +13,7 @@ import lombok.val;
  *
  */
 @Slf4j
-public class DockerCleanupAction extends InstanceAction {
+public class ExecutableCleanupAction extends InstanceAction {
 
     @Override
     public StateData<InstanceState, InstanceInfo> execute(

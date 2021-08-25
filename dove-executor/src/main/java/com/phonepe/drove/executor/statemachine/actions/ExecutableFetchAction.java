@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  */
 @Slf4j
-public class DockerPullAction extends InstanceAction {
+public class ExecutableFetchAction extends InstanceAction {
     @Override
     public StateData<InstanceState, InstanceInfo> execute(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {

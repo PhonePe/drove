@@ -13,7 +13,7 @@ import lombok.val;
  *
  */
 @Slf4j
-public class DockerStopAction extends InstanceAction {
+public class InstanceStopAction extends InstanceAction {
     @Override
     public StateData<InstanceState, InstanceInfo> execute(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {

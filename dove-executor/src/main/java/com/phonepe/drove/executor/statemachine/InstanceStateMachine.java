@@ -18,11 +18,11 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
     private static final List<Transition<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction>> TRANSITIONS
             = List.of(
             new Transition<>(InstanceState.PROVISIONING,
-                             new DockerPullAction(),
+                             new ExecutableFetchAction(),
                              InstanceState.STARTING,
                              InstanceState.PROVISIONING_FAILED),
             new Transition<>(InstanceState.STARTING,
-                             new DockerRunAction(),
+                             new InstanceRunAction(),
                              InstanceState.UNREADY,
                              InstanceState.START_FAILED),
             new Transition<>(InstanceState.UNREADY,
@@ -39,10 +39,10 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
                              InstanceState.UNHEALTHY,
                              InstanceState.STOPPING),
             new Transition<>(InstanceState.STOPPING,
-                             new DockerStopAction(),
+                             new InstanceStopAction(),
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.UNHEALTHY,
-                             new DockerStopAction(),
+                             new InstanceStopAction(),
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.PROVISIONING_FAILED,
                              new InstanceDummyAction(InstanceState.DEPROVISIONING),
@@ -51,7 +51,7 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
                              new InstanceDummyAction(InstanceState.DEPROVISIONING),
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.DEPROVISIONING,
-                             new DockerCleanupAction(),
+                             new ExecutableCleanupAction(),
                              InstanceState.STOPPED)
             );
 

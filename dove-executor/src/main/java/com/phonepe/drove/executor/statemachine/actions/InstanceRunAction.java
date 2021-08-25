@@ -27,7 +27,7 @@ import java.util.*;
  *
  */
 @Slf4j
-public class DockerRunAction extends InstanceAction {
+public class InstanceRunAction extends InstanceAction {
 
     @Override
     public StateData<InstanceState, InstanceInfo> execute(
