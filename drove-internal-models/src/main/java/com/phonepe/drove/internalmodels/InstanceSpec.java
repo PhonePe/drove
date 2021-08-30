@@ -17,6 +17,7 @@ import java.util.Map;
 @Value
 public class InstanceSpec {
     AppId appId;
+    String instanceId;
     ExecutableCoordinates executable;
     List<ResourceRequirement> resources;
     List<PortSpec> ports;

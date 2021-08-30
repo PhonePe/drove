@@ -3,8 +3,8 @@ package com.phonepe.drove.internalmodels;
 /**
  *
  */
-public enum MessageType {
+public enum ExecutorMessageType {
     START_INSTANCE,
     STOP_INSTANCE,
-    INSTANCE_INFO
+    QUERY_INFO
 }

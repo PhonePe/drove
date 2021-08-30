@@ -1,6 +1,7 @@
 package com.phonepe.drove.common;
 
 import io.appform.signals.signals.ConsumingParallelSignal;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
 
@@ -17,6 +18,7 @@ public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A exten
     private final Map<S, Transition<T, S, C, A>> validTransitions;
     private final ConsumingParallelSignal<StateData<S, T>> stateChanged;
 
+    @Getter
     private StateData<S, T> currentState;
     private final C context;
     private final AtomicReference<A> currentAction;

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.UUID;
 
 import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +32,7 @@ class InstanceRunActionTest {
     @Test
     void testRun() {
         val instanceSpec = new InstanceSpec(new AppId("test", 1),
+                                            UUID.randomUUID().toString(),
                                             new DockerCoordinates(
                                                     "docker.io/santanusinha/test-service:0.1",
                                                     Duration.seconds(100)),

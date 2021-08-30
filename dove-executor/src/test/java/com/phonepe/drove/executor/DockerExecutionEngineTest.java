@@ -12,6 +12,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.UUID;
 
 /**
  *
@@ -21,6 +22,7 @@ class DockerExecutionEngineTest {
     void basic() {
         val e = new DockerExecutionEngine();
         e.startContainer(new InstanceSpec(new AppId("test", 1),
+                                          UUID.randomUUID().toString(),
                                           new DockerCoordinates("docker.io/santanusinha/test-service:0.1",
                                                                         Duration.seconds(100)),
                                           ImmutableList.of(new CPURequirement(1),

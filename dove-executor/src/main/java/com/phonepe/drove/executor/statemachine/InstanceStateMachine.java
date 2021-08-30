@@ -17,6 +17,9 @@ import java.util.List;
 public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction> {
     private static final List<Transition<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction>> TRANSITIONS
             = List.of(
+            new Transition<>(InstanceState.PENDING,
+                             new InstanceSpecValidator(),
+                             InstanceState.PROVISIONING),
             new Transition<>(InstanceState.PROVISIONING,
                              new ExecutableFetchAction(),
                              InstanceState.STARTING,

@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
@@ -8,6 +9,7 @@ import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
@@ -28,6 +30,8 @@ import java.util.*;
  */
 @Slf4j
 public class InstanceRunAction extends InstanceAction {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
     public StateData<InstanceState, InstanceInfo> execute(
@@ -75,12 +79,19 @@ public class InstanceRunAction extends InstanceAction {
                         portMappings.put(portSpec.getName(), new InstancePort(portSpec.getPort(), freePort));
                     });
             hostConfig.withPortBindings(ports);
+
+            val instanceInfo = instanceInfo(instanceSpec, portMappings);
+            val labels = new HashMap<String, String>();
+            labels.put("drove.instance", MAPPER.writeValueAsString(instanceInfo));
+
             val id = containerCmd
                     .withHostConfig(hostConfig)
                     .withEnv(env)
+                    .withLabels(labels)
                     .exec()
                     .getId();
             log.debug("Created container id: {}", id);
+
             context.setDockerInstanceId(id);
             client.startContainerCmd(id)
                     .exec();
@@ -108,19 +119,23 @@ public class InstanceRunAction extends InstanceAction {
                         }
                     });
             return StateData.create(InstanceState.UNREADY,
-                                   new InstanceInfo(instanceSpec.getAppId(),
-                                                    "id",
-                                                    "",
-                                                    InstanceState.UNREADY,
-                                                    portMappings,
-                                                    Collections.emptyMap(),
-                                                    new Date(),
-                                                    new Date()));
+                                    instanceInfo);
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);
             return StateData.errorFrom(currentState, InstanceState.START_FAILED, e.getMessage());
         }
+    }
+
+    private InstanceInfo instanceInfo(InstanceSpec instanceSpec, HashMap<String, InstancePort> portMappings) {
+        return new InstanceInfo(instanceSpec.getAppId(),
+                                instanceSpec.getInstanceId(),
+                                "",
+                                InstanceState.UNREADY,
+                                portMappings,
+                                Collections.emptyMap(),
+                                new Date(),
+                                new Date());
     }
 
     @Override
