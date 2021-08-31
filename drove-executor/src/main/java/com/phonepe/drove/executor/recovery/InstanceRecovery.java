@@ -6,7 +6,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.DockerLabels;
+import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;

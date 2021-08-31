@@ -23,5 +23,5 @@ public interface Communicator<
      */
     void send(final SendMessage message);
 
-    void receive(final ReceiveMessage message);
+    MessageResponse receive(final ReceiveMessage message);
 }

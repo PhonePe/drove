@@ -3,7 +3,6 @@ package com.phonepe.drove.common;
 import com.phonepe.drove.internalmodels.Message;
 import com.phonepe.drove.internalmodels.MessageResponse;
 import io.appform.signals.signals.ConsumingSyncSignal;
-import io.appform.signals.signals.GeneratingParallelSignal;
 import io.appform.signals.signals.GeneratingSyncSignal;
 
 /**
@@ -17,13 +16,10 @@ public abstract class ThreadedCommunicator<
         implements Communicator<SendMessageType, ReceiveMessageType, SendMessage, ReceiveMessage> {
     private final GeneratingSyncSignal<SendMessage, MessageResponse> messageReady;
     private final ConsumingSyncSignal<MessageResponse> responseReceived;
-    private final GeneratingParallelSignal<ReceiveMessage, MessageResponse> messageReceived;
 
     protected ThreadedCommunicator() {
         messageReady = new GeneratingSyncSignal<>();
         responseReceived = new ConsumingSyncSignal<>();
-        messageReceived = new GeneratingParallelSignal<>();
-        messageReceived.connect(this::handleReceivedMessage);
     }
 
     @Override
@@ -42,8 +38,8 @@ public abstract class ThreadedCommunicator<
     }
 
     @Override
-    public void receive(ReceiveMessage message) {
-        messageReceived.dispatch(message);
+    public MessageResponse receive(ReceiveMessage message) {
+        return handleReceivedMessage(message);
     }
 
     protected abstract MessageResponse handleReceivedMessage(final ReceiveMessage message);
