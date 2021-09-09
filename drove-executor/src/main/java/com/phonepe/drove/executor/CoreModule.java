@@ -19,8 +19,8 @@ public class CoreModule extends AbstractModule {
     public InstanceEngine engine(final Environment environment, final Injector injector) {
         return new InstanceEngine(environment.lifecycle()
                                           .executorService("instance-engine")
-                                          .minThreads(1)
-                                          .maxThreads(1024)
+                                          .minThreads(128)
+                                          .maxThreads(128)
                                           .build(),
                                   new InjectingInstanceActionFactory(injector));
     }
