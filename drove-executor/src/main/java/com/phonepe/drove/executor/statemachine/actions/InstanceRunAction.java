@@ -7,6 +7,7 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.internalmodels.InstanceSpec;
@@ -34,7 +35,7 @@ public class InstanceRunAction extends InstanceAction {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val client = context.getClient();
@@ -82,7 +83,9 @@ public class InstanceRunAction extends InstanceAction {
 
             val instanceInfo = instanceInfo(instanceSpec, portMappings);
             val labels = new HashMap<String, String>();
-            labels.put("drove.instance", MAPPER.writeValueAsString(instanceInfo));
+            labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
+            labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
+            labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
 
             val id = containerCmd
                     .withHostConfig(hostConfig)

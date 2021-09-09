@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.application.requirements;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -13,7 +14,7 @@ import lombok.Value;
 public class MemoryRequirement extends ResourceRequirement {
     long sizeInMB;
 
-    public MemoryRequirement(int sizeInMB) {
+    public MemoryRequirement(@JsonProperty("sizeInMB") long sizeInMB) {
         super(ResourceRequirementType.MEMORY);
         this.sizeInMB = sizeInMB;
     }

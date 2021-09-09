@@ -2,8 +2,9 @@ package com.phonepe.drove.executor.engine;
 
 import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.common.messages.controller.InstanceStateReportMessage;
-import com.phonepe.drove.common.messages.executor.ExecutorMessage;
+import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.internalmodels.controller.InstanceStateReportMessage;
+import com.phonepe.drove.internalmodels.executor.ExecutorMessage;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.internalmodels.MessageHeader;
@@ -32,14 +33,16 @@ import java.util.concurrent.Future;
 @Slf4j
 public class InstanceEngine implements Closeable {
     private final ExecutorService service;
+    private final InstanceActionFactory actionFactory;
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<StateData<InstanceState, InstanceInfo>> stateChanged;
     private final ClockPulseGenerator clockPulseGenerator;
     @Setter
     private ExecutorCommunicator communicator;
 
-    public InstanceEngine(ExecutorService service) {
+    public InstanceEngine(ExecutorService service, InstanceActionFactory actionFactory) {
         this.service = service;
+        this.actionFactory = actionFactory;
         this.stateMachines = new ConcurrentHashMap<>();
         stateChanged = new ConsumingParallelSignal<>();
         clockPulseGenerator = new ClockPulseGenerator("scheduled-reporting-pulse-generator",
@@ -52,17 +55,28 @@ public class InstanceEngine implements Closeable {
         return message.accept(new ExecutorMessageHandler(this));
     }
 
-    public void startInstance(final InstanceSpec start) {
-        val sm = new InstanceStateMachine(start, StateData.create(InstanceState.PENDING, null));
-        sm.onStateChange().connect(this::handleStateChange);
+    public boolean exists(final String instanceId) {
+        return stateMachines.containsKey(instanceId);
+    }
+
+    public void startInstance(final InstanceSpec spec) {
+        registerInstance(spec.getInstanceId(), spec, StateData.create(InstanceState.PENDING, null));
+    }
+
+    public void registerInstance(
+            final String instanceId,
+            final InstanceSpec spec,
+            final StateData<InstanceState, InstanceInfo> currentState) {
+        val stateMachine = new InstanceStateMachine(spec, currentState, actionFactory);
+        stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
             InstanceState state = null;
             do {
-                state = sm.execute();
+                state = stateMachine.execute();
             } while (!state.isTerminal());
             return state;
         });
-        stateMachines.put(start.getInstanceId(), new SMInfo(sm, f));
+        stateMachines.put(instanceId, new SMInfo(stateMachine, f));
     }
 
     public void stopInstance(final String instanceId) {
@@ -72,14 +86,16 @@ public class InstanceEngine implements Closeable {
             return;
         }
         info.getStateMachine().stop();
-        try {
-            val finalState = info.getStateMachineFuture().get();
-            log.info("Final state: {}", finalState);
-            stateMachines.remove(instanceId);
-        }
-        catch (Exception e) {
-            log.error("Error stopping instance");
-        }
+        service.submit(() -> {
+            try {
+                val finalState = info.getStateMachineFuture().get();
+                log.info("Final state: {}", finalState);
+                stateMachines.remove(instanceId);
+            }
+            catch (Exception e) {
+                log.error("Error stopping instance: ", e);
+            }
+        });
     }
 
     public Optional<StateData<InstanceState, InstanceInfo>> currentState(final String instanceId) {

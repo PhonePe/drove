@@ -32,51 +32,69 @@ public class InstanceHealthcheckAction extends InstanceAction {
     private ScheduledFuture<?> checkerJob;
 
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
         val checker = Utils.createChecker(context, currentState.getData(), healthcheckSpec);
         log.info("Starting healthcheck");
-        checkerJob = executorService.scheduleAtFixedRate(new HealthChecker(checker,
-                                                                           checkLock,
-                                                                           stateChanged,
-                                                                           currentResult),
-                                                         healthcheckSpec.getInitialDelay().toMilliseconds(),
-                                                         healthcheckSpec.getInterval().toMilliseconds(),
-                                                         TimeUnit.MILLISECONDS);
-        checkLock.lock();
         try {
-            while (!stop.get() && isHealthy()) {
-                try {
-                    stateChanged.await();
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            checkerJob = executorService.scheduleWithFixedDelay(new HealthChecker(checker,
+                                                                                  checkLock,
+                                                                                  stateChanged,
+                                                                                  currentResult),
+                                                                healthcheckSpec.getInitialDelay().toMilliseconds(),
+                                                                healthcheckSpec.getInterval().toMilliseconds(),
+                                                                TimeUnit.MILLISECONDS);
+            checkLock.lock();
+            monitor();
             if (stop.get()) {
                 log.info("Stopping health-checks");
-                stopJob();
                 return StateData.create(InstanceState.STOPPING, currentState.getData());
             }
             val result = currentResult.get();
             if (null == result || result.getStatus().equals(CheckResult.Status.UNHEALTHY)) {
-                stopJob();
                 return StateData.errorFrom(
                         currentState,
                         InstanceState.UNHEALTHY,
-                        "Healthcheck failed" + (null != result ? ":" + result.getMessage() : ""));
+                        "Healthcheck failed" + (null != result
+                                                ? ":" + result.getMessage()
+                                                : ""));
             }
         }
+        catch (Exception e) {
+            log.info("Error occurred: ", e);
+        }
         finally {
+            stopJob();
             checkLock.unlock();
         }
         return StateData.errorFrom(currentState, InstanceState.UNHEALTHY, "Node is unhealthy");
     }
 
+    private void monitor() {
+        while (!stop.get() && isHealthy()) {
+            try {
+                stateChanged.await();
+            }
+            catch (InterruptedException e) {
+                log.info("Health check monitor thread interrupted.");
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     private void stopJob() {
         checkerJob.cancel(true);
         executorService.shutdownNow();
+        try {
+            val stopped = executorService.awaitTermination(5, TimeUnit.SECONDS);
+            if (!stopped) {
+                log.warn("Health check executor has not been shut down properly.");
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -117,6 +135,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
         public void run() {
             lock.lock();
             try {
+                log.debug("Starting healthcheck call");
                 val result = checker.call();
                 log.info("Health check results: {}", result);
                 currentResult.set(result);

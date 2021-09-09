@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  *
  */
-public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A extends Action<T, C, S>> {
+public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A extends Action<T, S, C>> {
 
     private final Map<S, Transition<T, S, C, A>> validTransitions;
     private final ConsumingParallelSignal<StateData<S, T>> stateChanged;
@@ -21,13 +21,16 @@ public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A exten
     @Getter
     private StateData<S, T> currentState;
     private final C context;
+    private final ActionFactory<T, S, C, A> actionFactory;
     private final AtomicReference<A> currentAction;
 
     protected StateMachine(
             @NonNull final StateData<S, T> initalState,
             C context,
+            ActionFactory<T,S,C,A> actionFactory,
             List<Transition<T, S, C, A>> transitions) {
         this.context = context;
+        this.actionFactory = actionFactory;
         this.stateChanged = new ConsumingParallelSignal<>();
         this.validTransitions = transitions.stream()
                 .collect(Collectors.toMap(Transition::getFrom, Function.identity()));
@@ -42,7 +45,7 @@ public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A exten
     public S execute() {
         val state = currentState.getState();
         val transition = validTransitions.get(state);
-        currentAction.set(transition.getAction());
+        currentAction.set(actionFactory.create(transition));
         val newStateData = currentAction.get().execute(context, currentState);
         val newState = newStateData.getState();
         if (!transition.getTo().contains(newState)) {
@@ -54,6 +57,7 @@ public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A exten
     }
 
     public void stop() {
+        context.getAlreadyStopped().set(true);
         val action = currentAction.get();
 
         if(action != null) {

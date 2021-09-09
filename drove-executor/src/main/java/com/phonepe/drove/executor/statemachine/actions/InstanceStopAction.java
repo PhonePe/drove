@@ -15,11 +15,11 @@ import lombok.val;
 @Slf4j
 public class InstanceStopAction extends InstanceAction {
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         if (Strings.isNullOrEmpty(context.getDockerInstanceId())) {
             log.warn("No docker id found for instance {}. Nothing to be done for stop.",
-                     currentState.getData().getInstanceId());
+                     context.getInstanceSpec().getInstanceId());
         }
         else {
 //            context.getLoggerFuture().cancel(true);
@@ -39,4 +39,11 @@ public class InstanceStopAction extends InstanceAction {
     public void stop() {
         //Ignored
     }
+
+
+    @Override
+    protected boolean isStopAllowed() {
+        return false;
+    }
+
 }

@@ -1,7 +1,6 @@
-package com.phonepe.drove.common.messages.executor;
+package com.phonepe.drove.internalmodels.executor;
 
 import com.phonepe.drove.internalmodels.ExecutorMessageType;
-import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.internalmodels.MessageHeader;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -13,12 +12,13 @@ import lombok.Value;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class StartInstanceMessage extends ExecutorMessage {
-    InstanceSpec spec;
+public class QueryInstanceMessage extends ExecutorMessage {
 
-    public StartInstanceMessage(MessageHeader header, InstanceSpec spec) {
-        super(ExecutorMessageType.START_INSTANCE, header);
-        this.spec = spec;
+    String instanceId;
+
+    public QueryInstanceMessage(MessageHeader header, String instanceId) {
+        super(ExecutorMessageType.QUERY_INFO, header);
+        this.instanceId = instanceId;
     }
 
     @Override

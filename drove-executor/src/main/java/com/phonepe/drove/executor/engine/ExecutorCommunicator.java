@@ -1,8 +1,8 @@
 package com.phonepe.drove.executor.engine;
 
 import com.phonepe.drove.common.ThreadedCommunicator;
-import com.phonepe.drove.common.messages.controller.ControllerMessage;
-import com.phonepe.drove.common.messages.executor.ExecutorMessage;
+import com.phonepe.drove.internalmodels.controller.ControllerMessage;
+import com.phonepe.drove.internalmodels.executor.ExecutorMessage;
 import com.phonepe.drove.internalmodels.*;
 import lombok.extern.slf4j.Slf4j;
 

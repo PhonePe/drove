@@ -10,13 +10,13 @@ import java.util.Set;
  */
 @Value
 @AllArgsConstructor
-public class Transition<T, S extends Enum<S>, C extends ActionContext, A extends Action<T, C, S>> {
+public class Transition<T, S extends Enum<S>, C extends ActionContext, A extends Action<T, S, C>> {
     S from;
-    A action;
+    Class<? extends A> action;
     Set<S> to;
 
     @SafeVarargs
-    public Transition(S from, A action, S... to) {
+    public Transition(S from, Class<? extends A> action, S... to) {
         this(from, action, Set.of(to));
     }
 }

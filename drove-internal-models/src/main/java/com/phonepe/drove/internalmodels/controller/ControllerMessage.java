@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.messages.controller;
+package com.phonepe.drove.internalmodels.controller;
 
 import com.phonepe.drove.internalmodels.ControllerMessageType;
 import com.phonepe.drove.internalmodels.Message;

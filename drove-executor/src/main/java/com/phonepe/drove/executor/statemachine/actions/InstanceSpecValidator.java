@@ -11,7 +11,7 @@ import com.phonepe.drove.models.instance.InstanceState;
  */
 public class InstanceSpecValidator extends InstanceAction {
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         return StateData.from(currentState, InstanceState.PROVISIONING);
     }

@@ -10,7 +10,7 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.phonepe.drove.common.Communicator;
 import com.phonepe.drove.internalmodels.InstanceSpec;
-import com.phonepe.drove.internalmodels.StopInstanceMessage;
+import com.phonepe.drove.internalmodels.StopInstanceMessage2;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import lombok.val;
 
@@ -102,13 +102,13 @@ public class DockerExecutionEngine implements ExecutionEngine {
 
     @Override
     public void stopContainer(
-            StopInstanceMessage startInstanceMessage, Communicator communicator) {
+            StopInstanceMessage2 startInstanceMessage, Communicator communicator) {
 
     }
 
     @Override
     public void getContainerInfo(
-            StopInstanceMessage startInstanceMessage, Communicator communicator) {
+            StopInstanceMessage2 startInstanceMessage, Communicator communicator) {
 
     }
 }

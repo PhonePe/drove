@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.application.requirements;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -13,7 +14,7 @@ import lombok.Value;
 public class CPURequirement extends ResourceRequirement {
     long count;
 
-    public CPURequirement(int count) {
+    public CPURequirement(@JsonProperty("count") long count) {
         super(ResourceRequirementType.CPU);
         this.count = count;
     }

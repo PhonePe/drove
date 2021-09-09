@@ -27,8 +27,9 @@ public class InstanceActionContext extends ActionContext {
     private Future<?> loggerFuture;
 
     public InstanceActionContext(InstanceSpec instanceSpec) {
+        super();
         this.instanceSpec = instanceSpec;
-        client = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
+        this.client = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
                                                       .build(),
                                               new ZerodepDockerHttpClient.Builder()
                                                       .dockerHost(URI.create("unix:///var/run/docker.sock"))

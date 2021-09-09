@@ -1,6 +1,5 @@
 package com.phonepe.drove.executor;
 
-import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.AppId;
 import com.phonepe.drove.models.application.PortSpec;
@@ -14,6 +13,7 @@ import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -27,8 +27,8 @@ public class TestingUtils {
                                 new DockerCoordinates(
                                         "docker.io/santanusinha/test-service:0.1",
                                         Duration.seconds(100)),
-                                ImmutableList.of(new CPURequirement(1),
-                                                 new MemoryRequirement(512)),
+                                List.of(new CPURequirement(1),
+                                        new MemoryRequirement(512)),
                                 Collections.singletonList(new PortSpec("main", 3000)),
                                 Collections.emptyList(),
                                 new CheckSpec(new HTTPCheckModeSpec("http",

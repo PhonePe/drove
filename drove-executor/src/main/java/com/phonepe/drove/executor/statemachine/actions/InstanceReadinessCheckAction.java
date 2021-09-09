@@ -27,7 +27,7 @@ public class InstanceReadinessCheckAction extends InstanceAction {
     private final AtomicBoolean stop = new AtomicBoolean();
 
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();
         final Checker checker = Utils.createChecker(context, currentState.getData(), readinessCheckSpec);

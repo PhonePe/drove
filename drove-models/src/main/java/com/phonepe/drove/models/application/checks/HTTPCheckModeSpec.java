@@ -33,7 +33,8 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
     Duration connectionTimeout;
 
     public HTTPCheckModeSpec(
-            String protocol, String portName,
+            String protocol,
+            String portName,
             String path,
             HTTPVerb verb,
             Set<Integer> successCodes,

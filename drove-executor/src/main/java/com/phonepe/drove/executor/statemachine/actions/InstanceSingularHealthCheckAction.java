@@ -27,7 +27,7 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
     private final AtomicBoolean stop = new AtomicBoolean();
 
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
         final Checker checker = Utils.createChecker(context, currentState.getData(), healthcheck);

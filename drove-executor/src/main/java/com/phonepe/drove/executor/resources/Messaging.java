@@ -1,6 +1,6 @@
 package com.phonepe.drove.executor.resources;
 
-import com.phonepe.drove.common.messages.executor.ExecutorMessage;
+import com.phonepe.drove.internalmodels.executor.ExecutorMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.internalmodels.MessageResponse;
 

@@ -1,8 +1,10 @@
 package com.phonepe.drove.executor;
 
+import com.google.inject.Guice;
+import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.common.messages.executor.StartInstanceMessage;
-import com.phonepe.drove.common.messages.executor.StopInstanceMessage;
+import com.phonepe.drove.internalmodels.executor.StartInstanceMessage;
+import com.phonepe.drove.internalmodels.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.internalmodels.MessageDeliveryStatus;
@@ -26,19 +28,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 class ExecutorCommunicatorTest {
     @Test
     void test() {
-        val engine = new InstanceEngine(Executors.newCachedThreadPool());
+        val engine = new InstanceEngine(Executors.newCachedThreadPool(),
+                                        new InjectingInstanceActionFactory(Guice.createInjector(Stage.DEVELOPMENT)));
         val comms = new ExecutorCommunicator(engine);
         comms.onMessageReady().connect(msg -> {
             log.info("Received message: {}", msg);
-            return new MessageResponse(MessageHeader.controllerResponse(msg.getHeader().getId()), MessageDeliveryStatus.ACCEPTED);
+            return new MessageResponse(MessageHeader.controllerResponse(msg.getHeader().getId()),
+                                       MessageDeliveryStatus.ACCEPTED);
         });
         comms.onResponse().connect(response -> log.info("Response: {}", response));
         val runningCount = new AtomicInteger();
         engine.onStateChange().connect(newState -> {
-            if(newState.getState().equals(InstanceState.PROVISIONING)) {
+            if (newState.getState().equals(InstanceState.PROVISIONING)) {
                 runningCount.getAndIncrement();
             }
-            if(newState.getState().isTerminal()) {
+            if (newState.getState().isTerminal()) {
                 runningCount.decrementAndGet();
             }
         });

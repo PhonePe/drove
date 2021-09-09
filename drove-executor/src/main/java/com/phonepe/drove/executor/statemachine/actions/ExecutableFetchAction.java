@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ExecutableFetchAction extends InstanceAction {
     @Override
-    public StateData<InstanceState, InstanceInfo> execute(
+    protected StateData<InstanceState, InstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val client = context.getClient();
