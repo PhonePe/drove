@@ -1,17 +1,16 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
-import com.github.dockerjava.api.async.ResultCallback;
-import com.github.dockerjava.api.model.Frame;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.engine.DockerLabels;
+import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.slf4j.MDC;
 
-import java.nio.charset.Charset;
 import java.util.Collections;
 
 /**
@@ -44,28 +43,10 @@ public class InstanceRecoveryAction extends InstanceAction {
         context.setDockerInstanceId(containerId);
         context.setDockerImageId(container.getImageId());
         client.logContainerCmd(containerId)
-                .withTailAll()
                 .withFollowStream(true)
                 .withStdOut(true)
                 .withStdErr(true)
-                .exec(new ResultCallback.Adapter<Frame>() {
-
-                    @Override
-                    public void onNext(Frame object) {
-                        switch (object.getStreamType())  {
-                            case STDOUT:
-                                log.info(new String(object.getPayload(), Charset.defaultCharset()));
-                                break;
-                            case STDERR:
-                                log.error(new String(object.getPayload(), Charset.defaultCharset()));
-                                break;
-                            case STDIN:
-                            case RAW:
-                            default:
-                                break;
-                        }
-                    }
-                });
+                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()));
 
         return StateData.from(currentState, InstanceState.UNREADY);
     }

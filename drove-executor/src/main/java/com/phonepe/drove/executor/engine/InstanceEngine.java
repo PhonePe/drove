@@ -17,6 +17,7 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.slf4j.MDC;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -70,10 +71,12 @@ public class InstanceEngine implements Closeable {
         val stateMachine = new InstanceStateMachine(spec, currentState, actionFactory);
         stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
+            MDC.put("instanceId", spec.getInstanceId());
             InstanceState state = null;
             do {
                 state = stateMachine.execute();
             } while (!state.isTerminal());
+            MDC.remove("instanceId");
             return state;
         });
         stateMachines.put(instanceId, new SMInfo(stateMachine, f));

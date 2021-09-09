@@ -10,7 +10,9 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.slf4j.MDC;
 
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,10 +40,12 @@ public class InstanceHealthcheckAction extends InstanceAction {
         val checker = Utils.createChecker(context, currentState.getData(), healthcheckSpec);
         log.info("Starting healthcheck");
         try {
+            val mdc = MDC.getCopyOfContextMap();
             checkerJob = executorService.scheduleWithFixedDelay(new HealthChecker(checker,
                                                                                   checkLock,
                                                                                   stateChanged,
-                                                                                  currentResult),
+                                                                                  currentResult,
+                                                                                  mdc),
                                                                 healthcheckSpec.getInitialDelay().toMilliseconds(),
                                                                 healthcheckSpec.getInterval().toMilliseconds(),
                                                                 TimeUnit.MILLISECONDS);
@@ -119,20 +123,23 @@ public class InstanceHealthcheckAction extends InstanceAction {
         private final Lock lock;
         private final Condition condition;
         private final AtomicReference<CheckResult> currentResult;
+        private final Map<String, String> mdc;
 
         private HealthChecker(
                 Checker checker,
                 Lock lock,
                 Condition condition,
-                AtomicReference<CheckResult> currentResult) {
+                AtomicReference<CheckResult> currentResult, Map<String, String> mdc) {
             this.checker = checker;
             this.lock = lock;
             this.condition = condition;
             this.currentResult = currentResult;
+            this.mdc = mdc;
         }
 
         @Override
         public void run() {
+            MDC.setContextMap(mdc);
             lock.lock();
             try {
                 log.debug("Starting healthcheck call");
@@ -146,6 +153,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
             finally {
                 condition.signalAll();
                 lock.unlock();
+                MDC.clear();
             }
         }
     }
