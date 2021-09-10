@@ -93,7 +93,6 @@ public class InstanceEngine implements Closeable {
             try {
                 val finalState = info.getStateMachineFuture().get();
                 log.info("Final state: {}", finalState);
-                stateMachines.remove(instanceId);
             }
             catch (Exception e) {
                 log.error("Error stopping instance: ", e);
@@ -126,7 +125,18 @@ public class InstanceEngine implements Closeable {
     }
 
     private void handleStateChange(StateData<InstanceState, InstanceInfo> currentState) {
-        log.info("Current state: {}", currentState);
+        val state = currentState.getState();
+        log.info("Current state: {}. Terminal: {} Error: {}", currentState, state.isTerminal(), state.isError());
+        if(state.isTerminal()) {
+            val data = currentState.getData();
+            if(null != data) {
+                stateMachines.remove(data.getInstanceId());
+                log.info("State machine {} has been successfully terminated", data.getInstanceId());
+            }
+            else {
+                log.warn("State data is not present");
+            }
+        }
         communicator.send(instanceStateMessage(currentState));
         stateChanged.dispatch(currentState);
         //TODO::SEND STATE UPDATE TO CONTROLLER

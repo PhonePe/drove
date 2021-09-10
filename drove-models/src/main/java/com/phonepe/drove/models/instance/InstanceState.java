@@ -1,10 +1,12 @@
 package com.phonepe.drove.models.instance;
 
 import com.phonepe.drove.models.StateEnum;
+import lombok.Getter;
 
 /**
  *
  */
+@Getter
 public enum InstanceState implements StateEnum {
     PENDING(false, false),
     PROVISIONING(false, false),
@@ -29,10 +31,5 @@ public enum InstanceState implements StateEnum {
     InstanceState(boolean terminal, boolean error) {
         this.terminal = terminal;
         this.error = error;
-    }
-
-    @Override
-    public boolean isTerminal() {
-        return terminal;
     }
 }
