@@ -5,7 +5,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.phonepe.drove.common.ActionContext;
-import com.phonepe.drove.internalmodels.InstanceSpec;
+import com.phonepe.drove.common.model.InstanceSpec;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

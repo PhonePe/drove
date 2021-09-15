@@ -9,7 +9,7 @@ import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
-import com.phonepe.drove.internalmodels.InstanceSpec;
+import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.dropwizard.lifecycle.Managed;

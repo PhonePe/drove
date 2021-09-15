@@ -14,7 +14,7 @@ import lombok.Data;
 })
 @Data
 public abstract class ResourceRequirement {
-    private final ResourceRequirementType type;
+    private final ResourceType type;
 
     public abstract <T> T accept(final ResourceRequirementVisitor<T> visitor);
 }

@@ -5,20 +5,21 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
+import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.internalmodels.InstanceSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 
 import java.net.InetAddress;
@@ -51,16 +52,17 @@ public class InstanceRunAction extends InstanceAction {
                     .withPublishAllPorts(true)*/;
 
             instanceSpec.getResources()
-                    .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceRequirementVisitor<Void>() {
+                    .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                         @Override
-                        public Void visit(CPURequirement cpuRequirement) {
-                            hostConfig.withCpuCount(cpuRequirement.getCount());
+                        public Void visit(CPUAllocation cpu) {
+                            hostConfig.withCpuCount((long)cpu.getCores().size());
+                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores(), ","));
                             return null;
                         }
 
                         @Override
-                        public Void visit(MemoryRequirement memoryRequirement) {
-                            hostConfig.withMemory(memoryRequirement.getSizeInMB() * (1<<20));
+                        public Void visit(MemoryAllocation memory) {
+                            hostConfig.withMemory(memory.getMemoryInMB() * (1<<20));
                             return null;
                         }
                     }));

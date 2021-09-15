@@ -15,7 +15,7 @@ public class CPURequirement extends ResourceRequirement {
     long count;
 
     public CPURequirement(@JsonProperty("count") long count) {
-        super(ResourceRequirementType.CPU);
+        super(ResourceType.CPU);
         this.count = count;
     }
 

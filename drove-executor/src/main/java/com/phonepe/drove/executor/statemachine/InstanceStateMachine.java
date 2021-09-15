@@ -5,7 +5,7 @@ import com.phonepe.drove.common.StateMachine;
 import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.statemachine.actions.*;
-import com.phonepe.drove.internalmodels.InstanceSpec;
+import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.NonNull;

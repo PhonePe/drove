@@ -9,8 +9,8 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.phonepe.drove.common.Communicator;
-import com.phonepe.drove.internalmodels.InstanceSpec;
-import com.phonepe.drove.internalmodels.StopInstanceMessage2;
+import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.StopInstanceMessage2;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import lombok.val;
 
@@ -85,9 +85,7 @@ public class DockerExecutionEngine implements ExecutionEngine {
         try (val containerCmd = client.createContainerCmd(UUID.randomUUID().toString())) {
             val id = containerCmd
                     .withImage(image)
-                    .withName(startInstanceMessage.getAppId().getName()
-                                      + startInstanceMessage.getAppId().getVersion()
-                                      + UUID.randomUUID())
+                    .withName(startInstanceMessage.getAppId() + UUID.randomUUID())
                     .exec()
                     .getId();
             System.out.println("Container id: " + id);

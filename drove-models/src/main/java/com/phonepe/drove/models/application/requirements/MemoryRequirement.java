@@ -15,7 +15,7 @@ public class MemoryRequirement extends ResourceRequirement {
     long sizeInMB;
 
     public MemoryRequirement(@JsonProperty("sizeInMB") long sizeInMB) {
-        super(ResourceRequirementType.MEMORY);
+        super(ResourceType.MEMORY);
         this.sizeInMB = sizeInMB;
     }
 

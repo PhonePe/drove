@@ -1,6 +1,6 @@
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.internalmodels.ExecutorState;
+import com.phonepe.drove.common.model.ExecutorState;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.Value;

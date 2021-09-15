@@ -1,7 +1,7 @@
 package com.phonepe.drove.common;
 
-import com.phonepe.drove.internalmodels.Message;
-import com.phonepe.drove.internalmodels.MessageResponse;
+import com.phonepe.drove.common.model.Message;
+import com.phonepe.drove.common.model.MessageResponse;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import io.appform.signals.signals.GeneratingSyncSignal;
 

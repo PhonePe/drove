@@ -2,15 +2,14 @@ package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
+import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.actions.ExecutableFetchAction;
 import com.phonepe.drove.executor.statemachine.actions.InstanceRunAction;
-import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.internalmodels.InstanceSpec;
-import com.phonepe.drove.models.application.AppId;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.dropwizard.util.Duration;
@@ -31,13 +30,13 @@ class InstanceRunActionTest {
 
     @Test
     void testRun() {
-        val instanceSpec = new InstanceSpec(new AppId("test", 1),
+        val instanceSpec = new InstanceSpec("T001",
                                             UUID.randomUUID().toString(),
                                             new DockerCoordinates(
                                                     "docker.io/santanusinha/test-service:0.1",
                                                     Duration.seconds(100)),
-                                            ImmutableList.of(new CPURequirement(1),
-                                                             new MemoryRequirement(512)),
+                                            ImmutableList.of(new CPUAllocation(Collections.singleton(1)),
+                                                             new MemoryAllocation(512)),
                                             Collections.singletonList(new PortSpec("main", 3000)),
                                             Collections.emptyList(),
                                             null,

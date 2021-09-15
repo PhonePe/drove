@@ -11,7 +11,6 @@
 
     <modules>
         <module>drove-models</module>
-        <module>drove-internal-models</module>
         <module>drove-common</module>
         <module>drove-executor</module>
         <module>drove-controller</module>

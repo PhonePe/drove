@@ -1,11 +1,11 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.statedb.StateDB;
-import com.phonepe.drove.internalmodels.MessageDeliveryStatus;
-import com.phonepe.drove.internalmodels.MessageResponse;
-import com.phonepe.drove.internalmodels.controller.ControllerMessageVisitor;
-import com.phonepe.drove.internalmodels.controller.ExecutorStateReportMessage;
-import com.phonepe.drove.internalmodels.controller.InstanceStateReportMessage;
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
+import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
+import com.phonepe.drove.common.model.controller.ExecutorStateReportMessage;
+import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import lombok.val;
 
 /**
