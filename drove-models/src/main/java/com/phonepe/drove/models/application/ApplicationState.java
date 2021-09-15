@@ -9,5 +9,6 @@ public enum ApplicationState {
     RUNNING,
     PARTIAL_OUTAGE,
     DOWN,
-    SUSPENDED
+    SUSPENDED,
+    FAILED
 }

@@ -43,9 +43,7 @@ public class InstanceRunAction extends InstanceAction {
         try (val containerCmd = client.createContainerCmd(UUID.randomUUID().toString())) {
             containerCmd
                     .withImage(image)
-                    .withName(instanceSpec.getAppId().getName()
-                                      + instanceSpec.getAppId().getVersion()
-                                      + UUID.randomUUID());
+                    .withName(instanceSpec.getAppId() + UUID.randomUUID());
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
                     .withOomKillDisable(true)

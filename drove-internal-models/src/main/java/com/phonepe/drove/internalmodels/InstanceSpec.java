@@ -1,6 +1,5 @@
 package com.phonepe.drove.internalmodels;
 
-import com.phonepe.drove.models.application.AppId;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -16,7 +15,7 @@ import java.util.Map;
  */
 @Value
 public class InstanceSpec {
-    AppId appId;
+    String appId;
     String instanceId;
     ExecutableCoordinates executable;
     List<ResourceRequirement> resources;

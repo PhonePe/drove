@@ -7,4 +7,5 @@ import lombok.Value;
  */
 @Value
 public class ExecutorState {
+    String executorId;
 }
