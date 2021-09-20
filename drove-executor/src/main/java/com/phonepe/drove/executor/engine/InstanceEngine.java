@@ -2,13 +2,17 @@ package com.phonepe.drove.executor.engine;
 
 import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.InstanceActionFactory;
-import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
-import com.phonepe.drove.common.model.executor.ExecutorMessage;
-import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
+import com.phonepe.drove.common.model.executor.ExecutorMessage;
+import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
+import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
+import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.executor.resource.ResourceDB;
+import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingParallelSignal;
@@ -22,6 +26,7 @@ import org.slf4j.MDC;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,15 +40,20 @@ import java.util.concurrent.Future;
 public class InstanceEngine implements Closeable {
     private final ExecutorService service;
     private final InstanceActionFactory actionFactory;
+    private final ResourceDB resourceDB;
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<StateData<InstanceState, InstanceInfo>> stateChanged;
     private final ClockPulseGenerator clockPulseGenerator;
     @Setter
     private ExecutorCommunicator communicator;
 
-    public InstanceEngine(ExecutorService service, InstanceActionFactory actionFactory) {
+    public InstanceEngine(
+            ExecutorService service,
+            InstanceActionFactory actionFactory,
+            ResourceDB resourceDB) {
         this.service = service;
         this.actionFactory = actionFactory;
+        this.resourceDB = resourceDB;
         this.stateMachines = new ConcurrentHashMap<>();
         stateChanged = new ConsumingParallelSignal<>();
         clockPulseGenerator = new ClockPulseGenerator("scheduled-reporting-pulse-generator",
@@ -60,14 +70,17 @@ public class InstanceEngine implements Closeable {
         return stateMachines.containsKey(instanceId);
     }
 
-    public void startInstance(final InstanceSpec spec) {
-        registerInstance(spec.getInstanceId(), spec, StateData.create(InstanceState.PENDING, null));
+    public boolean startInstance(final InstanceSpec spec) {
+        return registerInstance(spec.getInstanceId(), spec, StateData.create(InstanceState.PENDING, null));
     }
 
-    public void registerInstance(
+    public boolean registerInstance(
             final String instanceId,
             final InstanceSpec spec,
             final StateData<InstanceState, InstanceInfo> currentState) {
+        if (!lockRequiredResources(spec)) {
+            return false;
+        }
         val stateMachine = new InstanceStateMachine(spec, currentState, actionFactory);
         stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
@@ -80,6 +93,7 @@ public class InstanceEngine implements Closeable {
             return state;
         });
         stateMachines.put(instanceId, new SMInfo(stateMachine, f));
+        return true;
     }
 
     public void stopInstance(final String instanceId) {
@@ -124,12 +138,36 @@ public class InstanceEngine implements Closeable {
         Future<InstanceState> stateMachineFuture;
     }
 
+
+    private boolean lockRequiredResources(InstanceSpec spec) {
+        val resourceUsage = new ResourceDB.ResourceUsage(spec.getInstanceId(),
+                                                         ResourceDB.ResourceLockType.SOFT,
+                                                         new HashMap<>(),
+                                                         new HashMap<>());
+        spec.getResources()
+                .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
+                    @Override
+                    public Void visit(CPUAllocation cpu) {
+                        resourceUsage.getCores().putAll(cpu.getCores());
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(MemoryAllocation memory) {
+                        resourceUsage.getMemory().putAll(memory.getMemoryInMB());
+                        return null;
+                    }
+                }));
+        return resourceDB.lockResources(resourceUsage);
+    }
+
     private void handleStateChange(StateData<InstanceState, InstanceInfo> currentState) {
         val state = currentState.getState();
         log.info("Current state: {}. Terminal: {} Error: {}", currentState, state.isTerminal(), state.isError());
         if(state.isTerminal()) {
             val data = currentState.getData();
             if(null != data) {
+                resourceDB.reclaimResources(currentState.getData().getInstanceId());
                 stateMachines.remove(data.getInstanceId());
                 log.info("State machine {} has been successfully terminated", data.getInstanceId());
             }

@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -15,9 +16,9 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class CPUAllocation extends ResourceAllocation {
-    Set<Integer> cores;
+    Map<Integer, Set<Integer>> cores;
 
-    public CPUAllocation(@JsonProperty("cores") Set<Integer> cores) {
+    public CPUAllocation(@JsonProperty("cores") Map<Integer, Set<Integer>> cores) {
         super(ResourceType.CPU);
         this.cores = cores;
     }

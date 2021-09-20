@@ -5,6 +5,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.resource.ResourceDB;
 import io.dropwizard.setup.Environment;
 
 import javax.inject.Singleton;
@@ -22,7 +23,7 @@ public class CoreModule extends AbstractModule {
                                           .minThreads(128)
                                           .maxThreads(128)
                                           .build(),
-                                  new InjectingInstanceActionFactory(injector));
+                                  new InjectingInstanceActionFactory(injector), new ResourceDB());
     }
 
     @Provides

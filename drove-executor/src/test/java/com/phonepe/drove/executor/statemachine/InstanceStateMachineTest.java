@@ -2,8 +2,8 @@ package com.phonepe.drove.executor.statemachine;
 
 import com.google.inject.Guice;
 import com.google.inject.Stage;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.TestingUtils;
 import com.phonepe.drove.models.instance.InstanceState;

@@ -27,8 +27,10 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
         }
         try {
             log.info("Starting instance");
-            engine.startInstance(startInstanceMessage.getSpec());
-            return new MessageResponse(startInstanceMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
+            return new MessageResponse(startInstanceMessage.getHeader(),
+                                       engine.startInstance(startInstanceMessage.getSpec())
+                                       ? MessageDeliveryStatus.ACCEPTED
+                                       : MessageDeliveryStatus.FAILED);
         }
         catch (Exception e) {
             log.error("Could not start: ", e);

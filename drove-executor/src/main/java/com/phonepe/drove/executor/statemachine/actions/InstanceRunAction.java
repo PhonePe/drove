@@ -25,6 +25,7 @@ import org.slf4j.MDC;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -55,15 +56,20 @@ public class InstanceRunAction extends InstanceAction {
                     .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                         @Override
                         public Void visit(CPUAllocation cpu) {
-                            hostConfig.withCpuCount((long)cpu.getCores().size());
-                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores(), ","));
+                            hostConfig.withCpuCount((long) cpu.getCores().size());
+                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores().values().stream().collect(
+                                    Collectors.toUnmodifiableList()), ","));
                             return null;
                         }
 
                         @Override
                         public Void visit(MemoryAllocation memory) {
-                            hostConfig.withMemory(memory.getMemoryInMB() * (1<<20));
-                            hostConfig.withCpusetMems(StringUtils.join(memory.getNodes().toArray(), ","));
+                            hostConfig.withMemory(memory.getMemoryInMB()
+                                                          .values()
+                                                          .stream()
+                                                          .mapToLong(Long::longValue)
+                                                          .sum() * (1 << 20));
+                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet().toArray(), ","));
                             return null;
                         }
                     }));
