@@ -57,7 +57,7 @@ public class InstanceRunAction extends InstanceAction {
                         @Override
                         public Void visit(CPUAllocation cpu) {
                             hostConfig.withCpuCount((long) cpu.getCores().size());
-                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores().values().stream().collect(
+                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores().values().stream().flatMap(Set::stream).map(i -> Integer.toString(i)).collect(
                                     Collectors.toUnmodifiableList()), ","));
                             return null;
                         }
@@ -69,7 +69,7 @@ public class InstanceRunAction extends InstanceAction {
                                                           .stream()
                                                           .mapToLong(Long::longValue)
                                                           .sum() * (1 << 20));
-                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet().toArray(), ","));
+                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
                             return null;
                         }
                     }));

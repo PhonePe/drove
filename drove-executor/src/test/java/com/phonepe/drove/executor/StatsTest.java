@@ -1,7 +1,17 @@
 package com.phonepe.drove.executor;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
+import com.phonepe.drove.executor.resource.ResourceDB;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.junit.jupiter.api.Test;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -38,5 +48,24 @@ class StatsTest {
                     }
                 })
                 .awaitCompletion();*/
+    }
+
+    /*
+    available: 2 nodes (0-1)
+    node 0 cpus: 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78
+    node 0 size: 288766 MB
+    node 0 free: 194045 MB
+    node 1 cpus: 1 3 5 7 9 11 13 15 17 19 21 23 25 27 29 31 33 35 37 39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79
+    node 1 size: 290269 MB
+    node 1 free: 200774 MB
+    node distances:
+    node   0   1
+      0:  10  21
+      1:  21  10
+     */
+    @Test
+    @SneakyThrows
+    void readResource() {
+
     }
 }

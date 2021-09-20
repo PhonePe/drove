@@ -25,10 +25,7 @@ import org.slf4j.MDC;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -140,33 +137,53 @@ public class InstanceEngine implements Closeable {
 
 
     private boolean lockRequiredResources(InstanceSpec spec) {
-        val resourceUsage = new ResourceDB.ResourceUsage(spec.getInstanceId(),
-                                                         ResourceDB.ResourceLockType.SOFT,
-                                                         new HashMap<>(),
-                                                         new HashMap<>());
+        val resourceUsage = new HashMap<Integer, ResourceDB.NodeInfo>();
         spec.getResources()
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                     @Override
                     public Void visit(CPUAllocation cpu) {
-                        resourceUsage.getCores().putAll(cpu.getCores());
+                        cpu.getCores()
+                                .forEach((node, allocCpus) -> {
+                                    resourceUsage.compute(node, (nodeId, nodeInfo) -> {
+                                        val info = nodeInfo(nodeInfo);
+                                        info.setAvailableCores(allocCpus);
+                                        return info;
+                                    });
+                                });
                         return null;
                     }
 
                     @Override
                     public Void visit(MemoryAllocation memory) {
-                        resourceUsage.getMemory().putAll(memory.getMemoryInMB());
+                        memory.getMemoryInMB()
+                                .forEach((node, allocMem) -> {
+                                    resourceUsage.compute(node, (nodeId, nodeInfo) -> {
+                                        val info = nodeInfo(nodeInfo);
+                                        info.setMemoryInMB(allocMem);
+                                        return info;
+                                    });
+                                });
                         return null;
                     }
                 }));
-        return resourceDB.lockResources(resourceUsage);
+        return resourceDB.lockResources(new ResourceDB.ResourceUsage(spec.getInstanceId(),
+                                                                     ResourceDB.ResourceLockType.HARD,
+                                                                     resourceUsage));
+    }
+
+    private ResourceDB.NodeInfo nodeInfo(ResourceDB.NodeInfo nodeInfo) {
+        val updated = nodeInfo == null
+                      ? new ResourceDB.NodeInfo(new HashSet<>(), 0L)
+                      : nodeInfo;
+        return updated;
     }
 
     private void handleStateChange(StateData<InstanceState, InstanceInfo> currentState) {
         val state = currentState.getState();
         log.info("Current state: {}. Terminal: {} Error: {}", currentState, state.isTerminal(), state.isError());
-        if(state.isTerminal()) {
+        if (state.isTerminal()) {
             val data = currentState.getData();
-            if(null != data) {
+            if (null != data) {
                 resourceDB.reclaimResources(currentState.getData().getInstanceId());
                 stateMachines.remove(data.getInstanceId());
                 log.info("State machine {} has been successfully terminated", data.getInstanceId());

@@ -1,17 +1,17 @@
 package com.phonepe.drove.executor.resource;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Value;
+import com.google.common.collect.Sets;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
+import javax.inject.Singleton;
 import java.util.*;
 
 /**
  *
  */
 @Slf4j
+@Singleton
 public class ResourceDB {
     public enum ResourceLockType {
         SOFT,
@@ -22,8 +22,7 @@ public class ResourceDB {
     public static class ResourceUsage {
         String id;
         ResourceLockType type;
-        Map<Integer, Set<Integer>> cores;
-        Map<Integer, Long> memory;
+        Map<Integer, NodeInfo> usedResources;
     }
 
     @Data
@@ -36,41 +35,32 @@ public class ResourceDB {
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
     private final Map<String, ResourceUsage> resourceLocks = new HashMap<>();
 
+    public synchronized void populateResources(Map<Integer, NodeInfo> nodes) {
+        this.nodes = Map.copyOf(nodes);
+    }
+
     public synchronized boolean lockResources(final ResourceUsage usage) {
-        val hasCores = usage.getCores()
-                .entrySet()
-                .stream()
-                .allMatch(entry -> nodes.containsKey(entry.getKey())
-                        && nodes.get(entry.getKey())
-                        .getAvailableCores()
-                        .containsAll(entry.getValue()));
-        if (!hasCores) {
-            log.error("Provided cpu requirement not available. Usage Info: {}", usage);
+        val resourceRequirements = usage.getUsedResources();
+        if (!nodes.keySet().containsAll(resourceRequirements.keySet())) {
             return false;
         }
-        val hasMemory = usage.getMemory()
+        if (!resourceRequirements
                 .entrySet()
                 .stream()
-                .allMatch(entry -> nodes.containsKey(entry.getKey()) && nodes.get(entry.getKey())
-                        .getMemoryInMB() >= entry.getValue());
-        if (!hasMemory) {
-            log.error("Provided memory requirement not available. Usage Info: {}", usage);
+                .allMatch(entry -> ensureNodeResource(nodes.get(entry.getKey()), entry.getValue()))) {
+            log.error("Provided cpu or memory requirement not available. Usage Info: {}", usage);
             return false;
         }
         val currNodes = new HashMap<>(nodes);
-        usage.getCores()
-                .forEach((node, usedCores) -> currNodes.computeIfPresent(node, (key, nodeInfo) -> {
-                    nodeInfo.getAvailableCores().removeAll(usedCores);
-                    return nodeInfo;
-                }));
-        usage.getMemory()
-                .forEach((node, usedMemory) -> currNodes.computeIfPresent(node, (key, nodeInfo) -> {
-                    nodeInfo.setMemoryInMB(nodeInfo.getMemoryInMB() - usedMemory);
-                    return nodeInfo;
-                }));
+        resourceRequirements
+                .forEach((node, requirement)
+                                 -> currNodes.computeIfPresent(
+                        node, (key, old) -> new NodeInfo(Set.copyOf(
+                                Sets.difference(old.getAvailableCores(), requirement.getAvailableCores())),
+                                                         old.getMemoryInMB() - requirement.getMemoryInMB())));
         nodes = Map.copyOf(currNodes);
         resourceLocks.put(usage.getId(), usage);
-        return hasCores;
+        return true;
     }
 
     public synchronized void reclaimResources(String id) {
@@ -80,17 +70,24 @@ public class ResourceDB {
             return;
         }
         val currNodes = new HashMap<>(nodes);
-        usage.getCores()
-                .forEach((node, usedCores) -> currNodes.computeIfPresent(node, (key, nodeInfo) -> {
-                    nodeInfo.getAvailableCores().addAll(usedCores);
-                    return nodeInfo;
-                }));
-        usage.getMemory()
-                .forEach((node, usedMemory) -> currNodes.computeIfPresent(node, (key, nodeInfo) -> {
-                    nodeInfo.setMemoryInMB(nodeInfo.getMemoryInMB() + usedMemory);
-                    return nodeInfo;
-                }));
+        val resourceRequirements = usage.getUsedResources();
+        resourceRequirements
+                .forEach((node, requirement)
+                                 -> currNodes.computeIfPresent(
+                        node, (key, old) -> new NodeInfo(Set.copyOf(
+                                Sets.union(old.getAvailableCores(), requirement.getAvailableCores())),
+                                                         old.getMemoryInMB() + requirement.getMemoryInMB())));
         nodes = Map.copyOf(currNodes);
         resourceLocks.remove(id);
     }
+
+
+    private boolean ensureNodeResource(NodeInfo actual, NodeInfo requirement) {
+        if (null == actual) {
+            return false;
+        }
+        return actual.getAvailableCores().containsAll(requirement.getAvailableCores())
+                && actual.getMemoryInMB() >= requirement.getMemoryInMB();
+    }
+
 }

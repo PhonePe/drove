@@ -15,6 +15,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -26,6 +27,7 @@ import java.util.Collections;
  */
 @Singleton
 @Slf4j
+@Order(10)
 public class InstanceRecovery implements Managed {
     private final InstanceEngine engine;
     private final ObjectMapper mapper;
