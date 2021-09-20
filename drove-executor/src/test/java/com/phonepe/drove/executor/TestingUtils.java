@@ -27,7 +27,7 @@ public class TestingUtils {
                                         "docker.io/santanusinha/test-service:0.1",
                                         Duration.seconds(100)),
                                 ImmutableList.of(new CPUAllocation(Collections.singleton(1)),
-                                                 new MemoryAllocation(512)),
+                                                 new MemoryAllocation(Collections.singleton(0), 512)),
                                 Collections.singletonList(new PortSpec("main", 3000)),
                                 Collections.emptyList(),
                                 new CheckSpec(new HTTPCheckModeSpec("http",

@@ -63,6 +63,7 @@ public class InstanceRunAction extends InstanceAction {
                         @Override
                         public Void visit(MemoryAllocation memory) {
                             hostConfig.withMemory(memory.getMemoryInMB() * (1<<20));
+                            hostConfig.withCpusetMems(StringUtils.join(memory.getNodes().toArray(), ","));
                             return null;
                         }
                     }));

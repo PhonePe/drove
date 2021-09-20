@@ -21,10 +21,8 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
     @Override
     public MessageResponse visit(InstanceStateReportMessage instanceStateReport) {
         val instanceInfo = instanceStateReport.getInstanceInfo();
-        val status = stateDB.updateInstanceState(
-                instanceInfo.getAppId(),
-                instanceInfo.getInstanceId(),
-                instanceInfo);
+        val status
+                = stateDB.updateInstanceState(instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceInfo);
         return new MessageResponse(instanceStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
@@ -34,10 +32,10 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
     @Override
     public MessageResponse visit(ExecutorStateReportMessage executorStateReport) {
         val executorState = executorStateReport.getExecutorState();
-        val status = stateDB.updateExecutorState(executorState.getExecutorId(),
-                                                 executorState);
+        val status = stateDB.updateExecutorState(executorState.getExecutorId(), executorState);
         return new MessageResponse(executorStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
-                                   : MessageDeliveryStatus.FAILED);    }
+                                   : MessageDeliveryStatus.FAILED);
+    }
 }

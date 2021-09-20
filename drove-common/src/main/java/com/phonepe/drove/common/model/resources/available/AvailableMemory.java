@@ -5,6 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 
+import java.util.Map;
+
 /**
  *
  */
@@ -12,9 +14,9 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class AvailableMemory extends AvailableResource {
-    long memoryInMB;
+    Map<Integer, Long> memoryInMB;
 
-    public AvailableMemory(long memoryInMB) {
+    public AvailableMemory(Map<Integer, Long> memoryInMB) {
         super(ResourceType.MEMORY);
         this.memoryInMB = memoryInMB;
     }
