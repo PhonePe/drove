@@ -1,5 +1,6 @@
 package com.phonepe.drove.common.model.resources.available;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -21,7 +22,7 @@ public class AvailableCPU extends AvailableResource {
      */
     Map<Integer, Set<Integer>> cores;
 
-    public AvailableCPU(Map<Integer, Set<Integer>> cores) {
+    public AvailableCPU(@JsonProperty("cores") Map<Integer, Set<Integer>> cores) {
         super(ResourceType.CPU);
         this.cores = cores;
     }

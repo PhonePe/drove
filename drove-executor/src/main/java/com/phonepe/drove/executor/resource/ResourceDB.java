@@ -1,11 +1,23 @@
 package com.phonepe.drove.executor.resource;
 
 import com.google.common.collect.Sets;
-import lombok.*;
+import com.phonepe.drove.common.model.resources.available.AvailableCPU;
+import com.phonepe.drove.common.model.resources.available.AvailableMemory;
+import com.phonepe.drove.common.model.utils.Pair;
+import io.appform.signals.signals.ConsumingFireForgetSignal;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -34,6 +46,10 @@ public class ResourceDB {
 
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
     private final Map<String, ResourceUsage> resourceLocks = new HashMap<>();
+    private final ConsumingFireForgetSignal<ResourceInfo> resourceUpdated
+            = ConsumingFireForgetSignal.<ResourceInfo>builder()
+            .executorService(Executors.newSingleThreadExecutor())
+            .build();
 
     public synchronized void populateResources(Map<Integer, NodeInfo> nodes) {
         this.nodes = Map.copyOf(nodes);
@@ -79,8 +95,29 @@ public class ResourceDB {
                                                          old.getMemoryInMB() + requirement.getMemoryInMB())));
         nodes = Map.copyOf(currNodes);
         resourceLocks.remove(id);
+        resourceUpdated.dispatch(calculateResources());
     }
 
+
+    public synchronized ResourceInfo currentState() {
+        return calculateResources();
+    }
+
+    public ConsumingFireForgetSignal<ResourceInfo> onResourceUpdated() {
+        return resourceUpdated;
+    }
+
+    private ResourceInfo calculateResources() {
+        val cpus = nodes.entrySet()
+                .stream()
+                .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getAvailableCores()))
+                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+        val memory = nodes.entrySet()
+                .stream()
+                .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB()))
+                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+        return new ResourceInfo(new AvailableCPU(cpus), new AvailableMemory(memory));
+    }
 
     private boolean ensureNodeResource(NodeInfo actual, NodeInfo requirement) {
         if (null == actual) {

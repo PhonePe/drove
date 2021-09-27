@@ -22,3 +22,7 @@ logging:
       threshold: TRACE
       timeZone: IST
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceId}] %message%n"
+
+zookeeper:
+  connectionString: localhost:2181
+  hostname: localhost

@@ -26,7 +26,8 @@ public class App extends Application<AppConfig> {
                 GuiceBundle.builder()
                         .enableAutoConfig("com.phonepe.drove.executor.resources",
                                           "com.phonepe.drove.executor.healthcheck",
-                                          "com.phonepe.drove.executor.managed")
+                                          "com.phonepe.drove.executor.managed",
+                                          "com.phonepe.drove.executor.discovery")
                         .modules(new CoreModule())
                         .installers(HealthCheckInstaller.class)
                         .printDiagnosticInfo()

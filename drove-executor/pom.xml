@@ -50,7 +50,7 @@
         <dependency>
             <groupId>ru.vyarus</groupId>
             <artifactId>dropwizard-guicey</artifactId>
-            <version>${guice.version}</version>
+            <version>${dw-guicey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.phonepe.drove</groupId>

@@ -1,5 +1,6 @@
 package com.phonepe.drove.common.model.resources.available;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -16,7 +17,7 @@ import java.util.Map;
 public class AvailableMemory extends AvailableResource {
     Map<Integer, Long> memoryInMB;
 
-    public AvailableMemory(Map<Integer, Long> memoryInMB) {
+    public AvailableMemory(@JsonProperty("memoryInMB") Map<Integer, Long> memoryInMB) {
         super(ResourceType.MEMORY);
         this.memoryInMB = memoryInMB;
     }
