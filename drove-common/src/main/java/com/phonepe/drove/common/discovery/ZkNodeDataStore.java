@@ -3,12 +3,9 @@ package com.phonepe.drove.common.discovery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.NodeData;
 import com.phonepe.drove.common.discovery.nodedata.NodeType;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryForever;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -27,35 +24,14 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 public class ZkNodeDataStore implements NodeDataStore {
-    private static final String DEFAULT_NAMESPACE = "drove";
 
     final CuratorFramework curator;
     final ObjectMapper mapper;
 
     @Inject
-    public ZkNodeDataStore(ZkConfig config, ObjectMapper mapper) {
-        this(CuratorFrameworkFactory.builder()
-                     .connectString(config.getConnectionString())
-                     .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
-                     .retryPolicy(new RetryForever(1000))
-                     .build(), mapper);
-    }
-
     public ZkNodeDataStore(CuratorFramework curator, ObjectMapper mapper) {
         this.curator = curator;
         this.mapper = mapper;
-    }
-
-    @Override
-    @SneakyThrows
-    public void start() {
-        curator.start();
-        curator.blockUntilConnected();
-    }
-
-    @Override
-    public void stop() {
-        curator.close();
     }
 
     @Override

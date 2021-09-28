@@ -1,7 +1,8 @@
 package com.phonepe.drove.executor.discovery;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.ZkConfig;
+import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorState;
 import com.phonepe.drove.executor.resource.ResourceDB;
@@ -19,7 +20,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 @Singleton
-@Order(20)
+@Order(10)
 public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ZkConfig config;
     private final NodeDataStore nodeDataStore;
@@ -52,26 +52,23 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         this.resourceDB = resourceDB;
         this.refreshSignal.connect(this::refresh);
         environment.lifecycle().addServerLifecycleListener(this);
-        resourceDB.onResourceUpdated().connect(this::refreshNodeState);
     }
 
     @Override
     public void start() throws Exception {
-        nodeDataStore.start();
+        resourceDB.onResourceUpdated().connect(this::refreshNodeState);
     }
 
     @Override
     public void stop() throws Exception {
         refreshSignal.close();
-        nodeDataStore.stop();
     }
 
     @Override
     public void serverStarted(Server server) {
         log.info("Server started. Will start publishing node data");
         val port = getLocalPort(server);
-        val hostname = Objects.requireNonNullElse(System.getenv("HOSTNAME"), config.getHostname());
-        Objects.requireNonNull(hostname, "Hostname cannot be empty");
+        val hostname = CommonUtils.hostname(config.getHostname());
         refreshNodeState(port, hostname);
         started.set(true);
     }

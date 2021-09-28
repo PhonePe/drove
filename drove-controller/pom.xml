@@ -26,6 +26,11 @@
             <artifactId>dropwizard-guicey</artifactId>
             <version>${dw-guicey.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

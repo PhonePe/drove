@@ -3,9 +3,11 @@ package com.phonepe.drove.executor;
 import com.google.inject.Guice;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
+import com.phonepe.drove.executor.engine.ExecutorMessageSender;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
@@ -32,7 +34,12 @@ class ExecutorCommunicatorTest {
         val engine = new InstanceEngine(Executors.newCachedThreadPool(),
                                         new InjectingInstanceActionFactory(Guice.createInjector(Stage.DEVELOPMENT)),
                                         new ResourceDB());
-        val comms = new ExecutorCommunicator(engine);
+        val comms = new ExecutorCommunicator(engine, new ExecutorMessageSender() {
+            @Override
+            public MessageResponse sendRemoteMessage(ControllerMessage message) {
+                return new MessageResponse(message.getHeader(), MessageDeliveryStatus.ACCEPTED);
+            }
+        });
         comms.onMessageReady().connect(msg -> {
             log.info("Received message: {}", msg);
             return new MessageResponse(MessageHeader.controllerResponse(msg.getHeader().getId()),

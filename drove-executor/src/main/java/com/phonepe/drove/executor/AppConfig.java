@@ -1,6 +1,6 @@
 package com.phonepe.drove.executor;
 
-import com.phonepe.drove.common.discovery.ZkConfig;
+import com.phonepe.drove.common.zookeeper.ZkConfig;
 import io.dropwizard.Configuration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

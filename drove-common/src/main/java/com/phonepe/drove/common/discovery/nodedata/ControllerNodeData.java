@@ -13,16 +13,20 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ControllerNodeData extends NodeData {
-    boolean isLeader;
+    boolean leader;
 
-    public ControllerNodeData(String hostname, int port, Date updated, boolean isLeader) {
+    public ControllerNodeData(String hostname, int port, Date updated, boolean leader) {
         super(NodeType.CONTROLLER, hostname, port, updated);
-        this.isLeader = isLeader;
+        this.leader = leader;
     }
 
 
     @Override
     public <T> T accept(NodeDataVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public static ControllerNodeData from(final ControllerNodeData nodeData, boolean leader) {
+        return new ControllerNodeData(nodeData.getHostname(), nodeData.getPort(), new Date(), leader);
     }
 }

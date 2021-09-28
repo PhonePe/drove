@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.discovery;
+package com.phonepe.drove.common.zookeeper;
 
 import lombok.Data;
 

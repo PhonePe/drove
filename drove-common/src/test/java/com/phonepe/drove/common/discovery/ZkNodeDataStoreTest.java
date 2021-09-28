@@ -7,6 +7,7 @@ import com.phonepe.drove.common.discovery.nodedata.NodeType;
 import com.phonepe.drove.common.model.ExecutorState;
 import com.phonepe.drove.common.model.resources.available.AvailableCPU;
 import com.phonepe.drove.common.model.resources.available.AvailableMemory;
+import com.phonepe.drove.common.zookeeper.ZkConfig;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.test.TestingCluster;
@@ -31,8 +32,13 @@ class ZkNodeDataStoreTest {
         config.setConnectionString(cluster.getConnectString());
         val mapper = new ObjectMapper();
         CommonUtils.configureMapper(mapper);
-        val store = new ZkNodeDataStore(config, mapper);
-        store.start();
+
+        val curator = CommonUtils.buildCurator(config);
+        curator.start();
+        curator.blockUntilConnected();
+
+        val store = new ZkNodeDataStore(curator, mapper);
+
         val nodeData = new ExecutorNodeData("localhost",
                                             8080,
                                             new Date(),

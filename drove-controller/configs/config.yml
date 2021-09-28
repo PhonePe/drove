@@ -1,0 +1,28 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 4000
+  adminConnectors:
+    - type: http
+      port: 4001
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: console
+        timeZone: IST
+
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: DEBUG
+
+  appenders:
+    - type: console
+      threshold: TRACE
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceId}] %message%n"
+
+zookeeper:
+  connectionString: localhost:2181
+  hostname: localhost

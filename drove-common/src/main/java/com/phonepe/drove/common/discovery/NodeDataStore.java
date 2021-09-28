@@ -9,12 +9,10 @@ import java.util.List;
  *
  */
 public interface NodeDataStore {
-    void start();
-
-    void stop();
 
     void updateNodeData(final NodeData nodeData);
 
     List<NodeData> nodes(final NodeType nodeType);
+
     void removeNodeData(final NodeData nodeData);
 }

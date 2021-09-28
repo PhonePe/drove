@@ -19,11 +19,16 @@ import javax.inject.Singleton;
 @Singleton
 public class ExecutorCommunicator extends ThreadedCommunicator<ControllerMessageType, ExecutorMessageType, ControllerMessage, ExecutorMessage> {
     private final InstanceEngine engine;
+    private final ExecutorMessageSender messageSender;
 
     @Inject
-    public ExecutorCommunicator(InstanceEngine engine) {
+    public ExecutorCommunicator(
+            InstanceEngine engine,
+            ExecutorMessageSender messageSender) {
         this.engine = engine;
+        this.messageSender = messageSender;
         engine.setCommunicator(this);
+        onMessageReady().connect(messageSender::sendRemoteMessage);
     }
 
     @Override
