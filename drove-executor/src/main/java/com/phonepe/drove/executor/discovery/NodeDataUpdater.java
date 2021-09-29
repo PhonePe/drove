@@ -38,7 +38,6 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ScheduledSignal refreshSignal = new ScheduledSignal(Duration.ofSeconds(60));
     private final AtomicBoolean started = new AtomicBoolean();
     private ExecutorNodeData currentData;
-    private final String nodeId = UUID.randomUUID().toString();
     private final Lock stateLock = new ReentrantLock();
 
     @Inject
@@ -86,9 +85,12 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             stateLock.lock();
             currentData = new ExecutorNodeData(
                     hostname, port, new Date(),
-                    new ExecutorState(nodeId, resourceState.getCpu(), resourceState.getMemory()));
+                    new ExecutorState(UUID.fromString(String.format("%s:%d", hostname, port)).toString(),
+                                      resourceState.getCpu(),
+                                      resourceState.getMemory()));
             nodeDataStore.updateNodeData(currentData);
-        } finally {
+        }
+        finally {
             stateLock.unlock();
         }
     }
@@ -102,12 +104,13 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         try {
             stateLock.lock();
             currentData = ExecutorNodeData.from(currentData,
-                                                new ExecutorState(nodeId,
+                                                new ExecutorState(currentData.getState().getExecutorId(),
                                                                   resourceState.getCpu(),
                                                                   resourceState.getMemory()));
             nodeDataStore.updateNodeData(currentData);
-        } finally {
-          stateLock.unlock();
+        }
+        finally {
+            stateLock.unlock();
         }
     }
 }
