@@ -63,8 +63,10 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
                              InstanceState.DEPROVISIONING),
             new Transition<>(InstanceState.DEPROVISIONING,
                              ExecutableCleanupAction.class,
-                             InstanceState.STOPPED)
-                     );
+                             InstanceState.STOPPED),
+            new Transition<>(InstanceState.READINESS_CHECK_FAILED,
+                             InstanceStopAction.class,
+                             InstanceState.DEPROVISIONING));
 
     public InstanceStateMachine(
             InstanceSpec instanceSpec,
