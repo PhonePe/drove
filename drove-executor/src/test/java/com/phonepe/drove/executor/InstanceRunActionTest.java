@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
@@ -30,8 +31,10 @@ class InstanceRunActionTest {
 
     @Test
     void testRun() {
-        val instanceSpec = new InstanceSpec("T001",
-                                            UUID.randomUUID().toString(),
+        val appId = "T001";
+        val instanceId = UUID.randomUUID().toString();
+        val instanceSpec = new InstanceSpec(appId,
+                                            instanceId,
                                             new DockerCoordinates(
                                                     "docker.io/santanusinha/test-service:0.1",
                                                     Duration.seconds(100)),
@@ -42,13 +45,15 @@ class InstanceRunActionTest {
                                             null,
                                             null,
                                             Collections.emptyMap());
-        val ctx = new InstanceActionContext(instanceSpec);
+        val executorId = CommonUtils.executorId(3000);
+        val ctx = new InstanceActionContext(executorId, instanceSpec);
         new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState = new InstanceRunAction().execute(ctx,
                                                        StateData.create(PROVISIONING,
                                                       new InstanceInfo(instanceSpec.getAppId(),
-                                                                       null,
-                                                                       "",
+                                                                       instanceSpec.getInstanceId(),
+                                                                       executorId,
+                                                                       CommonUtils.hostname(),
                                                                        PROVISIONING,
                                                                        Collections.emptyMap(),
                                                                        Collections.emptyMap(),

@@ -11,6 +11,7 @@ import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -35,6 +36,7 @@ import java.util.concurrent.Future;
  */
 @Slf4j
 public class InstanceEngine implements Closeable {
+    private final ExecutorIdManager executorIdManager;
     private final ExecutorService service;
     private final InstanceActionFactory actionFactory;
     private final ResourceDB resourceDB;
@@ -45,9 +47,10 @@ public class InstanceEngine implements Closeable {
     private ExecutorCommunicator communicator;
 
     public InstanceEngine(
-            ExecutorService service,
+            final ExecutorIdManager executorIdManager, ExecutorService service,
             InstanceActionFactory actionFactory,
             ResourceDB resourceDB) {
+        this.executorIdManager = executorIdManager;
         this.service = service;
         this.actionFactory = actionFactory;
         this.resourceDB = resourceDB;
@@ -78,7 +81,10 @@ public class InstanceEngine implements Closeable {
         if (!lockRequiredResources(spec)) {
             return false;
         }
-        val stateMachine = new InstanceStateMachine(spec, currentState, actionFactory);
+        val stateMachine = new InstanceStateMachine(executorIdManager.executorId().orElse(null),
+                                                    spec,
+                                                    currentState,
+                                                    actionFactory);
         stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
             MDC.put("instanceId", spec.getInstanceId());

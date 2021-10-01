@@ -20,14 +20,16 @@ import java.util.concurrent.Future;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class InstanceActionContext extends ActionContext {
-    private final DockerClient client;
+    private final String executorId;
     private final InstanceSpec instanceSpec;
+    private final DockerClient client;
     private String dockerImageId;
     private String dockerInstanceId;
     private Future<?> loggerFuture;
 
-    public InstanceActionContext(InstanceSpec instanceSpec) {
+    public InstanceActionContext(String executorId, InstanceSpec instanceSpec) {
         super();
+        this.executorId = executorId;
         this.instanceSpec = instanceSpec;
         this.client = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
                                                       .build(),

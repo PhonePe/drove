@@ -20,11 +20,15 @@ public class AvailableCPU extends AvailableResource {
      * Storage model:
      * numa node id -> free cpu ids on that node
      */
-    Map<Integer, Set<Integer>> cores;
+    Map<Integer, Set<Integer>> freeCores;
+    Map<Integer, Set<Integer>> usedCores;
 
-    public AvailableCPU(@JsonProperty("cores") Map<Integer, Set<Integer>> cores) {
+    public AvailableCPU(
+            @JsonProperty("freeCores") Map<Integer, Set<Integer>> freeCores,
+            @JsonProperty("usedCores") Map<Integer, Set<Integer>> usedCores) {
         super(ResourceType.CPU);
-        this.cores = cores;
+        this.freeCores = freeCores;
+        this.usedCores = usedCores;
     }
 
     @Override

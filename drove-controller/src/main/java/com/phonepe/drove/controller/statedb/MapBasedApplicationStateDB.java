@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.model.ExecutorState;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.Value;
@@ -14,32 +13,14 @@ import java.util.stream.Collectors;
  *
  */
 @Value
-public class MapBasedStateDB implements StateDB {
-    Map<String, ExecutorState> executors = new ConcurrentHashMap<>();
+public class MapBasedApplicationStateDB implements ApplicationStateDB {
     Map<String, ApplicationStateEntry> apps = new ConcurrentHashMap<>();
 
 
-    @Override
-    public List<ExecutorState> executorState(int start, int size) {
-        //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
-        return List.copyOf(executors.values()).subList(start, start + size);
-    }
+
 
     @Override
-    public boolean updateExecutorState(
-            String executorId, ExecutorState executorState) {
-        executors.compute(executorId, (id, oldValue) -> executorState);
-        return true;
-    }
-
-    @Override
-    public boolean deleteExecutorState(String executorId) {
-        executors.remove(executorId);
-        return true;
-    }
-
-    @Override
-    public List<ApplicationInfo> applicationState(int start, int size) {
+    public List<ApplicationInfo> applications(int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
         return apps.values()
                 .stream()
@@ -67,7 +48,7 @@ public class MapBasedStateDB implements StateDB {
     }
 
     @Override
-    public List<InstanceInfo> applicationState(String appId, int start, int size) {
+    public List<InstanceInfo> instances(String appId, int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
         return List.copyOf(apps.get(appId).getInstances().values())
                 .subList(start, start + size);

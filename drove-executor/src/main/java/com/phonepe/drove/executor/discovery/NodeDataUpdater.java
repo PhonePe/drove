@@ -2,9 +2,9 @@ package com.phonepe.drove.executor.discovery;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorState;
+import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import com.phonepe.drove.executor.resource.ResourceInfo;
 import io.appform.signals.signals.ScheduledSignal;
@@ -20,7 +20,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -32,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 @Order(10)
 public class NodeDataUpdater implements Managed, ServerLifecycleListener {
-    private final ZkConfig config;
+    private final ExecutorIdManager executorIdManager;
     private final NodeDataStore nodeDataStore;
     private final ResourceDB resourceDB;
     private final ScheduledSignal refreshSignal = new ScheduledSignal(Duration.ofSeconds(60));
@@ -42,11 +41,11 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
 
     @Inject
     public NodeDataUpdater(
-            ZkConfig config,
+            ExecutorIdManager executorIdManager,
             NodeDataStore nodeDataStore,
             ResourceDB resourceDB,
             Environment environment) {
-        this.config = config;
+        this.executorIdManager = executorIdManager;
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
         this.refreshSignal.connect(this::refresh);
@@ -67,7 +66,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     public void serverStarted(Server server) {
         log.info("Server started. Will start publishing node data");
         val port = getLocalPort(server);
-        val hostname = CommonUtils.hostname(config.getHostname());
+        val hostname = CommonUtils.hostname();
         refreshNodeState(port, hostname);
         started.set(true);
     }
@@ -83,9 +82,10 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         val resourceState = resourceDB.currentState();
         try {
             stateLock.lock();
+            val executorId = executorIdManager.executorId().orElseGet(() -> CommonUtils.executorId(port));
             currentData = new ExecutorNodeData(
                     hostname, port, new Date(),
-                    new ExecutorState(UUID.fromString(String.format("%s:%d", hostname, port)).toString(),
+                    new ExecutorState(executorId,
                                       resourceState.getCpu(),
                                       resourceState.getMemory()));
             nodeDataStore.updateNodeData(currentData);

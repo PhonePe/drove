@@ -15,11 +15,15 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class AvailableMemory extends AvailableResource {
-    Map<Integer, Long> memoryInMB;
+    Map<Integer, Long> freeMemory;
+    Map<Integer, Long> usedMemory;
 
-    public AvailableMemory(@JsonProperty("memoryInMB") Map<Integer, Long> memoryInMB) {
+    public AvailableMemory(
+            @JsonProperty("freeMemory") Map<Integer, Long> freeMemory,
+            @JsonProperty("usedMemory") Map<Integer, Long> usedMemory) {
         super(ResourceType.MEMORY);
-        this.memoryInMB = memoryInMB;
+        this.freeMemory = freeMemory;
+        this.usedMemory = usedMemory;
     }
 
     @Override

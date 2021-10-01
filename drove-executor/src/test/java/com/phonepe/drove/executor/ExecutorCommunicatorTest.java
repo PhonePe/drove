@@ -12,6 +12,7 @@ import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.dropwizard.util.Duration;
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 class ExecutorCommunicatorTest {
     @Test
     void test() {
-        val engine = new InstanceEngine(Executors.newCachedThreadPool(),
+        val engine = new InstanceEngine(new ExecutorIdManager(3000), Executors.newCachedThreadPool(),
                                         new InjectingInstanceActionFactory(Guice.createInjector(Stage.DEVELOPMENT)),
                                         new ResourceDB());
         val comms = new ExecutorCommunicator(engine, new ExecutorMessageSender() {

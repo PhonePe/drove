@@ -112,11 +112,25 @@ public class ResourceDB {
                 .stream()
                 .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getAvailableCores()))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+        val usedCores = resourceLocks.values()
+                .stream()
+                .map(ResourceUsage::getUsedResources)
+                .flatMap(usage -> usage.entrySet().stream().map(entry -> new Pair<>(entry.getKey(),
+                                                                                    entry.getValue()
+                                                                                            .getAvailableCores())))
+                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Sets::union));
+
         val memory = nodes.entrySet()
                 .stream()
                 .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB()))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-        return new ResourceInfo(new AvailableCPU(cpus), new AvailableMemory(memory));
+        val usedMemory = resourceLocks.values()
+                .stream()
+                .map(ResourceUsage::getUsedResources)
+                .flatMap(usage -> usage.entrySet().stream().map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
+                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Long::sum));
+
+        return new ResourceInfo(new AvailableCPU(cpus, usedCores), new AvailableMemory(memory, usedMemory));
     }
 
     private boolean ensureNodeResource(NodeInfo actual, NodeInfo requirement) {

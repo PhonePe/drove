@@ -13,6 +13,7 @@ import lombok.val;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,7 +25,8 @@ class InstanceStateMachineTest {
     @Test
     void test() {
         val instanceSpec = TestingUtils.testSpec();
-        val sm = new InstanceStateMachine(instanceSpec,
+        val sm = new InstanceStateMachine(UUID.randomUUID().toString(),
+                                          instanceSpec,
                                           StateData.create(InstanceState.PROVISIONING, null),
                                           new InjectingInstanceActionFactory(Guice.createInjector(
                                                   Stage.DEVELOPMENT)));

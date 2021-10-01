@@ -67,9 +67,10 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
                      );
 
     public InstanceStateMachine(
+            String executorId,
             InstanceSpec instanceSpec,
             @NonNull StateData<InstanceState, InstanceInfo> initalState,
             InstanceActionFactory actionFactory) {
-        super(initalState, new InstanceActionContext(instanceSpec), actionFactory, transitions);
+        super(initalState, new InstanceActionContext(executorId, instanceSpec), actionFactory, transitions);
     }
 }

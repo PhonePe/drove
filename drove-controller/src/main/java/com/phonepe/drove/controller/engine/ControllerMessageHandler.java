@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
-import com.phonepe.drove.controller.statedb.StateDB;
+import com.phonepe.drove.controller.statedb.ExecutorStateDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
@@ -12,9 +13,13 @@ import lombok.val;
  *
  */
 public class ControllerMessageHandler implements ControllerMessageVisitor<MessageResponse> {
-    private final StateDB stateDB;
+    private final ExecutorStateDB executorStateDB;
+    private final ApplicationStateDB stateDB;
 
-    public ControllerMessageHandler(StateDB stateDB) {
+    public ControllerMessageHandler(
+            ExecutorStateDB executorStateDB,
+            ApplicationStateDB stateDB) {
+        this.executorStateDB = executorStateDB;
         this.stateDB = stateDB;
     }
 
@@ -32,7 +37,7 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
     @Override
     public MessageResponse visit(ExecutorStateReportMessage executorStateReport) {
         val executorState = executorStateReport.getExecutorState();
-        val status = stateDB.updateExecutorState(executorState.getExecutorId(), executorState);
+        val status = executorStateDB.updateExecutorState(executorState.getExecutorId(), executorState);
         return new MessageResponse(executorStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED

@@ -12,7 +12,10 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  *
@@ -29,10 +32,21 @@ public class CommonUtils {
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
-    public static String hostname(String defaultValue) {
-        val hostname = Objects.requireNonNullElse(System.getenv("HOSTNAME"), defaultValue);
+    public static String hostname() {
+        val hostname = Objects.requireNonNullElseGet(System.getenv("HOSTNAME"), () -> {
+            try {
+                return InetAddress.getLocalHost().getHostName();
+            }
+            catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        });
         Objects.requireNonNull(hostname, "Hostname cannot be empty");
         return hostname;
+    }
+
+    public static String executorId(int port) {
+        return UUID.nameUUIDFromBytes((hostname() + ":" + port).getBytes()).toString();
     }
 
     public static CuratorFramework buildCurator(ZkConfig config) {

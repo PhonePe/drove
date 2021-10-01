@@ -12,6 +12,7 @@ import java.util.Map;
 public class InstanceInfo {
     String appId;
     String instanceId;
+    String executorId;
     String hostname;
     InstanceState state;
     Map<String, InstancePort> ports;

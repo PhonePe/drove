@@ -80,7 +80,7 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
 
     @Override
     public void serverStarted(Server server) {
-        refreshNodeState(getLocalPort(server), CommonUtils.hostname(config.getHostname()));
+        refreshNodeState(getLocalPort(server), CommonUtils.hostname());
     }
 
     private void refresh(Date currDate) {

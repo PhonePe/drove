@@ -39,17 +39,16 @@ class ZkNodeDataStoreTest {
 
         val store = new ZkNodeDataStore(curator, mapper);
 
+        val state = new ExecutorState(
+                "abc",
+                new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
+                                 Collections.singletonMap(0, Collections.singleton(0))),
+                new AvailableMemory(Collections.singletonMap(0, 1024L),
+                                    Collections.singletonMap(0, 1024L)));
         val nodeData = new ExecutorNodeData("localhost",
                                             8080,
                                             new Date(),
-                                            new ExecutorState("abc",
-                                                              new AvailableCPU(
-                                                                      Collections.singletonMap(0,
-                                                                                               Collections.singleton(
-                                                                                                       1))),
-                                                              new AvailableMemory(Collections.singletonMap(
-                                                                      0,
-                                                                      1024L))));
+                                            state);
         store.updateNodeData(nodeData);
         var executors = store.nodes(NodeType.EXECUTOR);
         assertFalse(executors.isEmpty());

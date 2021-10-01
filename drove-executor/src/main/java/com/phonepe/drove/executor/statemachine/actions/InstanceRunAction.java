@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
@@ -22,7 +23,6 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -76,7 +76,8 @@ public class InstanceRunAction extends InstanceAction {
             val ports = new Ports();
             val env = new ArrayList<String>();
             val portMappings = new HashMap<String, InstancePort>();
-            env.add("HOST=" + InetAddress.getLocalHost().getHostName());
+            val hostName = CommonUtils.hostname();
+            env.add("HOST=" + hostName);
             instanceSpec.getPorts().forEach(
                     portSpec -> {
                         val freePort = findFreePort();
@@ -87,7 +88,7 @@ public class InstanceRunAction extends InstanceAction {
                     });
             hostConfig.withPortBindings(ports);
 
-            val instanceInfo = instanceInfo(instanceSpec, portMappings);
+            val instanceInfo = instanceInfo(context, instanceSpec, portMappings, hostName);
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
@@ -119,10 +120,14 @@ public class InstanceRunAction extends InstanceAction {
         }
     }
 
-    private InstanceInfo instanceInfo(InstanceSpec instanceSpec, HashMap<String, InstancePort> portMappings) {
+    private InstanceInfo instanceInfo(
+            InstanceActionContext context, InstanceSpec instanceSpec,
+            HashMap<String, InstancePort> portMappings,
+            String hostName) {
         return new InstanceInfo(instanceSpec.getAppId(),
                                 instanceSpec.getInstanceId(),
-                                "",
+                                context.getExecutorId(),
+                                hostName,
                                 InstanceState.UNREADY,
                                 portMappings,
                                 Collections.emptyMap(),
