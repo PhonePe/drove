@@ -13,10 +13,13 @@ public class InstanceInfo {
     String appId;
     String instanceId;
     String executorId;
-    String hostname;
+    LocalInstanceInfo localInfo;
     InstanceState state;
-    Map<String, InstancePort> ports;
     Map<String, String> metadata;
     Date created;
     Date updated;
+
+/*    public InstanceInfo updateState(InstanceState state) {
+        return new InstanceInfo(appId, instanceId, executorId, hostname, state, ports, metadata, created, new Date());
+    }*/
 }

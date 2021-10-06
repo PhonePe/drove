@@ -9,7 +9,6 @@ import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.experimental.UtilityClass;
-import lombok.val;
 import org.apache.commons.lang.NotImplementedException;
 
 /**
@@ -21,7 +20,7 @@ public class Utils {
             InstanceActionContext context,
             InstanceInfo instanceInfo,
             CheckSpec readinessCheckSpec) {
-        val checker = context.getInstanceSpec().getReadiness().getMode().accept(new CheckModeSpecVisitor<Checker>() {
+        return context.getInstanceSpec().getReadiness().getMode().accept(new CheckModeSpecVisitor<>() {
             @Override
             public Checker visit(HTTPCheckModeSpec httpCheck) {
                 return new HttpChecker(readinessCheckSpec, httpCheck, instanceInfo);
@@ -32,6 +31,5 @@ public class Utils {
                 throw new NotImplementedException("Command check is not yet implemented");
             }
         });
-        return checker;
     }
 }

@@ -6,7 +6,6 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
@@ -18,6 +17,7 @@ import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -88,7 +88,7 @@ public class InstanceRunAction extends InstanceAction {
                     });
             hostConfig.withPortBindings(ports);
 
-            val instanceInfo = instanceInfo(context, instanceSpec, portMappings, hostName);
+            val instanceInfo = instanceInfo(currentState, portMappings, hostName);
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
@@ -111,8 +111,7 @@ public class InstanceRunAction extends InstanceAction {
                     .withStdOut(true)
                     .withStdErr(true)
                     .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()));
-            return StateData.create(InstanceState.UNREADY,
-                                    instanceInfo);
+            return StateData.create(InstanceState.UNREADY, instanceInfo);
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);
@@ -121,15 +120,15 @@ public class InstanceRunAction extends InstanceAction {
     }
 
     private InstanceInfo instanceInfo(
-            InstanceActionContext context, InstanceSpec instanceSpec,
+            StateData<InstanceState, InstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,
             String hostName) {
-        return new InstanceInfo(instanceSpec.getAppId(),
-                                instanceSpec.getInstanceId(),
-                                context.getExecutorId(),
-                                hostName,
+        val data = currentState.getData();
+        return new InstanceInfo(data.getAppId(),
+                                data.getInstanceId(),
+                                data.getExecutorId(),
+                                new LocalInstanceInfo(hostName, portMappings),
                                 InstanceState.UNREADY,
-                                portMappings,
                                 Collections.emptyMap(),
                                 new Date(),
                                 new Date());

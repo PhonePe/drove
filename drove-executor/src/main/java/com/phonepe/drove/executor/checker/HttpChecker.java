@@ -40,7 +40,7 @@ public class HttpChecker implements Checker {
                 .build();
         this.httpSpec = httpSpec;
         this.instance = instance;
-        val portSpec = instance.getPorts().get(httpSpec.getPortName());
+        val portSpec = instance.getLocalInfo().getPorts().get(httpSpec.getPortName());
         Objects.requireNonNull(portSpec, "Invalid port spec. No port of name '" + httpSpec.getPortName() + "' exists");
         this.uri = URI.create(String.format("%s://localhost:%d%s",
                                        httpSpec.getProtocol(),

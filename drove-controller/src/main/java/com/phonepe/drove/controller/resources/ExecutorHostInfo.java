@@ -9,7 +9,8 @@ import java.util.*;
 /**
  *
  */
-@Value
+@Data
+@AllArgsConstructor
 public class ExecutorHostInfo {
     private enum CoreState {
         UNKNOWN,

@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -41,7 +42,7 @@ public class InstanceEngine implements Closeable {
     private final InstanceActionFactory actionFactory;
     private final ResourceDB resourceDB;
     private final Map<String, SMInfo> stateMachines;
-    private final ConsumingParallelSignal<StateData<InstanceState, InstanceInfo>> stateChanged;
+    private final ConsumingParallelSignal<InstanceInfo> stateChanged;
     private final ClockPulseGenerator clockPulseGenerator;
     @Setter
     private ExecutorCommunicator communicator;
@@ -71,7 +72,18 @@ public class InstanceEngine implements Closeable {
     }
 
     public boolean startInstance(final InstanceSpec spec) {
-        return registerInstance(spec.getInstanceId(), spec, StateData.create(InstanceState.PENDING, null));
+        val currDate = new Date();
+        return registerInstance(spec.getInstanceId(),
+                                spec,
+                                StateData.create(InstanceState.PENDING,
+                                                 new InstanceInfo(spec.getAppId(),
+                                                                  spec.getInstanceId(),
+                                                                  executorIdManager.executorId().orElse(null),
+                                                                  null,
+                                                                  InstanceState.PENDING,
+                                                                  Collections.emptyMap(),
+                                                                  currDate,
+                                                                  currDate)));
     }
 
     public boolean registerInstance(
@@ -117,12 +129,19 @@ public class InstanceEngine implements Closeable {
         });
     }
 
-    public Optional<StateData<InstanceState, InstanceInfo>> currentState(final String instanceId) {
+    public Optional<InstanceInfo> currentState(final String instanceId) {
         val smInfo = stateMachines.get(instanceId);
         if (null == smInfo) {
             return Optional.empty();
         }
-        return Optional.ofNullable(smInfo.getStateMachine().getCurrentState());
+        return Optional.ofNullable(smInfo.getStateMachine().getCurrentState().getData());
+    }
+
+    public List<InstanceInfo> currentState() {
+        return stateMachines.values()
+                .stream()
+                .map(v -> v.getStateMachine().getCurrentState().getData())
+                .collect(Collectors.toUnmodifiableList());
     }
 
     @Override
@@ -131,7 +150,7 @@ public class InstanceEngine implements Closeable {
         clockPulseGenerator.close();
     }
 
-    public ConsumingParallelSignal<StateData<InstanceState, InstanceInfo>> onStateChange() {
+    public ConsumingParallelSignal<InstanceInfo> onStateChange() {
         return stateChanged;
     }
 
@@ -178,10 +197,9 @@ public class InstanceEngine implements Closeable {
     }
 
     private ResourceDB.NodeInfo nodeInfo(ResourceDB.NodeInfo nodeInfo) {
-        val updated = nodeInfo == null
+        return nodeInfo == null
                       ? new ResourceDB.NodeInfo(new HashSet<>(), 0L)
                       : nodeInfo;
-        return updated;
     }
 
     private void handleStateChange(StateData<InstanceState, InstanceInfo> currentState) {
@@ -199,7 +217,7 @@ public class InstanceEngine implements Closeable {
             }
         }
         communicator.send(instanceStateMessage(currentState));
-        stateChanged.dispatch(currentState);
+        stateChanged.dispatch(currentState.getData());
         //TODO::SEND STATE UPDATE TO CONTROLLER
     }
 
@@ -213,4 +231,5 @@ public class InstanceEngine implements Closeable {
         return new InstanceStateReportMessage(MessageHeader.executorRequest(),
                                               currentState.getData());
     }
+
 }
