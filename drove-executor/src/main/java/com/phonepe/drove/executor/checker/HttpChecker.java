@@ -1,11 +1,11 @@
 package com.phonepe.drove.executor.checker;
 
 import com.google.common.base.Strings;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -24,12 +24,12 @@ import java.util.Objects;
 public class HttpChecker implements Checker {
     private final HttpClient httpClient;
     private final HTTPCheckModeSpec httpSpec;
-    private final InstanceInfo instance;
+    private final ExecutorInstanceInfo instance;
     private final URI uri;
     private final Duration requestTimeout;
 
 
-    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, InstanceInfo instance) {
+    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, ExecutorInstanceInfo instance) {
         var connectionTimeout = Duration.ofMillis(
                 Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
                                            io.dropwizard.util.Duration.seconds(1))

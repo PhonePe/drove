@@ -5,8 +5,8 @@ import com.phonepe.drove.common.StateMachine;
 import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.actions.*;
-import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.NonNull;
 
@@ -15,8 +15,8 @@ import java.util.List;
 /**
  *
  */
-public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction> {
-    private static final List<Transition<InstanceInfo, InstanceState, InstanceActionContext, InstanceAction>> transitions
+public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, InstanceState, InstanceActionContext, InstanceAction> {
+    private static final List<Transition<ExecutorInstanceInfo, InstanceState, InstanceActionContext, InstanceAction>> transitions
             = List.of(
             new Transition<>(InstanceState.PENDING,
                              InstanceSpecValidator.class,
@@ -71,7 +71,7 @@ public class InstanceStateMachine extends StateMachine<InstanceInfo, InstanceSta
     public InstanceStateMachine(
             String executorId,
             InstanceSpec instanceSpec,
-            @NonNull StateData<InstanceState, InstanceInfo> initalState,
+            @NonNull StateData<InstanceState, ExecutorInstanceInfo> initalState,
             InstanceActionFactory actionFactory) {
         super(initalState, new InstanceActionContext(executorId, instanceSpec), actionFactory, transitions);
     }

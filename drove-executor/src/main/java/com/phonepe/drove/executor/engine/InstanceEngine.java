@@ -11,7 +11,9 @@ import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -76,11 +78,10 @@ public class InstanceEngine implements Closeable {
         return registerInstance(spec.getInstanceId(),
                                 spec,
                                 StateData.create(InstanceState.PENDING,
-                                                 new InstanceInfo(spec.getAppId(),
+                                                 new ExecutorInstanceInfo(spec.getAppId(),
                                                                   spec.getInstanceId(),
                                                                   executorIdManager.executorId().orElse(null),
                                                                   null,
-                                                                  InstanceState.PENDING,
                                                                   Collections.emptyMap(),
                                                                   currDate,
                                                                   currDate)));
@@ -89,7 +90,7 @@ public class InstanceEngine implements Closeable {
     public boolean registerInstance(
             final String instanceId,
             final InstanceSpec spec,
-            final StateData<InstanceState, InstanceInfo> currentState) {
+            final StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         if (!lockRequiredResources(spec)) {
             return false;
         }
@@ -134,13 +135,13 @@ public class InstanceEngine implements Closeable {
         if (null == smInfo) {
             return Optional.empty();
         }
-        return Optional.ofNullable(smInfo.getStateMachine().getCurrentState().getData());
+        return Optional.of(Utils.convert(smInfo.getStateMachine().getCurrentState()));
     }
 
     public List<InstanceInfo> currentState() {
         return stateMachines.values()
                 .stream()
-                .map(v -> v.getStateMachine().getCurrentState().getData())
+                .map(v -> Utils.convert(v.getStateMachine().getCurrentState()))
                 .collect(Collectors.toUnmodifiableList());
     }
 
@@ -202,7 +203,7 @@ public class InstanceEngine implements Closeable {
                       : nodeInfo;
     }
 
-    private void handleStateChange(StateData<InstanceState, InstanceInfo> currentState) {
+    private void handleStateChange(StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val state = currentState.getState();
         log.info("Current state: {}. Terminal: {} Error: {}", currentState, state.isTerminal(), state.isError());
         if (state.isTerminal()) {
@@ -216,8 +217,9 @@ public class InstanceEngine implements Closeable {
                 log.warn("State data is not present");
             }
         }
-        communicator.send(instanceStateMessage(currentState));
-        stateChanged.dispatch(currentState.getData());
+        val instanceInfo = Utils.convert(currentState);
+        communicator.send(new InstanceStateReportMessage(MessageHeader.executorRequest(), instanceInfo));
+        stateChanged.dispatch(instanceInfo);
         //TODO::SEND STATE UPDATE TO CONTROLLER
     }
 
@@ -225,11 +227,6 @@ public class InstanceEngine implements Closeable {
         /*stateMachines.values().forEach(smi -> {
             communicator.send(instanceStateMessage(smi.getStateMachine().getCurrentState()));
         });*/
-    }
-
-    private InstanceStateReportMessage instanceStateMessage(StateData<InstanceState, InstanceInfo> currentState) {
-        return new InstanceStateReportMessage(MessageHeader.executorRequest(),
-                                              currentState.getData());
     }
 
 }

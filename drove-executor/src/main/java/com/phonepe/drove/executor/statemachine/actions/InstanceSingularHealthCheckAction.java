@@ -3,10 +3,10 @@ package com.phonepe.drove.executor.statemachine.actions;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.checker.Checker;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.CheckResult;
-import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +27,8 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
     private final AtomicBoolean stop = new AtomicBoolean();
 
     @Override
-    protected StateData<InstanceState, InstanceInfo> executeImpl(
-            InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
+            InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
         final Checker checker = Utils.createChecker(context, currentState.getData(), healthcheck);
         val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),

@@ -7,10 +7,10 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
-import com.phonepe.drove.common.model.InstanceSpec;
-import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +71,7 @@ public class InstanceRecovery implements Managed {
                                             InstanceSpec.class);
                 val data = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
-                                            InstanceInfo.class);
+                                            ExecutorInstanceInfo.class);
                 engine.registerInstance(id,
                                         spec,
                                         StateData.create(InstanceState.UNKNOWN, data));

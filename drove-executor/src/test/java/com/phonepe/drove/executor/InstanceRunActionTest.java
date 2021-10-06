@@ -6,12 +6,12 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.actions.ExecutableFetchAction;
 import com.phonepe.drove.executor.statemachine.actions.InstanceRunAction;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
-import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.dropwizard.util.Duration;
@@ -54,15 +54,14 @@ class InstanceRunActionTest {
         val newState
                 = new InstanceRunAction().execute(ctx,
                                                   StateData.create(PROVISIONING,
-                                                                   new InstanceInfo(instanceSpec.getAppId(),
-                                                                                    instanceSpec.getInstanceId(),
-                                                                                    executorId,
-                                                                                    new LocalInstanceInfo(CommonUtils.hostname(),
+                                                                   new ExecutorInstanceInfo(instanceSpec.getAppId(),
+                                                                                            instanceSpec.getInstanceId(),
+                                                                                            executorId,
+                                                                                            new LocalInstanceInfo(CommonUtils.hostname(),
                                                                                                           Collections.emptyMap()),
-                                                                                    PROVISIONING,
-                                                                                    Collections.emptyMap(),
-                                                                                    new Date(),
-                                                                                    new Date()),
+                                                                                            Collections.emptyMap(),
+                                                                                            new Date(),
+                                                                                            new Date()),
                                                                    ""));
         assertEquals(InstanceState.UNREADY, newState.getState());
     }

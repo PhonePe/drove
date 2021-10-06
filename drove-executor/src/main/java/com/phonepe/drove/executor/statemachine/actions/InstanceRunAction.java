@@ -11,10 +11,10 @@ import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
-import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
@@ -36,8 +36,8 @@ public class InstanceRunAction extends InstanceAction {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
-    protected StateData<InstanceState, InstanceInfo> executeImpl(
-            InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
+            InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val client = context.getClient();
         val image = instanceSpec.getExecutable().accept(DockerCoordinates::getUrl);
@@ -57,8 +57,14 @@ public class InstanceRunAction extends InstanceAction {
                         @Override
                         public Void visit(CPUAllocation cpu) {
                             hostConfig.withCpuCount((long) cpu.getCores().size());
-                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores().values().stream().flatMap(Set::stream).map(i -> Integer.toString(i)).collect(
-                                    Collectors.toUnmodifiableList()), ","));
+                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores()
+                                                                               .values()
+                                                                               .stream()
+                                                                               .flatMap(Set::stream)
+                                                                               .map(i -> Integer.toString(i))
+                                                                               .collect(
+                                                                                       Collectors.toUnmodifiableList()),
+                                                                       ","));
                             return null;
                         }
 
@@ -88,11 +94,11 @@ public class InstanceRunAction extends InstanceAction {
                     });
             hostConfig.withPortBindings(ports);
 
-            val instanceInfo = instanceInfo(currentState, portMappings, hostName);
+            val ExecutorInstanceInfo = instanceInfo(currentState, portMappings, hostName);
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
-            labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
+            labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(ExecutorInstanceInfo));
 
             val id = containerCmd
                     .withHostConfig(hostConfig)
@@ -111,7 +117,7 @@ public class InstanceRunAction extends InstanceAction {
                     .withStdOut(true)
                     .withStdErr(true)
                     .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()));
-            return StateData.create(InstanceState.UNREADY, instanceInfo);
+            return StateData.create(InstanceState.UNREADY, ExecutorInstanceInfo);
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);
@@ -119,19 +125,19 @@ public class InstanceRunAction extends InstanceAction {
         }
     }
 
-    private InstanceInfo instanceInfo(
-            StateData<InstanceState, InstanceInfo> currentState,
+    private ExecutorInstanceInfo instanceInfo(
+            StateData<InstanceState, ExecutorInstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,
             String hostName) {
         val data = currentState.getData();
-        return new InstanceInfo(data.getAppId(),
-                                data.getInstanceId(),
-                                data.getExecutorId(),
-                                new LocalInstanceInfo(hostName, portMappings),
-                                InstanceState.UNREADY,
-                                Collections.emptyMap(),
-                                new Date(),
-                                new Date());
+        return new ExecutorInstanceInfo(
+                data.getAppId(),
+                data.getInstanceId(),
+                data.getExecutorId(),
+                new LocalInstanceInfo(hostName, portMappings),
+                Collections.emptyMap(),
+                new Date(),
+                new Date());
     }
 
     @Override

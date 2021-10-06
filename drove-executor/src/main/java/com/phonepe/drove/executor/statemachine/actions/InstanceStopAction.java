@@ -2,9 +2,9 @@ package com.phonepe.drove.executor.statemachine.actions;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -15,8 +15,8 @@ import lombok.val;
 @Slf4j
 public class InstanceStopAction extends InstanceAction {
     @Override
-    protected StateData<InstanceState, InstanceInfo> executeImpl(
-            InstanceActionContext context, StateData<InstanceState, InstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
+            InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         if (Strings.isNullOrEmpty(context.getDockerInstanceId())) {
             log.warn("No docker id found for instance {}. Nothing to be done for stop.",
                      context.getInstanceSpec().getInstanceId());
