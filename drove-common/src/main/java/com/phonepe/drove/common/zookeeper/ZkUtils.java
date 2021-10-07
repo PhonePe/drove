@@ -3,6 +3,7 @@ package com.phonepe.drove.common.zookeeper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.util.List;
@@ -40,13 +41,17 @@ public class ZkUtils {
             int start,
             int size,
             Function<String, T> nodeReader) throws Exception {
-        return curatorFramework.getChildren()
+        val nodes = curatorFramework.getChildren()
                 .forPath(parentPath)
                 .stream()
                 .map(nodeReader)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toUnmodifiableList())
-                .subList(start, size);
+                .collect(Collectors.toUnmodifiableList());
+        if(nodes.isEmpty()) {
+            return nodes;
+        }
+        return nodes
+                .subList(start, Math.min(size, nodes.size()));
     }
 
     public static boolean deleteNode(CuratorFramework curatorFramework, String path) {

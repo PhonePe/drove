@@ -12,7 +12,7 @@ import java.util.*;
 @Data
 @AllArgsConstructor
 public class ExecutorHostInfo {
-    private enum CoreState {
+    public enum CoreState {
         UNKNOWN,
         UNAVAILABLE,
         FREE,
@@ -28,17 +28,16 @@ public class ExecutorHostInfo {
     }
 
     @Data
-    @AllArgsConstructor
     public static final class MemInfo {
-        long available;
-        long used;
+        long available = 0L;
+        long used = 0l;
     }
 
     @Value
     public static class NumaNodeInfo {
-        Set<CPUCoreInfo> cores = new TreeSet<>(Comparator.comparing(CPUCoreInfo::getCoreId));
-        MemInfo memory;
+        Map<Integer, CoreState> cores = new HashMap<>();
+        MemInfo memory = new MemInfo();
     }
     String executorId;
-    Map<Integer, NumaNodeInfo> nodes = new HashMap<>();
+    Map<Integer, NumaNodeInfo> nodes;
 }

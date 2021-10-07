@@ -1,12 +1,16 @@
 package com.phonepe.drove.controller.resources;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import lombok.SneakyThrows;
 import lombok.val;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,13 +24,19 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
 
     @Override
+    @SneakyThrows
     public synchronized void update(List<ExecutorNodeData> nodeData) {
-//        nodes.putAll(nodeData.stream().collect(Collectors.toUnmodifiableMap(this::id, Function.identity())));
+        nodes.putAll(nodeData.stream()
+                             .map(node -> new ExecutorHostInfo(node.getState().getExecutorId(),
+                                                               convertToNodeInfo(node.getState())))
+                             .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
+                                                                   Function.identity())));
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
-    public synchronized List<ExecutorNode> selectNodes(
-            List<ResourceRequirement> requirements, int instances, Function<ExecutorNode, Boolean> filter) {
+    public synchronized List<AllocatedExecutorNode> selectNodes(
+            List<ResourceRequirement> requirements, int instances, Function<AllocatedExecutorNode, Boolean> filter) {
 /*        nodes.values()
                 .stream()
                 .filter()*/
@@ -71,9 +81,48 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
         val eligibleNodes = hostInfo.getNodes()
                 .values()
                 .stream()
-                .filter(node -> node.getCores().size() >= cpus && node.getMemory().getAvailable() >= memory)
+                .filter(node -> freeCoresForNode(node) >= cpus && node.getMemory()
+                        .getAvailable() >= memory)
                 .collect(Collectors.toUnmodifiableList());
 
         return false;
     }
+
+    public Map<Integer, ExecutorHostInfo.NumaNodeInfo> convertToNodeInfo(final ExecutorResourceSnapshot resourceSnapshot) {
+        val numaNodes = new HashMap<Integer, ExecutorHostInfo.NumaNodeInfo>();
+        val cpus = resourceSnapshot.getCpus();
+        val memory = resourceSnapshot.getMemory();
+        cpus.getFreeCores()
+                .forEach((key, freeCores) -> {
+                    val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
+                    freeCores.forEach(i -> nodeInfo.getCores()
+                            .put(i, ExecutorHostInfo.CoreState.FREE)); //TODO::CHECK STATE BEFORE CHANGING
+                });
+        cpus.getUsedCores()
+                .forEach((key, usedCores) -> {
+                    val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
+                    usedCores.forEach(i -> nodeInfo.getCores()
+                            .put(i, ExecutorHostInfo.CoreState.IN_USE));//TODO::CHECK STATE BEFORE CHANGING
+                });
+        memory.getUsedMemory()
+                .forEach((key, usedMemory) -> {
+                    val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
+                    nodeInfo.getMemory().setUsed(usedMemory);
+                });
+        memory.getFreeMemory()
+                .forEach((key, freeMemory) -> {
+                    val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
+                    nodeInfo.getMemory().setAvailable(freeMemory);
+                });
+        return numaNodes;
+    }
+
+    private long freeCoresForNode(ExecutorHostInfo.NumaNodeInfo node) {
+        return node.getCores()
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue()
+                .equals(ExecutorHostInfo.CoreState.FREE)).count();
+    }
+
 }

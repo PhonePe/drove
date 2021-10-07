@@ -8,7 +8,7 @@ import lombok.Value;
  *
  */
 @Value
-public class ExecutorNode {
+public class AllocatedExecutorNode {
     String executorId;
     String hostname;
     int port;

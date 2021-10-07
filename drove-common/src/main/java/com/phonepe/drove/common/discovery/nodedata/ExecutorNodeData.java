@@ -1,10 +1,12 @@
 package com.phonepe.drove.common.discovery.nodedata;
 
-import com.phonepe.drove.common.model.ExecutorState;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Date;
 import java.util.List;
@@ -17,14 +19,16 @@ import java.util.List;
 @ToString(callSuper = true)
 public class ExecutorNodeData extends NodeData {
 
-    ExecutorState state;
+    ExecutorResourceSnapshot state;
     List<InstanceInfo> instances;
 
+    @Jacksonized
+    @Builder
     public ExecutorNodeData(
             String hostname,
             int port,
             Date updated,
-            ExecutorState state,
+            ExecutorResourceSnapshot state,
             List<InstanceInfo> instances) {
         super(NodeType.EXECUTOR, hostname, port, updated);
         this.state = state;
@@ -38,7 +42,7 @@ public class ExecutorNodeData extends NodeData {
 
     public static ExecutorNodeData from(
             final ExecutorNodeData nodeData,
-            final ExecutorState currentState,
+            final ExecutorResourceSnapshot currentState,
             final List<InstanceInfo> instances) {
         return new ExecutorNodeData(nodeData.getHostname(), nodeData.getPort(), new Date(), currentState, instances);
     }

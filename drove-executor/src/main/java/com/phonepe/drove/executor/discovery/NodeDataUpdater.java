@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.discovery;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.model.ExecutorState;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
@@ -89,7 +89,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             val executorId = executorIdManager.executorId().orElseGet(() -> CommonUtils.executorId(port));
             currentData = new ExecutorNodeData(
                     hostname, port, new Date(),
-                    new ExecutorState(executorId, resourceState.getCpu(), resourceState.getMemory()),
+                    new ExecutorResourceSnapshot(executorId, resourceState.getCpu(), resourceState.getMemory()),
                     engine.currentState());
             nodeDataStore.updateNodeData(currentData);
         }
@@ -108,9 +108,9 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             stateLock.lock();
             currentData = ExecutorNodeData.from(
                     currentData,
-                    new ExecutorState(currentData.getState().getExecutorId(),
-                                      resourceState.getCpu(),
-                                      resourceState.getMemory()),
+                    new ExecutorResourceSnapshot(currentData.getState().getExecutorId(),
+                                                 resourceState.getCpu(),
+                                                 resourceState.getMemory()),
                     engine.currentState());
             nodeDataStore.updateNodeData(currentData);
         }

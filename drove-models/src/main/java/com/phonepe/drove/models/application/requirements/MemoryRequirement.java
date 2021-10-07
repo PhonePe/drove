@@ -1,9 +1,7 @@
 package com.phonepe.drove.models.application.requirements;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  *
@@ -11,10 +9,12 @@ import lombok.Value;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
+@Builder
 public class MemoryRequirement extends ResourceRequirement {
     long sizeInMB;
 
-    public MemoryRequirement(@JsonProperty("sizeInMB") long sizeInMB) {
+    public MemoryRequirement(long sizeInMB) {
         super(ResourceType.MEMORY);
         this.sizeInMB = sizeInMB;
     }

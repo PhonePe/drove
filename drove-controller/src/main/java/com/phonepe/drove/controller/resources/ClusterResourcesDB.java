@@ -12,8 +12,8 @@ import java.util.function.Function;
 public interface ClusterResourcesDB {
     void update(final List<ExecutorNodeData> nodeData);
 
-    List<ExecutorNode> selectNodes(
+    List<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
             int instances,
-            Function<ExecutorNode, Boolean> filter);
+            Function<AllocatedExecutorNode, Boolean> filter);
 }

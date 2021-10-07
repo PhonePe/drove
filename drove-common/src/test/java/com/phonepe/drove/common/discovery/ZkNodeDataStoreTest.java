@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.discovery.nodedata.NodeType;
-import com.phonepe.drove.common.model.ExecutorState;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.common.model.resources.available.AvailableCPU;
 import com.phonepe.drove.common.model.resources.available.AvailableMemory;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
@@ -39,7 +39,7 @@ class ZkNodeDataStoreTest {
 
         val store = new ZkNodeDataStore(curator, mapper);
 
-        val state = new ExecutorState(
+        val state = new ExecutorResourceSnapshot(
                 "abc",
                 new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
                                  Collections.singletonMap(0, Collections.singleton(0))),

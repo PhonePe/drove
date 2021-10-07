@@ -1,10 +1,11 @@
 package com.phonepe.drove.common.model.resources.available;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.application.requirements.ResourceType;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,8 @@ import java.util.Set;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
+@Builder
 public class AvailableCPU extends AvailableResource {
     /**
      * Storage model:
@@ -24,8 +27,8 @@ public class AvailableCPU extends AvailableResource {
     Map<Integer, Set<Integer>> usedCores;
 
     public AvailableCPU(
-            @JsonProperty("freeCores") Map<Integer, Set<Integer>> freeCores,
-            @JsonProperty("usedCores") Map<Integer, Set<Integer>> usedCores) {
+            Map<Integer, Set<Integer>> freeCores,
+            Map<Integer, Set<Integer>> usedCores) {
         super(ResourceType.CPU);
         this.freeCores = freeCores;
         this.usedCores = usedCores;

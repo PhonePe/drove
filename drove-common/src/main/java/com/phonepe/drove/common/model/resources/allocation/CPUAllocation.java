@@ -1,10 +1,8 @@
 package com.phonepe.drove.common.model.resources.allocation;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.application.requirements.ResourceType;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 import java.util.Set;
@@ -15,10 +13,12 @@ import java.util.Set;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
+@Builder
 public class CPUAllocation extends ResourceAllocation {
     Map<Integer, Set<Integer>> cores;
 
-    public CPUAllocation(@JsonProperty("cores") Map<Integer, Set<Integer>> cores) {
+    public CPUAllocation(Map<Integer, Set<Integer>> cores) {
         super(ResourceType.CPU);
         this.cores = cores;
     }

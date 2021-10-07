@@ -1,7 +1,7 @@
 package com.phonepe.drove.common.model.controller;
 
 import com.phonepe.drove.common.model.ControllerMessageType;
-import com.phonepe.drove.common.model.ExecutorState;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.common.model.MessageHeader;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -15,11 +15,11 @@ import lombok.Value;
 @ToString(callSuper = true)
 public class ExecutorStateReportMessage extends ControllerMessage {
 
-    ExecutorState executorState;
+    ExecutorResourceSnapshot executorState;
 
     public ExecutorStateReportMessage(
             MessageHeader header,
-            ExecutorState executorState) {
+            ExecutorResourceSnapshot executorState) {
         super(ControllerMessageType.EXECUTOR_STATE_REPORT, header);
         this.executorState = executorState;
     }
