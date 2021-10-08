@@ -14,6 +14,8 @@ import org.apache.curator.retry.RetryForever;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -55,5 +57,17 @@ public class CommonUtils {
                      .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
                      .retryPolicy(new RetryForever(1000))
                      .build();
+    }
+
+    public static <T> List<T> sublist(final List<T> list, int start, int size) {
+        if(list == null || list.isEmpty()) {
+            return Collections.emptyList();
+        }
+        val listSize = list.size();
+        if(listSize  < start + 1) {
+            return Collections.emptyList();
+        }
+        val end  = Math.min(listSize, start + size);
+        return list.subList(start, end);
     }
 }

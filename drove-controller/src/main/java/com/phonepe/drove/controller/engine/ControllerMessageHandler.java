@@ -1,33 +1,38 @@
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.controller.statedb.ExecutorStateDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
 import com.phonepe.drove.common.model.controller.ExecutorStateReportMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+
+import java.util.Collections;
 
 /**
  *
  */
+@Slf4j
 public class ControllerMessageHandler implements ControllerMessageVisitor<MessageResponse> {
     private final ExecutorStateDB executorStateDB;
-    private final ApplicationStateDB stateDB;
+    private final StateUpdater stateUpdater;
 
     public ControllerMessageHandler(
             ExecutorStateDB executorStateDB,
-            ApplicationStateDB stateDB) {
+            StateUpdater stateUpdater) {
         this.executorStateDB = executorStateDB;
-        this.stateDB = stateDB;
+        this.stateUpdater = stateUpdater;
     }
 
     @Override
     public MessageResponse visit(InstanceStateReportMessage instanceStateReport) {
-        val instanceInfo = instanceStateReport.getInstanceInfo();
-        val status
-                = stateDB.updateInstanceState(instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceInfo);
+        log.info("Received instance update from executor: {}",
+                 instanceStateReport.getResourceSnapshot().getExecutorId());
+        val status = stateUpdater.updateSingle(instanceStateReport.getResourceSnapshot(),
+                                               instanceStateReport.getInstanceInfo());
         return new MessageResponse(instanceStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
@@ -42,5 +47,11 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
                                    : MessageDeliveryStatus.FAILED);
+    }
+
+    @Override
+    public MessageResponse visit(ExecutorSnapshotMessage executorSnapshot) {
+        stateUpdater.updateClusterResources(Collections.singletonList(executorSnapshot.getNodeData()));
+        return new MessageResponse(executorSnapshot.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 }

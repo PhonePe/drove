@@ -9,7 +9,9 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.resources.ClusterResourcesDB;
 import com.phonepe.drove.controller.resources.MapBasedClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ExecutorStateDB;
 import com.phonepe.drove.controller.statedb.MapBasedApplicationStateDB;
+import com.phonepe.drove.controller.statedb.MapBasedExecutorStateDB;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Singleton;
@@ -33,6 +35,7 @@ public class CoreControllerModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
+        bind(ExecutorStateDB.class).to(MapBasedExecutorStateDB.class);
         bind(ClusterResourcesDB.class).to(MapBasedClusterResourcesDB.class);
         bind(ApplicationStateDB.class).to(MapBasedApplicationStateDB.class);
     }

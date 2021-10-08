@@ -1,9 +1,11 @@
 package com.phonepe.drove.executor;
 
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.resource.ResourceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -51,5 +53,11 @@ public class Utils {
                 Collections.emptyMap(),
                 new Date(),
                 new Date());
+    }
+
+    public static ExecutorResourceSnapshot executorSnapshot(ResourceInfo resourceState, String executorId) {
+        return new ExecutorResourceSnapshot(executorId,
+                                            resourceState.getCpu(),
+                                            resourceState.getMemory());
     }
 }

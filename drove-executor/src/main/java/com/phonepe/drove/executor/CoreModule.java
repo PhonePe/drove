@@ -14,6 +14,7 @@ import com.phonepe.drove.executor.engine.RemoteExecutorMessageSender;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import io.dropwizard.setup.Environment;
+import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Singleton;
@@ -31,15 +32,22 @@ public class CoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public InstanceEngine engine(final Environment environment, final Injector injector, final ResourceDB resourceDB, final
-                                 ExecutorIdManager executorIdManager) {
-        return new InstanceEngine(executorIdManager, environment.lifecycle()
+    public InstanceEngine engine(
+            final Environment environment,
+            final Injector injector,
+            final ResourceDB resourceDB,
+            final ExecutorIdManager executorIdManager) {
+        val executorService = environment.lifecycle()
                 .executorService("instance-engine")
                 .minThreads(128)
                 .maxThreads(128)
-                .build(),
-                                  new InjectingInstanceActionFactory(injector),
-                                  resourceDB);
+                .build();
+        return new InstanceEngine(
+                executorIdManager,
+                executorService,
+                new InjectingInstanceActionFactory(injector),
+                resourceDB
+        );
     }
 
     @Provides

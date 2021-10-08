@@ -11,6 +11,8 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.common.CommonUtils.sublist;
+
 /**
  *
  */
@@ -50,8 +52,7 @@ public class ZkUtils {
         if(nodes.isEmpty()) {
             return nodes;
         }
-        return nodes
-                .subList(start, Math.min(size, nodes.size()));
+        return sublist(nodes, start, size);
     }
 
     public static boolean deleteNode(CuratorFramework curatorFramework, String path) {

@@ -1,10 +1,11 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
+import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  *
@@ -12,8 +13,10 @@ import java.util.function.Function;
 public interface ClusterResourcesDB {
     void update(final List<ExecutorNodeData> nodeData);
 
+    void update(ExecutorResourceSnapshot snapshot);
+
     List<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
             int instances,
-            Function<AllocatedExecutorNode, Boolean> filter);
+            Predicate<AllocatedExecutorNode> filter);
 }

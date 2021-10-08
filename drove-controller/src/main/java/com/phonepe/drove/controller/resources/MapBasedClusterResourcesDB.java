@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -27,16 +28,22 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     @SneakyThrows
     public synchronized void update(List<ExecutorNodeData> nodeData) {
         nodes.putAll(nodeData.stream()
-                             .map(node -> new ExecutorHostInfo(node.getState().getExecutorId(),
-                                                               convertToNodeInfo(node.getState())))
+                             .map(node -> convertState(node.getState()))
                              .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
                                                                    Function.identity())));
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
+    @SneakyThrows
+    public synchronized void update(final ExecutorResourceSnapshot snapshot) {
+        nodes.put(snapshot.getExecutorId(), convertState(snapshot));
+        System.out.println("updated data: " + new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
+    }
+
+    @Override
     public synchronized List<AllocatedExecutorNode> selectNodes(
-            List<ResourceRequirement> requirements, int instances, Function<AllocatedExecutorNode, Boolean> filter) {
+            List<ResourceRequirement> requirements, int instances, Predicate<AllocatedExecutorNode> filter) {
 /*        nodes.values()
                 .stream()
                 .filter()*/
@@ -125,4 +132,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .equals(ExecutorHostInfo.CoreState.FREE)).count();
     }
 
+    private ExecutorHostInfo convertState(final ExecutorResourceSnapshot snapshot) {
+        return new ExecutorHostInfo(snapshot.getExecutorId(), convertToNodeInfo(snapshot));
+    }
 }

@@ -3,9 +3,7 @@ package com.phonepe.drove.executor.engine;
 import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
-import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
@@ -20,7 +18,6 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingParallelSignal;
 import io.dropwizard.util.Duration;
-import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -46,8 +43,6 @@ public class InstanceEngine implements Closeable {
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<InstanceInfo> stateChanged;
     private final ClockPulseGenerator clockPulseGenerator;
-    @Setter
-    private ExecutorCommunicator communicator;
 
     public InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
@@ -218,9 +213,7 @@ public class InstanceEngine implements Closeable {
             }
         }
         val instanceInfo = Utils.convert(currentState);
-        communicator.send(new InstanceStateReportMessage(MessageHeader.executorRequest(), instanceInfo));
         stateChanged.dispatch(instanceInfo);
-        //TODO::SEND STATE UPDATE TO CONTROLLER
     }
 
     private void sendStatusReport(final Date now) {

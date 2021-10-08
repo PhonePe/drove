@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.discovery;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
+import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
@@ -53,6 +53,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         this.resourceDB = resourceDB;
         this.engine = engine;
         this.refreshSignal.connect(this::refresh);
+        this.engine.onStateChange().connect(info -> refresh(new Date()));
         environment.lifecycle().addServerLifecycleListener(this);
     }
 
@@ -89,7 +90,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             val executorId = executorIdManager.executorId().orElseGet(() -> CommonUtils.executorId(port));
             currentData = new ExecutorNodeData(
                     hostname, port, new Date(),
-                    new ExecutorResourceSnapshot(executorId, resourceState.getCpu(), resourceState.getMemory()),
+                    Utils.executorSnapshot(resourceState, executorId),
                     engine.currentState());
             nodeDataStore.updateNodeData(currentData);
         }
@@ -108,9 +109,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             stateLock.lock();
             currentData = ExecutorNodeData.from(
                     currentData,
-                    new ExecutorResourceSnapshot(currentData.getState().getExecutorId(),
-                                                 resourceState.getCpu(),
-                                                 resourceState.getMemory()),
+                    Utils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
                     engine.currentState());
             nodeDataStore.updateNodeData(currentData);
         }

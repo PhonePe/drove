@@ -2,7 +2,6 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.ThreadedCommunicator;
 import com.phonepe.drove.controller.statedb.ExecutorStateDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -16,16 +15,18 @@ import javax.inject.Inject;
  */
 public class ControllerCommunicator extends ThreadedCommunicator<ExecutorMessageType, ControllerMessageType, ExecutorMessage, ControllerMessage> {
     private final ExecutorStateDB executorStateDB;
-    private final ApplicationStateDB stateDB;
+    private final StateUpdater stateUpdater;
 
     @Inject
-    public ControllerCommunicator(ExecutorStateDB executorStateDB, ApplicationStateDB stateDB) {
+    public ControllerCommunicator(
+            ExecutorStateDB executorStateDB,
+            StateUpdater stateUpdater) {
         this.executorStateDB = executorStateDB;
-        this.stateDB = stateDB;
+        this.stateUpdater = stateUpdater;
     }
 
     @Override
     protected MessageResponse handleReceivedMessage(ControllerMessage message) {
-        return message.accept(new ControllerMessageHandler(executorStateDB, stateDB));
+        return message.accept(new ControllerMessageHandler(executorStateDB, stateUpdater));
     }
 }

@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.common.CommonUtils.sublist;
+
 /**
  *
  */
@@ -22,11 +24,10 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     public List<ApplicationInfo> applications(int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
-        return apps.values()
+        return sublist(apps.values()
                 .stream()
                 .map(ApplicationStateEntry::getApplicationInfo)
-                .collect(Collectors.toUnmodifiableList())
-                .subList(start, start + size);
+                .collect(Collectors.toUnmodifiableList()), start, size);
     }
 
     @Override
@@ -50,8 +51,7 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     public List<InstanceInfo> instances(String appId, int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
-        return List.copyOf(apps.get(appId).getInstances().values())
-                .subList(start, start + size);
+        return sublist(List.copyOf(apps.get(appId).getInstances().values()), start, size);
     }
 
     @Override

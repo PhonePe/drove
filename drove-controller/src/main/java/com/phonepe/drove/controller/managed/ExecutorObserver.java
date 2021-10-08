@@ -3,19 +3,16 @@ package com.phonepe.drove.controller.managed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.zookeeper.ZkUtils;
-import com.phonepe.drove.controller.resources.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.engine.StateUpdater;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.KeeperException;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,26 +23,23 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Order(20)
 public class ExecutorObserver implements Managed {
-    private final ClusterResourcesDB resourcesDB;
-    private final ApplicationStateDB applicationStateDB;
+
     private final CuratorFramework curatorFramework;
     private final ObjectMapper mapper;
+    private final StateUpdater updater;
     private final Lock refreshLock = new ReentrantLock();
-    private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(1));
+    private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(30));
 
     @Inject
-    public ExecutorObserver(
-            ClusterResourcesDB resourcesDB,
-            ApplicationStateDB applicationStateDB,
-            CuratorFramework curatorFramework, ObjectMapper mapper) {
-        this.resourcesDB = resourcesDB;
-        this.applicationStateDB = applicationStateDB;
+    public ExecutorObserver(CuratorFramework curatorFramework, ObjectMapper mapper, StateUpdater updater) {
         this.curatorFramework = curatorFramework;
         this.mapper = mapper;
+        this.updater = updater;
     }
 
     @Override
     public void start() throws Exception {
+        refreshDataFromZK(new Date());
         dataRefresher.connect(this::refreshDataFromZK);
     }
 
@@ -55,10 +49,9 @@ public class ExecutorObserver implements Managed {
     }
 
     private void refreshDataFromZK(final Date currentDate) {
-        val children = new ArrayList<ExecutorNodeData>();
         if (refreshLock.tryLock()) {
             try {
-                children.addAll(ZkUtils.readChildrenNodes(curatorFramework,
+                updater.updateClusterResources(ZkUtils.readChildrenNodes(curatorFramework,
                                                           "/executor",
                                                           0,
                                                           Integer.MAX_VALUE,
@@ -66,6 +59,7 @@ public class ExecutorObserver implements Managed {
                                                                                        "/executor/" + path,
                                                                                        mapper,
                                                                                        ExecutorNodeData.class)));
+                log.info("Completed refresh for invocation call at: {}", currentDate);
             }
             catch (KeeperException.NoNodeException e) {
                 log.warn("No executors found.. Maybe executors not started?");
@@ -80,10 +74,5 @@ public class ExecutorObserver implements Managed {
         else {
             log.warn("Looks like ZK reads are slow, skipping this data load.");
         }
-        if (children.isEmpty()) {
-            log.warn("No children found from ZK.");
-            return;
-        }
-        resourcesDB.update(children);
     }
 }
