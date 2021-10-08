@@ -1,13 +1,18 @@
 package com.phonepe.drove.controller.statedb;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.Value;
+import org.apache.curator.framework.CuratorFramework;
 
+import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
 
@@ -15,56 +20,50 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
  *
  */
 @Value
+@AllArgsConstructor(onConstructor = @__({@Inject}))
 public class MapBasedApplicationStateDB implements ApplicationStateDB {
-    Map<String, ApplicationStateEntry> apps = new ConcurrentHashMap<>();
+    private static final String APPLICATION_STATE_PATH = "/applications";
+    private static final String INSTANCE_STATE_PATH = "/instances";
 
-
-
+    CuratorFramework curatorFramework;
+    ObjectMapper mapper;
+    Map<String, Map<String, InstanceInfo>> apps = new ConcurrentHashMap<>();
 
     @Override
+    @SneakyThrows
     public List<ApplicationInfo> applications(int start, int size) {
-        //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
-        return sublist(apps.values()
-                .stream()
-                .map(ApplicationStateEntry::getApplicationInfo)
-                .collect(Collectors.toUnmodifiableList()), start, size);
+        return ZkUtils.readChildrenNodes(curatorFramework,
+                                         APPLICATION_STATE_PATH,
+                                         start,
+                                         size,
+                                         path -> ZkUtils.readNodeData(curatorFramework, path, mapper, ApplicationInfo.class));
     }
 
     @Override
     public boolean updateApplicationState(
             String appId, ApplicationInfo applicationInfo) {
-        apps.compute(appId, (id, oldValue) -> {
-            if (null == oldValue) {
-                return new ApplicationStateEntry(applicationInfo, new ConcurrentHashMap<>());
-            }
-            return new ApplicationStateEntry(applicationInfo, oldValue.getInstances());
-        });
-        return true;
+        return ZkUtils.setNodeData(curatorFramework, appInfoPath(appId), mapper, applicationInfo);
     }
+
 
     @Override
     public boolean deleteApplicationState(String appId) {
-        apps.remove(appId);
-        return true;
+        return ZkUtils.deleteNode(curatorFramework, appInfoPath(appId));
     }
 
     @Override
     public List<InstanceInfo> instances(String appId, int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
-        return sublist(List.copyOf(apps.get(appId).getInstances().values()), start, size);
+        return sublist(List.copyOf(apps.get(appId).values()), start, size);
     }
 
     @Override
     public boolean updateInstanceState(
             String appId, String instanceId, InstanceInfo instanceInfo) {
-        //Do not replace this with what seems obvious, this keeps the op atomic
         apps.computeIfPresent(appId,
                               (id, value) -> {
-                                  value.getInstances()
-                                          .compute(instanceId,
-                                                   (iid, oldValue) -> instanceInfo);
-                                  return new ApplicationStateEntry(value.getApplicationInfo(),
-                                                                   value.getInstances());
+                                  value.compute(instanceId, (iid, oldValue) -> instanceInfo);
+                                  return value;
                               });
         return true;
     }
@@ -72,10 +71,14 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     public boolean deleteInstanceState(String appId, String instanceId) {
         apps.computeIfPresent(appId, (id, value) -> {
-            value.getInstances()
-                    .remove(instanceId);
-            return new ApplicationStateEntry(value.getApplicationInfo(), value.getInstances());
+            value.remove(instanceId);
+            return value;
         });
         return true;
     }
+
+    private String appInfoPath(String appId) {
+        return APPLICATION_STATE_PATH + "/" + appId;
+    }
+
 }
