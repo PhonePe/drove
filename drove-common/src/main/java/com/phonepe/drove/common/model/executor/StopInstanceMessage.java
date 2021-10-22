@@ -16,8 +16,11 @@ public class StopInstanceMessage extends ExecutorMessage {
 
     String instanceId;
 
-    public StopInstanceMessage(MessageHeader header, String instanceId) {
-        super(ExecutorMessageType.STOP_INSTANCE, header);
+    public StopInstanceMessage(
+            MessageHeader header,
+            ExecutorAddress address,
+            String instanceId) {
+        super(ExecutorMessageType.STOP_INSTANCE, header, address);
         this.instanceId = instanceId;
     }
 

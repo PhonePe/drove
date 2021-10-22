@@ -14,11 +14,13 @@ import java.util.List;
  *
  */
 public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationState, AppActionContext, AppAction> {
-    protected ApplicationStateMachine(
+    public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,
             AppActionContext context,
             ActionFactory<ApplicationInfo, ApplicationState, AppActionContext, AppAction> actionFactory,
             List<Transition<ApplicationInfo, ApplicationState, AppActionContext, AppAction>> transitions) {
         super(initalState, context, actionFactory, transitions);
     }
+
+
 }

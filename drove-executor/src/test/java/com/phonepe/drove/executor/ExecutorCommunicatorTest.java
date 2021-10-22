@@ -57,9 +57,10 @@ class ExecutorCommunicatorTest {
             }
         });
         val spec = TestingUtils.testSpec();
-        comms.receive(new StartInstanceMessage(MessageHeader.controllerRequest(), spec));
+        val address = TestingUtils.localAddress();
+        comms.receive(new StartInstanceMessage(MessageHeader.controllerRequest(), address, spec));
         CommonTestUtils.delay(Duration.seconds(70));
-        comms.receive(new StopInstanceMessage(MessageHeader.controllerRequest(), spec.getInstanceId()));
+        comms.receive(new StopInstanceMessage(MessageHeader.controllerRequest(), address, spec.getInstanceId()));
         Awaitility.await()
                 .forever()
                 .pollDelay(2, TimeUnit.SECONDS)

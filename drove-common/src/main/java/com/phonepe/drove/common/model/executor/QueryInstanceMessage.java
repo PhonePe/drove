@@ -16,8 +16,11 @@ public class QueryInstanceMessage extends ExecutorMessage {
 
     String instanceId;
 
-    public QueryInstanceMessage(MessageHeader header, String instanceId) {
-        super(ExecutorMessageType.QUERY_INFO, header);
+    public QueryInstanceMessage(
+            MessageHeader header,
+            ExecutorAddress address,
+            String instanceId) {
+        super(ExecutorMessageType.QUERY_INFO, header, address);
         this.instanceId = instanceId;
     }
 

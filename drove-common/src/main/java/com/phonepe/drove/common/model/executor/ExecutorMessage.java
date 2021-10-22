@@ -9,8 +9,14 @@ import com.phonepe.drove.common.model.MessageHeader;
  */
 public abstract class ExecutorMessage extends Message<ExecutorMessageType> {
 
-    protected ExecutorMessage(ExecutorMessageType type, MessageHeader header) {
+    private final ExecutorAddress address;
+
+    protected ExecutorMessage(
+            ExecutorMessageType type,
+            MessageHeader header,
+            ExecutorAddress address) {
         super(type, header);
+        this.address = address;
     }
 
     public abstract <T> T accept(final ExecutorMessageVisitor<T> visitor);

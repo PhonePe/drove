@@ -16,8 +16,11 @@ import lombok.Value;
 public class StartInstanceMessage extends ExecutorMessage {
     InstanceSpec spec;
 
-    public StartInstanceMessage(MessageHeader header, InstanceSpec spec) {
-        super(ExecutorMessageType.START_INSTANCE, header);
+    public StartInstanceMessage(
+            MessageHeader header,
+            ExecutorAddress address,
+            InstanceSpec spec) {
+        super(ExecutorMessageType.START_INSTANCE, header, address);
         this.spec = spec;
     }
 

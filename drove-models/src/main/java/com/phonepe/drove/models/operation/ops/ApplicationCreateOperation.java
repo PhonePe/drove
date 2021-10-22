@@ -25,12 +25,12 @@ public class ApplicationCreateOperation extends ApplicationOperation {
 
     @NotNull
     @Valid
-    ClusterOpSpec opeSpec;
+    ClusterOpSpec opSpec;
 
-    public ApplicationCreateOperation(ApplicationSpec spec, ClusterOpSpec opeSpec) {
+    public ApplicationCreateOperation(ApplicationSpec spec, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.CREATE);
         this.spec = spec;
-        this.opeSpec = opeSpec;
+        this.opSpec = opSpec;
     }
 
     @Override

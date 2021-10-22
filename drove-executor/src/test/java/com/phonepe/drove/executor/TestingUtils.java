@@ -2,6 +2,7 @@ package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.application.PortSpec;
@@ -53,6 +54,10 @@ public class TestingUtils {
                                        3,
                                        Duration.seconds(0)),
                                 Collections.emptyMap());
+    }
+
+    public static ExecutorAddress localAddress() {
+        return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000);
     }
 
 }

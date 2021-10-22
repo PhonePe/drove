@@ -12,6 +12,7 @@ import org.apache.curator.framework.CuratorFramework;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
@@ -55,6 +56,11 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     public List<InstanceInfo> instances(String appId, int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
         return sublist(List.copyOf(apps.get(appId).values()), start, size);
+    }
+
+    @Override
+    public Optional<InstanceInfo> instance(String appId, String instanceId) {
+        return Optional.ofNullable(apps.get(appId).get(instanceId));
     }
 
     @Override

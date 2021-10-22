@@ -4,51 +4,74 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import lombok.val;
 
-import java.util.List;
+import javax.inject.Inject;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  *
  */
 public class DefaultInstanceScheduler implements InstanceScheduler {
     private final ApplicationStateDB applicationStateDB;
+    private final ClusterResourcesDB clusterResourcesDB;
 
-    public DefaultInstanceScheduler(ApplicationStateDB applicationStateDB) {
+    @Inject
+    public DefaultInstanceScheduler(
+            ApplicationStateDB applicationStateDB,
+            ClusterResourcesDB clusterResourcesDB) {
         this.applicationStateDB = applicationStateDB;
+        this.clusterResourcesDB = clusterResourcesDB;
     }
 
     @Override
-    public void schedule(ApplicationSpec applicationSpec) {
-        applicationSpec.getPlacementPolicy().accept(new PlacementPolicyVisitor<List<String>>() {
-            @Override
-            public List<String> visit(OnePerHostPlacementPolicy onePerHost) {
-                return null;
-            }
-
-            @Override
-            public List<String> visit(MaxNPerHostPlacementPolicy maxNPerHost) {
-                return null;
-            }
-
-            @Override
-            public List<String> visit(MatchTagPlacementPolicy matchTag) {
-                return null;
-            }
-
-            @Override
-            public List<String> visit(RuleBasedPlacementPolicy ruleBased) {
-                return null;
-            }
-
-            @Override
-            public List<String> visit(AnyPlacementPolicy anyPlacementPolicy) {
-                return null;
-            }
-        });
+    public Optional<AllocatedExecutorNode> schedule(ApplicationSpec applicationSpec) {
+        return clusterResourcesDB.selectNodes(applicationSpec.getResources(),
+                                                  1,
+                                                  allocatedNode -> validateNode(applicationSpec, allocatedNode))
+                .stream()
+                .findFirst();
     }
 
     @Override
     public boolean accept(String executorInfo) {
         return false;
+    }
+
+    boolean validateNode(final ApplicationSpec spec, final AllocatedExecutorNode executorNode) {
+        val existing = applicationStateDB.instances(spec.getName(), 1, Integer.MAX_VALUE)
+                .stream()
+                .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));
+        val allocatedExecutorId = executorNode.getExecutorId();
+        return spec.getPlacementPolicy().accept(new PlacementPolicyVisitor<>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return !existing.containsKey(allocatedExecutorId);
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return existing.getOrDefault(allocatedExecutorId, 0L) <= maxNPerHost.getNumContainers();
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                //TODO::IMPLEMENT
+                return false;
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                //TODO::IMPLEMENT
+                return null;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return true;
+            }
+        });
     }
 }

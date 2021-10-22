@@ -14,7 +14,6 @@
     <properties>
         <docker-java.version>3.2.11</docker-java.version>
         <retry4j.version>0.15.0</retry4j.version>
-        <failsafe.version>2.4.2</failsafe.version>
     </properties>
 
     <dependencies>
