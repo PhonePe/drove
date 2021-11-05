@@ -10,7 +10,7 @@ import java.util.Set;
  */
 @Value
 @AllArgsConstructor
-public class Transition<T, S extends Enum<S>, C extends ActionContext, A extends Action<T, S, C>> {
+public class Transition<T, D, S extends Enum<S>, C extends ActionContext<D>, A extends Action<T, S, C, D>> {
     S from;
     Class<? extends A> action;
     Set<S> to;

@@ -15,8 +15,8 @@ import java.util.List;
 /**
  *
  */
-public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, InstanceState, InstanceActionContext, InstanceAction> {
-    private static final List<Transition<ExecutorInstanceInfo, InstanceState, InstanceActionContext, InstanceAction>> transitions
+public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext, InstanceAction> {
+    private static final List<Transition<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext, InstanceAction>> transitions
             = List.of(
             new Transition<>(InstanceState.PENDING,
                              InstanceSpecValidator.class,

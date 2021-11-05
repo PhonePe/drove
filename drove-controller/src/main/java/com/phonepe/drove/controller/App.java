@@ -28,7 +28,7 @@ public class App extends Application<AppConfig> {
                                           "com.phonepe.drove.controller.healthcheck",
                                           "com.phonepe.drove.controller.managed",
                                           "com.phonepe.drove.controller.leadership")
-                        .modules(new CoreControllerModule())
+                        .modules(new ControllerCoreModule())
                         .installers(HealthCheckInstaller.class)
                         .printDiagnosticInfo()
                         .build(Stage.PRODUCTION));

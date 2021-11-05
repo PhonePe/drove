@@ -6,11 +6,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 public abstract class AbstractJobResponseCombiner<T> implements JobResponseCombiner<T> {
-    protected final AtomicReference<Throwable> t = new AtomicReference<>();
+    protected final AtomicReference<Throwable> failure = new AtomicReference<>();
 
     @Override
     public boolean handleError(Throwable throwable) {
-        t.set(throwable);
+        failure.set(throwable);
         return false;
     }
 

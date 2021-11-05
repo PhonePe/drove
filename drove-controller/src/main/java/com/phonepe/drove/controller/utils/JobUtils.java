@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class JobUtils {
     public static <T> boolean executeSingleJob(
-            JobContext context, final JobResponseCombiner<T> responseCombiner, final Job<T> job) {
+            JobContext<T> context, final JobResponseCombiner<T> responseCombiner, final Job<T> job) {
         log.info("Calling: {}", job.jobId());
         try {
             if (context.isStopped()) {

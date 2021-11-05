@@ -1,0 +1,113 @@
+package com.phonepe.drove.controller.engine.jobs;
+
+import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.executor.ExecutorAddress;
+import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.jobexecutor.Job;
+import com.phonepe.drove.controller.jobexecutor.JobContext;
+import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
+import com.phonepe.drove.controller.resources.ClusterResourcesDB;
+import com.phonepe.drove.controller.resources.ExecutorHostInfo;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
+import net.jodah.failsafe.TimeoutExceededException;
+
+import java.time.Duration;
+
+import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
+
+/**
+ * Starts  a single instance by whatever means necessary
+ */
+@Slf4j
+public class StopSingleInstanceJob implements Job<Boolean> {
+    private final String appId;
+    private final String instanceId;
+    private final ClusterOpSpec clusterOpSpec;
+    private final ApplicationStateDB applicationStateDB;
+    private final ClusterResourcesDB clusterResourcesDB;
+    private final ControllerCommunicator communicator;
+
+    public StopSingleInstanceJob(
+            String appId,
+            String instanceId,
+            ClusterOpSpec clusterOpSpec,
+            ApplicationStateDB applicationStateDB,
+            ClusterResourcesDB clusterResourcesDB,
+            ControllerCommunicator communicator) {
+        this.appId = appId;
+        this.instanceId = instanceId;
+        this.clusterOpSpec = clusterOpSpec;
+        this.applicationStateDB = applicationStateDB;
+        this.clusterResourcesDB = clusterResourcesDB;
+        this.communicator = communicator;
+    }
+
+    @Override
+    public String jobId() {
+        return "start-instance-" + appId + "-" + instanceId;
+    }
+
+    @Override
+    public void cancel() {
+
+    }
+
+    @Override
+    public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
+        val retryPolicy = new RetryPolicy<Boolean>()
+                .withDelay(Duration.ofSeconds(30))
+                .withMaxDuration(Duration.ofMinutes(3))
+                .handle(Exception.class)
+                .handleResultIf(r -> !r);
+        val instanceInfo = applicationStateDB.instance(appId, instanceId).orElse(null);
+        if (null == instanceInfo) {
+            return true;
+        }
+        try {
+            return Failsafe.with(retryPolicy)
+                    .onFailure(event -> {
+                        val failure = event.getFailure();
+                        if (null != failure) {
+                            log.error("Error setting up instance for " + appId, failure);
+                        }
+                        else {
+                            log.error("Error setting up instance for {}. Event: {}", appId, event);
+                        }
+                    })
+                    .get(() -> stopInstance(instanceInfo, clusterOpSpec));
+        }
+        catch (TimeoutExceededException e) {
+            log.error("Could not allocate an instance for {} after retires.", appId);
+        }
+        catch (Exception e) {
+            log.error("Could not allocate an instance for " + appId + " after retires.", e);
+        }
+        return false;
+    }
+
+    private boolean stopInstance(final InstanceInfo instanceInfo, final ClusterOpSpec clusterOpSpec) {
+        val executorId = instanceInfo.getExecutorId();
+        val node = clusterResourcesDB.currentSnapshot(executorId).map(ExecutorHostInfo::getNodeData).orElse(null);
+        if (null == node) {
+            log.warn("No node found in the cluster with ID {}.", executorId);
+            return false;
+        }
+        val stopMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
+                                                   new ExecutorAddress(executorId,
+                                                                       instanceInfo.getLocalInfo().getHostname(),
+                                                                       node.getPort()),
+                                                   instanceId);
+        communicator.send(stopMessage);
+        log.debug("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
+        return ensureInstanceState(applicationStateDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED);
+    }
+
+}

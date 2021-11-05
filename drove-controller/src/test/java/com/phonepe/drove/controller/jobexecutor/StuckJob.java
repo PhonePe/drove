@@ -17,7 +17,7 @@ public class StuckJob implements Job<Integer> {
 
     @Override
     public Integer execute(
-            JobContext context,
+            JobContext<Integer> context,
             JobResponseCombiner<Integer> responseCombiner) {
         while (!context.isStopped());
         return 0;

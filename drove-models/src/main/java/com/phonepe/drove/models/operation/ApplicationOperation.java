@@ -23,5 +23,5 @@ import lombok.Data;
 public abstract class ApplicationOperation {
     private final ApplicationOperationType type;
 
-    public abstract <T> T visit(final ApplicationOperationVisitor<T> visitor);
+    public abstract <T> T accept(final ApplicationOperationVisitor<T> visitor);
 }

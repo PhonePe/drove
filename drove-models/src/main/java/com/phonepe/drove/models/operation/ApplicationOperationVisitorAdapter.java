@@ -1,0 +1,54 @@
+package com.phonepe.drove.models.operation;
+
+import com.phonepe.drove.models.operation.ops.*;
+
+/**
+ *
+ */
+public class ApplicationOperationVisitorAdapter<T> implements ApplicationOperationVisitor<T> {
+    private final T defaultValue;
+
+    public ApplicationOperationVisitorAdapter(T defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationCreateOperation create) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationUpdateOperation update) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationInfoOperation info) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationDestroyOperation destroy) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationDeployOperation deploy) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationScaleOperation scale) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationRestartOperation restart) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(ApplicationSuspendOperation suspend) {
+        return defaultValue;
+    }
+}

@@ -4,6 +4,10 @@ import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.StateMachine;
 import com.phonepe.drove.common.Transition;
+import com.phonepe.drove.controller.statemachine.actions.AppOperationRouterAction;
+import com.phonepe.drove.controller.statemachine.actions.CreateAppAction;
+import com.phonepe.drove.controller.statemachine.actions.StartAppAction;
+import com.phonepe.drove.controller.statemachine.actions.StopAppAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import lombok.NonNull;
@@ -13,13 +17,34 @@ import java.util.List;
 /**
  *
  */
-public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationState, AppActionContext, AppAction> {
+public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> {
+    private static final List<Transition<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
+            = List.of(
+            new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.CREATED),
+            new Transition<>(ApplicationState.CREATED,
+                             AppOperationRouterAction.class,
+                             ApplicationState.DEPLOYMENT_REQUESTED,
+                             ApplicationState.DESTROY_REQUESTED,
+                             ApplicationState.SCALING_REQUESTED,
+                             ApplicationState.RESTART_REQUESTED,
+                             ApplicationState.SUSPEND_REQUESTED,
+                             ApplicationState.PARTIAL_OUTAGE),
+            new Transition<>(ApplicationState.DEPLOYMENT_REQUESTED, StartAppAction.class, ApplicationState.RUNNING),
+            new Transition<>(ApplicationState.RUNNING,
+                             AppOperationRouterAction.class,
+                             ApplicationState.DEPLOYMENT_REQUESTED,
+                             ApplicationState.DESTROY_REQUESTED,
+                             ApplicationState.SCALING_REQUESTED,
+                             ApplicationState.RESTART_REQUESTED,
+                             ApplicationState.SUSPEND_REQUESTED,
+                             ApplicationState.PARTIAL_OUTAGE),
+            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.CREATED));
+
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,
             AppActionContext context,
-            ActionFactory<ApplicationInfo, ApplicationState, AppActionContext, AppAction> actionFactory,
-            List<Transition<ApplicationInfo, ApplicationState, AppActionContext, AppAction>> transitions) {
-        super(initalState, context, actionFactory, transitions);
+            ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> actionFactory) {
+        super(initalState, context, actionFactory, TRANSITIONS);
     }
 
 

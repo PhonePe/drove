@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
+import com.phonepe.drove.common.model.ControllerMessageType;
+import com.phonepe.drove.common.model.controller.ControllerMessage;
+import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
-import com.phonepe.drove.executor.engine.ExecutorMessageSender;
 import com.phonepe.drove.executor.engine.InstanceEngine;
-import com.phonepe.drove.executor.engine.RemoteExecutorMessageSender;
+import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import io.dropwizard.setup.Environment;
@@ -27,8 +30,10 @@ public class CoreModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
-        bind(ExecutorMessageSender.class).to(RemoteExecutorMessageSender.class);
+        bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>(){})
+                .to(RemoteControllerMessageSender.class);
     }
+
 
     @Provides
     @Singleton

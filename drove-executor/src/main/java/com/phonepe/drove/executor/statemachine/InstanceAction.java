@@ -8,11 +8,12 @@ import com.phonepe.drove.models.instance.InstanceState;
 /**
  *
  */
-public abstract class InstanceAction implements Action<ExecutorInstanceInfo, InstanceState, InstanceActionContext> {
+public abstract class InstanceAction extends Action<ExecutorInstanceInfo, InstanceState, InstanceActionContext, Void> {
 
     @Override
     public final StateData<InstanceState, ExecutorInstanceInfo> execute(
-            InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+            InstanceActionContext context,
+            StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         if(isStopAllowed()) {
             if (context.getAlreadyStopped().get()) {
                 return StateData.from(currentState, InstanceState.STOPPING);

@@ -10,7 +10,7 @@ public interface Job<T> {
     void cancel();
 
     T execute(
-            JobContext context,
+            JobContext<T> context,
             final JobResponseCombiner<T> responseCombiner);
 
     default boolean isBatch() {

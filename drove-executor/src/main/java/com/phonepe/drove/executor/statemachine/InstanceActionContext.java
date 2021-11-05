@@ -19,7 +19,7 @@ import java.util.concurrent.Future;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class InstanceActionContext extends ActionContext {
+public class InstanceActionContext extends ActionContext<Void> {
     private final String executorId;
     private final InstanceSpec instanceSpec;
     private final DockerClient client;

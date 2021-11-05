@@ -8,12 +8,14 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.val;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  *
  */
+@Singleton
 public class DefaultInstanceScheduler implements InstanceScheduler {
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;

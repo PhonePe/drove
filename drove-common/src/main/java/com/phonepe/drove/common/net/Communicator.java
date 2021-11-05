@@ -1,9 +1,8 @@
-package com.phonepe.drove.common;
+package com.phonepe.drove.common.net;
 
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageResponse;
 import io.appform.signals.signals.ConsumingSyncSignal;
-import io.appform.signals.signals.GeneratingSyncSignal;
 
 /**
  *
@@ -14,9 +13,6 @@ public interface Communicator<
         SendMessage extends Message<SendMessageType>,
         ReceiveMessage extends Message<ReceiveMessageType>> {
     ConsumingSyncSignal<MessageResponse> onResponse();
-
-    GeneratingSyncSignal<SendMessage, MessageResponse> onMessageReady();
-
     /**
      * Send message to remote
      * @param message the actual message received

@@ -1,6 +1,6 @@
 package com.phonepe.drove.executor.engine;
 
-import com.phonepe.drove.common.Communicator;
+import com.phonepe.drove.common.net.Communicator;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.StopInstanceMessage2;
 

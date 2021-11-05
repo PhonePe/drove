@@ -1,36 +1,34 @@
-package com.phonepe.drove.executor.engine;
+package com.phonepe.drove.common.net;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.controller.ControllerMessage;
-import com.phonepe.drove.executor.discovery.LeadershipObserver;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  *
  */
-@Singleton
 @Slf4j
-public class RemoteExecutorMessageSender implements ExecutorMessageSender {
-    private final LeadershipObserver observer;
-    private final HttpClient httpClient;
-    private final ObjectMapper mapper;
+public abstract class RemoteMessageSender<
+        SendMessageType extends Enum<SendMessageType>,
+        SendMessage extends Message<SendMessageType>>
+        implements MessageSender<SendMessageType, SendMessage> {
 
-    @Inject
-    public RemoteExecutorMessageSender(LeadershipObserver observer, ObjectMapper mapper) {
-        this.observer = observer;
+    private final ObjectMapper mapper;
+    private final HttpClient httpClient;
+
+    protected RemoteMessageSender(final ObjectMapper mapper) {
         this.mapper = mapper;
         var connectionTimeout = Duration.ofSeconds(1);
         httpClient = HttpClient.newBuilder()
@@ -39,13 +37,14 @@ public class RemoteExecutorMessageSender implements ExecutorMessageSender {
                 .build();
     }
 
-    public MessageResponse sendRemoteMessage(final ControllerMessage message) {
-        val leader = observer.leader().orElse(null);
-        if(null == leader) {
-            log.error("No leader controller found");
+    @Override
+    public MessageResponse send(SendMessage message) {
+        val host = translateRemoteAddress(message).orElse(null);
+        if (null == host) {
+            log.error("No host found.");
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
-        val uri = String.format("http://%s:%d/messages/v1", leader.getHostname(), leader.getPort());
+        val uri = String.format("http://%s:%d/messages/v1", host.getHostname(), host.getPort());
         val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
         try {
             requestBuilder.header("Content-type", "application/json");
@@ -60,7 +59,7 @@ public class RemoteExecutorMessageSender implements ExecutorMessageSender {
         try {
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             val body = response.body();
-            if(response.statusCode() == 200) {
+            if (response.statusCode() == 200) {
                 return mapper.readValue(body, MessageResponse.class);
             }
             else {
@@ -77,4 +76,7 @@ public class RemoteExecutorMessageSender implements ExecutorMessageSender {
         log.info("Message sent to controller");
         return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
     }
+
+    protected abstract Optional<RemoteHost> translateRemoteAddress(final SendMessage message);
+
 }

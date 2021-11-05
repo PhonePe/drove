@@ -9,5 +9,5 @@ import com.phonepe.drove.models.instance.InstanceState;
 /**
  *
  */
-public interface InstanceActionFactory extends ActionFactory<ExecutorInstanceInfo, InstanceState, InstanceActionContext, InstanceAction> {
+public interface InstanceActionFactory extends ActionFactory<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext, InstanceAction> {
 }

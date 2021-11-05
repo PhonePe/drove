@@ -4,6 +4,7 @@ import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
@@ -13,6 +14,11 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
  */
 public class MapBasedExecutorStateDB implements ExecutorStateDB {
     Map<String, ExecutorResourceSnapshot> executors = new ConcurrentHashMap<>();
+
+    @Override
+    public Optional<ExecutorResourceSnapshot> executorState(String executorId) {
+        return Optional.ofNullable(executors.get(executorId));
+    }
 
     @Override
     public List<ExecutorResourceSnapshot> executorState(int start, int size) {

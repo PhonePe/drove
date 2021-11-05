@@ -46,7 +46,7 @@ public class StateUpdater {
 
     private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
         return applicationStateDB.updateInstanceState(instanceInfo.getAppId(),
-                                                      instanceInfo.getAppId(),
+                                                      instanceInfo.getInstanceId(),
                                                       instanceInfo);
     }
 }

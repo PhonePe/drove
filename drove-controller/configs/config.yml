@@ -21,7 +21,7 @@ logging:
     - type: console
       threshold: TRACE
       timeZone: IST
-      logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceId}] %message%n"
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{appId}] %message%n"
 
 zookeeper:
   connectionString: localhost:2181

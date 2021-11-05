@@ -5,12 +5,15 @@ import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
  *
  */
 public interface ClusterResourcesDB {
+    Optional<ExecutorHostInfo> currentSnapshot(String executorId);
+
     void update(final List<ExecutorNodeData> nodeData);
 
     void update(ExecutorResourceSnapshot snapshot);

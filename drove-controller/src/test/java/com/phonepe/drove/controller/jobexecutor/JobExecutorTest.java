@@ -20,16 +20,19 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @Slf4j
 class JobExecutorTest {
+    private final JobExecutor<Integer> exec = new JobExecutor<>(Executors.newSingleThreadExecutor());
 
     @Test
     void test() {
         val responseCombiner = new IntResponseCombiner();
-        val exec = new JobExecutor<>(Executors.newSingleThreadExecutor(), responseCombiner);
         val done = new AtomicBoolean();
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> validateResults(done, failed, res));
-
-        exec.schedule(IntStream.rangeClosed(1, 10).mapToObj(Adder::new).collect(Collectors.toUnmodifiableList()));
+        val topology = JobTopology.<Integer>builder().addJob(IntStream.rangeClosed(1, 10)
+                                                                     .mapToObj(Adder::new)
+                                                                     .collect(Collectors.toUnmodifiableList()))
+                .build();
+        exec.schedule(topology, responseCombiner, r -> {});
         Awaitility.await()
                 .timeout(300, TimeUnit.SECONDS)
                 .until(done::get);
@@ -40,7 +43,6 @@ class JobExecutorTest {
     @Test
     void testParallel() {
         val responseCombiner = new IntResponseCombiner();
-        val exec = new JobExecutor<>(Executors.newSingleThreadExecutor(), responseCombiner);
         val done = new AtomicBoolean();
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> validateResults(done, failed, res));
@@ -49,7 +51,7 @@ class JobExecutorTest {
                 new JobLevel<>(3,
                                IntStream.rangeClosed(1, 10)
                                        .mapToObj(Adder::new)
-                                       .collect(Collectors.toUnmodifiableList()))));
+                                       .collect(Collectors.toUnmodifiableList()))), responseCombiner, r -> {});
         log.debug("Waiting for jobs to complete");
         Awaitility.await()
                 .timeout(300, TimeUnit.SECONDS)
@@ -61,7 +63,6 @@ class JobExecutorTest {
     @Test
     void testMixed() {
         val responseCombiner = new IntResponseCombiner();
-        val exec = new JobExecutor<>(Executors.newSingleThreadExecutor(), responseCombiner);
         val done = new AtomicBoolean();
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> validateResults(done, failed, res, 57));
@@ -72,7 +73,7 @@ class JobExecutorTest {
                         .collect(Collectors.toUnmodifiableList()))
                 .addJob(new Adder(1))
                 .build();
-        exec.schedule(Collections.singletonList(topology));
+        exec.schedule(topology, responseCombiner, r -> {});
         log.debug("Waiting");
         Awaitility.await()
                 .timeout(3, TimeUnit.SECONDS)
@@ -83,8 +84,6 @@ class JobExecutorTest {
 
     @Test
     void testFailure() {
-        val responseCombiner = new IntResponseCombiner();
-        val exec = new JobExecutor<>(Executors.newSingleThreadExecutor(), responseCombiner);
         val done = new AtomicBoolean();
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> {
@@ -111,7 +110,7 @@ class JobExecutorTest {
                 .addJob(new ErrorJob())
                 .addJob(new Adder(1))
                 .build();
-        exec.schedule(Collections.singletonList(topology));
+        exec.schedule(topology, new IntResponseCombiner(), r -> {});
         log.debug("Waiting");
         Awaitility.await()
                 .timeout(300, TimeUnit.SECONDS)
@@ -123,8 +122,6 @@ class JobExecutorTest {
     @SneakyThrows
     @Test
     void testCancellation() {
-        val responseCombiner = new IntResponseCombiner();
-        val exec = new JobExecutor<>(Executors.newSingleThreadExecutor(), responseCombiner);
         val done = new AtomicBoolean();
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> {
@@ -148,7 +145,7 @@ class JobExecutorTest {
                 .addJob(new StuckJob())
                 .addJob(new Adder(1))
                 .build();
-        val execId = exec.schedule(Collections.singletonList(topology));
+        val execId = exec.schedule(Collections.singletonList(topology), new IntResponseCombiner(), r -> {});
         log.debug("Waiting");
         Thread.sleep(1000);
         exec.cancel(execId);
@@ -163,7 +160,11 @@ class JobExecutorTest {
         validateResults(done, failed, res, 55);
     }
 
-    private void validateResults(AtomicBoolean done, AtomicBoolean failed, JobExecutionResult<Integer> res, int expectation) {
+    private void validateResults(
+            AtomicBoolean done,
+            AtomicBoolean failed,
+            JobExecutionResult<Integer> res,
+            int expectation) {
         log.info("Jobs completed");
         try {
             assertEquals(expectation, res.getResult());

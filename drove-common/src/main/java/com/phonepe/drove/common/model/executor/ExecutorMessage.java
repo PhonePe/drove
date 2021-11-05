@@ -3,10 +3,12 @@ package com.phonepe.drove.common.model.executor;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageHeader;
+import lombok.Data;
 
 /**
  *
  */
+@Data
 public abstract class ExecutorMessage extends Message<ExecutorMessageType> {
 
     private final ExecutorAddress address;

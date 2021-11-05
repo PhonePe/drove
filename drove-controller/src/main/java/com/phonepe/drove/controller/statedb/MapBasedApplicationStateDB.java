@@ -7,12 +7,12 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
+import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import javax.inject.Singleton;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
@@ -22,6 +22,7 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
  */
 @Value
 @AllArgsConstructor(onConstructor = @__({@Inject}))
+@Singleton
 public class MapBasedApplicationStateDB implements ApplicationStateDB {
     private static final String APPLICATION_STATE_PATH = "/applications";
     private static final String INSTANCE_STATE_PATH = "/instances";
@@ -43,7 +44,9 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     public boolean updateApplicationState(
             String appId, ApplicationInfo applicationInfo) {
-        return ZkUtils.setNodeData(curatorFramework, appInfoPath(appId), mapper, applicationInfo);
+        val res = ZkUtils.setNodeData(curatorFramework, appInfoPath(appId), mapper, applicationInfo);
+        apps.computeIfAbsent(appId, id -> new HashMap<>());
+        return res;
     }
 
 
@@ -55,11 +58,17 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     public List<InstanceInfo> instances(String appId, int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
+        if(!apps.containsKey(appId)) {
+            return Collections.emptyList();
+        }
         return sublist(List.copyOf(apps.get(appId).values()), start, size);
     }
 
     @Override
     public Optional<InstanceInfo> instance(String appId, String instanceId) {
+        if(!apps.containsKey(appId)) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(apps.get(appId).get(instanceId));
     }
 

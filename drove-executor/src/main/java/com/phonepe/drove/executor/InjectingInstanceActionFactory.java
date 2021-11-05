@@ -18,7 +18,7 @@ public class InjectingInstanceActionFactory implements InstanceActionFactory {
     }
 
     @Override
-    public InstanceAction create(Transition<ExecutorInstanceInfo, InstanceState, InstanceActionContext, InstanceAction> transition) {
+    public InstanceAction create(Transition<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext, InstanceAction> transition) {
         return injector.getInstance(transition.getAction());
     }
 }

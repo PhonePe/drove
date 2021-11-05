@@ -34,7 +34,7 @@ public class JobTopology<T> implements Job<T> {
     }
 
     @Override
-    public T execute(JobContext context, JobResponseCombiner<T> responseCombiner) {
+    public T execute(JobContext<T> context, JobResponseCombiner<T> responseCombiner) {
         for (Job<T> job : List.copyOf(jobs)) {
             if(!JobUtils.executeSingleJob(context, responseCombiner, job)) {
                 log.info("Exiting");
@@ -54,7 +54,12 @@ public class JobTopology<T> implements Job<T> {
         private final List<Job<T>> jobs = new ArrayList<>();
 
         public Builder<T> addJob(final Job<T> job) {
-            jobs.add(job);
+            this.jobs.add(job);
+            return this;
+        }
+
+        public Builder<T> addJob(final List<Job<T>> jobs) {
+            this.jobs.addAll(jobs);
             return this;
         }
 

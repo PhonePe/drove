@@ -5,7 +5,7 @@
     <option name="PROGRAM_PARAMETERS" value="server drove-executor/configs/config.yml" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.phonepe.drove.common.*" />
+        <option name="PATTERN" value="com.phonepe.drove.common.net.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

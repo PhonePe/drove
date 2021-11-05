@@ -8,6 +8,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -18,6 +19,7 @@ import javax.validation.constraints.NotNull;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
 public class ApplicationCreateOperation extends ApplicationOperation {
     @NotNull
     @Valid
@@ -34,7 +36,7 @@ public class ApplicationCreateOperation extends ApplicationOperation {
     }
 
     @Override
-    public <T> T visit(ApplicationOperationVisitor<T> visitor) {
+    public <T> T accept(ApplicationOperationVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

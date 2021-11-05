@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
-import com.phonepe.drove.common.ThreadedCommunicator;
+import com.phonepe.drove.common.net.MessageSender;
+import com.phonepe.drove.common.net.ThreadedCommunicator;
 import com.phonepe.drove.controller.statedb.ExecutorStateDB;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.ExecutorMessageType;
@@ -20,7 +21,9 @@ public class ControllerCommunicator extends ThreadedCommunicator<ExecutorMessage
     @Inject
     public ControllerCommunicator(
             ExecutorStateDB executorStateDB,
-            StateUpdater stateUpdater) {
+            StateUpdater stateUpdater,
+            MessageSender<ExecutorMessageType, ExecutorMessage> messageSender) {
+        super(messageSender);
         this.executorStateDB = executorStateDB;
         this.stateUpdater = stateUpdater;
     }

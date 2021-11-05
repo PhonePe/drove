@@ -22,7 +22,7 @@ public class IntResponseCombiner extends AbstractJobResponseCombiner<Integer> {
     }
 
     @Override
-    public JobExecutionResult<Integer> buildResult() {
-        return new JobExecutionResult<>(current.get(), t.get());
+    public JobExecutionResult<Integer> buildResult(String jobId) {
+        return new JobExecutionResult<>(jobId, current.get(), failure.get());
     }
 }

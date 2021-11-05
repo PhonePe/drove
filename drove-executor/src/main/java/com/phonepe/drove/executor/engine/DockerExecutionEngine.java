@@ -8,7 +8,7 @@ import com.github.dockerjava.api.model.PullResponseItem;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
-import com.phonepe.drove.common.Communicator;
+import com.phonepe.drove.common.net.Communicator;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.StopInstanceMessage2;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;

@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor.engine;
 
-import com.phonepe.drove.common.ThreadedCommunicator;
+import com.phonepe.drove.common.net.MessageSender;
+import com.phonepe.drove.common.net.ThreadedCommunicator;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
@@ -23,9 +24,9 @@ public class ExecutorCommunicator extends ThreadedCommunicator<ControllerMessage
     @Inject
     public ExecutorCommunicator(
             InstanceEngine engine,
-            ExecutorMessageSender messageSender) {
+            MessageSender<ControllerMessageType, ControllerMessage> messageSender) {
+        super(messageSender);
         this.engine = engine;
-        onMessageReady().connect(messageSender::sendRemoteMessage);
     }
 
     @Override

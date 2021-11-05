@@ -17,7 +17,7 @@ public class ErrorJob implements Job<Integer> {
 
     @Override
     public Integer execute(
-            JobContext context,
+            JobContext<Integer> context,
             JobResponseCombiner<Integer> responseCombiner) {
         throw new IllegalStateException("Error for testing");
     }

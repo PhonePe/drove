@@ -3,6 +3,8 @@ package com.phonepe.drove.controller.resources;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
+import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
+import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
@@ -10,9 +12,8 @@ import com.phonepe.drove.models.application.requirements.ResourceRequirementVisi
 import lombok.SneakyThrows;
 import lombok.val;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.inject.Singleton;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -21,14 +22,20 @@ import java.util.stream.Collectors;
 /**
  *
  */
+@Singleton
 public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
+
+    @Override
+    public Optional<ExecutorHostInfo> currentSnapshot(final String executorId) {
+        return Optional.ofNullable(nodes.get(executorId));
+    }
 
     @Override
     @SneakyThrows
     public synchronized void update(List<ExecutorNodeData> nodeData) {
         nodes.putAll(nodeData.stream()
-                             .map(node -> convertState(node.getState()))
+                             .map(node -> convertState(node))
                              .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
                                                                    Function.identity())));
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
@@ -37,24 +44,30 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     @Override
     @SneakyThrows
     public synchronized void update(final ExecutorResourceSnapshot snapshot) {
-        nodes.put(snapshot.getExecutorId(), convertState(snapshot));
-        System.out.println("updated data: " + new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
+        nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
+        System.out.println("updated data: " + new ObjectMapper().writerWithDefaultPrettyPrinter()
+                .writeValueAsString(nodes));
     }
 
     @Override
     public synchronized List<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements, int instances, Predicate<AllocatedExecutorNode> filter) {
-/*        nodes.values()
+        return nodes.values()
                 .stream()
-                .filter()*/
-        return null;
+                .map(node -> ensureResource(node, requirements))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .filter(filter)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     private String id(final ExecutorHostInfo hostInfo) {
         return hostInfo.getExecutorId();
     }
 
-    private boolean ensureResource(final ExecutorHostInfo hostInfo, final List<ResourceRequirement> resources) {
+    private Optional<AllocatedExecutorNode> ensureResource(
+            final ExecutorHostInfo hostInfo,
+            final List<ResourceRequirement> resources) {
         val cpus =
                 resources.stream()
                         .mapToLong(req -> req.accept(new ResourceRequirementVisitor<>() {
@@ -85,14 +98,38 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                             }
                         }))
                         .sum();
-        val eligibleNodes = hostInfo.getNodes()
-                .values()
+        //NOTE: THis ensures everything is on the SAME numa node for performance
+        return hostInfo.getNodes()
+                .entrySet()
                 .stream()
-                .filter(node -> freeCoresForNode(node) >= cpus && node.getMemory()
+                .filter(entry -> freeCoresForNode(entry.getValue()) >= cpus && entry.getValue().getMemory()
                         .getAvailable() >= memory)
-                .collect(Collectors.toUnmodifiableList());
+                .map(node -> new AllocatedExecutorNode(hostInfo.getExecutorId(),
+                                                       hostInfo.getNodeData().getHostname(),
+                                                       hostInfo.getNodeData().getPort(),
+                                                       allocateCPUs(node, cpus),
+                                                       new MemoryAllocation(Collections.singletonMap(node.getKey(), memory))))
+                .findAny();
+    }
 
-        return false;
+    /**
+     * Allocate free CPUs as per requirement
+     * @param nodeInfo current node
+     * @param requiredCPUs number of CPUs needed
+     * @return Set of allocated CPU cores on same numa node
+     */
+    private CPUAllocation allocateCPUs(
+            final Map.Entry<Integer, ExecutorHostInfo.NumaNodeInfo> nodeInfo,
+            long requiredCPUs) {
+        return new CPUAllocation(Collections.singletonMap(nodeInfo.getKey(), nodeInfo.getValue()
+                                                                  .getCores()
+                                                                  .entrySet()
+                                                                  .stream()
+                                                                  .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
+                                                                  .map(Map.Entry::getKey)
+                                                                  .limit(requiredCPUs)
+                                                                  .collect(Collectors.toUnmodifiableSet())
+                                                         ));
     }
 
     public Map<Integer, ExecutorHostInfo.NumaNodeInfo> convertToNodeInfo(final ExecutorResourceSnapshot resourceSnapshot) {
@@ -129,10 +166,15 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .entrySet()
                 .stream()
                 .filter(e -> e.getValue()
-                .equals(ExecutorHostInfo.CoreState.FREE)).count();
+                        .equals(ExecutorHostInfo.CoreState.FREE)).count();
     }
 
-    private ExecutorHostInfo convertState(final ExecutorResourceSnapshot snapshot) {
-        return new ExecutorHostInfo(snapshot.getExecutorId(), convertToNodeInfo(snapshot));
+    private ExecutorHostInfo convertState(final ExecutorNodeData node) {
+        val snapshot = node.getState();
+        return new ExecutorHostInfo(snapshot.getExecutorId(), node, convertToNodeInfo(snapshot));
+    }
+
+    private ExecutorHostInfo convertState(final ExecutorHostInfo node, final ExecutorResourceSnapshot snapshot) {
+        return new ExecutorHostInfo(snapshot.getExecutorId(), node.getNodeData(), convertToNodeInfo(snapshot));
     }
 }

@@ -31,7 +31,7 @@ public final class Adder implements Job<Integer> {
     @SneakyThrows
     @Override
     public Integer execute(
-            JobContext context,
+            JobContext<Integer> context,
             final JobResponseCombiner<Integer> responseCombiner) {
         Thread.sleep(RANDOM.nextInt(100));
         return i;

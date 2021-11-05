@@ -40,7 +40,7 @@ final class JobLevel<T> implements Job<T> {
     }
 
     @Override
-    public T execute(JobContext context, final JobResponseCombiner<T> responseCombiner) {
+    public T execute(JobContext<T> context, final JobResponseCombiner<T> responseCombiner) {
         val workList = List.copyOf(this.jobs);
         val futures = workList.stream()
                 .map(job -> executorService.submit(() -> JobUtils.executeSingleJob(context, responseCombiner, job)))

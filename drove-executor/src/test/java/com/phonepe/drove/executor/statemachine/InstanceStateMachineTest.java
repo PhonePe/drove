@@ -36,6 +36,7 @@ class InstanceStateMachineTest {
                 .submit(() -> {
                     try {
                         while (!sm.execute().isTerminal()) {
+
                         }
                         done.set(true);
                         log.info("State machine execution completed");

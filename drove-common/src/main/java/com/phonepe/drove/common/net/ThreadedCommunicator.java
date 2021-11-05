@@ -1,9 +1,8 @@
-package com.phonepe.drove.common;
+package com.phonepe.drove.common.net;
 
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageResponse;
 import io.appform.signals.signals.ConsumingSyncSignal;
-import io.appform.signals.signals.GeneratingSyncSignal;
 
 /**
  *
@@ -14,11 +13,11 @@ public abstract class ThreadedCommunicator<
         SendMessage extends Message<SendMessageType>,
         ReceiveMessage extends Message<ReceiveMessageType>>
         implements Communicator<SendMessageType, ReceiveMessageType, SendMessage, ReceiveMessage> {
-    private final GeneratingSyncSignal<SendMessage, MessageResponse> messageReady;
     private final ConsumingSyncSignal<MessageResponse> responseReceived;
+    private final MessageSender<SendMessageType, SendMessage> messageSender;
 
-    protected ThreadedCommunicator() {
-        messageReady = new GeneratingSyncSignal<>();
+    protected ThreadedCommunicator(MessageSender<SendMessageType, SendMessage> messageSender) {
+        this.messageSender = messageSender;
         responseReceived = new ConsumingSyncSignal<>();
     }
 
@@ -28,13 +27,8 @@ public abstract class ThreadedCommunicator<
     }
 
     @Override
-    public GeneratingSyncSignal<SendMessage, MessageResponse> onMessageReady() {
-        return messageReady;
-    }
-
-    @Override
     public void send(SendMessage message) {
-        responseReceived.dispatch(messageReady.dispatch(message));
+        responseReceived.dispatch(messageSender.send(message));
     }
 
     @Override
@@ -43,4 +37,5 @@ public abstract class ThreadedCommunicator<
     }
 
     protected abstract MessageResponse handleReceivedMessage(final ReceiveMessage message);
+
 }

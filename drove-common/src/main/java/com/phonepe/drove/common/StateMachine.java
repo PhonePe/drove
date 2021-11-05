@@ -13,29 +13,28 @@ import java.util.stream.Collectors;
 /**
  *
  */
-public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A extends Action<T, S, C>> {
+public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A extends Action<T, S, C, D>> {
 
-    private final Map<S, Transition<T, S, C, A>> validTransitions;
+    private final Map<S, Transition<T, D, S, C, A>> validTransitions;
     private final ConsumingParallelSignal<StateData<S, T>> stateChanged;
 
     @Getter
     private StateData<S, T> currentState;
     private final C context;
-    private final ActionFactory<T, S, C, A> actionFactory;
-    private final AtomicReference<A> currentAction;
+    private final ActionFactory<T, D, S, C, A> actionFactory;
+    private final AtomicReference<A> currentAction = new AtomicReference<>();
 
     protected StateMachine(
             @NonNull final StateData<S, T> initalState,
             C context,
-            ActionFactory<T,S,C,A> actionFactory,
-            List<Transition<T, S, C, A>> transitions) {
+            ActionFactory<T, D, S,C,A> actionFactory,
+            List<Transition<T, D, S, C, A>> transitions) {
         this.context = context;
         this.actionFactory = actionFactory;
         this.stateChanged = new ConsumingParallelSignal<>();
         this.validTransitions = transitions.stream()
                 .collect(Collectors.toMap(Transition::getFrom, Function.identity()));
         this.currentState = initalState;
-        currentAction = new AtomicReference<>();
     }
 
     public final ConsumingParallelSignal<StateData<S, T>> onStateChange() {
@@ -54,6 +53,10 @@ public class StateMachine<T, S extends Enum<S>, C extends ActionContext, A exten
         currentState = newStateData;
         stateChanged.dispatch(newStateData);
         return newState;
+    }
+
+    public void notifyUpdate(D parameter) {
+        context.recordUpdate(parameter);
     }
 
     public void stop() {

@@ -24,7 +24,7 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
     String portName;
     @NotEmpty
     String path;
-    @NotEmpty
+    @NotNull
     HTTPVerb verb;
     @NotEmpty
     @NotNull

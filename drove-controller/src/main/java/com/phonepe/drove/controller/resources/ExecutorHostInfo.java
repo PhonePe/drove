@@ -1,10 +1,12 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Value;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -39,5 +41,6 @@ public class ExecutorHostInfo {
         MemInfo memory = new MemInfo();
     }
     String executorId;
+    ExecutorNodeData nodeData;
     Map<Integer, NumaNodeInfo> nodes;
 }
