@@ -63,8 +63,11 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public ApplicationEngine applicationEngine(Injector injector, JobExecutor<Boolean> jobExecutor) {
-        return new ApplicationEngine(new InjectingAppActionFactory(injector), jobExecutor);
+    public ApplicationEngine applicationEngine(
+            Injector injector,
+            JobExecutor<Boolean> jobExecutor,
+            ApplicationStateDB stateDB) {
+        return new ApplicationEngine(new InjectingAppActionFactory(injector), jobExecutor, stateDB);
     }
 
     @Override

@@ -11,6 +11,7 @@ import java.util.Date;
 public class ApplicationInfo {
     String appId;
     ApplicationSpec spec;
+    long instances;
     Date created;
     Date updated;
 }

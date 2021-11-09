@@ -13,7 +13,9 @@ import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ops.ApplicationDeployOperation;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -25,6 +27,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 /**
  *
  */
+@Slf4j
 public class StartAppAction extends AppAsyncAction {
 
     private final ApplicationStateDB applicationStateDB;
@@ -52,8 +55,16 @@ public class StartAppAction extends AppAsyncAction {
         val applicationSpec = context.getApplicationSpec();
         val clusterOpSpec = createOperation.getOpSpec();
         val parallelism = clusterOpSpec.getParallelism();
+        val requestedInstances = operation.accept(new ApplicationOperationVisitorAdapter<>(0) {
+            @Override
+            public Integer visit(ApplicationDeployOperation deploy) {
+                return deploy.getInstances();
+            }
+        });
+        log.info("Requested number of additional instances: {}", requestedInstances);
+
         return JobTopology.<Boolean>builder()
-                .addParallel(parallelism, IntStream.range(0, applicationSpec.getInstances())
+                .addParallel(parallelism, IntStream.range(0, requestedInstances)
                         .mapToObj(i -> new StartSingleInstanceJob(applicationSpec,
                                                                   clusterOpSpec,
                                                                   scheduler,
@@ -71,7 +82,14 @@ public class StartAppAction extends AppAsyncAction {
         if(Boolean.TRUE.equals(executionResult.getResult())) {
             return StateData.from(currentState, ApplicationState.RUNNING);
         }
-        return StateData.errorFrom(currentState, ApplicationState.FAILED, "Could not start application");
+        val errorMessage = null == executionResult.getFailure()
+            ? "Could not start application"
+        : "Could not start application: " + executionResult.getFailure().getMessage();
+
+        if(applicationStateDB.instanceCount(context.getAppId()) > 0) {
+            return StateData.errorFrom(currentState, ApplicationState.RUNNING, errorMessage);
+        }
+        return StateData.errorFrom(currentState, ApplicationState.MONITORING, errorMessage);
     }
 
 }

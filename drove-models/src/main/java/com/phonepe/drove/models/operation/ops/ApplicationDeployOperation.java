@@ -10,6 +10,8 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
@@ -24,13 +26,18 @@ public class ApplicationDeployOperation extends ApplicationOperation {
     @NotEmpty
     String appId;
 
+    @Min(0)
+    @Max(1024)
+    int instances;
+
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationDeployOperation(String appId, ClusterOpSpec opSpec) {
+    public ApplicationDeployOperation(String appId, int instances, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.DEPLOY);
         this.appId = appId;
+        this.instances = instances;
         this.opSpec = opSpec;
     }
 

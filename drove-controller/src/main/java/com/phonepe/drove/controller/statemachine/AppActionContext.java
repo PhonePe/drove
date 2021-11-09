@@ -13,6 +13,7 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class AppActionContext extends ActionContext<ApplicationUpdateData> {
+    private final String appId;
     private final ApplicationSpec applicationSpec;
 
     private String jobId;

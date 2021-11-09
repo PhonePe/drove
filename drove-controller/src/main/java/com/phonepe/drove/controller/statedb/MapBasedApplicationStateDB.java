@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.Value;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
@@ -20,16 +18,23 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
 /**
  *
  */
-@Value
-@AllArgsConstructor(onConstructor = @__({@Inject}))
+
 @Singleton
 public class MapBasedApplicationStateDB implements ApplicationStateDB {
     private static final String APPLICATION_STATE_PATH = "/applications";
     private static final String INSTANCE_STATE_PATH = "/instances";
 
-    CuratorFramework curatorFramework;
-    ObjectMapper mapper;
-    Map<String, Map<String, InstanceInfo>> apps = new ConcurrentHashMap<>();
+    private final CuratorFramework curatorFramework;
+    private final ObjectMapper mapper;
+    private final Map<String, Map<String, InstanceInfo>> appInstances = new ConcurrentHashMap<>();
+
+    @Inject
+    public MapBasedApplicationStateDB(
+            CuratorFramework curatorFramework,
+            ObjectMapper mapper) {
+        this.curatorFramework = curatorFramework;
+        this.mapper = mapper;
+    }
 
     @Override
     @SneakyThrows
@@ -38,14 +43,25 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
                                          APPLICATION_STATE_PATH,
                                          start,
                                          size,
-                                         path -> ZkUtils.readNodeData(curatorFramework, path, mapper, ApplicationInfo.class));
+                                         path -> ZkUtils.readNodeData(curatorFramework,
+                                                                      path,
+                                                                      mapper,
+                                                                      ApplicationInfo.class));
+    }
+
+    @Override
+    public Optional<ApplicationInfo> application(String appId) {
+        return Optional.ofNullable(ZkUtils.readNodeData(curatorFramework,
+                                                        appInfoPath(appId),
+                                                        mapper,
+                                                        ApplicationInfo.class));
     }
 
     @Override
     public boolean updateApplicationState(
             String appId, ApplicationInfo applicationInfo) {
         val res = ZkUtils.setNodeData(curatorFramework, appInfoPath(appId), mapper, applicationInfo);
-        apps.computeIfAbsent(appId, id -> new HashMap<>());
+        appInstances.computeIfAbsent(appId, id -> new HashMap<>());
         return res;
     }
 
@@ -58,25 +74,25 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     public List<InstanceInfo> instances(String appId, int start, int size) {
         //TODO:: THIS IS NOT PERFORMANT IN TERMS OF MEMORY
-        if(!apps.containsKey(appId)) {
+        if (!appInstances.containsKey(appId)) {
             return Collections.emptyList();
         }
-        return sublist(List.copyOf(apps.get(appId).values()), start, size);
+        return sublist(List.copyOf(appInstances.get(appId).values()), start, size);
     }
 
     @Override
     public Optional<InstanceInfo> instance(String appId, String instanceId) {
-        if(!apps.containsKey(appId)) {
+        if (!appInstances.containsKey(appId)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(apps.get(appId).get(instanceId));
+        return Optional.ofNullable(appInstances.get(appId).get(instanceId));
     }
 
     @Override
     public boolean updateInstanceState(
             String appId, String instanceId, InstanceInfo instanceInfo) {
-        apps.computeIfPresent(appId,
-                              (id, value) -> {
+        appInstances.computeIfPresent(appId,
+                                      (id, value) -> {
                                   value.compute(instanceId, (iid, oldValue) -> instanceInfo);
                                   return value;
                               });
@@ -85,7 +101,7 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
 
     @Override
     public boolean deleteInstanceState(String appId, String instanceId) {
-        apps.computeIfPresent(appId, (id, value) -> {
+        appInstances.computeIfPresent(appId, (id, value) -> {
             value.remove(instanceId);
             return value;
         });

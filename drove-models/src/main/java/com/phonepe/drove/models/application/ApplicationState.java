@@ -7,7 +7,7 @@ import lombok.Getter;
  */
 public enum ApplicationState {
     INIT(false),
-    CREATED(false),
+    MONITORING(false),
     DEPLOYMENT_REQUESTED(false),
     RUNNING(false),
     PARTIAL_OUTAGE(false),

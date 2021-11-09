@@ -20,8 +20,8 @@ import java.util.List;
 public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> {
     private static final List<Transition<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
             = List.of(
-            new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.CREATED),
-            new Transition<>(ApplicationState.CREATED,
+            new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.MONITORING),
+            new Transition<>(ApplicationState.MONITORING,
                              AppOperationRouterAction.class,
                              ApplicationState.DEPLOYMENT_REQUESTED,
                              ApplicationState.DESTROY_REQUESTED,
@@ -29,7 +29,10 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                              ApplicationState.RESTART_REQUESTED,
                              ApplicationState.SUSPEND_REQUESTED,
                              ApplicationState.PARTIAL_OUTAGE),
-            new Transition<>(ApplicationState.DEPLOYMENT_REQUESTED, StartAppAction.class, ApplicationState.RUNNING),
+            new Transition<>(ApplicationState.DEPLOYMENT_REQUESTED,
+                             StartAppAction.class,
+                             ApplicationState.RUNNING,
+                             ApplicationState.MONITORING),
             new Transition<>(ApplicationState.RUNNING,
                              AppOperationRouterAction.class,
                              ApplicationState.DEPLOYMENT_REQUESTED,
@@ -38,7 +41,7 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                              ApplicationState.RESTART_REQUESTED,
                              ApplicationState.SUSPEND_REQUESTED,
                              ApplicationState.PARTIAL_OUTAGE),
-            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.CREATED));
+            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.MONITORING));
 
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,
@@ -46,6 +49,5 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
             ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> actionFactory) {
         super(initalState, context, actionFactory, TRANSITIONS);
     }
-
 
 }

@@ -33,6 +33,6 @@ public class CreateAppAction extends OperationDrivenAppAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
         applicationStateDB.updateApplicationState(ControllerUtils.appId(context.getApplicationSpec()), currentState.getData());
-        return StateData.from(currentState, ApplicationState.CREATED);
+        return StateData.from(currentState, ApplicationState.MONITORING);
     }
 }

@@ -4,6 +4,7 @@ import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
@@ -14,6 +15,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -28,16 +30,20 @@ import java.util.concurrent.Executors;
  *
  */
 @Singleton
+@Slf4j
 public class ApplicationEngine {
     private final Map<String, ApplicationMonitor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> factory;
+    private final ApplicationStateDB stateDB;
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
 
     @Inject
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> factory,
-            JobExecutor<Boolean> executor) {
+            JobExecutor<Boolean> executor,
+            ApplicationStateDB stateDB) {
         this.factory = factory;
+        this.stateDB = stateDB;
         executor.onComplete().connect(this::handleJobCompleted);
     }
 
@@ -65,11 +71,15 @@ public class ApplicationEngine {
                 val appSpec = create.getSpec();
                 val now = new Date();
                 val appId = ControllerUtils.appId(appSpec);
-                val appInfo = new ApplicationInfo(appId, appSpec, now, now);
-                val context = new AppActionContext(appSpec);
+                val appInfo = new ApplicationInfo(appId, appSpec, 0, now, now);
+                val context = new AppActionContext(appId, appSpec);
+                val stateMachine = new ApplicationStateMachine(StateData.create(
+                        ApplicationState.INIT,
+                        appInfo), context, factory);
+                stateMachine.onStateChange().connect(newState -> updateAppState(appId, newState));
                 val monitor = new ApplicationMonitor(
                         appId,
-                        new ApplicationStateMachine(StateData.create(ApplicationState.INIT, appInfo), context, factory),
+                        stateMachine,
                         monitorExecutor);
                 monitor.start();
                 return monitor;
@@ -77,5 +87,17 @@ public class ApplicationEngine {
         });
     }
 
-
+    private void updateAppState(String appId, StateData<ApplicationState, ApplicationInfo> newState) {
+        if(newState.getState().equals(ApplicationState.PARTIAL_OUTAGE)) {
+            log.info("Not updating state as application seems to be in partial outage scenario");
+            return;
+        }
+        val runningInstances = stateDB.instanceCount(appId);
+        if(stateDB.updateInstanceCount(appId, runningInstances)) {
+            log.info("Instance count has been updated to {}", runningInstances);
+        }
+        else {
+            log.warn("Instance count update failed.");
+        }
+    }
 }

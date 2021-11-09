@@ -71,7 +71,7 @@ public class StopAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             JobExecutionResult<Boolean> executionResult) {
         if(Boolean.TRUE.equals(executionResult.getResult())) {
-            return StateData.from(currentState, ApplicationState.CREATED);
+            return StateData.from(currentState, ApplicationState.MONITORING);
         }
         return currentState;
     }

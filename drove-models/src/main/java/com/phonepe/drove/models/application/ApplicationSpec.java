@@ -9,7 +9,6 @@ import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import lombok.Value;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -50,10 +49,6 @@ public class ApplicationSpec {
 
     @Valid
     PlacementPolicy placementPolicy;
-
-    @Min(1)
-    @Max(2048)
-    int instances;
 
     @NotNull
     @Valid

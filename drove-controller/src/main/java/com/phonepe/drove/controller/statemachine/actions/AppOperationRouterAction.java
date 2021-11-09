@@ -5,7 +5,6 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -73,7 +72,7 @@ public class AppOperationRouterAction extends AppAction {
                         return newState;
                     }
                 }
-                if (currentState.getState().equals(ApplicationState.CREATED)) {
+                if (currentState.getState().equals(ApplicationState.MONITORING)) {
                     log.debug("App in created state. Nothing to do. Will wait for further commands.");
                     continue;
                 }
@@ -148,13 +147,17 @@ public class AppOperationRouterAction extends AppAction {
     private Optional<StateData<ApplicationState, ApplicationInfo>> checkAppHealth(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState) {
-        val spec = context.getApplicationSpec();
-        val appId = ControllerUtils.appId(spec);
+        val appId = context.getAppId();
+        val appInfo = applicationStateDB.application(appId).orElse(null);
+        if(null == appInfo) {
+            log.error("No app info found for app: {}", appId);
+            return Optional.empty();
+        }
         val healthyInstances = applicationStateDB.instances(appId, 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
                 .count();
-        val requestedInstances = spec.getInstances();
+        val requestedInstances = appInfo.getInstances();
         if (healthyInstances != requestedInstances) {
             log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
                       appId, healthyInstances, requestedInstances);
