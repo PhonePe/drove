@@ -28,13 +28,13 @@ public class ApplicationDeployOperation extends ApplicationOperation {
 
     @Min(0)
     @Max(1024)
-    int instances;
+    long instances;
 
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationDeployOperation(String appId, int instances, ClusterOpSpec opSpec) {
+    public ApplicationDeployOperation(String appId, long instances, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.DEPLOY);
         this.appId = appId;
         this.instances = instances;

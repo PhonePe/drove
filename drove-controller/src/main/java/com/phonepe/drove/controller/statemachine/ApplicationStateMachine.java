@@ -41,7 +41,11 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                              ApplicationState.RESTART_REQUESTED,
                              ApplicationState.SUSPEND_REQUESTED,
                              ApplicationState.PARTIAL_OUTAGE),
-            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.MONITORING));
+            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.MONITORING),
+            new Transition<>(ApplicationState.PARTIAL_OUTAGE,
+                             StartAppAction.class,
+                             ApplicationState.RUNNING,
+                             ApplicationState.MONITORING));
 
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,

@@ -28,14 +28,14 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
  *
  */
 @Slf4j
-public class StartAppAction extends AppAsyncAction {
+public class RecoverAppAction extends AppAsyncAction {
 
     private final ApplicationStateDB applicationStateDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
 
     @Inject
-    public StartAppAction(
+    public RecoverAppAction(
             ApplicationStateDB applicationStateDB,
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
