@@ -67,7 +67,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             @Override
             public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
                 //TODO::IMPLEMENT
-                return null;
+                return false;
             }
 
             @Override

@@ -1,17 +1,7 @@
 package com.phonepe.drove.executor;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
-import com.phonepe.drove.executor.resource.ResourceDB;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.junit.jupiter.api.Test;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  *

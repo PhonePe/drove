@@ -18,8 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -30,7 +29,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class AppOperationRouterAction extends AppAction {
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
     private final ClockPulseGenerator clockPulseGenerator = new ClockPulseGenerator("app-checker",
@@ -69,29 +67,19 @@ public class AppOperationRouterAction extends AppAction {
                                 ? context.getUpdate().getOperation()
                                 : null;
                 if (null != operation) {
-                    val newState = moveToNextState(currentState, operation);
-                    if(null != newState) {
+                    val newState = moveToNextState(currentState, operation).orElse(null);
+                    if (null != newState) {
                         log.info("App move to new state: {}", newState);
                         return newState;
                     }
                 }
-                if(currentState.getState().equals(ApplicationState.CREATED)) {
+                if (currentState.getState().equals(ApplicationState.CREATED)) {
                     log.debug("App in created state. Nothing to do. Will wait for further commands.");
                     continue;
                 }
-                val spec = context.getApplicationSpec();
-                val appId = ControllerUtils.appId(spec);
-                val healthyInstances = applicationStateDB.instances(appId, 0, Integer.MAX_VALUE)
-                        .stream()
-                        .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
-                        .count();
-                val requestedInstances = spec.getInstances();
-                if (healthyInstances != requestedInstances) {
-                    log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
-                              appId, healthyInstances, requestedInstances);
-                    return StateData.errorFrom(currentState,
-                                               ApplicationState.PARTIAL_OUTAGE,
-                                               "Current instances " + healthyInstances + " Requested: " + requestedInstances);
+                val checkResult = checkAppHealth(context, currentState).orElse(null);
+                if (checkResult != null) {
+                    return checkResult;
                 }
             }
             catch (InterruptedException e) {
@@ -100,61 +88,81 @@ public class AppOperationRouterAction extends AppAction {
             finally {
                 check.set(false);
                 checkLock.unlock();
-//                clockPulseGenerator.close();
                 //Do not reset the operation in context here, it will be used by next action
             }
         }
-//        return null;
     }
 
     @Override
     public void stop() {
-
+        //TODO::IMPLEMENT THIS
     }
 
-    protected StateData<ApplicationState, ApplicationInfo> moveToNextState(
+    protected Optional<StateData<ApplicationState, ApplicationInfo>> moveToNextState(
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
         return operation.accept(new ApplicationOperationVisitor<>() {
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationCreateOperation create) {
-                return null;
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationCreateOperation create) {
+                return Optional.empty();
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationUpdateOperation update) {
-                return null; //TODO
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationUpdateOperation update) {
+                return Optional.empty(); //TODO
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationInfoOperation info) {
-                return null;
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationInfoOperation info) {
+                return Optional.empty();
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationDestroyOperation destroy) {
-                return StateData.from(currentState, ApplicationState.DESTROY_REQUESTED);
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationDestroyOperation destroy) {
+                return Optional.of(StateData.from(currentState, ApplicationState.DESTROY_REQUESTED));
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationDeployOperation deploy) {
-                return StateData.from(currentState, ApplicationState.DEPLOYMENT_REQUESTED);
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationDeployOperation deploy) {
+                return Optional.of(StateData.from(currentState, ApplicationState.DEPLOYMENT_REQUESTED));
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationScaleOperation scale) {
-                return StateData.from(currentState, ApplicationState.SCALING_REQUESTED);
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationScaleOperation scale) {
+                return Optional.of(StateData.from(currentState, ApplicationState.SCALING_REQUESTED));
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationRestartOperation restart) {
-                return StateData.from(currentState, ApplicationState.RESTART_REQUESTED);
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationRestartOperation restart) {
+                return Optional.of(StateData.from(currentState, ApplicationState.RESTART_REQUESTED));
             }
 
             @Override
-            public StateData<ApplicationState, ApplicationInfo> visit(ApplicationSuspendOperation suspend) {
-                return StateData.from(currentState, ApplicationState.SUSPEND_REQUESTED);
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationSuspendOperation suspend) {
+                return Optional.of(StateData.from(currentState, ApplicationState.SUSPEND_REQUESTED));
             }
         });
     }
+
+
+    private Optional<StateData<ApplicationState, ApplicationInfo>> checkAppHealth(
+            AppActionContext context,
+            StateData<ApplicationState, ApplicationInfo> currentState) {
+        val spec = context.getApplicationSpec();
+        val appId = ControllerUtils.appId(spec);
+        val healthyInstances = applicationStateDB.instances(appId, 0, Integer.MAX_VALUE)
+                .stream()
+                .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
+                .count();
+        val requestedInstances = spec.getInstances();
+        if (healthyInstances != requestedInstances) {
+            log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
+                      appId, healthyInstances, requestedInstances);
+            return Optional.of(StateData.errorFrom(currentState,
+                                                   ApplicationState.PARTIAL_OUTAGE,
+                                                   "Current instances " + healthyInstances + " Requested: " + requestedInstances));
+        }
+        return Optional.empty();
+    }
+
 }

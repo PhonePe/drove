@@ -20,7 +20,7 @@ import java.util.Collections;
 public class InstanceRecoveryAction extends InstanceAction {
     @Override
     public void stop() {
-
+        //This is not stoppable
     }
 
     @Override
@@ -49,5 +49,10 @@ public class InstanceRecoveryAction extends InstanceAction {
                 .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()));
 
         return StateData.from(currentState, InstanceState.UNREADY);
+    }
+
+    @Override
+    protected boolean isStopAllowed() {
+        return false;
     }
 }

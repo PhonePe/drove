@@ -28,7 +28,6 @@ import io.dropwizard.setup.Environment;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Singleton;
-import java.util.concurrent.Executors;
 
 /**
  *
@@ -49,12 +48,11 @@ public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public JobExecutor<Boolean> jobExecutor(final Environment environment) {
-/*        return new JobExecutor<>(environment.lifecycle()
+        return new JobExecutor<>(environment.lifecycle()
                                          .executorService("job-executor-%d")
                                          .maxThreads(1024)
                                          .minThreads(1024)
-                                         .build());*/
-        return new JobExecutor<>(Executors.newFixedThreadPool(1024));
+                                         .build());
     }
 
     @Provides

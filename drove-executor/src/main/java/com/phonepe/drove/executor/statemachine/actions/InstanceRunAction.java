@@ -94,11 +94,11 @@ public class InstanceRunAction extends InstanceAction {
                     });
             hostConfig.withPortBindings(ports);
 
-            val ExecutorInstanceInfo = instanceInfo(currentState, portMappings, hostName);
+            val instanceInfo = instanceInfo(currentState, portMappings, hostName);
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
-            labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(ExecutorInstanceInfo));
+            labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
 
             val id = containerCmd
                     .withHostConfig(hostConfig)
@@ -117,7 +117,7 @@ public class InstanceRunAction extends InstanceAction {
                     .withStdOut(true)
                     .withStdErr(true)
                     .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()));
-            return StateData.create(InstanceState.UNREADY, ExecutorInstanceInfo);
+            return StateData.create(InstanceState.UNREADY, instanceInfo);
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);

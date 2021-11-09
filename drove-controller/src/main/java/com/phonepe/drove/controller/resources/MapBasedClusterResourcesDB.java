@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.resources;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
@@ -10,6 +9,7 @@ import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Singleton;
@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
  *
  */
 @Singleton
+@Slf4j
 public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
 
@@ -35,18 +36,15 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     @SneakyThrows
     public synchronized void update(List<ExecutorNodeData> nodeData) {
         nodes.putAll(nodeData.stream()
-                             .map(node -> convertState(node))
+                             .map(this::convertState)
                              .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
                                                                    Function.identity())));
-        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
     @SneakyThrows
     public synchronized void update(final ExecutorResourceSnapshot snapshot) {
         nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
-        System.out.println("updated data: " + new ObjectMapper().writerWithDefaultPrettyPrinter()
-                .writeValueAsString(nodes));
     }
 
     @Override
@@ -59,10 +57,6 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .map(Optional::get)
                 .filter(filter)
                 .collect(Collectors.toUnmodifiableList());
-    }
-
-    private String id(final ExecutorHostInfo hostInfo) {
-        return hostInfo.getExecutorId();
     }
 
     private Optional<AllocatedExecutorNode> ensureResource(
@@ -110,6 +104,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                                                        allocateCPUs(node, cpus),
                                                        new MemoryAllocation(Collections.singletonMap(node.getKey(), memory))))
                 .findAny();
+        //TODO::Mark these nodes as allocated once this is done in controller local mem to avoid race
     }
 
     /**

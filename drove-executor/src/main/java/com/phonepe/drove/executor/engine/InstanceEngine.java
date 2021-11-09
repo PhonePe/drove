@@ -74,12 +74,12 @@ public class InstanceEngine implements Closeable {
                                 spec,
                                 StateData.create(InstanceState.PENDING,
                                                  new ExecutorInstanceInfo(spec.getAppId(),
-                                                                  spec.getInstanceId(),
-                                                                  executorIdManager.executorId().orElse(null),
-                                                                  null,
-                                                                  Collections.emptyMap(),
-                                                                  currDate,
-                                                                  currDate)));
+                                                                          spec.getInstanceId(),
+                                                                          executorIdManager.executorId().orElse(null),
+                                                                          null,
+                                                                          Collections.emptyMap(),
+                                                                          currDate,
+                                                                          currDate)));
     }
 
     public boolean registerInstance(
@@ -164,26 +164,23 @@ public class InstanceEngine implements Closeable {
                     @Override
                     public Void visit(CPUAllocation cpu) {
                         cpu.getCores()
-                                .forEach((node, allocCpus) -> {
-                                    resourceUsage.compute(node, (nodeId, nodeInfo) -> {
-                                        val info = nodeInfo(nodeInfo);
-                                        info.setAvailableCores(allocCpus);
-                                        return info;
-                                    });
-                                });
+                                .forEach((node, allocCpus) -> resourceUsage.compute(node, (nodeId, nodeInfo) -> {
+                                    val info = nodeInfo(nodeInfo);
+                                    info.setAvailableCores(allocCpus);
+                                    return info;
+
+                                }));
                         return null;
                     }
 
                     @Override
                     public Void visit(MemoryAllocation memory) {
                         memory.getMemoryInMB()
-                                .forEach((node, allocMem) -> {
-                                    resourceUsage.compute(node, (nodeId, nodeInfo) -> {
-                                        val info = nodeInfo(nodeInfo);
-                                        info.setMemoryInMB(allocMem);
-                                        return info;
-                                    });
-                                });
+                                .forEach((node, allocMem) -> resourceUsage.compute(node, (nodeId, nodeInfo) -> {
+                                    val info = nodeInfo(nodeInfo);
+                                    info.setMemoryInMB(allocMem);
+                                    return info;
+                                }));
                         return null;
                     }
                 }));
@@ -194,8 +191,8 @@ public class InstanceEngine implements Closeable {
 
     private ResourceDB.NodeInfo nodeInfo(ResourceDB.NodeInfo nodeInfo) {
         return nodeInfo == null
-                      ? new ResourceDB.NodeInfo(new HashSet<>(), 0L)
-                      : nodeInfo;
+               ? new ResourceDB.NodeInfo(new HashSet<>(), 0L)
+               : nodeInfo;
     }
 
     private void handleStateChange(StateData<InstanceState, ExecutorInstanceInfo> currentState) {

@@ -1,6 +1,9 @@
 package com.phonepe.drove.models.application.requirements;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**

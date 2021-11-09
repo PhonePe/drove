@@ -69,7 +69,7 @@ public class LeadershipObserver implements Managed {
                 .filter(Objects::nonNull)
                 .findAny()
                 .orElse(null);
-//        log.info("Leader node: {}", leaderNode);
+        log.trace("Leader node: {}", leaderNode);
         leader.set(leaderNode);
     }
 }

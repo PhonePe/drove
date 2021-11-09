@@ -1,7 +1,10 @@
 package com.phonepe.drove.common.model.resources.allocation;
 
 import com.phonepe.drove.models.application.requirements.ResourceType;
-import lombok.*;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;

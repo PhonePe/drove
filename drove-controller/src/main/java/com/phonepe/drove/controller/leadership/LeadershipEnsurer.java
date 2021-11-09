@@ -3,7 +3,6 @@ package com.phonepe.drove.controller.leadership;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.nodedata.ControllerNodeData;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.ServerLifecycleListener;
@@ -19,7 +18,6 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Inject;
 import java.time.Duration;
 import java.util.Date;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,20 +28,18 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Order(10)
 public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
-    private final CuratorFramework curatorFramework;
-    private final ZkConfig config;
     private final NodeDataStore nodeDataStore;
     private final LeaderLatch leaderLatch;
     private final ScheduledSignal checkLeadership = new ScheduledSignal(Duration.ofSeconds(60));
-    private final String nodeId = UUID.randomUUID().toString();
     private final Lock stateLock = new ReentrantLock();
     private final AtomicBoolean started = new AtomicBoolean();
     private ControllerNodeData currentData;
 
     @Inject
-    public LeadershipEnsurer(CuratorFramework curatorFramework, ZkConfig config, NodeDataStore nodeDataStore, Environment environment) {
-        this.curatorFramework = curatorFramework;
-        this.config = config;
+    public LeadershipEnsurer(
+            CuratorFramework curatorFramework,
+            NodeDataStore nodeDataStore,
+            Environment environment) {
         this.nodeDataStore = nodeDataStore;
         val path = "/leadership";
         this.leaderLatch = new LeaderLatch(curatorFramework, path);
