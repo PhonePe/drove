@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resources;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
@@ -16,6 +17,7 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.LongBinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -39,24 +41,66 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                              .map(this::convertState)
                              .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
                                                                    Function.identity())));
+        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
     @SneakyThrows
     public synchronized void update(final ExecutorResourceSnapshot snapshot) {
         nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
+        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
+    @SneakyThrows
     public synchronized List<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements, int instances, Predicate<AllocatedExecutorNode> filter) {
-        return nodes.values()
+        val allocNodes = nodes.values()
                 .stream()
                 .map(node -> ensureResource(node, requirements))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .filter(filter)
+                .peek(this::softLockResources)
                 .collect(Collectors.toUnmodifiableList());
+        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
+        return allocNodes;
+    }
+
+    @Override
+    public synchronized void deselectNode(AllocatedExecutorNode executorNode) {
+        softUnlockResources(executorNode);
+    }
+
+    private void softLockResources(AllocatedExecutorNode node) {
+        updateResources(node, ExecutorHostInfo.CoreState.ALLOCATED, (av, alloc) -> av - alloc );
+    }
+
+    private void softUnlockResources(AllocatedExecutorNode node) {
+        updateResources(node, ExecutorHostInfo.CoreState.FREE, Long::sum);
+    }
+
+    private void updateResources(AllocatedExecutorNode node, ExecutorHostInfo.CoreState newState, LongBinaryOperator memUpdater) {
+        node.getCpu()
+                .getCores()
+                .forEach((numaNodeId, coreIds) -> nodes.get(node.getExecutorId())
+                        .getNodes()
+                        .entrySet()
+                        .stream()
+                        .filter(e -> Objects.equals(e.getKey(), numaNodeId))
+                        .forEach(e -> coreIds.forEach(coreId -> e.getValue().getCores()
+                                .put(coreId, newState))));
+        node.getMemory()
+                .getMemoryInMB()
+                .forEach((numaNodeId, allocMem) -> nodes.get(node.getExecutorId())
+                        .getNodes()
+                        .entrySet()
+                        .stream()
+                        .filter(e -> Objects.equals(e.getKey(), numaNodeId))
+                        .forEach(e -> {
+                            val memInfo = e.getValue().getMemory();
+                            memInfo.setAvailable(memUpdater.applyAsLong(memInfo.getAvailable(), allocMem));
+                        }));
     }
 
     private Optional<AllocatedExecutorNode> ensureResource(
@@ -102,14 +146,15 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                                                        hostInfo.getNodeData().getHostname(),
                                                        hostInfo.getNodeData().getPort(),
                                                        allocateCPUs(node, cpus),
-                                                       new MemoryAllocation(Collections.singletonMap(node.getKey(), memory))))
+                                                       new MemoryAllocation(Collections.singletonMap(node.getKey(),
+                                                                                                     memory))))
                 .findAny();
-        //TODO::Mark these nodes as allocated once this is done in controller local mem to avoid race
     }
 
     /**
      * Allocate free CPUs as per requirement
-     * @param nodeInfo current node
+     *
+     * @param nodeInfo     current node
      * @param requiredCPUs number of CPUs needed
      * @return Set of allocated CPU cores on same numa node
      */
@@ -135,13 +180,13 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .forEach((key, freeCores) -> {
                     val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
                     freeCores.forEach(i -> nodeInfo.getCores()
-                            .put(i, ExecutorHostInfo.CoreState.FREE)); //TODO::CHECK STATE BEFORE CHANGING
+                            .compute(i, (core, state) -> null == state || state != ExecutorHostInfo.CoreState.ALLOCATED ? ExecutorHostInfo.CoreState.FREE : state));
                 });
         cpus.getUsedCores()
                 .forEach((key, usedCores) -> {
                     val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
                     usedCores.forEach(i -> nodeInfo.getCores()
-                            .put(i, ExecutorHostInfo.CoreState.IN_USE));//TODO::CHECK STATE BEFORE CHANGING
+                            .put(i, ExecutorHostInfo.CoreState.IN_USE));
                 });
         memory.getUsedMemory()
                 .forEach((key, usedMemory) -> {

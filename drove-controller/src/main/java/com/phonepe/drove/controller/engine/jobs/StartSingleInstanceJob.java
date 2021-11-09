@@ -115,9 +115,19 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                      applicationSpec.getHealthcheck(),
                                                                      applicationSpec.getReadiness(),
                                                                      applicationSpec.getEnv()));
-        communicator.send(startMessage);
-        log.debug("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, startMessage);
-        return ensureInstanceState(applicationStateDB, clusterOpSpec, appId, instanceId, InstanceState.HEALTHY);
+        var successful = false;
+        try {
+            communicator.send(startMessage);
+            log.debug("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, startMessage);
+            successful = ensureInstanceState(applicationStateDB, clusterOpSpec, appId, instanceId, InstanceState.HEALTHY);
+        }
+        finally {
+            if(!successful) {
+                log.info("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
+                scheduler.deallocate(node);
+            }
+        }
+        return successful;
         //TODO::IDENTIFY THE STATES AND DO NOT GIVE UP QUICKLY IF IT IS IN STARTING STATE ETC
     }
 

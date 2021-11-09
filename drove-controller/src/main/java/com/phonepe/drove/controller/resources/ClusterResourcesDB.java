@@ -22,4 +22,5 @@ public interface ClusterResourcesDB {
             List<ResourceRequirement> requirements,
             int instances,
             Predicate<AllocatedExecutorNode> filter);
+    void deselectNode(final AllocatedExecutorNode executorNode);
 }

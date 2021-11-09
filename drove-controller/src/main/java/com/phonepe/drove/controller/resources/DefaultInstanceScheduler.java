@@ -38,6 +38,12 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     @Override
+    public boolean deallocate(AllocatedExecutorNode node) {
+        clusterResourcesDB.deselectNode(node);
+        return true;
+    }
+
+    @Override
     public boolean accept(String executorInfo) {
         return false;
     }
