@@ -10,9 +10,8 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  *
@@ -21,23 +20,21 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
-public class ApplicationScaleOperation extends ApplicationOperation {
-    @NotNull
-    @Valid
+public class ApplicationStopInstancesOperation extends ApplicationOperation {
     String appId;
-
-    @Min(1)
-    @Max(2048)
-    long requiredInstances;
+    List<String> instanceIds;
 
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationScaleOperation(String appId, long requiredInstances, ClusterOpSpec opSpec) {
-        super(ApplicationOperationType.SCALE);
+    public ApplicationStopInstancesOperation(
+            String appId,
+            List<String> instanceIds,
+            ClusterOpSpec opSpec) {
+        super(ApplicationOperationType.STOP_INSTANCES);
         this.appId = appId;
-        this.requiredInstances = requiredInstances;
+        this.instanceIds = instanceIds;
         this.opSpec = opSpec;
     }
 

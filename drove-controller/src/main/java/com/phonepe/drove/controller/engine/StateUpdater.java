@@ -9,7 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *
@@ -36,6 +38,16 @@ public class StateUpdater {
         resourcesDB.update(children);
         children.forEach(node -> node.getInstances()
                 .forEach(this::updateInstanceInfo));
+    }
+
+    public void remove(Collection<String> executorIds) {
+        executorIds.stream()
+                .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
+                .filter(Objects::nonNull)
+                .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
+                        .forEach(instance -> applicationStateDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
+
+        resourcesDB.remove(executorIds);
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final InstanceInfo instanceInfo) {

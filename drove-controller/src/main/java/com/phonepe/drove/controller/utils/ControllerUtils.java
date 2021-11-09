@@ -129,6 +129,11 @@ public class ControllerUtils {
             }
 
             @Override
+            public String visit(ApplicationStopInstancesOperation stopInstances) {
+                return stopInstances.getAppId();
+            }
+
+            @Override
             public String visit(ApplicationScaleOperation scale) {
                 return scale.getAppId();
             }
@@ -142,6 +147,7 @@ public class ControllerUtils {
             public String visit(ApplicationSuspendOperation suspend) {
                 return suspend.getAppId();
             }
+
         });
     }
 }

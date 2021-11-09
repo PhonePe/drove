@@ -15,6 +15,7 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "INFO", value = ApplicationUpdateOperation.class),
         @JsonSubTypes.Type(name = "DESTROY", value = ApplicationDestroyOperation.class),
         @JsonSubTypes.Type(name = "DEPLOY", value = ApplicationDeployOperation.class),
+        @JsonSubTypes.Type(name = "STOP_INSTANCES", value = ApplicationStopInstancesOperation.class),
         @JsonSubTypes.Type(name = "SCALE", value = ApplicationScaleOperation.class),
         @JsonSubTypes.Type(name = "RESTART", value = ApplicationRestartOperation.class),
         @JsonSubTypes.Type(name = "SUSPEND", value = ApplicationSuspendOperation.class),

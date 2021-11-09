@@ -4,10 +4,7 @@ import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.StateMachine;
 import com.phonepe.drove.common.Transition;
-import com.phonepe.drove.controller.statemachine.actions.AppOperationRouterAction;
-import com.phonepe.drove.controller.statemachine.actions.CreateAppAction;
-import com.phonepe.drove.controller.statemachine.actions.StartAppAction;
-import com.phonepe.drove.controller.statemachine.actions.StopAppAction;
+import com.phonepe.drove.controller.statemachine.actions.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import lombok.NonNull;
@@ -31,8 +28,7 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                              ApplicationState.PARTIAL_OUTAGE),
             new Transition<>(ApplicationState.DEPLOYMENT_REQUESTED,
                              StartAppAction.class,
-                             ApplicationState.RUNNING,
-                             ApplicationState.MONITORING),
+                             ApplicationState.SCALING_REQUESTED),
             new Transition<>(ApplicationState.RUNNING,
                              AppOperationRouterAction.class,
                              ApplicationState.DEPLOYMENT_REQUESTED,
@@ -41,9 +37,14 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                              ApplicationState.RESTART_REQUESTED,
                              ApplicationState.SUSPEND_REQUESTED,
                              ApplicationState.PARTIAL_OUTAGE),
-            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.MONITORING),
-            new Transition<>(ApplicationState.PARTIAL_OUTAGE,
+            new Transition<>(ApplicationState.SUSPEND_REQUESTED, StopAppAction.class, ApplicationState.SCALING_REQUESTED),
+/*            new Transition<>(ApplicationState.PARTIAL_OUTAGE,
                              StartAppAction.class,
+                             ApplicationState.RUNNING,
+                             ApplicationState.MONITORING),*/
+            new Transition<>(ApplicationState.SCALING_REQUESTED,
+                             ScaleAppAction.class,
+                             ApplicationState.SCALING_REQUESTED,
                              ApplicationState.RUNNING,
                              ApplicationState.MONITORING));
 

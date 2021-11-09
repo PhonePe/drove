@@ -35,6 +35,11 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     }
 
     @Override
+    public synchronized void remove(Collection<String> executorIds) {
+        executorIds.forEach(nodes::remove);
+    }
+
+    @Override
     @SneakyThrows
     public synchronized void update(List<ExecutorNodeData> nodeData) {
         nodes.putAll(nodeData.stream()

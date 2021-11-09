@@ -127,6 +127,11 @@ public class AppOperationRouterAction extends AppAction {
             }
 
             @Override
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationStopInstancesOperation stopInstances) {
+                return Optional.of(StateData.from(currentState, ApplicationState.STOP_INSTANCES_REQUESTED));
+            }
+
+            @Override
             public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationScaleOperation scale) {
                 return Optional.of(StateData.from(currentState, ApplicationState.SCALING_REQUESTED));
             }
@@ -162,7 +167,7 @@ public class AppOperationRouterAction extends AppAction {
             log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
                       appId, healthyInstances, requestedInstances);
             return Optional.of(StateData.errorFrom(currentState,
-                                                   ApplicationState.PARTIAL_OUTAGE,
+                                                   ApplicationState.SCALING_REQUESTED,
                                                    "Current instances " + healthyInstances + " Requested: " + requestedInstances));
         }
         return Optional.empty();

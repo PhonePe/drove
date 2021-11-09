@@ -9,6 +9,7 @@ public enum ApplicationOperationType {
     INFO,
     DESTROY,
     DEPLOY,
+    STOP_INSTANCES,
     SCALE,
     RESTART,
     SUSPEND,

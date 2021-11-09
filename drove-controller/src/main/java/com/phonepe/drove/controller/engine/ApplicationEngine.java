@@ -16,7 +16,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationDeployOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -100,17 +100,17 @@ public class ApplicationEngine {
             case DEPLOYMENT_REQUESTED:
                 break;
             case RUNNING: {
-                val runningInstances = stateDB.instanceCount(appId);
+/*                val runningInstances = stateDB.instanceCount(appId);
                 if (stateDB.updateInstanceCount(appId, runningInstances)) {
                     log.info("Instance count has been updated to {}", runningInstances);
                 }
                 else {
                     log.warn("Instance count update failed.");
                 }
-                break;
+                break;*/
             }
             case PARTIAL_OUTAGE: {
-                val info = stateDB.application(appId).orElse(null);
+/*                val info = stateDB.application(appId).orElse(null);
                 if (null == info) {
                     log.error("No app info found. Skipping update");
                     break;
@@ -119,29 +119,48 @@ public class ApplicationEngine {
                 log.warn("Outage detected: Required {} Actual {}", info.getInstances(), runningInstances);
                 if (info.getInstances() > runningInstances) {
                     stateMachines.computeIfPresent(appId, (id, sm) -> {
-                        sm.notifyUpdate(new ApplicationUpdateData(new ApplicationDeployOperation(appId,
-                                                                                                 info.getInstances() - runningInstances,
-                                                                                                 ClusterOpSpec.DEFAULT),
-                                                                  null));
+                        sm.notifyUpdate(new ApplicationUpdateData(
+                                new ApplicationDeployOperation(appId,
+                                                               info.getInstances() - runningInstances,
+                                                               ClusterOpSpec.DEFAULT),
+                                null));
                         return sm;
                     });
                 }
                 else {
-//                    stateMachines.computeIfPresent(appId, (id, sm) -> {
-//                        sm.notifyUpdate(new ApplicationS(new ApplicationDeployOperation(appId,
-//                                                                                                 info.getInstances() - runningInstances,
-//                                                                                                 ClusterOpSpec.DEFAULT),
-//                                                                  null));
-//                        return sm;
-//                    });
-                    //TODO::SHUTDOWN EXTRA INSTANCES
-                }
+                    val instances = stateDB.instances(appId, 0, (int) (runningInstances - info.getInstances()));
+                    if (instances.isEmpty()) {
+                        log.warn(
+                                "Looks like instances are in inconsistent state. Tried to find extra instances but could not");
+                    }
+                    else {
+                        stateMachines.computeIfPresent(appId, (id, sm) -> {
+                            sm.notifyUpdate(new ApplicationUpdateData(
+                                    new ApplicationStopInstancesOperation(appId,
+                                                                          instances.stream()
+                                                                                  .map(InstanceInfo::getInstanceId)
+                                                                                  .collect(
+                                                                                          Collectors.toUnmodifiableList()),
+                                                                          ClusterOpSpec.DEFAULT),
+                                    null));
+                            return sm;
+                        });
+                    }
+                }*/
                 break;
             }
             case SUSPEND_REQUESTED:
                 break;
-            case SCALING_REQUESTED:
+            case SCALING_REQUESTED: {
+                stateMachines.computeIfPresent(appId, (id, sm) -> {
+                    val requiredAbsoluteCount = stateDB.application(appId).map(ApplicationInfo::getInstances).orElse(0L);
+                    sm.notifyUpdate(new ApplicationUpdateData(
+                            new ApplicationScaleOperation(appId, requiredAbsoluteCount, ClusterOpSpec.DEFAULT),
+                            null));
+                    return sm;
+                });
                 break;
+            }
             case RESTART_REQUESTED:
                 break;
             case DESTROY_REQUESTED:
@@ -154,4 +173,5 @@ public class ApplicationEngine {
                 break;
         }
     }
+
 }

@@ -38,6 +38,11 @@ public class ApplicationOperationVisitorAdapter<T> implements ApplicationOperati
     }
 
     @Override
+    public T visit(ApplicationStopInstancesOperation stopInstances) {
+        return defaultValue;
+    }
+
+    @Override
     public T visit(ApplicationScaleOperation scale) {
         return defaultValue;
     }

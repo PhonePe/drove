@@ -4,6 +4,7 @@ import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -13,6 +14,8 @@ import java.util.function.Predicate;
  */
 public interface ClusterResourcesDB {
     Optional<ExecutorHostInfo> currentSnapshot(String executorId);
+
+    void remove(Collection<String> executorIds);
 
     void update(final List<ExecutorNodeData> nodeData);
 

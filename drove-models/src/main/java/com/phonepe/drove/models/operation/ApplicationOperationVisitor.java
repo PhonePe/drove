@@ -17,6 +17,8 @@ public interface ApplicationOperationVisitor<T> {
 
     T visit(ApplicationDeployOperation deploy);
 
+    T visit(ApplicationStopInstancesOperation stopInstances);
+
     T visit(ApplicationScaleOperation scale);
 
     T visit(ApplicationRestartOperation restart);

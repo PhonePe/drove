@@ -46,7 +46,7 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
         val topology = jobsToRun(context, currentState, operation);
         val jobId = jobExecutor.schedule(topology,
                                          new BooleanResponseCombiner(),
-                                         jobResult -> jobCompleted(context, currentState, jobResult));
+                                         jobResult -> jobCompleted(context, currentState, operation, jobResult));
         context.setJobId(jobId);
         jobLock.lock();
         try {
@@ -71,16 +71,18 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
     protected abstract StateData<ApplicationState, ApplicationInfo> processResult(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
+            ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult);
 
 
     private void jobCompleted(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
+            ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
         jobLock.lock();
         try {
-            this.result.set(processResult(context, currentState, executionResult));
+            this.result.set(processResult(context, currentState, operation, executionResult));
             done.set(true);
             condition.signalAll();
         }

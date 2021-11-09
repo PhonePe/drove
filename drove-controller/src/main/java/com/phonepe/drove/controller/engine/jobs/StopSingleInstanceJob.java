@@ -52,7 +52,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
 
     @Override
     public String jobId() {
-        return "start-instance-" + appId + "-" + instanceId;
+        return "stop-instance-" + appId + "-" + instanceId;
     }
 
     @Override

@@ -13,6 +13,7 @@ public enum ApplicationState {
     PARTIAL_OUTAGE(false),
     SUSPEND_REQUESTED(false),
     SCALING_REQUESTED(false),
+    STOP_INSTANCES_REQUESTED(false),
     RESTART_REQUESTED(false),
     DESTROY_REQUESTED(false),
     DOWN(false),
