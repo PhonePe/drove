@@ -2,8 +2,9 @@ package com.phonepe.drove.common;
 
 import lombok.Data;
 
+import java.util.Optional;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
@@ -12,17 +13,17 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ActionContext<D> {
     private final AtomicBoolean alreadyStopped = new AtomicBoolean();
 
-    private final AtomicReference<D> currentUpdate = new AtomicReference<>();
+    private final LinkedBlockingQueue<D> currentUpdate = new LinkedBlockingQueue<>();
 
-    public D getUpdate() {
-        return currentUpdate.get();
+    public Optional<D> getUpdate() {
+        return Optional.ofNullable(currentUpdate.peek());
     }
 
     public boolean recordUpdate(D update) {
-        return null == currentUpdate.compareAndExchange(null, update);
+        return currentUpdate.offer(update);
     }
 
-    public boolean resetUpdate() {
-        return null != currentUpdate.getAndUpdate(oldValue -> null);
+    public boolean ackUpdate() {
+        return getUpdate().map(currentUpdate::remove).orElse(false);
     }
 }

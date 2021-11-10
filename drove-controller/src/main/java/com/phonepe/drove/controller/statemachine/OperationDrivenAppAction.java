@@ -15,7 +15,7 @@ public abstract class OperationDrivenAppAction extends AppAction {
     @Override
     public final StateData<ApplicationState, ApplicationInfo> execute(
             AppActionContext context, StateData<ApplicationState, ApplicationInfo> currentState) {
-        val update = context.getUpdate();
+        val update = context.getUpdate().orElse(null);
         if(null == update || null == update.getOperation()) {
             log.warn("OperationDrivenAppAction triggered without any available operation. Returning to old state");
             return StateData.errorFrom(currentState, ApplicationState.FAILED, "No operation available");
@@ -28,7 +28,7 @@ public abstract class OperationDrivenAppAction extends AppAction {
             return StateData.errorFrom(currentState, ApplicationState.FAILED, "Error: " + e.getMessage());
         }
         finally {
-            context.resetUpdate();
+            context.ackUpdate();
         }
     }
 

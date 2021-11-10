@@ -5,6 +5,7 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
+import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -62,9 +63,9 @@ public class AppOperationRouterAction extends AppAction {
                 while (!check.get()) {
                     checkCondition.await();
                 }
-                val operation = null != context.getUpdate()
-                                ? context.getUpdate().getOperation()
-                                : null;
+                val operation = context.getUpdate()
+                        .map(ApplicationUpdateData::getOperation)
+                        .orElse(null);
                 if (null != operation) {
                     val newState = moveToNextState(currentState, operation).orElse(null);
                     if (null != newState) {
@@ -154,7 +155,7 @@ public class AppOperationRouterAction extends AppAction {
             StateData<ApplicationState, ApplicationInfo> currentState) {
         val appId = context.getAppId();
         val appInfo = applicationStateDB.application(appId).orElse(null);
-        if(null == appInfo) {
+        if (null == appInfo) {
             log.error("No app info found for app: {}", appId);
             return Optional.empty();
         }
