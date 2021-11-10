@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.httpresources;
+package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.utils.ControllerUtils;

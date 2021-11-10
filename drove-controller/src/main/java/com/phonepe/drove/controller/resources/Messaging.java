@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.httpresources;
+package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessage;

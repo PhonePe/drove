@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
-import com.phonepe.drove.controller.resources.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.extern.slf4j.Slf4j;

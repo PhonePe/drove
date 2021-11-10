@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.resources;
+package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ExecutorResourceSnapshot;

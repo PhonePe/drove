@@ -8,7 +8,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobContext;
 import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
-import com.phonepe.drove.controller.resources.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;

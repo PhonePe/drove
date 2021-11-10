@@ -6,7 +6,7 @@ import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.jobexecutor.JobTopology;
-import com.phonepe.drove.controller.resources.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;

@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.resources;
+package com.phonepe.drove.controller.resourcemgmt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;

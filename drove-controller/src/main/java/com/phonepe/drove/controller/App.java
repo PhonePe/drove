@@ -24,7 +24,7 @@ public class App extends Application<AppConfig> {
 
         bootstrap.addBundle(
                 GuiceBundle.builder()
-                        .enableAutoConfig("com.phonepe.drove.controller.httpresources",
+                        .enableAutoConfig("com.phonepe.drove.controller.resources",
                                           "com.phonepe.drove.controller.healthcheck",
                                           "com.phonepe.drove.controller.managed",
                                           "com.phonepe.drove.controller.leadership")

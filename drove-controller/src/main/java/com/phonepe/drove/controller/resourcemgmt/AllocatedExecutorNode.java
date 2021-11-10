@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.resources;
+package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
 import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;

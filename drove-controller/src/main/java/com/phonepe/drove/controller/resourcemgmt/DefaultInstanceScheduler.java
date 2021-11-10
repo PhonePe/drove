@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.resources;
+package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
