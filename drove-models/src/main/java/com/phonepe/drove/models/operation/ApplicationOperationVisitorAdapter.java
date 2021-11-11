@@ -56,4 +56,9 @@ public class ApplicationOperationVisitorAdapter<T> implements ApplicationOperati
     public T visit(ApplicationSuspendOperation suspend) {
         return defaultValue;
     }
+
+    @Override
+    public T visit(ApplicationRecoverOperation recover) {
+        return defaultValue;
+    }
 }

@@ -22,8 +22,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,7 +33,9 @@ import java.util.concurrent.Executors;
 @Singleton
 @Slf4j
 public class ApplicationEngine {
-    private final Map<String, ApplicationMonitor> stateMachines = new ConcurrentHashMap<>();
+    private final Set<ApplicationState> OPERATION_ENABLED_STATES = EnumSet.of(ApplicationState.INIT, ApplicationState.MONITORING, ApplicationState.RUNNING);
+
+    private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
@@ -46,18 +47,33 @@ public class ApplicationEngine {
             ApplicationStateDB stateDB) {
         this.factory = factory;
         this.stateDB = stateDB;
-        executor.onComplete().connect(this::handleJobCompleted);
+//        executor.onComplete().connect(this::handleJobCompleted);
     }
 
     public void handleOperation(final ApplicationOperation operation) {
         val appId = ControllerUtils.appId(operation);
-        stateMachines.computeIfAbsent(appId, id -> createApp(operation));
-        stateMachines.computeIfPresent(appId, (id, monitor) -> {
-            monitor.notifyUpdate(new ApplicationUpdateData(operation, null));
-            return monitor;
-        });
+        if(validateOp(appId, operation)) {
+            stateMachines.computeIfAbsent(appId, id -> createApp(operation));
+            stateMachines.computeIfPresent(appId, (id, monitor) -> {
+                monitor.notifyUpdate(new ApplicationUpdateData(operation, null));
+                return monitor;
+            });
+        }
+        log.warn("Requested operation of type {} ignored for app {}", operation.getType().name(), appId);
     }
 
+    private boolean validateOp(String appId, ApplicationOperation operation) {
+        //TODO::Check operation
+        Objects.requireNonNull(operation, "Operation cannot be null");
+        return applicationState(appId)
+                .map(OPERATION_ENABLED_STATES::contains)
+                .orElse(true);
+    }
+
+    public Optional<ApplicationState> applicationState(final String appId) {
+        return Optional.ofNullable(stateMachines.get(appId))
+                .map(executor -> executor.getStateMachine().getCurrentState().getState());
+    }
 
     private void handleJobCompleted(final JobExecutionResult<Boolean> result) {
         stateMachines.computeIfPresent(result.getJobId(), (id, sm) -> {
@@ -66,10 +82,10 @@ public class ApplicationEngine {
         });
     }
 
-    private ApplicationMonitor createApp(ApplicationOperation operation) {
+    private ApplicationStateMachineExecutor createApp(ApplicationOperation operation) {
         return operation.accept(new ApplicationOperationVisitorAdapter<>(null) {
             @Override
-            public ApplicationMonitor visit(ApplicationCreateOperation create) {
+            public ApplicationStateMachineExecutor visit(ApplicationCreateOperation create) {
                 val appSpec = create.getSpec();
                 val now = new Date();
                 val appId = ControllerUtils.appId(appSpec);
@@ -79,7 +95,7 @@ public class ApplicationEngine {
                         ApplicationState.INIT,
                         appInfo), context, factory);
                 stateMachine.onStateChange().connect(newState -> handleAppStateUpdate(appId, context, newState));
-                val monitor = new ApplicationMonitor(
+                val monitor = new ApplicationStateMachineExecutor(
                         appId,
                         stateMachine,
                         monitorExecutor);

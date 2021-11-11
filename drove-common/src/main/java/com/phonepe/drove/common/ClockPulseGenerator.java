@@ -1,11 +1,11 @@
 package com.phonepe.drove.common;
 
 import io.appform.signals.signals.ConsumingParallelSignal;
-import io.dropwizard.util.Duration;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,7 +27,7 @@ public class ClockPulseGenerator implements Closeable {
             public void run() {
                 pulseGenerated.dispatch(new Date());
             }
-        }, initialDelay.toMilliseconds(), duration.toMilliseconds());
+        }, initialDelay.toMillis(), duration.toMillis());
     }
 
 

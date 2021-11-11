@@ -1,10 +1,10 @@
 package com.phonepe.drove.common;
 
-import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.awaitility.Awaitility;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @UtilityClass
 public class CommonTestUtils {
     public void delay(final Duration duration) {
-        val wait = duration.toMilliseconds();
+        val wait = duration.toMillis();
         val end = new Date(new Date().getTime() + wait);
         Awaitility.await()
                 .pollDelay(java.time.Duration.ofSeconds(1))

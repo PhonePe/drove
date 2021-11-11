@@ -13,12 +13,12 @@ import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.dropwizard.util.Duration;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,7 +52,7 @@ class ExecutorCommunicatorTest {
         val spec = TestingUtils.testSpec();
         val address = TestingUtils.localAddress();
         comms.receive(new StartInstanceMessage(MessageHeader.controllerRequest(), address, spec));
-        CommonTestUtils.delay(Duration.seconds(70));
+        CommonTestUtils.delay(Duration.ofSeconds(70));
         comms.receive(new StopInstanceMessage(MessageHeader.controllerRequest(), address, spec.getInstanceId()));
         Awaitility.await()
                 .forever()

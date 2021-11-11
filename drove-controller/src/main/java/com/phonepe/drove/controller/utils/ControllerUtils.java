@@ -148,6 +148,11 @@ public class ControllerUtils {
                 return suspend.getAppId();
             }
 
+            @Override
+            public String visit(ApplicationRecoverOperation recover) {
+                return recover.getAppId();
+            }
+
         });
     }
 }

@@ -17,7 +17,6 @@ import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingParallelSignal;
-import io.dropwizard.util.Duration;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -25,6 +24,7 @@ import org.slf4j.MDC;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -55,8 +55,8 @@ public class InstanceEngine implements Closeable {
         this.stateMachines = new ConcurrentHashMap<>();
         stateChanged = new ConsumingParallelSignal<>();
         clockPulseGenerator = new ClockPulseGenerator("scheduled-reporting-pulse-generator",
-                                                      Duration.seconds(30),
-                                                      Duration.seconds(10));
+                                                      Duration.ofSeconds(30),
+                                                      Duration.ofSeconds(10));
         clockPulseGenerator.onPulse().connect(this::sendStatusReport);
     }
 

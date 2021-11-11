@@ -1,15 +1,16 @@
-package com.phonepe.drove.controller.engine;
+package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.ClockPulseGenerator;
+import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationRecoverOperation;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import java.time.Duration;
@@ -24,10 +25,12 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  */
 @Slf4j
+@Order(20)
 public class ApplicationMonitor implements Managed {
     private static final Set<ApplicationState> SKIPPED_STATES = EnumSet.of(ApplicationState.INIT,
                                                                            ApplicationState.SUSPENDED,
-                                                                           ApplicationState.FAILED);
+                                                                           ApplicationState.FAILED,
+                                                                           ApplicationState.SCALING_REQUESTED);
     private final ClockPulseGenerator clockPulseGenerator
             = new ClockPulseGenerator("application-monitor", Duration.ofSeconds(5), Duration.ofSeconds(3));
 
@@ -75,7 +78,7 @@ public class ApplicationMonitor implements Managed {
                 .forEach(app -> {
                     val appId = app.getAppId();
                     val state = engine.applicationState(appId).orElse(ApplicationState.FAILED);
-                    if (SKIPPED_STATES.contains(state)) {
+                    if (state != ApplicationState.RUNNING) {
                         log.debug("Checks skipped on {} as it is in {} state", appId, state.name());
                         return;
                     }
@@ -85,8 +88,7 @@ public class ApplicationMonitor implements Managed {
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
                                   appId, actualInstances, expectedInstances);
-                        notifyOperation(new ApplicationScaleOperation(appId, expectedInstances, ClusterOpSpec.DEFAULT));
-                    }
+                        notifyOperation(new ApplicationRecoverOperation(appId));                    }
                 });
     }
 }

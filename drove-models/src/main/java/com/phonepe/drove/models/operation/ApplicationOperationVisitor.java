@@ -25,4 +25,5 @@ public interface ApplicationOperationVisitor<T> {
 
     T visit(ApplicationSuspendOperation suspend);
 
+    T visit(ApplicationRecoverOperation recover);
 }

@@ -13,4 +13,5 @@ public enum ApplicationOperationType {
     SCALE,
     RESTART,
     SUSPEND,
+    RECOVER,
 }

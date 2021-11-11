@@ -7,12 +7,12 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.TestingUtils;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.dropwizard.util.Duration;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,7 +45,7 @@ class InstanceStateMachineTest {
                         e.printStackTrace();
                     }
                 });
-        CommonTestUtils.delay(Duration.seconds(120));
+        CommonTestUtils.delay(Duration.ofSeconds(120));
         if (!done.get()) {
             sm.stop();
             log.debug("Stop called on sm");

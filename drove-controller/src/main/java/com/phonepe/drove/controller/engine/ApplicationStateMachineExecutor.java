@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
 import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.models.application.ApplicationState;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 
@@ -14,14 +15,15 @@ import java.util.concurrent.Future;
  *
  */
 @Slf4j
-public class ApplicationMonitor {
+public class ApplicationStateMachineExecutor {
     public static final String MDC_PARAM = "appId";
     private final String appId;
+    @Getter
     private final ApplicationStateMachine stateMachine;
     private final ExecutorService executorService;
     private Future<ApplicationState> currentState;
 
-    public ApplicationMonitor(
+    public ApplicationStateMachineExecutor(
             String appId,
             ApplicationStateMachine stateMachine, ExecutorService executorService) {
         this.appId = appId;

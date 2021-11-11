@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  *
  */
 @Slf4j
-@Order(20)
+@Order(10)
 public class ExecutorObserver implements Managed {
 
     private final CuratorFramework curatorFramework;

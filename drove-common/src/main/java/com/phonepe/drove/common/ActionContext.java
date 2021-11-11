@@ -24,6 +24,6 @@ public class ActionContext<D> {
     }
 
     public boolean ackUpdate() {
-        return getUpdate().map(currentUpdate::remove).orElse(false);
+        return currentUpdate.poll() != null;
     }
 }

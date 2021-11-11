@@ -44,7 +44,7 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
                                          start,
                                          size,
                                          path -> ZkUtils.readNodeData(curatorFramework,
-                                                                      path,
+                                                                      appInfoPath(path),
                                                                       mapper,
                                                                       ApplicationInfo.class));
     }

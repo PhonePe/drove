@@ -2,22 +2,19 @@ package com.phonepe.drove.controller.statemachine.actions;
 
 import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
-import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.inject.Inject;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -32,15 +29,9 @@ public class AppOperationRouterAction extends AppAction {
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
     private final ClockPulseGenerator clockPulseGenerator = new ClockPulseGenerator("app-checker",
-                                                                                    Duration.seconds(1),
-                                                                                    Duration.seconds(5));
+                                                                                    Duration.ofSeconds(1),
+                                                                                    Duration.ofSeconds(5));
     private final AtomicBoolean check = new AtomicBoolean();
-    private final ApplicationStateDB applicationStateDB;
-
-    @Inject
-    public AppOperationRouterAction(ApplicationStateDB applicationStateDB) {
-        this.applicationStateDB = applicationStateDB;
-    }
 
     @SneakyThrows
     @Override
@@ -72,10 +63,6 @@ public class AppOperationRouterAction extends AppAction {
                         log.info("App move to new state: {}", newState);
                         return newState;
                     }
-                }
-                val checkResult = checkAppHealth(context, currentState).orElse(null);
-                if (checkResult != null) {
-                    return checkResult;
                 }
             }
             catch (InterruptedException e) {
@@ -142,34 +129,12 @@ public class AppOperationRouterAction extends AppAction {
             public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationSuspendOperation suspend) {
                 return Optional.of(StateData.from(currentState, ApplicationState.SUSPEND_REQUESTED));
             }
+
+            @Override
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationRecoverOperation recover) {
+                return Optional.of(StateData.from(currentState, ApplicationState.OUTAGE_DETECTED));
+            }
         });
-    }
-
-
-    private Optional<StateData<ApplicationState, ApplicationInfo>> checkAppHealth(
-            AppActionContext context,
-            StateData<ApplicationState, ApplicationInfo> currentState) {
-        val appId = context.getAppId();
-        val appInfo = applicationStateDB.application(appId).orElse(null);
-        if (null == appInfo) {
-            log.error("No app info found for app: {}", appId);
-            return Optional.empty();
-        }
-        val expectedInstances = appInfo.getInstances();
-        val healthyInstances = applicationStateDB.instanceCount(appId, InstanceState.HEALTHY);
-        if (healthyInstances != expectedInstances) {
-            log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
-                      appId, healthyInstances, expectedInstances);
-/*            context.recordUpdate(
-                    new ApplicationUpdateData(
-                            new ApplicationScaleOperation(context.getAppId(), expectedInstances, ClusterOpSpec.DEFAULT),
-                            null));*/
-
-            return Optional.of(StateData.errorFrom(currentState,
-                                                   ApplicationState.SCALING_REQUESTED,
-                                                   "Current instances " + healthyInstances + " Requested: " + expectedInstances));
-        }
-        return Optional.empty();
     }
 
 }

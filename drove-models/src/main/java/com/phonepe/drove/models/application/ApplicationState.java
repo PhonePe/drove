@@ -10,7 +10,7 @@ public enum ApplicationState {
     MONITORING(false),
     DEPLOYMENT_REQUESTED(false),
     RUNNING(false),
-    PARTIAL_OUTAGE(false),
+    OUTAGE_DETECTED(false),
     SUSPEND_REQUESTED(false),
     SCALING_REQUESTED(false),
     STOP_INSTANCES_REQUESTED(false),

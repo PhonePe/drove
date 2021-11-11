@@ -19,6 +19,7 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "SCALE", value = ApplicationScaleOperation.class),
         @JsonSubTypes.Type(name = "RESTART", value = ApplicationRestartOperation.class),
         @JsonSubTypes.Type(name = "SUSPEND", value = ApplicationSuspendOperation.class),
+        @JsonSubTypes.Type(name = "RECOVER", value = ApplicationRecoverOperation.class),
 })
 @Data
 public abstract class ApplicationOperation {

@@ -15,20 +15,20 @@ public abstract class OperationDrivenAppAction extends AppAction {
     @Override
     public final StateData<ApplicationState, ApplicationInfo> execute(
             AppActionContext context, StateData<ApplicationState, ApplicationInfo> currentState) {
-        val update = context.getUpdate().orElse(null);
-        if(null == update || null == update.getOperation()) {
+        val operation = context.getUpdate().map(ApplicationUpdateData::getOperation).orElse(null);
+        if(null == operation) {
             log.warn("OperationDrivenAppAction triggered without any available operation. Returning to old state");
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, "No operation available");
         }
         try {
-            return commandReceived(context, currentState, update.getOperation());
+            return commandReceived(context, currentState, operation);
         }
         catch (Exception e) {
             log.error("Error occurred: ", e);
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, "Error: " + e.getMessage());
         }
         finally {
-            context.ackUpdate();
+            log.debug("Acking operation of type: {}. Status: {}", operation.getType(), context.ackUpdate());
         }
     }
 
