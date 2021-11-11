@@ -1,6 +1,5 @@
 package com.phonepe.drove.executor.engine;
 
-import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -17,6 +16,7 @@ import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingParallelSignal;
+import io.appform.signals.signals.ScheduledSignal;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -41,8 +41,10 @@ public class InstanceEngine implements Closeable {
     private final InstanceActionFactory actionFactory;
     private final ResourceDB resourceDB;
     private final Map<String, SMInfo> stateMachines;
-    private final ConsumingParallelSignal<InstanceInfo> stateChanged;
-    private final ClockPulseGenerator clockPulseGenerator;
+    private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
+    private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
+            .initialDelay(Duration.ofSeconds(30))
+            .interval(Duration.ofSeconds(10)).build();
 
     public InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
@@ -53,11 +55,7 @@ public class InstanceEngine implements Closeable {
         this.actionFactory = actionFactory;
         this.resourceDB = resourceDB;
         this.stateMachines = new ConcurrentHashMap<>();
-        stateChanged = new ConsumingParallelSignal<>();
-        clockPulseGenerator = new ClockPulseGenerator("scheduled-reporting-pulse-generator",
-                                                      Duration.ofSeconds(30),
-                                                      Duration.ofSeconds(10));
-        clockPulseGenerator.onPulse().connect(this::sendStatusReport);
+        refreshSignal.connect(this::sendStatusReport);
     }
 
     public MessageResponse handleMessage(final ExecutorMessage message) {
@@ -143,7 +141,7 @@ public class InstanceEngine implements Closeable {
     @Override
     public void close() throws IOException {
         //TODO::STOP ALL SMs, get all states, then shutdown the pool
-        clockPulseGenerator.close();
+        refreshSignal.close();
     }
 
     public ConsumingParallelSignal<InstanceInfo> onStateChange() {

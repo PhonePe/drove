@@ -1,12 +1,12 @@
 package com.phonepe.drove.controller.managed;
 
-import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationRecoverOperation;
+import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -31,8 +31,10 @@ public class ApplicationMonitor implements Managed {
                                                                            ApplicationState.SUSPENDED,
                                                                            ApplicationState.FAILED,
                                                                            ApplicationState.SCALING_REQUESTED);
-    private final ClockPulseGenerator clockPulseGenerator
-            = new ClockPulseGenerator("application-monitor", Duration.ofSeconds(5), Duration.ofSeconds(3));
+    private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
+            .initialDelay(Duration.ofSeconds(5))
+            .interval(Duration.ofSeconds(3))
+            .build();
 
     private final AtomicBoolean check = new AtomicBoolean();
     private final Lock checkLock = new ReentrantLock();
@@ -51,7 +53,7 @@ public class ApplicationMonitor implements Managed {
 
     @Override
     public void start() throws Exception {
-        clockPulseGenerator.onPulse().connect(time -> {
+        refreshSignal.connect(time -> {
 /*             checkLock.lock();
              try {
                  check.set(true);
@@ -88,7 +90,8 @@ public class ApplicationMonitor implements Managed {
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
                                   appId, actualInstances, expectedInstances);
-                        notifyOperation(new ApplicationRecoverOperation(appId));                    }
+                        notifyOperation(new ApplicationRecoverOperation(appId));
+                    }
                 });
     }
 }

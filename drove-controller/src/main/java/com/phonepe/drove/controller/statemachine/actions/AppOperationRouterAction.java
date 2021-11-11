@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
-import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
@@ -9,6 +8,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
+import io.appform.signals.signals.ScheduledSignal;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -27,16 +27,14 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AppOperationRouterAction extends AppAction {
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
-    private final ClockPulseGenerator clockPulseGenerator = new ClockPulseGenerator("app-checker",
-                                                                                    Duration.ofSeconds(1),
-                                                                                    Duration.ofSeconds(5));
+    private final ScheduledSignal clockPulseGenerator = new ScheduledSignal(Duration.ofSeconds(5));
     private final AtomicBoolean check = new AtomicBoolean();
 
     @SneakyThrows
     @Override
     public StateData<ApplicationState, ApplicationInfo> execute(
             AppActionContext context, StateData<ApplicationState, ApplicationInfo> currentState) {
-        clockPulseGenerator.onPulse().connect(time -> {
+        clockPulseGenerator.connect(time -> {
             checkLock.lock();
             try {
                 check.set(true);
