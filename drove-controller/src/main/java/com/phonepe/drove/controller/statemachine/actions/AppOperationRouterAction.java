@@ -73,10 +73,6 @@ public class AppOperationRouterAction extends AppAction {
                         return newState;
                     }
                 }
-                if (currentState.getState().equals(ApplicationState.MONITORING)) {
-                    log.debug("App in created state. Nothing to do. Will wait for further commands.");
-                    continue;
-                }
                 val checkResult = checkAppHealth(context, currentState).orElse(null);
                 if (checkResult != null) {
                     return checkResult;
@@ -159,17 +155,19 @@ public class AppOperationRouterAction extends AppAction {
             log.error("No app info found for app: {}", appId);
             return Optional.empty();
         }
-        val healthyInstances = applicationStateDB.instances(appId, 0, Integer.MAX_VALUE)
-                .stream()
-                .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
-                .count();
-        val requestedInstances = appInfo.getInstances();
-        if (healthyInstances != requestedInstances) {
+        val expectedInstances = appInfo.getInstances();
+        val healthyInstances = applicationStateDB.instanceCount(appId, InstanceState.HEALTHY);
+        if (healthyInstances != expectedInstances) {
             log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
-                      appId, healthyInstances, requestedInstances);
+                      appId, healthyInstances, expectedInstances);
+/*            context.recordUpdate(
+                    new ApplicationUpdateData(
+                            new ApplicationScaleOperation(context.getAppId(), expectedInstances, ClusterOpSpec.DEFAULT),
+                            null));*/
+
             return Optional.of(StateData.errorFrom(currentState,
                                                    ApplicationState.SCALING_REQUESTED,
-                                                   "Current instances " + healthyInstances + " Requested: " + requestedInstances));
+                                                   "Current instances " + healthyInstances + " Requested: " + expectedInstances));
         }
         return Optional.empty();
     }

@@ -14,7 +14,9 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -76,7 +78,7 @@ public class ApplicationEngine {
                 val stateMachine = new ApplicationStateMachine(StateData.create(
                         ApplicationState.INIT,
                         appInfo), context, factory);
-                stateMachine.onStateChange().connect(newState -> handleAppStateUpdate(appId, newState));
+                stateMachine.onStateChange().connect(newState -> handleAppStateUpdate(appId, context, newState));
                 val monitor = new ApplicationMonitor(
                         appId,
                         stateMachine,
@@ -87,8 +89,20 @@ public class ApplicationEngine {
         });
     }
 
-    private void handleAppStateUpdate(String appId, StateData<ApplicationState, ApplicationInfo> newState) {
+    private void handleAppStateUpdate(
+            String appId,
+            AppActionContext context,
+            StateData<ApplicationState, ApplicationInfo> newState) {
         log.info("App state: {}", newState.getState());
+        if (newState.getState().equals(ApplicationState.SCALING_REQUESTED)) {
+            val expectedInstances = stateDB.application(appId).map(ApplicationInfo::getInstances).orElse(0L);
+            log.info("App is in scaling requested state. Setting appropriate operation to scale app to: {}",
+                     expectedInstances);
+            context.recordUpdate(
+                    new ApplicationUpdateData(
+                            new ApplicationScaleOperation(context.getAppId(), expectedInstances, ClusterOpSpec.DEFAULT),
+                            null));
+        }
     }
 
 }

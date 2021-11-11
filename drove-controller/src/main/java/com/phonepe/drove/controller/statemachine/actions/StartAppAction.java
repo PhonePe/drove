@@ -3,13 +3,12 @@ package com.phonepe.drove.controller.statemachine.actions;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.controller.statemachine.OperationDrivenAppAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDeployOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -38,12 +37,13 @@ public class StartAppAction extends OperationDrivenAppAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
         val deploy = safeCast(operation, ApplicationDeployOperation.class);
-        val requiredInstances = applicationStateDB.instanceCount(deploy.getAppId()) + deploy.getInstances();
+        val requiredInstances = applicationStateDB.instanceCount(deploy.getAppId(),
+                                                                 InstanceState.HEALTHY) + deploy.getInstances();
         applicationStateDB.updateInstanceCount(deploy.getAppId(), requiredInstances);
-        context.recordUpdate(
+/*        context.recordUpdate(
                 new ApplicationUpdateData(
                         new ApplicationScaleOperation(deploy.getAppId(), requiredInstances, deploy.getOpSpec()),
-                        null));
+                        null));*/
         return StateData.from(currentState, ApplicationState.SCALING_REQUESTED);
     }
 

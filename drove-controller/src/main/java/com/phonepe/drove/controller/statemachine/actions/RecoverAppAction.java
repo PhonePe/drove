@@ -12,6 +12,7 @@ import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ops.ApplicationDeployOperation;
@@ -80,14 +81,14 @@ public class RecoverAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        if(Boolean.TRUE.equals(executionResult.getResult())) {
+        if (Boolean.TRUE.equals(executionResult.getResult())) {
             return StateData.from(currentState, ApplicationState.RUNNING);
         }
         val errorMessage = null == executionResult.getFailure()
-            ? "Could not start application"
-        : "Could not start application: " + executionResult.getFailure().getMessage();
+                           ? "Could not start application"
+                           : "Could not start application: " + executionResult.getFailure().getMessage();
 
-        if(applicationStateDB.instanceCount(context.getAppId()) > 0) {
+        if (applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errorMessage);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errorMessage);

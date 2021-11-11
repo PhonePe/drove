@@ -1,6 +1,6 @@
 package com.phonepe.drove.common;
 
-import io.appform.signals.signals.ConsumingParallelSignal;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A extends Action<T, S, C, D>> {
 
     private final Map<S, Transition<T, D, S, C, A>> validTransitions;
-    private final ConsumingParallelSignal<StateData<S, T>> stateChanged;
+    private final ConsumingSyncSignal<StateData<S, T>> stateChanged;
 
     @Getter
     private StateData<S, T> currentState;
@@ -34,13 +34,13 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
             List<Transition<T, D, S, C, A>> transitions) {
         this.context = context;
         this.actionFactory = actionFactory;
-        this.stateChanged = new ConsumingParallelSignal<>();
+        this.stateChanged = new ConsumingSyncSignal<>();
         this.validTransitions = transitions.stream()
                 .collect(Collectors.toMap(Transition::getFrom, Function.identity()));
         this.currentState = initalState;
     }
 
-    public final ConsumingParallelSignal<StateData<S, T>> onStateChange() {
+    public final ConsumingSyncSignal<StateData<S, T>> onStateChange() {
         return stateChanged;
     }
 

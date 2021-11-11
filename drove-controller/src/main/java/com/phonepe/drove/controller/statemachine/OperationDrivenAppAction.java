@@ -18,14 +18,14 @@ public abstract class OperationDrivenAppAction extends AppAction {
         val update = context.getUpdate().orElse(null);
         if(null == update || null == update.getOperation()) {
             log.warn("OperationDrivenAppAction triggered without any available operation. Returning to old state");
-            return StateData.errorFrom(currentState, ApplicationState.FAILED, "No operation available");
+            return StateData.errorFrom(currentState, ApplicationState.RUNNING, "No operation available");
         }
         try {
             return commandReceived(context, currentState, update.getOperation());
         }
         catch (Exception e) {
             log.error("Error occurred: ", e);
-            return StateData.errorFrom(currentState, ApplicationState.FAILED, "Error: " + e.getMessage());
+            return StateData.errorFrom(currentState, ApplicationState.RUNNING, "Error: " + e.getMessage());
         }
         finally {
             context.ackUpdate();

@@ -49,6 +49,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     boolean validateNode(final ApplicationSpec spec, final AllocatedExecutorNode executorNode) {
+        //We need to consider all instances here, not only healthy ones because they would have locked
+        // cores and mem till they are dead
         val existing = applicationStateDB.instances(spec.getName(), 0, Integer.MAX_VALUE)
                 .stream()
                 .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));

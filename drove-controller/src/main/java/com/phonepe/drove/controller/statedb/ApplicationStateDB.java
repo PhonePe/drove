@@ -6,6 +6,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -30,14 +31,21 @@ public interface ApplicationStateDB {
 
     boolean deleteApplicationState(String appId);
 
+    default List<InstanceInfo> healthyInstances(String appId) {
+        return instances(appId, 0, Integer.MAX_VALUE)
+                .stream()
+                .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
+                .collect(Collectors.toUnmodifiableList());
+    }
+
     List<InstanceInfo> instances(String appId, int start, int size);
 
     Optional<InstanceInfo> instance(String appId, String instanceId);
 
-    default long instanceCount(final String appId) {
+    default long instanceCount(final String appId, InstanceState requiredState) {
         return instances(appId, 0, Integer.MAX_VALUE)
                 .stream()
-                .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
+                .filter(instance -> instance.getState().equals(requiredState))
                 .count();
     }
 

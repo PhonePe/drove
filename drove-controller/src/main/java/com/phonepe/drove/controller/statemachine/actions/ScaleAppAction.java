@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
-
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -58,10 +57,7 @@ public class ScaleAppAction extends AppAsyncAction {
             ApplicationOperation operation) {
         val scaleOp = safeCast(operation, ApplicationScaleOperation.class);
         long required = scaleOp.getRequiredInstances();
-        val currentInstances = applicationStateDB.instances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
-                .stream()
-                .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
-                .collect(Collectors.toUnmodifiableList());
+        val currentInstances = applicationStateDB.healthyInstances(scaleOp.getAppId());
         val currentInstancesCount = currentInstances.size();
         if (currentInstancesCount == required) {
             return JobTopology.<Boolean>builder().build(); //TODO::FIX THIS
@@ -118,22 +114,30 @@ public class ScaleAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        if (Boolean.TRUE.equals(executionResult.getResult())) {
-            val count = applicationStateDB.instanceCount(context.getAppId());
-            val scaleOp = safeCast(operation, ApplicationScaleOperation.class);
-            if(scaleOp.getRequiredInstances() == count) {
-                log.info("Required scale {} has been reached.", count);
+        var errMsg = Boolean.TRUE.equals(executionResult.getResult())
+                     ? ""
+                     : (executionResult.getFailure() == null
+                        ? "Execution failed"
+                        : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage());
+        val count = applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+        val scaleOp = safeCast(operation, ApplicationScaleOperation.class);
+        if (scaleOp.getRequiredInstances() == count) {
+            log.info("Required scale {} has been reached.", count);
 //                applicationStateDB.updateInstanceCount(scaleOp.getAppId(), count);
-            }
-            else {
-                log.warn("Mismatch between expected instances: {} and actual: {}. Need to be re-looked at", scaleOp.getRequiredInstances(), count);
-                return StateData.from(currentState, ApplicationState.SCALING_REQUESTED);
-            }
-            if(count > 0) {
-                return StateData.from(currentState, ApplicationState.RUNNING);
-            }
-            return StateData.from(currentState, ApplicationState.MONITORING);
         }
-        return currentState;
+        else {
+            log.warn("Mismatch between expected instances: {} and actual: {}. Need to be re-looked at",
+                     scaleOp.getRequiredInstances(),
+                     count);
+/*                context.recordUpdate(
+                        new ApplicationUpdateData(
+                                new ApplicationScaleOperation(context.getAppId(), count, ClusterOpSpec.DEFAULT),
+                                null));*/
+            return StateData.errorFrom(currentState, ApplicationState.SCALING_REQUESTED, errMsg);
+        }
+        if (count > 0) {
+            return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
+        }
+        return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
 }

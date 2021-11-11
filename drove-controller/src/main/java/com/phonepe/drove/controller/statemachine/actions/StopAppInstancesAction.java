@@ -12,6 +12,7 @@ import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationStopInstancesOperation;
 import lombok.val;
@@ -74,7 +75,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
                            ? "Could not start application"
                            : "Could not start application: " + executionResult.getFailure().getMessage();
 
-        if (applicationStateDB.instanceCount(context.getAppId()) > 0) {
+        if (applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errorMessage);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errorMessage);
