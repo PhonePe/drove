@@ -4,7 +4,6 @@ import com.phonepe.drove.common.ClockPulseGenerator;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -48,16 +47,16 @@ public class AppOperationRouterAction extends AppAction {
             }
         });
         while (true) {
-            log.debug("Monitoring for commands");
+            log.trace("Monitoring for commands");
             checkLock.lock();
             try {
                 while (!check.get()) {
                     checkCondition.await();
                 }
                 val operation = context.getUpdate()
-                        .map(ApplicationUpdateData::getOperation)
                         .orElse(null);
                 if (null != operation) {
+                    log.info("Received command of type: {}", operation.getType());
                     val newState = moveToNextState(currentState, operation).orElse(null);
                     if (null != newState) {
                         log.info("App move to new state: {}", newState);

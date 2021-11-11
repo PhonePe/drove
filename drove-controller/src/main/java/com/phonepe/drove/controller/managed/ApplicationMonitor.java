@@ -79,7 +79,7 @@ public class ApplicationMonitor implements Managed {
                     val appId = app.getAppId();
                     val state = engine.applicationState(appId).orElse(ApplicationState.FAILED);
                     if (state != ApplicationState.RUNNING) {
-                        log.debug("Checks skipped on {} as it is in {} state", appId, state.name());
+                        log.trace("Checks skipped on {} as it is in {} state", appId, state.name());
                         return;
                     }
 

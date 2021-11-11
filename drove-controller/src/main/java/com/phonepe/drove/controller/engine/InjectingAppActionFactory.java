@@ -7,15 +7,15 @@ import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.operation.ApplicationOperation;
 
 /**
  *
  */
 @Singleton
-public class InjectingAppActionFactory implements ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> {
+public class InjectingAppActionFactory implements ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> {
     private final Injector injector;
 
     @Inject
@@ -24,7 +24,7 @@ public class InjectingAppActionFactory implements ActionFactory<ApplicationInfo,
     }
 
     @Override
-    public AppAction create(Transition<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> transition) {
+    public AppAction create(Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> transition) {
         return injector.getInstance(transition.getAction());
     }
 }

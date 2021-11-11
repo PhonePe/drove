@@ -58,13 +58,15 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         return newState;
     }
 
-    public void notifyUpdate(D parameter) {
-        if(context.recordUpdate(parameter)) {
+    public boolean notifyUpdate(D parameter) {
+        val status = context.recordUpdate(parameter);
+        if(status) {
             log.info("Update recorded successfully");
         }
         else {
             log.error("Update could not be recorded as there is already an update being processed");
         }
+        return status;
     }
 
     public void stop() {

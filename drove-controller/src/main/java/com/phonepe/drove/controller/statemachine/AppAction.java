@@ -7,5 +7,5 @@ import com.phonepe.drove.models.application.ApplicationState;
 /**
  *
  */
-public abstract class AppAction extends Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationUpdateData> {
+public abstract class AppAction extends Action<ApplicationInfo, ApplicationState, AppActionContext,com.phonepe.drove.models.operation.ApplicationOperation> {
 }

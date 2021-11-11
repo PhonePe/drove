@@ -7,6 +7,7 @@ import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.controller.statemachine.actions.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.NonNull;
 
 import java.util.List;
@@ -14,8 +15,8 @@ import java.util.List;
 /**
  *
  */
-public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> {
-    private static final List<Transition<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
+public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> {
+    private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
             = List.of(
             new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.MONITORING),
             new Transition<>(ApplicationState.MONITORING,
@@ -56,7 +57,7 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,
             AppActionContext context,
-            ActionFactory<ApplicationInfo, ApplicationUpdateData, ApplicationState, AppActionContext, AppAction> actionFactory) {
+            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> actionFactory) {
         super(initalState, context, actionFactory, TRANSITIONS);
     }
 

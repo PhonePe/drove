@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
-import com.phonepe.drove.controller.statemachine.ApplicationUpdateData;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -52,8 +52,8 @@ public class ApplicationStateMachineExecutor {
         
     }
 
-    public void notifyUpdate(final ApplicationUpdateData update) {
-        stateMachine.notifyUpdate(update);
+    public boolean notifyUpdate(final ApplicationOperation update) {
+        return stateMachine.notifyUpdate(update);
     }
 
     public void stop() {
