@@ -7,6 +7,8 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,6 +41,24 @@ public abstract class RemoteMessageSender<
 
     @Override
     public MessageResponse send(SendMessage message) {
+        final RetryPolicy<MessageResponse> retryPolicy = retryStrategy();
+        return Failsafe.with(retryPolicy).onFailure(result -> {
+            val failure = result.getFailure();
+            if(null != failure) {
+                log.error("Message sending failed with error: {}", failure.getMessage());
+            }
+            else {
+                val response = result.getResult();
+                if(response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                    log.error("Message sending failed with response: {}", response);
+                }
+            }
+        }).get(() -> sendRemoteMessage(message));
+    }
+
+    protected abstract RetryPolicy<MessageResponse> retryStrategy();
+
+    private MessageResponse sendRemoteMessage(SendMessage message) {
         val host = translateRemoteAddress(message).orElse(null);
         if (null == host) {
             log.error("No host found.");
@@ -54,7 +74,7 @@ public abstract class RemoteMessageSender<
             log.error("Error building message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
-        log.debug("Sending message to leader: {}", uri);
+        log.debug("Sending message to remote host: {}", uri);
         val request = requestBuilder.timeout(Duration.ofSeconds(1)).build();
         try {
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
