@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -27,15 +28,22 @@ import java.util.Collections;
 @Slf4j
 public class Apis {
     private final ApplicationEngine engine;
+    private final LeadershipEnsurer leadershipEnsurer;
 
     @Inject
-    public Apis(ApplicationEngine engine) {
+    public Apis(ApplicationEngine engine, final LeadershipEnsurer leadershipEnsurer) {
         this.engine = engine;
+        this.leadershipEnsurer = leadershipEnsurer;
     }
 
     @POST
     public Response acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
-        engine.handleOperation(operation);
-        return Response.ok(Collections.singletonMap("appId", ControllerUtils.appId(operation))).build();
+        if (leadershipEnsurer.isLeader()) {
+            engine.handleOperation(operation);
+            return Response.ok(Collections.singletonMap("appId", ControllerUtils.appId(operation))).build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Collections.singletonMap("error", "This node is not the leader controller"))
+                .build();
     }
 }
