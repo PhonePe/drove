@@ -94,7 +94,7 @@ public class ControllerUtils {
         if (null == instanceInfo) {
             return false;
         }
-        log.debug("Intsance state for {}/{}: {}",
+        log.debug("Instance state for {}/{}: {}",
                   instanceInfo.getAppId(),
                   instanceInfo.getInstanceId(),
                   instanceInfo.getState());

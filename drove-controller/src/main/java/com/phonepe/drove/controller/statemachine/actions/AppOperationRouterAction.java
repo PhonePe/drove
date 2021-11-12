@@ -8,69 +8,34 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
-import io.appform.signals.signals.ScheduledSignal;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
  */
 @Slf4j
 public class AppOperationRouterAction extends AppAction {
-    private final Lock checkLock = new ReentrantLock();
-    private final Condition checkCondition = checkLock.newCondition();
-    private final ScheduledSignal clockPulseGenerator = new ScheduledSignal(Duration.ofSeconds(5));
-    private final AtomicBoolean check = new AtomicBoolean();
 
     @SneakyThrows
     @Override
     public StateData<ApplicationState, ApplicationInfo> execute(
             AppActionContext context, StateData<ApplicationState, ApplicationInfo> currentState) {
-        clockPulseGenerator.connect(time -> {
-            checkLock.lock();
-            try {
-                check.set(true);
-                checkCondition.signalAll();
-            }
-            finally {
-                checkLock.unlock();
-            }
-        });
-        while (true) {
-            log.trace("Monitoring for commands");
-            checkLock.lock();
-            try {
-                while (!check.get()) {
-                    checkCondition.await();
-                }
-                val operation = context.getUpdate()
-                        .orElse(null);
-                if (null != operation) {
+        return context.getUpdate()
+                .map(operation -> {
                     log.info("Received command of type: {}", operation.getType());
                     val newState = moveToNextState(currentState, operation).orElse(null);
                     if (null != newState) {
                         log.info("App move to new state: {}", newState);
                         return newState;
                     }
-                }
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            finally {
-                check.set(false);
-                checkLock.unlock();
-                //Do not reset the operation in context here, it will be used by next action
-            }
-        }
+                    log.info("Nothing to be routed. Going back to previous state");
+                    return currentState;
+                })
+                .orElse(null);
     }
 
     @Override
