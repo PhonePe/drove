@@ -13,6 +13,7 @@ import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Set;
@@ -25,7 +26,8 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  */
 @Slf4j
-@Order(20)
+@Order(30)
+@Singleton
 public class ApplicationMonitor implements Managed {
     private static final Set<ApplicationState> SKIPPED_STATES = EnumSet.of(ApplicationState.INIT,
                                                                            ApplicationState.SUSPENDED,

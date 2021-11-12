@@ -5,6 +5,7 @@ import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
@@ -18,7 +19,7 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
 /**
  *
  */
-
+@Slf4j
 @Singleton
 public class MapBasedApplicationStateDB implements ApplicationStateDB {
     private static final String APPLICATION_STATE_PATH = "/applications";
@@ -89,23 +90,25 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     }
 
     @Override
-    public boolean updateInstanceState(
-            String appId, String instanceId, InstanceInfo instanceInfo) {
-        appInstances.computeIfPresent(appId,
-                                      (id, value) -> {
-                                  value.compute(instanceId, (iid, oldValue) -> instanceInfo);
-                                  return value;
-                              });
-        return true;
+    public boolean updateInstanceState(String appId, String instanceId, InstanceInfo instanceInfo) {
+        val info = appInstances.compute(appId,
+                             (id, value) -> {
+                                 val newValue = null != value
+                                                ? value
+                                                : new HashMap<String, InstanceInfo>();
+                                 newValue.compute(instanceId, (iid, oldValue) -> instanceInfo);
+                                 return newValue;
+                             });
+        return info.containsKey(instanceId);
     }
 
     @Override
     public boolean deleteInstanceState(String appId, String instanceId) {
-        appInstances.computeIfPresent(appId, (id, value) -> {
+        val info = appInstances.computeIfPresent(appId, (id, value) -> {
             value.remove(instanceId);
             return value;
         });
-        return true;
+        return null == info || !info.containsKey(instanceId);
     }
 
     private String appInfoPath(String appId) {

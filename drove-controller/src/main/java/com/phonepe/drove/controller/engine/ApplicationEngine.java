@@ -2,7 +2,6 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
@@ -43,11 +42,9 @@ public class ApplicationEngine {
     @Inject
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
-            JobExecutor<Boolean> executor,
             ApplicationStateDB stateDB) {
         this.factory = factory;
         this.stateDB = stateDB;
-//        executor.onComplete().connect(this::handleJobCompleted);
     }
 
     public void handleOperation(final ApplicationOperation operation) {
@@ -62,6 +59,11 @@ public class ApplicationEngine {
         else {
             log.warn("Requested operation of type {} ignored for app {}", operation.getType().name(), appId);
         }
+    }
+
+    public void stopAll() {
+        stateMachines.forEach((appId, exec) -> exec.stop());
+        stateMachines.clear();
     }
 
     private boolean validateOp(String appId, ApplicationOperation operation) {

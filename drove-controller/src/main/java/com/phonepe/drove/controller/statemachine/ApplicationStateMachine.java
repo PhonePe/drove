@@ -18,7 +18,7 @@ import java.util.List;
 public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> {
     private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
             = List.of(
-            new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.MONITORING),
+            new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.MONITORING, ApplicationState.RUNNING),
             new Transition<>(ApplicationState.MONITORING,
                              AppOperationRouterAction.class,
                              ApplicationState.DEPLOYMENT_REQUESTED,

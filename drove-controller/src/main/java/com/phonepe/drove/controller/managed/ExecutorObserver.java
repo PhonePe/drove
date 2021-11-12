@@ -14,6 +14,7 @@ import org.apache.zookeeper.KeeperException;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -24,7 +25,8 @@ import java.util.stream.Collectors;
  *
  */
 @Slf4j
-@Order(10)
+@Order(20)
+@Singleton
 public class ExecutorObserver implements Managed {
 
     private final CuratorFramework curatorFramework;

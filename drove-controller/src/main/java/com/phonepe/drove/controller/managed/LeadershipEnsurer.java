@@ -1,8 +1,9 @@
-package com.phonepe.drove.controller.leadership;
+package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.nodedata.ControllerNodeData;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.ServerLifecycleListener;
@@ -16,6 +17,7 @@ import org.eclipse.jetty.server.Server;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,10 +29,12 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 @Order(10)
+@Singleton
 public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     private final NodeDataStore nodeDataStore;
     private final LeaderLatch leaderLatch;
     private final ScheduledSignal checkLeadership = new ScheduledSignal(Duration.ofSeconds(60));
+    private final ConsumingSyncSignal<Boolean> leadershipStateChanged = new ConsumingSyncSignal<>();
     private final Lock stateLock = new ReentrantLock();
     private final AtomicBoolean started = new AtomicBoolean();
     private ControllerNodeData currentData;
@@ -48,12 +52,14 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
             public void isLeader() {
                 log.info("This node because leader. Updating state.");
                 refreshNodeState();
+                leadershipStateChanged.dispatch(true);
             }
 
             @Override
             public void notLeader() {
                 log.info("This node lost leadership. Updating state.");
                 refreshNodeState();
+                leadershipStateChanged.dispatch(false);
             }
         });
         this.checkLeadership.connect(this::refresh);
@@ -68,6 +74,10 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     @Override
     public void stop() throws Exception {
         leaderLatch.close();
+    }
+
+    public ConsumingSyncSignal<Boolean> onLeadershipStateChanged() {
+        return leadershipStateChanged;
     }
 
     public boolean isLeader() {
