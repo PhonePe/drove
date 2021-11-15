@@ -27,7 +27,7 @@ public class App extends Application<AppConfig> {
                         .enableAutoConfig("com.phonepe.drove.controller.resources",
                                           "com.phonepe.drove.controller.healthcheck",
                                           "com.phonepe.drove.controller.managed",
-                                          "com.phonepe.drove.controller.leadership")
+                                          "com.phonepe.drove.controller.helpers")
                         .modules(new ControllerCoreModule())
                         .installers(HealthCheckInstaller.class)
                         .printDiagnosticInfo()

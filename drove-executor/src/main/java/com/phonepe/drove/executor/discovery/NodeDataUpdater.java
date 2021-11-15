@@ -36,7 +36,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final NodeDataStore nodeDataStore;
     private final ResourceDB resourceDB;
     private final InstanceEngine engine;
-    private final ScheduledSignal refreshSignal = new ScheduledSignal(Duration.ofSeconds(60));
+    private final ScheduledSignal refreshSignal = new ScheduledSignal(Duration.ofSeconds(10));
     private final AtomicBoolean started = new AtomicBoolean();
     private ExecutorNodeData currentData;
     private final Lock stateLock = new ReentrantLock();

@@ -24,8 +24,4 @@ public class InstanceInfo {
     Map<String, String> metadata;
     Date created;
     Date updated;
-
-/*    public InstanceInfo updateState(InstanceState state) {
-        return new InstanceInfo(appId, instanceId, executorId, hostname, state, ports, metadata, created, new Date());
-    }*/
 }

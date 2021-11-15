@@ -29,6 +29,11 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
 
     @Override
+    public List<ExecutorHostInfo> currentSnapshot() {
+        return List.copyOf(nodes.values());
+    }
+
+    @Override
     public Optional<ExecutorHostInfo> currentSnapshot(final String executorId) {
         return Optional.ofNullable(nodes.get(executorId));
     }

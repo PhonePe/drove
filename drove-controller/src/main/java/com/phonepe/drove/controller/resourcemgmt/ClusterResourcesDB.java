@@ -13,6 +13,8 @@ import java.util.function.Predicate;
  *
  */
 public interface ClusterResourcesDB {
+    List<ExecutorHostInfo> currentSnapshot();
+
     Optional<ExecutorHostInfo> currentSnapshot(String executorId);
 
     void remove(Collection<String> executorIds);
