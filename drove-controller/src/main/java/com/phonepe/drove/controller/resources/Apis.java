@@ -3,7 +3,7 @@ package com.phonepe.drove.controller.resources;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiResponse;
-import com.phonepe.drove.models.api.AppDetails;
+import com.phonepe.drove.models.api.AppSummary;
 import com.phonepe.drove.models.api.ExecutorSummary;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -55,7 +55,7 @@ public class Apis {
 
     @GET
     @Path("/applications")
-    public ApiResponse<Map<String, AppDetails>> applications(
+    public ApiResponse<Map<String, AppSummary>> applications(
             @QueryParam("from") @DefaultValue("0") @Min(0) @Max(1024) final int from,
             @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(1024) final int size) {
         return responseEngine.applications(from, size);
@@ -63,7 +63,7 @@ public class Apis {
 
     @GET
     @Path("/applications/{id}")
-    public ApiResponse<AppDetails> application(@PathParam("id") @NotEmpty final String appId) {
+    public ApiResponse<AppSummary> application(@PathParam("id") @NotEmpty final String appId) {
         return responseEngine.application(appId);
     }
 

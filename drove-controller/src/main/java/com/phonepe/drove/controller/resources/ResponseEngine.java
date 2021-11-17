@@ -55,17 +55,17 @@ public class ResponseEngine {
         this.clusterResourcesDB = clusterResourcesDB;
     }
 
-    public ApiResponse<Map<String, AppDetails>> applications(final int from, final int size) {
+    public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
         return ApiResponse.success(applicationStateDB.applications(from, size)
                                            .stream()
                                            .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
-                                                                                 this::toDetails)));
+                                                                                 this::toAppSummary)));
     }
 
 
-    public ApiResponse<AppDetails> application(final String appId) {
+    public ApiResponse<AppSummary> application(final String appId) {
         return applicationStateDB.application(appId)
-                .map(appInfo -> ApiResponse.success(toDetails(appInfo)))
+                .map(appInfo -> ApiResponse.success(toAppSummary(appInfo)))
                 .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "App " + appId + " not found"));
     }
 
@@ -174,13 +174,13 @@ public class ResponseEngine {
         return ApiResponse.success(
                 clusterResourcesDB.currentSnapshot()
                         .stream()
-                        .map(hostInfo -> toSummary(hostInfo).orElse(null))
+                        .map(hostInfo -> toExecutorSummary(hostInfo).orElse(null))
                         .filter(Objects::nonNull)
                         .collect(Collectors.toUnmodifiableList()));
     }
 
 
-    private AppDetails toDetails(final ApplicationInfo info) {
+    private AppSummary toAppSummary(final ApplicationInfo info) {
         val spec = info.getSpec();
         val instances = info.getInstances();
         val healthyInstances = applicationStateDB.instanceCount(info.getAppId(), InstanceState.HEALTHY);
@@ -210,7 +210,7 @@ public class ResponseEngine {
                     }
                 }))
                 .sum();
-        return new AppDetails(info.getAppId(),
+        return new AppSummary(info.getAppId(),
                               spec,
                               instances,
                               healthyInstances,
@@ -222,7 +222,7 @@ public class ResponseEngine {
 
     }
 
-    private Optional<ExecutorSummary> toSummary(final ExecutorHostInfo hostInfo) {
+    private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo) {
         return hostInfo.getNodeData()
                 .accept(new NodeDataVisitor<Optional<ExecutorSummary>>() {
                     @Override

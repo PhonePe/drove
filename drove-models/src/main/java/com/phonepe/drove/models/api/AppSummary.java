@@ -10,7 +10,7 @@ import java.util.Date;
  *
  */
 @Value
-public class AppDetails {
+public class AppSummary {
     String id;
     ApplicationSpec spec;
     long instances;
