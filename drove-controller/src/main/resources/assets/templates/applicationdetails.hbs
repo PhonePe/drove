@@ -46,7 +46,6 @@
 {{/partial}}
 
 {{#partial "page_js"}}
-
     var summary = $('#appsummary').DataTable({
         'processing' : true,
         'ajax': {
@@ -98,31 +97,9 @@
             { 'data' : 'logStream' }
         ]
     });
-/*    function loadApplicationSummary() {
-        $.ajax({
-            url: '/applications/{{appId}}/summary',
-            dataType: 'html',
-            success: function(html) {
-                    $('#appsummary').html($(html));
-                }
-            });
-    }*/
-    /*function loadInstances() {
-        $.ajax({
-            url: '/applications/{{appId}}/instances',
-            dataType: 'html',
-            success: function(html) {
-                    $('#instances').html($(html));
-                }
-            });
-    }*/
-    //loadApplicationSummary();
-    //loadInstances();
     setInterval(() => {
-        //loadApplicationSummary();
         summary.ajax.reload();
         instances.ajax.reload();
-        //loadInstances();
     }, 5000);
 {{/partial}}
 {{> common/base}}
