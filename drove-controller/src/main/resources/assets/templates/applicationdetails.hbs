@@ -1,8 +1,20 @@
 {{#partial "content"}}
     <section>
         <div class="row">
-            <div class="col" id="appsummary">
-
+            <div class="col">
+                <table class="table table-bordered" id="appsummary">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Expected Instances</th>
+                        <th>Healthy Instances</th>
+                        <th>CPU</th>
+                        <th>Memory (MB)</th>
+                        <th>State</th>
+                    </tr>
+                    </thead>
+                </table>
             </div>
         </div>
     </section>
@@ -13,7 +25,20 @@
                     <div class="col"><h4>Instances</h4></div>
                 </div>
                 <div class="row">
-                    <div class="col" id="instances"></div>
+                    <div class="col">
+                        <table class="table table-bordered"  id="instances">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ExecutorId</th>
+                                <th>Host</th>
+                                <th>Port</th>
+                                <th>State</th>
+                                <th>Log Stream</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -22,7 +47,38 @@
 
 {{#partial "page_js"}}
 
-    function loadApplicationSummary() {
+    var summary = $('#appsummary').DataTable({
+        'processing' : true,
+        'ajax': '/applications/{{appId}}/summary/dt',
+        'paging': false,
+        'searching' : false,
+        'ordering' : false,
+        'info' : false,
+        'columns' : [
+            { 'data' : 'id' },
+            { 'data' : 'spec.name' },
+            { 'data' : 'requiredInstances' },
+            { 'data' : 'healthyInstances' },
+            { 'data' : 'totalCPUs' },
+            { 'data' : 'totalMemory' },
+            { 'data' : 'state' }
+        ]
+    });
+    var instances = $('#instances').DataTable({
+        'processing' : true,
+        'ajax': '/applications/{{appId}}/instances/dt',
+        'paging': false,
+        'info' : false,
+        'columns' : [
+            { 'data' : 'instanceId' },
+            { 'data' : 'executorId' },
+            { 'data' : 'hostname' },
+            { 'data' : 'ports' },
+            { 'data' : 'state' },
+            { 'data' : 'logStream' }
+        ]
+    });
+/*    function loadApplicationSummary() {
         $.ajax({
             url: '/applications/{{appId}}/summary',
             dataType: 'html',
@@ -30,8 +86,8 @@
                     $('#appsummary').html($(html));
                 }
             });
-    }
-    function loadInstances() {
+    }*/
+    /*function loadInstances() {
         $.ajax({
             url: '/applications/{{appId}}/instances',
             dataType: 'html',
@@ -39,12 +95,14 @@
                     $('#instances').html($(html));
                 }
             });
-    }
-    loadApplicationSummary();
-    loadInstances();
+    }*/
+    //loadApplicationSummary();
+    //loadInstances();
     setInterval(() => {
-        loadApplicationSummary();
-        loadInstances();
+        //loadApplicationSummary();
+        summary.ajax.reload();
+        instances.ajax.reload();
+        //loadInstances();
     }, 5000);
 {{/partial}}
 {{> common/base}}

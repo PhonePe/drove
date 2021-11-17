@@ -1,8 +1,22 @@
 {{#partial "content"}}
     <section>
         <div class="row">
-            <div class="col" id="clusterSummary">
-
+            <div class="col">
+                <table class="table table-bordered" id="clusterSummary">
+                    <thead>
+                    <tr>
+                        <th class="text-center">Number of executors</th>
+                        <th class="text-center">Number of Applications</th>
+                        <th class="text-center">Number of Active Applications</th>
+                        <th class="text-center">Free Cores</th>
+                        <th class="text-center">Used Cores</th>
+                        <th class="text-center">Total Cores</th>
+                        <th class="text-center">Free Memory</th>
+                        <th class="text-center">Used Memory</th>
+                        <th class="text-center">Total Memory</th>
+                    </tr>
+                    </thead>
+                </table>
             </div>
         </div>
     </section>
@@ -13,7 +27,21 @@
                     <div class="col"><h4>Applications</h4></div>
                 </div>
                 <div class="row">
-                    <div class="col" id="applications"></div>
+                    <div class="col">
+                        <table class="table table-bordered" id="applications" title="Applications">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Expected Instances</th>
+                                <th>Healthy Instances</th>
+                                <th>CPU</th>
+                                <th>Memory (MB)</th>
+                                <th>State</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
             <div class="col-md-6 col-sm-12">
@@ -21,7 +49,20 @@
                     <div class="col"><h4>Executors</h4></div>
                 </div>
                 <div class="row">
-                    <div class="col" id="executors"></div>
+                    <div class="col">
+                        <table class="table table-bordered"  id="executors">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Host</th>
+                                <th>Free Cores</th>
+                                <th>Used Cores</th>
+                                <th>Free Memory</th>
+                                <th>Used Memory</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -29,41 +70,82 @@
 {{/partial}}
 
 {{#partial "page_js"}}
-    function loadClusterSummary() {
-        $.ajax({
-            url: '/cluster',
-            dataType: 'html',
-            success: function(html) {
-                $('#clusterSummary').html($(html));
+    var cluster = $('#clusterSummary').DataTable({
+        'processing' : true,
+        'ajax': '/cluster/dt',
+        'paging': false,
+        'searching' : false,
+        'ordering' : false,
+        'info' : false,
+        'columnDefs': [ {'className': 'text-center', 'targets': '_all'} ],
+        'columns' : [
+            { 'data' : 'numExecutors' },
+            { 'data' : 'numApplications' },
+            { 'data' : 'numActiveApplications' },
+            { 'data' : 'freeCores' },
+            { 'data' : 'usedCores' },
+            { 'data' : 'totalCores' },
+            { 'data' : 'freeMemory' },
+            { 'data' : 'usedMemory' },
+            { 'data' : 'totalMemory' }
+        ]
+    });
+    var applications = $('#applications').DataTable({
+        'processing' : true,
+        'ajax': '/applications/dt',
+        'paging': false,
+        'info' : false,
+        'columnDefs': [
+            {
+                'className': 'text-center',
+                'targets': '_all'
             }
-        });
-    }
+        ],
+        'columns' : [
+            {
+                'data' : 'id' ,
+                'render' : function(data, type, row, meta) {
+                    return '<a href="/applications/' + data + '">' + data + '</a>';
+                }
+            },
+            { 'data' : 'spec.name' },
+            { 'data' : 'requiredInstances' },
+            { 'data' : 'healthyInstances' },
+            { 'data' : 'totalCPUs' },
+            { 'data' : 'totalMemory' },
+            { 'data' : 'state' }
+        ]
+    });
+    var executors = $('#executors').DataTable({
+        'processing' : true,
+        'ajax': '/executors/dt',
+        'paging': false,
+        'info' : false,
+        'columnDefs': [
+            {
+                'className': 'text-center',
+                'targets': [2,3,4,5]
+            }
+        ],
+        'columns' : [
+            {
+                'data' : 'executorId' ,
+                'render' : function(data, type, row, meta) {
+                    return '<a href="/executors/' + data + '">' + data + '</a>';
+                }
+            },
+            { 'data' : 'hostname' },
+            { 'data' : 'freeCores' },
+            { 'data' : 'usedCores' },
+            { 'data' : 'freeMemory' },
+            { 'data' : 'usedMemory' }
+        ]
+    });
 
-    function loadApplications() {
-        $.ajax({
-            url: '/applications',
-            dataType: 'html',
-            success: function(html) {
-                $('#applications').html($(html));
-            }
-        });
-    }
-    function loadExecutors() {
-        $.ajax({
-            url: '/executors',
-            dataType: 'html',
-            success: function(html) {
-                $('#executors').html($(html));
-            }
-        });
-    }
-    loadClusterSummary();
-    loadApplications();
-    loadExecutors();
     setInterval(() => {
-        loadClusterSummary();
-        loadApplications();
-        loadExecutors();
+        cluster.ajax.reload();
+        applications.ajax.reload();
+        executors.ajax.reload();
     }, 5000);
 {{/partial}}
 {{> common/base}}
