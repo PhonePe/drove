@@ -49,7 +49,10 @@
 
     var summary = $('#appsummary').DataTable({
         'processing' : true,
-        'ajax': '/applications/{{appId}}/summary/dt',
+        'ajax': {
+            'url' : '/apis/v1/applications/{{appId}}',
+            'dataSrc' : function(res) { return res.data ? [ res.data ] : []; }
+        },
         'paging': false,
         'searching' : false,
         'ordering' : false,
@@ -66,7 +69,24 @@
     });
     var instances = $('#instances').DataTable({
         'processing' : true,
-        'ajax': '/applications/{{appId}}/instances/dt',
+        'ajax': {
+            'url' : '/apis/v1/applications/{{appId}}/instances',
+            'dataSrc' : function(res) {
+                if(!res.data) {
+                    return [];
+                }
+                res.data.forEach( (info, i) => {
+                    if(info.localInfo) {
+                        info['hostname'] = info.localInfo.hostname;
+                        info['ports'] = Object.keys(info.localInfo.ports)
+                                        .map(key => key + ':' + info.localInfo.ports[key].hostPort)
+                                        .join(",");
+                    }
+                    info['logStream'] = "TODO";
+                });
+                return res.data;
+            }
+        },
         'paging': false,
         'info' : false,
         'columns' : [

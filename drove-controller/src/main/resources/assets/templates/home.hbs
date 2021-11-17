@@ -72,7 +72,10 @@
 {{#partial "page_js"}}
     var cluster = $('#clusterSummary').DataTable({
         'processing' : true,
-        'ajax': '/cluster/dt',
+        'ajax': {
+            'url' : '/apis/v1/cluster',
+            'dataSrc': function(res) { return res.data ? [ res.data ] : []; }
+        },
         'paging': false,
         'searching' : false,
         'ordering' : false,
@@ -92,7 +95,12 @@
     });
     var applications = $('#applications').DataTable({
         'processing' : true,
-        'ajax': '/applications/dt',
+        'ajax': {
+            'url' : '/apis/v1/applications',
+            'dataSrc' : function(res) {
+                return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
+            }
+        },
         'paging': false,
         'info' : false,
         'columnDefs': [
@@ -118,7 +126,7 @@
     });
     var executors = $('#executors').DataTable({
         'processing' : true,
-        'ajax': '/executors/dt',
+        'ajax': '/apis/v1/cluster/executors',
         'paging': false,
         'info' : false,
         'columnDefs': [

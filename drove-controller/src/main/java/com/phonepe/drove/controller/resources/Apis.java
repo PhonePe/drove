@@ -4,6 +4,7 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.api.AppSummary;
+import com.phonepe.drove.models.api.ClusterSummary;
 import com.phonepe.drove.models.api.ExecutorSummary;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -74,6 +75,12 @@ public class Apis {
             @QueryParam("state") final Set<InstanceState> state) {
 
         return responseEngine.applicationInstances(appId, state);
+    }
+
+    @GET
+    @Path("/cluster")
+    public ApiResponse<ClusterSummary> clusterSummary() {
+        return responseEngine.cluster();
     }
 
     @GET
