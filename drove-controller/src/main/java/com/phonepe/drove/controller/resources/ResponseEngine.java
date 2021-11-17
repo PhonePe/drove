@@ -9,6 +9,7 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
@@ -69,6 +70,12 @@ public class ResponseEngine {
                 .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "App " + appId + " not found"));
     }
 
+    public ApiResponse<AppDetails> appDetails(String appId) {
+        return applicationStateDB.application(appId)
+                .map(this::toAppDetails)
+                .map(ApiResponse::success)
+                .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "No app found with id: " + appId));
+    }
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(
             final String appId, final Set<InstanceState> state) {
@@ -179,24 +186,45 @@ public class ResponseEngine {
                         .collect(Collectors.toUnmodifiableList()));
     }
 
+    private AppDetails toAppDetails(final ApplicationInfo info) {
+        val spec = info.getSpec();
+        val requiredInstances = info.getInstances();
+        val instances = applicationStateDB.instances(info.getAppId(), 0, Integer.MAX_VALUE);
+        val cpus = totalCPU(spec, requiredInstances);
+        val memory = totalMemory(spec, requiredInstances);
+        return new AppDetails(info.getAppId(),
+                              spec,
+                              requiredInstances,
+                              instances.stream().filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY)).count(),
+                              cpus,
+                              memory,
+                              instances,
+                              engine.applicationState(info.getAppId()).orElse(null),
+                              info.getCreated(),
+                              info.getUpdated());
+
+    }
 
     private AppSummary toAppSummary(final ApplicationInfo info) {
         val spec = info.getSpec();
         val instances = info.getInstances();
         val healthyInstances = applicationStateDB.instanceCount(info.getAppId(), InstanceState.HEALTHY);
-        val cpus = instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return cpuRequirement.getCount();
-                    }
+        val cpus = totalCPU(spec, instances);
+        val memory = totalMemory(spec, instances);
+        return new AppSummary(info.getAppId(),
+                              spec,
+                              instances,
+                              healthyInstances,
+                              cpus,
+                              memory,
+                              engine.applicationState(info.getAppId()).orElse(null),
+                              info.getCreated(),
+                              info.getUpdated());
 
-                    @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return 0L;
-                    }
-                }))
-                .sum();
-        val memory = instances * spec.getResources()
+    }
+
+    private long totalMemory(ApplicationSpec spec, long instances) {
+        return instances * spec.getResources()
                 .stream()
                 .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
                     @Override
@@ -210,16 +238,21 @@ public class ResponseEngine {
                     }
                 }))
                 .sum();
-        return new AppSummary(info.getAppId(),
-                              spec,
-                              instances,
-                              healthyInstances,
-                              cpus,
-                              memory,
-                              engine.applicationState(info.getAppId()).orElse(null),
-                              info.getCreated(),
-                              info.getUpdated());
+    }
 
+    private long totalCPU(ApplicationSpec spec, long instances) {
+        return instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return cpuRequirement.getCount();
+                    }
+
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return 0L;
+                    }
+                }))
+                .sum();
     }
 
     private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo) {

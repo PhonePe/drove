@@ -10,6 +10,7 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
@@ -109,13 +110,25 @@ public class ApplicationEngine {
             StateData<ApplicationState, ApplicationInfo> newState) {
         log.info("App state: {}", newState.getState());
         if (newState.getState().equals(ApplicationState.SCALING_REQUESTED)) {
-            val expectedInstances = stateDB.application(appId).map(ApplicationInfo::getInstances).orElse(0L);
-            log.info("App is in scaling requested state. Setting appropriate operation to scale app to: {}",
-                     expectedInstances);
-            handleOperation(new ApplicationScaleOperation(context.getAppId(),
-                                                               expectedInstances,
-                                                               ClusterOpSpec.DEFAULT));
+            val scalingOperation = context.getUpdate()
+                    .filter(op -> op.getType().equals(ApplicationOperationType.SCALE))
+                    .map(op -> {
+                        val scaleOp = (ApplicationScaleOperation)op;
+                        stateDB.updateInstanceCount(scaleOp.getAppId(), scaleOp.getRequiredInstances());
+                        log.info("App instances updated to: {}", scaleOp.getRequiredInstances());
+                        return op;
+                    })
+                    .orElseGet(() -> {
+                        val expectedInstances = stateDB.application(appId)
+                                .map(ApplicationInfo::getInstances)
+                                .orElse(0L);
+                        log.info("App is in scaling requested state. Setting appropriate operation to scale app to: {}",
+                                 expectedInstances);
+                        return new ApplicationScaleOperation(context.getAppId(),
+                                                      expectedInstances,
+                                                      ClusterOpSpec.DEFAULT);
+                    });
+            handleOperation(scalingOperation);
         }
     }
-
 }

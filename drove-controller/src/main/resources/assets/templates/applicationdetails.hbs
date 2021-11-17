@@ -1,0 +1,50 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col" id="appsummary">
+
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="row">
+            <div class="col">
+                <div class="row">
+                    <div class="col"><h4>Instances</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col" id="instances"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+{{/partial}}
+
+{{#partial "page_js"}}
+
+    function loadApplicationSummary() {
+        $.ajax({
+            url: '/applications/{{appId}}/summary',
+            dataType: 'html',
+            success: function(html) {
+                    $('#appsummary').html($(html));
+                }
+            });
+    }
+    function loadInstances() {
+        $.ajax({
+            url: '/applications/{{appId}}/instances',
+            dataType: 'html',
+            success: function(html) {
+                    $('#instances').html($(html));
+                }
+            });
+    }
+    loadApplicationSummary();
+    loadInstances();
+    setInterval(() => {
+        loadApplicationSummary();
+        loadInstances();
+    }, 5000);
+{{/partial}}
+{{> common/base}}

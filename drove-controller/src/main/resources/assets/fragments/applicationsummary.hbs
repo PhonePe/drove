@@ -12,9 +12,9 @@
         </tr>
     </thead>
     <tbody>
-        {{#each apps}}
+        {{#with app}}
             <tr>
-                <td><a href="/applications/{{id}}">{{id}}</a></td>
+                <td>{{id}}</td>
                 <td>{{#with spec}}{{name}}{{/with}}</td>
                 <td>{{requiredInstances}}</td>
                 <td>{{healthyInstances}}</td>
@@ -22,6 +22,6 @@
                 <td>{{totalMemory}}</td>
                 <td>{{state}}</td>
             </tr>
-        {{/each}}
+        {{/with}}
     </tbody>
 </table>
