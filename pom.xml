@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <lombok.version>1.18.22</lombok.version>
-        <dropwizard.version>2.0.24</dropwizard.version>
+        <dropwizard.version>2.0.25</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.1</junit.version>
         <awaitility.version>4.1.0</awaitility.version>

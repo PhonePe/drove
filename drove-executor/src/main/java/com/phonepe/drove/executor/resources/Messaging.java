@@ -15,7 +15,7 @@ import javax.ws.rs.core.MediaType;
 /**
  *
  */
-@Path("/messages")
+@Path("/v1/messages")
 @Produces(MediaType.APPLICATION_JSON)
 public class Messaging {
     private final ExecutorCommunicator communicator;
@@ -25,7 +25,6 @@ public class Messaging {
         this.communicator = communicator;
     }
 
-    @Path("/v1")
     @POST
     public MessageResponse receiveCommand(@NotNull @Valid final ExecutorMessage message) {
         return communicator.receive(message);

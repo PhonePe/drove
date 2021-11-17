@@ -64,7 +64,7 @@ public abstract class RemoteMessageSender<
             log.error("No host found.");
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
-        val uri = String.format("http://%s:%d/messages/v1", host.getHostname(), host.getPort());
+        val uri = String.format("http://%s:%d/apis/v1/messages", host.getHostname(), host.getPort());
         val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
         try {
             requestBuilder.header("Content-type", "application/json");

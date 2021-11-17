@@ -87,7 +87,7 @@ public class ApplicationEngine {
                 val appSpec = create.getSpec();
                 val now = new Date();
                 val appId = ControllerUtils.appId(appSpec);
-                val appInfo = new ApplicationInfo(appId, appSpec, 0, now, now);
+                val appInfo = new ApplicationInfo(appId, appSpec, create.getInstances(), now, now);
                 val context = new AppActionContext(appId, appSpec);
                 val stateMachine = new ApplicationStateMachine(StateData.create(
                         ApplicationState.INIT,

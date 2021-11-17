@@ -4,6 +4,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public interface ApplicationStateDB {
                                                     appInfo.getSpec(),
                                                     instances,
                                                     appInfo.getCreated(),
-                                                    appInfo.getUpdated()))
+                                                    new Date()))
                 .map(appInfo -> updateApplicationState(appId, appInfo))
                 .orElse(false);
     }

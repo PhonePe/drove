@@ -11,6 +11,8 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 /**
@@ -25,13 +27,18 @@ public class ApplicationCreateOperation extends ApplicationOperation {
     @Valid
     ApplicationSpec spec;
 
+    @Min(0)
+    @Max(2048)
+    long instances;
+
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationCreateOperation(ApplicationSpec spec, ClusterOpSpec opSpec) {
+    public ApplicationCreateOperation(ApplicationSpec spec, long instances, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.CREATE);
         this.spec = spec;
+        this.instances = instances;
         this.opSpec = opSpec;
     }
 

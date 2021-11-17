@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.KeeperException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,14 +41,18 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
     @Override
     @SneakyThrows
     public List<ApplicationInfo> applications(int start, int size) {
-        return ZkUtils.readChildrenNodes(curatorFramework,
-                                         APPLICATION_STATE_PATH,
-                                         start,
-                                         size,
-                                         path -> ZkUtils.readNodeData(curatorFramework,
-                                                                      appInfoPath(path),
-                                                                      mapper,
-                                                                      ApplicationInfo.class));
+        try {
+            return ZkUtils.readChildrenNodes(curatorFramework,
+                                             APPLICATION_STATE_PATH,
+                                             start,
+                                             size,
+                                             path -> ZkUtils.readNodeData(curatorFramework,
+                                                                          appInfoPath(path),
+                                                                          mapper,
+                                                                          ApplicationInfo.class));
+        } catch (KeeperException.NoNodeException e) {
+            return Collections.emptyList();
+        }
     }
 
     @Override

@@ -40,7 +40,9 @@ public class AppRecovery implements Managed {
             applicationStateDB.applications(0, Integer.MAX_VALUE)
                     .forEach(applicationInfo -> {
                         log.info("Found app: {}. Starting it.", applicationInfo.getAppId());
-                        applicationEngine.handleOperation(new ApplicationCreateOperation(applicationInfo.getSpec(), ClusterOpSpec.DEFAULT));
+                        applicationEngine.handleOperation(new ApplicationCreateOperation(applicationInfo.getSpec(),
+                                                                                         applicationInfo.getInstances(),
+                                                                                         ClusterOpSpec.DEFAULT));
                     });
         }
         else {

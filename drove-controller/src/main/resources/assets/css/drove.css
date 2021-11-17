@@ -1,0 +1,27 @@
+header {
+  margin-bottom: 1rem;
+}
+
+section {
+  margin-bottom: 1rem;
+}
+
+a {
+  color: #4b7bc5;
+}
+.idm-section {
+  border: darkgray solid 1px;
+  padding: 1rem;
+  margin: 1rem;
+}
+
+.cm-first-row {
+  padding: 1rem;
+}
+
+.cm-text-box {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border: solid darkgray !important;
+  border-width: 1px !important;
+}

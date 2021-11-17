@@ -11,8 +11,12 @@ import java.util.Date;
  */
 @Value
 public class AppDetails {
+    String id;
     ApplicationSpec spec;
     long instances;
+    long healthyInstances;
+    long totalCPUs;
+    long totalMemory;
     ApplicationState state;
     Date created;
     Date updated;

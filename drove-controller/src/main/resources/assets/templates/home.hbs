@@ -1,0 +1,69 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col" id="clusterSummary">
+
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <div class="row">
+                    <div class="col"><h4>Applications</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col" id="applications"></div>
+                </div>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <div class="row">
+                    <div class="col"><h4>Executors</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col" id="executors"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+{{/partial}}
+
+{{#partial "page_js"}}
+    function loadClusterSummary() {
+        $.ajax({
+            url: '/cluster',
+            dataType: 'html',
+            success: function(html) {
+                $('#clusterSummary').html($(html));
+            }
+        });
+    }
+
+    function loadApplications() {
+        $.ajax({
+            url: '/applications',
+            dataType: 'html',
+            success: function(html) {
+                $('#applications').html($(html));
+            }
+        });
+    }
+    function loadExecutors() {
+        $.ajax({
+            url: '/executors',
+            dataType: 'html',
+            success: function(html) {
+                $('#executors').html($(html));
+            }
+        });
+    }
+    loadClusterSummary();
+    loadApplications();
+    loadExecutors();
+    setInterval(() => {
+        loadClusterSummary();
+        loadApplications();
+        loadExecutors();
+    }, 5000);
+{{/partial}}
+{{> common/base}}

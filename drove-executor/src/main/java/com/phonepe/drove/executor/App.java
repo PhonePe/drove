@@ -4,6 +4,7 @@ import com.google.inject.Stage;
 import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
+import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import ru.vyarus.dropwizard.guice.GuiceBundle;
@@ -37,6 +38,7 @@ public class App extends Application<AppConfig> {
     @Override
     public void run(AppConfig appConfig, Environment environment) throws Exception {
         configureMapper(environment.getObjectMapper());
+        ((AbstractServerFactory)appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
     }
 
     public static void main(String[] args) throws Exception {

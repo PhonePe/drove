@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!--<link rel="icon" href="favicon.ico">-->
+
+    <title>D R O V E</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <!--    <link href="/open-iconic-master/font/css/open-iconic-bootstrap.css" rel="stylesheet">-->
+    <link href="/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+
+    {{#block "page_css_includes"}}
+
+    {{/block}}
+    <link href="/css/drove.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <!--<link href="album.css" rel="stylesheet">-->
+    <style>
+        {{#block "page_css"}}
+
+    {{/block}}
+
+    </style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-right">
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <a class="navbar-brand cm-icon mb-0 h1" href="/" style="font-size: x-large;"><img
+                    src="/images/drove-logo-white.png" width="60" height="45" alt=""><span class="pl-2">d r o v e</span></a>
+            <ul class="navbar-nav mr-auto mt-2 mt-lg-0"></ul>
+        </div>
+
+    </nav>
+</header>
+<main role="main" class="container-fluid">
+    {{#if error}}
+        <section>
+            <div class="alert alert-danger" role="alert">
+                <b>Error:</b> {{error}}
+            </div>
+        </section>
+    {{/if}}
+    {{#block "content"}}
+
+    {{/block}}
+</main>
+<script src="/js/swal.js"></script>
+<script src="/js/jquery-3.3.1.min.js"></script>
+<script src="/js/popper.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/jquery.dataTables.min.js"></script>
+<script src="/js/cookies.js"></script>
+
+{{#block "page_js_includes"}}
+
+{{/block}}
+<script language="JavaScript">
+(function() {
+  'use strict';
+  window.addEventListener( "pageshow", function ( event ) {
+    var historyTraversal = event.persisted ||
+                           ( typeof window.performance != "undefined" &&
+                                window.performance.navigation.type === 2 );
+    if ( historyTraversal ) {
+      // Handle page restore.
+      window.location.reload();
+    }
+  });
+
+  window.addEventListener('load', function() {
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+
+$(document).ready(function() {
+{{#block "page_js"}}
+
+{{/block}}
+	$('.data-table').DataTable({
+		paging: false,
+		ordering: false,
+		info: false,
+		"dom":' <"search"f><"top"l>rt<"bottom"ip><"clear">'
+	});
+
+	$('.post-button').on('click', function(e) {
+	    e.preventDefault();
+	    var data = new Object();
+	    data[this.attr('data-field')] = this.attr('data-submit');
+	    $.post(this.href, data, function() {
+	        alert('Action complete');
+	        location.reload();
+	    });
+	});
+
+    $('form.confirmed-form').submit(function (e, params) {
+        var localParams = params || {};
+
+        if (!localParams.send) {
+            e.preventDefault();
+
+            var form = $(this);
+            Swal.fire({
+                    title: form.attr('data-cnf-title'),
+                    text: form.attr('data-cnf-text'),
+                    type: "warning",
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonColor: "#6A9944",
+                    confirmButtonText: "Confirm",
+                    cancelButtonText: "Cancel",
+                    closeOnConfirm: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $(e.currentTarget).trigger(e.type, { 'send': true });
+                    }
+                });
+        }
+    });
+
+});
+
+
+</script>
+</body>
+</html>

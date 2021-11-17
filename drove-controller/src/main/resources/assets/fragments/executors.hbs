@@ -1,0 +1,24 @@
+<table class="table table-bordered data-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Host</th>
+            <th>Free Cores</th>
+            <th>Used Cores</th>
+            <th>Free Memory</th>
+            <th>Used Memory</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#each executors}}
+            <tr>
+                <td><a href="/executors/{{executorId}}">{{executorId}}</a></td>
+                <td>{{hostname}}:{{port}}</td>
+                <td>{{freeCores}}</td>
+                <td>{{usedCores}}</td>
+                <td>{{freeMemory}}</td>
+                <td>{{usedMemory}}</td>
+            </tr>
+        {{/each}}
+    </tbody>
+</table>

@@ -1,0 +1,30 @@
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th class="text-center">Number of executors</th>
+            <th class="text-center">Number of Applications</th>
+            <th class="text-center">Number of Active Applications</th>
+            <th class="text-center">Free Cores</th>
+            <th class="text-center">Used Cores</th>
+            <th class="text-center">Total Cores</th>
+            <th class="text-center">Free Memory</th>
+            <th class="text-center">Used Memory</th>
+            <th class="text-center">Total Memory</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#with summary}}
+        <tr>
+            <td class="text-center">{{numExecutors}}</td>
+            <td class="text-center">{{numApplications}}</td>
+            <td class="text-center">{{numActiveApplications}}</td>
+            <td class="text-center">{{freeCores}}</td>
+            <td class="text-center">{{usedCores}}</td>
+            <td class="text-center">{{totalCores}}</td>
+            <td class="text-center">{{freeMemory}}</td>
+            <td class="text-center">{{usedMemory}}</td>
+            <td class="text-center">{{totalMemory}}</td>
+        </tr>
+    {{/with}}
+    </tbody>
+</table>

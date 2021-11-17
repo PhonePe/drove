@@ -16,7 +16,7 @@ import javax.ws.rs.core.MediaType;
 /**
  *
  */
-@Path("/messages")
+@Path("/v1/messages")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class Messaging {
@@ -27,7 +27,6 @@ public class Messaging {
         this.communicator = communicator;
     }
 
-    @Path("/v1")
     @POST
     public MessageResponse receiveCommand(@NotNull @Valid final ControllerMessage message) {
         return communicator.receive(message);
