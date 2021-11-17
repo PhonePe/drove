@@ -79,8 +79,8 @@
                     if(info.localInfo) {
                         info['hostname'] = info.localInfo.hostname;
                         info['ports'] = Object.keys(info.localInfo.ports)
-                                        .map(key => key + ':' + info.localInfo.ports[key].hostPort)
-                                        .join(",");
+                                        .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
+                                            .join(",");
                     }
                     info['logStream'] = "TODO";
                 });
