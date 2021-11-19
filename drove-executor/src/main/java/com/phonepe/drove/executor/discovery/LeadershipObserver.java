@@ -1,10 +1,10 @@
 package com.phonepe.drove.executor.discovery;
 
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.nodedata.ControllerNodeData;
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.discovery.nodedata.NodeDataVisitor;
-import com.phonepe.drove.common.discovery.nodedata.NodeType;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;

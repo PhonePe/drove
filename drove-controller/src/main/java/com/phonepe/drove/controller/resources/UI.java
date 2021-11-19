@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.resources;
 import com.google.common.base.Strings;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.ui.views.ApplicationDetailsPageView;
+import com.phonepe.drove.controller.ui.views.ExecutorDetailsPageView;
 import com.phonepe.drove.controller.ui.views.HomeView;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -56,5 +57,14 @@ public class UI {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
         return new ApplicationDetailsPageView(appId);
+    }
+
+    @GET
+    @Path("/executors/{id}")
+    public ExecutorDetailsPageView executorDetails(@PathParam("id") final String executorId) {
+        if (Strings.isNullOrEmpty(executorId)) {
+            throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
+        }
+        return new ExecutorDetailsPageView(executorId);
     }
 }

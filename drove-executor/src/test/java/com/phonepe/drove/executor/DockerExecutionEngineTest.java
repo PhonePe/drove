@@ -2,8 +2,8 @@ package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.model.InstanceSpec;
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.executor.engine.DockerExecutionEngine;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;

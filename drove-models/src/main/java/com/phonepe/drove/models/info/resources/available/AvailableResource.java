@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.model.resources.allocation;
+package com.phonepe.drove.models.info.resources.available;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -10,12 +10,12 @@ import lombok.Data;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(name = "CPU", value = CPUAllocation.class),
-        @JsonSubTypes.Type(name = "MEMORY", value = MemoryAllocation.class),
+        @JsonSubTypes.Type(name = "CPU", value = AvailableCPU.class),
+        @JsonSubTypes.Type(name = "MEMORY", value = AvailableMemory.class),
 })
 @Data
-public abstract class ResourceAllocation {
+public abstract class AvailableResource {
     private final ResourceType type;
 
-    public abstract <T> T accept(final ResourceAllocationVisitor<T> visitor);
+    public abstract <T> T accept(final AvailableResourceVisitor<T> visitor);
 }

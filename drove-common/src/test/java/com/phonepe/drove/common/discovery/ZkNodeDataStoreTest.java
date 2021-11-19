@@ -2,12 +2,12 @@ package com.phonepe.drove.common.discovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.discovery.nodedata.NodeType;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
-import com.phonepe.drove.common.model.resources.available.AvailableCPU;
-import com.phonepe.drove.common.model.resources.available.AvailableMemory;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeType;
+import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.test.TestingCluster;

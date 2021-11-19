@@ -1,6 +1,6 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Value;

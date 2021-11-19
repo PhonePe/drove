@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor;
 
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -49,6 +49,7 @@ public class Utils {
                 data.getInstanceId(),
                 data.getExecutorId(),
                 data.getLocalInfo(),
+                data.getResources(),
                 state.getState(),
                 Collections.emptyMap(),
                 new Date(),

@@ -1,6 +1,6 @@
-package com.phonepe.drove.common.discovery.nodedata;
+package com.phonepe.drove.models.info.nodedata;
 
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;

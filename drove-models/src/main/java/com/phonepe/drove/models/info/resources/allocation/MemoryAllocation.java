@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.model.resources.allocation;
+package com.phonepe.drove.models.info.resources.allocation;
 
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import lombok.Builder;

@@ -1,7 +1,8 @@
 package com.phonepe.drove.common.discovery;
 
-import com.phonepe.drove.common.discovery.nodedata.NodeData;
-import com.phonepe.drove.common.discovery.nodedata.NodeType;
+
+import com.phonepe.drove.models.info.nodedata.NodeData;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 
 import java.util.List;
 

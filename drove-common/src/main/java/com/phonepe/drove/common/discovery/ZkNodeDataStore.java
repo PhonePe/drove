@@ -1,8 +1,8 @@
 package com.phonepe.drove.common.discovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phonepe.drove.common.discovery.nodedata.NodeData;
-import com.phonepe.drove.common.discovery.nodedata.NodeType;
+import com.phonepe.drove.models.info.nodedata.NodeData;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;

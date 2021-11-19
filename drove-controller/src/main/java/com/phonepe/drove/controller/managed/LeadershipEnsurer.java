@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;

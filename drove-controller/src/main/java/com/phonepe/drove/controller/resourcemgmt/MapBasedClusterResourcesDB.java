@@ -1,13 +1,13 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

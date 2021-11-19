@@ -2,10 +2,8 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.api.ApiResponse;
-import com.phonepe.drove.models.api.AppSummary;
-import com.phonepe.drove.models.api.ClusterSummary;
-import com.phonepe.drove.models.api.ExecutorSummary;
+import com.phonepe.drove.models.api.*;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -87,5 +85,11 @@ public class Apis {
     @Path("/cluster/executors")
     public ApiResponse<List<ExecutorSummary>> nodes() {
         return responseEngine.nodes();
+    }
+
+    @GET
+    @Path("/cluster/executors/{id}")
+    public ApiResponse<ExecutorNodeData> executorDetails(@PathParam("id") @NotEmpty final String executorId) {
+        return responseEngine.executorDetails(executorId);
     }
 }
