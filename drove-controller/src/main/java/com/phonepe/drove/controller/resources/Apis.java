@@ -97,4 +97,10 @@ public class Apis {
     public ApiResponse<ExecutorNodeData> executorDetails(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.executorDetails(executorId);
     }
+
+    @GET
+    @Path("/endpoints")
+    public ApiResponse<List<ExposedAppInfo>> endpoints() {
+        return responseEngine.endpoints();
+    }
 }
