@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>com.phonepe.drove</groupId>
-            <artifactId>drove-internal-models</artifactId>
+            <artifactId>drove-models</artifactId>
             <version>${project.version}</version>
         </dependency>
 

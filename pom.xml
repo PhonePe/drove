@@ -23,9 +23,9 @@
         <dropwizard.version>2.0.25</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.1</junit.version>
-        <awaitility.version>4.1.0</awaitility.version>
+        <awaitility.version>4.1.1</awaitility.version>
         <guice.version>5.0.1</guice.version>
-        <dw-guicey.version>5.3.0</dw-guicey.version>
+        <dw-guicey.version>5.4.0</dw-guicey.version>
         <curator.version>5.2.0</curator.version>
         <failsafe.version>2.4.2</failsafe.version>
     </properties>

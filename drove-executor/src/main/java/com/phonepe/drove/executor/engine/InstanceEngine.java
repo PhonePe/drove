@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
+
 /**
  *
  */
@@ -94,12 +96,13 @@ public class InstanceEngine implements Closeable {
                                                     actionFactory);
         stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
-            MDC.put("instanceId", spec.getInstanceId());
+            MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
             InstanceState state = null;
             do {
                 state = stateMachine.execute();
             } while (!state.isTerminal());
-            MDC.remove("instanceId");
+            log.info(FINALIZE_SESSION_MARKER, "Completed");
+            MDC.remove("instanceLogId");
             return state;
         });
         stateMachines.put(instanceId, new SMInfo(stateMachine, f));

@@ -14,7 +14,5 @@ public class ZkConfig {
 
     private String nameSpace;
 
-    private String hostname;
-
     private int port;
 }
