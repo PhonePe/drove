@@ -25,4 +25,3 @@ logging:
 
 zookeeper:
   connectionString: localhost:2181
-  hostname: localhost

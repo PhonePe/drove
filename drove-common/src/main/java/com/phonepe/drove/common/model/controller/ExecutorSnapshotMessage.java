@@ -1,8 +1,8 @@
 package com.phonepe.drove.common.model.controller;
 
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

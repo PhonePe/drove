@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.discovery.nodedata;
+package com.phonepe.drove.models.info.nodedata;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

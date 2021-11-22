@@ -1,6 +1,6 @@
 package com.phonepe.drove.common.model;
 
-import com.phonepe.drove.common.model.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;

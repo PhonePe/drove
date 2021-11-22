@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.model.resources.allocation;
+package com.phonepe.drove.models.info.resources.allocation;
 
 /**
  *

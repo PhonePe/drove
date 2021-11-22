@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 
 import java.util.Collection;
 import java.util.List;

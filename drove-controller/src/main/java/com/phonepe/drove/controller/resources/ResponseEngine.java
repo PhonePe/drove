@@ -1,8 +1,5 @@
 package com.phonepe.drove.controller.resources;
 
-import com.phonepe.drove.common.discovery.nodedata.ControllerNodeData;
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.discovery.nodedata.NodeDataVisitor;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -14,6 +11,9 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.val;
@@ -298,5 +298,12 @@ public class ResponseEngine {
                                                                        .sum()));
                     }
                 });
+    }
+
+    public ApiResponse<com.phonepe.drove.models.info.nodedata.ExecutorNodeData> executorDetails(String executorId) {
+        return clusterResourcesDB.currentSnapshot(executorId)
+                .map(ExecutorHostInfo::getNodeData)
+                .map(ApiResponse::success)
+                .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "No executor found with id: " + executorId));
     }
 }

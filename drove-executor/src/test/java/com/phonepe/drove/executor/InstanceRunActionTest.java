@@ -4,8 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.actions.ExecutableFetchAction;
@@ -59,6 +59,7 @@ class InstanceRunActionTest {
                                                                                             executorId,
                                                                                             new LocalInstanceInfo(CommonUtils.hostname(),
                                                                                                           Collections.emptyMap()),
+                                                                                            instanceSpec.getResources(),
                                                                                             Collections.emptyMap(),
                                                                                             new Date(),
                                                                                             new Date()),

@@ -133,6 +133,38 @@
                     <skipStaging>true</skipStaging>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.jamierf.dropwizard</groupId>
+                <artifactId>dropwizard-debpkg-maven-plugin</artifactId>
+                <version>0.10</version>
+                <configuration>
+                    <configTemplate>configs/deb-executor-config.yml</configTemplate>
+                    <jvm>
+                        <memory>2g</memory>
+                        <packageName>openjdk-11-jre</packageName>
+                        <server>true</server>
+                    </jvm>
+                    <unix>
+                        <user>drove</user>
+                        <respawn>true</respawn>
+                    </unix>
+                    <dropwizard>
+                        <httpPort>8080</httpPort>
+                        <httpAdminPort>8081</httpAdminPort>
+                    </dropwizard>
+                    <path>
+                        <logDirectory>/var/log/drove/${project.artifactId}</logDirectory>
+                    </path>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>dwpackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

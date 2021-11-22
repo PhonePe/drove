@@ -1,6 +1,6 @@
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 
 import java.util.List;
 import java.util.Map;

@@ -1,6 +1,5 @@
 package com.phonepe.drove.executor.managed;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.executor.resource.ResourceDB;
@@ -13,8 +12,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.Arrays;
+import java.io.StringReader;
 import java.util.Collections;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -48,26 +49,21 @@ public class ResourcePopulator implements Managed {
         val cores = lines.stream()
                 .filter(line -> line.matches("node \\d+ cpus:.*"))
                 .map(line -> {
-                    val m = nodePattern.matcher(line.substring(0, line.indexOf(':')));
-                    if (!m.find()) {
+                    val node = nodeNum(line);
+                    if(-1 == node) {
                         throw new IllegalStateException("Did not find any node");
                     }
-                    val node = Integer.parseInt(m.group());
-                    val cpus = Arrays.stream(line.replaceAll("node \\d+ cpus: ", "").split("\\s*"))
-                            .filter(s -> !Strings.isNullOrEmpty(s))
-                            .map(Integer::parseInt)
-                            .collect(Collectors.toUnmodifiableSet());
+                    val cpus = cores(line);
                     return new Pair<>(node, cpus);
                 })
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
         val mem = lines.stream()
                 .filter(line -> line.matches("node \\d+ size: .*"))
                 .map(line -> {
-                    val m = nodePattern.matcher(line.substring(0, line.indexOf(':')));
-                    if (!m.find()) {
-                        throw new IllegalStateException();
+                    val node = nodeNum(line);
+                    if (-1 == node) {
+                        throw new IllegalStateException("Did not find any node");
                     }
-                    val node = Integer.parseInt(m.group());
                     val m1 = nodePattern.matcher(line.substring(line.indexOf(":")));
                     if (!m1.find()) {
                         throw new IllegalStateException();
@@ -89,5 +85,20 @@ public class ResourcePopulator implements Managed {
     @Override
     public void stop() throws Exception {
 
+    }
+
+    private int nodeNum(final String cpuLine) {
+        return new Scanner(new StringReader(cpuLine.substring(0, cpuLine.indexOf(':'))))
+                .findAll(Pattern.compile("\\p{Digit}+"))
+                .findAny()
+                .map(m -> Integer.parseInt(m.group()))
+                .orElse(-1);
+    }
+
+    private Set<Integer> cores(final String line) {
+        return new Scanner(new StringReader(line.substring(line.indexOf(':'))))
+            .findAll(Pattern.compile("\\p{Digit}+"))
+                .map(r -> Integer.parseInt(r.group()))
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

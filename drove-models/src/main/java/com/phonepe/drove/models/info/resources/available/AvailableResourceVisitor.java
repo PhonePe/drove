@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.model.resources.available;
+package com.phonepe.drove.models.info.resources.available;
 
 /**
  *

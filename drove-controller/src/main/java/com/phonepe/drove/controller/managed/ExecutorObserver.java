@@ -2,9 +2,9 @@ package com.phonepe.drove.controller.managed;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.controller.engine.StateUpdater;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;

@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
 /**

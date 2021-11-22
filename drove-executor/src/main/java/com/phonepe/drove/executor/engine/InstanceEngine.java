@@ -4,9 +4,9 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
 
 /**
  *
@@ -75,6 +77,7 @@ public class InstanceEngine implements Closeable {
                                                                           spec.getInstanceId(),
                                                                           executorIdManager.executorId().orElse(null),
                                                                           null,
+                                                                          spec.getResources(),
                                                                           Collections.emptyMap(),
                                                                           currDate,
                                                                           currDate)));
@@ -93,12 +96,13 @@ public class InstanceEngine implements Closeable {
                                                     actionFactory);
         stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
-            MDC.put("instanceId", spec.getInstanceId());
+            MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
             InstanceState state = null;
             do {
                 state = stateMachine.execute();
             } while (!state.isTerminal());
-            MDC.remove("instanceId");
+            log.info(FINALIZE_SESSION_MARKER, "Completed");
+            MDC.remove("instanceLogId");
             return state;
         });
         stateMachines.put(instanceId, new SMInfo(stateMachine, f));

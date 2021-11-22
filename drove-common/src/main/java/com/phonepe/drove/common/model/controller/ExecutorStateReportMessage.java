@@ -1,7 +1,7 @@
 package com.phonepe.drove.common.model.controller;
 
 import com.phonepe.drove.common.model.ControllerMessageType;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.common.model.MessageHeader;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

@@ -2,12 +2,12 @@ package com.phonepe.drove.executor.discovery;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resource.ResourceDB;
 import com.phonepe.drove.executor.resource.ResourceInfo;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.ServerLifecycleListener;

@@ -1,13 +1,14 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.common.discovery.nodedata.ExecutorNodeData;
-import com.phonepe.drove.common.model.ExecutorResourceSnapshot;
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -50,14 +51,14 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                              .map(this::convertState)
                              .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
                                                                    Function.identity())));
-//        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
+        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
     @SneakyThrows
     public synchronized void update(final ExecutorResourceSnapshot snapshot) {
         nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
-//        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
+        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override

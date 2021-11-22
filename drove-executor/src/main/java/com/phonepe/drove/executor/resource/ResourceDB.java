@@ -1,8 +1,8 @@
 package com.phonepe.drove.executor.resource;
 
 import com.google.common.collect.Sets;
-import com.phonepe.drove.common.model.resources.available.AvailableCPU;
-import com.phonepe.drove.common.model.resources.available.AvailableMemory;
+import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.common.model.utils.Pair;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.AllArgsConstructor;

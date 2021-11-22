@@ -80,28 +80,9 @@ buildNumber.properties
 
 ### Maven template
 .mvn/timing.properties
-bullhorn-fabric-processor/embedded_hbase
-bullhorn-fabric-processor/embedded_zookeeper
-bullhorn-server/embedded_hbase
-bullhorn-server/embedded_zookeeper
-
 # Eclipse
 .project
 .settings/
-bullhorn-client/.classpath
-bullhorn-client/.project
-bullhorn-client/.settings/
-bullhorn-colloquy-models/.classpath
-bullhorn-colloquy-models/.project
-bullhorn-colloquy-models/.settings/
-bullhorn-models/.classpath
-bullhorn-models/.project
-bullhorn-models/.settings/
-bullhorn-server/.classpath
-bullhorn-server/.project
-bullhorn-server/.settings/
-bullhorn-zencast-models/.classpath
-bullhorn-zencast-models/bin/
-bullhorn-fabric-processor/.classpath
-bullhorn-ingestion-models/.classpath
-bullhorn-ingestion/.classpath
+*.deb
+*.zip
+.*.sw*

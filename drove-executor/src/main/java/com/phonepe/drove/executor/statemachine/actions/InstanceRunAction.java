@@ -6,9 +6,10 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.common.model.resources.allocation.CPUAllocation;
-import com.phonepe.drove.common.model.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.common.model.resources.allocation.ResourceAllocationVisitor;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -94,7 +95,7 @@ public class InstanceRunAction extends InstanceAction {
                     });
             hostConfig.withPortBindings(ports);
 
-            val instanceInfo = instanceInfo(currentState, portMappings, hostName);
+            val instanceInfo = instanceInfo(currentState, portMappings, instanceSpec.getResources(), hostName);
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
@@ -128,6 +129,7 @@ public class InstanceRunAction extends InstanceAction {
     private ExecutorInstanceInfo instanceInfo(
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,
+            List<ResourceAllocation> resources,
             String hostName) {
         val data = currentState.getData();
         return new ExecutorInstanceInfo(
@@ -135,6 +137,7 @@ public class InstanceRunAction extends InstanceAction {
                 data.getInstanceId(),
                 data.getExecutorId(),
                 new LocalInstanceInfo(hostName, portMappings),
+                resources,
                 Collections.emptyMap(),
                 new Date(),
                 new Date());
