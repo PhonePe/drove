@@ -257,29 +257,36 @@ public class ResponseEngine {
     public ApiResponse<List<ExposedAppInfo>> endpoints() {
         //TODO::HANDLE EXPOSURE MODE
         return ApiResponse.success(applicationStateDB.applications(0, Integer.MAX_VALUE)
-                .stream()
-                .filter(app -> engine.applicationState(app.getAppId())
-                        .filter(s -> s.equals(ApplicationState.RUNNING)).isPresent()) //Only running
-                .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
-                .filter(app -> !app.getSpec().getExposedPorts().isEmpty()) //Has any exposed ports
-                .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
-                .map(app -> {
-                    val spec = app.getSpec().getExposureSpec();
-                    return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
-                                              applicationStateDB.healthyInstances(app.getAppId())
-                                                      .stream()
-                                                      .sorted(Comparator.comparing(InstanceInfo::getCreated)) //Reduce chaos
-                                                      .filter(instanceInfo -> instanceInfo.getLocalInfo()
-                                                              .getPorts()
-                                                              .containsKey(spec.getPortName())) //Has the specified port exposed
-                                                      .map(instanceInfo -> new ExposedAppInfo.ExposedHost(instanceInfo.getLocalInfo()
-                                                                                                                  .getHostname(),
-                                                                                                          instanceInfo.getLocalInfo()
-                                                                                                                  .getPorts()
-                                                                                                                  .get(spec.getPortName())
-                                                                                                                  .getHostPort()))
-                                                      .collect(Collectors.toUnmodifiableList()));
-                })
-                .collect(Collectors.toUnmodifiableList()));
+                                           .stream()
+                                           .filter(app -> engine.applicationState(app.getAppId())
+                                                   .filter(s -> s.equals(ApplicationState.RUNNING) || s.equals(
+                                                           ApplicationState.SCALING_REQUESTED) || s.equals(
+                                                           ApplicationState.RESTART_REQUESTED))
+                                                   .isPresent()) //Only running
+                                           .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
+                                           .filter(app -> !app.getSpec()
+                                                   .getExposedPorts()
+                                                   .isEmpty()) //Has any exposed ports
+                                           .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
+                                           .map(app -> {
+                                               val spec = app.getSpec().getExposureSpec();
+                                               return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
+                                                                         applicationStateDB.healthyInstances(app.getAppId())
+                                                                                 .stream()
+                                                                                 .sorted(Comparator.comparing(
+                                                                                         InstanceInfo::getCreated)) //Reduce chaos
+                                                                                 .filter(instanceInfo -> instanceInfo.getLocalInfo()
+                                                                                         .getPorts()
+                                                                                         .containsKey(spec.getPortName())) //Has the specified port exposed
+                                                                                 .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
+                                                                                         instanceInfo.getLocalInfo()
+                                                                                                 .getHostname(),
+                                                                                         instanceInfo.getLocalInfo()
+                                                                                                 .getPorts()
+                                                                                                 .get(spec.getPortName())
+                                                                                                 .getHostPort()))
+                                                                                 .collect(Collectors.toUnmodifiableList()));
+                                           })
+                                           .collect(Collectors.toUnmodifiableList()));
     }
 }

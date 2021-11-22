@@ -103,4 +103,10 @@ public class Apis {
     public ApiResponse<List<ExposedAppInfo>> endpoints() {
         return responseEngine.endpoints();
     }
+
+    @GET
+    @Path("/ping")
+    public ApiResponse<String> ping() {
+        return ApiResponse.success("pong");
+    }
 }
