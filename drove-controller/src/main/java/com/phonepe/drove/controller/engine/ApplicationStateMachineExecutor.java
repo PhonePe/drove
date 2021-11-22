@@ -5,11 +5,15 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
+import net.jodah.failsafe.TimeoutExceededException;
 import org.slf4j.MDC;
 
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -22,7 +26,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class ApplicationStateMachineExecutor {
-    private static final Set<ApplicationState> PAUSED_STATES = EnumSet.of(ApplicationState.MONITORING, ApplicationState.RUNNING);
+    private static final Set<ApplicationState> PAUSED_STATES = EnumSet.of(ApplicationState.MONITORING,
+                                                                          ApplicationState.RUNNING);
 
     public static final String MDC_PARAM = "appId";
     private final String appId;
@@ -50,10 +55,11 @@ public class ApplicationStateMachineExecutor {
                 do {
                     try {
                         state = stateMachine.execute();
-                    } catch (Throwable t) {
+                    }
+                    catch (Throwable t) {
                         log.error("Error running action: ", t);
                     }
-                    if(PAUSED_STATES.contains(state)) {
+                    if (PAUSED_STATES.contains(state)) {
                         log.info("State machine is being suspended");
                         checkLock.lock();
                         wake.set(false);
@@ -68,6 +74,7 @@ public class ApplicationStateMachineExecutor {
                         }
                     }
                 } while (null != state && !state.isTerminal());
+                log.info("State machine exited with final state: {}", state);
             }
             finally {
                 MDC.remove(MDC_PARAM);
@@ -77,7 +84,7 @@ public class ApplicationStateMachineExecutor {
     }
 
     public boolean notifyUpdate(final ApplicationOperation update) {
-        if(stateMachine.notifyUpdate(update)) {
+        if (stateMachine.notifyUpdate(update)) {
             checkLock.lock();
             try {
                 wake.set(true);
@@ -93,15 +100,23 @@ public class ApplicationStateMachineExecutor {
 
     public void stop() {
         if (null != currentState) {
-            currentState.cancel(true);
+            stateMachine.stop();
+//            currentState.cancel(true);
+            val retryPolicy = new RetryPolicy<Boolean>()
+                    .withDelay(Duration.ofSeconds(3))
+                    .withMaxAttempts(50)
+                    .withMaxDuration(Duration.ofSeconds(60))
+                    .handle(Exception.class)
+                    .handleResultIf(r -> !r);
             try {
-                log.info("Application {} exited with state {}", appId, currentState.get());
+                Failsafe.with(retryPolicy)
+                        .onFailure(e -> log.error("Completion wait for " + appId + " completed with error:",
+                                                  e.getFailure()))
+                        .run(() -> currentState.isDone());
+                log.info("State machine for app {} has shut down", appId);
             }
-            catch (ExecutionException e) {
-                log.error("Error getting value from app future for " + appId, e);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            catch (TimeoutExceededException e) {
+                log.error("Wait for SM for {} to stop has exceeded 60 secs. There might be thread leak.", appId);
             }
         }
     }

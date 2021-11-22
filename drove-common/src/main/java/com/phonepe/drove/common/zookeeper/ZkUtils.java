@@ -59,6 +59,7 @@ public class ZkUtils {
         try {
             curatorFramework.delete()
                     .idempotent()
+                    .guaranteed()
                     .forPath(path);
             return true;
         }

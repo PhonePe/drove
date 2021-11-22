@@ -18,7 +18,10 @@ import java.util.List;
 public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> {
     private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
             = List.of(
-            new Transition<>(ApplicationState.INIT, CreateAppAction.class, ApplicationState.MONITORING, ApplicationState.RUNNING),
+            new Transition<>(ApplicationState.INIT,
+                             CreateAppAction.class,
+                             ApplicationState.MONITORING,
+                             ApplicationState.RUNNING),
             new Transition<>(ApplicationState.MONITORING,
                              AppOperationRouterAction.class,
                              ApplicationState.DEPLOYMENT_REQUESTED,
@@ -56,7 +59,10 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
             new Transition<>(ApplicationState.RESTART_REQUESTED,
                              RestartAppAction.class,
                              ApplicationState.RUNNING,
-                             ApplicationState.MONITORING));
+                             ApplicationState.MONITORING),
+            new Transition<>(ApplicationState.DESTROY_REQUESTED,
+                             DestroyAppAction.class,
+                             ApplicationState.DESTROYED));
 
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,

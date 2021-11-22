@@ -17,7 +17,7 @@ public enum ApplicationState {
     RESTART_REQUESTED(false),
     DESTROY_REQUESTED(false),
     DOWN(false),
-    SUSPENDED(true),
+    DESTROYED(true),
     FAILED(true);
 
     @Getter

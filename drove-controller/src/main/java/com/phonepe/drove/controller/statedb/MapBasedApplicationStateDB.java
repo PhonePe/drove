@@ -74,7 +74,11 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
 
     @Override
     public boolean deleteApplicationState(String appId) {
-        return ZkUtils.deleteNode(curatorFramework, appInfoPath(appId));
+        val status = ZkUtils.deleteNode(curatorFramework, appInfoPath(appId));
+        if(status) {
+            appInstances.remove(appId);
+        }
+        return status;
     }
 
     @Override

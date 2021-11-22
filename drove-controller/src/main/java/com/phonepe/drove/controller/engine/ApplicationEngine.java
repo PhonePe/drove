@@ -108,8 +108,9 @@ public class ApplicationEngine {
             String appId,
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> newState) {
-        log.info("App state: {}", newState.getState());
-        if (newState.getState().equals(ApplicationState.SCALING_REQUESTED)) {
+        val state = newState.getState();
+        log.info("App state: {}", state);
+        if (state.equals(ApplicationState.SCALING_REQUESTED)) {
             val scalingOperation = context.getUpdate()
                     .filter(op -> op.getType().equals(ApplicationOperationType.SCALE))
                     .map(op -> {
@@ -129,6 +130,16 @@ public class ApplicationEngine {
                                                       ClusterOpSpec.DEFAULT);
                     });
             handleOperation(scalingOperation);
+        }
+        else {
+            if(state.equals(ApplicationState.DESTROYED)) {
+                stateMachines.computeIfPresent(appId, (id, sm) -> {
+                    sm.stop();
+                    stateDB.deleteApplicationState(appId);
+                    log.info("State machine stopped for: {}", appId);
+                   return null;
+                });
+            }
         }
     }
 }

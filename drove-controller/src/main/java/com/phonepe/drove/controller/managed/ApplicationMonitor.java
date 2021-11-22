@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 public class ApplicationMonitor implements Managed {
     private static final Set<ApplicationState> SKIPPED_STATES = EnumSet.of(ApplicationState.INIT,
-                                                                           ApplicationState.SUSPENDED,
+                                                                           ApplicationState.DESTROYED,
                                                                            ApplicationState.FAILED,
                                                                            ApplicationState.SCALING_REQUESTED);
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
