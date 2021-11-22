@@ -38,28 +38,29 @@ public class ApplicationEngine {
     private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
+    private final CommandValidator commandValidator;
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
 
     @Inject
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
-            ApplicationStateDB stateDB) {
+            ApplicationStateDB stateDB, CommandValidator commandValidator) {
         this.factory = factory;
         this.stateDB = stateDB;
+        this.commandValidator = commandValidator;
     }
 
-    public void handleOperation(final ApplicationOperation operation) {
+    public CommandValidator.ValidationResult handleOperation(final ApplicationOperation operation) {
         val appId = ControllerUtils.appId(operation);
-        if (validateOp(appId, operation)) {
+        val res = validateOp(operation);
+        if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             stateMachines.computeIfAbsent(appId, id -> createApp(operation));
             stateMachines.computeIfPresent(appId, (id, monitor) -> {
                 monitor.notifyUpdate(operation);
                 return monitor;
             });
         }
-        else {
-            log.warn("Requested operation of type {} ignored for app {}", operation.getType().name(), appId);
-        }
+        return res;
     }
 
     public void stopAll() {
@@ -67,13 +68,10 @@ public class ApplicationEngine {
         stateMachines.clear();
     }
 
-    private boolean validateOp(String appId, ApplicationOperation operation) {
+    private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {
         //TODO::Check operation
         Objects.requireNonNull(operation, "Operation cannot be null");
-/*        return applicationState(appId)
-                .map(OPERATION_ENABLED_STATES::contains)
-                .orElse(true);*/
-        return true;
+        return commandValidator.validate(operation);
     }
 
     public Optional<ApplicationState> applicationState(final String appId) {
@@ -129,7 +127,10 @@ public class ApplicationEngine {
                                                       expectedInstances,
                                                       ClusterOpSpec.DEFAULT);
                     });
-            handleOperation(scalingOperation);
+            val res = handleOperation(scalingOperation);
+            if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+                log.error("Error sending command to state machine. Error: " + res.getMessage());
+            }
         }
         else {
             if(state.equals(ApplicationState.DESTROYED)) {

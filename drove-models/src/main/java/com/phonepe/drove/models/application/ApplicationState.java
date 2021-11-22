@@ -8,15 +8,14 @@ import lombok.Getter;
 public enum ApplicationState {
     INIT(false),
     MONITORING(false),
-    DEPLOYMENT_REQUESTED(false),
     RUNNING(false),
+    DEPLOYMENT_REQUESTED(false),
     OUTAGE_DETECTED(false),
     SUSPEND_REQUESTED(false),
     SCALING_REQUESTED(false),
     STOP_INSTANCES_REQUESTED(false),
     RESTART_REQUESTED(false),
     DESTROY_REQUESTED(false),
-    DOWN(false),
     DESTROYED(true),
     FAILED(true);
 

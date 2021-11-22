@@ -4,6 +4,7 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -105,66 +106,10 @@ public class ResponseEngine {
         var usedMemory = 0L;
         val executors = clusterResourcesDB.currentSnapshot();
         for (val executor : executors) {
-            usedCores += executor.getNodeData()
-                    .accept(new NodeDataVisitor<Integer>() {
-                        @Override
-                        public Integer visit(ControllerNodeData controllerData) {
-                            return 0;
-                        }
-
-                        @Override
-                        public Integer visit(ExecutorNodeData executorData) {
-                            return executorData.getState().getCpus().getUsedCores().values()
-                                    .stream()
-                                    .mapToInt(Set::size)
-                                    .sum();
-                        }
-                    });
-            freeCores += executor.getNodeData()
-                    .accept(new NodeDataVisitor<Integer>() {
-                        @Override
-                        public Integer visit(ControllerNodeData controllerData) {
-                            return 0;
-                        }
-
-                        @Override
-                        public Integer visit(ExecutorNodeData executorData) {
-                            return executorData.getState().getCpus().getFreeCores().values()
-                                    .stream()
-                                    .mapToInt(Set::size)
-                                    .sum();
-                        }
-                    });
-            freeMemory += executor.getNodeData()
-                    .accept(new NodeDataVisitor<Long>() {
-                        @Override
-                        public Long visit(ControllerNodeData controllerData) {
-                            return 0L;
-                        }
-
-                        @Override
-                        public Long visit(ExecutorNodeData executorData) {
-                            return executorData.getState().getMemory().getFreeMemory().values()
-                                    .stream()
-                                    .mapToLong(v -> v)
-                                    .sum();
-                        }
-                    });
-            usedMemory += executor.getNodeData()
-                    .accept(new NodeDataVisitor<Long>() {
-                        @Override
-                        public Long visit(ControllerNodeData controllerData) {
-                            return 0L;
-                        }
-
-                        @Override
-                        public Long visit(ExecutorNodeData executorData) {
-                            return executorData.getState().getMemory().getUsedMemory().values()
-                                    .stream()
-                                    .mapToLong(v -> v)
-                                    .sum();
-                        }
-                    });
+            usedCores += ControllerUtils.usedCores(executor);
+            freeCores += ControllerUtils.freeCores(executor);
+            freeMemory += ControllerUtils.freeMemory(executor);
+            usedMemory += ControllerUtils.usedMemory(executor);
         }
         return ApiResponse.success(new ClusterSummary(executors.size(),
                                                       allApps,
@@ -195,7 +140,9 @@ public class ResponseEngine {
         return new AppDetails(info.getAppId(),
                               spec,
                               requiredInstances,
-                              instances.stream().filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY)).count(),
+                              instances.stream()
+                                      .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
+                                      .count(),
                               cpus,
                               memory,
                               instances,

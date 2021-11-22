@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -74,7 +75,10 @@ public class ApplicationMonitor implements Managed {
     }
 
     public void notifyOperation(final ApplicationOperation operation) {
-        engine.handleOperation(operation);
+        val res = engine.handleOperation(operation);
+        if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            log.error("Error sending command to state machine. Error: " + res.getMessage());
+        }
     }
 
     private void checkAllApps() {

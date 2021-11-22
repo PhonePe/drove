@@ -33,7 +33,7 @@ public class ExecutorObserver implements Managed {
     private final ObjectMapper mapper;
     private final StateUpdater updater;
     private final Lock refreshLock = new ReentrantLock();
-    private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(30));
+    private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(10));
     private final Set<String> knownExecutors = new HashSet<>();
 
     @Inject

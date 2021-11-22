@@ -4,9 +4,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,9 +42,13 @@ public interface ApplicationStateDB {
     Optional<InstanceInfo> instance(String appId, String instanceId);
 
     default long instanceCount(final String appId, InstanceState requiredState) {
+        return instanceCount(appId, Collections.singleton(requiredState));
+    }
+
+    default long instanceCount(final String appId, Set<InstanceState> requiredStates) {
         return instances(appId, 0, Integer.MAX_VALUE)
                 .stream()
-                .filter(instance -> instance.getState().equals(requiredState))
+                .filter(instance -> requiredStates.contains(instance.getState()))
                 .count();
     }
 

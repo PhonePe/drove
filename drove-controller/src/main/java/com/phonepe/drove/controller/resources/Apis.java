@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -8,6 +9,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -48,8 +50,11 @@ public class Apis {
     @POST
     @Path("/operations")
     public ApiResponse<Map<String, String>> acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
-        engine.handleOperation(operation);
-        return ApiResponse.success(Collections.singletonMap("appId", ControllerUtils.appId(operation)));
+        val res = engine.handleOperation(operation);
+        if(res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            return ApiResponse.success(Collections.singletonMap("appId", ControllerUtils.appId(operation)));
+        }
+        return new ApiResponse<>(ApiErrorCode.FAILED, null, res.getMessage());
     }
 
     @GET

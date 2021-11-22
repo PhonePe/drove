@@ -1,11 +1,13 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
@@ -35,14 +37,17 @@ public class AppRecovery implements Managed {
     }
 
     private void handleLeadershipChange(boolean isLeader) {
-        if(isLeader) {
+        if (isLeader) {
             log.info("This controller is now the leader.");
             applicationStateDB.applications(0, Integer.MAX_VALUE)
                     .forEach(applicationInfo -> {
                         log.info("Found app: {}. Starting it.", applicationInfo.getAppId());
-                        applicationEngine.handleOperation(new ApplicationCreateOperation(applicationInfo.getSpec(),
-                                                                                         applicationInfo.getInstances(),
-                                                                                         ClusterOpSpec.DEFAULT));
+                        val res = applicationEngine.handleOperation(new ApplicationCreateOperation(applicationInfo.getSpec(),
+                                                                                                   applicationInfo.getInstances(),
+                                                                                                   ClusterOpSpec.DEFAULT));
+                        if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+                            log.error("Error sending command to state machine. Error: " + res.getMessage());
+                        }
                     });
         }
         else {

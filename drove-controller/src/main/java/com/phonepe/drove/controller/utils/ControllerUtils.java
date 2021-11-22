@@ -1,7 +1,11 @@
 package com.phonepe.drove.controller.utils;
 
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -16,6 +20,7 @@ import net.jodah.failsafe.RetryPolicy;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  *
@@ -154,5 +159,77 @@ public class ControllerUtils {
             }
 
         });
+    }
+
+    public static long usedMemory(ExecutorHostInfo executor) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<Long>() {
+                    @Override
+                    public Long visit(ControllerNodeData controllerData) {
+                        return 0L;
+                    }
+
+                    @Override
+                    public Long visit(ExecutorNodeData executorData) {
+                        return executorData.getState().getMemory().getUsedMemory().values()
+                                .stream()
+                                .mapToLong(v -> v)
+                                .sum();
+                    }
+                });
+    }
+
+    public static long freeMemory(ExecutorHostInfo executor) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<Long>() {
+                    @Override
+                    public Long visit(ControllerNodeData controllerData) {
+                        return 0L;
+                    }
+
+                    @Override
+                    public Long visit(ExecutorNodeData executorData) {
+                        return executorData.getState().getMemory().getFreeMemory().values()
+                                .stream()
+                                .mapToLong(v -> v)
+                                .sum();
+                    }
+                });
+    }
+
+    public static int freeCores(ExecutorHostInfo executor) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<Integer>() {
+                    @Override
+                    public Integer visit(ControllerNodeData controllerData) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(ExecutorNodeData executorData) {
+                        return executorData.getState().getCpus().getFreeCores().values()
+                                .stream()
+                                .mapToInt(Set::size)
+                                .sum();
+                    }
+                });
+    }
+
+    public static int usedCores(ExecutorHostInfo executor) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<Integer>() {
+                    @Override
+                    public Integer visit(ControllerNodeData controllerData) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(ExecutorNodeData executorData) {
+                        return executorData.getState().getCpus().getUsedCores().values()
+                                .stream()
+                                .mapToInt(Set::size)
+                                .sum();
+                    }
+                });
     }
 }
