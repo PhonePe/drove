@@ -41,7 +41,7 @@ public class CommandValidator {
     private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
             .put(INIT, Set.of())
-            .put(MONITORING, Set.of(DEPLOY, SCALE, DESTROY))
+            .put(MONITORING, Set.of(DEPLOY, SCALE, DESTROY, RECOVER))
             .put(RUNNING, Set.of(DEPLOY, STOP_INSTANCES, SCALE, RESTART, SUSPEND, RECOVER))
             .put(DEPLOYMENT_REQUESTED, Set.of())
             .put(OUTAGE_DETECTED, Set.of())
