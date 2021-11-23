@@ -2,6 +2,8 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
@@ -39,15 +41,20 @@ public class ApplicationEngine {
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
     private final CommandValidator commandValidator;
+    private final DroveEventBus droveEventBus;
+
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
 
     @Inject
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
-            ApplicationStateDB stateDB, CommandValidator commandValidator) {
+            ApplicationStateDB stateDB,
+            CommandValidator commandValidator,
+            DroveEventBus droveEventBus) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.commandValidator = commandValidator;
+        this.droveEventBus = droveEventBus;
     }
 
     public CommandValidator.ValidationResult handleOperation(final ApplicationOperation operation) {
@@ -142,5 +149,6 @@ public class ApplicationEngine {
                 });
             }
         }
+        droveEventBus.publish(new DroveAppStateChangeEvent(appId, newState.getState()));
     }
 }

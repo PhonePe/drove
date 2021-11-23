@@ -10,6 +10,8 @@ server:
     appenders:
       - type: console
         timeZone: IST
+  gzip:
+    syncFlush: true
 
 
 logging:

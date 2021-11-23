@@ -8,6 +8,7 @@ import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.glassfish.jersey.media.sse.SseFeature;
 import ru.vyarus.dropwizard.guice.GuiceBundle;
 import ru.vyarus.dropwizard.guice.module.installer.feature.health.HealthCheckInstaller;
 import ru.vyarus.guicey.gsp.ServerPagesBundle;
@@ -48,6 +49,8 @@ public class App extends Application<AppConfig> {
     public void run(AppConfig appConfig, Environment environment) throws Exception {
         configureMapper(environment.getObjectMapper());
         ((AbstractServerFactory)appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
+        environment.jersey().register(SseFeature.class);
+        environment.jersey().getResourceConfig().register(SseFeature.class);
     }
 
     public static void main(String[] args) throws Exception {
