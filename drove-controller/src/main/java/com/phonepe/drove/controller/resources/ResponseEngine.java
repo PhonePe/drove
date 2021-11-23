@@ -259,9 +259,9 @@ public class ResponseEngine {
         return ApiResponse.success(applicationStateDB.applications(0, Integer.MAX_VALUE)
                                            .stream()
                                            .filter(app -> engine.applicationState(app.getAppId())
-                                                   .filter(s -> s.equals(ApplicationState.RUNNING) || s.equals(
-                                                           ApplicationState.SCALING_REQUESTED) || s.equals(
-                                                           ApplicationState.RESTART_REQUESTED))
+                                                   .filter(s -> s.equals(ApplicationState.RUNNING)
+                                                           || s.equals(ApplicationState.SCALING_REQUESTED)
+                                                           || s.equals(ApplicationState.RESTART_REQUESTED))
                                                    .isPresent()) //Only running
                                            .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
                                            .filter(app -> !app.getSpec()
