@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor.resource;
+package com.phonepe.drove.executor.resourcemgmt;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;

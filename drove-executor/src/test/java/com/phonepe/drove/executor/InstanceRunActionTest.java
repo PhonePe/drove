@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -52,8 +53,8 @@ class InstanceRunActionTest {
         val ctx = new InstanceActionContext(executorId, instanceSpec);
         new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
-                = new InstanceRunAction().execute(ctx,
-                                                  StateData.create(PROVISIONING,
+                = new InstanceRunAction(new LogBus()).execute(ctx,
+                                                            StateData.create(PROVISIONING,
                                                                    new ExecutorInstanceInfo(instanceSpec.getAppId(),
                                                                                             instanceSpec.getInstanceId(),
                                                                                             executorId,

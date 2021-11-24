@@ -3,9 +3,11 @@ package com.phonepe.drove.executor.statemachine.actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.LogConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -24,6 +26,7 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 
+import javax.inject.Inject;
 import java.net.ServerSocket;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +38,12 @@ import java.util.stream.Collectors;
 public class InstanceRunAction extends InstanceAction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final LogBus logBus;
+
+    @Inject
+    public InstanceRunAction(LogBus logBus) {
+        this.logBus = logBus;
+    }
 
     @Override
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
@@ -51,7 +60,12 @@ public class InstanceRunAction extends InstanceAction {
                     .withMemorySwappiness(0L)
                     .withOomKillDisable(true)
                     .withAutoRemove(true)/*
-                    .withPublishAllPorts(true)*/;
+                    .withPublishAllPorts(true)*/
+                    .withLogConfig(new LogConfig(LogConfig.LoggingType.LOCAL)
+                                           .setConfig(Map.of("mode", "non-blocking", //TODO::READ SIZE ETC FROM CONFIG
+                                                             "max-size", "10m",
+                                                             "max-file", "3",
+                                                             "compress", "true")));
 
             instanceSpec.getResources()
                     .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
@@ -117,7 +131,7 @@ public class InstanceRunAction extends InstanceAction {
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
-                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()));
+                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(), instanceSpec.getAppId(), instanceSpec.getInstanceId(), logBus));
             return StateData.create(InstanceState.UNREADY, instanceInfo);
         }
         catch (Exception e) {

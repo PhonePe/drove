@@ -11,7 +11,7 @@ import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.resource.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;

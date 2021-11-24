@@ -60,7 +60,7 @@ public class ScaleAppAction extends AppAsyncAction {
         val currentInstances = applicationStateDB.healthyInstances(scaleOp.getAppId());
         val currentInstancesCount = currentInstances.size();
         if (currentInstancesCount == required) {
-            return JobTopology.<Boolean>builder().build(); //TODO::FIX THIS
+            return null;
         }
         val applicationSpec = context.getApplicationSpec();
         val clusterOpSpec = scaleOp.getOpSpec();

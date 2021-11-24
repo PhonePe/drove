@@ -15,7 +15,7 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.resource.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;

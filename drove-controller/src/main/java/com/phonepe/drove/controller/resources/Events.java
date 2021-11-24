@@ -30,6 +30,19 @@ public class Events {
         eventBus.onNewEvent().connect(this::handleNewEvent);
     }
 
+    @GET
+    public void generateEventStream(@Context SseEventSink eventSink, @Context Sse sse) {
+        instance(sse).getSseBroadcaster().register(eventSink);
+    }
+
+    private static synchronized StreamingSupport instance(final Sse sse) {
+        if (null == Events.streamingSupport) {
+            Events.streamingSupport = new StreamingSupport(sse);
+        }
+        return streamingSupport;
+    }
+
+
     private synchronized void handleNewEvent(DroveEvent event) {
         if (null == streamingSupport) {
             log.warn("Broadcaster not initialised");
@@ -45,16 +58,4 @@ public class Events {
                         .build());
     }
 
-    @GET
-    public void generateEventStream(@Context SseEventSink eventSink, @Context Sse sse) {
-        instance(sse).getSseBroadcaster().register(eventSink);
-
-    }
-
-    private static synchronized StreamingSupport instance(final Sse sse) {
-        if (null == Events.streamingSupport) {
-            Events.streamingSupport = new StreamingSupport(sse);
-        }
-        return streamingSupport;
-    }
 }

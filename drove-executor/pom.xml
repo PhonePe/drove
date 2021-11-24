@@ -12,7 +12,7 @@
     <artifactId>drove-executor</artifactId>
 
     <properties>
-        <docker-java.version>3.2.11</docker-java.version>
+        <docker-java.version>3.2.12</docker-java.version>
         <retry4j.version>0.15.0</retry4j.version>
     </properties>
 
@@ -21,6 +21,11 @@
             <groupId>com.phonepe.drove</groupId>
             <artifactId>drove-common</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-sse</artifactId>
+            <version>2.33</version>
         </dependency>
         <dependency>
             <groupId>com.github.docker-java</groupId>

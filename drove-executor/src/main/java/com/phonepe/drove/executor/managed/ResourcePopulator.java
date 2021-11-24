@@ -2,7 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.model.utils.Pair;
-import com.phonepe.drove.executor.resource.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

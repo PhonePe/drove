@@ -5,7 +5,7 @@ import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.executor.engine.InstanceEngine;
-import com.phonepe.drove.executor.resource.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;

@@ -44,6 +44,9 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
         val topology = jobsToRun(context, currentState, operation);
+        if(topology == null) {
+            return StateData.from(currentState, ApplicationState.RUNNING); //TODO USE OPTIONAL ABOVE, RETURN MONITORING IF 0
+        }
         val jobId = jobExecutor.schedule(topology,
                                          new BooleanResponseCombiner(),
                                          jobResult -> jobCompleted(context, currentState, operation, jobResult));
