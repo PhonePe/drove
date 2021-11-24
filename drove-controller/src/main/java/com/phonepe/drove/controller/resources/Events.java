@@ -49,7 +49,7 @@ public class Events {
     public void generateEventStream(@Context SseEventSink eventSink, @Context Sse sse) {
         instance(sse).getSseBroadcaster().register(eventSink);
 
-}
+    }
 
     private static synchronized StreamingSupport instance(final Sse sse) {
         if (null == Events.streamingSupport) {
