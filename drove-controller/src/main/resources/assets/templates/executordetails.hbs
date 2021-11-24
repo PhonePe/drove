@@ -69,7 +69,11 @@
                 { 'data' : 'usedCores' },
                 { 'data' : 'usedMemory' },
                 { 'data' : 'state' },
-                { 'data' : 'logStream' }
+                { 'data' : 'logStream',
+                  'render' : function(data, type, row, meta) {
+                       return '<a href="' + data + '" target="_blank">Log</a>';
+                  }
+                }
             ]
         });
     function loadExecutorSnapshot() {
@@ -121,7 +125,7 @@
                         }
                     });
 
-                    info['logStream'] = "TODO";
+                    info['logStream'] = "/apis/v1/logs/" + info['appId'] + "/" + info['instanceId'];
                 });
                 ii.clear();
                 ii.rows.add(instances).draw();

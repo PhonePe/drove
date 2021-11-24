@@ -95,7 +95,7 @@
                             info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
                         }
                     });
-                    info['logStream'] = "TODO";
+                    info['logStream'] = "/apis/v1/logs/{{appId}}/" + info['instanceId'];
                 });
                 return res.data;
             }
@@ -110,7 +110,11 @@
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory' },
             { 'data' : 'state' },
-            { 'data' : 'logStream' }
+            { 'data' : 'logStream',
+                'render' : function(data, type, row, meta) {
+                    return '<a href="' + data + '" target="_blank">Log</a>';
+                }
+            }
         ]
     });
     setInterval(() => {
