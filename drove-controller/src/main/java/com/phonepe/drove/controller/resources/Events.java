@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.event.DroveEvent;
 import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.utils.StreamingSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.jersey.media.sse.SseFeature;
 
@@ -11,9 +12,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
-import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
 /**
@@ -24,25 +23,20 @@ import javax.ws.rs.sse.SseEventSink;
 @Slf4j
 public class Events {
 
-    private final DroveEventBus eventBus;
-
-    private Sse sse;
-    private SseBroadcaster sseBroadcaster = null;
-    private OutboundSseEvent.Builder eventBuilder;
+    private static StreamingSupport streamingSupport = null;
 
     @Inject
     public Events(DroveEventBus eventBus) {
-        this.eventBus = eventBus;
         eventBus.onNewEvent().connect(this::handleNewEvent);
     }
 
-    private void handleNewEvent(DroveEvent event) {
-        if(null == sseBroadcaster) {
+    private synchronized void handleNewEvent(DroveEvent event) {
+        if (null == streamingSupport) {
             log.warn("Broadcaster not initialised");
             return;
         }
-        sseBroadcaster.broadcast(
-                this.eventBuilder
+        streamingSupport.getSseBroadcaster().broadcast(
+                streamingSupport.getEventBuilder()
                         .name(event.getType().name())
                         .id(event.getId())
                         .mediaType(MediaType.APPLICATION_JSON_TYPE)
@@ -51,22 +45,16 @@ public class Events {
                         .build());
     }
 
-
-    @Context
-    public void setSse(Sse sse) {
-        this.sse = sse;
-        this.eventBuilder = sse.newEventBuilder();
-        this.sseBroadcaster = sse.newBroadcaster();
-    }
-
     @GET
     public void generateEventStream(@Context SseEventSink eventSink, @Context Sse sse) {
-        if(null == this.sse) {
-            synchronized (this) {
-                setSse(sse);
-            }
-            eventBus.onNewEvent().connect(this::handleNewEvent);
+        instance(sse).getSseBroadcaster().register(eventSink);
+
+}
+
+    private static synchronized StreamingSupport instance(final Sse sse) {
+        if (null == Events.streamingSupport) {
+            Events.streamingSupport = new StreamingSupport(sse);
         }
-        sseBroadcaster.register(eventSink);
+        return streamingSupport;
     }
 }
