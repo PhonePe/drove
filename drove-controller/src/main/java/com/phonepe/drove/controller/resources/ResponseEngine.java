@@ -284,7 +284,11 @@ public class ResponseEngine {
                                                                                          instanceInfo.getLocalInfo()
                                                                                                  .getPorts()
                                                                                                  .get(spec.getPortName())
-                                                                                                 .getHostPort()))
+                                                                                                 .getHostPort(),
+                                                                                      instanceInfo.getLocalInfo()
+                                                                                              .getPorts()
+                                                                                              .get(spec.getPortName())
+                                                                                                 .getPortType()))
                                                                                  .collect(Collectors.toUnmodifiableList()));
                                            })
                                            .collect(Collectors.toUnmodifiableList()));

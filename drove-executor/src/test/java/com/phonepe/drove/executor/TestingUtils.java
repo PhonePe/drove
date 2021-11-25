@@ -3,6 +3,7 @@ package com.phonepe.drove.executor;
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
+import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.application.PortSpec;
@@ -29,7 +30,7 @@ public class TestingUtils {
                                         Duration.seconds(100)),
                                 ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Collections.singleton(1))),
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
-                                Collections.singletonList(new PortSpec("main", 3000)),
+                                Collections.singletonList(new PortSpec("main", 3000, PortType.HTTP)),
                                 Collections.emptyList(),
                                 new CheckSpec(new HTTPCheckModeSpec("http",
                                                                     "main",

@@ -5,6 +5,7 @@ import lombok.Value;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 /**
  *
@@ -17,4 +18,7 @@ public class PortSpec {
     @Min(0)
     @Max(65_535)
     int port;
+
+    @NotNull
+    PortType type;
 }

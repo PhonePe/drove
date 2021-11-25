@@ -105,7 +105,7 @@ public class InstanceRunAction extends InstanceAction {
                         val specPort = portSpec.getPort();
                         ports.bind(new ExposedPort(specPort), Ports.Binding.bindPort(freePort));
                         env.add(String.format("PORT_%d=%d", specPort, freePort));
-                        portMappings.put(portSpec.getName(), new InstancePort(portSpec.getPort(), freePort));
+                        portMappings.put(portSpec.getName(), new InstancePort(portSpec.getPort(), freePort, portSpec.getType()));
                     });
             hostConfig.withPortBindings(ports);
 
