@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
@@ -23,6 +24,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -70,16 +72,21 @@ public class ScaleAppAction extends AppAsyncAction {
         val parallelism = clusterOpSpec.getParallelism();
         if (currentInstancesCount < required) {
             val numNew = required - currentInstancesCount;
-            log.info("{} new instances to be started", numNew);
+            val schedulingSessionId = UUID.randomUUID().toString();
+            context.setSchedulingSessionId(schedulingSessionId);
+            log.info("{} new instances to be started. Shed session ID: {}", numNew, schedulingSessionId);
             return Optional.of(JobTopology.<Boolean>builder()
-                    .addParallel(parallelism, LongStream.range(0, numNew)
-                            .mapToObj(i -> new StartSingleInstanceJob(applicationSpec,
-                                                                      clusterOpSpec,
-                                                                      scheduler,
-                                                                      applicationStateDB,
-                                                                      communicator))
-                            .collect(Collectors.toUnmodifiableList()))
-                    .build());
+                                       .addParallel(
+                                               parallelism,
+                                               LongStream.range(0, numNew)
+                                                       .mapToObj(i -> new StartSingleInstanceJob(applicationSpec,
+                                                                                                 clusterOpSpec,
+                                                                                                 scheduler,
+                                                                                                 applicationStateDB,
+                                                                                                 communicator,
+                                                                                                 schedulingSessionId))
+                                                       .collect(Collectors.toUnmodifiableList()))
+                                       .build());
         }
         else {
             val numToBeStopped = currentInstancesCount - required;
@@ -95,17 +102,17 @@ public class ScaleAppAction extends AppAsyncAction {
             }
             else {
                 return Optional.of(JobTopology.<Boolean>builder()
-                        .addParallel(clusterOpSpec.getParallelism(), instancesToBeStopped
-                                .stream()
-                                .map(InstanceInfo::getInstanceId)
-                                .map(iid -> new StopSingleInstanceJob(scaleOp.getAppId(),
-                                                                      iid,
-                                                                      scaleOp.getOpSpec(),
-                                                                      applicationStateDB,
-                                                                      clusterResourcesDB,
-                                                                      communicator))
-                                .collect(Collectors.toUnmodifiableList()))
-                        .build());
+                                           .addParallel(clusterOpSpec.getParallelism(), instancesToBeStopped
+                                                   .stream()
+                                                   .map(InstanceInfo::getInstanceId)
+                                                   .map(iid -> new StopSingleInstanceJob(scaleOp.getAppId(),
+                                                                                         iid,
+                                                                                         scaleOp.getOpSpec(),
+                                                                                         applicationStateDB,
+                                                                                         clusterResourcesDB,
+                                                                                         communicator))
+                                                   .collect(Collectors.toUnmodifiableList()))
+                                           .build());
             }
         }
         log.warn("Could not figure out number of ops to perform." +
@@ -120,8 +127,8 @@ public class ScaleAppAction extends AppAsyncAction {
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
         val message = executionResult.getFailure() == null
-                         ? "Execution failed"
-                         : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
+                      ? "Execution failed"
+                      : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
         var errMsg = Boolean.TRUE.equals(executionResult.getResult())
                      ? ""
                      : message;
@@ -131,13 +138,32 @@ public class ScaleAppAction extends AppAsyncAction {
             log.info("Required scale {} has been reached.", count);
         }
         else {
-            log.warn("Mismatch between expected instances: {} and actual: {}. Need to be re-looked at",
-                     scaleOp.getRequiredInstances(), count);
-            return StateData.errorFrom(currentState, ApplicationState.SCALING_REQUESTED, errMsg);
+            if (executionResult.isCancelled()) {
+                log.warn(
+                        "Looks like jobs were cancelled. Rolling back instances count to what is present right now [{}].",
+                        count);
+                applicationStateDB.updateInstanceCount(context.getAppId(), count);
+            }
+            else {
+                log.warn("Mismatch between expected instances: {} and actual: {}. Need to be re-looked at",
+                         scaleOp.getRequiredInstances(), count);
+                return StateData.errorFrom(currentState, ApplicationState.SCALING_REQUESTED, errMsg);
+            }
+        }
+        if(!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+            scheduler.finaliseSession(context.getSchedulingSessionId());
+            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
+            context.setSchedulingSessionId(null);
         }
         if (count > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
+
+    @Override
+    public boolean cancel(AppActionContext context) {
+        return cancelCurrentJobs(context);
+    }
+
 }

@@ -14,6 +14,7 @@ public class JobContext<T> {
     @Getter
     private final Consumer<JobExecutionResult<T>> handler;
     private final AtomicBoolean stopped = new AtomicBoolean();
+    private final AtomicBoolean cancelled = new AtomicBoolean();
     @Setter
     @Getter
     private Future<JobExecutionResult<T>> future;
@@ -26,7 +27,15 @@ public class JobContext<T> {
         stopped.set(true);
     }
 
+    public void markCancelled() {
+        cancelled.set(true);
+    }
+
     public boolean isStopped() {
+        return stopped.get();
+    }
+
+    public boolean isCancelled() {
         return stopped.get();
     }
 }

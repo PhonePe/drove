@@ -18,4 +18,5 @@ public class AppActionContext extends ActionContext<ApplicationOperation> {
     private final ApplicationSpec applicationSpec;
 
     private String jobId;
+    private String schedulingSessionId;
 }

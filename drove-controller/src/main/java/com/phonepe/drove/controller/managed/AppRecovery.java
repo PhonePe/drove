@@ -63,6 +63,6 @@ public class AppRecovery implements Managed {
 
     @Override
     public void stop() throws Exception {
-
+        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 }

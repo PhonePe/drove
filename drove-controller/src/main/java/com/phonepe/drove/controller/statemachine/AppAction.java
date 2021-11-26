@@ -7,9 +7,13 @@ import com.phonepe.drove.models.application.ApplicationState;
 /**
  *
  */
-public abstract class AppAction extends Action<ApplicationInfo, ApplicationState, AppActionContext,com.phonepe.drove.models.operation.ApplicationOperation> {
+public abstract class AppAction extends Action<ApplicationInfo, ApplicationState, AppActionContext, com.phonepe.drove.models.operation.ApplicationOperation> {
     @Override
     public void stop() {
         //Nothing to do here
+    }
+
+    public boolean cancel(final AppActionContext context) {
+        return false;
     }
 }

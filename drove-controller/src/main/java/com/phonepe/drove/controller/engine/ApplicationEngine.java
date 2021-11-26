@@ -7,13 +7,20 @@ import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
+import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.operation.*;
-import com.phonepe.drove.models.operation.ops.*;
+import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ApplicationOperationType;
+import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationDeployOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -70,6 +77,18 @@ public class ApplicationEngine {
     public void stopAll() {
         stateMachines.forEach((appId, exec) -> exec.stop());
         stateMachines.clear();
+    }
+
+    public boolean cancelCurrentJob(final String appId) {
+        val sm = stateMachines.get(appId);
+        val appSm = sm.getStateMachine();
+        val action = (AppAsyncAction) appSm.currentAction()
+                .filter(a -> a instanceof AppAsyncAction)
+                .orElse(null);
+        if(null == action) {
+            return false;
+        }
+        return action.cancel(appSm.getContext());
     }
 
     private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {

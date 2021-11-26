@@ -51,10 +51,18 @@ public class Apis {
     @Path("/operations")
     public ApiResponse<Map<String, String>> acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
         val res = engine.handleOperation(operation);
-        if(res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+        if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             return ApiResponse.success(Collections.singletonMap("appId", ControllerUtils.appId(operation)));
         }
         return new ApiResponse<>(ApiErrorCode.FAILED, null, res.getMessage());
+    }
+
+    @POST
+    @Path("/operations/{appId}/cancel")
+    public ApiResponse<Void> cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
+        return engine.cancelCurrentJob(appId)
+               ? ApiResponse.success(null)
+               : new ApiResponse<>(ApiErrorCode.FAILED, null, "Current operation could not be cancelled");
     }
 
     @GET

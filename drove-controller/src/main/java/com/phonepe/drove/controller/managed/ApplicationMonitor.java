@@ -71,7 +71,9 @@ public class ApplicationMonitor implements Managed {
 
     @Override
     public void stop() throws Exception {
-
+        log.debug("Shutting down {}", this.getClass().getSimpleName());
+        refreshSignal.close();
+        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
     public void notifyOperation(final ApplicationOperation operation) {

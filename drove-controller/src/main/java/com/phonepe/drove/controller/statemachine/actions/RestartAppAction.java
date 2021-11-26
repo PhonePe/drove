@@ -24,6 +24,7 @@ import lombok.val;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
@@ -65,14 +66,16 @@ public class RestartAppAction extends AppAsyncAction {
             return Optional.empty();
         }
         int parallelism = clusterOpSpec.getParallelism();
-        log.info("{} instances to be restarted with parallelism: {}", instances.size(), parallelism);
+        val schedulingSessionId = UUID.randomUUID().toString();
+        log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}", instances.size(), parallelism, schedulingSessionId);
         val restartJobs = instances.stream()
                 .map(instanceInfo -> (Job<Boolean>) JobTopology.<Boolean>builder()
                         .addJob(List.of(new StartSingleInstanceJob(appSpec,
                                                                    clusterOpSpec,
                                                                    scheduler,
                                                                    applicationStateDB,
-                                                                   communicator),
+                                                                   communicator,
+                                                                   schedulingSessionId),
                                         new StopSingleInstanceJob(appId,
                                                                   instanceInfo.getInstanceId(),
                                                                   clusterOpSpec,

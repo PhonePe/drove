@@ -24,6 +24,6 @@ public class BooleanResponseCombiner extends AbstractJobResponseCombiner<Boolean
 
     @Override
     public JobExecutionResult<Boolean> buildResult(String jobId) {
-        return new JobExecutionResult<>(jobId, current(), super.failure.get());
+        return new JobExecutionResult<>(jobId, current(), super.failure.get(), super.cancelled.get());
     }
 }

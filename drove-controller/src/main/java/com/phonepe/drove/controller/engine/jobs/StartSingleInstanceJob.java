@@ -37,18 +37,20 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final InstanceScheduler scheduler;
     private final ApplicationStateDB applicationStateDB;
     private final ControllerCommunicator communicator;
+    private final String schedulingSessionId;
 
     public StartSingleInstanceJob(
             ApplicationSpec applicationSpec,
             ClusterOpSpec clusterOpSpec,
             InstanceScheduler scheduler,
             ApplicationStateDB applicationStateDB,
-            ControllerCommunicator communicator) {
+            ControllerCommunicator communicator, String schedulingSessionId) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
         this.applicationStateDB = applicationStateDB;
         this.communicator = communicator;
+        this.schedulingSessionId = schedulingSessionId;
     }
 
     @Override
@@ -67,10 +69,10 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                 .withDelay(Duration.ofSeconds(30))
                 .withMaxDuration(Duration.ofMinutes(3))
                 .handle(Exception.class)
-                .handleResultIf(r -> !r);
+                .handleResultIf(instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.appId(applicationSpec);
         try {
-            return Failsafe.with(retryPolicy)
+            val status = Failsafe.with(retryPolicy)
                     .onFailure(event -> {
                         val failure = event.getFailure();
                         if (null != failure) {
@@ -81,6 +83,10 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                         }
                     })
                     .get(() -> startInstance(applicationSpec, clusterOpSpec));
+            if (context.isStopped() || context.isCancelled()) {
+                return false;
+            }
+            return status;
         }
         catch (TimeoutExceededException e) {
             log.error("Could not allocate an instance for {} after retires.", appId);
@@ -92,11 +98,12 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     }
 
     private boolean startInstance(ApplicationSpec applicationSpec, ClusterOpSpec clusterOpSpec) {
-        val node = scheduler.schedule(applicationSpec)
+        val node = scheduler.schedule(schedulingSessionId, applicationSpec)
                 .orElse(null);
         if (null == node) {
             log.warn("No node found in the cluster that can provide required resources" +
-                             " and satisfy the placement policy needed for {}.", ControllerUtils.appId(applicationSpec));
+                             " and satisfy the placement policy needed for {}.",
+                     ControllerUtils.appId(applicationSpec));
             return false;
         }
         val appId = ControllerUtils.appId(applicationSpec);
@@ -119,12 +126,16 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         try {
             communicator.send(startMessage);
             log.debug("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, startMessage);
-            successful = ensureInstanceState(applicationStateDB, clusterOpSpec, appId, instanceId, InstanceState.HEALTHY);
+            successful = ensureInstanceState(applicationStateDB,
+                                             clusterOpSpec,
+                                             appId,
+                                             instanceId,
+                                             InstanceState.HEALTHY);
         }
         finally {
-            if(!successful) {
+            if (!successful) {
                 log.info("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
-                scheduler.deallocate(node);
+                scheduler.discardAllocation(schedulingSessionId, node);
             }
         }
         return successful;

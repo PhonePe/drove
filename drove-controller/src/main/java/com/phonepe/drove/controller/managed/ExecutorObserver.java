@@ -51,7 +51,9 @@ public class ExecutorObserver implements Managed {
 
     @Override
     public void stop() throws Exception {
+        log.debug("Shutting down {}", this.getClass().getSimpleName());
         dataRefresher.close();
+        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
     private void refreshDataFromZK(final Date currentDate) {

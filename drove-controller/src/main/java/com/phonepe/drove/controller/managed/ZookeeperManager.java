@@ -31,7 +31,9 @@ public class ZookeeperManager implements Managed {
 
     @Override
     public void stop() throws Exception {
+        log.debug("Shutting down {}", this.getClass().getSimpleName());
         curatorFramework.close();
         log.info("Zookeeper connection closed");
+        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 }

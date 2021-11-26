@@ -62,8 +62,8 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
 
     @Override
     @SneakyThrows
-    public synchronized List<AllocatedExecutorNode> selectNodes(
-            List<ResourceRequirement> requirements, int instances, Predicate<AllocatedExecutorNode> filter) {
+    public synchronized Optional<AllocatedExecutorNode> selectNodes(
+            List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter) {
         val rawNodes = new ArrayList<>(nodes.values());
         Collections.shuffle(rawNodes);
         return rawNodes
@@ -73,7 +73,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .map(Optional::get)
                 .filter(filter)
                 .peek(this::softLockResources)
-                .collect(Collectors.toUnmodifiableList());
+                .findFirst();
     }
 
     @Override

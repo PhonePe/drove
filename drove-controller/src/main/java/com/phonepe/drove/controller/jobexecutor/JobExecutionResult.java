@@ -10,4 +10,5 @@ public class JobExecutionResult <T> {
     String jobId;
     T result;
     Throwable failure;
+    boolean cancelled;
 }

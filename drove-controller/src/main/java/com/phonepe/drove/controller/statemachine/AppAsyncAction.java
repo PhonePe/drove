@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.statemachine;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.BooleanResponseCombiner;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
@@ -59,6 +60,14 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
             jobLock.unlock();
         }
         return result.get();
+    }
+
+    protected boolean cancelCurrentJobs(final AppActionContext context) {
+        if(Strings.isNullOrEmpty(context.getAppId())) {
+            return false;
+        }
+        jobExecutor.cancel(context.getJobId());
+        return true;
     }
 
     protected abstract Optional<JobTopology<Boolean>> jobsToRun(

@@ -52,6 +52,9 @@ public final class JobExecutor<T> {
                         break;
                     }
                 }
+                if(context.isCancelled()) {
+                    responseCombiner.handleCancel();
+                }
                 val result = responseCombiner.buildResult(id);
                 context.getHandler().accept(result);
                 jobCompleted.dispatch(result);
@@ -66,6 +69,7 @@ public final class JobExecutor<T> {
     public void cancel(String execId) {
         contexts.computeIfPresent(execId, (id, value) -> {
             value.markStopped();
+            value.markCancelled();
             value.getFuture().cancel(false);
             return value;
         });

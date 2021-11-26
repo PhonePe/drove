@@ -32,7 +32,7 @@ public class AppOperationRouterAction extends AppAction {
                         log.info("App move to new state: {}", newState);
                         return newState;
                     }
-                    log.info("Nothing to be done. Going back to previous state. Operation of type: {} is being ignored.",
+                    log.info("Nothing to be done. Going back to previous state. Operation of type {} is being ignored.",
                              operation.getType());
                     context.ackUpdate(); // In case we can't do anything, eat up the operation
                     return currentState;

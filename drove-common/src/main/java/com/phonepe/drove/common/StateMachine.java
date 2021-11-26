@@ -8,6 +8,7 @@ import lombok.val;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
 
     @Getter
     private StateData<S, T> currentState;
+    @Getter
     private final C context;
     private final ActionFactory<T, D, S, C, A> actionFactory;
     private final AtomicReference<A> currentAction = new AtomicReference<>();
@@ -56,6 +58,10 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         currentState = newStateData;
         stateChanged.dispatch(newStateData);
         return newState;
+    }
+
+    public Optional<A> currentAction() {
+        return Optional.ofNullable(currentAction.get());
     }
 
     public boolean notifyUpdate(D parameter) {

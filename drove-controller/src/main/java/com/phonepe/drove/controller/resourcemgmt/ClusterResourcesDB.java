@@ -23,9 +23,8 @@ public interface ClusterResourcesDB {
 
     void update(ExecutorResourceSnapshot snapshot);
 
-    List<AllocatedExecutorNode> selectNodes(
-            List<ResourceRequirement> requirements,
-            int instances,
-            Predicate<AllocatedExecutorNode> filter);
+    Optional<AllocatedExecutorNode> selectNodes(
+            List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter);
+
     void deselectNode(final AllocatedExecutorNode executorNode);
 }

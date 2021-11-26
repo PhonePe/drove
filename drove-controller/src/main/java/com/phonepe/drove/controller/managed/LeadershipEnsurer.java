@@ -73,7 +73,9 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
 
     @Override
     public void stop() throws Exception {
+        log.debug("Shutting down {}", this.getClass().getSimpleName());
         leaderLatch.close();
+        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
     public ConsumingSyncSignal<Boolean> onLeadershipStateChanged() {
