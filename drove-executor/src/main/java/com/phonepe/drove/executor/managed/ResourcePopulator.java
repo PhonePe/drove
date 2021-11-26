@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.model.utils.Pair;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +28,12 @@ import java.util.stream.Collectors;
 @Order(0)
 public class ResourcePopulator implements Managed {
     private final ResourceDB resourceDB;
+    private final ResourceConfig resourceConfig;
 
     @Inject
-    public ResourcePopulator(ResourceDB resourceDB) {
+    public ResourcePopulator(ResourceDB resourceDB, ResourceConfig resourceConfig) {
         this.resourceDB = resourceDB;
+        this.resourceConfig = resourceConfig;
     }
 
     @Override
@@ -57,6 +60,7 @@ public class ResourcePopulator implements Managed {
                     return new Pair<>(node, cpus);
                 })
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+        val exposedMemPercentage = ((double)resourceConfig.getExposedMemPercentage()) / 100.0;
         val mem = lines.stream()
                 .filter(line -> line.matches("node \\d+ size: .*"))
                 .map(line -> {
@@ -68,7 +72,7 @@ public class ResourcePopulator implements Managed {
                     if (!m1.find()) {
                         throw new IllegalStateException();
                     }
-                    return new Pair<>(node, Long.parseLong(m1.group()));
+                    return new Pair<>(node, (long)(Long.parseLong(m1.group()) * exposedMemPercentage));
                 })
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
         if(!Sets.difference(cores.keySet(), mem.keySet()).isEmpty()) {
@@ -99,6 +103,7 @@ public class ResourcePopulator implements Managed {
         return new Scanner(new StringReader(line.substring(line.indexOf(':'))))
             .findAll(Pattern.compile("\\p{Digit}+"))
                 .map(r -> Integer.parseInt(r.group()))
+                .filter(core -> !resourceConfig.getOsCores().contains(core))
                 .collect(Collectors.toUnmodifiableSet());
     }
 }

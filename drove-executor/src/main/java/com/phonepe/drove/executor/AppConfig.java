@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor;
 
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import io.dropwizard.Configuration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,4 +20,8 @@ public class AppConfig extends Configuration {
     @NotNull
     @Valid
     private ZkConfig zookeeper;
+
+    @NotNull
+    @Valid
+    private ResourceConfig resources = new ResourceConfig();
 }

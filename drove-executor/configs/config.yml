@@ -26,3 +26,7 @@ logging:
 
 zookeeper:
   connectionString: localhost:2181
+
+resources:
+  osCores: [ 0, 1 ]
+  exposedMemPercentage: 60

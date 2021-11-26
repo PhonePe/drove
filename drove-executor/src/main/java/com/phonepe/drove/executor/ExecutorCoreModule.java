@@ -15,6 +15,7 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import io.dropwizard.setup.Environment;
 import lombok.val;
@@ -25,7 +26,7 @@ import javax.inject.Singleton;
 /**
  *
  */
-public class CoreModule extends AbstractModule {
+public class ExecutorCoreModule extends AbstractModule {
 
     @Override
     protected void configure() {
@@ -71,5 +72,12 @@ public class CoreModule extends AbstractModule {
     @Singleton
     public CuratorFramework curator(ZkConfig config) {
         return CommonUtils.buildCurator(config);
+    }
+
+    @Provides
+    @Singleton
+    public ResourceConfig resourceConfig(final AppConfig appConfig) {
+        val resourceConfig = appConfig.getResources();
+        return resourceConfig == null ? ResourceConfig.DEFAULT : resourceConfig;
     }
 }

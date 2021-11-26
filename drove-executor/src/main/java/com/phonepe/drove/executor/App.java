@@ -30,7 +30,7 @@ public class App extends Application<AppConfig> {
                                           "com.phonepe.drove.executor.healthcheck",
                                           "com.phonepe.drove.executor.managed",
                                           "com.phonepe.drove.executor.discovery")
-                        .modules(new CoreModule())
+                        .modules(new ExecutorCoreModule())
                         .installers(HealthCheckInstaller.class)
                         .printDiagnosticInfo()
                         .build(Stage.PRODUCTION));
