@@ -1,13 +1,12 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.LogConfig;
-import com.github.dockerjava.api.model.Ports;
+import com.github.dockerjava.api.model.*;
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.logging.LogBus;
+import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -105,10 +104,24 @@ public class InstanceRunAction extends InstanceAction {
                         val specPort = portSpec.getPort();
                         ports.bind(new ExposedPort(specPort), Ports.Binding.bindPort(freePort));
                         env.add(String.format("PORT_%d=%d", specPort, freePort));
-                        portMappings.put(portSpec.getName(), new InstancePort(portSpec.getPort(), freePort, portSpec.getType()));
+                        portMappings.put(portSpec.getName(),
+                                         new InstancePort(portSpec.getPort(), freePort, portSpec.getType()));
                     });
             hostConfig.withPortBindings(ports);
 
+            if(null != instanceSpec.getVolumes()) {
+                hostConfig.withBinds(instanceSpec.getVolumes()
+                                             .stream()
+                                             .map(volume -> new Bind(volume.getPathOnHost(),
+                                                                     new Volume(Strings.isNullOrEmpty(volume.getPathInContainer())
+                                                                                ? volume.getPathOnHost()
+                                                                                : volume.getPathInContainer()),
+                                                                     volume.getMode()
+                                                                             .equals(MountedVolume.MountMode.READ_ONLY)
+                                                                     ? AccessMode.ro
+                                                                     : AccessMode.rw))
+                                             .collect(Collectors.toUnmodifiableList()));
+            }
             val instanceInfo = instanceInfo(currentState, portMappings, instanceSpec.getResources(), hostName);
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
@@ -116,6 +129,7 @@ public class InstanceRunAction extends InstanceAction {
             labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
 
             val id = containerCmd
+                    .withBinds()
                     .withHostConfig(hostConfig)
                     .withEnv(env)
                     .withLabels(labels)
@@ -127,11 +141,14 @@ public class InstanceRunAction extends InstanceAction {
             client.startContainerCmd(id)
                     .exec();
             client.logContainerCmd(id)
-                    .withTailAll()
+//                    .withTailAll()
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
-                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(), instanceSpec.getAppId(), instanceSpec.getInstanceId(), logBus));
+                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
+                                                 instanceSpec.getAppId(),
+                                                 instanceSpec.getInstanceId(),
+                                                 logBus));
             return StateData.create(InstanceState.UNREADY, instanceInfo);
         }
         catch (Exception e) {
