@@ -23,6 +23,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
@@ -51,7 +52,7 @@ public class RestartAppAction extends AppAsyncAction {
     }
 
     @Override
-    protected JobTopology<Boolean> jobsToRun(
+    protected Optional<JobTopology<Boolean>> jobsToRun(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
@@ -61,7 +62,7 @@ public class RestartAppAction extends AppAsyncAction {
         val clusterOpSpec = restartOp.getOpSpec();
         val appSpec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
         if (null == appSpec) {
-            return null;
+            return Optional.empty();
         }
         int parallelism = clusterOpSpec.getParallelism();
         log.info("{} instances to be restarted with parallelism: {}", instances.size(), parallelism);
@@ -80,9 +81,9 @@ public class RestartAppAction extends AppAsyncAction {
                                                                   communicator)))
                         .build())
                 .collect(Collectors.toUnmodifiableList());
-        return JobTopology.<Boolean>builder()
+        return Optional.of(JobTopology.<Boolean>builder()
                 .addParallel(parallelism, restartJobs)
-                .build();
+                .build());
     }
 
     @Override

@@ -10,6 +10,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
@@ -21,7 +22,10 @@ import java.util.List;
 @ToString(callSuper = true)
 @Jacksonized
 public class ApplicationStopInstancesOperation extends ApplicationOperation {
+    @NotEmpty
     String appId;
+
+    @NotEmpty
     List<String> instanceIds;
 
     @NotNull

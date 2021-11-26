@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -51,7 +52,7 @@ public class ScaleAppAction extends AppAsyncAction {
     }
 
     @Override
-    protected JobTopology<Boolean> jobsToRun(
+    protected Optional<JobTopology<Boolean>> jobsToRun(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
@@ -60,7 +61,7 @@ public class ScaleAppAction extends AppAsyncAction {
         val currentInstances = applicationStateDB.healthyInstances(scaleOp.getAppId());
         val currentInstancesCount = currentInstances.size();
         if (currentInstancesCount == required) {
-            return null;
+            return Optional.empty();
         }
         val applicationSpec = context.getApplicationSpec();
         val clusterOpSpec = scaleOp.getOpSpec();
@@ -68,7 +69,7 @@ public class ScaleAppAction extends AppAsyncAction {
         if (currentInstancesCount < required) {
             val numNew = required - currentInstancesCount;
             log.info("{} new instances to be started", numNew);
-            return JobTopology.<Boolean>builder()
+            return Optional.of(JobTopology.<Boolean>builder()
                     .addParallel(parallelism, LongStream.range(0, numNew)
                             .mapToObj(i -> new StartSingleInstanceJob(applicationSpec,
                                                                       clusterOpSpec,
@@ -76,7 +77,7 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                       applicationStateDB,
                                                                       communicator))
                             .collect(Collectors.toUnmodifiableList()))
-                    .build();
+                    .build());
         }
         else {
             val numToBeStopped = currentInstancesCount - required;
@@ -91,7 +92,7 @@ public class ScaleAppAction extends AppAsyncAction {
                         "Looks like instances are in inconsistent state. Tried to find extra instances but could not");
             }
             else {
-                return JobTopology.<Boolean>builder()
+                return Optional.of(JobTopology.<Boolean>builder()
                         .addParallel(clusterOpSpec.getParallelism(), instancesToBeStopped
                                 .stream()
                                 .map(InstanceInfo::getInstanceId)
@@ -102,10 +103,10 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                       clusterResourcesDB,
                                                                       communicator))
                                 .collect(Collectors.toUnmodifiableList()))
-                        .build();
+                        .build());
             }
         }
-        return JobTopology.<Boolean>builder().build(); //TODO::FIX THIS
+        return Optional.empty();
     }
 
     @Override
@@ -114,25 +115,20 @@ public class ScaleAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
+        val message = executionResult.getFailure() == null
+                         ? "Execution failed"
+                         : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
         var errMsg = Boolean.TRUE.equals(executionResult.getResult())
                      ? ""
-                     : (executionResult.getFailure() == null
-                        ? "Execution failed"
-                        : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage());
+                     : message;
         val count = applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
         val scaleOp = safeCast(operation, ApplicationScaleOperation.class);
         if (scaleOp.getRequiredInstances() == count) {
             log.info("Required scale {} has been reached.", count);
-//                applicationStateDB.updateInstanceCount(scaleOp.getAppId(), count);
         }
         else {
             log.warn("Mismatch between expected instances: {} and actual: {}. Need to be re-looked at",
-                     scaleOp.getRequiredInstances(),
-                     count);
-/*                context.recordUpdate(
-                        new ApplicationUpdateData(
-                                new ApplicationScaleOperation(context.getAppId(), count, ClusterOpSpec.DEFAULT),
-                                null));*/
+                     scaleOp.getRequiredInstances(), count);
             return StateData.errorFrom(currentState, ApplicationState.SCALING_REQUESTED, errMsg);
         }
         if (count > 0) {

@@ -162,7 +162,7 @@ public class CommandValidator {
                     .stream()
                     .map(InstanceInfo::getInstanceId)
                     .collect(Collectors.toUnmodifiableSet());
-            val invalidIds = Sets.difference(Set.of(stopInstances.getInstanceIds()), validIds);
+            val invalidIds = Sets.difference(Set.copyOf(stopInstances.getInstanceIds()), validIds);
             return invalidIds.isEmpty()
                    ? ValidationResult.success()
                    : ValidationResult.failure(

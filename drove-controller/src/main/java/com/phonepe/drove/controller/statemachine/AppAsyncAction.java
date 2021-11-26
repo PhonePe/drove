@@ -11,6 +11,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -43,9 +44,9 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
-        val topology = jobsToRun(context, currentState, operation);
+        val topology = jobsToRun(context, currentState, operation).orElse(null);
         if(topology == null) {
-            return StateData.from(currentState, ApplicationState.RUNNING); //TODO USE OPTIONAL ABOVE, RETURN MONITORING IF 0
+            return StateData.from(currentState, ApplicationState.RUNNING); //TODO RETURN MONITORING IF 0
         }
         val jobId = jobExecutor.schedule(topology,
                                          new BooleanResponseCombiner(),
@@ -66,7 +67,7 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
         return result.get();
     }
 
-    protected abstract JobTopology<Boolean> jobsToRun(
+    protected abstract Optional<JobTopology<Boolean>> jobsToRun(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation);

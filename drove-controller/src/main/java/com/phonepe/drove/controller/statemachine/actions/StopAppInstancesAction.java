@@ -19,6 +19,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
@@ -44,12 +45,12 @@ public class StopAppInstancesAction extends AppAsyncAction {
     }
 
     @Override
-    protected JobTopology<Boolean> jobsToRun(
+    protected Optional<JobTopology<Boolean>> jobsToRun(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
         val stopAction = safeCast(operation, ApplicationStopInstancesOperation.class);
-        return JobTopology.<Boolean>builder()
+        return Optional.of(JobTopology.<Boolean>builder()
                 .addParallel(stopAction.getOpSpec().getParallelism(), stopAction.getInstanceIds()
                         .stream()
                         .map(instanceId -> new StopSingleInstanceJob(stopAction.getAppId(),
@@ -59,7 +60,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
                                                                      clusterResourcesDB,
                                                                      communicator))
                         .collect(Collectors.toUnmodifiableList()))
-                .build();
+                .build());
     }
 
     @Override
@@ -72,8 +73,8 @@ public class StopAppInstancesAction extends AppAsyncAction {
             return StateData.from(currentState, ApplicationState.RUNNING);
         }
         val errorMessage = null == executionResult.getFailure()
-                           ? "Could not start application"
-                           : "Could not start application: " + executionResult.getFailure().getMessage();
+                           ? "Could not stop application instances"
+                           : "Could not stop application instances: " + executionResult.getFailure().getMessage();
 
         if (applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errorMessage);
