@@ -32,15 +32,12 @@ public class AppOperationRouterAction extends AppAction {
                         log.info("App move to new state: {}", newState);
                         return newState;
                     }
-                    log.info("Nothing to be routed. Going back to previous state");
+                    log.info("Nothing to be done. Going back to previous state. Operation of type: {} is being ignored.",
+                             operation.getType());
+                    context.ackUpdate(); // In case we can't do anything, eat up the operation
                     return currentState;
                 })
                 .orElse(null);
-    }
-
-    @Override
-    public void stop() {
-        //TODO::IMPLEMENT THIS
     }
 
     protected Optional<StateData<ApplicationState, ApplicationInfo>> moveToNextState(
@@ -49,17 +46,7 @@ public class AppOperationRouterAction extends AppAction {
         return operation.accept(new ApplicationOperationVisitor<>() {
             @Override
             public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationCreateOperation create) {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationUpdateOperation update) {
-                return Optional.empty(); //TODO
-            }
-
-            @Override
-            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationInfoOperation info) {
-                return Optional.empty();
+                return Optional.empty(); //This happens when someone sends create on running app
             }
 
             @Override
@@ -69,7 +56,7 @@ public class AppOperationRouterAction extends AppAction {
 
             @Override
             public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationDeployOperation deploy) {
-                return Optional.of(StateData.from(currentState, ApplicationState.DEPLOYMENT_REQUESTED));
+                throw new IllegalStateException("DEPLOY operations should have been changed to scale operation");
             }
 
             @Override
@@ -89,7 +76,7 @@ public class AppOperationRouterAction extends AppAction {
 
             @Override
             public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationSuspendOperation suspend) {
-                return Optional.of(StateData.from(currentState, ApplicationState.SUSPEND_REQUESTED));
+                throw new IllegalStateException("SUSPEND operations should have been changed to scale operation");
             }
 
             @Override

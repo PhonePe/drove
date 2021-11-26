@@ -34,12 +34,6 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
     }
 
     @Override
-    public final void stop() {
-        throw new IllegalStateException("stop called on app action. This is not supported.");
-    }
-
-
-    @Override
     protected StateData<ApplicationState, ApplicationInfo> commandReceived(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,

@@ -18,16 +18,6 @@ public class ApplicationOperationVisitorAdapter<T> implements ApplicationOperati
     }
 
     @Override
-    public T visit(ApplicationUpdateOperation update) {
-        return defaultValue;
-    }
-
-    @Override
-    public T visit(ApplicationInfoOperation info) {
-        return defaultValue;
-    }
-
-    @Override
     public T visit(ApplicationDestroyOperation destroy) {
         return defaultValue;
     }

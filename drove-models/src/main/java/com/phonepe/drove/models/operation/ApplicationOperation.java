@@ -11,8 +11,6 @@ import lombok.Data;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "CREATE", value = ApplicationCreateOperation.class),
-        @JsonSubTypes.Type(name = "UPDATE", value = ApplicationUpdateOperation.class),
-        @JsonSubTypes.Type(name = "INFO", value = ApplicationUpdateOperation.class),
         @JsonSubTypes.Type(name = "DESTROY", value = ApplicationDestroyOperation.class),
         @JsonSubTypes.Type(name = "DEPLOY", value = ApplicationDeployOperation.class),
         @JsonSubTypes.Type(name = "STOP_INSTANCES", value = ApplicationStopInstancesOperation.class),

@@ -11,12 +11,9 @@ import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.models.operation.ApplicationOperationType;
-import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.operation.*;
+import com.phonepe.drove.models.operation.ops.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -63,7 +60,7 @@ public class ApplicationEngine {
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             stateMachines.computeIfAbsent(appId, id -> createApp(operation));
             stateMachines.computeIfPresent(appId, (id, monitor) -> {
-                monitor.notifyUpdate(operation);
+                monitor.notifyUpdate(translateOp(operation));
                 return monitor;
             });
         }
@@ -79,6 +76,28 @@ public class ApplicationEngine {
         //TODO::Check operation
         Objects.requireNonNull(operation, "Operation cannot be null");
         return commandValidator.validate(operation);
+    }
+
+    private ApplicationOperation translateOp(final ApplicationOperation original) {
+        return original.accept(new ApplicationOperationVisitorAdapter<>(original) {
+            @Override
+            public ApplicationOperation visit(ApplicationDeployOperation deploy) {
+                val appId = deploy.getAppId();
+                log.info("Translating deploy op to scaling op for {}", appId);
+                val existing = stateDB.instanceCount(appId, InstanceState.HEALTHY);
+                return new ApplicationScaleOperation(appId,
+                                                     existing + deploy.getInstances(),
+                                                     deploy.getOpSpec());
+            }
+
+            @Override
+            public ApplicationOperation visit(ApplicationSuspendOperation suspend) {
+                val appId = suspend.getAppId();
+
+                log.info("Translating suspend op to scaling op for {}", appId);
+                return new ApplicationScaleOperation(appId, 0, suspend.getOpSpec());
+            }
+        });
     }
 
     public Optional<ApplicationState> applicationState(final String appId) {
@@ -119,7 +138,7 @@ public class ApplicationEngine {
             val scalingOperation = context.getUpdate()
                     .filter(op -> op.getType().equals(ApplicationOperationType.SCALE))
                     .map(op -> {
-                        val scaleOp = (ApplicationScaleOperation)op;
+                        val scaleOp = (ApplicationScaleOperation) op;
                         stateDB.updateInstanceCount(scaleOp.getAppId(), scaleOp.getRequiredInstances());
                         log.info("App instances updated to: {}", scaleOp.getRequiredInstances());
                         return op;
@@ -131,21 +150,21 @@ public class ApplicationEngine {
                         log.info("App is in scaling requested state. Setting appropriate operation to scale app to: {}",
                                  expectedInstances);
                         return new ApplicationScaleOperation(context.getAppId(),
-                                                      expectedInstances,
-                                                      ClusterOpSpec.DEFAULT);
+                                                             expectedInstances,
+                                                             ClusterOpSpec.DEFAULT);
                     });
             val res = handleOperation(scalingOperation);
-            if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
                 log.error("Error sending command to state machine. Error: " + res.getMessage());
             }
         }
         else {
-            if(state.equals(ApplicationState.DESTROYED)) {
+            if (state.equals(ApplicationState.DESTROYED)) {
                 stateMachines.computeIfPresent(appId, (id, sm) -> {
                     sm.stop();
                     stateDB.deleteApplicationState(appId);
                     log.info("State machine stopped for: {}", appId);
-                   return null;
+                    return null;
                 });
             }
         }

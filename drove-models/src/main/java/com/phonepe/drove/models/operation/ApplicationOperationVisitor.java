@@ -9,10 +9,6 @@ public interface ApplicationOperationVisitor<T> {
 
     T visit(ApplicationCreateOperation create);
 
-    T visit(ApplicationUpdateOperation update);
-
-    T visit(ApplicationInfoOperation info);
-
     T visit(ApplicationDestroyOperation destroy);
 
     T visit(ApplicationDeployOperation deploy);

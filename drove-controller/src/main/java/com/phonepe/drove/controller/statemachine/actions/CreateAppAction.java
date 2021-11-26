@@ -25,11 +25,6 @@ public class CreateAppAction extends OperationDrivenAppAction {
     }
 
     @Override
-    public void stop() {
-        //This is not stoppable
-    }
-
-    @Override
     public StateData<ApplicationState, ApplicationInfo> commandReceived(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,

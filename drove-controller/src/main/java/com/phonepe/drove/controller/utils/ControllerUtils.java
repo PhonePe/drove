@@ -114,16 +114,6 @@ public class ControllerUtils {
             }
 
             @Override
-            public String visit(ApplicationUpdateOperation update) {
-                return update.getAppId();
-            }
-
-            @Override
-            public String visit(ApplicationInfoOperation info) {
-                return info.getAppId();
-            }
-
-            @Override
             public String visit(ApplicationDestroyOperation destroy) {
                 return destroy.getAppId();
             }

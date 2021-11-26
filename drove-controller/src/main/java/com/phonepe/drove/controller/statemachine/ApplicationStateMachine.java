@@ -9,66 +9,59 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.NonNull;
+import lombok.val;
 
 import java.util.List;
+import java.util.Set;
+
+import static com.phonepe.drove.models.application.ApplicationState.*;
 
 /**
  *
  */
 public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> {
-    private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS
-            = List.of(
-            new Transition<>(ApplicationState.INIT,
-                             CreateAppAction.class,
-                             ApplicationState.MONITORING,
-                             ApplicationState.RUNNING),
-            new Transition<>(ApplicationState.MONITORING,
-                             AppOperationRouterAction.class,
-                             ApplicationState.DEPLOYMENT_REQUESTED,
-                             ApplicationState.STOP_INSTANCES_REQUESTED,
-                             ApplicationState.DESTROY_REQUESTED,
-                             ApplicationState.SCALING_REQUESTED,
-                             ApplicationState.RESTART_REQUESTED,
-                             ApplicationState.SUSPEND_REQUESTED,
-                             ApplicationState.OUTAGE_DETECTED,
-                             ApplicationState.MONITORING,
-                             ApplicationState.RUNNING),
-            new Transition<>(ApplicationState.DEPLOYMENT_REQUESTED,
-                             StartAppAction.class,
-                             ApplicationState.SCALING_REQUESTED),
-            new Transition<>(ApplicationState.RUNNING,
-                             AppOperationRouterAction.class,
-                             ApplicationState.DEPLOYMENT_REQUESTED,
-                             ApplicationState.STOP_INSTANCES_REQUESTED,
-                             ApplicationState.DESTROY_REQUESTED,
-                             ApplicationState.SCALING_REQUESTED,
-                             ApplicationState.RESTART_REQUESTED,
-                             ApplicationState.SUSPEND_REQUESTED,
-                             ApplicationState.OUTAGE_DETECTED,
-                             ApplicationState.MONITORING,
-                             ApplicationState.RUNNING),
-            new Transition<>(ApplicationState.SUSPEND_REQUESTED,
-                             StopAppAction.class,
-                             ApplicationState.SCALING_REQUESTED),
-            new Transition<>(ApplicationState.OUTAGE_DETECTED,
-                             RecoverAppAction.class,
-                             ApplicationState.SCALING_REQUESTED),
-            new Transition<>(ApplicationState.SCALING_REQUESTED,
-                             ScaleAppAction.class,
-                             ApplicationState.SCALING_REQUESTED,
-                             ApplicationState.RUNNING,
-                             ApplicationState.MONITORING),
-            new Transition<>(ApplicationState.RESTART_REQUESTED,
-                             RestartAppAction.class,
-                             ApplicationState.RUNNING,
-                             ApplicationState.MONITORING),
-            new Transition<>(ApplicationState.STOP_INSTANCES_REQUESTED,
-                             StopAppInstancesAction.class,
-                             ApplicationState.RUNNING,
-                             ApplicationState.MONITORING),
-            new Transition<>(ApplicationState.DESTROY_REQUESTED,
-                             DestroyAppAction.class,
-                             ApplicationState.DESTROYED));
+    private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS;
+
+    static {
+        val actionStates = Set.of(
+                STOP_INSTANCES_REQUESTED,
+                DESTROY_REQUESTED,
+                SCALING_REQUESTED,
+                RESTART_REQUESTED,
+                OUTAGE_DETECTED,
+                MONITORING,
+                RUNNING);
+        TRANSITIONS = List.of(
+                new Transition<>(INIT,
+                                 CreateAppAction.class,
+                                 MONITORING,
+                                 RUNNING),
+                new Transition<>(MONITORING,
+                                 AppOperationRouterAction.class,
+                                 actionStates),
+                new Transition<>(RUNNING,
+                                 AppOperationRouterAction.class,
+                                 actionStates),
+                new Transition<>(OUTAGE_DETECTED,
+                                 RecoverAppAction.class,
+                                 SCALING_REQUESTED),
+                new Transition<>(SCALING_REQUESTED,
+                                 ScaleAppAction.class,
+                                 SCALING_REQUESTED,
+                                 RUNNING,
+                                 MONITORING),
+                new Transition<>(RESTART_REQUESTED,
+                                 RestartAppAction.class,
+                                 RUNNING,
+                                 MONITORING),
+                new Transition<>(STOP_INSTANCES_REQUESTED,
+                                 StopAppInstancesAction.class,
+                                 RUNNING,
+                                 MONITORING),
+                new Transition<>(DESTROY_REQUESTED,
+                                 DestroyAppAction.class,
+                                 DESTROYED));
+    }
 
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,

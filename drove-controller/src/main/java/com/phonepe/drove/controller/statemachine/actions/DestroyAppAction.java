@@ -12,14 +12,6 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
  */
 public class DestroyAppAction extends OperationDrivenAppAction {
 
-    public DestroyAppAction() {
-    }
-
-    @Override
-    public void stop() {
-
-    }
-
     @Override
     protected StateData<ApplicationState, ApplicationInfo> commandReceived(
             AppActionContext context,

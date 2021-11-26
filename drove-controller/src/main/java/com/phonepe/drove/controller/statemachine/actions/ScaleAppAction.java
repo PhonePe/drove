@@ -61,6 +61,8 @@ public class ScaleAppAction extends AppAsyncAction {
         val currentInstances = applicationStateDB.healthyInstances(scaleOp.getAppId());
         val currentInstancesCount = currentInstances.size();
         if (currentInstancesCount == required) {
+            log.info("Nothings needs to be done for scaling as app {} already has required number of instances: {}",
+                     context.getAppId(), required);
             return Optional.empty();
         }
         val applicationSpec = context.getApplicationSpec();
@@ -106,6 +108,8 @@ public class ScaleAppAction extends AppAsyncAction {
                         .build());
             }
         }
+        log.warn("Could not figure out number of ops to perform." +
+                         " Will skip this time and revisit next health check cycle");
         return Optional.empty();
     }
 

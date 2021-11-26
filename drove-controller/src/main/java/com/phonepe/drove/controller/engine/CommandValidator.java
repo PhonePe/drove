@@ -43,9 +43,7 @@ public class CommandValidator {
             .put(INIT, Set.of())
             .put(MONITORING, Set.of(DEPLOY, SCALE, DESTROY, RECOVER))
             .put(RUNNING, Set.of(DEPLOY, STOP_INSTANCES, SCALE, RESTART, SUSPEND, RECOVER))
-            .put(DEPLOYMENT_REQUESTED, Set.of())
             .put(OUTAGE_DETECTED, Set.of())
-            .put(SUSPEND_REQUESTED, Set.of())
             .put(SCALING_REQUESTED, Set.of(SCALE))
             .put(STOP_INSTANCES_REQUESTED, Set.of())
             .put(RESTART_REQUESTED, Set.of())
@@ -133,16 +131,6 @@ public class CommandValidator {
             return /*applicationStateDB.application(appId).isPresent()
                    ? ValidationResult.failure("App " + appId + " already exists")
                    : */ValidationResult.success();
-        }
-
-        @Override
-        public ValidationResult visit(ApplicationUpdateOperation update) {
-            return ValidationResult.failure("Not implemented");
-        }
-
-        @Override
-        public ValidationResult visit(ApplicationInfoOperation info) {
-            return ValidationResult.failure("Not implemented");
         }
 
         @Override

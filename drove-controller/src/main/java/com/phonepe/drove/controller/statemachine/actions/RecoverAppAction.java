@@ -9,15 +9,10 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- *
+ * This state is there so that notifications wrt outage become easy. Do not delete this.
  */
 @Slf4j
 public class RecoverAppAction extends OperationDrivenAppAction {
-
-    @Override
-    public void stop() {
-
-    }
 
     @Override
     protected StateData<ApplicationState, ApplicationInfo> commandReceived(
