@@ -12,6 +12,7 @@
                         <th>Free CPU Cores</th>
                         <th>Uses Memory</th>
                         <th>Free Memory</th>
+                        <th>Tags</th>
                     </tr>
                     </thead>
                 </table>
@@ -55,7 +56,20 @@
             { 'data' : 'usedCores' },
             { 'data' : 'freeCores' },
             { 'data' : 'usedMemory' },
-            { 'data' : 'freeMemory' }
+            { 'data' : 'freeMemory' },
+            {
+                'data' : 'tags',
+                'render' : function(data, type, row, meta) {
+                    var tagStr = "";
+                    if(!data) {
+                        return tagStr;
+                    }
+                    for(var i = 0; i < data.length; i++) {
+                        tagStr += '<span class="badge badge-secondary">' + data[i] + '</span> ';
+                    }
+                    return tagStr;
+                }
+            }
         ]
     });
     var ii = $('#instances').DataTable({
@@ -101,6 +115,7 @@
                                         .reduce((acc, v) => acc + v, 0);
                 esum['freeMemory'] = Object.values(data.state.memory.freeMemory)
                                         .reduce((acc, v) => acc + v, 0);
+                esum['tags'] = data.tags;
                 summary.clear();
                 summary.rows.add([esum]).draw();
 

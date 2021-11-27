@@ -59,6 +59,7 @@
                                 <th>Used Cores</th>
                                 <th>Free Memory</th>
                                 <th>Used Memory</th>
+                                <th>Tags</th>
                             </tr>
                             </thead>
                         </table>
@@ -147,10 +148,17 @@
             { 'data' : 'usedCores' },
             { 'data' : 'freeMemory' },
             { 'data' : 'usedMemory' },
-            { 'data' : 'tags',
-              'render' : function(data, type, row, meta) {
-                    return data ? data.join(",") : "";
-              }
+            {  'data' : 'tags',
+                'render' : function(data, type, row, meta) {
+                   var tagStr = "";
+                   if(!data) {
+                       return tagStr;
+                   }
+                   for(var i = 0; i < data.length; i++) {
+                       tagStr += '<span class="badge badge-secondary">' + data[i] + '</span> ';
+                   }
+                   return tagStr;
+                }
             }
         ]
     });
