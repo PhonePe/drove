@@ -82,14 +82,17 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     }
 
     private void softLockResources(AllocatedExecutorNode node) {
-        updateResources(node, ExecutorHostInfo.CoreState.ALLOCATED, (av, alloc) -> av - alloc );
+        updateResources(node, ExecutorHostInfo.CoreState.ALLOCATED, (av, alloc) -> av - alloc);
     }
 
     private void softUnlockResources(AllocatedExecutorNode node) {
         updateResources(node, ExecutorHostInfo.CoreState.FREE, Long::sum);
     }
 
-    private void updateResources(AllocatedExecutorNode node, ExecutorHostInfo.CoreState newState, LongBinaryOperator memUpdater) {
+    private void updateResources(
+            AllocatedExecutorNode node,
+            ExecutorHostInfo.CoreState newState,
+            LongBinaryOperator memUpdater) {
         node.getCpu()
                 .getCores()
                 .forEach((numaNodeId, coreIds) -> nodes.get(node.getExecutorId())
@@ -155,8 +158,11 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                                                        hostInfo.getNodeData().getHostname(),
                                                        hostInfo.getNodeData().getPort(),
                                                        allocateCPUs(node, cpus),
-                                                       new MemoryAllocation(Collections.singletonMap(node.getKey(),
-                                                                                                     memory))))
+                                                       new MemoryAllocation(
+                                                               Collections.singletonMap(node.getKey(), memory)),
+                                                       hostInfo.getNodeData().getTags() == null
+                                                       ? Collections.emptySet()
+                                                       : hostInfo.getNodeData().getTags()))
                 .findAny();
     }
 
@@ -189,7 +195,10 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .forEach((key, freeCores) -> {
                     val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
                     freeCores.forEach(i -> nodeInfo.getCores()
-                            .compute(i, (core, state) -> null == state || state != ExecutorHostInfo.CoreState.ALLOCATED ? ExecutorHostInfo.CoreState.FREE : state));
+                            .compute(i,
+                                     (core, state) -> null == state || state != ExecutorHostInfo.CoreState.ALLOCATED
+                                                      ? ExecutorHostInfo.CoreState.FREE
+                                                      : state));
                 });
         cpus.getUsedCores()
                 .forEach((key, usedCores) -> {

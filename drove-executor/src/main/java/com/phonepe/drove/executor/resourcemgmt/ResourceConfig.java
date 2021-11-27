@@ -21,4 +21,6 @@ public class ResourceConfig {
     @Min(50)
     @Max(100)
     private int exposedMemPercentage = 100;
+
+    private Set<String> tags = Collections.emptySet();
 }

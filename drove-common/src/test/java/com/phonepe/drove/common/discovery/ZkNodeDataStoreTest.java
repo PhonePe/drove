@@ -48,7 +48,9 @@ class ZkNodeDataStoreTest {
         val nodeData = new ExecutorNodeData("localhost",
                                             8080,
                                             new Date(),
-                                            state, Collections.emptyList());
+                                            state,
+                                            Collections.emptyList(),
+                                            Collections.emptySet());
         store.updateNodeData(nodeData);
         var executors = store.nodes(NodeType.EXECUTOR);
         assertFalse(executors.isEmpty());

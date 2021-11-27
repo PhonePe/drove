@@ -4,6 +4,8 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
+import java.util.Set;
+
 /**
  *
  */
@@ -14,4 +16,5 @@ public class AllocatedExecutorNode {
     int port;
     CPUAllocation cpu;
     MemoryAllocation memory;
+    Set<String> tags;
 }

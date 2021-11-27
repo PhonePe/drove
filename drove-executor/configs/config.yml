@@ -30,3 +30,5 @@ zookeeper:
 resources:
   osCores: [ 0, 1 ]
   exposedMemPercentage: 60
+  tags:
+  - local

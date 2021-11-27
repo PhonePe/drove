@@ -8,8 +8,10 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -21,6 +23,7 @@ public class ExecutorNodeData extends NodeData {
 
     ExecutorResourceSnapshot state;
     List<InstanceInfo> instances;
+    Set<String> tags;
 
     @Jacksonized
     @Builder
@@ -29,10 +32,11 @@ public class ExecutorNodeData extends NodeData {
             int port,
             Date updated,
             ExecutorResourceSnapshot state,
-            List<InstanceInfo> instances) {
+            List<InstanceInfo> instances, Set<String> tags) {
         super(NodeType.EXECUTOR, hostname, port, updated);
         this.state = state;
         this.instances = instances;
+        this.tags = tags;
     }
 
     @Override
@@ -43,7 +47,13 @@ public class ExecutorNodeData extends NodeData {
     public static ExecutorNodeData from(
             final ExecutorNodeData nodeData,
             final ExecutorResourceSnapshot currentState,
-            final List<InstanceInfo> instances) {
-        return new ExecutorNodeData(nodeData.getHostname(), nodeData.getPort(), new Date(), currentState, instances);
+            final List<InstanceInfo> instances,
+            final Set<String> tags) {
+        return new ExecutorNodeData(nodeData.getHostname(),
+                                    nodeData.getPort(),
+                                    new Date(),
+                                    currentState,
+                                    instances,
+                                    null == tags ? Collections.emptySet() : tags);
     }
 }

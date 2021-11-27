@@ -24,9 +24,12 @@ public class MatchTagPlacementPolicy extends PlacementPolicy {
     @NotEmpty
     String tag;
 
-    public MatchTagPlacementPolicy(String tag) {
+    boolean negate;
+
+    public MatchTagPlacementPolicy(String tag, boolean negate) {
         super(PlacementPolicyType.MATCH_TAG);
         this.tag = tag;
+        this.negate = negate;
     }
 
     @Override

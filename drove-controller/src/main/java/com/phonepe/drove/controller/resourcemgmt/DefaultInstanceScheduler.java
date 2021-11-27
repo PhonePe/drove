@@ -108,8 +108,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                //TODO::IMPLEMENT
-                return false;
+                return matchTag.isNegate() != executorNode.getTags().contains(matchTag.getTag());
             }
 
             @Override

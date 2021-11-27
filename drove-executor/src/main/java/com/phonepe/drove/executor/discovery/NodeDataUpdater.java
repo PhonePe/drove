@@ -5,6 +5,7 @@ import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -36,6 +37,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final NodeDataStore nodeDataStore;
     private final ResourceDB resourceDB;
     private final InstanceEngine engine;
+    private final ResourceConfig resourceConfig;
     private final ScheduledSignal refreshSignal = new ScheduledSignal(Duration.ofSeconds(10));
     private final AtomicBoolean started = new AtomicBoolean();
     private ExecutorNodeData currentData;
@@ -47,11 +49,12 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             NodeDataStore nodeDataStore,
             ResourceDB resourceDB,
             Environment environment,
-            InstanceEngine engine) {
+            InstanceEngine engine, ResourceConfig resourceConfig) {
         this.executorIdManager = executorIdManager;
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
         this.engine = engine;
+        this.resourceConfig = resourceConfig;
         this.refreshSignal.connect(this::refresh);
         this.engine.onStateChange().connect(info -> refresh(new Date()));
         environment.lifecycle().addServerLifecycleListener(this);
@@ -91,7 +94,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             currentData = new ExecutorNodeData(
                     hostname, port, new Date(),
                     Utils.executorSnapshot(resourceState, executorId),
-                    engine.currentState());
+                    engine.currentState(), resourceConfig.getTags());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {
@@ -110,7 +113,8 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             currentData = ExecutorNodeData.from(
                     currentData,
                     Utils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
-                    engine.currentState());
+                    engine.currentState(),
+                    resourceConfig.getTags());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {
