@@ -2,6 +2,8 @@ package com.phonepe.drove.models.api;
 
 import lombok.Value;
 
+import java.util.Set;
+
 /**
  *
  */
@@ -14,4 +16,5 @@ public class ExecutorSummary {
     int usedCores;
     long freeMemory;
     long usedMemory;
+    Set<String> tags;
 }

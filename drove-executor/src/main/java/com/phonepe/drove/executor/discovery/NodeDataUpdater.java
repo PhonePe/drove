@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.discovery;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.executor.Utils;
@@ -21,7 +22,10 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -92,9 +96,12 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             stateLock.lock();
             val executorId = executorIdManager.executorId().orElseGet(() -> CommonUtils.executorId(port));
             currentData = new ExecutorNodeData(
-                    hostname, port, new Date(),
+                    hostname,
+                    port,
+                    new Date(),
                     Utils.executorSnapshot(resourceState, executorId),
-                    engine.currentState(), resourceConfig.getTags());
+                    engine.currentState(),
+                    tags());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {
@@ -114,12 +121,21 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
                     currentData,
                     Utils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
                     engine.currentState(),
-                    resourceConfig.getTags());
+                    tags());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {
             stateLock.unlock();
         }
+    }
+
+    private Set<String> tags() {
+        val hostname = currentData != null && !Strings.isNullOrEmpty(currentData.getHostname())
+                       ? currentData.getHostname()
+                       : CommonUtils.hostname();
+        val existing = new HashSet<>(resourceConfig.getTags() == null ? Collections.emptySet() : resourceConfig.getTags());
+        existing.add(hostname);
+        return Set.copyOf(existing);
     }
 
 }

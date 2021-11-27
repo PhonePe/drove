@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -23,6 +24,7 @@ import java.util.UUID;
  *
  */
 @UtilityClass
+@Slf4j
 public class CommonUtils {
     private static final String DEFAULT_NAMESPACE = "drove";
 
@@ -35,17 +37,11 @@ public class CommonUtils {
     }
 
     public static String hostname() {
-        val hostname = Objects.requireNonNullElseGet(System.getenv("HOSTNAME"), () -> {
-            try {
-                return InetAddress.getLocalHost().getHostName();
-            }
-            catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        val hostname = Objects.requireNonNullElseGet(readHostname(), () -> System.getenv("HOSTNAME"));
         Objects.requireNonNull(hostname, "Hostname cannot be empty");
         return hostname;
     }
+
 
     public static String executorId(int port) {
         return UUID.nameUUIDFromBytes((hostname() + ":" + port).getBytes()).toString();
@@ -69,5 +65,15 @@ public class CommonUtils {
         }
         val end  = Math.min(listSize, start + size);
         return list.subList(start, end);
+    }
+
+    private static String readHostname() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        }
+        catch (UnknownHostException e) {
+            log.error("Error getting hostname: " + e.getMessage(), e);
+        }
+        return null;
     }
 }

@@ -242,7 +242,8 @@ public class ResponseEngine {
                                                                        .values()
                                                                        .stream()
                                                                        .mapToLong(v -> v)
-                                                                       .sum()));
+                                                                       .sum(),
+                                                               executorData.getTags()));
                     }
                 });
     }

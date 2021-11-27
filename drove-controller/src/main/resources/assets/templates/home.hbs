@@ -146,7 +146,12 @@
             { 'data' : 'freeCores' },
             { 'data' : 'usedCores' },
             { 'data' : 'freeMemory' },
-            { 'data' : 'usedMemory' }
+            { 'data' : 'usedMemory' },
+            { 'data' : 'tags',
+              'render' : function(data, type, row, meta) {
+                    return data ? data.join(",") : "";
+              }
+            }
         ]
     });
 
