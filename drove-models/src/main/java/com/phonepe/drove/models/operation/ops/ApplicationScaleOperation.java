@@ -26,7 +26,7 @@ public class ApplicationScaleOperation extends ApplicationOperation {
     @Valid
     String appId;
 
-    @Min(1)
+    @Min(0)
     @Max(2048)
     long requiredInstances;
 

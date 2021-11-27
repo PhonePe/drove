@@ -4,7 +4,7 @@ import lombok.Data;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.Set;
 
@@ -15,7 +15,7 @@ import java.util.Set;
 public class ResourceConfig {
     public static final ResourceConfig DEFAULT = new ResourceConfig();
 
-    @NotEmpty
+    @NotNull
     private Set<Integer> osCores = Collections.emptySet();
 
     @Min(50)

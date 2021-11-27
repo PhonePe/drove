@@ -5,18 +5,18 @@ import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.engine.DockerLabels;
+import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.statemachine.InstanceAction;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
-import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.InstanceLogHandler;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.statemachine.InstanceAction;
-import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
@@ -109,7 +109,7 @@ public class InstanceRunAction extends InstanceAction {
                     });
             hostConfig.withPortBindings(ports);
 
-            if(null != instanceSpec.getVolumes()) {
+            if (null != instanceSpec.getVolumes()) {
                 hostConfig.withBinds(instanceSpec.getVolumes()
                                              .stream()
                                              .map(volume -> new Bind(volume.getPathOnHost(),
@@ -127,9 +127,13 @@ public class InstanceRunAction extends InstanceAction {
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
             labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
-
+            env.addAll(instanceSpec.getEnv()
+                               .entrySet()
+                               .stream()
+                               .map(e -> e.getKey() + "=" + e.getValue())
+                               .collect(Collectors.toUnmodifiableList()));
+            log.debug("Environment: {}", env);
             val id = containerCmd
-                    .withBinds()
                     .withHostConfig(hostConfig)
                     .withEnv(env)
                     .withLabels(labels)

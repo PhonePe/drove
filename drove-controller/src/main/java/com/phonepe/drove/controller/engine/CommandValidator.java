@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.engine;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -19,6 +18,7 @@ import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
 import lombok.Value;
 import lombok.val;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -155,7 +155,7 @@ public class CommandValidator {
                    ? ValidationResult.success()
                    : ValidationResult.failure(
                            "App " + appId + " does not have any instances with the following ids: "
-                                   + Joiner.on(',').join(invalidIds));
+                                   + StringUtils.join(invalidIds, ','));
         }
 
         @Override
