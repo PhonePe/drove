@@ -154,6 +154,7 @@
                    if(!data) {
                        return tagStr;
                    }
+                   data.sort();
                    for(var i = 0; i < data.length; i++) {
                        tagStr += '<span class="badge badge-secondary">' + data[i] + '</span> ';
                    }
