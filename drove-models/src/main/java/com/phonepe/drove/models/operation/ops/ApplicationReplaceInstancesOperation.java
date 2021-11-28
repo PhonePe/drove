@@ -12,6 +12,8 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  *
@@ -20,17 +22,20 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
-public class ApplicationRestartOperation extends ApplicationOperation {
+public class ApplicationReplaceInstancesOperation extends ApplicationOperation {
     @NotEmpty
     String appId;
+
+    Set<String> instanceIds;
 
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationRestartOperation(String appId, ClusterOpSpec opSpec) {
-        super(ApplicationOperationType.RESTART);
+    public ApplicationReplaceInstancesOperation(String appId, Set<String> instanceIds, ClusterOpSpec opSpec) {
+        super(ApplicationOperationType.REPLACE_INSTANCES);
         this.appId = appId;
+        this.instanceIds = instanceIds == null ? Collections.emptySet() : instanceIds;
         this.opSpec = opSpec;
     }
 

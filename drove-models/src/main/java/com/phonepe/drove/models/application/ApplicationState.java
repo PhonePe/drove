@@ -12,7 +12,7 @@ public enum ApplicationState {
     OUTAGE_DETECTED(false),
     SCALING_REQUESTED(false),
     STOP_INSTANCES_REQUESTED(false),
-    RESTART_REQUESTED(false),
+    REPLACE_INSTANCES_REQUESTED(false),
     DESTROY_REQUESTED(false),
     DESTROYED(true),
     FAILED(true);

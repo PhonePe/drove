@@ -38,7 +38,7 @@ public class ApplicationOperationVisitorAdapter<T> implements ApplicationOperati
     }
 
     @Override
-    public T visit(ApplicationRestartOperation restart) {
+    public T visit(ApplicationReplaceInstancesOperation replaceInstances) {
         return defaultValue;
     }
 

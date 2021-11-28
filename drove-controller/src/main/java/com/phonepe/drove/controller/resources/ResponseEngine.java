@@ -33,7 +33,7 @@ public class ResponseEngine {
                                                                                   ApplicationState.OUTAGE_DETECTED,
                                                                                   ApplicationState.SCALING_REQUESTED,
                                                                                   ApplicationState.STOP_INSTANCES_REQUESTED,
-                                                                                  ApplicationState.RESTART_REQUESTED,
+                                                                                  ApplicationState.REPLACE_INSTANCES_REQUESTED,
                                                                                   ApplicationState.DESTROY_REQUESTED);
 
     private static final EnumSet<InstanceState> ACTIVE_INSTANCE_STATES = EnumSet.of(InstanceState.PENDING,
@@ -262,7 +262,7 @@ public class ResponseEngine {
                                            .filter(app -> engine.applicationState(app.getAppId())
                                                    .filter(s -> s.equals(ApplicationState.RUNNING)
                                                            || s.equals(ApplicationState.SCALING_REQUESTED)
-                                                           || s.equals(ApplicationState.RESTART_REQUESTED))
+                                                           || s.equals(ApplicationState.REPLACE_INSTANCES_REQUESTED))
                                                    .isPresent()) //Only running
                                            .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
                                            .filter(app -> !app.getSpec()

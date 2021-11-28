@@ -134,8 +134,8 @@ public class ControllerUtils {
             }
 
             @Override
-            public String visit(ApplicationRestartOperation restart) {
-                return restart.getAppId();
+            public String visit(ApplicationReplaceInstancesOperation replaceInstances) {
+                return replaceInstances.getAppId();
             }
 
             @Override

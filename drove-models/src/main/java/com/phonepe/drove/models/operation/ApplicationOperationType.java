@@ -11,7 +11,7 @@ public enum ApplicationOperationType {
     DEPLOY,
     STOP_INSTANCES,
     SCALE,
-    RESTART,
+    REPLACE_INSTANCES,
     SUSPEND,
     RECOVER,
 }

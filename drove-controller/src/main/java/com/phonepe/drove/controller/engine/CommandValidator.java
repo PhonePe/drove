@@ -42,11 +42,11 @@ public class CommandValidator {
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
             .put(INIT, Set.of())
             .put(MONITORING, Set.of(DEPLOY, SCALE, DESTROY, RECOVER))
-            .put(RUNNING, Set.of(DEPLOY, STOP_INSTANCES, SCALE, RESTART, SUSPEND, RECOVER))
+            .put(RUNNING, Set.of(DEPLOY, STOP_INSTANCES, SCALE, REPLACE_INSTANCES, SUSPEND, RECOVER))
             .put(OUTAGE_DETECTED, Set.of())
             .put(SCALING_REQUESTED, Set.of(SCALE))
             .put(STOP_INSTANCES_REQUESTED, Set.of())
-            .put(RESTART_REQUESTED, Set.of())
+            .put(REPLACE_INSTANCES_REQUESTED, Set.of())
             .put(DESTROY_REQUESTED, Set.of())
             .put(DESTROYED, Set.of())
             .put(FAILED, Set.of())
@@ -170,7 +170,7 @@ public class CommandValidator {
         }
 
         @Override
-        public ValidationResult visit(ApplicationRestartOperation restart) {
+        public ValidationResult visit(ApplicationReplaceInstancesOperation replaceInstances) {
             return ValidationResult.success();
         }
 

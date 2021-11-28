@@ -17,7 +17,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationRestartOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -33,14 +33,14 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
  *
  */
 @Slf4j
-public class RestartAppAction extends AppAsyncAction {
+public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
 
     @Inject
-    public RestartAppAction(
+    public ReplaceInstancesAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
             ClusterResourcesDB clusterResourcesDB,
@@ -57,9 +57,13 @@ public class RestartAppAction extends AppAsyncAction {
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
-        val restartOp = safeCast(operation, ApplicationRestartOperation.class);
+        val restartOp = safeCast(operation, ApplicationReplaceInstancesOperation.class);
         val appId = restartOp.getAppId();
-        val instances = applicationStateDB.healthyInstances(restartOp.getAppId());
+        val instances = applicationStateDB.healthyInstances(restartOp.getAppId())
+                .stream()
+                .filter(instanceInfo -> (restartOp.getInstanceIds() == null || restartOp.getInstanceIds().isEmpty())
+                                            || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
+                .collect(Collectors.toUnmodifiableList());
         val clusterOpSpec = restartOp.getOpSpec();
         val appSpec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
         if (null == appSpec) {

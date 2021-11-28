@@ -70,8 +70,8 @@ public class AppOperationRouterAction extends AppAction {
             }
 
             @Override
-            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationRestartOperation restart) {
-                return Optional.of(StateData.from(currentState, ApplicationState.RESTART_REQUESTED));
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationReplaceInstancesOperation replaceInstances) {
+                return Optional.of(StateData.from(currentState, ApplicationState.REPLACE_INSTANCES_REQUESTED));
             }
 
             @Override
