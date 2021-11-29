@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.engine.jobs;
 
 import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
@@ -124,8 +125,16 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                      applicationSpec.getEnv()));
         var successful = false;
         try {
-            communicator.send(startMessage);
-            log.debug("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, startMessage);
+            val response = communicator.send(startMessage);
+            log.debug("Sent message to start instance: {}/{}. Response: {} Message: {}",
+                      appId,
+                      instanceId,
+                      response,
+                      startMessage);
+            if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                log.warn("Sending start message failed. Won't wait for ensuring state. Rescheduling necessary.");
+                return false;
+            }
             successful = ensureInstanceState(applicationStateDB,
                                              clusterOpSpec,
                                              appId,
