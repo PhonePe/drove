@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> blackListedNodes = new ConcurrentHashMap<>();
 
     @Override
     public List<ExecutorHostInfo> currentSnapshot() {
@@ -68,6 +69,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
         Collections.shuffle(rawNodes);
         return rawNodes
                 .stream()
+                .filter(node -> !isBlacklisted(node.executorId))
                 .map(node -> ensureResource(node, requirements))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
@@ -79,6 +81,24 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     @Override
     public synchronized void deselectNode(AllocatedExecutorNode executorNode) {
         softUnlockResources(executorNode);
+    }
+
+    @Override
+    public boolean isBlacklisted(String executorId) {
+        return Optional.of(nodes.get(executorId))
+                .map(node -> node.getNodeData().isBlacklisted())
+                .orElse(false)
+                || blackListedNodes.getOrDefault(executorId, false);
+    }
+
+    @Override
+    public void markBlacklisted(String executorId) {
+        blackListedNodes.putIfAbsent(executorId, true);
+    }
+
+    @Override
+    public void unmarkBlacklisted(String executorId) {
+        blackListedNodes.remove(executorId);
     }
 
     private void softLockResources(AllocatedExecutorNode node) {

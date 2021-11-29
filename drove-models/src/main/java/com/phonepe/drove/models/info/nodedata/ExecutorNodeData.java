@@ -24,6 +24,7 @@ public class ExecutorNodeData extends NodeData {
     ExecutorResourceSnapshot state;
     List<InstanceInfo> instances;
     Set<String> tags;
+    boolean blacklisted;
 
     @Jacksonized
     @Builder
@@ -32,11 +33,13 @@ public class ExecutorNodeData extends NodeData {
             int port,
             Date updated,
             ExecutorResourceSnapshot state,
-            List<InstanceInfo> instances, Set<String> tags) {
+            List<InstanceInfo> instances, Set<String> tags,
+            boolean blacklisted) {
         super(NodeType.EXECUTOR, hostname, port, updated);
         this.state = state;
         this.instances = instances;
         this.tags = tags;
+        this.blacklisted = blacklisted;
     }
 
     @Override
@@ -48,12 +51,13 @@ public class ExecutorNodeData extends NodeData {
             final ExecutorNodeData nodeData,
             final ExecutorResourceSnapshot currentState,
             final List<InstanceInfo> instances,
-            final Set<String> tags) {
+            final Set<String> tags, boolean blacklisted) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),
                                     new Date(),
                                     currentState,
                                     instances,
-                                    null == tags ? Collections.emptySet() : tags);
+                                    null == tags ? Collections.emptySet() : tags,
+                                    blacklisted);
     }
 }

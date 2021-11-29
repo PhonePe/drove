@@ -3,6 +3,9 @@ package com.phonepe.drove.common.net;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageResponse;
 import io.appform.signals.signals.ConsumingSyncSignal;
+import lombok.val;
+
+import java.util.function.Consumer;
 
 /**
  *
@@ -27,8 +30,13 @@ public abstract class ThreadedCommunicator<
     }
 
     @Override
-    public void send(SendMessage message) {
-        responseReceived.dispatch(messageSender.send(message));
+    public MessageResponse send(SendMessage message, Consumer<MessageResponse> responseConsumer) {
+        val response = messageSender.send(message);
+        responseReceived.dispatch(response);
+        if(null != responseConsumer) {
+            responseConsumer.accept(response);
+        }
+        return response;
     }
 
     @Override

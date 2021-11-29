@@ -27,4 +27,11 @@ public interface ClusterResourcesDB {
             List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter);
 
     void deselectNode(final AllocatedExecutorNode executorNode);
+
+    boolean isBlacklisted(String executorId);
+
+    void markBlacklisted(String executorId);
+
+    void unmarkBlacklisted(String executorId);
+
 }

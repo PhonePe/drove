@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -17,19 +18,20 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationDeployOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
-import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
+import com.phonepe.drove.models.operation.ops.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -37,9 +39,6 @@ import java.util.concurrent.Executors;
 @Singleton
 @Slf4j
 public class ApplicationEngine {
-    private final Set<ApplicationState> OPERATION_ENABLED_STATES = EnumSet.of(ApplicationState.INIT,
-                                                                              ApplicationState.MONITORING,
-                                                                              ApplicationState.RUNNING);
 
     private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
@@ -145,6 +144,19 @@ public class ApplicationEngine {
                 return monitor;
             }
         });
+    }
+
+    public void moveInstancesFromExecutor(final String executorId) {
+        stateDB.applications(0, Integer.MAX_VALUE)
+                .stream()
+                .flatMap(app -> stateDB.healthyInstances(app.getAppId()).stream())
+                .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
+                .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
+                .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
+                .forEach((appId, instances) -> {
+                    val res = handleOperation(new ApplicationReplaceInstancesOperation(appId, instances, ClusterOpSpec.DEFAULT));
+                    log.info("Instances to be replaced for {}: {}. command acceptance status: {}", appId, instances, res);
+                });
     }
 
     private void handleAppStateUpdate(

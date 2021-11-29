@@ -2,10 +2,7 @@ package com.phonepe.drove.executor.engine;
 
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.executor.ExecutorMessageVisitor;
-import com.phonepe.drove.common.model.executor.QueryInstanceMessage;
-import com.phonepe.drove.common.model.executor.StartInstanceMessage;
-import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.common.model.executor.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -22,7 +19,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
 
     @Override
     public MessageResponse visit(StartInstanceMessage startInstanceMessage) {
-        if(engine.exists(startInstanceMessage.getSpec().getInstanceId())) {
+        if (engine.exists(startInstanceMessage.getSpec().getInstanceId())) {
             return new MessageResponse(startInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
@@ -40,7 +37,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
 
     @Override
     public MessageResponse visit(StopInstanceMessage stopInstanceMessage) {
-        if(!engine.exists(stopInstanceMessage.getInstanceId())) {
+        if (!engine.exists(stopInstanceMessage.getInstanceId())) {
             return new MessageResponse(stopInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
@@ -57,10 +54,22 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(QueryInstanceMessage queryInstanceMessage) {
         val state = engine.currentState(queryInstanceMessage.getInstanceId()).orElse(null);
-        if(null == state) {
+        if (null == state) {
             return new MessageResponse(queryInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         //TODO::QUEUE UP MESSAGE FOR SENDING
         return new MessageResponse(queryInstanceMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
+    }
+
+    @Override
+    public MessageResponse visit(BlacklistExecutorMessage blacklistExecutorMessage) {
+        engine.blacklist();
+        return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
+    }
+
+    @Override
+    public MessageResponse visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage) {
+        engine.unblacklist();
+        return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 }

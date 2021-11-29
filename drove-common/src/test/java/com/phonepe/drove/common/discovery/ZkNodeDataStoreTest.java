@@ -50,7 +50,8 @@ class ZkNodeDataStoreTest {
                                             new Date(),
                                             state,
                                             Collections.emptyList(),
-                                            Collections.emptySet());
+                                            Collections.emptySet(),
+                                            false);
         store.updateNodeData(nodeData);
         var executors = store.nodes(NodeType.EXECUTOR);
         assertFalse(executors.isEmpty());

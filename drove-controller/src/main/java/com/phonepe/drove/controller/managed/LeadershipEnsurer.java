@@ -50,7 +50,7 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
         this.leaderLatch.addListener(new LeaderLatchListener() {
             @Override
             public void isLeader() {
-                log.info("This node because leader. Updating state.");
+                log.info("This node became leader. Updating state.");
                 refreshNodeState();
                 leadershipStateChanged.dispatch(true);
             }

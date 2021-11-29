@@ -11,7 +11,11 @@ public class ApiResponse<T> {
     T data;
     String message;
 
-    public static<T> ApiResponse<T> success(T data) {
+    public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(ApiErrorCode.SUCCESS, data, "success");
+    }
+
+    public static <T> ApiResponse<T> failure(final String message) {
+        return new ApiResponse<>(ApiErrorCode.FAILED, null, message);
     }
 }

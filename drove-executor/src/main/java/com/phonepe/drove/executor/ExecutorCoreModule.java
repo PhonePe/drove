@@ -17,6 +17,7 @@ import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -42,7 +43,8 @@ public class ExecutorCoreModule extends AbstractModule {
             final Environment environment,
             final Injector injector,
             final ResourceDB resourceDB,
-            final ExecutorIdManager executorIdManager) {
+            final ExecutorIdManager executorIdManager,
+            final BlacklistingManager blacklistManager) {
         val executorService = environment.lifecycle()
                 .executorService("instance-engine")
                 .minThreads(128)
@@ -52,8 +54,8 @@ public class ExecutorCoreModule extends AbstractModule {
                 executorIdManager,
                 executorService,
                 new InjectingInstanceActionFactory(injector),
-                resourceDB
-        );
+                resourceDB,
+                blacklistManager);
     }
 
     @Provides

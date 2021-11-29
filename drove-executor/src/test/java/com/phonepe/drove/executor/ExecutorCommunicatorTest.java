@@ -12,6 +12,7 @@ import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -32,7 +33,8 @@ class ExecutorCommunicatorTest {
     void test() {
         val engine = new InstanceEngine(new ExecutorIdManager(3000), Executors.newCachedThreadPool(),
                                         new InjectingInstanceActionFactory(Guice.createInjector(Stage.DEVELOPMENT)),
-                                        new ResourceDB());
+                                        new ResourceDB(),
+                                        new BlacklistingManager());
         val comms = new ExecutorCommunicator(
                 engine, msg -> {
             log.info("Received message: {}", msg);

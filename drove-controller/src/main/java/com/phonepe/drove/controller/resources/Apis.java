@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
+import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -20,7 +21,10 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -31,20 +35,19 @@ import java.util.*;
 @Singleton
 @Slf4j
 public class Apis {
-    private static final EnumSet<InstanceState> ACTIVE_STATES = EnumSet.of(InstanceState.PENDING,
-                                                                           InstanceState.PROVISIONING,
-                                                                           InstanceState.STARTING,
-                                                                           InstanceState.UNHEALTHY,
-                                                                           InstanceState.HEALTHY,
-                                                                           InstanceState.DEPROVISIONING,
-                                                                           InstanceState.STOPPING);
+
     private final ApplicationEngine engine;
     private final ResponseEngine responseEngine;
+    private final ControllerCommunicator communicator;
 
     @Inject
-    public Apis(ApplicationEngine engine, ResponseEngine responseEngine) {
+    public Apis(
+            ApplicationEngine engine,
+            ResponseEngine responseEngine,
+            ControllerCommunicator communicator) {
         this.engine = engine;
         this.responseEngine = responseEngine;
+        this.communicator = communicator;
     }
 
     @POST
@@ -54,7 +57,7 @@ public class Apis {
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             return ApiResponse.success(Collections.singletonMap("appId", ControllerUtils.appId(operation)));
         }
-        return new ApiResponse<>(ApiErrorCode.FAILED, null, res.getMessage());
+        return ApiResponse.failure(res.getMessage());
     }
 
     @POST
@@ -62,7 +65,7 @@ public class Apis {
     public ApiResponse<Void> cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
         return engine.cancelCurrentJob(appId)
                ? ApiResponse.success(null)
-               : new ApiResponse<>(ApiErrorCode.FAILED, null, "Current operation could not be cancelled");
+               : ApiResponse.failure("Current operation could not be cancelled");
     }
 
     @GET
@@ -104,6 +107,18 @@ public class Apis {
     @Path("/cluster/executors/{id}")
     public ApiResponse<ExecutorNodeData> executorDetails(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.executorDetails(executorId);
+    }
+
+    @POST
+    @Path("/cluster/executors/{id}/blacklist")
+    public ApiResponse<Void> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
+        return responseEngine.blacklistExecutor(executorId);
+    }
+
+    @POST
+    @Path("/cluster/executors/{id}/unblacklist")
+    public ApiResponse<Void> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
+        return responseEngine.unblacklistExecutor(executorId);
     }
 
     @GET

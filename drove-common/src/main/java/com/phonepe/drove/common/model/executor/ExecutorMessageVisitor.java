@@ -9,4 +9,8 @@ public interface ExecutorMessageVisitor<T> {
     T visit(StopInstanceMessage stopInstanceMessage);
 
     T visit(QueryInstanceMessage queryInstanceMessage);
+
+    T visit(BlacklistExecutorMessage blacklistExecutorMessage);
+
+    T visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage);
 }

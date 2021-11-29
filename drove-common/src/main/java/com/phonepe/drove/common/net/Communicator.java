@@ -4,6 +4,8 @@ import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageResponse;
 import io.appform.signals.signals.ConsumingSyncSignal;
 
+import java.util.function.Consumer;
+
 /**
  *
  */
@@ -17,7 +19,11 @@ public interface Communicator<
      * Send message to remote
      * @param message the actual message received
      */
-    void send(final SendMessage message);
+    default MessageResponse send(final SendMessage message) {
+        return send(message, null);
+    }
+
+    MessageResponse send(final SendMessage message, final Consumer<MessageResponse> onComplete);
 
     MessageResponse receive(final ReceiveMessage message);
 }

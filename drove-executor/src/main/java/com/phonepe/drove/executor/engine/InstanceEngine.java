@@ -4,6 +4,7 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
+import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
@@ -42,6 +43,7 @@ public class InstanceEngine implements Closeable {
     private final ExecutorService service;
     private final InstanceActionFactory actionFactory;
     private final ResourceDB resourceDB;
+    private final BlacklistingManager blacklistManager;
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
@@ -51,11 +53,12 @@ public class InstanceEngine implements Closeable {
     public InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
             InstanceActionFactory actionFactory,
-            ResourceDB resourceDB) {
+            ResourceDB resourceDB, BlacklistingManager blacklistManager) {
         this.executorIdManager = executorIdManager;
         this.service = service;
         this.actionFactory = actionFactory;
         this.resourceDB = resourceDB;
+        this.blacklistManager = blacklistManager;
         this.stateMachines = new ConcurrentHashMap<>();
         refreshSignal.connect(this::sendStatusReport);
     }
@@ -140,6 +143,14 @@ public class InstanceEngine implements Closeable {
                 .stream()
                 .map(v -> Utils.convert(v.getStateMachine().getCurrentState()))
                 .collect(Collectors.toUnmodifiableList());
+    }
+
+    public void blacklist() {
+        blacklistManager.blacklist();
+    }
+
+    public void unblacklist() {
+        blacklistManager.unblacklist();
     }
 
     @Override

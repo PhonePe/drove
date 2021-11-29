@@ -1,6 +1,12 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
+import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
+import com.phonepe.drove.common.model.executor.ExecutorAddress;
+import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -17,6 +23,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -28,6 +35,7 @@ import java.util.stream.Collectors;
  *
  */
 @Singleton
+@Slf4j
 public class ResponseEngine {
     private static final EnumSet<ApplicationState> ACTIVE_APP_STATES = EnumSet.of(ApplicationState.RUNNING,
                                                                                   ApplicationState.OUTAGE_DETECTED,
@@ -46,15 +54,18 @@ public class ResponseEngine {
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final ControllerCommunicator communicator;
 
     @Inject
     public ResponseEngine(
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB) {
+            ClusterResourcesDB clusterResourcesDB,
+            ControllerCommunicator communicator) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.communicator = communicator;
     }
 
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
@@ -68,14 +79,14 @@ public class ResponseEngine {
     public ApiResponse<AppSummary> application(final String appId) {
         return applicationStateDB.application(appId)
                 .map(appInfo -> ApiResponse.success(toAppSummary(appInfo)))
-                .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "App " + appId + " not found"));
+                .orElse(ApiResponse.failure("App " + appId + " not found"));
     }
 
     public ApiResponse<AppDetails> appDetails(String appId) {
         return applicationStateDB.application(appId)
                 .map(this::toAppDetails)
                 .map(ApiResponse::success)
-                .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "No app found with id: " + appId));
+                .orElse(ApiResponse.failure("No app found with id: " + appId));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(
@@ -252,7 +263,7 @@ public class ResponseEngine {
         return clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
                 .map(ApiResponse::success)
-                .orElse(new ApiResponse<>(ApiErrorCode.FAILED, null, "No executor found with id: " + executorId));
+                .orElse(ApiResponse.failure("No executor found with id: " + executorId));
     }
 
     public ApiResponse<List<ExposedAppInfo>> endpoints() {
@@ -286,12 +297,51 @@ public class ResponseEngine {
                                                                                                  .getPorts()
                                                                                                  .get(spec.getPortName())
                                                                                                  .getHostPort(),
-                                                                                      instanceInfo.getLocalInfo()
-                                                                                              .getPorts()
-                                                                                              .get(spec.getPortName())
+                                                                                         instanceInfo.getLocalInfo()
+                                                                                                 .getPorts()
+                                                                                                 .get(spec.getPortName())
                                                                                                  .getPortType()))
                                                                                  .collect(Collectors.toUnmodifiableList()));
                                            })
                                            .collect(Collectors.toUnmodifiableList()));
+    }
+
+    public ApiResponse<Void> blacklistExecutor(final String executorId) {
+        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+        if (null != executor) {
+            val msgResponse = communicator.send(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                                             new ExecutorAddress(executor.getExecutorId(),
+                                                                                                 executor.getNodeData()
+                                                                                                         .getHostname(),
+                                                                                                 executor.getNodeData()
+                                                                                                         .getPort())));
+            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                clusterResourcesDB.markBlacklisted(executorId);
+                log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
+                engine.moveInstancesFromExecutor(executorId);
+                return ApiResponse.success(null);
+            }
+            return ApiResponse.failure("Error sending remote message");
+        }
+        return ApiResponse.failure("No such executor");
+    }
+
+    public ApiResponse<Void> unblacklistExecutor(final String executorId) {
+        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+        if (null != executor) {
+            val msgResponse = communicator.send(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                                               new ExecutorAddress(executor.getExecutorId(),
+                                                                                                   executor.getNodeData()
+                                                                                                           .getHostname(),
+                                                                                                   executor.getNodeData()
+                                                                                                           .getPort())));
+            if(msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                clusterResourcesDB.unmarkBlacklisted(executorId);
+                log.debug("Executor {} marked unblacklisted.", executorId);
+                return ApiResponse.success(null);
+            }
+            return ApiResponse.failure("Error sending remote message");
+        }
+        return ApiResponse.failure("No such executor");
     }
 }
