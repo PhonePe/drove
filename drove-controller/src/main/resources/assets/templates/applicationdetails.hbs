@@ -45,6 +45,33 @@
             </div>
         </div>
     </section>
+    <section>
+        <div class="row">
+            <div class="col">
+                <div class="row">
+                    <div class="col"><h4>Old Instances</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered"  id="oldinstances">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ExecutorId</th>
+                                <th>Host</th>
+                                <th>Ports</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>State</th>
+                                <th>Log Stream</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {{/partial}}
 
 {{#partial "page_js"}}
@@ -68,37 +95,61 @@
             { 'data' : 'state' }
         ]
     });
+    function instanceDataHandler(res) {
+        if(!res.data) {
+        return [];
+        }
+        res.data.forEach( (info, i) => {
+        if(info.localInfo) {
+            info['hostname'] = info.localInfo.hostname;
+            info['ports'] = Object.keys(info.localInfo.ports)
+                .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
+                .join(",");
+        }
+        else {
+        info['hostname'] = '';
+        info['ports'] = '';
+        }
+        info.resources.forEach((r,i) => {
+        if(r.type === 'CPU') {
+        info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+        }
+        if(r.type === 'MEMORY') {
+        info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+        }
+        });
+        info['logStream'] = "/apis/v1/logs/{{appId}}/" + info['instanceId'];
+        });
+        return res.data;
+    }
     var instances = $('#instances').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/applications/{{appId}}/instances',
-            'dataSrc' : function(res) {
-                if(!res.data) {
-                    return [];
+            'dataSrc' : instanceDataHandler
+        },
+        'paging': false,
+        'info' : false,
+        'columns' : [
+            { 'data' : 'instanceId' },
+            { 'data' : 'executorId' },
+            { 'data' : 'hostname' },
+            { 'data' : 'ports' },
+            { 'data' : 'usedCores' },
+            { 'data' : 'usedMemory' },
+            { 'data' : 'state' },
+            { 'data' : 'logStream',
+                'render' : function(data, type, row, meta) {
+                    return '<a href="' + data + '" target="_blank">Log</a>';
                 }
-                res.data.forEach( (info, i) => {
-                    if(info.localInfo) {
-                        info['hostname'] = info.localInfo.hostname;
-                        info['ports'] = Object.keys(info.localInfo.ports)
-                                        .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
-                                            .join(",");
-                    }
-                    else {
-                        info['hostname'] = '';
-                        info['ports'] = '';
-                    }
-                    info.resources.forEach((r,i) => {
-                        if(r.type === 'CPU') {
-                            info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
-                        }
-                        if(r.type === 'MEMORY') {
-                            info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
-                        }
-                    });
-                    info['logStream'] = "/apis/v1/logs/{{appId}}/" + info['instanceId'];
-                });
-                return res.data;
             }
+        ]
+    });
+    var oldinstances = $('#oldinstances').DataTable({
+        'processing' : true,
+        'ajax': {
+            'url' : '/apis/v1/applications/{{appId}}/instances/old',
+            'dataSrc' : instanceDataHandler
         },
         'paging': false,
         'info' : false,
@@ -120,6 +171,7 @@
     setInterval(() => {
         summary.ajax.reload();
         instances.ajax.reload();
+        oldinstances.ajax.reload();
     }, 5000);
 {{/partial}}
 {{> common/base}}

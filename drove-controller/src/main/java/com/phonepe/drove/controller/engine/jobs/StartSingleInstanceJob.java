@@ -132,14 +132,16 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                       response,
                       startMessage);
             if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                log.warn("Sending start message failed. Won't wait for ensuring state. Rescheduling necessary.");
-                return false;
+                log.warn("Sending start message failed with status: {}. " +
+                                 "Won't wait for ensuring state. Rescheduling necessary.", response.getStatus());
             }
-            successful = ensureInstanceState(applicationStateDB,
-                                             clusterOpSpec,
-                                             appId,
-                                             instanceId,
-                                             InstanceState.HEALTHY);
+            else {
+                successful = ensureInstanceState(applicationStateDB,
+                                                 clusterOpSpec,
+                                                 appId,
+                                                 instanceId,
+                                                 InstanceState.HEALTHY);
+            }
         }
         finally {
             if (!successful) {

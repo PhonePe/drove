@@ -89,15 +89,19 @@ public class ResponseEngine {
                 .orElse(ApiResponse.failure("No app found with id: " + appId));
     }
 
-    public ApiResponse<List<InstanceInfo>> applicationInstances(
-            final String appId, final Set<InstanceState> state) {
-
+    public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
         val checkStates = null == state || state.isEmpty()
                           ? ACTIVE_INSTANCE_STATES
                           : state;
-        return ApiResponse.success(applicationStateDB.instances(appId, 0, Integer.MAX_VALUE)
+        return ApiResponse.success(applicationStateDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
                                            .filter(info -> checkStates.contains(info.getState()))
+                                           .collect(Collectors.toUnmodifiableList()));
+    }
+
+    public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
+        return ApiResponse.success(applicationStateDB.oldInstances(appId, 0, Integer.MAX_VALUE)
+                                           .stream()
                                            .collect(Collectors.toUnmodifiableList()));
     }
 
@@ -145,7 +149,7 @@ public class ResponseEngine {
     private AppDetails toAppDetails(final ApplicationInfo info) {
         val spec = info.getSpec();
         val requiredInstances = info.getInstances();
-        val instances = applicationStateDB.instances(info.getAppId(), 0, Integer.MAX_VALUE);
+        val instances = applicationStateDB.activeInstances(info.getAppId(), 0, Integer.MAX_VALUE);
         val cpus = totalCPU(spec, requiredInstances);
         val memory = totalMemory(spec, requiredInstances);
         return new AppDetails(info.getAppId(),
@@ -335,7 +339,7 @@ public class ResponseEngine {
                                                                                                            .getHostname(),
                                                                                                    executor.getNodeData()
                                                                                                            .getPort())));
-            if(msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.unmarkBlacklisted(executorId);
                 log.debug("Executor {} marked unblacklisted.", executorId);
                 return ApiResponse.success(null);

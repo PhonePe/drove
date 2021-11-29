@@ -92,6 +92,14 @@ public class Apis {
     }
 
     @GET
+    @Path("/applications/{id}/instances/old")
+    public ApiResponse<List<InstanceInfo>> applicationOldInstances(
+            @PathParam("id") @NotEmpty final String appId) {
+
+        return responseEngine.applicationOldInstances(appId);
+    }
+
+    @GET
     @Path("/cluster")
     public ApiResponse<ClusterSummary> clusterSummary() {
         return responseEngine.cluster();

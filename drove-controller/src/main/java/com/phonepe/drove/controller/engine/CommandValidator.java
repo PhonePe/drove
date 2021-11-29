@@ -146,7 +146,7 @@ public class CommandValidator {
 
         @Override
         public ValidationResult visit(ApplicationStopInstancesOperation stopInstances) {
-            val validIds = applicationStateDB.instances(appId, 0, Integer.MAX_VALUE)
+            val validIds = applicationStateDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                     .stream()
                     .map(InstanceInfo::getInstanceId)
                     .collect(Collectors.toUnmodifiableSet());

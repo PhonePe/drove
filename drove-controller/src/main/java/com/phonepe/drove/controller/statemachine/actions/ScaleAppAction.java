@@ -91,7 +91,7 @@ public class ScaleAppAction extends AppAsyncAction {
         else {
             val numToBeStopped = currentInstancesCount - required;
             log.info("{} instances to be stopped", numToBeStopped);
-            val instancesToBeStopped = applicationStateDB.instances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
+            val instancesToBeStopped = applicationStateDB.activeInstances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
                     .stream()
                     .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
                     .limit(numToBeStopped)

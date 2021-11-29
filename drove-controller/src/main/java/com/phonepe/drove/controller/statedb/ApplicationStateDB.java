@@ -31,13 +31,15 @@ public interface ApplicationStateDB {
     boolean deleteApplicationState(String appId);
 
     default List<InstanceInfo> healthyInstances(String appId) {
-        return instances(appId, 0, Integer.MAX_VALUE)
+        return activeInstances(appId, 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    List<InstanceInfo> instances(String appId, int start, int size);
+    List<InstanceInfo> activeInstances(String appId, int start, int size);
+
+    List<InstanceInfo> oldInstances(String appId, int start, int size);
 
     Optional<InstanceInfo> instance(String appId, String instanceId);
 
@@ -46,7 +48,7 @@ public interface ApplicationStateDB {
     }
 
     default long instanceCount(final String appId, Set<InstanceState> requiredStates) {
-        return instances(appId, 0, Integer.MAX_VALUE)
+        return activeInstances(appId, 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instance -> requiredStates.contains(instance.getState()))
                 .count();
