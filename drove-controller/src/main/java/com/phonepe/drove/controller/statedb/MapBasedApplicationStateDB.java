@@ -118,10 +118,7 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
         val info = appInstances.compute(appId,
                                         (id, value) -> {
                                             val currState = instanceInfo.getState();
-                                            log.debug("State update: {}/{}: {}",
-                                                      appId,
-                                                      instanceId,
-                                                      currState);
+                                            log.trace("State update: {}/{}: {}", appId, instanceId, currState);
                                             val newValue = null != value
                                                            ? value
                                                            : new HashMap<String, InstanceInfo>();
