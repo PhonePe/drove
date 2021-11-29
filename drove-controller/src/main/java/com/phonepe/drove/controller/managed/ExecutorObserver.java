@@ -64,7 +64,7 @@ public class ExecutorObserver implements Managed {
                         .map(n -> n.getState().getExecutorId())
                         .collect(Collectors.toUnmodifiableSet());
                 if(knownExecutors.equals(ids)) {
-                    log.info("No changes detected in cluster topology");
+                    log.trace("No changes detected in cluster topology");
                 }
                 else {
                     val missingExecutors = Sets.difference(knownExecutors, ids);
@@ -80,7 +80,7 @@ public class ExecutorObserver implements Managed {
                     knownExecutors.addAll(ids);
                 }
                 updater.updateClusterResources(currentExecutors);
-                log.info("Completed refresh for invocation call at: {}", currentDate);
+                log.info("Cluster state refresh completed for invocation at: {}", currentDate);
             }
             finally {
                 refreshLock.unlock();

@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.engine.jobs;
 
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
@@ -95,7 +96,9 @@ public class StopSingleInstanceJob implements Job<Boolean> {
 
     private boolean stopInstance(final InstanceInfo instanceInfo, final ClusterOpSpec clusterOpSpec) {
         val executorId = instanceInfo.getExecutorId();
-        val node = clusterResourcesDB.currentSnapshot(executorId).map(ExecutorHostInfo::getNodeData).orElse(null);
+        val node = clusterResourcesDB.currentSnapshot(executorId)
+                .map(ExecutorHostInfo::getNodeData)
+                .orElse(null);
         if (null == node) {
             log.warn("No node found in the cluster with ID {}.", executorId);
             return false;
@@ -105,8 +108,12 @@ public class StopSingleInstanceJob implements Job<Boolean> {
                                                                        instanceInfo.getLocalInfo().getHostname(),
                                                                        node.getPort()),
                                                    instanceId);
-        communicator.send(stopMessage);
-        log.debug("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
+        val response = communicator.send(stopMessage);
+        log.trace("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
+        if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+            log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
+            return false;
+        }
         return ensureInstanceState(applicationStateDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED);
     }
 

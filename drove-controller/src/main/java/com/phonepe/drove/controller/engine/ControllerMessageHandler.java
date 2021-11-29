@@ -29,7 +29,7 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
 
     @Override
     public MessageResponse visit(InstanceStateReportMessage instanceStateReport) {
-        log.info("Received instance update from executor: {}",
+        log.trace("Received instance update from executor: {}",
                  instanceStateReport.getResourceSnapshot().getExecutorId());
         val status = stateUpdater.updateSingle(instanceStateReport.getResourceSnapshot(),
                                                instanceStateReport.getInstanceInfo());

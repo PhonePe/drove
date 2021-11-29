@@ -126,7 +126,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         var successful = false;
         try {
             val response = communicator.send(startMessage);
-            log.debug("Sent message to start instance: {}/{}. Response: {} Message: {}",
+            log.trace("Sent message to start instance: {}/{}. Response: {} Message: {}",
                       appId,
                       instanceId,
                       response,
@@ -136,6 +136,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                          response.getStatus(), instanceId);
             }
             else {
+                log.info("Start message for instance {}/{} accepted by executor {}",
+                         appId, instanceId, node.getExecutorId());
                 successful = ensureInstanceState(applicationStateDB,
                                                  clusterOpSpec,
                                                  appId,
@@ -145,7 +147,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         }
         finally {
             if (!successful) {
-                log.info("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
+                log.warn("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
                 scheduler.discardAllocation(schedulingSessionId, node);
             }
         }

@@ -99,11 +99,13 @@ public class ControllerUtils {
         if (null == instanceInfo) {
             return false;
         }
-        log.debug("Instance state for {}/{}: {}",
-                  instanceInfo.getAppId(),
-                  instanceInfo.getInstanceId(),
-                  instanceInfo.getState());
-        return instanceInfo.getState() == instanceState;
+        log.trace("Instance state for {}/{}: {}",
+                  instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceInfo.getState());
+        if(instanceInfo.getState() == instanceState) {
+            log.info("Instance {}/{} reached desired state: {}", instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceState);
+            return true;
+        }
+        return false;
     }
 
     public static String appId(final ApplicationOperation operation) {
