@@ -131,8 +131,9 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                       instanceId,
                       response,
                       startMessage);
-            if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                log.warn("Sending start message failed with status: {}. Rescheduling necessary.", response.getStatus());
+            if (!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                log.warn("Sending start message failed with status: {} for {}. Rescheduling necessary.",
+                         response.getStatus(), instanceId);
             }
             else {
                 successful = ensureInstanceState(applicationStateDB,
