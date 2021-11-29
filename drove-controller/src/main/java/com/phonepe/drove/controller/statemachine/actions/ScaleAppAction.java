@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -74,7 +76,7 @@ public class ScaleAppAction extends AppAsyncAction {
             val numNew = required - currentInstancesCount;
             val schedulingSessionId = UUID.randomUUID().toString();
             context.setSchedulingSessionId(schedulingSessionId);
-            log.info("{} new instances to be started. Shed session ID: {}", numNew, schedulingSessionId);
+            log.info("{} new instances to be started. Sched session ID: {}", numNew, schedulingSessionId);
             return Optional.of(JobTopology.<Boolean>builder()
                                        .addParallel(
                                                parallelism,
@@ -91,14 +93,18 @@ public class ScaleAppAction extends AppAsyncAction {
         else {
             val numToBeStopped = currentInstancesCount - required;
             log.info("{} instances to be stopped", numToBeStopped);
-            val instancesToBeStopped = applicationStateDB.activeInstances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
+            val healthyInstances = new ArrayList<>(
+                    applicationStateDB.activeInstances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
+                            .stream()
+                            .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
+                            .collect(Collectors.toUnmodifiableList()));
+            Collections.shuffle(healthyInstances);  //This is needed to reduce chances of selected instances to be skewed
+            val instancesToBeStopped = healthyInstances
                     .stream()
-                    .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
                     .limit(numToBeStopped)
                     .collect(Collectors.toUnmodifiableList());
             if (instancesToBeStopped.isEmpty()) {
-                log.warn(
-                        "Looks like instances are in inconsistent state. Tried to find extra instances but could not");
+                log.warn("Looks like instances are in inconsistent state. Tried to find extra instances but could not");
             }
             else {
                 return Optional.of(JobTopology.<Boolean>builder()
@@ -150,7 +156,7 @@ public class ScaleAppAction extends AppAsyncAction {
                 return StateData.errorFrom(currentState, ApplicationState.SCALING_REQUESTED, errMsg);
             }
         }
-        if(!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
             scheduler.finaliseSession(context.getSchedulingSessionId());
             log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
             context.setSchedulingSessionId(null);

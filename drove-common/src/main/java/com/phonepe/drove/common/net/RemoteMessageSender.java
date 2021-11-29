@@ -74,7 +74,7 @@ public abstract class RemoteMessageSender<
             log.error("Error building message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
-        log.debug("Sending message to remote host: {}", uri);
+        log.debug("Sending message to remote host: {}. Message: {}", uri, message);
         val request = requestBuilder.timeout(Duration.ofSeconds(1)).build();
         try {
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
