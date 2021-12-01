@@ -76,6 +76,7 @@ public class ResourceDB {
                                                          old.getMemoryInMB() - requirement.getMemoryInMB())));
         nodes = Map.copyOf(currNodes);
         resourceLocks.put(usage.getId(), usage);
+        resourceUpdated.dispatch(calculateResources());
         return true;
     }
 

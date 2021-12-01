@@ -73,6 +73,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     @Override
     public void start() throws Exception {
         resourceDB.onResourceUpdated().connect(this::refreshNodeState);
+        blacklistingManager.onStateChange().connect(b -> refreshNodeState());
     }
 
     @Override
@@ -82,11 +83,11 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
 
     @Override
     public void serverStarted(Server server) {
-        log.info("Server started. Will start publishing node data");
         val port = getLocalPort(server);
         val hostname = CommonUtils.hostname();
         refreshNodeState(port, hostname);
         started.set(true);
+        log.info("Server started. Will start publishing node data");
     }
 
     private void refresh(Date currDate) {
@@ -124,6 +125,10 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private void refreshNodeState(ResourceInfo resourceState) {
         try {
             stateLock.lock();
+            if(!started.get()) {
+                log.warn("Node is not started no data is updated in store.");
+                return;
+            }
             currentData = ExecutorNodeData.from(
                     currentData,
                     Utils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
