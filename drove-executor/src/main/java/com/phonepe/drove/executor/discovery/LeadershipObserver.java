@@ -43,6 +43,7 @@ public class LeadershipObserver implements Managed {
     @Override
     public void start() throws Exception {
         leaderRefresher.connect(this::refresh);
+        refresh(new Date());
     }
 
     @Override
@@ -70,6 +71,10 @@ public class LeadershipObserver implements Managed {
                 .findAny()
                 .orElse(null);
         log.trace("Leader node: {}", leaderNode);
-        leader.set(leaderNode);
+        val oldLeader = leader.getAndSet(leaderNode);
+        if(null != leaderNode && leaderNode.equals(oldLeader)) {
+            log.info("Leader controller changed from: {} to: {}",
+                     oldLeader, leaderNode);
+        }
     }
 }
