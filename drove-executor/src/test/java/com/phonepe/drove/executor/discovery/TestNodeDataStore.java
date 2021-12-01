@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class TestNodeDataStore implements NodeDataStore {
     private final Map<String, NodeData> nodes = new ConcurrentHashMap<>();
 
-    private ConsumingSyncSignal<NodeData> updated = new ConsumingSyncSignal<>();
+    private final ConsumingSyncSignal<NodeData> updated = new ConsumingSyncSignal<>();
 
     @Override
     public void updateNodeData(NodeData nodeData) {

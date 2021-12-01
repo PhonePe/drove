@@ -19,11 +19,12 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
 
     @Override
     public MessageResponse visit(StartInstanceMessage startInstanceMessage) {
-        if (engine.exists(startInstanceMessage.getSpec().getInstanceId())) {
+        val instanceId = startInstanceMessage.getSpec().getInstanceId();
+        if (engine.exists(instanceId)) {
             return new MessageResponse(startInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
-            log.info("Starting instance");
+            log.info("Starting instance {}", instanceId);
             return new MessageResponse(startInstanceMessage.getHeader(),
                                        engine.startInstance(startInstanceMessage.getSpec())
                                        ? MessageDeliveryStatus.ACCEPTED
@@ -37,13 +38,16 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
 
     @Override
     public MessageResponse visit(StopInstanceMessage stopInstanceMessage) {
-        if (!engine.exists(stopInstanceMessage.getInstanceId())) {
+        val instanceId = stopInstanceMessage.getInstanceId();
+        if (!engine.exists(instanceId)) {
             return new MessageResponse(stopInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
-            log.info("Stop instance");
-            engine.stopInstance(stopInstanceMessage.getInstanceId());
-            return new MessageResponse(stopInstanceMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
+            log.info("Stopping instance {}", instanceId);
+            return new MessageResponse(stopInstanceMessage.getHeader(),
+                                       engine.stopInstance(instanceId)
+                                       ? MessageDeliveryStatus.ACCEPTED
+                                       : MessageDeliveryStatus.FAILED);
         }
         catch (Exception e) {
             log.error("Could not start: ", e);
@@ -52,24 +56,24 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     }
 
     @Override
-    public MessageResponse visit(QueryInstanceMessage queryInstanceMessage) {
-        val state = engine.currentState(queryInstanceMessage.getInstanceId()).orElse(null);
-        if (null == state) {
-            return new MessageResponse(queryInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
-        }
-        //TODO::QUEUE UP MESSAGE FOR SENDING
-        return new MessageResponse(queryInstanceMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
-    }
-
-    @Override
     public MessageResponse visit(BlacklistExecutorMessage blacklistExecutorMessage) {
-        engine.blacklist();
+        try {
+            engine.blacklist();
+        }
+        catch (Exception e) {
+            return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
         return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 
     @Override
     public MessageResponse visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage) {
-        engine.unblacklist();
+        try {
+            engine.unblacklist();
+        }
+        catch (Exception e) {
+            return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
         return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 }

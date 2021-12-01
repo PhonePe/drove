@@ -4,20 +4,19 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.Utils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingParallelSignal;
-import io.appform.signals.signals.ScheduledSignal;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -25,7 +24,6 @@ import org.slf4j.MDC;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -46,9 +44,7 @@ public class InstanceEngine implements Closeable {
     private final BlacklistingManager blacklistManager;
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
-    private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
-            .initialDelay(Duration.ofSeconds(30))
-            .interval(Duration.ofSeconds(10)).build();
+
 
     public InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
@@ -60,7 +56,6 @@ public class InstanceEngine implements Closeable {
         this.resourceDB = resourceDB;
         this.blacklistManager = blacklistManager;
         this.stateMachines = new ConcurrentHashMap<>();
-        refreshSignal.connect(this::sendStatusReport);
     }
 
     public MessageResponse handleMessage(final ExecutorMessage message) {
@@ -112,11 +107,11 @@ public class InstanceEngine implements Closeable {
         return true;
     }
 
-    public void stopInstance(final String instanceId) {
+    public boolean stopInstance(final String instanceId) {
         val info = stateMachines.get(instanceId);
         if (null == info) {
             log.error("No such instance: {}. Nothing will be stopped", instanceId);
-            return;
+            return false;
         }
         info.getStateMachine().stop();
         service.submit(() -> {
@@ -128,6 +123,7 @@ public class InstanceEngine implements Closeable {
                 log.error("Error stopping instance: ", e);
             }
         });
+        return true;
     }
 
     public Optional<InstanceInfo> currentState(final String instanceId) {
@@ -156,7 +152,6 @@ public class InstanceEngine implements Closeable {
     @Override
     public void close() throws IOException {
         //TODO::STOP ALL SMs, get all states, then shutdown the pool
-        refreshSignal.close();
     }
 
     public ConsumingParallelSignal<InstanceInfo> onStateChange() {
@@ -224,12 +219,6 @@ public class InstanceEngine implements Closeable {
         }
         val instanceInfo = Utils.convert(currentState);
         stateChanged.dispatch(instanceInfo);
-    }
-
-    private void sendStatusReport(final Date now) {
-        /*stateMachines.values().forEach(smi -> {
-            communicator.send(instanceStateMessage(smi.getStateMachine().getCurrentState()));
-        });*/
     }
 
 }

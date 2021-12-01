@@ -1,28 +1,21 @@
 package com.phonepe.drove.executor;
 
-import com.google.inject.Guice;
-import com.google.inject.Stage;
-import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.common.model.MessageDeliveryStatus;
-import com.phonepe.drove.common.model.MessageHeader;
-import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.executor.StartInstanceMessage;
-import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.common.model.*;
+import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
+import com.phonepe.drove.common.model.executor.ExecutorAddress;
+import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.executor.engine.InstanceEngine;
-import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
-import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
-import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -30,37 +23,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 class ExecutorCommunicatorTest {
     @Test
-    void test() {
-        val engine = new InstanceEngine(new ExecutorIdManager(3000), Executors.newCachedThreadPool(),
-                                        new InjectingInstanceActionFactory(Guice.createInjector(Stage.DEVELOPMENT)),
-                                        new ResourceDB(),
-                                        new BlacklistingManager());
-        val comms = new ExecutorCommunicator(
-                engine, msg -> {
-            log.info("Received message: {}", msg);
-            return new MessageResponse(MessageHeader.controllerResponse(msg.getHeader().getId()),
-                                       MessageDeliveryStatus.ACCEPTED);
+    void testComms() {
+        val engine = mock(InstanceEngine.class);
+        when(engine.handleMessage(any(ExecutorMessage.class)))
+                .thenAnswer((Answer<MessageResponse>) mock -> {
+                    val param = (ExecutorMessage) mock.getArguments()[0];
+                    assertEquals(ExecutorMessageType.BLACKLIST, param.getType());
+                    return new MessageResponse(param.getHeader(), MessageDeliveryStatus.ACCEPTED);
+                });
+
+        val comm = new ExecutorCommunicator(engine, message -> {
+            assertEquals(ControllerMessageType.EXECUTOR_SNAPSHOT, message.getType());
+            return new MessageResponse(message.getHeader(), MessageDeliveryStatus.ACCEPTED);
         });
-        comms.onResponse().connect(response -> log.info("Response: {}", response));
-        val runningCount = new AtomicInteger();
-        engine.onStateChange().connect(newState -> {
-            if (newState.getState().equals(InstanceState.PROVISIONING)) {
-                runningCount.getAndIncrement();
-            }
-            if (newState.getState().isTerminal()) {
-                runningCount.decrementAndGet();
-            }
-        });
-        val spec = TestingUtils.testSpec();
-        val address = TestingUtils.localAddress();
-        comms.receive(new StartInstanceMessage(MessageHeader.controllerRequest(), address, spec));
-        CommonTestUtils.delay(Duration.ofSeconds(70));
-        comms.receive(new StopInstanceMessage(MessageHeader.controllerRequest(), address, spec.getInstanceId()));
-        Awaitility.await()
-                .forever()
-                .pollDelay(2, TimeUnit.SECONDS)
-                .pollInterval(1, TimeUnit.SECONDS)
-                .until(() -> runningCount.get() == 0);
+        comm.onResponse().connect(message -> assertEquals(MessageDeliveryStatus.ACCEPTED, message.getStatus()));
+
+        assertEquals(MessageDeliveryStatus.ACCEPTED,
+                     comm.send(new ExecutorSnapshotMessage(MessageHeader.executorRequest(), null)).getStatus());
+        assertEquals(MessageDeliveryStatus.ACCEPTED,
+                     comm.receive(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                               new ExecutorAddress("test", "h", 3000))).getStatus());
     }
 
+    @Test
+    void testCommsFailure() {
+        val engine = mock(InstanceEngine.class);
+        when(engine.handleMessage(any(ExecutorMessage.class)))
+                .thenThrow(new IllegalArgumentException());
+        val comm = new ExecutorCommunicator(engine,
+                                            message -> new MessageResponse(message.getHeader(),
+                                                                           MessageDeliveryStatus.ACCEPTED));
+        assertEquals(MessageDeliveryStatus.FAILED,
+                     comm.receive(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                               new ExecutorAddress("test", "h", 3000))).getStatus());
+    }
 }

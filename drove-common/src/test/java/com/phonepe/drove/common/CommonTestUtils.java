@@ -1,5 +1,6 @@
 package com.phonepe.drove.common;
 
+import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.awaitility.Awaitility;
@@ -20,5 +21,9 @@ public class CommonTestUtils {
                 .pollDelay(java.time.Duration.ofSeconds(1))
                 .timeout(wait + 5_000, TimeUnit.SECONDS)
                 .until(() -> new Date().after(end));
+    }
+
+    public ExecutorAddress executor() {
+        return new ExecutorAddress("testexec1", "h1", 8080);
     }
 }
