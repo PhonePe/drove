@@ -37,6 +37,7 @@ class InstanceRunActionTest {
         val appId = "T001";
         val instanceId = UUID.randomUUID().toString();
         val instanceSpec = new InstanceSpec(appId,
+                                            "TEST_APP",
                                             instanceId,
                                             new DockerCoordinates(
                                                     "docker.io/santanusinha/test-service:0.1",
@@ -57,6 +58,7 @@ class InstanceRunActionTest {
                 = new InstanceRunAction(new LogBus()).execute(ctx,
                                                             StateData.create(PROVISIONING,
                                                                    new ExecutorInstanceInfo(instanceSpec.getAppId(),
+                                                                                            instanceSpec.getAppName(),
                                                                                             instanceSpec.getInstanceId(),
                                                                                             executorId,
                                                                                             new LocalInstanceInfo(CommonUtils.hostname(),

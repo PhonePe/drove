@@ -153,6 +153,7 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
             val oldValue = value.remove(instanceId);
             if(null != oldValue) {
                 val lostInstance = new InstanceInfo(oldValue.getAppId(),
+                                              oldValue.getAppName(),
                                               oldValue.getInstanceId(),
                                               oldValue.getExecutorId(),
                                               oldValue.getLocalInfo(),

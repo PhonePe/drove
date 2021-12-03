@@ -19,6 +19,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class InstanceInfo {
     String appId;
+    String appName;
     String instanceId;
     String executorId;
     LocalInstanceInfo localInfo;

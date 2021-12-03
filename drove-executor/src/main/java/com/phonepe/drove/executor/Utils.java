@@ -46,6 +46,7 @@ public class Utils {
         val data = state.getData();
         return new InstanceInfo(
                 data.getAppId(),
+                data.getAppName(),
                 data.getInstanceId(),
                 data.getExecutorId(),
                 data.getLocalInfo(),

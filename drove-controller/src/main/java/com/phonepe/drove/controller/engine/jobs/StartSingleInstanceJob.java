@@ -114,6 +114,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                         node.getHostname(),
                                                                         node.getPort()),
                                                     new InstanceSpec(appId,
+                                                                     applicationSpec.getName(),
                                                                      instanceId,
                                                                      applicationSpec.getExecutable(),
                                                                      List.of(node.getCpu(),

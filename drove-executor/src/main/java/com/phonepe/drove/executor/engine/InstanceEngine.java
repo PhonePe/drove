@@ -72,6 +72,7 @@ public class InstanceEngine implements Closeable {
                                 spec,
                                 StateData.create(InstanceState.PENDING,
                                                  new ExecutorInstanceInfo(spec.getAppId(),
+                                                                          spec.getAppName(),
                                                                           spec.getInstanceId(),
                                                                           executorIdManager.executorId().orElse(null),
                                                                           null,

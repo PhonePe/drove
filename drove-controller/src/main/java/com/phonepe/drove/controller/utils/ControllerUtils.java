@@ -30,7 +30,7 @@ import java.util.Set;
 public class ControllerUtils {
 
     public static String appId(ApplicationSpec applicationSpec) {
-        return applicationSpec.getName();
+        return applicationSpec.getName() + "-" + applicationSpec.getVersion();
     }
 
     public static boolean ensureInstanceState(

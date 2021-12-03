@@ -28,6 +28,7 @@ import java.util.*;
 public class TestingUtils {
     public static InstanceSpec testSpec() {
         return new InstanceSpec("T001",
+                                "TEST_SPEC",
                                 UUID.randomUUID().toString(),
                                 new DockerCoordinates(
                                         "docker.io/santanusinha/perf-test-server:0.1",
@@ -66,7 +67,8 @@ public class TestingUtils {
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
-        return new ExecutorInstanceInfo("TEST_APP",
+        return new ExecutorInstanceInfo("TEST_APP_1",
+                                        "TEST_APP",
                                         "TEST_INSTANCE",
                                         "TEST_EXEC",
                                         new LocalInstanceInfo("localhost",

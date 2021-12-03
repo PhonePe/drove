@@ -169,6 +169,7 @@ public class InstanceRunAction extends InstanceAction {
         val data = currentState.getData();
         return new ExecutorInstanceInfo(
                 data.getAppId(),
+                data.getAppName(),
                 data.getInstanceId(),
                 data.getExecutorId(),
                 new LocalInstanceInfo(hostName, portMappings),

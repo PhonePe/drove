@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
@@ -81,7 +82,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     private Map<String, Long> clusterSnapshot(ApplicationSpec applicationSpec) {
-        return applicationStateDB.activeInstances(applicationSpec.getName(), 0, Integer.MAX_VALUE)
+        return applicationStateDB.activeInstances(ControllerUtils.appId(applicationSpec), 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instanceInfo -> RESOURCE_CONSUMING_INSTANCE_STATES.contains(instanceInfo.getState()))
                 .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));

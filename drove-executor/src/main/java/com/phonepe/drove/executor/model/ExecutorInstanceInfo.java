@@ -14,6 +14,7 @@ import java.util.Map;
 @Value
 public class ExecutorInstanceInfo {
     String appId;
+    String appName;
     String instanceId;
     String executorId;
     LocalInstanceInfo localInfo;

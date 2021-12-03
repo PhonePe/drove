@@ -9,7 +9,6 @@ import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import lombok.Value;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
@@ -23,8 +22,8 @@ public class ApplicationSpec {
     @NotEmpty
     String name;
 
-    @Min(0)
-    int version;
+    @NotEmpty
+    String version;
 
     @NotNull
     @Valid
