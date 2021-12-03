@@ -5,24 +5,21 @@ import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  *
@@ -33,11 +30,11 @@ public class TestingUtils {
         return new InstanceSpec("T001",
                                 UUID.randomUUID().toString(),
                                 new DockerCoordinates(
-                                        "docker.io/santanusinha/test-service:0.1",
+                                        "docker.io/santanusinha/perf-test-server:0.1",
                                         Duration.seconds(100)),
-                                ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Collections.singleton(1))),
+                                ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
-                                Collections.singletonList(new PortSpec("main", 3000, PortType.HTTP)),
+                                Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                 Collections.emptyList(),
                                 new CheckSpec(new HTTPCheckModeSpec("http",
                                                                     "main",

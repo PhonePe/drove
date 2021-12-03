@@ -57,7 +57,7 @@ public class InstanceRunAction extends InstanceAction {
                     .withName(instanceSpec.getAppId() + UUID.randomUUID());
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
-                    .withOomKillDisable(true)
+//                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any stats
                     .withAutoRemove(true)/*
                     .withPublishAllPorts(true)*/
                     .withLogConfig(new LogConfig(LogConfig.LoggingType.LOCAL)
