@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
@@ -81,5 +82,11 @@ public class ExecutorCoreModule extends AbstractModule {
     public ResourceConfig resourceConfig(final AppConfig appConfig) {
         val resourceConfig = appConfig.getResources();
         return resourceConfig == null ? ResourceConfig.DEFAULT : resourceConfig;
+    }
+
+    @Provides
+    @Singleton
+    public MetricRegistry registry(final Environment environment) {
+        return environment.metrics();
     }
 }

@@ -52,6 +52,7 @@ public class InstanceRecoveryAction extends InstanceAction {
         context.setDockerInstanceId(containerId);
         context.setDockerImageId(container.getImageId());
         client.logContainerCmd(containerId)
+                .withTail(0)
                 .withFollowStream(true)
                 .withStdOut(true)
                 .withStdErr(true)

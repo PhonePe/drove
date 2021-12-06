@@ -32,3 +32,11 @@ resources:
   exposedMemPercentage: 60
   tags:
   - local
+#
+#metrics:
+#  frequency: 1 minute
+#  reportOnStop: true
+#  reporters:
+#    - type: console
+#      timeZone: IST
+#      output: stdout
