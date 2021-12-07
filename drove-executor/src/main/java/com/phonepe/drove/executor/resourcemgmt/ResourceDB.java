@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.common.model.utils.Pair;
+import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,10 +52,12 @@ public class ResourceDB {
             .executorService(Executors.newSingleThreadExecutor())
             .build();
 
+    @MonitoredFunction
     public synchronized void populateResources(Map<Integer, NodeInfo> nodes) {
         this.nodes = Map.copyOf(nodes);
     }
 
+    @MonitoredFunction
     public synchronized boolean lockResources(final ResourceUsage usage) {
         val resourceRequirements = usage.getUsedResources();
         if (!nodes.keySet().containsAll(resourceRequirements.keySet())) {
@@ -80,6 +83,7 @@ public class ResourceDB {
         return true;
     }
 
+    @MonitoredFunction
     public synchronized void reclaimResources(String id) {
         val usage = resourceLocks.get(id);
         if (null == usage) {
@@ -99,7 +103,7 @@ public class ResourceDB {
         resourceUpdated.dispatch(calculateResources());
     }
 
-
+    @MonitoredFunction
     public synchronized ResourceInfo currentState() {
         return calculateResources();
     }

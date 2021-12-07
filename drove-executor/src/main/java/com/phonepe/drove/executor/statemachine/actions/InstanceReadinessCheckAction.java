@@ -8,6 +8,7 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -27,6 +28,7 @@ public class InstanceReadinessCheckAction extends InstanceAction {
     private final AtomicBoolean stop = new AtomicBoolean();
 
     @Override
+    @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();

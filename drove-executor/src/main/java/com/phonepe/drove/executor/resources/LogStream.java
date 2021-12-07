@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.resources;
 
+import com.codahale.metrics.annotation.Metered;
 import com.phonepe.drove.executor.logging.LogBus;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -35,6 +36,7 @@ public class LogStream {
 
     @GET
     @Path("/{appId}/{instanceId}")
+    @Metered
     public void streamLogs(@Context SseEventSink sseEventSink,
                                   @PathParam("appId") final String appId,
                                   @PathParam("instanceId") final String instanceId) {

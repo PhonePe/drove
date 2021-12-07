@@ -8,6 +8,7 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
@@ -37,6 +38,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
     private ScheduledFuture<?> checkerJob;
 
     @Override
+    @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
@@ -141,6 +143,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
         }
 
         @Override
+        @MonitoredFunction(method = "execute")
         public void run() {
             MDC.setContextMap(mdc);
             lock.lock();

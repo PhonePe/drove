@@ -27,7 +27,8 @@
         <guice.version>5.0.1</guice.version>
         <dw-guicey.version>5.4.0</dw-guicey.version>
         <curator.version>5.2.0</curator.version>
-        <failsafe.version>2.4.2</failsafe.version>
+        <failsafe.version>2.4.3</failsafe.version>
+        <aspectj.version>1.9.7</aspectj.version>
     </properties>
 
     <dependencyManagement>

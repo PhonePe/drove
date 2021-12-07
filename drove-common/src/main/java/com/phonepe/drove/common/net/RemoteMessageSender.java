@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
@@ -40,6 +41,7 @@ public abstract class RemoteMessageSender<
     }
 
     @Override
+    @MonitoredFunction
     public MessageResponse send(SendMessage message) {
         final RetryPolicy<MessageResponse> retryPolicy = retryStrategy();
         return Failsafe.with(retryPolicy).onFailure(result -> {

@@ -9,6 +9,7 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -22,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ExecutableFetchAction extends InstanceAction {
     @Override
+    @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();

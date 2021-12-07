@@ -13,6 +13,7 @@
 
     <properties>
         <signals.version>1.1</signals.version>
+        <function-metrics.version>1.0.10</function-metrics.version>
     </properties>
 
     <dependencies>
@@ -49,6 +50,21 @@
             <artifactId>failsafe</artifactId>
             <version>${failsafe.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.appform.functionmetrics</groupId>
+            <artifactId>function-metrics</artifactId>
+            <version>${function-metrics.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>${aspectj.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>${aspectj.version}</version>
+        </dependency>
 <!--        <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
@@ -65,6 +81,51 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.14.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjrt</artifactId>
+                        <version>${aspectj.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>${aspectj.version}</version>
+                    </dependency>
+                </dependencies>
+
+                <configuration>
+                    <complianceLevel>11</complianceLevel>
+                    <source>11</source>
+                    <target>11</target>
+                    <showWeaveInfo>true</showWeaveInfo>
+                    <forceAjcCompile>true</forceAjcCompile>
+                    <sources/>
+                    <weaveDirectories>
+                        <weaveDirectory>${project.build.directory}/classes</weaveDirectory>
+                    </weaveDirectories>
+                    <verbose>true</verbose>
+                    <Xlint>ignore</Xlint>
+                    <aspectLibraries>
+                        <aspectLibrary>
+                            <groupId>io.appform.functionmetrics</groupId>
+                            <artifactId>function-metrics</artifactId>
+                        </aspectLibrary>
+                    </aspectLibraries>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor;
 
 import com.google.inject.Stage;
+import io.appform.functionmetrics.FunctionMetricsManager;
 import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
@@ -42,6 +43,7 @@ public class App extends Application<AppConfig> {
         ((AbstractServerFactory)appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         environment.jersey().register(SseFeature.class);
         environment.jersey().getResourceConfig().register(SseFeature.class);
+        FunctionMetricsManager.initialize("com.phonepe.drove.executor", environment.metrics());
     }
 
     public static void main(String[] args) throws Exception {

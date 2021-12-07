@@ -2,6 +2,7 @@ package com.phonepe.drove.common.net;
 
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageResponse;
+import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
 
@@ -30,6 +31,7 @@ public abstract class ThreadedCommunicator<
     }
 
     @Override
+    @MonitoredFunction
     public MessageResponse send(SendMessage message, Consumer<MessageResponse> responseConsumer) {
         val response = messageSender.send(message);
         responseReceived.dispatch(response);
@@ -40,6 +42,7 @@ public abstract class ThreadedCommunicator<
     }
 
     @Override
+    @MonitoredFunction
     public MessageResponse receive(ReceiveMessage message) {
         return handleReceivedMessage(message);
     }

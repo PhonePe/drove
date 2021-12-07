@@ -20,6 +20,7 @@ import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisi
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +46,7 @@ public class InstanceRunAction extends InstanceAction {
     }
 
     @Override
+    @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();

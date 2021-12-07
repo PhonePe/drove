@@ -111,7 +111,9 @@ public class ContainerStatsObserver implements Managed {
                             instanceInfo,
                             statistics -> null != statistics.getCpuStats()
                                                   && null != statistics.getCpuStats().getThrottlingData()
-                                                  && null != statistics.getCpuStats().getThrottlingData().getThrottledPeriods()
+                                                  && null != statistics.getCpuStats()
+                                    .getThrottlingData()
+                                    .getThrottledPeriods()
                                           ? statistics.getCpuStats().getThrottlingData().getThrottledPeriods()
                                           : 0L))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_per_core"),
@@ -277,6 +279,14 @@ public class ContainerStatsObserver implements Managed {
     }
 
     private static String metricName(final InstanceInfo instanceInfo, String name) {
-        return name("drove", instanceInfo.getAppName(), "instance", instanceInfo.getInstanceId(), name);
+        return name("com",
+                    "phonepe",
+                    "drove",
+                    "executor",
+                    "containers",
+                    instanceInfo.getAppName(),
+                    "instance",
+                    instanceInfo.getInstanceId(),
+                    name);
     }
 }

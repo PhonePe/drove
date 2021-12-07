@@ -24,24 +24,26 @@ public class AverageCpuUsageGauge implements Gauge<Double>, SignalConsumer<Stati
 
     @Override
     public void consume(Statistics data) {
-        if(null == data.getCpuStats()
-                || null == data.getCpuStats().getCpuUsage()
-                || null == data.getCpuStats().getCpuUsage().getTotalUsage()) {
+        val cpuStats = data.getCpuStats();
+        if(null == cpuStats
+                || null == cpuStats.getCpuUsage()
+                || null == cpuStats.getCpuUsage().getTotalUsage()
+                || null == cpuStats.getSystemCpuUsage()) {
             return;
         }
-        val totalUsage = data.getCpuStats().getCpuUsage().getTotalUsage();
-        val systemUsage = data.getCpuStats().getSystemCpuUsage();
+        val totalUsage = cpuStats.getCpuUsage().getTotalUsage().longValue();
+        val systemUsage = cpuStats.getSystemCpuUsage().longValue();
         val currTime = new Date().getTime();
         if (null != currUsage.get()) {
             val prev = currUsage.get();
             val cpuDelta = totalUsage - prev.getTotalTime();
             val systemDelta = systemUsage - prev.getSystemTime();
             if (cpuDelta > 0 || systemDelta > 0) {
-                currPercentage.set((double) (cpuDelta + systemDelta) / currTime);
+                currPercentage.set((double) (cpuDelta + systemDelta) / (currTime - prev.getLastSyncTime()));
             }
         }
         currUsage.set(new CPUUsage(totalUsage, systemUsage, currTime));
-        log.debug("PEr CPU Usage: {}", data.getCpuStats().getCpuUsage().getPercpuUsage());
+        log.debug("PEr CPU Usage: {}", cpuStats.getCpuUsage().getPercpuUsage());
     }
 
     @Value

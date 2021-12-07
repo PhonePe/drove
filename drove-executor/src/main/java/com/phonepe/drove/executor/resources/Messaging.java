@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.resources;
 
+import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
@@ -26,6 +27,7 @@ public class Messaging {
     }
 
     @POST
+    @Timed
     public MessageResponse receiveCommand(@NotNull @Valid final ExecutorMessage message) {
         return communicator.receive(message);
     }

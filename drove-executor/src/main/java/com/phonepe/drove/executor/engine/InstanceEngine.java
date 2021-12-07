@@ -16,6 +16,7 @@ import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingParallelSignal;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +83,7 @@ public class InstanceEngine implements Closeable {
                                                                           currDate)));
     }
 
+    @MonitoredFunction
     public boolean registerInstance(
             final String instanceId,
             final InstanceSpec spec,
@@ -108,6 +110,7 @@ public class InstanceEngine implements Closeable {
         return true;
     }
 
+    @MonitoredFunction
     public boolean stopInstance(final String instanceId) {
         val info = stateMachines.get(instanceId);
         if (null == info) {
@@ -142,10 +145,12 @@ public class InstanceEngine implements Closeable {
                 .collect(Collectors.toUnmodifiableList());
     }
 
+    @MonitoredFunction
     public void blacklist() {
         blacklistManager.blacklist();
     }
 
+    @MonitoredFunction
     public void unblacklist() {
         blacklistManager.unblacklist();
     }
@@ -204,6 +209,7 @@ public class InstanceEngine implements Closeable {
                : nodeInfo;
     }
 
+    @MonitoredFunction
     private void handleStateChange(StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val state = currentState.getState();
         log.info("Current state: {}. Terminal: {} Error: {}", currentState, state.isTerminal(), state.isError());

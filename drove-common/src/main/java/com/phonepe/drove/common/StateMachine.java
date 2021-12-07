@@ -1,5 +1,6 @@
 package com.phonepe.drove.common;
 
+import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.Getter;
 import lombok.NonNull;
@@ -46,6 +47,7 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         return stateChanged;
     }
 
+    @MonitoredFunction
     public S execute() {
         val state = currentState.getState();
         val transition = validTransitions.get(state);
