@@ -15,6 +15,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationStopInstancesOperation;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -45,6 +46,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
     }
 
     @Override
+    @MonitoredFunction
     protected Optional<JobTopology<Boolean>> jobsToRun(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
@@ -64,6 +66,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
     }
 
     @Override
+    @MonitoredFunction
     protected StateData<ApplicationState, ApplicationInfo> processResult(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,

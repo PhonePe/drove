@@ -16,6 +16,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.Value;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -86,6 +87,7 @@ public class CommandValidator {
         this.clusterResourcesDB = clusterResourcesDB;
     }
 
+    @MonitoredFunction
     public ValidationResult validate(final ApplicationOperation operation) {
         val appId = appId(operation);
         if (Strings.isNullOrEmpty(appId)) {

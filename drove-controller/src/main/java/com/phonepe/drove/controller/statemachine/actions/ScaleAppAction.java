@@ -19,6 +19,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -56,6 +57,7 @@ public class ScaleAppAction extends AppAsyncAction {
     }
 
     @Override
+    @MonitoredFunction
     protected Optional<JobTopology<Boolean>> jobsToRun(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,
@@ -127,6 +129,7 @@ public class ScaleAppAction extends AppAsyncAction {
     }
 
     @Override
+    @MonitoredFunction
     protected StateData<ApplicationState, ApplicationInfo> processResult(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,

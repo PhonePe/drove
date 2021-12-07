@@ -9,6 +9,7 @@ import com.phonepe.drove.controller.jobexecutor.JobTopology;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -35,6 +36,7 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
     }
 
     @Override
+    @MonitoredFunction
     protected StateData<ApplicationState, ApplicationInfo> commandReceived(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,

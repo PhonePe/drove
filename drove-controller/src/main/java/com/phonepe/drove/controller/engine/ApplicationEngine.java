@@ -19,6 +19,7 @@ import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.*;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -60,6 +61,7 @@ public class ApplicationEngine {
         this.droveEventBus = droveEventBus;
     }
 
+    @MonitoredFunction
     public CommandValidator.ValidationResult handleOperation(final ApplicationOperation operation) {
         val appId = ControllerUtils.appId(operation);
         val res = validateOp(operation);
@@ -73,11 +75,13 @@ public class ApplicationEngine {
         return res;
     }
 
+    @MonitoredFunction
     public void stopAll() {
         stateMachines.forEach((appId, exec) -> exec.stop());
         stateMachines.clear();
     }
 
+    @MonitoredFunction
     public boolean cancelCurrentJob(final String appId) {
         val sm = stateMachines.get(appId);
         val appSm = sm.getStateMachine();
@@ -88,6 +92,27 @@ public class ApplicationEngine {
             return false;
         }
         return action.cancel(appSm.getContext());
+    }
+
+
+    @MonitoredFunction
+    public Optional<ApplicationState> applicationState(final String appId) {
+        return Optional.ofNullable(stateMachines.get(appId))
+                .map(executor -> executor.getStateMachine().getCurrentState().getState());
+    }
+
+    @MonitoredFunction
+    public void moveInstancesFromExecutor(final String executorId) {
+        stateDB.applications(0, Integer.MAX_VALUE)
+                .stream()
+                .flatMap(app -> stateDB.healthyInstances(app.getAppId()).stream())
+                .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
+                .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
+                .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
+                .forEach((appId, instances) -> {
+                    val res = handleOperation(new ApplicationReplaceInstancesOperation(appId, instances, ClusterOpSpec.DEFAULT));
+                    log.info("Instances to be replaced for {}: {}. command acceptance status: {}", appId, instances, res);
+                });
     }
 
     private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {
@@ -118,11 +143,6 @@ public class ApplicationEngine {
         });
     }
 
-    public Optional<ApplicationState> applicationState(final String appId) {
-        return Optional.ofNullable(stateMachines.get(appId))
-                .map(executor -> executor.getStateMachine().getCurrentState().getState());
-    }
-
     private ApplicationStateMachineExecutor createApp(ApplicationOperation operation) {
         return operation.accept(new ApplicationOperationVisitorAdapter<>(null) {
             @Override
@@ -146,18 +166,6 @@ public class ApplicationEngine {
         });
     }
 
-    public void moveInstancesFromExecutor(final String executorId) {
-        stateDB.applications(0, Integer.MAX_VALUE)
-                .stream()
-                .flatMap(app -> stateDB.healthyInstances(app.getAppId()).stream())
-                .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
-                .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
-                .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
-                .forEach((appId, instances) -> {
-                    val res = handleOperation(new ApplicationReplaceInstancesOperation(appId, instances, ClusterOpSpec.DEFAULT));
-                    log.info("Instances to be replaced for {}: {}. command acceptance status: {}", appId, instances, res);
-                });
-    }
 
     private void handleAppStateUpdate(
             String appId,

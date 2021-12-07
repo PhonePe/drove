@@ -6,6 +6,7 @@ import com.phonepe.drove.controller.statemachine.OperationDrivenAppAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 public class RecoverAppAction extends OperationDrivenAppAction {
 
     @Override
+    @MonitoredFunction
     protected StateData<ApplicationState, ApplicationInfo> commandReceived(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState,

@@ -2,6 +2,7 @@ package com.phonepe.drove.controller;
 
 import com.google.inject.Stage;
 import com.phonepe.drove.controller.ui.HandlebarsViewRenderer;
+import io.appform.functionmetrics.FunctionMetricsManager;
 import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
@@ -51,6 +52,7 @@ public class App extends Application<AppConfig> {
         ((AbstractServerFactory)appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         environment.jersey().register(SseFeature.class);
         environment.jersey().getResourceConfig().register(SseFeature.class);
+        FunctionMetricsManager.initialize("com.phonepe.drove.controller", environment.metrics());
     }
 
     public static void main(String[] args) throws Exception {

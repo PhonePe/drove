@@ -8,6 +8,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -22,6 +23,7 @@ public class AppOperationRouterAction extends AppAction {
 
     @SneakyThrows
     @Override
+    @MonitoredFunction
     public StateData<ApplicationState, ApplicationInfo> execute(
             AppActionContext context, StateData<ApplicationState, ApplicationInfo> currentState) {
         return context.getUpdate()

@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.jobexecutor;
 
 import com.phonepe.drove.controller.utils.JobUtils;
+import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -36,6 +37,7 @@ public final class JobExecutor<T> {
         return schedule(Collections.singletonList(job), responseCombiner, resultHandler);
     }
 
+    @MonitoredFunction
     public String schedule(
             final List<Job<T>> jobs,
             final JobResponseCombiner<T> responseCombiner,

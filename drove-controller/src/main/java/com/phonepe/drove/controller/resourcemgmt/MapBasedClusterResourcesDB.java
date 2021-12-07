@@ -8,6 +8,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -30,22 +31,26 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, Boolean> blackListedNodes = new ConcurrentHashMap<>();
 
     @Override
+    @MonitoredFunction
     public List<ExecutorHostInfo> currentSnapshot() {
         return List.copyOf(nodes.values());
     }
 
     @Override
+    @MonitoredFunction
     public Optional<ExecutorHostInfo> currentSnapshot(final String executorId) {
         return Optional.ofNullable(nodes.get(executorId));
     }
 
     @Override
+    @MonitoredFunction
     public synchronized void remove(Collection<String> executorIds) {
         executorIds.forEach(nodes::remove);
     }
 
     @Override
     @SneakyThrows
+    @MonitoredFunction
     public synchronized void update(List<ExecutorNodeData> nodeData) {
         nodes.putAll(nodeData.stream()
                              .map(this::convertState)
@@ -56,6 +61,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
 
     @Override
     @SneakyThrows
+    @MonitoredFunction
     public synchronized void update(final ExecutorResourceSnapshot snapshot) {
         nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
 //        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
@@ -63,6 +69,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
 
     @Override
     @SneakyThrows
+    @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter) {
         val rawNodes = new ArrayList<>(nodes.values());
@@ -79,11 +86,13 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     }
 
     @Override
+    @MonitoredFunction
     public synchronized void deselectNode(AllocatedExecutorNode executorNode) {
         softUnlockResources(executorNode);
     }
 
     @Override
+    @MonitoredFunction
     public boolean isBlacklisted(String executorId) {
         return Optional.of(nodes.get(executorId))
                 .map(node -> node.getNodeData().isBlacklisted())
@@ -92,11 +101,13 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     }
 
     @Override
+    @MonitoredFunction
     public void markBlacklisted(String executorId) {
         blackListedNodes.putIfAbsent(executorId, true);
     }
 
     @Override
+    @MonitoredFunction
     public void unmarkBlacklisted(String executorId) {
         blackListedNodes.remove(executorId);
     }

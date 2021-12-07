@@ -7,6 +7,7 @@ import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -44,6 +45,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     @Override
+    @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
             String schedulingSessionId, ApplicationSpec applicationSpec) {
         //Take a snapshot of all instances in this cluster at the onset of the session
@@ -67,11 +69,13 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     @Override
+    @MonitoredFunction
     public synchronized void finaliseSession(final String schedulingSessionId) {
         schedulingSessionData.remove(schedulingSessionId);
     }
 
     @Override
+    @MonitoredFunction
     public synchronized boolean discardAllocation(String schedulingSessionId, AllocatedExecutorNode node) {
         clusterResourcesDB.deselectNode(node);
         schedulingSessionData.computeIfPresent(schedulingSessionId, (id, executors) -> {

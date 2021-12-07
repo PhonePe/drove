@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resources;
 
+import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -52,6 +53,7 @@ public class Apis {
 
     @POST
     @Path("/operations")
+    @Timed
     public ApiResponse<Map<String, String>> acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
         val res = engine.handleOperation(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
@@ -62,6 +64,7 @@ public class Apis {
 
     @POST
     @Path("/operations/{appId}/cancel")
+    @Timed
     public ApiResponse<Void> cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
         return engine.cancelCurrentJob(appId)
                ? ApiResponse.success(null)
@@ -70,6 +73,7 @@ public class Apis {
 
     @GET
     @Path("/applications")
+    @Timed
     public ApiResponse<Map<String, AppSummary>> applications(
             @QueryParam("from") @DefaultValue("0") @Min(0) @Max(1024) final int from,
             @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(1024) final int size) {
@@ -78,12 +82,14 @@ public class Apis {
 
     @GET
     @Path("/applications/{id}")
+    @Timed
     public ApiResponse<AppSummary> application(@PathParam("id") @NotEmpty final String appId) {
         return responseEngine.application(appId);
     }
 
     @GET
     @Path("/applications/{id}/instances")
+    @Timed
     public ApiResponse<List<InstanceInfo>> applicationInstances(
             @PathParam("id") @NotEmpty final String appId,
             @QueryParam("state") final Set<InstanceState> state) {
@@ -93,6 +99,7 @@ public class Apis {
 
     @GET
     @Path("/applications/{id}/instances/old")
+    @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(
             @PathParam("id") @NotEmpty final String appId) {
 
@@ -101,42 +108,49 @@ public class Apis {
 
     @GET
     @Path("/cluster")
+    @Timed
     public ApiResponse<ClusterSummary> clusterSummary() {
         return responseEngine.cluster();
     }
 
     @GET
     @Path("/cluster/executors")
+    @Timed
     public ApiResponse<List<ExecutorSummary>> nodes() {
         return responseEngine.nodes();
     }
 
     @GET
     @Path("/cluster/executors/{id}")
+    @Timed
     public ApiResponse<ExecutorNodeData> executorDetails(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.executorDetails(executorId);
     }
 
     @POST
     @Path("/cluster/executors/{id}/blacklist")
+    @Timed
     public ApiResponse<Void> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.blacklistExecutor(executorId);
     }
 
     @POST
     @Path("/cluster/executors/{id}/unblacklist")
+    @Timed
     public ApiResponse<Void> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.unblacklistExecutor(executorId);
     }
 
     @GET
     @Path("/endpoints")
+    @Timed
     public ApiResponse<List<ExposedAppInfo>> endpoints() {
         return responseEngine.endpoints();
     }
 
     @GET
     @Path("/ping")
+    @Timed
     public ApiResponse<String> ping() {
         return ApiResponse.success("pong");
     }
