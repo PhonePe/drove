@@ -11,6 +11,7 @@ import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
@@ -59,6 +60,7 @@ public class TestingUtils {
                                        Duration.seconds(3),
                                        3,
                                        Duration.seconds(0)),
+                                LocalLoggingSpec.DEFAULT,
                                 Collections.emptyMap());
     }
 

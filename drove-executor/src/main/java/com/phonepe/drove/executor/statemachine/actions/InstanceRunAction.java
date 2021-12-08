@@ -3,8 +3,10 @@ package com.phonepe.drove.executor.statemachine.actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
@@ -13,6 +15,9 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
+import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
+import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -62,11 +67,7 @@ public class InstanceRunAction extends InstanceAction {
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any stats
                     .withAutoRemove(true)/*
                     .withPublishAllPorts(true)*/
-                    .withLogConfig(new LogConfig(LogConfig.LoggingType.LOCAL)
-                                           .setConfig(Map.of("mode", "non-blocking", //TODO::READ SIZE ETC FROM CONFIG
-                                                             "max-size", "10m",
-                                                             "max-file", "3",
-                                                             "compress", "true")));
+                    .withLogConfig(logConfig(instanceSpec));
 
             instanceSpec.getResources()
                     .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
@@ -197,5 +198,40 @@ public class InstanceRunAction extends InstanceAction {
             log.error("Port allocation failure");
         }
         return 0;
+    }
+
+    /*
+    new LogConfig(LogConfig.LoggingType.SYSLOG)
+                                           /*.setConfig(Map.of("mode", "non-blocking", //TODO::READ SIZE ETC FROM CONFIG
+                                                             "max-size", "10m",
+                                                             "max-file", "3",
+                                                             "compress", "true"))*/
+
+    private LogConfig logConfig(final InstanceSpec instanceSpec) {
+        val spec = instanceSpec.getLoggingSpec() == null
+                   ? LocalLoggingSpec.DEFAULT
+                   : instanceSpec.getLoggingSpec();
+        val configBuilder = ImmutableMap.<String, String>builder()
+                .put("mode", "non-blocking")
+                .put("max-buffer-size", "10m");
+        return spec.accept(new LoggingSpecVisitor<>() {
+            @Override
+            public LogConfig visit(LocalLoggingSpec local) {
+                configBuilder.put("max-size", local.getMaxSize());
+                configBuilder.put("max-file", Integer.toString(local.getMaxFiles()));
+                configBuilder.put("compress", Boolean.toString(local.isCompress()));
+                return new LogConfig(LogConfig.LoggingType.LOCAL, configBuilder.build());
+            }
+
+            @Override
+            public LogConfig visit(RsyslogLoggingSpec rsyslog) {
+                configBuilder.put("syslog-address", rsyslog.getServer());
+                configBuilder.put("tag", Objects.requireNonNullElse(rsyslog.getTagPrefix(), "")
+                        + instanceSpec.getAppName()
+                        + Objects.requireNonNullElse(rsyslog.getTagSuffix(), ""));
+                configBuilder.put("syslog-facility", "daemon");
+                return new LogConfig(LogConfig.LoggingType.SYSLOG, configBuilder.build());
+            }
+        });
     }
 }

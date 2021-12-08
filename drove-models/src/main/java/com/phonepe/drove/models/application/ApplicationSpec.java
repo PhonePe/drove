@@ -4,6 +4,7 @@ import com.phonepe.drove.models.application.changenotification.StateChangeNotifi
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
+import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import lombok.Value;
@@ -38,6 +39,9 @@ public class ApplicationSpec {
 
     @NotNull
     JobType type;
+
+    @Valid
+    LoggingSpec logging;
 
     @Valid
     StateChangeNotificationSpec stateChangeNotificationReceivers;

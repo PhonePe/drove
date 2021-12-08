@@ -6,6 +6,7 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.models.application.PortType;
+import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -50,6 +51,7 @@ class InstanceRunActionTest {
                                             Collections.emptyList(),
                                             null,
                                             null,
+                                            LocalLoggingSpec.DEFAULT,
                                             Collections.emptyMap());
         val executorId = CommonUtils.executorId(3000);
         val ctx = new InstanceActionContext(executorId, instanceSpec);

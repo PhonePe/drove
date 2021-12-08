@@ -1,5 +1,6 @@
 package com.phonepe.drove.common.model;
 
+import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
@@ -24,5 +25,6 @@ public class InstanceSpec {
     List<MountedVolume> volumes;
     CheckSpec healthcheck;
     CheckSpec readiness;
+    LoggingSpec loggingSpec;
     Map<String, String> env;
 }

@@ -125,6 +125,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                      applicationSpec.getVolumes(),
                                                                      applicationSpec.getHealthcheck(),
                                                                      applicationSpec.getReadiness(),
+                                                                     applicationSpec.getLogging(),
                                                                      applicationSpec.getEnv()));
         var successful = false;
         try {
