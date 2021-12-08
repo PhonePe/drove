@@ -6,6 +6,8 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import javax.validation.constraints.NotEmpty;
+
 /**
  *
  */
@@ -14,6 +16,7 @@ import lombok.extern.jackson.Jacksonized;
 @ToString(callSuper = true)
 @Jacksonized
 public class RsyslogLoggingSpec extends LoggingSpec {
+    @NotEmpty
     String server;
 
     String tagPrefix;
