@@ -86,3 +86,5 @@ buildNumber.properties
 *.deb
 *.zip
 .*.sw*
+out
+dep
