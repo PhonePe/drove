@@ -1,16 +1,12 @@
 package com.phonepe.drove.executor.statemachine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.phonepe.drove.common.ActionContext;
 import com.phonepe.drove.common.model.InstanceSpec;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.net.URI;
 import java.util.concurrent.Future;
 
 /**
@@ -27,14 +23,13 @@ public class InstanceActionContext extends ActionContext<Void> {
     private String dockerInstanceId;
     private Future<?> loggerFuture;
 
-    public InstanceActionContext(String executorId, InstanceSpec instanceSpec) {
+    public InstanceActionContext(
+            String executorId,
+            InstanceSpec instanceSpec,
+            DockerClient client) {
         super();
         this.executorId = executorId;
         this.instanceSpec = instanceSpec;
-        this.client = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
-                                                      .build(),
-                                              new ZerodepDockerHttpClient.Builder()
-                                                      .dockerHost(URI.create("unix:///var/run/docker.sock"))
-                                                      .build());
+        this.client = client;
     }
 }

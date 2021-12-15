@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor;
 
+import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.when;
  *
  */
 @Slf4j
-class ExecutorCommunicatorTest {
+class ExecutorCommunicatorTest extends AbstractTestBase {
     @Test
     void testComms() {
         val engine = mock(InstanceEngine.class);

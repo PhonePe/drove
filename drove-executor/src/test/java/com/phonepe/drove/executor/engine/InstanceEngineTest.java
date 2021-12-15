@@ -10,6 +10,7 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.executor.AbstractExecutorBaseTest;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.TestingUtils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -26,12 +27,10 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.functionmetrics.FunctionMetricsManager;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +50,7 @@ import static org.mockito.Mockito.when;
  *
  */
 @Slf4j
-class InstanceEngineTest {
+class InstanceEngineTest extends AbstractExecutorBaseTest {
 
     @Inject
     private ResourceDB resourceDB;
@@ -62,14 +61,11 @@ class InstanceEngineTest {
     @Inject
     private InstanceEngine engine;
 
-    @BeforeAll
-    static void setupClass() {
-        FunctionMetricsManager.initialize("drove.test", SharedMetricRegistries.getOrCreate("test"));
-    }
 
     @BeforeEach
     void setup() {
         val injector = Guice.createInjector(new AbstractModule() {
+
             @Override
             protected void configure() {
                 super.configure();
@@ -97,7 +93,8 @@ class InstanceEngineTest {
                         executorService,
                         new InjectingInstanceActionFactory(injector),
                         resourceDB,
-                        blacklistManager);
+                        blacklistManager,
+                        DOCKER_CLIENT);
             }
         });
         injector.injectMembers(this);

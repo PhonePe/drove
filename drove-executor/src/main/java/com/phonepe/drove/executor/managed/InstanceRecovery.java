@@ -2,9 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
+import com.github.dockerjava.api.DockerClient;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
@@ -19,7 +17,6 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.net.URI;
 import java.util.Collections;
 
 /**
@@ -31,11 +28,16 @@ import java.util.Collections;
 public class InstanceRecovery implements Managed {
     private final InstanceEngine engine;
     private final ObjectMapper mapper;
+    private final DockerClient client;
 
     @Inject
-    public InstanceRecovery(InstanceEngine engine, ObjectMapper mapper) {
+    public InstanceRecovery(
+            InstanceEngine engine,
+            ObjectMapper mapper,
+            DockerClient client) {
         this.engine = engine;
         this.mapper = mapper;
+        this.client = client;
     }
 
 
@@ -48,15 +50,10 @@ public class InstanceRecovery implements Managed {
 
     @Override
     public void stop() throws Exception {
-
+        log.info("Instance recovery stopped");
     }
 
     private void recoverState() {
-        val client = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
-                                                          .build(),
-                                                  new ZerodepDockerHttpClient.Builder()
-                                                          .dockerHost(URI.create("unix:///var/run/docker.sock"))
-                                                          .build());
         val containers = client.listContainersCmd()
                 .withLabelFilter(Collections.singletonList(DockerLabels.DROVE_INSTANCE_ID_LABEL))
                 .exec();

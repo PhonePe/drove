@@ -5,16 +5,16 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.logging.LogBus;
-import com.phonepe.drove.models.application.PortType;
-import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.actions.ExecutableFetchAction;
 import com.phonepe.drove.executor.statemachine.actions.InstanceRunAction;
 import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.dropwizard.util.Duration;
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  *
  */
-class InstanceRunActionTest {
+class InstanceRunActionTest extends AbstractExecutorBaseTest {
 
     @Test
     void testRun() {
@@ -54,7 +54,7 @@ class InstanceRunActionTest {
                                             LocalLoggingSpec.DEFAULT,
                                             Collections.emptyMap());
         val executorId = CommonUtils.executorId(3000);
-        val ctx = new InstanceActionContext(executorId, instanceSpec);
+        val ctx = new InstanceActionContext(executorId, instanceSpec, DOCKER_CLIENT);
         new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new InstanceRunAction(new LogBus()).execute(ctx,

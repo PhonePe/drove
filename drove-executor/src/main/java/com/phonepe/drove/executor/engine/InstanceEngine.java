@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.engine;
 
+import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -45,17 +46,19 @@ public class InstanceEngine implements Closeable {
     private final BlacklistingManager blacklistManager;
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
+    private final DockerClient client;
 
 
     public InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
             InstanceActionFactory actionFactory,
-            ResourceDB resourceDB, BlacklistingManager blacklistManager) {
+            ResourceDB resourceDB, BlacklistingManager blacklistManager, DockerClient client) {
         this.executorIdManager = executorIdManager;
         this.service = service;
         this.actionFactory = actionFactory;
         this.resourceDB = resourceDB;
         this.blacklistManager = blacklistManager;
+        this.client = client;
         this.stateMachines = new ConcurrentHashMap<>();
     }
 
@@ -94,7 +97,8 @@ public class InstanceEngine implements Closeable {
         val stateMachine = new InstanceStateMachine(executorIdManager.executorId().orElse(null),
                                                     spec,
                                                     currentState,
-                                                    actionFactory);
+                                                    actionFactory,
+                                                    client);
         stateMachine.onStateChange().connect(this::handleStateChange);
         val f = service.submit(() -> {
             MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());

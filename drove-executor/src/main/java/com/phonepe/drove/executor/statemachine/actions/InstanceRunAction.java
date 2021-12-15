@@ -65,8 +65,7 @@ public class InstanceRunAction extends InstanceAction {
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any stats
-                    .withAutoRemove(true)/*
-                    .withPublishAllPorts(true)*/
+                    .withAutoRemove(true)
                     .withLogConfig(logConfig(instanceSpec));
 
             instanceSpec.getResources()

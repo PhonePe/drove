@@ -5,10 +5,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.MemoryStatsConfig;
 import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.core.InvocationBuilder;
-import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.google.inject.Inject;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
@@ -28,7 +25,6 @@ import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,14 +55,10 @@ public class ContainerStatsObserver implements Managed {
     @Inject
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
-            InstanceEngine instanceEngine) {
+            InstanceEngine instanceEngine, DockerClient client) {
         this.metricRegistry = metricRegistry;
         this.instanceEngine = instanceEngine;
-        this.client = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
-                                                           .build(),
-                                                   new ZerodepDockerHttpClient.Builder()
-                                                           .dockerHost(URI.create("unix:///var/run/docker.sock"))
-                                                           .build());
+        this.client = client;
         instanceEngine.onStateChange()
                 .connect(instanceInfo -> {
                     if (instanceInfo.getState().equals(InstanceState.HEALTHY)) {

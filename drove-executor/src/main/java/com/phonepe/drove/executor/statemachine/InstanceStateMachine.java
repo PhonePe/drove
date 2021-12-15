@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine;
 
+import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.StateMachine;
 import com.phonepe.drove.common.Transition;
@@ -72,7 +73,7 @@ public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Voi
             String executorId,
             InstanceSpec instanceSpec,
             @NonNull StateData<InstanceState, ExecutorInstanceInfo> initalState,
-            InstanceActionFactory actionFactory) {
-        super(initalState, new InstanceActionContext(executorId, instanceSpec), actionFactory, transitions);
+            InstanceActionFactory actionFactory, DockerClient client) {
+        super(initalState, new InstanceActionContext(executorId, instanceSpec, client), actionFactory, transitions);
     }
 }

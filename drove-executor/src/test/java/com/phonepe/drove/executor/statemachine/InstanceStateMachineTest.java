@@ -4,12 +4,14 @@ import com.google.inject.Guice;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
+import com.phonepe.drove.executor.AbstractExecutorBaseTest;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.TestingUtils;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -21,7 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 @Slf4j
-class InstanceStateMachineTest {
+@Disabled
+class InstanceStateMachineTest extends AbstractExecutorBaseTest {
     @Test
     void test() {
         val instanceSpec = TestingUtils.testSpec();
@@ -29,7 +32,8 @@ class InstanceStateMachineTest {
                                           instanceSpec,
                                           StateData.create(InstanceState.PROVISIONING, null),
                                           new InjectingInstanceActionFactory(Guice.createInjector(
-                                                  Stage.DEVELOPMENT)));
+                                                  Stage.DEVELOPMENT)),
+                                          DOCKER_CLIENT);
         sm.onStateChange().connect(sd -> log.info("Current state: {}", sd));
         val done = new AtomicBoolean();
         Executors.newSingleThreadExecutor()

@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- *
+ * Sends messages to the current leader
  */
 @Singleton
 @Slf4j

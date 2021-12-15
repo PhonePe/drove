@@ -2,6 +2,10 @@ package com.phonepe.drove.executor;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.core.DefaultDockerClientConfig;
+import com.github.dockerjava.core.DockerClientImpl;
+import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
@@ -24,6 +28,7 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Singleton;
+import java.net.URI;
 
 /**
  *
@@ -45,7 +50,8 @@ public class ExecutorCoreModule extends AbstractModule {
             final Injector injector,
             final ResourceDB resourceDB,
             final ExecutorIdManager executorIdManager,
-            final BlacklistingManager blacklistManager) {
+            final BlacklistingManager blacklistManager,
+            final DockerClient client) {
         val executorService = environment.lifecycle()
                 .executorService("instance-engine")
                 .minThreads(128)
@@ -56,7 +62,8 @@ public class ExecutorCoreModule extends AbstractModule {
                 executorService,
                 new InjectingInstanceActionFactory(injector),
                 resourceDB,
-                blacklistManager);
+                blacklistManager,
+                client);
     }
 
     @Provides
@@ -88,5 +95,15 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     public MetricRegistry registry(final Environment environment) {
         return environment.metrics();
+    }
+
+    @Provides
+    @Singleton
+    public DockerClient dockerClient() {
+        return DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
+                                                    .build(),
+                                            new ZerodepDockerHttpClient.Builder()
+                                                    .dockerHost(URI.create("unix:///var/run/docker.sock"))
+                                                    .build());
     }
 }

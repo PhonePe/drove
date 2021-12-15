@@ -72,9 +72,15 @@ public class LeadershipObserver implements Managed {
                 .orElse(null);
         log.trace("Leader node: {}", leaderNode);
         val oldLeader = leader.getAndSet(leaderNode);
-        if(null != leaderNode && leaderNode.equals(oldLeader)) {
-            log.info("Leader controller changed from: {} to: {}",
-                     oldLeader, leaderNode);
+        if (null != leaderNode) {
+            if (null == oldLeader) {
+                log.info("Leader set to: {}", leaderNode);
+            }
+            else if (!leaderNode.getHostname().equals(oldLeader.getHostname())) {
+                log.info("Leader controller changed from: {} to: {}",
+                         oldLeader, leaderNode);
+
+            }
         }
     }
 }
