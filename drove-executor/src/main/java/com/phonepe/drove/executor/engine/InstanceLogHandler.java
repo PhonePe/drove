@@ -13,7 +13,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 
 /**
- *
+ * Handles stream of docker log messages
  */
 @Slf4j
 public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {

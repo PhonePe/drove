@@ -37,7 +37,6 @@
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-logging</artifactId>
-            <version>${dropwizard.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.inject</groupId>
