@@ -125,6 +125,10 @@ class ContainerStatsObserverTest extends AbstractExecutorTestBase {
             waitUntil(() -> engine.currentState(instanceId).isEmpty());
             statsObserver.stop();
         }
+        assertTrue(METRIC_REGISTRY.getGauges(MetricFilter.endsWith("nr_throttled"))
+                           .keySet()
+                           .stream()
+                           .noneMatch(name -> name.contains(instanceId)));
     }
 
     private boolean gaugePresent(String instanceId) {

@@ -72,6 +72,10 @@ public class ContainerStatsObserver implements Managed {
         this.instanceEngine = instanceEngine;
         this.statsChecker = new ScheduledSignal(refreshDuration);
         this.client = client;
+    }
+
+    @Override
+    public void start() throws Exception {
         instanceEngine.onStateChange()
                 .connect(STATS_OBSERVER_HANDLER_NAME, instanceInfo -> {
                     if (instanceInfo.getState().equals(InstanceState.HEALTHY)) {
@@ -86,10 +90,6 @@ public class ContainerStatsObserver implements Managed {
                         }
                     }
                 });
-    }
-
-    @Override
-    public void start() throws Exception {
         statsChecker.connect(REPORTER_HANDLER_NAME, this::reportStats);
     }
 
