@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.managed;
 
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.executor.Utils;
@@ -22,31 +23,40 @@ import javax.inject.Singleton;
 @Singleton
 @Order(50)
 public class ExecutorInstanceStateChangeNotifier implements Managed {
+    private static final String STATE_CHANGE_HANDLER_NAME = "state-change-notifier";
     private final ResourceDB resourceDB;
     private final ExecutorCommunicator communicator;
+    private final InstanceEngine engine;
 
     @Inject
     public ExecutorInstanceStateChangeNotifier(
             ResourceDB resourceDB, ExecutorCommunicator communicator, InstanceEngine engine) {
         this.resourceDB = resourceDB;
         this.communicator = communicator;
-        engine.onStateChange().connect(this::handleStateChange);
+        this.engine = engine;
     }
 
-    public void handleStateChange(final InstanceInfo instanceInfo) {
-        log.info("received state change notification: {}", instanceInfo);
+    private void handleStateChange(final InstanceInfo instanceInfo) {
+        log.debug("Received state change notification: {}", instanceInfo);
         val executorId = instanceInfo.getExecutorId();
         val snapshot = Utils.executorSnapshot(resourceDB.currentState(), executorId);
-        communicator.send(new InstanceStateReportMessage(MessageHeader.executorRequest(), snapshot, instanceInfo));
+        val resp = communicator.send(new InstanceStateReportMessage(MessageHeader.executorRequest(),
+                                                                    snapshot,
+                                                                    instanceInfo)).getStatus();
+        if (!resp.equals(MessageDeliveryStatus.ACCEPTED)) {
+            log.info("Sending message to controller failed with status: {}.", resp);
+        }
     }
 
     @Override
     public void start() throws Exception {
+        engine.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, this::handleStateChange);
         log.info("State updater started");
     }
 
     @Override
     public void stop() throws Exception {
+        engine.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
         log.info("State updater stopped");
     }
 }
