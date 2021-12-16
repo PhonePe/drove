@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.Utils;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
@@ -42,7 +42,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
-        val checker = Utils.createChecker(context, currentState.getData(), healthcheckSpec);
+        val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheckSpec);
         log.info("Starting healthcheck");
         try {
             val mdc = MDC.getCopyOfContextMap();

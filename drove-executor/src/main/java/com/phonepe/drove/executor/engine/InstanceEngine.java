@@ -6,7 +6,7 @@ import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.InstanceActionFactory;
-import com.phonepe.drove.executor.Utils;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
@@ -139,13 +139,13 @@ public class InstanceEngine implements Closeable {
         if (null == smInfo) {
             return Optional.empty();
         }
-        return Optional.of(Utils.convert(smInfo.getStateMachine().getCurrentState()));
+        return Optional.of(ExecutorUtils.convert(smInfo.getStateMachine().getCurrentState()));
     }
 
     public List<InstanceInfo> currentState() {
         return stateMachines.values()
                 .stream()
-                .map(v -> Utils.convert(v.getStateMachine().getCurrentState()))
+                .map(v -> ExecutorUtils.convert(v.getStateMachine().getCurrentState()))
                 .collect(Collectors.toUnmodifiableList());
     }
 
@@ -228,7 +228,7 @@ public class InstanceEngine implements Closeable {
                 log.warn("State data is not present");
             }
         }
-        val instanceInfo = Utils.convert(currentState);
+        val instanceInfo = ExecutorUtils.convert(currentState);
         stateChanged.dispatch(instanceInfo);
     }
 

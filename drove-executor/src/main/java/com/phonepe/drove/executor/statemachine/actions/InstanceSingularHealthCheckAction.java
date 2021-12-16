@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.Utils;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
@@ -32,7 +32,7 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
-        final Checker checker = Utils.createChecker(context, currentState.getData(), healthcheck);
+        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck);
         val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if (initDelay > 0) {

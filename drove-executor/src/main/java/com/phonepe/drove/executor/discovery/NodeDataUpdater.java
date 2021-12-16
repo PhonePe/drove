@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.discovery;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.executor.Utils;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -106,7 +106,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
                     hostname,
                     port,
                     new Date(),
-                    Utils.executorSnapshot(resourceState, executorId),
+                    ExecutorUtils.executorSnapshot(resourceState, executorId),
                     engine.currentState(),
                     tags(),
                     blacklistingManager.isBlacklisted());
@@ -131,7 +131,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             }
             currentData = ExecutorNodeData.from(
                     currentData,
-                    Utils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
+                    ExecutorUtils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
                     engine.currentState(),
                     tags(),
                     blacklistingManager.isBlacklisted());

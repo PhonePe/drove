@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.managed;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
-import com.phonepe.drove.executor.Utils;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
@@ -39,7 +39,7 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
     private void handleStateChange(final InstanceInfo instanceInfo) {
         log.debug("Received state change notification: {}", instanceInfo);
         val executorId = instanceInfo.getExecutorId();
-        val snapshot = Utils.executorSnapshot(resourceDB.currentState(), executorId);
+        val snapshot = ExecutorUtils.executorSnapshot(resourceDB.currentState(), executorId);
         val resp = communicator.send(new InstanceStateReportMessage(MessageHeader.executorRequest(),
                                                                     snapshot,
                                                                     instanceInfo)).getStatus();

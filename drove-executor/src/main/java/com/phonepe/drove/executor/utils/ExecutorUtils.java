@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor;
+package com.phonepe.drove.executor.utils;
 
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
@@ -24,7 +24,7 @@ import java.util.Date;
  *
  */
 @UtilityClass
-public class Utils {
+public class ExecutorUtils {
     public static Checker createChecker(
             InstanceActionContext context,
             ExecutorInstanceInfo instanceInfo,
