@@ -90,7 +90,7 @@ public class LogStream {
         }
 
         @Override
-        public void handle(LogBus.LogLine logLine) {
+        public void consume(LogBus.LogLine logLine) {
             if(stopped.get()) {
                 return;
             }

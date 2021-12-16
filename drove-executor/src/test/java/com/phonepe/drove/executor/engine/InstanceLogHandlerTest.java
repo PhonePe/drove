@@ -31,7 +31,7 @@ class InstanceLogHandlerTest {
             }
 
             @Override
-            public void handle(LogBus.LogLine logLine) {
+            public void consume(LogBus.LogLine logLine) {
                 if (logLine.getLogChannel().equals(LogBus.LogChannel.STDERR)) {
                     stderrMessagesCount.incrementAndGet();
                 }

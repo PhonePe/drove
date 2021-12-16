@@ -1,21 +1,17 @@
 package com.phonepe.drove.executor.logging;
 
 import com.google.common.base.Strings;
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.Subscribe;
+import io.appform.signals.signalhandlers.SignalConsumer;
+import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Value;
 import lombok.val;
 
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 
 /**
  *
  */
 @Singleton
-@SuppressWarnings("UnstableApiUsage")
 public class LogBus {
     public enum LogChannel {
         STDOUT,
@@ -30,32 +26,31 @@ public class LogBus {
         String log;
     }
 
-    public interface LogListener {
+    public interface LogListener extends SignalConsumer<LogLine> {
         String id();
-
-        @Subscribe
-        void handle(final LogLine logLine);
     }
 
-    private final Map<String, LogListener> listeners = new ConcurrentHashMap<>();
-    private final AsyncEventBus logGenerated = new AsyncEventBus(Executors.newCachedThreadPool());
+    private final ConsumingFireForgetSignal<LogLine> logGenerated = new ConsumingFireForgetSignal<>();
 
     public void publish(final LogLine logLine) {
-        logGenerated.post(logLine);
+        logGenerated.dispatch(logLine);
     }
 
     public void registerLogHandler(final LogListener listener) {
+        if(null == listener) {
+            return;
+        }
         val id = listener.id();
         if(Strings.isNullOrEmpty(id)) {
             return;
         }
-        listeners.computeIfAbsent(id, lid -> {
-            logGenerated.register(listener);
-            return listener;
-        });
+        logGenerated.connect(id, listener);
     }
 
     public void unregisterLogHandler(final LogListener listener) {
+        if(null == listener) {
+            return;
+        }
         val id = listener.id();
         if(Strings.isNullOrEmpty(id)) {
             return;
@@ -64,9 +59,9 @@ public class LogBus {
     }
 
     public void unregisterLogHandler(final String id) {
-        listeners.computeIfPresent(id, (lid, listener) -> {
-            logGenerated.unregister(listener);
-            return null;
-        });
+        if(Strings.isNullOrEmpty(id)) {
+            return;
+        }
+        logGenerated.disconnect(id);
     }
 }

@@ -12,7 +12,7 @@
     <artifactId>drove-common</artifactId>
 
     <properties>
-        <signals.version>1.1</signals.version>
+        <signals.version>1.2</signals.version>
         <function-metrics.version>1.0.10</function-metrics.version>
     </properties>
 
