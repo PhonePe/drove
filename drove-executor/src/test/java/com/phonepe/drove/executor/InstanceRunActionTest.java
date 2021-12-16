@@ -19,6 +19,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.dropwizard.util.Duration;
 import lombok.val;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -34,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class InstanceRunActionTest extends AbstractExecutorTestBase {
 
     @Test
+    @Disabled
     void testRun() {
         val appId = "T001";
         val instanceId = UUID.randomUUID().toString();
@@ -71,5 +73,6 @@ class InstanceRunActionTest extends AbstractExecutorTestBase {
                                                                                             new Date()),
                                                                    ""));
         assertEquals(InstanceState.UNREADY, newState.getState());
+
     }
 }

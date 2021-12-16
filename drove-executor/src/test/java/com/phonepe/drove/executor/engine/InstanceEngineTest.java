@@ -1,21 +1,15 @@
 package com.phonepe.drove.executor.engine;
 
-import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.inject.*;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
-import com.phonepe.drove.executor.AbstractExecutorTestBase;
-import com.phonepe.drove.executor.InjectingInstanceActionFactory;
+import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.TestingUtils;
-import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -27,81 +21,21 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  *
  */
 @Slf4j
-class InstanceEngineTest extends AbstractExecutorTestBase {
-
-    @Inject
-    private ResourceDB resourceDB;
-
-    @Inject
-    private BlacklistingManager blacklistingManager;
-
-    @Inject
-    private InstanceEngine engine;
-
-
-    @BeforeEach
-    void setup() {
-        val injector = Guice.createInjector(new AbstractModule() {
-
-            @Override
-            protected void configure() {
-                super.configure();
-            }
-
-            @Provides
-            @Singleton
-            public Environment environment() {
-                val env = mock(Environment.class);
-                val lsm = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
-                when(env.lifecycle()).thenReturn(lsm);
-                return env;
-            }
-
-            @Provides
-            @Singleton
-            public InstanceEngine engine(
-                    final Injector injector,
-                    final ResourceDB resourceDB,
-                    final ExecutorIdManager executorIdManager,
-                    final BlacklistingManager blacklistManager) {
-                val executorService = Executors.newSingleThreadExecutor();
-                return new InstanceEngine(
-                        executorIdManager,
-                        executorService,
-                        new InjectingInstanceActionFactory(injector),
-                        resourceDB,
-                        blacklistManager,
-                        DOCKER_CLIENT);
-            }
-        });
-        injector.injectMembers(this);
-        resourceDB.populateResources(Map.of(0, new ResourceDB.NodeInfo(IntStream.rangeClosed(0, 7)
-                                                                               .boxed()
-                                                                               .collect(Collectors.toUnmodifiableSet()),
-                                                                       16_000_000)));
-    }
+class InstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
 
     @Test
     void testBasicRun() {

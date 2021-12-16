@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.managed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
-import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
@@ -17,7 +16,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -55,23 +54,23 @@ public class InstanceRecovery implements Managed {
 
     private void recoverState() {
         val containers = client.listContainersCmd()
-                .withLabelFilter(Collections.singletonList(DockerLabels.DROVE_INSTANCE_ID_LABEL))
+                .withLabelFilter(List.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                                         DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                                         DockerLabels.DROVE_INSTANCE_DATA_LABEL))
                 .exec();
         containers.forEach(container -> {
             try {
                 val id = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
-                if (Strings.isNullOrEmpty(id)) {
-                    log.info("Container {} is not a drove container. Won't be recovered", container.getId());
-                }
                 val spec = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_SPEC_LABEL),
                                             InstanceSpec.class);
                 val data = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
                                             ExecutorInstanceInfo.class);
-                engine.registerInstance(id,
-                                        spec,
-                                        StateData.create(InstanceState.UNKNOWN, data));
+                val status = engine.registerInstance(id,
+                                                     spec,
+                                                     StateData.create(InstanceState.UNKNOWN, data));
+                log.info("Recovery status for instance {}: {}", id, status);
             }
             catch (JsonProcessingException e) {
                 log.error("Error recovering state for container: " + container.getId(), e);
