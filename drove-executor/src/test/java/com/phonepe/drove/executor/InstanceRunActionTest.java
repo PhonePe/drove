@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  *
  */
-class InstanceRunActionTest extends AbstractExecutorBaseTest {
+class InstanceRunActionTest extends AbstractExecutorTestBase {
 
     @Test
     void testRun() {

@@ -2,26 +2,25 @@ package com.phonepe.drove.executor.healthcheck;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.PingCmd;
-import com.phonepe.drove.executor.AbstractExecutorBaseTest;
+import com.phonepe.drove.executor.AbstractExecutorTestBase;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
  *
  */
-class DockerEngineHealthcheckTest extends AbstractExecutorBaseTest {
+class DockerEngineHealthcheckTest extends AbstractExecutorTestBase {
 
     @Test
     @SneakyThrows
     void testHealthy() {
         val hc = new DockerEngineHealthcheck(DOCKER_CLIENT);
         assertTrue(hc.check().isHealthy());
-
+        assertEquals("docker-engine", hc.getName());
     }
 
     @Test

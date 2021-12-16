@@ -27,12 +27,13 @@ import java.util.*;
  */
 @UtilityClass
 public class TestingUtils {
+    final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.1";
+
     public static InstanceSpec testSpec() {
         return new InstanceSpec("T001",
                                 "TEST_SPEC",
                                 UUID.randomUUID().toString(),
-                                new DockerCoordinates(
-                                        "docker.io/santanusinha/perf-test-server:0.1",
+                                new DockerCoordinates(TestingUtils.IMAGE_NAME,
                                         Duration.seconds(100)),
                                 ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),

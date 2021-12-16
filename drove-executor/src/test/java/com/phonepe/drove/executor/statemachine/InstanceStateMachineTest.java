@@ -4,13 +4,12 @@ import com.google.inject.Guice;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.AbstractExecutorBaseTest;
+import com.phonepe.drove.executor.AbstractExecutorTestBase;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.TestingUtils;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -19,12 +18,14 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
+
 /**
  *
  */
 @Slf4j
 @Disabled
-class InstanceStateMachineTest extends AbstractExecutorBaseTest {
+class InstanceStateMachineTest extends AbstractExecutorTestBase {
     @Test
     void test() {
         val instanceSpec = TestingUtils.testSpec();
@@ -53,10 +54,7 @@ class InstanceStateMachineTest extends AbstractExecutorBaseTest {
         if (!done.get()) {
             sm.stop();
             log.debug("Stop called on sm");
-            Awaitility.await()
-                    .pollDelay(java.time.Duration.ofSeconds(1))
-                    .forever()
-                    .until(done::get);
+            waitUntil(done::get);
         }
     }
 

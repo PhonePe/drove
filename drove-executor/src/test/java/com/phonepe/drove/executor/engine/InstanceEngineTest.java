@@ -10,7 +10,7 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
-import com.phonepe.drove.executor.AbstractExecutorBaseTest;
+import com.phonepe.drove.executor.AbstractExecutorTestBase;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.TestingUtils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -34,14 +34,13 @@ import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static com.phonepe.drove.models.instance.InstanceState.*;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -50,7 +49,7 @@ import static org.mockito.Mockito.when;
  *
  */
 @Slf4j
-class InstanceEngineTest extends AbstractExecutorBaseTest {
+class InstanceEngineTest extends AbstractExecutorTestBase {
 
     @Inject
     private ResourceDB resourceDB;
@@ -121,9 +120,7 @@ class InstanceEngineTest extends AbstractExecutorBaseTest {
         val startResponse = engine.handleMessage(startInstanceMessage);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
         assertEquals(MessageDeliveryStatus.FAILED, engine.handleMessage(startInstanceMessage).getStatus());
-        await().forever()
-                .pollInterval(Duration.ofSeconds(1))
-                .until(() -> engine.currentState(instanceId)
+        waitUntil(() -> engine.currentState(instanceId)
                         .map(InstanceInfo::getState)
                         .map(instanceState -> instanceState.equals(HEALTHY))
                         .orElse(false));
@@ -140,9 +137,7 @@ class InstanceEngineTest extends AbstractExecutorBaseTest {
                                                           executorAddress,
                                                           instanceId);
         assertEquals(MessageDeliveryStatus.ACCEPTED, engine.handleMessage(stopInstanceMessage).getStatus());
-        await().forever()
-                .pollInterval(Duration.ofSeconds(1))
-                .until(() -> engine.currentState(instanceId).isEmpty());
+        waitUntil(() -> engine.currentState(instanceId).isEmpty());
         assertEquals(MessageDeliveryStatus.FAILED, engine.handleMessage(stopInstanceMessage).getStatus());
         val statesDiff = Sets.difference(stateChanges,
                                          EnumSet.of(PENDING,

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -24,6 +25,9 @@ public class AverageCpuUsageGauge implements Gauge<Double>, SignalConsumer<Stati
 
     @Override
     public void consume(Statistics data) {
+        if(null == data) {
+            return;
+        }
         val cpuStats = data.getCpuStats();
         if(null == cpuStats
                 || null == cpuStats.getCpuUsage()
@@ -31,8 +35,8 @@ public class AverageCpuUsageGauge implements Gauge<Double>, SignalConsumer<Stati
                 || null == cpuStats.getSystemCpuUsage()) {
             return;
         }
-        val totalUsage = cpuStats.getCpuUsage().getTotalUsage().longValue();
-        val systemUsage = cpuStats.getSystemCpuUsage().longValue();
+        val totalUsage = (long)Objects.requireNonNullElse(cpuStats.getCpuUsage().getTotalUsage(), 0L);
+        val systemUsage = (long)Objects.requireNonNullElse(cpuStats.getSystemCpuUsage(), 0L);
         val currTime = new Date().getTime();
         if (null != currUsage.get()) {
             val prev = currUsage.get();
@@ -43,7 +47,6 @@ public class AverageCpuUsageGauge implements Gauge<Double>, SignalConsumer<Stati
             }
         }
         currUsage.set(new CPUUsage(totalUsage, systemUsage, currTime));
-        log.debug("PEr CPU Usage: {}", cpuStats.getCpuUsage().getPercpuUsage());
     }
 
     @Value

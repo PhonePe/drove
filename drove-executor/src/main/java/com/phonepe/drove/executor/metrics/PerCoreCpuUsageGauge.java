@@ -8,6 +8,8 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -28,21 +30,30 @@ public class PerCoreCpuUsageGauge implements Gauge<Double>, SignalConsumer<Stati
 
     @Override
     public void consume(Statistics data) {
-        val totalUsage = data.getCpuStats().getCpuUsage().getTotalUsage();
-        val systemUsage = data.getCpuStats().getSystemCpuUsage();
+        if (null == data) {
+            return;
+        }
+        val cpuStats = data.getCpuStats();
+        if (null == cpuStats
+                || null == cpuStats.getCpuUsage()
+                || null == cpuStats.getCpuUsage().getTotalUsage()) {
+            currUsage.set(new CPUUsage(0L, 0L));
+            return;
+        }
+        val totalUsage = (long) Objects.requireNonNullElse(cpuStats.getCpuUsage().getTotalUsage(), 0L);
+        val systemUsage = (long) Objects.requireNonNullElse(cpuStats.getSystemCpuUsage(), 0L);
         if (null != currUsage.get()) {
             val prev = currUsage.get();
             val cpuDelta = totalUsage - prev.getTotalTime();
             val systemDelta = systemUsage - prev.getSystemTime();
             if (cpuDelta > 0 || systemDelta > 0) {
-                currPercentage.set((double) (cpuDelta * 100 * data.getCpuStats()
-                        .getCpuUsage()
-                        .getPercpuUsage()
+                val perCpuUsage = Objects.requireNonNullElse(
+                        cpuStats.getCpuUsage().getPercpuUsage(), Collections.emptyList());
+                currPercentage.set((double) (cpuDelta * 100 * perCpuUsage
                         .size()) / (systemDelta * numAllocatedCpus));
             }
         }
         currUsage.set(new CPUUsage(totalUsage, systemUsage));
-        log.debug("PEr CPU Usage: {}", data.getCpuStats().getCpuUsage().getPercpuUsage());
     }
 
     @Value

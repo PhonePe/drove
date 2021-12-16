@@ -9,7 +9,7 @@ import javax.inject.Inject;
 /**
  *
  */
-@Order(0)
+@Order(20)
 public class ZookeeperManager implements Managed {
     private final CuratorFramework curatorFramework;
 

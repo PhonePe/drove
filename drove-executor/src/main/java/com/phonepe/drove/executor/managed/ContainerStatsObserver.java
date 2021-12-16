@@ -36,13 +36,16 @@ import static com.codahale.metrics.MetricRegistry.name;
 /**
  *
  */
-@Order(20)
+@Order(60)
 @Slf4j
 public class ContainerStatsObserver implements Managed {
+    private static final String STATS_OBSERVER_HANDLER_NAME = "stats-observer";
+    private static final String REPORTER_HANDLER_NAME = "timed-reporter";
+
     private final MetricRegistry metricRegistry;
-    private final InstanceEngine instanceEngine;
     private final Map<String, InstanceData> instances = new ConcurrentHashMap<>();
-    private final ScheduledSignal statsChecker = new ScheduledSignal(Duration.ofSeconds(30));
+    private final InstanceEngine instanceEngine;
+    private final ScheduledSignal statsChecker;
     private final DockerClient client;
 
     @Value
@@ -55,12 +58,22 @@ public class ContainerStatsObserver implements Managed {
     @Inject
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
-            InstanceEngine instanceEngine, DockerClient client) {
+            InstanceEngine instanceEngine,
+            DockerClient client) {
+        this(metricRegistry, instanceEngine, client, Duration.ofSeconds(30));
+    }
+
+    public ContainerStatsObserver(
+            MetricRegistry metricRegistry,
+            InstanceEngine instanceEngine,
+            DockerClient client,
+            Duration refreshDuration) {
         this.metricRegistry = metricRegistry;
         this.instanceEngine = instanceEngine;
+        this.statsChecker = new ScheduledSignal(refreshDuration);
         this.client = client;
         instanceEngine.onStateChange()
-                .connect(instanceInfo -> {
+                .connect(STATS_OBSERVER_HANDLER_NAME, instanceInfo -> {
                     if (instanceInfo.getState().equals(InstanceState.HEALTHY)) {
                         registerTrackedContainer(instanceInfo.getInstanceId(), instanceInfo);
                         log.info("Starting to track instance: {}", instanceInfo.getInstanceId());
@@ -77,15 +90,19 @@ public class ContainerStatsObserver implements Managed {
 
     @Override
     public void start() throws Exception {
-        statsChecker.connect(this::reportStats);
+        statsChecker.connect(REPORTER_HANDLER_NAME, this::reportStats);
     }
 
     @Override
     public void stop() throws Exception {
+        statsChecker.disconnect(REPORTER_HANDLER_NAME);
         statsChecker.close();
+        instanceEngine.onStateChange()
+                .disconnect(STATS_OBSERVER_HANDLER_NAME);
+        log.info("All handlers disconnected");
     }
 
-    void registerTrackedContainer(final String instanceId, final InstanceInfo instanceInfo) {
+    private void registerTrackedContainer(final String instanceId, final InstanceInfo instanceInfo) {
         instances.computeIfAbsent(instanceId, iid -> {
             val containers = client.listContainersCmd()
                     .withLabelFilter(Collections.singletonMap(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceId))
@@ -101,7 +118,8 @@ public class ContainerStatsObserver implements Managed {
                     .connect(gauge(
                             "nr_throttled",
                             instanceInfo,
-                            statistics -> null != statistics.getCpuStats()
+                            statistics -> null != statistics
+                                                  && null != statistics.getCpuStats()
                                                   && null != statistics.getCpuStats().getThrottlingData()
                                                   && null != statistics.getCpuStats()
                                     .getThrottlingData()
@@ -252,12 +270,18 @@ public class ContainerStatsObserver implements Managed {
         }
 
         private void handleStats(final Statistics data) {
+            if (null == data) {
+                return;
+            }
             if (null != data.getMemoryStats()) {
                 memoryStatsReceived.dispatch(new SignalData<>(instanceInfo, data.getMemoryStats()));
             }
             if (null != data.getNetworks()) {
+                val networkData
+                        = Objects.<Map<String, StatisticNetworksConfig>>requireNonNullElse(
+                                data.getNetworks(), Collections.emptyMap());
                 networkStatsReceived.dispatch(new SignalData<>(instanceInfo,
-                                                               data.getNetworks()
+                                                               networkData
                                                                        .values()
                                                                        .stream()
                                                                        .filter(Objects::nonNull)

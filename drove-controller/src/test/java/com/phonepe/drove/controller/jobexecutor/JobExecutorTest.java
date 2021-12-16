@@ -3,16 +3,17 @@ package com.phonepe.drove.controller.jobexecutor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.common.CommonTestUtils.delay;
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -33,9 +34,7 @@ class JobExecutorTest {
                                                                      .collect(Collectors.toUnmodifiableList()))
                 .build();
         exec.schedule(topology, responseCombiner, r -> {});
-        Awaitility.await()
-                .timeout(300, TimeUnit.SECONDS)
-                .until(done::get);
+        waitUntil(done::get);
         assertTrue(done.get());
         assertFalse(failed.get());
     }
@@ -53,9 +52,7 @@ class JobExecutorTest {
                                        .mapToObj(Adder::new)
                                        .collect(Collectors.toUnmodifiableList()))), responseCombiner, r -> {});
         log.debug("Waiting for jobs to complete");
-        Awaitility.await()
-                .timeout(300, TimeUnit.SECONDS)
-                .until(done::get);
+        waitUntil(done::get);
         assertTrue(done.get());
         assertFalse(failed.get());
     }
@@ -75,9 +72,7 @@ class JobExecutorTest {
                 .build();
         exec.schedule(topology, responseCombiner, r -> {});
         log.debug("Waiting");
-        Awaitility.await()
-                .timeout(3, TimeUnit.SECONDS)
-                .until(done::get);
+        waitUntil(done::get);
         assertTrue(done.get());
         assertFalse(failed.get());
     }
@@ -112,9 +107,7 @@ class JobExecutorTest {
                 .build();
         exec.schedule(topology, new IntResponseCombiner(), r -> {});
         log.debug("Waiting");
-        Awaitility.await()
-                .timeout(300, TimeUnit.SECONDS)
-                .until(done::get);
+        waitUntil(done::get);
         assertTrue(done.get());
         assertFalse(failed.get());
     }
@@ -147,11 +140,9 @@ class JobExecutorTest {
                 .build();
         val execId = exec.schedule(Collections.singletonList(topology), new IntResponseCombiner(), r -> {});
         log.debug("Waiting");
-        Thread.sleep(1000);
+        delay(Duration.ofSeconds(1));
         exec.cancel(execId);
-        Awaitility.await()
-                .timeout(300, TimeUnit.SECONDS)
-                .until(done::get);
+        waitUntil(done::get);
         assertTrue(done.get());
         assertFalse(failed.get());
     }

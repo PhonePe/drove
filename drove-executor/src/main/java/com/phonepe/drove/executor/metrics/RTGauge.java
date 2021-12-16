@@ -17,7 +17,7 @@ public abstract class RTGauge<T> implements Gauge<T>, SignalConsumer<Statistics>
     private final AtomicReference<T> value;
     private final T defaultValue;
 
-    public RTGauge(T defaultValue) {
+    protected RTGauge(T defaultValue) {
         this.value = new AtomicReference<>(defaultValue);
         this.defaultValue = defaultValue;
     }

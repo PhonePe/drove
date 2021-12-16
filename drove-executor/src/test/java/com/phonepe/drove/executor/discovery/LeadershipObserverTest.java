@@ -8,16 +8,15 @@ import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,10 +35,7 @@ class LeadershipObserverTest {
                                                                 new ControllerNodeData("h2", 3000, new Date(), true)));
         val obs = new LeadershipObserver(nds);
         obs.start();
-        Awaitility.await()
-                .pollDelay(java.time.Duration.ofSeconds(1))
-                .timeout(8, TimeUnit.SECONDS)
-                .until(() -> obs.leader().isPresent());
+        waitUntil(() -> obs.leader().isPresent());
         val leader = obs.leader().orElse(null);
         assertNotNull(leader);
         assertTrue(leader.isLeader());
@@ -55,10 +51,7 @@ class LeadershipObserverTest {
                                                                 new ControllerNodeData("h2", 3000, new Date(), false)));
         val obs = new LeadershipObserver(nds);
         obs.start();
-        Awaitility.await()
-                .pollDelay(java.time.Duration.ofSeconds(1))
-                .timeout(8, TimeUnit.SECONDS)
-                .until(() -> obs.leader().isEmpty());
+        waitUntil(() -> obs.leader().isEmpty());
         val leader = obs.leader().orElse(null);
         assertNull(leader);
         obs.stop();
@@ -92,10 +85,7 @@ class LeadershipObserverTest {
         obs.start();
 
         {
-            Awaitility.await()
-                    .pollDelay(java.time.Duration.ofSeconds(1))
-                    .timeout(8, TimeUnit.SECONDS)
-                    .until(() -> ctr.get() == 2);
+            waitUntil(() -> ctr.get() == 2);
             val leader = obs.leader().orElse(null);
 
             assertNotNull(leader);
@@ -103,10 +93,7 @@ class LeadershipObserverTest {
             assertEquals("h2", leader.getHostname());
         }
         {
-            Awaitility.await()
-                    .pollDelay(java.time.Duration.ofSeconds(1))
-                    .timeout(8, TimeUnit.SECONDS)
-                    .until(() -> ctr.get() == 3);
+            waitUntil(() -> ctr.get() == 3);
             val leader = obs.leader().orElse(null);
 
             assertNotNull(leader);
@@ -114,10 +101,7 @@ class LeadershipObserverTest {
             assertEquals("h1", leader.getHostname());
         }
         {
-            Awaitility.await()
-                    .pollDelay(java.time.Duration.ofSeconds(1))
-                    .timeout(8, TimeUnit.SECONDS)
-                    .until(() -> ctr.get() > 3);
+            waitUntil(() -> ctr.get() > 3);
             val leader = obs.leader().orElse(null);
             assertNull(leader);
         }
@@ -132,10 +116,7 @@ class LeadershipObserverTest {
                 List.of(new ExecutorNodeData("h", 4000, new Date(), null, null, null, false)));
         val obs = new LeadershipObserver(nds);
         obs.start();
-        Awaitility.await()
-                .pollDelay(java.time.Duration.ofSeconds(1))
-                .timeout(8, TimeUnit.SECONDS)
-                .until(() -> obs.leader().isEmpty());
+        waitUntil(() -> obs.leader().isEmpty());
         val leader = obs.leader().orElse(null);
         assertNull(leader);
         obs.stop();

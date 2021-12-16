@@ -10,6 +10,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -19,6 +20,7 @@ import javax.inject.Singleton;
  */
 @Slf4j
 @Singleton
+@Order(50)
 public class ExecutorInstanceStateChangeNotifier implements Managed {
     private final ResourceDB resourceDB;
     private final ExecutorCommunicator communicator;

@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  *
  */
-@Order(20)
+@Order(30)
 @Slf4j
 @Singleton
 public class LeadershipObserver implements Managed {

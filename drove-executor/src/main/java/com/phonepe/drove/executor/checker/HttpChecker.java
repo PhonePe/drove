@@ -47,7 +47,7 @@ public class HttpChecker implements Checker {
         this.requestTimeout = Duration.ofMillis(
                 Objects.requireNonNullElse(checkSpec.getTimeout(), io.dropwizard.util.Duration.seconds(1))
                         .toMilliseconds());
-        log.info("URI for healthcheck: {}", uri);
+        log.debug("URI for healthcheck: {}", uri);
     }
 
     @Override

@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 @Singleton
-@Order(10)
+@Order(40)
 public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ExecutorIdManager executorIdManager;
     private final NodeDataStore nodeDataStore;

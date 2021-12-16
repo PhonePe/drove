@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 @Singleton
-@Order(5)
+@Order(10)
 @Slf4j
 public class ExecutorIdManager implements Managed, ServerLifecycleListener {
     private final AtomicInteger port;

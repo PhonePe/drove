@@ -11,13 +11,13 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  */
 class InstanceLogHandlerTest {
-
 
     @Test
     void testLogging() {
@@ -48,6 +48,8 @@ class InstanceLogHandlerTest {
         IntStream.rangeClosed(1, 10)
                 .forEach(i -> logHandler.onNext(new Frame(StreamType.STDERR,
                                                           ("Message " + i).getBytes(StandardCharsets.UTF_8))));
+        waitUntil(() -> stderrMessagesCount.get() == 10);
+
         assertEquals(100, stdoutMessagesCount.get());
         assertEquals(10, stderrMessagesCount.get());
     }

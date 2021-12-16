@@ -2,7 +2,7 @@ package com.phonepe.drove.executor.discovery;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.Guice;
-import com.phonepe.drove.executor.AbstractExecutorBaseTest;
+import com.phonepe.drove.executor.AbstractExecutorTestBase;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -21,14 +21,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.awaitility.Awaitility.await;
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -36,7 +35,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-class NodeDataUpdaterTest extends AbstractExecutorBaseTest {
+class NodeDataUpdaterTest extends AbstractExecutorTestBase {
 
     @Test
     @SneakyThrows
@@ -76,9 +75,7 @@ class NodeDataUpdaterTest extends AbstractExecutorBaseTest {
                                                                                                  .collect(Collectors.toUnmodifiableSet()),
                                                                                          128_000_000)))));
         {
-            await()
-                    .pollInterval(Duration.ofSeconds(1))
-                    .until(() -> updateCounter.get() == 2);
+            waitUntil(() -> updateCounter.get() == 2);
             val nodes = nds.nodes(NodeType.EXECUTOR);
             assertFalse(nodes.isEmpty());
             val node = nodes.get(0);
@@ -104,9 +101,7 @@ class NodeDataUpdaterTest extends AbstractExecutorBaseTest {
 
         blm.blacklist();
         {
-            await()
-                    .pollInterval(Duration.ofSeconds(1))
-                    .until(() -> updateCounter.get() == 4);
+            waitUntil(() -> updateCounter.get() == 4);
             val nodes = nds.nodes(NodeType.EXECUTOR);
             assertFalse(nodes.isEmpty());
             val node = nodes.get(0);
@@ -131,9 +126,7 @@ class NodeDataUpdaterTest extends AbstractExecutorBaseTest {
     }
 
     private void validateSteadyState(AtomicInteger updateCounter, TestNodeDataStore nds, int updateCount) {
-        await()
-                .pollInterval(Duration.ofSeconds(1))
-                .until(() -> updateCounter.get() == updateCount);
+        waitUntil(() -> updateCounter.get() == updateCount);
         val nodes = nds.nodes(NodeType.EXECUTOR);
         assertFalse(nodes.isEmpty());
         val node = nodes.get(0);

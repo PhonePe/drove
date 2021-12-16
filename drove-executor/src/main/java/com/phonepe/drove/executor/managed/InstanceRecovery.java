@@ -24,7 +24,7 @@ import java.util.Collections;
  */
 @Singleton
 @Slf4j
-@Order(10)
+@Order(70)
 public class InstanceRecovery implements Managed {
     private final InstanceEngine engine;
     private final ObjectMapper mapper;

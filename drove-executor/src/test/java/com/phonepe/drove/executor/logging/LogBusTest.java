@@ -3,11 +3,10 @@ package com.phonepe.drove.executor.logging;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.awaitility.Awaitility.await;
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -33,9 +32,7 @@ class LogBusTest {
         };
         bus.registerLogHandler(listener);
         generateLogs(bus);
-        await().forever()
-                        .pollInterval(Duration.ofSeconds(1))
-                                .until(() -> ctr.get() == 100);
+        waitUntil(() -> ctr.get() == 100);
         assertEquals(100, ctr.get());
         bus.unregisterLogHandler(listener);
         generateLogs(bus);
