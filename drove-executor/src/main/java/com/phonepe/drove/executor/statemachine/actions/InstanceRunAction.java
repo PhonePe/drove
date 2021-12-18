@@ -58,10 +58,9 @@ public class InstanceRunAction extends InstanceAction {
         val client = context.getClient();
         val image = instanceSpec.getExecutable().accept(DockerCoordinates::getUrl);
 
-        try (val containerCmd = client.createContainerCmd(UUID.randomUUID().toString())) {
+        try (val containerCmd = client.createContainerCmd(image)) {
             containerCmd
-                    .withImage(image)
-                    .withName(instanceSpec.getAppId() + UUID.randomUUID());
+                    .withName(instanceSpec.getAppId() + "-" + instanceSpec.getInstanceId());
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any stats
