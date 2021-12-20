@@ -247,7 +247,7 @@ public class ContainerStatsObserver implements Managed {
     private <T> LongGauge<T> gauge(final String name, InstanceInfo instanceInfo, ToLongFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
         return metricRegistry.register(metricName,
-                                       new LongGauge<T>(metricName) {
+                                       new LongGauge<T>() {
                                            @Override
                                            public void consume(T data) {
                                                setValue(generator.applyAsLong(data));

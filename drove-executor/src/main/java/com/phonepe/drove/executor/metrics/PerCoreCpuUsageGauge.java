@@ -40,7 +40,7 @@ public class PerCoreCpuUsageGauge implements Gauge<Double>, SignalConsumer<Stati
             currUsage.set(new CPUUsage(0L, 0L));
             return;
         }
-        val totalUsage = (long) Objects.requireNonNullElse(cpuStats.getCpuUsage().getTotalUsage(), 0L);
+        val totalUsage = (long)cpuStats.getCpuUsage().getTotalUsage();
         val systemUsage = (long) Objects.requireNonNullElse(cpuStats.getSystemCpuUsage(), 0L);
         if (null != currUsage.get()) {
             val prev = currUsage.get();
