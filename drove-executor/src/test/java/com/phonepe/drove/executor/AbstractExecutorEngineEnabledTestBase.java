@@ -4,7 +4,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.*;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
  */
 public class AbstractExecutorEngineEnabledTestBase extends AbstractExecutorTestBase {
     @Inject
-    protected ResourceDB resourceDB;
+    protected ResourceManager resourceDB;
 
     @Inject
     protected BlacklistingManager blacklistingManager;
@@ -55,7 +55,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractExecutorTestB
             @Singleton
             public InstanceEngine engine(
                     final Injector injector,
-                    final ResourceDB resourceDB,
+                    final ResourceManager resourceDB,
                     final ExecutorIdManager executorIdManager,
                     final BlacklistingManager blacklistManager) {
                 val executorService = Executors.newSingleThreadExecutor();
@@ -69,9 +69,9 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractExecutorTestB
             }
         });
         injector.injectMembers(this);
-        resourceDB.populateResources(Map.of(0, new ResourceDB.NodeInfo(IntStream.rangeClosed(0, 7)
+        resourceDB.populateResources(Map.of(0, new ResourceManager.NodeInfo(IntStream.rangeClosed(0, 7)
                                                                                .boxed()
                                                                                .collect(Collectors.toUnmodifiableSet()),
-                                                                       16_000_000)));
+                                                                            16_000_000)));
     }
 }

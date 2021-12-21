@@ -7,7 +7,7 @@ import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -40,7 +40,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ExecutorIdManager executorIdManager;
     private final NodeDataStore nodeDataStore;
-    private final ResourceDB resourceDB;
+    private final ResourceManager resourceDB;
     private final InstanceEngine engine;
     private final ResourceConfig resourceConfig;
     private final BlacklistingManager blacklistingManager;
@@ -54,7 +54,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     public NodeDataUpdater(
             ExecutorIdManager executorIdManager,
             NodeDataStore nodeDataStore,
-            ResourceDB resourceDB,
+            ResourceManager resourceDB,
             Environment environment,
             InstanceEngine engine,
             ResourceConfig resourceConfig,

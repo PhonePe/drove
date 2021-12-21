@@ -1,34 +1,28 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.AbstractTestBase;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.common.CommonTestUtils.set;
+import static com.phonepe.drove.executor.TestingUtils.resourceConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  */
-class NumaCtlBasedResourceLoaderTest {
+class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
 
     @SneakyThrows
     @Test
     void testBasicParsing() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(Set.of(0, 1));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
-        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
+        val rl = new NumaCtlBasedResourceLoader(resourceConfig());
 
         val info = rl.parseCommandOutput(
                 readLinesFromFile("/numactl-resource-loader-test/dualnode.txt"));
@@ -40,19 +34,10 @@ class NumaCtlBasedResourceLoaderTest {
         assertEquals(174158L, info.get(1).getMemoryInMB());
     }
 
-    private List<String> readLinesFromFile(String fileName) throws IOException, URISyntaxException {
-        return Files.readAllLines(Paths.get(getClass().getResource(fileName)
-                                                    .toURI()));
-    }
-
     @SneakyThrows
     @Test
     void testNodeNoData() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(Set.of(0, 1));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
-        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
+        val rl = new NumaCtlBasedResourceLoader(resourceConfig());
 
         val info = rl.parseCommandOutput(readLinesFromFile(
                 "/numactl-resource-loader-test/nodata.txt"));
@@ -63,11 +48,7 @@ class NumaCtlBasedResourceLoaderTest {
     @SneakyThrows
     @Test
     void testInvalidNdoeData() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(Set.of(0, 1));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
-        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
+        val rl = new NumaCtlBasedResourceLoader(resourceConfig());
 
         val info = rl.parseCommandOutput(readLinesFromFile(
                 "/numactl-resource-loader-test/no-cores.txt"));
@@ -79,11 +60,7 @@ class NumaCtlBasedResourceLoaderTest {
     @SneakyThrows
     @Test
     void testNegativeNdoeData() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(Set.of(0, 1));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
-        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
+        val rl = new NumaCtlBasedResourceLoader(resourceConfig());
 
         val info = rl.parseCommandOutput(readLinesFromFile(
                 "/numactl-resource-loader-test/invalidnode.txt"));
@@ -94,7 +71,7 @@ class NumaCtlBasedResourceLoaderTest {
     @Test
     void testAllCoresReserved() {
         val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(IntStream.rangeClosed(0, 19).boxed().collect(Collectors.toUnmodifiableSet()));
+        resourceConfig.setOsCores(set(19));
         resourceConfig.setExposedMemPercentage(90);
         resourceConfig.setTags(Set.of("test-machine"));
         val rl = new NumaCtlBasedResourceLoader(resourceConfig);

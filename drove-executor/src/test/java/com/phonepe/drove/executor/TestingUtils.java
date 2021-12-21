@@ -10,6 +10,7 @@ import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
@@ -160,5 +161,13 @@ public class TestingUtils {
             assertEquals(MessageDeliveryStatus.ACCEPTED, engine.handleMessage(stopInstanceMessage).getStatus());
             waitUntil(() -> engine.currentState(instanceId).isEmpty());
         }
+    }
+
+    public static ResourceConfig resourceConfig() {
+        val resourceConfig = new ResourceConfig();
+        resourceConfig.setOsCores(Set.of(0, 1));
+        resourceConfig.setExposedMemPercentage(90);
+        resourceConfig.setTags(Set.of("test-machine"));
+        return resourceConfig;
     }
 }

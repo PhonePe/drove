@@ -21,7 +21,7 @@ import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import io.dropwizard.setup.Environment;
 import lombok.val;
@@ -48,7 +48,7 @@ public class ExecutorCoreModule extends AbstractModule {
     public InstanceEngine engine(
             final Environment environment,
             final Injector injector,
-            final ResourceDB resourceDB,
+            final ResourceManager resourceDB,
             final ExecutorIdManager executorIdManager,
             final BlacklistingManager blacklistManager,
             final DockerClient client) {

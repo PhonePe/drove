@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Singleton
-public class ResourceDB {
+public class ResourceManager {
     public enum ResourceLockType {
         SOFT,
         HARD
@@ -59,6 +59,10 @@ public class ResourceDB {
 
     @MonitoredFunction
     public synchronized boolean lockResources(final ResourceUsage usage) {
+        if(resourceLocks.containsKey(usage.getId())) {
+            log.error("Resources already allocated for: {}", usage.getId());
+            return false;
+        }
         val resourceRequirements = usage.getUsedResources();
         if (!nodes.keySet().containsAll(resourceRequirements.keySet())) {
             return false;
@@ -84,12 +88,13 @@ public class ResourceDB {
     }
 
     @MonitoredFunction
-    public synchronized void reclaimResources(String id) {
-        val usage = resourceLocks.get(id);
-        if (null == usage) {
+    public synchronized boolean reclaimResources(String id) {
+        if(!resourceLocks.containsKey(id)) {
             log.warn("No recorded usage for id: {}", id);
-            return;
+            return false;
         }
+
+        val usage = resourceLocks.get(id);
         val currNodes = new HashMap<>(nodes);
         val resourceRequirements = usage.getUsedResources();
         resourceRequirements
@@ -101,6 +106,7 @@ public class ResourceDB {
         nodes = Map.copyOf(currNodes);
         resourceLocks.remove(id);
         resourceUpdated.dispatch(calculateResources());
+        return true;
     }
 
     @MonitoredFunction

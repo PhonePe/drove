@@ -7,7 +7,7 @@ import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -45,11 +45,11 @@ class NodeDataUpdaterTest extends AbstractExecutorTestBase {
         val nds = new TestNodeDataStore();
         nds.onNodeDataUpdate().connect(nodeData -> updateCounter.incrementAndGet());
         //when(nds.updateNodeData(any(NodeData.class));
-        val rdb = new ResourceDB();
-        rdb.populateResources(Map.of(0, new ResourceDB.NodeInfo(IntStream.rangeClosed(0, 20)
+        val rdb = new ResourceManager();
+        rdb.populateResources(Map.of(0, new ResourceManager.NodeInfo(IntStream.rangeClosed(0, 20)
                                                                         .boxed()
                                                                         .collect(Collectors.toUnmodifiableSet()),
-                                                                512_000_000)));
+                                                                     512_000_000)));
         val env = mock(Environment.class);
         when(env.lifecycle()).thenReturn(new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test")));
         val blm = new BlacklistingManager();
@@ -69,11 +69,11 @@ class NodeDataUpdaterTest extends AbstractExecutorTestBase {
         when(server.getConnectors()).thenReturn(new ServerConnector[] { conn });
         ndu.serverStarted(server);
         validateSteadyState(updateCounter, nds, 1);
-        assertTrue(rdb.lockResources(new ResourceDB.ResourceUsage("test", ResourceDB.ResourceLockType.HARD,
-                                                       Map.of(0, new ResourceDB.NodeInfo(IntStream.rangeClosed(0, 10)
+        assertTrue(rdb.lockResources(new ResourceManager.ResourceUsage("test", ResourceManager.ResourceLockType.HARD,
+                                                                       Map.of(0, new ResourceManager.NodeInfo(IntStream.rangeClosed(0, 10)
                                                                                                  .boxed()
                                                                                                  .collect(Collectors.toUnmodifiableSet()),
-                                                                                         128_000_000)))));
+                                                                                                              128_000_000)))));
         {
             waitUntil(() -> updateCounter.get() == 2);
             val nodes = nds.nodes(NodeType.EXECUTOR);

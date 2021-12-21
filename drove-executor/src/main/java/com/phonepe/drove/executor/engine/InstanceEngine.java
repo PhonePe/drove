@@ -9,7 +9,7 @@ import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
@@ -42,7 +42,7 @@ public class InstanceEngine implements Closeable {
     private final ExecutorIdManager executorIdManager;
     private final ExecutorService service;
     private final InstanceActionFactory actionFactory;
-    private final ResourceDB resourceDB;
+    private final ResourceManager resourceDB;
     private final BlacklistingManager blacklistManager;
     private final Map<String, SMInfo> stateMachines;
     private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
@@ -52,7 +52,7 @@ public class InstanceEngine implements Closeable {
     public InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
             InstanceActionFactory actionFactory,
-            ResourceDB resourceDB, BlacklistingManager blacklistManager, DockerClient client) {
+            ResourceManager resourceDB, BlacklistingManager blacklistManager, DockerClient client) {
         this.executorIdManager = executorIdManager;
         this.service = service;
         this.actionFactory = actionFactory;
@@ -176,7 +176,7 @@ public class InstanceEngine implements Closeable {
 
 
     private boolean lockRequiredResources(InstanceSpec spec) {
-        val resourceUsage = new HashMap<Integer, ResourceDB.NodeInfo>();
+        val resourceUsage = new HashMap<Integer, ResourceManager.NodeInfo>();
         spec.getResources()
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                     @Override
@@ -202,14 +202,14 @@ public class InstanceEngine implements Closeable {
                         return null;
                     }
                 }));
-        return resourceDB.lockResources(new ResourceDB.ResourceUsage(spec.getInstanceId(),
-                                                                     ResourceDB.ResourceLockType.HARD,
-                                                                     resourceUsage));
+        return resourceDB.lockResources(new ResourceManager.ResourceUsage(spec.getInstanceId(),
+                                                                          ResourceManager.ResourceLockType.HARD,
+                                                                          resourceUsage));
     }
 
-    private ResourceDB.NodeInfo nodeInfo(ResourceDB.NodeInfo nodeInfo) {
+    private ResourceManager.NodeInfo nodeInfo(ResourceManager.NodeInfo nodeInfo) {
         return nodeInfo == null
-               ? new ResourceDB.NodeInfo(new HashSet<>(), 0L)
+               ? new ResourceManager.NodeInfo(new HashSet<>(), 0L)
                : nodeInfo;
     }
 

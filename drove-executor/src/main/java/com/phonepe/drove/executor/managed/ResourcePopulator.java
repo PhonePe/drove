@@ -1,6 +1,6 @@
 package com.phonepe.drove.executor.managed;
 
-import com.phonepe.drove.executor.resourcemgmt.ResourceDB;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.NumaCtlBasedResourceLoader;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
 @Singleton
 @Order(0)
 public class ResourcePopulator implements Managed {
-    private final ResourceDB resourceDB;
+    private final ResourceManager resourceDB;
     private final NumaCtlBasedResourceLoader resourceLoader;
 
     @Inject
     public ResourcePopulator(
-            ResourceDB resourceDB,
+            ResourceManager resourceDB,
             NumaCtlBasedResourceLoader resourceLoader) {
         this.resourceDB = resourceDB;
         this.resourceLoader = resourceLoader;

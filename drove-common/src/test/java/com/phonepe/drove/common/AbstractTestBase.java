@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static com.phonepe.drove.common.CommonUtils.configureMapper;
 
@@ -29,5 +30,10 @@ public class AbstractTestBase {
     protected  <T> T readJsonResource(final String jsonFile, final Class<T> clazz) {
         return MAPPER.readValue(Files.readAllBytes(Paths.get(getClass().getResource(jsonFile).toURI())),
                                 clazz);
+    }
+
+    @SneakyThrows
+    protected List<String> readLinesFromFile(String fileName) {
+        return Files.readAllLines(Paths.get(getClass().getResource(fileName).toURI()));
     }
 }

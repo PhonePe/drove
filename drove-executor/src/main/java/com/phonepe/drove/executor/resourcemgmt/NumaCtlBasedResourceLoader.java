@@ -27,7 +27,7 @@ public class NumaCtlBasedResourceLoader {
     }
 
 
-    public Map<Integer, ResourceDB.NodeInfo> parseCommandOutput(List<String> lines) {
+    public Map<Integer, ResourceManager.NodeInfo> parseCommandOutput(List<String> lines) {
         val nodePattern = Pattern.compile("\\d+");
         val cores = lines.stream()
                 .filter(line -> line.matches("node \\d+ cpus:.*"))
@@ -60,7 +60,7 @@ public class NumaCtlBasedResourceLoader {
         }
         val resources = cores.entrySet()
                 .stream()
-                .map(e -> new Pair<>(e.getKey(), new ResourceDB.NodeInfo(e.getValue(), mem.get(e.getKey()))))
+                .map(e -> new Pair<>(e.getKey(), new ResourceManager.NodeInfo(e.getValue(), mem.get(e.getKey()))))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
         if (resources.size() > 0) {
             log.info("Found resources:");
