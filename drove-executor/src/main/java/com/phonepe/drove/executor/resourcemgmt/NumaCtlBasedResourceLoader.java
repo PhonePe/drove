@@ -33,14 +33,14 @@ public class NumaCtlBasedResourceLoader {
                 .filter(line -> line.matches("node \\d+ cpus:.*"))
                 .map(line -> {
                     val node = nodeNum(line);
-                    if(-1 == node) {
+                    if (-1 == node) {
                         throw new IllegalStateException("Did not find any node");
                     }
                     val cpus = cores(line);
                     return new Pair<>(node, cpus);
                 })
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-        val exposedMemPercentage = ((double)resourceConfig.getExposedMemPercentage()) / 100.0;
+        val exposedMemPercentage = ((double) resourceConfig.getExposedMemPercentage()) / 100.0;
         val mem = lines.stream()
                 .filter(line -> line.matches("node \\d+ size: .*"))
                 .map(line -> {
@@ -52,17 +52,30 @@ public class NumaCtlBasedResourceLoader {
                     if (!m1.find()) {
                         throw new IllegalStateException();
                     }
-                    return new Pair<>(node, (long)(Long.parseLong(m1.group()) * exposedMemPercentage));
+                    return new Pair<>(node, (long) (Long.parseLong(m1.group()) * exposedMemPercentage));
                 })
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-        if(!Sets.difference(cores.keySet(), mem.keySet()).isEmpty()) {
-            throw new IllegalStateException();
+        if (!Sets.difference(cores.keySet(), mem.keySet()).isEmpty()) {
+            throw new IllegalStateException("Mismatch between memory nodes and cores");
         }
         val resources = cores.entrySet()
                 .stream()
                 .map(e -> new Pair<>(e.getKey(), new ResourceDB.NodeInfo(e.getValue(), mem.get(e.getKey()))))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-        log.info("Found resources: {}", resources);
+        if (resources.size() > 0) {
+            log.info("Found resources:");
+            resources.forEach((id, info) -> log.info(
+                    "    Node " + id
+                            + ": Cores: " + info.getAvailableCores()
+                            .stream()
+                            .sorted()
+                            .collect(Collectors.toUnmodifiableList())
+                            + " Memory (MB): " + info.getMemoryInMB()));
+
+        }
+        else {
+            log.error("No usable resources found");
+        }
         return resources;
     }
 
@@ -71,6 +84,7 @@ public class NumaCtlBasedResourceLoader {
                 .findAll(Pattern.compile("\\p{Digit}+"))
                 .findAny()
                 .map(m -> Integer.parseInt(m.group()))
+                .filter(i -> i >= 0)
                 .orElse(-1);
     }
 
@@ -78,6 +92,7 @@ public class NumaCtlBasedResourceLoader {
         return new Scanner(new StringReader(line.substring(line.indexOf(':'))))
                 .findAll(Pattern.compile("\\p{Digit}+"))
                 .map(r -> Integer.parseInt(r.group()))
+                .filter(i -> i >= 0)
                 .filter(core -> !resourceConfig.getOsCores().contains(core))
                 .collect(Collectors.toUnmodifiableSet());
     }
