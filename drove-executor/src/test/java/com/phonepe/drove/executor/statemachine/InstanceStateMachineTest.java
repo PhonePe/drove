@@ -6,7 +6,7 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.AbstractExecutorTestBase;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
-import com.phonepe.drove.executor.TestingUtils;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -28,7 +28,7 @@ import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 class InstanceStateMachineTest extends AbstractExecutorTestBase {
     @Test
     void test() {
-        val instanceSpec = TestingUtils.testSpec();
+        val instanceSpec = ExecutorTestingUtils.testSpec();
         val sm = new InstanceStateMachine(UUID.randomUUID().toString(),
                                           instanceSpec,
                                           StateData.create(InstanceState.PROVISIONING, null),

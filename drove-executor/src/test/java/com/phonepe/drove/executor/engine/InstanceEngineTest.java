@@ -9,7 +9,7 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
-import com.phonepe.drove.executor.TestingUtils;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -39,7 +39,7 @@ class InstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
 
     @Test
     void testBasicRun() {
-        val spec = TestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testSpec();
         val instanceId = spec.getInstanceId();
         val stateChanges = new HashSet<InstanceState>();
         engine.onStateChange().connect(state -> {

@@ -11,7 +11,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import static com.phonepe.drove.common.CommonTestUtils.executor;
-import static com.phonepe.drove.executor.TestingUtils.testSpec;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testSpec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;

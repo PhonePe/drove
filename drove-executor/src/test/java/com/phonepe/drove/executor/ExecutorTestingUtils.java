@@ -42,15 +42,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @Slf4j
 @UtilityClass
-public class TestingUtils {
+public class ExecutorTestingUtils {
     public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.1";
 
     public static InstanceSpec testSpec() {
+        return testSpec(ExecutorTestingUtils.IMAGE_NAME);
+    }
+
+    public static InstanceSpec testSpec(final String imageName) {
         return new InstanceSpec("T001",
                                 "TEST_SPEC",
                                 UUID.randomUUID().toString(),
-                                new DockerCoordinates(TestingUtils.IMAGE_NAME,
-                                        Duration.seconds(100)),
+                                new DockerCoordinates(imageName, Duration.seconds(100)),
                                 ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                 Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
@@ -86,6 +89,10 @@ public class TestingUtils {
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
+        return createExecutorInfo(wm.getHttpPort());
+    }
+
+    public static ExecutorInstanceInfo createExecutorInfo(int port) {
         return new ExecutorInstanceInfo("TEST_APP_1",
                                         "TEST_APP",
                                         "TEST_INSTANCE",
@@ -95,7 +102,7 @@ public class TestingUtils {
                                                                           "main",
                                                                           new InstancePort(
                                                                                   8080,
-                                                                                  wm.getHttpPort(),
+                                                                                  port,
                                                                                   PortType.HTTP))),
                                         List.of(new CPUAllocation(Collections.singletonMap(1,
                                                                                            Collections.singleton(0))),
@@ -136,7 +143,7 @@ public class TestingUtils {
     }
 
     public static<R> R executeOnceContainerStarted(final InstanceEngine engine, final Function<InstanceInfo, R> check) {
-        val spec = TestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testSpec();
         val instanceId = spec.getInstanceId();
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),

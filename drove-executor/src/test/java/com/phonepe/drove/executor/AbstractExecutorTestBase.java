@@ -25,7 +25,7 @@ public class AbstractExecutorTestBase extends AbstractTestBase {
 
     @BeforeAll
     static void ensureDockerImage() {
-        val imageName = TestingUtils.IMAGE_NAME;
+        val imageName = ExecutorTestingUtils.IMAGE_NAME;
         log.info("Ensuring docker image {} exists", imageName);
         try {
             DOCKER_CLIENT.pullImageCmd(imageName)

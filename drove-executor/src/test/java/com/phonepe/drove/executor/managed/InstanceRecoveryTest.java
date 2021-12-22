@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.managed;
 import com.github.dockerjava.api.model.HostConfig;
 import com.google.common.base.Strings;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
-import com.phonepe.drove.executor.TestingUtils;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -33,7 +33,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     @SneakyThrows
     void testRecoverContainers() {
-        val spec = TestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testSpec();
 
         var containerId = "";
 
@@ -51,7 +51,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         val instanceId = spec.getInstanceId();
         try {
             val createContainerResponse = DOCKER_CLIENT
-                    .createContainerCmd(TestingUtils.IMAGE_NAME)
+                    .createContainerCmd(ExecutorTestingUtils.IMAGE_NAME)
                     .withName("RecoveryTest")
                     .withLabels(Map.of(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceId,
                                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(spec),
@@ -79,7 +79,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     void testRecoverNonDroveContainers() {
         var containerId = "";
         try (val createCmd = DOCKER_CLIENT.createContainerCmd(UUID.randomUUID().toString())) {
-            containerId = createCmd.withImage(TestingUtils.IMAGE_NAME)
+            containerId = createCmd.withImage(ExecutorTestingUtils.IMAGE_NAME)
                     .withName("test-container")
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec()

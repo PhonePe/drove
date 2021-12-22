@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.phonepe.drove.executor.TestingUtils.checkSpec;
-import static com.phonepe.drove.executor.TestingUtils.createExecutorInfo;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.checkSpec;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.createExecutorInfo;
 import static org.junit.jupiter.api.Assertions.*;
 
 @WireMockTest

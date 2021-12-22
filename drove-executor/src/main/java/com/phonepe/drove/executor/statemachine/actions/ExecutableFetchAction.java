@@ -31,6 +31,7 @@ public class ExecutableFetchAction extends InstanceAction {
             return StateData.create(InstanceState.STARTING, currentState.getData());
         }
         catch (InterruptedException e) {
+            log.info("Action has been interrupted");
             Thread.currentThread().interrupt();
             return StateData.errorFrom(currentState,
                                        InstanceState.PROVISIONING_FAILED,

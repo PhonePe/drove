@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
-import static com.phonepe.drove.executor.TestingUtils.executeOnceContainerStarted;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.executeOnceContainerStarted;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

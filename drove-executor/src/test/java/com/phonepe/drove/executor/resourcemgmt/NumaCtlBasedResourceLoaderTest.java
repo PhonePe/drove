@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonTestUtils.set;
-import static com.phonepe.drove.executor.TestingUtils.resourceConfig;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.resourceConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
