@@ -71,9 +71,9 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
     @Test
     void testAllCoresReserved() {
         val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(set(19));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
+        resourceConfig.setOsCores(set(19))
+                .setExposedMemPercentage(90)
+                .setTags(Set.of("test-machine"));
         val rl = new NumaCtlBasedResourceLoader(resourceConfig);
 
         val info = rl.parseCommandOutput(
@@ -87,10 +87,10 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
     @SneakyThrows
     @Test
     void testMemMismatch() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(IntStream.rangeClosed(0, 19).boxed().collect(Collectors.toUnmodifiableSet()));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
+        val resourceConfig = new ResourceConfig()
+                .setOsCores(IntStream.rangeClosed(0, 19).boxed().collect(Collectors.toUnmodifiableSet()))
+                .setExposedMemPercentage(90)
+                .setTags(Set.of("test-machine"));
         val rl = new NumaCtlBasedResourceLoader(resourceConfig);
 
         val lines = readLinesFromFile("/numactl-resource-loader-test/mismatch.txt");

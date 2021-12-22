@@ -20,9 +20,9 @@ class ZookeeperManagerTest {
     void testZkManager() {
         try(val tc = new TestingCluster(1)) {
             tc.start();
-            val zkConfig = new ZkConfig();
-            zkConfig.setConnectionString(tc.getConnectString());
-            zkConfig.setNameSpace("drove");
+            val zkConfig = new ZkConfig()
+                    .setConnectionString(tc.getConnectString())
+                    .setNameSpace("drove");
             val curator = CommonUtils.buildCurator(zkConfig);
             val xkm = new ZookeeperManager(curator);
             xkm.start();

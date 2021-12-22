@@ -164,10 +164,9 @@ public class TestingUtils {
     }
 
     public static ResourceConfig resourceConfig() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(Set.of(0, 1));
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
-        return resourceConfig;
+        return new ResourceConfig()
+                .setOsCores(Set.of(0, 1))
+                .setExposedMemPercentage(90)
+                .setTags(Set.of("test-machine"));
     }
 }

@@ -19,10 +19,10 @@ class ResourcePopulatorTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     @SneakyThrows
     void testResourcePopulator() {
-        val resourceConfig = new ResourceConfig();
-        resourceConfig.setOsCores(Set.of());
-        resourceConfig.setExposedMemPercentage(90);
-        resourceConfig.setTags(Set.of("test-machine"));
+        val resourceConfig = new ResourceConfig()
+                .setOsCores(Set.of())
+                .setExposedMemPercentage(90)
+                .setTags(Set.of("test-machine"));
         val resourcePopulator = new ResourcePopulator(resourceDB, new NumaCtlBasedResourceLoader(resourceConfig));
         resourcePopulator.start();
         val currentState = resourceDB.currentState();

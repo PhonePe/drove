@@ -51,8 +51,8 @@ public class InstanceRecoveryAction extends InstanceAction {
                                        "No container found with drove id: " + instanceId);
         }
         val containerId = container.getId();
-        context.setDockerInstanceId(containerId);
-        context.setDockerImageId(container.getImageId());
+        context.setDockerInstanceId(containerId)
+                .setDockerImageId(container.getImageId());
         client.logContainerCmd(containerId)
                 .withTail(0)
                 .withFollowStream(true)
