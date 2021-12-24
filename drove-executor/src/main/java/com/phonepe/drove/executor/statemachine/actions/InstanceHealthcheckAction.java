@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,10 +46,14 @@ public class InstanceHealthcheckAction extends InstanceAction {
         val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheckSpec);
         log.info("Starting healthcheck");
         try {
-            val mdc = MDC.getCopyOfContextMap();
+            val currentContext = MDC.getCopyOfContextMap();
+            val mdc = null != currentContext
+                      ? currentContext
+                      : Collections.<String, String>emptyMap();
             checkerJob = executorService.scheduleWithFixedDelay(new HealthChecker(checker,
                                                                                   checkLock,
                                                                                   stateChanged,
+                                                                                  healthcheckSpec.getAttempts(),
                                                                                   currentResult,
                                                                                   mdc),
                                                                 healthcheckSpec.getInitialDelay().toMilliseconds(),
@@ -88,6 +93,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
             catch (InterruptedException e) {
                 log.info("Health check monitor thread interrupted.");
                 Thread.currentThread().interrupt();
+                return;
             }
         }
     }
@@ -127,17 +133,22 @@ public class InstanceHealthcheckAction extends InstanceAction {
         private final Checker checker;
         private final Lock lock;
         private final Condition condition;
+        private final int maxAttempts;
         private final AtomicReference<CheckResult> currentResult;
         private final Map<String, String> mdc;
+        private int attemptCount = 1;
 
         private HealthChecker(
                 Checker checker,
                 Lock lock,
                 Condition condition,
-                AtomicReference<CheckResult> currentResult, Map<String, String> mdc) {
+                int maxAttempts,
+                AtomicReference<CheckResult> currentResult,
+                Map<String, String> mdc) {
             this.checker = checker;
             this.lock = lock;
             this.condition = condition;
+            this.maxAttempts = maxAttempts;
             this.currentResult = currentResult;
             this.mdc = mdc;
         }
@@ -150,6 +161,11 @@ public class InstanceHealthcheckAction extends InstanceAction {
             try {
                 log.debug("Starting healthcheck call");
                 val result = checker.call();
+                if (result.getStatus().equals(CheckResult.Status.UNHEALTHY) && attemptCount < maxAttempts) {
+                    log.warn("Health check returned unhealthy for attempt {}", attemptCount);
+                    attemptCount++;
+                    return;
+                }
                 log.info("Health check results: {}", result);
                 currentResult.set(result);
             }

@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Slf4j
 @UtilityClass
 public class ExecutorTestingUtils {
-    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.1";
+    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.2";
 
     public static InstanceSpec testSpec() {
         return testSpec(ExecutorTestingUtils.IMAGE_NAME);

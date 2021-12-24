@@ -94,7 +94,7 @@ public class HttpChecker implements Checker {
                                                        responseBody));
         }
         catch (IOException e) {
-            return CheckResult.unhealthy("Healthcheck error from " + uri + ":" + e.getMessage());
+            return CheckResult.unhealthy("Healthcheck error from " + uri + ": " + e.getMessage());
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
