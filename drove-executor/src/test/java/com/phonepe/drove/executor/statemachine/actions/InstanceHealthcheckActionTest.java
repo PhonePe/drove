@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -13,12 +14,10 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,10 +82,7 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
                                              StateData.create(InstanceState.HEALTHY,
                                                               ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort()))));
         val endTime = new Date(new Date().getTime() + 5_000);
-        await()
-                .timeout(Duration.ofSeconds(15))
-                .pollDelay(Duration.ofSeconds(3))
-                .until(() -> new Date().after(endTime));
+        CommonTestUtils.delay(endTime);
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
     }
@@ -105,10 +101,7 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
 
                 });
         val endTime = new Date(new Date().getTime() + 5_000);
-        await()
-                .timeout(Duration.ofSeconds(15))
-                .pollDelay(Duration.ofSeconds(3))
-                .until(() -> new Date().after(endTime));
+        CommonTestUtils.delay(endTime);
         f.cancel(true);
         assertTrue(f.isCancelled());
     }
@@ -149,11 +142,9 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
         val totalDelay = (healthcheck.getAttempts() * healthcheck.getInterval().toMilliseconds())
                 + healthcheck.getInitialDelay().toMilliseconds();
         val endTime = new Date(new Date().getTime() + totalDelay + 5_000);
-        await()
-                .timeout(Duration.ofSeconds(15))
-                .pollDelay(Duration.ofSeconds(3))
-                .until(() -> new Date().after(endTime));
+        CommonTestUtils.delay(endTime);
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
     }
+
 }

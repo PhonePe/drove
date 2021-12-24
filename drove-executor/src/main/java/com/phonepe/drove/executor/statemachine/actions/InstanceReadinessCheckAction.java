@@ -1,11 +1,11 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -16,6 +16,7 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -49,7 +50,7 @@ public class InstanceReadinessCheckAction extends InstanceAction {
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
         try {
-            val result = Failsafe.with(retryPolicy)
+            val result = Failsafe.with(List.of(retryPolicy))
                     .onComplete(e -> {
                         val failure = e.getFailure();
                         if (failure != null) {

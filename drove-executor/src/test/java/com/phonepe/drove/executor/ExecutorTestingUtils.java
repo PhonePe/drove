@@ -79,7 +79,7 @@ public class ExecutorTestingUtils {
                                        Duration.seconds(1),
                                        Duration.seconds(3),
                                        3,
-                                       Duration.seconds(0)),
+                                       Duration.seconds(1)),
                                 LocalLoggingSpec.DEFAULT,
                                 Collections.emptyMap());
     }
