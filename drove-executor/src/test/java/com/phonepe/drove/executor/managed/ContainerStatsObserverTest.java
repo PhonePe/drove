@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.codahale.metrics.MetricFilter;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,7 +24,7 @@ class ContainerStatsObserverTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     @SneakyThrows
     void testStats() {
-        val statsObserver = new ContainerStatsObserver(METRIC_REGISTRY, engine, DOCKER_CLIENT, Duration.ofSeconds(1));
+        val statsObserver = new ContainerStatsObserver(METRIC_REGISTRY, engine, ExecutorTestingUtils.DOCKER_CLIENT, Duration.ofSeconds(1));
         statsObserver.start();
         val instanceId = executeOnceContainerStarted(engine, info -> {
             log.info("Container is healthy, will look for gauge to be published");

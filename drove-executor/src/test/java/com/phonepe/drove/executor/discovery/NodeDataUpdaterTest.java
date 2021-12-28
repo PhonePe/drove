@@ -2,7 +2,8 @@ package com.phonepe.drove.executor.discovery;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.Guice;
-import com.phonepe.drove.executor.AbstractExecutorTestBase;
+import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-class NodeDataUpdaterTest extends AbstractExecutorTestBase {
+class NodeDataUpdaterTest extends AbstractTestBase {
 
     @Test
     @SneakyThrows
@@ -58,7 +59,7 @@ class NodeDataUpdaterTest extends AbstractExecutorTestBase {
                                     new InjectingInstanceActionFactory(Guice.createInjector()),
                                     rdb,
                                     blm,
-                                    DOCKER_CLIENT);
+                                    ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
         val ndu = new NodeDataUpdater(eim, nds, rdb, env, ie, rCfg, blm);
         ndu.start();

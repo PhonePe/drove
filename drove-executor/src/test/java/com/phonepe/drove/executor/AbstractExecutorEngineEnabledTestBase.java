@@ -2,6 +2,7 @@ package com.phonepe.drove.executor;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.*;
+import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -22,7 +23,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-public class AbstractExecutorEngineEnabledTestBase extends AbstractExecutorTestBase {
+public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
     @Inject
     protected ResourceManager resourceDB;
 
@@ -65,7 +66,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractExecutorTestB
                         new InjectingInstanceActionFactory(injector),
                         resourceDB,
                         blacklistManager,
-                        DOCKER_CLIENT);
+                        ExecutorTestingUtils.DOCKER_CLIENT);
             }
         });
         injector.injectMembers(this);

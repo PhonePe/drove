@@ -52,11 +52,4 @@ public class CommonTestUtils {
                 .boxed()
                 .collect(Collectors.toUnmodifiableSet());
     }
-
-    public static void delay(final Date endTime) {
-        await()
-                .timeout(Duration.ofSeconds(15))
-                .pollDelay(Duration.ofSeconds(3))
-                .until(() -> new Date().after(endTime));
-    }
 }

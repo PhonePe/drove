@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor;
 
 import com.google.common.collect.ImmutableList;
+import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
@@ -32,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  *
  */
-class InstanceRunActionTest extends AbstractExecutorTestBase {
+class InstanceRunActionTest extends AbstractTestBase {
 
     @Test
     @Disabled
@@ -56,7 +57,7 @@ class InstanceRunActionTest extends AbstractExecutorTestBase {
                                             LocalLoggingSpec.DEFAULT,
                                             Collections.emptyMap());
         val executorId = CommonUtils.executorId(3000);
-        val ctx = new InstanceActionContext(executorId, instanceSpec, DOCKER_CLIENT);
+        val ctx = new InstanceActionContext(executorId, instanceSpec, ExecutorTestingUtils.DOCKER_CLIENT);
         new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new InstanceRunAction(new LogBus()).execute(ctx,

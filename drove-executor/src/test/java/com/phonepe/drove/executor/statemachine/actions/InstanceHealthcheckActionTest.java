@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.phonepe.drove.common.AbstractTestBase;
-import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -14,10 +13,12 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.util.Date;
+import java.time.Duration;
 import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.phonepe.drove.common.CommonTestUtils.delay;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testSpec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,44 +31,44 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
     @Test
     void testUsualFlow(final WireMockRuntimeInfo wm) {
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs(Scenario.STARTED)
                         .willReturn(ok())
                         .willSetStateTo("unhealthyState"));
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs("unhealthyState")
                         .willReturn(serverError())
                         .willSetStateTo("unhealthyState"));
-        ;
 
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceHealthcheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort())));
+                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
         assertEquals(InstanceState.UNHEALTHY, response.getState());
     }
 
     @Test
     void testException(final WireMockRuntimeInfo wm) {
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs(Scenario.STARTED)
                         .willReturn(ok())
                         .willSetStateTo("unhealthyState"));
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs("unhealthyState")
                         .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER))
                         .willSetStateTo("unhealthyState"));
-        ;
 
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceHealthcheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort())));
+                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
         assertEquals(InstanceState.UNHEALTHY, response.getState());
     }
 
@@ -75,14 +76,14 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
     @Test
     void testStop(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(ok()));
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceHealthcheckAction();
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                              StateData.create(InstanceState.HEALTHY,
-                                                              ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort()))));
-        val endTime = new Date(new Date().getTime() + 5_000);
-        CommonTestUtils.delay(endTime);
+                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
+        delay(Duration.ofSeconds(5));
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
     }
@@ -91,17 +92,14 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
     @Test
     void testInterruption(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(ok()));
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceHealthcheckAction();
         val f = Executors.newSingleThreadExecutor()
-                .submit(() -> {
-                    return action.execute(ctx,
-                                          StateData.create(InstanceState.HEALTHY,
-                                                           ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort())));
-
-                });
-        val endTime = new Date(new Date().getTime() + 5_000);
-        CommonTestUtils.delay(endTime);
+                .submit(() -> action.execute(ctx,
+                                         StateData.create(InstanceState.HEALTHY,
+                                                          ExecutorTestingUtils.createExecutorInfo(spec, wm))));
+        delay(Duration.ofSeconds(5));
         f.cancel(true);
         assertTrue(f.isCancelled());
     }
@@ -110,39 +108,37 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
     @SneakyThrows
     void testRecovery(final WireMockRuntimeInfo wm) {
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs(Scenario.STARTED)
                         .willReturn(ok())
                         .willSetStateTo("unhealthyState-1"));
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs("unhealthyState-1")
                         .willReturn(serverError())
                         .willSetStateTo("unhealthyState-2"));
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs("unhealthyState-2")
                         .willReturn(serverError())
                         .willSetStateTo("healthyState"));
         stubFor(get("/")
-                        .inScenario("healthchecktest")
+                        .inScenario("health-check-test")
                         .whenScenarioStateIs("healthyState")
                         .willReturn(ok())
                         .willSetStateTo("healthyState"));
-        ;
 
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
-        val ctx = new InstanceActionContext("EX1", spec, null);
+        val spec = testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceHealthcheckAction();
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                              StateData.create(InstanceState.HEALTHY,
-                                                              ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort()))));
+                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
         val healthcheck = spec.getHealthcheck();
         val totalDelay = (healthcheck.getAttempts() * healthcheck.getInterval().toMilliseconds())
                 + healthcheck.getInitialDelay().toMilliseconds();
-        val endTime = new Date(new Date().getTime() + totalDelay + 5_000);
-        CommonTestUtils.delay(endTime);
+        delay(Duration.ofMillis(totalDelay));
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
     }

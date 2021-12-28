@@ -43,11 +43,12 @@ class InstanceReadinessCheckActionTest {
                         .willReturn(ok())
                         .willSetStateTo("healthyState"));
 
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort())));
+                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
         assertEquals(InstanceState.READY, response.getState());
     }
 
@@ -55,11 +56,12 @@ class InstanceReadinessCheckActionTest {
     void testFail(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
 
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort())));
+                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
         assertEquals(InstanceState.READINESS_CHECK_FAILED, response.getState());
     }
 
@@ -68,12 +70,14 @@ class InstanceReadinessCheckActionTest {
     void testStop(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
 
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
+
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                              StateData.create(InstanceState.HEALTHY,
-                                                              ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort()))));
+                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
         delay(Duration.ofSeconds(5));
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
@@ -82,12 +86,14 @@ class InstanceReadinessCheckActionTest {
     @Test
     void testInterrupt(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
-        val ctx = new InstanceActionContext("EX1", ExecutorTestingUtils.testSpec("hello-world"), null);
+        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
+
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                              StateData.create(InstanceState.HEALTHY,
-                                                              ExecutorTestingUtils.createExecutorInfo(wm.getHttpPort()))));
+                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
         f.cancel(true);
         assertTrue(f.isCancelled());
     }

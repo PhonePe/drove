@@ -37,7 +37,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         when(leaderObserver.leader())
                 .thenReturn(Optional.of(new ControllerNodeData("localhost", wm.getHttpPort(), new Date(), true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver, MAPPER);
+        val msgSender = new RemoteControllerMessageSender(leaderObserver, AbstractTestBase.MAPPER);
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -52,7 +52,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         when(leaderObserver.leader())
                 .thenReturn(Optional.of(new ControllerNodeData("localhost", wm.getHttpPort(), new Date(), true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver, MAPPER);
+        val msgSender = new RemoteControllerMessageSender(leaderObserver, AbstractTestBase.MAPPER);
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -68,7 +68,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         when(leaderObserver.leader())
                 .thenReturn(Optional.of(new ControllerNodeData("localhost", wm.getHttpPort(), new Date(), true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver, MAPPER);
+        val msgSender = new RemoteControllerMessageSender(leaderObserver, AbstractTestBase.MAPPER);
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")

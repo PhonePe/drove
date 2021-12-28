@@ -17,7 +17,7 @@ import static com.phonepe.drove.common.CommonUtils.configureMapper;
  *
  */
 public class AbstractTestBase {
-    protected static final ObjectMapper MAPPER = new ObjectMapper();
+    public static final ObjectMapper MAPPER = new ObjectMapper();
     protected static final MetricRegistry METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("test");
 
     @BeforeAll
@@ -27,9 +27,9 @@ public class AbstractTestBase {
     }
 
     @SneakyThrows
-    protected  <T> T readJsonResource(final String jsonFile, final Class<T> clazz) {
+    protected <T> T readJsonResource(final String jsonFile, final Class<T> clazz) {
         return MAPPER.readValue(Files.readAllBytes(Paths.get(getClass().getResource(jsonFile).toURI())),
-                                clazz);
+                                                     clazz);
     }
 
     @SneakyThrows

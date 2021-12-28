@@ -2,9 +2,9 @@ package com.phonepe.drove.executor.statemachine;
 
 import com.google.inject.Guice;
 import com.google.inject.Stage;
+import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.AbstractExecutorTestBase;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -25,7 +25,7 @@ import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
  */
 @Slf4j
 @Disabled
-class InstanceStateMachineTest extends AbstractExecutorTestBase {
+class InstanceStateMachineTest extends AbstractTestBase {
     @Test
     void test() {
         val instanceSpec = ExecutorTestingUtils.testSpec();
@@ -34,7 +34,7 @@ class InstanceStateMachineTest extends AbstractExecutorTestBase {
                                           StateData.create(InstanceState.PROVISIONING, null),
                                           new InjectingInstanceActionFactory(Guice.createInjector(
                                                   Stage.DEVELOPMENT)),
-                                          DOCKER_CLIENT);
+                                          ExecutorTestingUtils.DOCKER_CLIENT);
         sm.onStateChange().connect(sd -> log.info("Current state: {}", sd));
         val done = new AtomicBoolean();
         Executors.newSingleThreadExecutor()
