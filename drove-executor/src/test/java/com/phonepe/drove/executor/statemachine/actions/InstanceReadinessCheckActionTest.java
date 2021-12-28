@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.phonepe.drove.common.CommonTestUtils.delay;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testSpec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,7 +44,7 @@ class InstanceReadinessCheckActionTest {
                         .willReturn(ok())
                         .willSetStateTo("healthyState"));
 
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val spec = testSpec("hello-world");
         val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
         val response = action.execute(ctx,
@@ -56,7 +57,7 @@ class InstanceReadinessCheckActionTest {
     void testFail(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
 
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val spec = testSpec("hello-world");
         val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
         val response = action.execute(ctx,
@@ -70,7 +71,7 @@ class InstanceReadinessCheckActionTest {
     void testStop(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
 
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val spec = testSpec("hello-world");
         val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
 
@@ -86,7 +87,7 @@ class InstanceReadinessCheckActionTest {
     @Test
     void testInterrupt(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
+        val spec = testSpec("hello-world");
         val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new InstanceReadinessCheckAction();
 

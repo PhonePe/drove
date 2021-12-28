@@ -198,13 +198,6 @@ public class InstanceRunAction extends InstanceAction {
         return 0;
     }
 
-    /*
-    new LogConfig(LogConfig.LoggingType.SYSLOG)
-                                           /*.setConfig(Map.of("mode", "non-blocking", //TODO::READ SIZE ETC FROM CONFIG
-                                                             "max-size", "10m",
-                                                             "max-file", "3",
-                                                             "compress", "true"))*/
-
     private LogConfig logConfig(final InstanceSpec instanceSpec) {
         val spec = instanceSpec.getLoggingSpec() == null
                    ? LocalLoggingSpec.DEFAULT

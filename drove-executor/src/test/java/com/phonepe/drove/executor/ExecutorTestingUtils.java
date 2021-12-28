@@ -18,6 +18,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
@@ -72,7 +73,7 @@ public class ExecutorTestingUtils {
                                 ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                 Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
-                                Collections.emptyList(),
+                                List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
                                 new CheckSpec(new HTTPCheckModeSpec("http",
                                                                     "main",
                                                                     "/",
