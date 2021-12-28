@@ -7,8 +7,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.concurrent.Future;
-
 /**
  *
  */
@@ -21,7 +19,6 @@ public class InstanceActionContext extends ActionContext<Void> {
     private final DockerClient client;
     private String dockerImageId;
     private String dockerInstanceId;
-    private Future<?> loggerFuture;
 
     public InstanceActionContext(
             String executorId,

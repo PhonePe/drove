@@ -24,7 +24,6 @@ public class InstanceStopAction extends InstanceAction {
                      context.getInstanceSpec().getInstanceId());
         }
         else {
-//            context.getLoggerFuture().cancel(true);
             val dockerClient = context.getClient();
             try {
                 dockerClient.stopContainerCmd(context.getDockerInstanceId()).exec();
