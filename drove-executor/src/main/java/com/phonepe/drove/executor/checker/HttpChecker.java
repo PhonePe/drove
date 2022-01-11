@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.checker;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -12,7 +12,6 @@ import lombok.val;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Objects;
@@ -52,32 +51,7 @@ public class HttpChecker implements Checker {
 
     @Override
     public CheckResult call() {
-        val requestBuilder = HttpRequest.newBuilder(uri);
-        switch (httpSpec.getVerb()) {
-
-            case GET: {
-                requestBuilder.GET();
-                break;
-            }
-            case POST: {
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-                }
-                else {
-                    requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
-                }
-                break;
-            }
-            case PUT: {
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-                }
-                else {
-                    requestBuilder.PUT(HttpRequest.BodyPublishers.noBody());
-                }
-                break;
-            }
-        }
+        val requestBuilder = ExecutorUtils.buildRequestFromSpec(httpSpec, uri);
 
         val request = requestBuilder.timeout(requestTimeout)
                 .build();

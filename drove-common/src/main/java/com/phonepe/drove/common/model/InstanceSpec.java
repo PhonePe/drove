@@ -1,5 +1,6 @@
 package com.phonepe.drove.common.model;
 
+import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.application.MountedVolume;
@@ -27,4 +28,5 @@ public class InstanceSpec {
     CheckSpec readiness;
     LoggingSpec loggingSpec;
     Map<String, String> env;
+    CheckModeSpec preShutdownHook;
 }

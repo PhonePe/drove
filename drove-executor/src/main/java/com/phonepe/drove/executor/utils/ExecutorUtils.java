@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.utils;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.executor.checker.Checker;
@@ -17,6 +18,8 @@ import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.apache.commons.lang.NotImplementedException;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
 import java.util.Collections;
 import java.util.Date;
 
@@ -61,5 +64,35 @@ public class ExecutorUtils {
         return new ExecutorResourceSnapshot(executorId,
                                             resourceState.getCpu(),
                                             resourceState.getMemory());
+    }
+
+    public static HttpRequest.Builder buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
+        val requestBuilder = HttpRequest.newBuilder(uri);
+        switch (httpSpec.getVerb()) {
+
+            case GET: {
+                requestBuilder.GET();
+                break;
+            }
+            case POST: {
+                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
+                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+                }
+                else {
+                    requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
+                }
+                break;
+            }
+            case PUT: {
+                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
+                    requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+                }
+                else {
+                    requestBuilder.PUT(HttpRequest.BodyPublishers.noBody());
+                }
+                break;
+            }
+        }
+        return requestBuilder;
     }
 }

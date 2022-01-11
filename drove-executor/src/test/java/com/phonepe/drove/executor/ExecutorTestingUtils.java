@@ -97,7 +97,8 @@ public class ExecutorTestingUtils {
                                               3,
                                               Duration.seconds(1)),
                                 LocalLoggingSpec.DEFAULT,
-                                Collections.emptyMap());
+                                Collections.emptyMap(),
+                                null);
     }
 
     public static ExecutorAddress localAddress() {

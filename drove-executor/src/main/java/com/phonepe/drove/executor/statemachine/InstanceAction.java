@@ -14,10 +14,8 @@ public abstract class InstanceAction extends Action<ExecutorInstanceInfo, Instan
     public final StateData<InstanceState, ExecutorInstanceInfo> execute(
             InstanceActionContext context,
             StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        if(isStopAllowed()) {
-            if (context.getAlreadyStopped().get()) {
-                return StateData.from(currentState, InstanceState.STOPPING);
-            }
+        if (isStopAllowed() && context.getAlreadyStopped().get()) {
+            return StateData.from(currentState, InstanceState.STOPPING);
         }
         return executeImpl(context, currentState);
     }
