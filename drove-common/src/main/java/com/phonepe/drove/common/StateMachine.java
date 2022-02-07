@@ -72,7 +72,7 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
             log.info("Update recorded successfully");
         }
         else {
-            log.error("Update could not be recorded as there is already an update being processed");
+            log.error("Update could not be recorded as there is already an update being processed. Current update: {}", context.getUpdate().orElse(null));
         }
         return status;
     }

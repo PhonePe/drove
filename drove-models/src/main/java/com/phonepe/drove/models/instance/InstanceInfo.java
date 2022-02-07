@@ -26,6 +26,7 @@ public class InstanceInfo {
     List<ResourceAllocation> resources;
     InstanceState state;
     Map<String, String> metadata;
+    String errorMessage;
     Date created;
     Date updated;
 }

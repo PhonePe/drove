@@ -4,5 +4,6 @@ package com.phonepe.drove.controller.event;
  *
  */
 public enum DroveEventType {
-    APP_STATE_CHANGE
+    APP_STATE_CHANGE,
+    INSTANCE_FAILED
 }

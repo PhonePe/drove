@@ -160,6 +160,7 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
                                               oldValue.getResources(),
                                               InstanceState.UNKNOWN,
                                               oldValue.getMetadata(),
+                                              "",
                                               oldValue.getCreated(),
                                               new Date());
                 recordInstance(oldInstances, appId, instanceId, lostInstance);

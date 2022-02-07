@@ -8,6 +8,7 @@ import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.net.ThreadedCommunicator;
+import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.statedb.ExecutorStateDB;
 
@@ -20,17 +21,19 @@ public class ControllerCommunicator extends ThreadedCommunicator<ExecutorMessage
     private final ExecutorStateDB executorStateDB;
     private final StateUpdater stateUpdater;
     private final LeadershipEnsurer leadershipEnsurer;
+    private final DroveEventBus eventBus;
 
     @Inject
     public ControllerCommunicator(
             ExecutorStateDB executorStateDB,
             StateUpdater stateUpdater,
             MessageSender<ExecutorMessageType, ExecutorMessage> messageSender,
-            final LeadershipEnsurer leadershipEnsurer) {
+            final LeadershipEnsurer leadershipEnsurer, DroveEventBus eventBus) {
         super(messageSender);
         this.executorStateDB = executorStateDB;
         this.stateUpdater = stateUpdater;
         this.leadershipEnsurer = leadershipEnsurer;
+        this.eventBus = eventBus;
     }
 
     @Override
@@ -38,6 +41,6 @@ public class ControllerCommunicator extends ThreadedCommunicator<ExecutorMessage
         if(!leadershipEnsurer.isLeader()) {
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.REJECTED);
         }
-        return message.accept(new ControllerMessageHandler(executorStateDB, stateUpdater));
+        return message.accept(new ControllerMessageHandler(executorStateDB, stateUpdater, eventBus));
     }
 }

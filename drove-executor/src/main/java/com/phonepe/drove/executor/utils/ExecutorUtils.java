@@ -56,6 +56,7 @@ public class ExecutorUtils {
                 data.getResources(),
                 state.getState(),
                 Collections.emptyMap(),
+                state.getError(),
                 new Date(),
                 new Date());
     }

@@ -19,38 +19,38 @@ class SerTest {
         m.readValue("{\n" +
                             "    \"type\": \"CREATE\",\n" +
                             "    \"spec\": {\n" +
-                            "        \"name\": \"TEST_APP\",\n" +
-                            "        \"version\": 1,\n" +
+                            "        \"name\": \"TEST_APP_LARGE\",\n" +
+                            "        \"version\": \"1\",\n" +
                             "        \"executable\": {\n" +
-                            "            \"url\": \"docker.io/santanusinha/test-service:0.1\",\n" +
+                            "            \"url\": \"docker.io/santanusinha/perf-test-server:0.1\",\n" +
                             "            \"dockerPullTimeout\": \"100 seconds\",\n" +
                             "            \"type\": \"DOCKER\"\n" +
                             "        },\n" +
                             "        \"exposedPorts\": [\n" +
                             "            {\n" +
-                            "                \"port\": 3000,\n" +
-                            "                \"name\": \"main\"\n" +
+                            "                \"port\": 8000,\n" +
+                            "                \"name\": \"main\",\n" +
+                            "                \"type\": \"HTTP\"\n" +
                             "            }\n" +
                             "        ],\n" +
                             "        \"volumes\": [],\n" +
                             "        \"type\": \"SERVICE\",\n" +
                             "        \"resources\": [\n" +
                             "            {\n" +
-                            "                \"type\": \"CPU\",\n" +
-                            "                \"cores\": [\n" +
-                            "                    1\n" +
-                            "                ]\n" +
+                            "                \"type\": \"1\",\n" +
+                            "                \"count\": 30\n" +
                             "            },\n" +
                             "            {\n" +
                             "                \"type\": \"MEMORY\",\n" +
-                            "                \"memoryInMB\": 512\n" +
+                            "                \"sizeInMB\": 512\n" +
                             "            }\n" +
                             "        ],\n" +
-                            "        \"env\": {},\n" +
+                            "        \"env\": {\n" +
+                            "        \t\"CORES\" : \"1\"\n" +
+                            "        },\n" +
                             "        \"placementPolicy\": {\n" +
                             "            \"type\": \"ANY\"\n" +
                             "        },\n" +
-                            "        \"instances\": 1,\n" +
                             "        \"healthcheck\": {\n" +
                             "            \"mode\": {\n" +
                             "                \"payload\": \"\",\n" +
@@ -89,8 +89,20 @@ class SerTest {
                             "        },\n" +
                             "        \"exposureSpec\": {\n" +
                             "            \"vhost\": \"test.appform.io\",\n" +
-                            "            \"portIndex\": 0,\n" +
+                            "            \"portName\": \"main\",\n" +
                             "            \"mode\": \"ALL\"\n" +
+                            "        },\n" +
+                            "        \"preShutdownHook\" :  {\n" +
+                            "            \"payload\": \"\",\n" +
+                            "            \"verb\": \"GET\",\n" +
+                            "            \"portName\": \"main\",\n" +
+                            "            \"successCodes\": [\n" +
+                            "                200\n" +
+                            "            ],\n" +
+                            "            \"connectionTimeout\": \"1 second\",\n" +
+                            "            \"protocol\": \"http\",\n" +
+                            "            \"type\": \"HTTP\",\n" +
+                            "            \"path\": \"/\"\n" +
                             "        }\n" +
                             "    },\n" +
                             "    \"opSpec\": {\n" +

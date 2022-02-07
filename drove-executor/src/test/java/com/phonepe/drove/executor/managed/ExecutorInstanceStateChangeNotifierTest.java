@@ -31,6 +31,7 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                    InstanceState.HEALTHY,
                                    null,
                                    null,
+                                   null,
                                    null);
         val ctr = new AtomicInteger();
         val scn = new ExecutorInstanceStateChangeNotifier(
