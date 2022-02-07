@@ -7,10 +7,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import java.io.StringReader;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -58,11 +55,29 @@ public class NumaCtlBasedResourceLoader {
         if (!Sets.difference(cores.keySet(), mem.keySet()).isEmpty()) {
             throw new IllegalStateException("Mismatch between memory nodes and cores");
         }
-        val resources = cores.entrySet()
-                .stream()
-                .map(e -> new Pair<>(e.getKey(), new ResourceManager.NodeInfo(e.getValue(), mem.get(e.getKey()))))
-                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-        if (resources.size() > 0) {
+        log.info("NUMA Optimisation: {}",
+                 resourceConfig.isDisableNUMAPinning()
+                 ? "Off"
+                 : "On");
+        val resources =
+                resourceConfig.isDisableNUMAPinning()
+                ? Map.of(0,
+                         new ResourceManager.NodeInfo(
+                                 cores.values()
+                                         .stream()
+                                         .flatMap(Collection::stream)
+                                         .collect(Collectors.toUnmodifiableSet()),
+                                 mem.values()
+                                         .stream()
+                                         .mapToLong(i -> i)
+                                         .sum())
+                        )
+                : cores.entrySet()
+                        .stream()
+                        .map(e -> new Pair<>(e.getKey(),
+                                             new ResourceManager.NodeInfo(e.getValue(), mem.get(e.getKey()))))
+                        .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+        if (!resources.isEmpty()) {
             log.info("Found resources:");
             resources.forEach((id, info) -> log.info(
                     "    Node " + id

@@ -11,6 +11,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.MountedVolume;
@@ -44,10 +45,12 @@ public class InstanceRunAction extends InstanceAction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final LogBus logBus;
+    private final ResourceConfig schedulingConfig;
 
     @Inject
-    public InstanceRunAction(LogBus logBus) {
+    public InstanceRunAction(LogBus logBus, ResourceConfig resourceConfig) {
         this.logBus = logBus;
+        this.schedulingConfig = resourceConfig;
     }
 
     @Override
@@ -72,14 +75,16 @@ public class InstanceRunAction extends InstanceAction {
                         @Override
                         public Void visit(CPUAllocation cpu) {
                             hostConfig.withCpuCount((long) cpu.getCores().size());
-                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores()
-                                                                               .values()
-                                                                               .stream()
-                                                                               .flatMap(Set::stream)
-                                                                               .map(i -> Integer.toString(i))
-                                                                               .collect(
-                                                                                       Collectors.toUnmodifiableList()),
-                                                                       ","));
+                            if (!schedulingConfig.isDisableNUMAPinning()) {
+                                hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores()
+                                                                                   .values()
+                                                                                   .stream()
+                                                                                   .flatMap(Set::stream)
+                                                                                   .map(i -> Integer.toString(i))
+                                                                                   .collect(
+                                                                                           Collectors.toUnmodifiableList()),
+                                                                           ","));
+                            }
                             return null;
                         }
 
@@ -90,11 +95,14 @@ public class InstanceRunAction extends InstanceAction {
                                                           .stream()
                                                           .mapToLong(Long::longValue)
                                                           .sum() * (1 << 20));
-                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
+                            if (!schedulingConfig.isDisableNUMAPinning()) {
+                                hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
+                            }
                             return null;
                         }
                     }));
             val ports = new Ports();
+            val exposedPorts = new ArrayList<ExposedPort>();
             val env = new ArrayList<String>();
             val portMappings = new HashMap<String, InstancePort>();
             val hostName = CommonUtils.hostname();
@@ -103,13 +111,14 @@ public class InstanceRunAction extends InstanceAction {
                     portSpec -> {
                         val freePort = findFreePort();
                         val specPort = portSpec.getPort();
-                        ports.bind(new ExposedPort(specPort), Ports.Binding.bindPort(freePort));
+                        val exposedPort = new ExposedPort(specPort);
+                        ports.bind(exposedPort, Ports.Binding.bindPort(freePort));
+                        exposedPorts.add(exposedPort);
                         env.add(String.format("PORT_%d=%d", specPort, freePort));
                         portMappings.put(portSpec.getName(),
                                          new InstancePort(portSpec.getPort(), freePort, portSpec.getType()));
                     });
             hostConfig.withPortBindings(ports);
-
             if (null != instanceSpec.getVolumes()) {
                 hostConfig.withBinds(instanceSpec.getVolumes()
                                              .stream()
@@ -138,6 +147,7 @@ public class InstanceRunAction extends InstanceAction {
                     .withHostConfig(hostConfig)
                     .withEnv(env)
                     .withLabels(labels)
+                    .withExposedPorts(exposedPorts)
                     .exec()
                     .getId();
             log.debug("Created container id: {}", id);
@@ -182,7 +192,7 @@ public class InstanceRunAction extends InstanceAction {
 
     @Override
     public void stop() {
-
+        //Nothing to do here
     }
 
     private int findFreePort() {

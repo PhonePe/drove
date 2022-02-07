@@ -7,6 +7,7 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.actions.ExecutableFetchAction;
 import com.phonepe.drove.executor.statemachine.actions.InstanceRunAction;
@@ -61,19 +62,21 @@ class InstanceRunActionTest extends AbstractTestBase {
         val ctx = new InstanceActionContext(executorId, instanceSpec, ExecutorTestingUtils.DOCKER_CLIENT);
         new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
-                = new InstanceRunAction(new LogBus()).execute(ctx,
-                                                            StateData.create(PROVISIONING,
-                                                                   new ExecutorInstanceInfo(instanceSpec.getAppId(),
-                                                                                            instanceSpec.getAppName(),
-                                                                                            instanceSpec.getInstanceId(),
-                                                                                            executorId,
-                                                                                            new LocalInstanceInfo(CommonUtils.hostname(),
-                                                                                                          Collections.emptyMap()),
-                                                                                            instanceSpec.getResources(),
-                                                                                            Collections.emptyMap(),
-                                                                                            new Date(),
-                                                                                            new Date()),
-                                                                   ""));
+                = new InstanceRunAction(new LogBus(),
+                                        new ResourceConfig())
+                .execute(ctx,
+                         StateData.create(PROVISIONING,
+                                          new ExecutorInstanceInfo(instanceSpec.getAppId(),
+                                                                   instanceSpec.getAppName(),
+                                                                   instanceSpec.getInstanceId(),
+                                                                   executorId,
+                                                                   new LocalInstanceInfo(CommonUtils.hostname(),
+                                                                                         Collections.emptyMap()),
+                                                                   instanceSpec.getResources(),
+                                                                   Collections.emptyMap(),
+                                                                   new Date(),
+                                                                   new Date()),
+                                          ""));
         assertEquals(InstanceState.UNREADY, newState.getState());
 
     }

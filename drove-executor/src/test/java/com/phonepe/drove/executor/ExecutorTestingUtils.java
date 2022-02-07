@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Slf4j
 @UtilityClass
 public class ExecutorTestingUtils {
-    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.2";
+    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.3";
     public static final String EXECUTOR_ID = "TEST_EXEC";
     public static final DockerClient DOCKER_CLIENT
             = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder().build(),

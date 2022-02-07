@@ -22,5 +22,7 @@ public class ResourceConfig {
     @Max(100)
     private int exposedMemPercentage = 100;
 
+    private boolean disableNUMAPinning;
+
     private Set<String> tags = Collections.emptySet();
 }

@@ -192,7 +192,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                                                        new MemoryAllocation(
                                                                Collections.singletonMap(node.getKey(), memory)),
                                                        hostInfo.getNodeData().getTags() == null
-                                                       ? Collections.emptySet()
+                                                       ? Set.of()
                                                        : hostInfo.getNodeData().getTags()))
                 .findAny();
     }
@@ -207,15 +207,15 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     private CPUAllocation allocateCPUs(
             final Map.Entry<Integer, ExecutorHostInfo.NumaNodeInfo> nodeInfo,
             long requiredCPUs) {
-        return new CPUAllocation(Collections.singletonMap(nodeInfo.getKey(), nodeInfo.getValue()
-                                                                  .getCores()
-                                                                  .entrySet()
-                                                                  .stream()
-                                                                  .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
-                                                                  .map(Map.Entry::getKey)
-                                                                  .limit(requiredCPUs)
-                                                                  .collect(Collectors.toUnmodifiableSet())
-                                                         ));
+        return new CPUAllocation(Map.of(nodeInfo.getKey(),
+                                        nodeInfo.getValue()
+                                                .getCores()
+                                                .entrySet()
+                                                .stream()
+                                                .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
+                                                .map(Map.Entry::getKey)
+                                                .limit(requiredCPUs)
+                                                .collect(Collectors.toUnmodifiableSet())));
     }
 
     public Map<Integer, ExecutorHostInfo.NumaNodeInfo> convertToNodeInfo(final ExecutorResourceSnapshot resourceSnapshot) {
@@ -250,7 +250,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
         return numaNodes;
     }
 
-    private long freeCoresForNode(ExecutorHostInfo.NumaNodeInfo node) {
+    private long freeCoresForNode(final ExecutorHostInfo.NumaNodeInfo node) {
         return node.getCores()
                 .entrySet()
                 .stream()
