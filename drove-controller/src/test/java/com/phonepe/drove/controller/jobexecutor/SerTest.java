@@ -19,10 +19,10 @@ class SerTest {
         m.readValue("{\n" +
                             "    \"type\": \"CREATE\",\n" +
                             "    \"spec\": {\n" +
-                            "        \"name\": \"TEST_APP_LARGE\",\n" +
+                            "        \"name\": \"TEST_APP\",\n" +
                             "        \"version\": \"1\",\n" +
                             "        \"executable\": {\n" +
-                            "            \"url\": \"docker.io/santanusinha/perf-test-server:0.1\",\n" +
+                            "            \"url\": \"docker.io/santanusinha/perf-test-server:0.3\",\n" +
                             "            \"dockerPullTimeout\": \"100 seconds\",\n" +
                             "            \"type\": \"DOCKER\"\n" +
                             "        },\n" +
@@ -37,12 +37,12 @@ class SerTest {
                             "        \"type\": \"SERVICE\",\n" +
                             "        \"resources\": [\n" +
                             "            {\n" +
-                            "                \"type\": \"1\",\n" +
-                            "                \"count\": 30\n" +
+                            "                \"type\": \"CPU\",\n" +
+                            "                \"count\": 1\n" +
                             "            },\n" +
                             "            {\n" +
                             "                \"type\": \"MEMORY\",\n" +
-                            "                \"sizeInMB\": 512\n" +
+                            "                \"sizeInMB\": 180\n" +
                             "            }\n" +
                             "        ],\n" +
                             "        \"env\": {\n" +
@@ -93,17 +93,17 @@ class SerTest {
                             "            \"mode\": \"ALL\"\n" +
                             "        },\n" +
                             "        \"preShutdownHook\" :  {\n" +
-                            "            \"payload\": \"\",\n" +
-                            "            \"verb\": \"GET\",\n" +
-                            "            \"portName\": \"main\",\n" +
-                            "            \"successCodes\": [\n" +
-                            "                200\n" +
-                            "            ],\n" +
-                            "            \"connectionTimeout\": \"1 second\",\n" +
-                            "            \"protocol\": \"http\",\n" +
-                            "            \"type\": \"HTTP\",\n" +
-                            "            \"path\": \"/\"\n" +
-                            "        }\n" +
+                            "                \"payload\": \"\",\n" +
+                            "                \"verb\": \"GET\",\n" +
+                            "                \"portName\": \"main\",\n" +
+                            "                \"successCodes\": [\n" +
+                            "                    200\n" +
+                            "                ],\n" +
+                            "                \"connectionTimeout\": \"1 second\",\n" +
+                            "                \"protocol\": \"http\",\n" +
+                            "                \"type\": \"HTTP\",\n" +
+                            "                \"path\": \"/\"\n" +
+                            "            }\n" +
                             "    },\n" +
                             "    \"opSpec\": {\n" +
                             "        \"timeout\": \"5m\",\n" +
