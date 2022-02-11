@@ -5,6 +5,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
@@ -47,6 +48,7 @@ class ZkNodeDataStoreTest {
                                     Collections.singletonMap(0, 1024L)));
         val nodeData = new ExecutorNodeData("localhost",
                                             8080,
+                                            NodeTransportType.HTTP,
                                             new Date(),
                                             state,
                                             Collections.emptyList(),

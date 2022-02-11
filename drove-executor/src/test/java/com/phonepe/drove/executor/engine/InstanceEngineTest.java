@@ -17,6 +17,7 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -47,7 +48,7 @@ class InstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                 stateChanges.add(state.getState());
             }
         });
-        val executorAddress = new ExecutorAddress("eid", "localhost", 3000);
+        val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
@@ -132,7 +133,7 @@ class InstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                     LocalLoggingSpec.DEFAULT,
                                     Collections.emptyMap(),
                                     null);
-        val executorAddress = new ExecutorAddress("eid", "localhost", 3000);
+        val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);

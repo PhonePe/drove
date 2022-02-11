@@ -40,6 +40,6 @@ public class RemoteExecutorMessageSender extends RemoteMessageSender<ExecutorMes
     @Override
     protected Optional<RemoteHost> translateRemoteAddress(ExecutorMessage message) {
         val host = message.getAddress();
-        return Optional.of(new RemoteHost(host.getHostname(), host.getPort()));
+        return Optional.of(new RemoteHost(host.getHostname(), host.getPort(), host.getTransportType()));
     }
 }

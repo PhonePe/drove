@@ -11,6 +11,7 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.ServerLifecycleListener;
@@ -85,7 +86,12 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     public void serverStarted(Server server) {
         val port = getLocalPort(server);
         val hostname = CommonUtils.hostname();
-        refreshNodeState(port, hostname);
+        val cf = server.getConnectors()[0].getConnectionFactory("ssl");
+        refreshNodeState(port,
+                         null == cf
+                         ? NodeTransportType.HTTP
+                         : NodeTransportType.HTTPS,
+                         hostname);
         started.set(true);
         log.info("Server started. Will start publishing node data");
     }
@@ -97,7 +103,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         refreshNodeState();
     }
 
-    private void refreshNodeState(int port, String hostname) {
+    private void refreshNodeState(int port, NodeTransportType transportType, String hostname) {
         val resourceState = resourceDB.currentState();
         try {
             stateLock.lock();
@@ -105,6 +111,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             currentData = new ExecutorNodeData(
                     hostname,
                     port,
+                    transportType,
                     new Date(),
                     ExecutorUtils.executorSnapshot(resourceState, executorId),
                     engine.currentState(),
@@ -125,7 +132,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private void refreshNodeState(ResourceInfo resourceState) {
         try {
             stateLock.lock();
-            if(!started.get()) {
+            if (!started.get()) {
                 log.warn("Node is not started no data is updated in store.");
                 return;
             }
@@ -146,7 +153,9 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         val hostname = currentData != null && !Strings.isNullOrEmpty(currentData.getHostname())
                        ? currentData.getHostname()
                        : CommonUtils.hostname();
-        val existing = new HashSet<>(resourceConfig.getTags() == null ? Collections.emptySet() : resourceConfig.getTags());
+        val existing = new HashSet<>(resourceConfig.getTags() == null
+                                     ? Collections.emptySet()
+                                     : resourceConfig.getTags());
         existing.add(hostname);
         return Set.copyOf(existing);
     }

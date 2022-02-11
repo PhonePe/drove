@@ -108,7 +108,8 @@ public class StopSingleInstanceJob implements Job<Boolean> {
         val stopMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
                                                    new ExecutorAddress(executorId,
                                                                        instanceInfo.getLocalInfo().getHostname(),
-                                                                       node.getPort()),
+                                                                       node.getPort(),
+                                                                       node.getTransportType()),
                                                    instanceId);
         val response = communicator.send(stopMessage);
         log.trace("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, stopMessage);

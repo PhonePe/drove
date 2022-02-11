@@ -3,6 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="com.phonepe.drove.controller.App" />
     <module name="drove-controller" />
     <option name="PROGRAM_PARAMETERS" value="server drove-controller/configs/config.yml" />
+    <option name="VM_PARAMETERS" value="-Djdk.internal.httpclient.disableHostnameVerification " />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.phonepe.drove.controller.*" />

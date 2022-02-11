@@ -1,5 +1,6 @@
 package com.phonepe.drove.common.net;
 
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.Value;
 
 /**
@@ -9,4 +10,5 @@ import lombok.Value;
 public class RemoteHost {
     String hostname;
     int port;
+    NodeTransportType transportType;
 }

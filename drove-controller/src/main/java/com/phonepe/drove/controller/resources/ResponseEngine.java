@@ -230,6 +230,7 @@ public class ResponseEngine {
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                                                hostInfo.getNodeData().getHostname(),
                                                                hostInfo.getNodeData().getPort(),
+                                                               hostInfo.getNodeData().getTransportType(),
                                                                executorData.getState()
                                                                        .getCpus()
                                                                        .getFreeCores()
@@ -313,12 +314,12 @@ public class ResponseEngine {
     public ApiResponse<Void> blacklistExecutor(final String executorId) {
         val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
         if (null != executor) {
-            val msgResponse = communicator.send(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                                             new ExecutorAddress(executor.getExecutorId(),
-                                                                                                 executor.getNodeData()
-                                                                                                         .getHostname(),
-                                                                                                 executor.getNodeData()
-                                                                                                         .getPort())));
+            val msgResponse = communicator.send(
+                    new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                 new ExecutorAddress(executor.getExecutorId(),
+                                                                     executor.getNodeData().getHostname(),
+                                                                     executor.getNodeData().getPort(),
+                                                                     executor.getNodeData().getTransportType())));
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.markBlacklisted(executorId);
                 log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
@@ -333,12 +334,12 @@ public class ResponseEngine {
     public ApiResponse<Void> unblacklistExecutor(final String executorId) {
         val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
         if (null != executor) {
-            val msgResponse = communicator.send(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                                               new ExecutorAddress(executor.getExecutorId(),
-                                                                                                   executor.getNodeData()
-                                                                                                           .getHostname(),
-                                                                                                   executor.getNodeData()
-                                                                                                           .getPort())));
+            val msgResponse = communicator.send(
+                    new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                   new ExecutorAddress(executor.getExecutorId(),
+                                                                       executor.getNodeData().getHostname(),
+                                                                       executor.getNodeData().getPort(),
+                                                                       executor.getNodeData().getTransportType())));
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.unmarkBlacklisted(executorId);
                 log.debug("Executor {} marked unblacklisted.", executorId);

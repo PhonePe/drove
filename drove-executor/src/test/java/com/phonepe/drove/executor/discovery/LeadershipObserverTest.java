@@ -1,10 +1,7 @@
 package com.phonepe.drove.executor.discovery;
 
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
-import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
-import com.phonepe.drove.models.info.nodedata.NodeData;
-import com.phonepe.drove.models.info.nodedata.NodeType;
+import com.phonepe.drove.models.info.nodedata.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -31,8 +28,16 @@ class LeadershipObserverTest {
     @SneakyThrows
     void testObserverSuccess() {
         val nds = mock(NodeDataStore.class);
-        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(List.of(new ControllerNodeData("h1", 3000, new Date(), false),
-                                                                new ControllerNodeData("h2", 3000, new Date(), true)));
+        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(List.of(new ControllerNodeData("h1",
+                                                                                       3000,
+                                                                                       NodeTransportType.HTTP,
+                                                                                       new Date(),
+                                                                                       false),
+                                                                new ControllerNodeData("h2",
+                                                                                       3000,
+                                                                                       NodeTransportType.HTTP,
+                                                                                       new Date(),
+                                                                                       true)));
         val obs = new LeadershipObserver(nds);
         obs.start();
         waitUntil(() -> obs.leader().isPresent());
@@ -47,8 +52,16 @@ class LeadershipObserverTest {
     @SneakyThrows
     void testObserverNoLeader() {
         val nds = mock(NodeDataStore.class);
-        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(List.of(new ControllerNodeData("h1", 3000, new Date(), false),
-                                                                new ControllerNodeData("h2", 3000, new Date(), false)));
+        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(List.of(new ControllerNodeData("h1",
+                                                                                       3000,
+                                                                                       NodeTransportType.HTTP,
+                                                                                       new Date(),
+                                                                                       false),
+                                                                new ControllerNodeData("h2",
+                                                                                       3000,
+                                                                                       NodeTransportType.HTTP,
+                                                                                       new Date(),
+                                                                                       false)));
         val obs = new LeadershipObserver(nds);
         obs.start();
         waitUntil(() -> obs.leader().isEmpty());
@@ -68,17 +81,17 @@ class LeadershipObserverTest {
                 val currVal = ctr.incrementAndGet();
                 if (currVal == 2) {
                     log.info("Returning leader : h2");
-                    return List.of(new ControllerNodeData("h1", 3000, new Date(), false),
-                                   new ControllerNodeData("h2", 3000, new Date(), true));
+                    return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), false),
+                                   new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), true));
                 }
                 if (currVal == 3) {
                     log.info("Returning leader : h1");
-                    return List.of(new ControllerNodeData("h1", 3000, new Date(), true),
-                                   new ControllerNodeData("h2", 3000, new Date(), false));
+                    return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), true),
+                                   new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), false));
                 }
                 log.info("Returning no leader");
-                return List.of(new ControllerNodeData("h1", 3000, new Date(), false),
-                               new ControllerNodeData("h2", 3000, new Date(), false));
+                return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), false),
+                               new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), false));
             }
         });
         val obs = new LeadershipObserver(nds);
@@ -113,7 +126,14 @@ class LeadershipObserverTest {
     void testObserverRandomData() {
         val nds = mock(NodeDataStore.class);
         when(nds.nodes(NodeType.CONTROLLER)).thenReturn(
-                List.of(new ExecutorNodeData("h", 4000, new Date(), null, null, null, false)));
+                List.of(new ExecutorNodeData("h",
+                                             4000,
+                                             NodeTransportType.HTTP,
+                                             new Date(),
+                                             null,
+                                             null,
+                                             null,
+                                             false)));
         val obs = new LeadershipObserver(nds);
         obs.start();
         waitUntil(() -> obs.leader().isEmpty());

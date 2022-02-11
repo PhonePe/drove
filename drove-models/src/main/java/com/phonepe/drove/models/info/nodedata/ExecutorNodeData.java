@@ -31,11 +31,12 @@ public class ExecutorNodeData extends NodeData {
     public ExecutorNodeData(
             String hostname,
             int port,
+            NodeTransportType transportType,
             Date updated,
             ExecutorResourceSnapshot state,
             List<InstanceInfo> instances, Set<String> tags,
             boolean blacklisted) {
-        super(NodeType.EXECUTOR, hostname, port, updated);
+        super(NodeType.EXECUTOR, hostname, port, transportType, updated);
         this.state = state;
         this.instances = instances;
         this.tags = tags;
@@ -54,6 +55,7 @@ public class ExecutorNodeData extends NodeData {
             final Set<String> tags, boolean blacklisted) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),
+                                    nodeData.getTransportType(),
                                     new Date(),
                                     currentState,
                                     instances,

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -66,7 +67,10 @@ public abstract class RemoteMessageSender<
             log.error("No host found.");
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
-        val uri = String.format("http://%s:%d/apis/v1/messages", host.getHostname(), host.getPort());
+        val uri = String.format("%s://%s:%d/apis/v1/messages",
+                                host.getTransportType() == NodeTransportType.HTTP ? "http" : "https",
+                                host.getHostname(),
+                                host.getPort());
         val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
         try {
             requestBuilder.header("Content-type", "application/json");

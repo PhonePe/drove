@@ -27,6 +27,7 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -102,7 +103,7 @@ public class ExecutorTestingUtils {
     }
 
     public static ExecutorAddress localAddress() {
-        return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000);
+        return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000, NodeTransportType.HTTP);
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
@@ -166,7 +167,7 @@ public class ExecutorTestingUtils {
             final Function<InstanceInfo, R> check) {
         val spec = ExecutorTestingUtils.testSpec();
         val instanceId = spec.getInstanceId();
-        val executorAddress = new ExecutorAddress("eid", "localhost", 3000);
+        val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);

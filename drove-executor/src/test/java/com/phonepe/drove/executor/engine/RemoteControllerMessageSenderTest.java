@@ -9,6 +9,7 @@ import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.executor.discovery.LeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,11 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
     void testBasicSend(final WireMockRuntimeInfo wm) {
         val leaderObserver = mock(LeadershipObserver.class);
         when(leaderObserver.leader())
-                .thenReturn(Optional.of(new ControllerNodeData("localhost", wm.getHttpPort(), new Date(), true)));
+                .thenReturn(Optional.of(new ControllerNodeData("localhost",
+                                                               wm.getHttpPort(),
+                                                               NodeTransportType.HTTP,
+                                                               new Date(),
+                                                               true)));
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver, AbstractTestBase.MAPPER);
 
@@ -50,7 +55,11 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
     void testSrvErr(final WireMockRuntimeInfo wm) {
         val leaderObserver = mock(LeadershipObserver.class);
         when(leaderObserver.leader())
-                .thenReturn(Optional.of(new ControllerNodeData("localhost", wm.getHttpPort(), new Date(), true)));
+                .thenReturn(Optional.of(new ControllerNodeData("localhost",
+                                                               wm.getHttpPort(),
+                                                               NodeTransportType.HTTP,
+                                                               new Date(),
+                                                               true)));
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver, AbstractTestBase.MAPPER);
 
@@ -66,7 +75,11 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
     void testIOException(final WireMockRuntimeInfo wm) {
         val leaderObserver = mock(LeadershipObserver.class);
         when(leaderObserver.leader())
-                .thenReturn(Optional.of(new ControllerNodeData("localhost", wm.getHttpPort(), new Date(), true)));
+                .thenReturn(Optional.of(new ControllerNodeData("localhost",
+                                                               wm.getHttpPort(),
+                                                               NodeTransportType.HTTP,
+                                                               new Date(),
+                                                               true)));
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver, AbstractTestBase.MAPPER);
 

@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.managed;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
@@ -88,7 +89,13 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
 
     @Override
     public void serverStarted(Server server) {
-        refreshNodeState(getLocalPort(server), CommonUtils.hostname());
+        val cf = server.getConnectors()[0].getConnectionFactory("ssl");
+
+        refreshNodeState(getLocalPort(server),
+                         cf == null
+                         ? NodeTransportType.HTTP
+                         : NodeTransportType.HTTPS,
+                         CommonUtils.hostname());
     }
 
     private void refresh(Date currDate) {
@@ -98,14 +105,15 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
         refreshNodeState();
     }
 
-    private void refreshNodeState(int port, String hostname) {
+    private void refreshNodeState(int port, NodeTransportType transportType, String hostname) {
         try {
             stateLock.lock();
-            currentData = new ControllerNodeData(hostname, port, new Date(), isLeader());
+            currentData = new ControllerNodeData(hostname, port, transportType, new Date(), isLeader());
             nodeDataStore.updateNodeData(currentData);
             started.set(true);
             log.info("Node created for this controller. Data: {}", currentData);
-        } finally {
+        }
+        finally {
             stateLock.unlock();
         }
     }
@@ -113,13 +121,14 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     private void refreshNodeState() {
         try {
             stateLock.lock();
-            if(null == currentData) {
+            if (null == currentData) {
                 log.error("Ignoring update as server has not started");
                 return;
             }
             currentData = ControllerNodeData.from(currentData, isLeader());
             nodeDataStore.updateNodeData(currentData);
-        } finally {
+        }
+        finally {
             stateLock.unlock();
         }
     }

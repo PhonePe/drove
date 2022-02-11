@@ -41,6 +41,8 @@ public class RemoteControllerMessageSender extends RemoteMessageSender<Controlle
 
     @Override
     protected Optional<RemoteHost> translateRemoteAddress(ControllerMessage message) {
-        return observer.leader().map(leader -> new RemoteHost(leader.getHostname(), leader.getPort()));
+        return observer.leader().map(leader -> new RemoteHost(leader.getHostname(),
+                                                              leader.getPort(),
+                                                              leader.getTransportType()));
     }
 }

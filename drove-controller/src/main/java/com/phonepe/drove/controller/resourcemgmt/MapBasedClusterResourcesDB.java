@@ -188,6 +188,7 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                 .map(node -> new AllocatedExecutorNode(hostInfo.getExecutorId(),
                                                        hostInfo.getNodeData().getHostname(),
                                                        hostInfo.getNodeData().getPort(),
+                                                       hostInfo.getNodeData().getTransportType(),
                                                        allocateCPUs(node, cpus),
                                                        new MemoryAllocation(
                                                                Collections.singletonMap(node.getKey(), memory)),

@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.resources;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -49,12 +50,18 @@ public class InstanceLogStream {
         if (null == executorHostInfo) {
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
-        val url = String.format("http://%s:%d/apis/v1/logs/%s/%s",
+        val url = String.format("%s://%s:%d/apis/v1/logs/%s/%s",
+                                executorHostInfo.getTransportType() == NodeTransportType.HTTP ? "http" : "https",
                                 executorHostInfo.getHostname(),
                                 executorHostInfo.getPort(),
                                 appId,
                                 instanceId);
-        val client = ClientBuilder.newBuilder().register(SseFeature.class).build();
+        val prop = System.getProperty("jdk.internal.httpclient.disableHostnameVerification");
+        val clientBuilder = ClientBuilder.newBuilder().register(SseFeature.class);
+        if("".equals(prop) || Boolean.parseBoolean(prop)) {
+            clientBuilder.hostnameVerifier((s, sslSession) -> true);
+        }
+        val client = clientBuilder.build();
         val target = client.target(url);
         val es = new EventSource(target);
         val stopped = new AtomicBoolean();

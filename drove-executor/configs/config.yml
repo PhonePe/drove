@@ -2,6 +2,13 @@ server:
   applicationConnectors:
     - type: http
       port: 3000
+#    - type: https
+#      port: 3000
+#      bindHost: ssdev.test
+#      keyStorePath: /home/santanu/certs/keystore.jks
+#      keyStorePassword: "password"
+#      validateCerts: false
+#      validatePeers: false
   adminConnectors:
     - type: http
       port: 3001

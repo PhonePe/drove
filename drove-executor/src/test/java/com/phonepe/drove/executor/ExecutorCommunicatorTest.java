@@ -8,6 +8,7 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
 import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class ExecutorCommunicatorTest extends AbstractTestBase {
                      comm.send(new ExecutorSnapshotMessage(MessageHeader.executorRequest(), null)).getStatus());
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      comm.receive(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                               new ExecutorAddress("test", "h", 3000))).getStatus());
+                                                               new ExecutorAddress("test", "h", 3000, NodeTransportType.HTTP))).getStatus());
     }
 
     @Test
@@ -56,6 +57,6 @@ class ExecutorCommunicatorTest extends AbstractTestBase {
                                                                            MessageDeliveryStatus.ACCEPTED));
         assertEquals(MessageDeliveryStatus.FAILED,
                      comm.receive(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                               new ExecutorAddress("test", "h", 3000))).getStatus());
+                                                               new ExecutorAddress("test", "h", 3000, NodeTransportType.HTTP))).getStatus());
     }
 }

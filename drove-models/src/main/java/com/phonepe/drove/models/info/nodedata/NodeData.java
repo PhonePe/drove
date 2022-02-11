@@ -19,6 +19,7 @@ public abstract class NodeData {
     private final NodeType type;
     private final String hostname;
     private final int port;
+    private final NodeTransportType transportType;
     private final Date updated;
     
     public abstract <T> T accept(final NodeDataVisitor<T> visitor);

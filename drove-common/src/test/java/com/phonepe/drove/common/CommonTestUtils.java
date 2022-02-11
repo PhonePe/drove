@@ -1,6 +1,7 @@
 package com.phonepe.drove.common;
 
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -40,7 +41,7 @@ public class CommonTestUtils {
     }
 
     public ExecutorAddress executor() {
-        return new ExecutorAddress("testexec1", "h1", 8080);
+        return new ExecutorAddress("testexec1", "h1", 8080, NodeTransportType.HTTP);
     }
 
     public Set<Integer> set(int max) {

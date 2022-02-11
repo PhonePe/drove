@@ -15,8 +15,13 @@ import java.util.Date;
 public class ControllerNodeData extends NodeData {
     boolean leader;
 
-    public ControllerNodeData(String hostname, int port, Date updated, boolean leader) {
-        super(NodeType.CONTROLLER, hostname, port, updated);
+    public ControllerNodeData(
+            String hostname,
+            int port,
+            NodeTransportType transportType,
+            Date updated,
+            boolean leader) {
+        super(NodeType.CONTROLLER, hostname, port, transportType, updated);
         this.leader = leader;
     }
 
@@ -27,6 +32,10 @@ public class ControllerNodeData extends NodeData {
     }
 
     public static ControllerNodeData from(final ControllerNodeData nodeData, boolean leader) {
-        return new ControllerNodeData(nodeData.getHostname(), nodeData.getPort(), new Date(), leader);
+        return new ControllerNodeData(nodeData.getHostname(),
+                                      nodeData.getPort(),
+                                      nodeData.getTransportType(),
+                                      new Date(),
+                                      leader);
     }
 }
