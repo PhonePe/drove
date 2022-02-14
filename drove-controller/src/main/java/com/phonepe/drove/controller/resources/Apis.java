@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.phonepe.drove.common.auth.DroveUserRole;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -12,6 +13,8 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.validation.Valid;
@@ -34,6 +37,7 @@ import java.util.Set;
 @Consumes(MediaType.APPLICATION_JSON)
 @Singleton
 @Slf4j
+@PermitAll
 public class Apis {
 
     private final ApplicationEngine engine;
@@ -50,6 +54,7 @@ public class Apis {
     @POST
     @Path("/operations")
     @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Map<String, String>> acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
         val res = engine.handleOperation(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
@@ -61,6 +66,7 @@ public class Apis {
     @POST
     @Path("/operations/{appId}/cancel")
     @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Void> cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
         return engine.cancelCurrentJob(appId)
                ? ApiResponse.success(null)
@@ -126,6 +132,7 @@ public class Apis {
     @POST
     @Path("/cluster/executors/{id}/blacklist")
     @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Void> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.blacklistExecutor(executorId);
     }
@@ -133,6 +140,7 @@ public class Apis {
     @POST
     @Path("/cluster/executors/{id}/unblacklist")
     @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Void> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.unblacklistExecutor(executorId);
     }

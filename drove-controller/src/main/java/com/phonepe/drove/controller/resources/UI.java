@@ -10,6 +10,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.guicey.gsp.views.template.Template;
 
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -25,6 +26,7 @@ import java.util.Collections;
 @Path("/ui")
 @Template
 @Produces({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
+@PermitAll
 public class UI {
     @Value
     @AllArgsConstructor

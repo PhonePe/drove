@@ -34,3 +34,13 @@ logging:
 
 zookeeper:
   connectionString: localhost:2181
+
+userAuth:
+  enabled: true
+  users:
+    - username: admin
+      password: admin
+      role: EXTERNAL_READ_WRITE
+    - username: guest
+      password: guest
+      role: EXTERNAL_READ_ONLY

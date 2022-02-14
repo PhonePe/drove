@@ -47,13 +47,13 @@ public class App extends Application<AppConfig> {
     @Override
     public void run(AppConfig appConfig, Environment environment) throws Exception {
         configureMapper(environment.getObjectMapper());
-        ((AbstractServerFactory)appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
+        ((AbstractServerFactory) appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         val jersey = environment.jersey();
         jersey.register(SseFeature.class);
         jersey.getResourceConfig().register(SseFeature.class);
         FunctionMetricsManager.initialize("com.phonepe.drove.executor", environment.metrics());
         jersey.register(new AuthDynamicFeature(
-                        new DroveAuthFilter.Builder()
+                        new DroveClusterAuthFilter.Builder()
                                 .setAuthenticator(new DroveClusterSecretAuthenticator(Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT)))
                                 .setAuthorizer(new DroveAuthorizer())
                                 .setUnauthorizedHandler(new DroveUnauthorizedHandler())

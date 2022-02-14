@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.glassfish.jersey.media.sse.*;
 
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.client.ClientBuilder;
@@ -29,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Produces(SseFeature.SERVER_SENT_EVENTS)
 @Slf4j
 @Path("/v1/logs")
+@PermitAll
 public class InstanceLogStream {
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;

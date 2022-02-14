@@ -6,6 +6,7 @@ import com.phonepe.drove.controller.utils.StreamingSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.jersey.media.sse.SseFeature;
 
+import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -21,6 +22,7 @@ import javax.ws.rs.sse.SseEventSink;
 @Path("/v1/events")
 @Produces(SseFeature.SERVER_SENT_EVENTS)
 @Slf4j
+@PermitAll
 public class Events {
 
     private static StreamingSupport streamingSupport = null;

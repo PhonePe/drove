@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller;
 
+import com.phonepe.drove.common.auth.BasicAuthConfig;
 import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import io.dropwizard.Configuration;
@@ -23,4 +24,7 @@ public class AppConfig extends Configuration {
 
     @Valid
     private ClusterAuthenticationConfig clusterAuth;
+
+    @Valid
+    BasicAuthConfig userAuth;
 }
