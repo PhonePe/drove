@@ -3,7 +3,7 @@ package com.phonepe.drove.common.net;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
+import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -23,7 +23,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Optional;
 
-import static com.phonepe.drove.common.auth.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.common.auth.core.AuthConstansts.NODE_ID_HEADER;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 

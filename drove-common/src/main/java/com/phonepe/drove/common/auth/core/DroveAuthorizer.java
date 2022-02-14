@@ -1,5 +1,6 @@
-package com.phonepe.drove.common.auth;
+package com.phonepe.drove.common.auth.core;
 
+import com.phonepe.drove.common.auth.model.DroveUser;
 import io.dropwizard.auth.Authorizer;
 
 /**

@@ -1,9 +1,9 @@
-package com.phonepe.drove.common.auth;
+package com.phonepe.drove.common.auth.model;
 
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 
-import static com.phonepe.drove.common.auth.DroveUserRole.Values.*;
+import static com.phonepe.drove.common.auth.model.DroveUserRole.Values.*;
 
 /**
  *

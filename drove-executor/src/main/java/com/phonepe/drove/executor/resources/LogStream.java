@@ -1,8 +1,8 @@
 package com.phonepe.drove.executor.resources;
 
 import com.codahale.metrics.annotation.Metered;
-import com.phonepe.drove.common.auth.DroveUser;
-import com.phonepe.drove.common.auth.DroveUserRole;
+import com.phonepe.drove.common.auth.model.DroveUser;
+import com.phonepe.drove.common.auth.model.DroveUserRole;
 import com.phonepe.drove.executor.logging.LogBus;
 import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;

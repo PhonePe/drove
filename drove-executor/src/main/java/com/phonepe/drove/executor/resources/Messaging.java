@@ -1,8 +1,8 @@
 package com.phonepe.drove.executor.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.phonepe.drove.common.auth.DroveUser;
-import com.phonepe.drove.common.auth.DroveUserRole;
+import com.phonepe.drove.common.auth.model.DroveUser;
+import com.phonepe.drove.common.auth.model.DroveUserRole;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;

@@ -11,7 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
+import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.model.ControllerMessageType;

@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.auth;
+package com.phonepe.drove.common.auth.core;
 
 import io.dropwizard.auth.UnauthorizedHandler;
 

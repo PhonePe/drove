@@ -1,5 +1,7 @@
-package com.phonepe.drove.common.auth;
+package com.phonepe.drove.common.auth.filters;
 
+import com.phonepe.drove.common.auth.core.ClusterCredentials;
+import com.phonepe.drove.common.auth.model.DroveUser;
 import io.dropwizard.auth.AuthFilter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -13,7 +15,7 @@ import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
 import java.util.Optional;
 
-import static com.phonepe.drove.common.auth.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.common.auth.core.AuthConstansts.NODE_ID_HEADER;
 
 /**
  *

@@ -1,5 +1,8 @@
-package com.phonepe.drove.common.auth;
+package com.phonepe.drove.common.auth.filters;
 
+import com.phonepe.drove.common.auth.config.BasicAuthConfig;
+import com.phonepe.drove.common.auth.model.DroveExternalUser;
+import com.phonepe.drove.common.auth.model.DroveUser;
 import io.dropwizard.auth.AuthFilter;
 import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;

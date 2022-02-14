@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.auth;
+package com.phonepe.drove.common.auth.model;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
