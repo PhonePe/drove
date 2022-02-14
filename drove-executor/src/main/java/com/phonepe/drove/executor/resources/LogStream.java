@@ -1,12 +1,16 @@
 package com.phonepe.drove.executor.resources;
 
 import com.codahale.metrics.annotation.Metered;
+import com.phonepe.drove.common.auth.DroveUser;
+import com.phonepe.drove.common.auth.DroveUserRole;
 import com.phonepe.drove.executor.logging.LogBus;
+import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.glassfish.jersey.media.sse.OutboundEvent;
 import org.glassfish.jersey.media.sse.SseFeature;
 
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Produces(SseFeature.SERVER_SENT_EVENTS)
 @Slf4j
 @Path("/v1/logs")
+@RolesAllowed(DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE)
 public class LogStream {
     private final LogBus logBus;
 
@@ -37,9 +42,12 @@ public class LogStream {
     @GET
     @Path("/{appId}/{instanceId}")
     @Metered
-    public void streamLogs(@Context SseEventSink sseEventSink,
-                                  @PathParam("appId") final String appId,
-                                  @PathParam("instanceId") final String instanceId) {
+    public void streamLogs(
+            @Auth final DroveUser user,
+            @Context SseEventSink sseEventSink,
+            @PathParam("appId") final String appId,
+            @PathParam("instanceId") final String instanceId) {
+        log.debug("Received connection request from: {}", user.getName());
         val stopped = new AtomicBoolean();
         val streamLock = new ReentrantLock();
         val cond = streamLock.newCondition();

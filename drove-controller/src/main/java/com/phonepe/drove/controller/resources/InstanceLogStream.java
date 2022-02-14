@@ -1,9 +1,13 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
+import com.phonepe.drove.common.auth.DroveClientRequestFilter;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -28,13 +32,22 @@ import java.util.concurrent.locks.ReentrantLock;
 public class InstanceLogStream {
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final ClusterAuthenticationConfig.SecretConfig secret;
+    private final String nodeId;
 
     @Inject
     public InstanceLogStream(
             ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB) {
+            ClusterResourcesDB clusterResourcesDB,
+            ClusterAuthenticationConfig clusterAuthenticationConfig) {
         this.applicationStateDB = applicationStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.secret = clusterAuthenticationConfig.getSecrets()
+                .stream()
+                .filter(s -> s.getNodeType().equals(NodeType.CONTROLLER))
+                .findAny()
+                .orElse(null);
+        nodeId = CommonUtils.hostname();
     }
 
     @GET
@@ -57,7 +70,9 @@ public class InstanceLogStream {
                                 appId,
                                 instanceId);
         val prop = System.getProperty("jdk.internal.httpclient.disableHostnameVerification");
-        val clientBuilder = ClientBuilder.newBuilder().register(SseFeature.class);
+        val clientBuilder = ClientBuilder.newBuilder()
+                .register(SseFeature.class)
+                .register(new DroveClientRequestFilter(nodeId, secret.getSecret()));
         if("".equals(prop) || Boolean.parseBoolean(prop)) {
             clientBuilder.hostnameVerifier((s, sslSession) -> true);
         }

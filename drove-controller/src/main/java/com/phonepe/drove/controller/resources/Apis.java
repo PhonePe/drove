@@ -3,7 +3,6 @@ package com.phonepe.drove.controller.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
-import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -39,16 +38,13 @@ public class Apis {
 
     private final ApplicationEngine engine;
     private final ResponseEngine responseEngine;
-    private final ControllerCommunicator communicator;
 
     @Inject
     public Apis(
             ApplicationEngine engine,
-            ResponseEngine responseEngine,
-            ControllerCommunicator communicator) {
+            ResponseEngine responseEngine) {
         this.engine = engine;
         this.responseEngine = responseEngine;
-        this.communicator = communicator;
     }
 
     @POST
