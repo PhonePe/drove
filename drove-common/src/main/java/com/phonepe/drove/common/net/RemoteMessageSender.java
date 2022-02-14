@@ -2,10 +2,13 @@ package com.phonepe.drove.common.net;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -20,6 +23,10 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Optional;
 
+import static com.phonepe.drove.common.auth.AuthConstansts.NODE_ID_HEADER;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+
 /**
  *
  */
@@ -31,14 +38,25 @@ public abstract class RemoteMessageSender<
 
     private final ObjectMapper mapper;
     private final HttpClient httpClient;
+    private final ClusterAuthenticationConfig.SecretConfig secret;
+    private final String nodeId;
 
-    protected RemoteMessageSender(final ObjectMapper mapper) {
+    protected RemoteMessageSender(
+            final ObjectMapper mapper,
+            ClusterAuthenticationConfig clusterAuthenticationConfig,
+            NodeType nodeType) {
         this.mapper = mapper;
+        this.secret = clusterAuthenticationConfig.getSecrets()
+                .stream()
+                .filter(s -> s.getNodeType().equals(nodeType))
+                .findAny()
+                .orElse(null);
         var connectionTimeout = Duration.ofSeconds(1);
         httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(connectionTimeout)
                 .build();
+        nodeId = CommonUtils.hostname();
     }
 
     @Override
@@ -47,12 +65,12 @@ public abstract class RemoteMessageSender<
         final RetryPolicy<MessageResponse> retryPolicy = retryStrategy();
         return Failsafe.with(retryPolicy).onFailure(result -> {
             val failure = result.getFailure();
-            if(null != failure) {
+            if (null != failure) {
                 log.error("Message sending failed with error: {}", failure.getMessage());
             }
             else {
                 val response = result.getResult();
-                if(response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                if (response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                     log.error("Message sending failed with response: {}", response);
                 }
             }
@@ -68,12 +86,19 @@ public abstract class RemoteMessageSender<
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
         val uri = String.format("%s://%s:%d/apis/v1/messages",
-                                host.getTransportType() == NodeTransportType.HTTP ? "http" : "https",
+                                host.getTransportType() == NodeTransportType.HTTP
+                                ? "http"
+                                : "https",
                                 host.getHostname(),
                                 host.getPort());
         val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
         try {
-            requestBuilder.header("Content-type", "application/json");
+
+            requestBuilder.header(CONTENT_TYPE, "application/json");
+            requestBuilder.header(NODE_ID_HEADER, nodeId);
+            if(null != secret) {
+                requestBuilder.header(AUTHORIZATION, "Bearer " + secret.getSecret());
+            }
             requestBuilder.POST(HttpRequest.BodyPublishers.ofByteArray(mapper.writeValueAsBytes(message)));
         }
         catch (JsonProcessingException e) {
@@ -99,7 +124,7 @@ public abstract class RemoteMessageSender<
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        log.info("Message sent to controller");
+        log.info("Failed to send message to node: {}:{}", host.getHostname(), host.getPort());
         return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
     }
 

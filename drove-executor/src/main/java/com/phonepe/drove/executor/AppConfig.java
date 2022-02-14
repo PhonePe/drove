@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor;
 
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import io.dropwizard.Configuration;
@@ -24,4 +25,7 @@ public class AppConfig extends Configuration {
     @NotNull
     @Valid
     private ResourceConfig resources = new ResourceConfig();
+
+    @Valid
+    ClusterAuthenticationConfig clusterAuth;
 }

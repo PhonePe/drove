@@ -6,6 +6,7 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.phonepe.drove.common.ActionFactory;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.model.ExecutorMessageType;
@@ -32,6 +33,7 @@ import io.dropwizard.setup.Environment;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Singleton;
+import java.util.Objects;
 
 /**
  *
@@ -76,5 +78,11 @@ public class ControllerCoreModule extends AbstractModule {
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>>(){})
                 .to(InjectingAppActionFactory.class);
+    }
+
+    @Provides
+    @Singleton
+    public ClusterAuthenticationConfig clusterAuth(final AppConfig appConfig) {
+        return Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT);
     }
 }

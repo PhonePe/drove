@@ -11,6 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.model.ControllerMessageType;
@@ -29,6 +30,7 @@ import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Singleton;
 import java.net.URI;
+import java.util.Objects;
 
 /**
  *
@@ -105,5 +107,11 @@ public class ExecutorCoreModule extends AbstractModule {
                                             new ZerodepDockerHttpClient.Builder()
                                                     .dockerHost(URI.create("unix:///var/run/docker.sock"))
                                                     .build());
+    }
+
+    @Provides
+    @Singleton
+    public ClusterAuthenticationConfig clusterAuth(final AppConfig appConfig) {
+        return Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT);
     }
 }

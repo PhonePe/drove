@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller;
 
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import io.dropwizard.Configuration;
 import lombok.Data;
@@ -19,4 +20,7 @@ public class AppConfig extends Configuration {
     @NotNull
     @Valid
     private ZkConfig zookeeper;
+
+    @Valid
+    private ClusterAuthenticationConfig clusterAuth;
 }

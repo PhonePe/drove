@@ -1,12 +1,14 @@
 package com.phonepe.drove.controller.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.RemoteHost;
 import com.phonepe.drove.common.net.RemoteMessageSender;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.RetryPolicy;
@@ -24,8 +26,10 @@ import java.util.Optional;
 public class RemoteExecutorMessageSender extends RemoteMessageSender<ExecutorMessageType, ExecutorMessage> {
 
     @Inject
-    public RemoteExecutorMessageSender(ObjectMapper mapper) {
-        super(mapper);
+    public RemoteExecutorMessageSender(
+            ClusterAuthenticationConfig clusterAuthenticationConfig,
+            ObjectMapper mapper) {
+        super(mapper, clusterAuthenticationConfig, NodeType.CONTROLLER);
     }
 
     @Override

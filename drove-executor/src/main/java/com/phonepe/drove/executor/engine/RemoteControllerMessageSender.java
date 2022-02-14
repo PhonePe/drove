@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.auth.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -8,6 +9,7 @@ import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.RemoteHost;
 import com.phonepe.drove.common.net.RemoteMessageSender;
 import com.phonepe.drove.executor.discovery.LeadershipObserver;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.RetryPolicy;
 
@@ -25,8 +27,9 @@ public class RemoteControllerMessageSender extends RemoteMessageSender<Controlle
     private final LeadershipObserver observer;
 
     @Inject
-    public RemoteControllerMessageSender(LeadershipObserver observer, ObjectMapper mapper) {
-        super(mapper);
+    public RemoteControllerMessageSender(
+            LeadershipObserver observer, ObjectMapper mapper, ClusterAuthenticationConfig clusterAuthenticationConfig) {
+        super(mapper, clusterAuthenticationConfig, NodeType.EXECUTOR);
         this.observer = observer;
     }
 

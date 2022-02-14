@@ -22,7 +22,10 @@
             <artifactId>drove-models</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-auth</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.appform.signals</groupId>
             <artifactId>signals</artifactId>
