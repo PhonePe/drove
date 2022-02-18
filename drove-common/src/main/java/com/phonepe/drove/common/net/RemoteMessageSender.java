@@ -52,7 +52,7 @@ public abstract class RemoteMessageSender<
                 .findAny()
                 .orElse(null);
         var connectionTimeout = Duration.ofSeconds(1);
-        httpClient = HttpClient.newBuilder()
+        this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(connectionTimeout)
                 .build();
