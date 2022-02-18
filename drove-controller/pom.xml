@@ -78,9 +78,9 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
+                <groupId>dev.aspectj</groupId>
                 <artifactId>aspectj-maven-plugin</artifactId>
-                <version>1.14.0</version>
+                <version>1.13.1</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.aspectj</groupId>
@@ -95,9 +95,9 @@
                 </dependencies>
 
                 <configuration>
-                    <complianceLevel>11</complianceLevel>
-                    <source>11</source>
-                    <target>11</target>
+                    <complianceLevel>17</complianceLevel>
+                    <source>17</source>
+                    <target>17</target>
                     <showWeaveInfo>true</showWeaveInfo>
                     <forceAjcCompile>true</forceAjcCompile>
                     <sources/>
