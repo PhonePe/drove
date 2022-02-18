@@ -31,6 +31,16 @@ logging:
       timeZone: IST
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceLogId}] %message%n"
 
+    - type: drove
+      logPath: "/home/santanu/drove/drove-executor"
+      archivedLogFileSuffix: "%d"
+      archivedFileCount: 3
+      threshold: TRACE
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] [%logger{0}] %message%n"
+      archive: true
+
+
 zookeeper:
   connectionString: localhost:2181
 

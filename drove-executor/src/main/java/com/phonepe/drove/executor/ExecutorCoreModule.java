@@ -20,6 +20,7 @@ import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
+import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -113,5 +114,11 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     public ClusterAuthenticationConfig clusterAuth(final AppConfig appConfig) {
         return Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT);
+    }
+
+    @Provides
+    @Singleton
+    public LogInfo logInfo(final AppConfig appConfig) {
+        return LogInfo.create(appConfig);
     }
 }

@@ -27,6 +27,8 @@ import javax.validation.constraints.Min;
  */
 @JsonTypeName("drove")
 public class DroveAppenderFactory<E extends DeferredProcessingAware> extends AbstractAppenderFactory<ILoggingEvent> {
+    public static final String DEFAULT_LOG_FILE_NAME = "output.log";
+
     @Nullable
     @Getter
     @Setter
@@ -84,7 +86,7 @@ public class DroveAppenderFactory<E extends DeferredProcessingAware> extends Abs
             val parts = discriminatingValue.split(":");
             val filePath = (parts.length == 1)
                 ? discriminatingValue + ".log"
-                : String.format("%s/%s/output.log", parts[0], parts[1]);
+                : String.format("%s/%s/%s", parts[0], parts[1], DEFAULT_LOG_FILE_NAME);
             val logFilename = logPath + "/" + filePath;
             faf.setCurrentLogFilename(logFilename);
             faf.setArchive(archive);
@@ -103,7 +105,6 @@ public class DroveAppenderFactory<E extends DeferredProcessingAware> extends Abs
             faf.setMessageRate(getMessageRate());
             faf.setIncludeCallerData(isIncludeCallerData());
             faf.setFilterFactories(getFilterFactories());
-            //faf.setNeverBlock();
             return faf.build(loggerContext, "drove", layoutFactory, levelFilterFactory, asyncAppenderFactory);
         });
 
