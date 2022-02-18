@@ -19,9 +19,8 @@ import javax.validation.constraints.NotEmpty;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import javax.ws.rs.core.StreamingOutput;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 public class LogFileStream {
 
     private static final String ERROR_FIELD = "error";
-    private static final int DEFAULT_BUFFER_SIZE = 4096;
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
 
     @Value
     public static class LogLines {
@@ -79,7 +78,7 @@ public class LogFileStream {
     }
 
     @GET
-    @Path("/{appId}/{instanceId}/{fileName}")
+    @Path("/{appId}/{instanceId}/read/{fileName}")
     @Metered
     public Response streamLogs(
             @Auth final DroveUser user,
@@ -109,6 +108,45 @@ public class LogFileStream {
             return readFwd(startOffset, logFilePath, logFile, bufferSize);
         }
         return readRev(endOffset, logFilePath, logFile, bufferSize);
+    }
+
+
+    @GET
+    @Path("/{appId}/{instanceId}/download/{fileName}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Metered
+    public Response downloadLogFile(
+            @Auth final DroveUser user,
+            @PathParam("appId") @NotEmpty final String appId,
+            @PathParam("instanceId") @NotEmpty final String instanceId,
+            @PathParam("fileName") @NotEmpty final String fileName) {
+        log.debug("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
+        val logFilePath = logInfo.logPathFor(appId, instanceId);
+        if (Strings.isNullOrEmpty(logFilePath)) {
+            return error("This only works if the 'drove' appender type is configured");
+        }
+        val extractedFileName = FilenameUtils.getName(fileName);
+        val logFile = new File(logFilePath + "/" + extractedFileName);
+        log.debug("File read request: file={} path={}", extractedFileName, logFilePath);
+        if (!logFile.exists() || !logFile.isFile() || !logFile.canRead()) {
+            return error("Could not read log file: " + logFilePath);
+        }
+        val so = new StreamingOutput() {
+            @Override
+            public void write(OutputStream output) throws IOException, WebApplicationException {
+                try(val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
+                    val bw = new BufferedWriter(new OutputStreamWriter(output), DEFAULT_BUFFER_SIZE)) {
+                    var buffer = new char[DEFAULT_BUFFER_SIZE];
+                    int bytesRead;
+
+                    while((bytesRead = br.read(buffer, 0, DEFAULT_BUFFER_SIZE)) !=-1) {
+                        bw.write(buffer, 0, bytesRead);
+                    }
+                    bw.flush();
+                }
+            }
+        };
+        return Response.ok(so).build();
     }
 
     private Response readFwd(long startOffset, String logFilePath, File logFile, long bufferSize) {
