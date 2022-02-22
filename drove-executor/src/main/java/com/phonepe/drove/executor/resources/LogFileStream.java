@@ -22,7 +22,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,8 +43,6 @@ public class LogFileStream {
         long endOffset;
         List<String> lines;
     }
-
-//    record LogBuffer(String data, long offset){}
 
     @Value
     private static class LogBuffer {
@@ -128,40 +125,6 @@ public class LogFileStream {
     }
 
     @GET
-    @Path("/{appId}/{instanceId}/read/{fileName}/old")
-    @Metered
-    public Response streamLogsOld(
-            @Auth final DroveUser user,
-            @PathParam("appId") @NotEmpty final String appId,
-            @PathParam("instanceId") @NotEmpty final String instanceId,
-            @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam("after") @Min(0) final long startOffset,
-            @QueryParam("before") @Min(0) final long endOffset,
-            @QueryParam("size") @Min(0) @Max(100) final long size) {
-        log.debug("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
-        val logFilePath = logInfo.logPathFor(appId, instanceId);
-        if (Strings.isNullOrEmpty(logFilePath)) {
-            return error("This only works if the 'drove' appender type is configured");
-        }
-        val extractedFileName = FilenameUtils.getName(fileName);
-        val logFile = new File(logFilePath + "/" + extractedFileName);
-        log.debug("File read request: file={} start={} end={} path={}",
-                  extractedFileName, startOffset, endOffset, logFilePath);
-        if (!logFile.exists() || !logFile.isFile() || !logFile.canRead()) {
-            return error("Could not read log file: " + logFilePath);
-        }
-        val bufferSize = size == 0
-                         ? DEFAULT_BUFFER_SIZE
-                         : size;
-
-        if (0 != startOffset) {
-            return readFwd(startOffset, logFilePath, logFile, bufferSize);
-        }
-        return readRev(endOffset, logFilePath, logFile, bufferSize);
-    }
-
-
-    @GET
     @Path("/{appId}/{instanceId}/download/{fileName}")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Metered
@@ -197,61 +160,6 @@ public class LogFileStream {
             }
         };
         return Response.ok(so).build();
-    }
-
-    private Response readFwd(long startOffset, String logFilePath, File logFile, long bufferSize) {
-        val fileLength = logFile.length();
-        val startPos = startOffset > fileLength
-                       ? 0
-                       // File might have rotated/truncated for any other reason
-                       : startOffset;
-        try (val rf = new RandomAccessFile(logFile, "r")) {
-            rf.seek(startPos);
-            val lines = new ArrayList<String>();
-            var currBuffSize = 0L;
-            var lastBufPtr = rf.getFilePointer();
-            var currOffset = lastBufPtr;
-            for (; currBuffSize < bufferSize; currOffset = rf.getFilePointer(), currBuffSize += currOffset - lastBufPtr, lastBufPtr = currOffset) {
-                val line = rf.readLine();
-                if (null == line) {
-                    break;
-                }
-                lines.add(line);
-            }
-            return Response.ok(new LogLines(startPos, rf.getFilePointer(), lines)).build();
-        }
-        catch (IOException e) {
-            return error("Error reading file " + logFilePath + ": " + e.getMessage());
-        }
-    }
-
-    private Response readRev(long endOffset, String logFilePath, File logFile, long bufferSize) {
-        val fileLength = logFile.length();
-        val endPos = endOffset == 0
-                     ? fileLength
-                     //If no offset is provided, end will be end of file
-                     : Math.min(fileLength, endOffset); //if provided, it can only read till end of file
-        //Start can be start of buffer or start of file whichever comes later
-        val startPos = Math.max(endPos - bufferSize, 0);
-        try (val rf = new RandomAccessFile(logFile, "r")) {
-            rf.seek(startPos);
-            val lines = new ArrayList<String>();
-            var currBuffSize = 0L;
-            var lastBufPtr = rf.getFilePointer();
-            var currOffset = lastBufPtr;
-            var line = rf.readLine(); //Skip the first line as it might be partial
-            for (; currBuffSize < bufferSize; currOffset = rf.getFilePointer(), currBuffSize += currOffset - lastBufPtr, lastBufPtr = currOffset) {
-                line = rf.readLine();
-                if (null == line) {
-                    break;
-                }
-                lines.add(line);
-            }
-            return Response.ok(new LogLines(startPos, rf.getFilePointer(), lines)).build();
-        }
-        catch (IOException e) {
-            return error("Error reading file " + logFilePath + ": " + e.getMessage());
-        }
     }
 
     private Response error(String message) {
