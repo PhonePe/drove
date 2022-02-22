@@ -31,7 +31,7 @@
                         <th>Cores</th>
                         <th>Memory</th>
                         <th>State</th>
-                        <th>Log Stream</th>
+                        <th></th>
                     </tr>
                     </thead>
                 </table>
@@ -86,7 +86,7 @@
                 { 'data' : 'state' },
                 { 'data' : 'logStream',
                   'render' : function(data, type, row, meta) {
-                       return '<a href="' + data + '" target="_blank">Log</a>';
+                    return '<a href="/applications/' + row['appId'] + '/instances/' + row['instanceId'] + '">Details</a>';
                   }
                 }
             ]

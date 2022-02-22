@@ -36,7 +36,7 @@
                                 <th>Cores</th>
                                 <th>Memory</th>
                                 <th>State</th>
-                                <th>Log Stream</th>
+                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -63,7 +63,7 @@
                                 <th>Cores</th>
                                 <th>Memory</th>
                                 <th>State</th>
-                                <th>Log Stream</th>
+                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -131,20 +131,16 @@
         'paging': false,
         'info' : false,
         'columns' : [
-            { 'data' : 'instanceId',
-                'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/{{appId}}/instances/' + data + '">' + data + '</a>';
-                }
-            },
+            { 'data' : 'instanceId' },
             { 'data' : 'executorId' },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory' },
             { 'data' : 'state' },
-            { 'data' : 'logStream',
+            { 'data' : 'details',
                 'render' : function(data, type, row, meta) {
-                    return '<a href="' + data + '" target="_blank">Log</a>';
+                    return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
                 }
             }
         ]
@@ -158,20 +154,16 @@
         'paging': false,
         'info' : false,
         'columns' : [
-            { 'data' : 'instanceId',
-                'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/{{appId}}/instances/' + data + '">' + data + '</a>';
-                }
-            },
+            { 'data' : 'instanceId' },
             { 'data' : 'executorId' },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory' },
             { 'data' : 'state' },
-            { 'data' : 'logStream',
+            { 'data' : 'details',
                 'render' : function(data, type, row, meta) {
-                    return '<a href="' + data + '" target="_blank">Log</a>';
+                    return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
                 }
             }
         ]
