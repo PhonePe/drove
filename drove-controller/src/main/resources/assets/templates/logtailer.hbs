@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- This is copied almost verbatim from https://github.com/apache/mesos/blob/master/src/webui/app/shared/pailer.html -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <style>
+      body {
+        line-height: 16px;
+        font-size: 14px;
+      }
+
+      .indicator {
+        background: #000000;
+        color: #FFFFFF;
+        left: 5px;
+        position: absolute;
+        text-decoration: none;
+        top: 5px;
+      }
+    </style>
+</head>
+
+<body style="overflow: hidden;">
+<pre id="data"></pre>
+<div class="indicator" id="indicator"></div>
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+<script src="/js/underscore-1.4.3.min.js"></script>
+<script src="/js/jquery.pailer.js"></script>
+
+<script>
+      var $body = $('body');
+      var $data = $('#data');
+
+      function resize() {
+        var margin_left = parseInt($body.css('margin-left'));
+        var margin_top = parseInt($body.css('margin-top'));
+        var margin_bottom = parseInt($body.css('margin-bottom'));
+        $data
+          .width($(window).width() - margin_left)
+          .height($(window).height() - margin_top - margin_bottom);
+      }
+
+      $(window).resize(resize);
+
+      $(document).ready(function() {
+        resize();
+
+        var storageKey = "{{appID}}-{{instanceId}}";
+
+        $data.pailer({
+          read: function(options) {
+            var settings = $.extend({
+              'offset': -1,
+              'length': -1
+            }, options);
+
+            var url = '/apis/v1/logfiles/{{appId}}/{{instanceId}}/read/{{logFileName}}'
+                + '?offset=' + settings.offset
+                + '&length=' + ((settings.length && settings.length != 0) ? settings.length : -1);
+            return $.getJSON(url);
+          },
+          'indicator': $('#indicator')
+        });
+      });
+    </script>
+</body>
+</html>

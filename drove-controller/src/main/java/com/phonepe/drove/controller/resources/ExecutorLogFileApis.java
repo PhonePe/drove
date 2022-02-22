@@ -87,13 +87,12 @@ public class ExecutorLogFileApis {
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam("after") @Min(0) final long startOffset,
-            @QueryParam("before") @Min(0) final long endOffset,
-            @QueryParam("size") @Min(0) @Max(2^20) final long size) {
+            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstream(appId,
                             instanceId,
                             "/read/" + fileName,
-                            Map.of("after", startOffset, "before", endOffset, "size", size),
+                            Map.of("offset", offset, "length", length),
                             Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 

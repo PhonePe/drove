@@ -2,9 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.ui.views.ApplicationDetailsPageView;
-import com.phonepe.drove.controller.ui.views.ExecutorDetailsPageView;
-import com.phonepe.drove.controller.ui.views.HomeView;
+import com.phonepe.drove.controller.ui.views.*;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +57,30 @@ public class UI {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
         return new ApplicationDetailsPageView(appId);
+    }
+
+
+    @GET
+    @Path("/applications/{id}/instances/{instanceId}")
+    public InstanceDetailsPage instanceDetailsPage(
+            @PathParam("id") final String appId,
+            @PathParam("instanceId") final String instanceId) {
+        if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
+            throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
+        }
+        return new InstanceDetailsPage(appId, instanceId, stateDB.instance(appId, instanceId).orElse(null));
+    }
+
+    @GET
+    @Path("/applications/{id}/instances/{instanceId}/stream")
+    public LogPailerPage pailerPage(
+            @PathParam("id") final String appId,
+            @PathParam("instanceId") final String instanceId,
+            @QueryParam("logFileName") final String logFileName) {
+        if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
+            throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
+        }
+        return new LogPailerPage(appId, instanceId, logFileName);
     }
 
     @GET

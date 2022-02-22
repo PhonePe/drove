@@ -100,6 +100,15 @@ public class Apis {
     }
 
     @GET
+    @Path("/applications/{appId}/instances/{instanceId}")
+    @Timed
+    public ApiResponse<InstanceInfo> applicationInstance(
+            @PathParam("appId") @NotEmpty final String appId,
+            @PathParam("instanceId") @NotEmpty final String instanceId) {
+        return responseEngine.instanceDetails(appId, instanceId);
+    }
+
+    @GET
     @Path("/applications/{id}/instances/old")
     @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(

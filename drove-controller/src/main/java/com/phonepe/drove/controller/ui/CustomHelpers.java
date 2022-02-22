@@ -14,9 +14,44 @@
 
 package com.phonepe.drove.controller.ui;
 
+import com.google.common.base.Joiner;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
+
+import java.util.Set;
+
 /**
  *
  */
 
 public class CustomHelpers {
+
+    public CharSequence resourceRepr(final ResourceAllocation resource) {
+        record NodeResource(Set<Integer> cores, long mem) {};
+        return resource.accept(new ResourceAllocationVisitor<CharSequence>() {
+            @Override
+            public CharSequence visit(CPUAllocation cpu) {
+                return Joiner.on("<br>")
+                        .join(cpu.getCores()
+                                      .entrySet()
+                                      .stream()
+                                      .map(entry -> String.format("<b>Node: </b> %s: <b>Cores:</b> %s",
+                                                                  entry.getKey(),
+                                                                  Joiner.on(", ").join(entry.getValue())))
+                                      .toList());
+            }
+
+            @Override
+            public CharSequence visit(MemoryAllocation memory) {
+                return Joiner.on("<br")
+                        .join(memory.getMemoryInMB()
+                                      .entrySet()
+                                      .stream()
+                                      .map(e -> String.format("<b>Node:</b> %s <b>Memory:</b> %d MB", e.getKey(), e.getValue()))
+                                      .toList());
+            }
+        });
+    }
 }

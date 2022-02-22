@@ -84,6 +84,9 @@ public class ApplicationEngine {
     @MonitoredFunction
     public boolean cancelCurrentJob(final String appId) {
         val sm = stateMachines.get(appId);
+        if(null == sm) {
+            return false;
+        }
         val appSm = sm.getStateMachine();
         val action = (AppAsyncAction) appSm.currentAction()
                 .filter(a -> a instanceof AppAsyncAction)

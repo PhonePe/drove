@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -44,6 +43,14 @@ public class LogFileStream {
         long startOffset;
         long endOffset;
         List<String> lines;
+    }
+
+//    record LogBuffer(String data, long offset){}
+
+    @Value
+    private static class LogBuffer {
+        String data;
+        long offset;
     }
 
     private final LogInfo logInfo;
@@ -65,11 +72,12 @@ public class LogFileStream {
             return Response.ok(
                             Map.of("files",
                                    list
-                                           .filter(filePath -> FilenameUtils.getName(filePath.getFileName().toString()).startsWith("output."))
+                                           .filter(filePath -> FilenameUtils.getName(filePath.getFileName().toString())
+                                                   .startsWith("output."))
                                            .map(java.nio.file.Path::toFile)
                                            .filter(logFile -> logFile.exists() && logFile.isFile() && logFile.canRead())
                                            .map(logFile -> FilenameUtils.getName(logFile.getAbsolutePath()))
-                                           .collect(Collectors.toUnmodifiableList())))
+                                           .toList()))
                     .build();
         }
         catch (IOException e) {
@@ -81,6 +89,48 @@ public class LogFileStream {
     @Path("/{appId}/{instanceId}/read/{fileName}")
     @Metered
     public Response streamLogs(
+            @Auth final DroveUser user,
+            @PathParam("appId") @NotEmpty final String appId,
+            @PathParam("instanceId") @NotEmpty final String instanceId,
+            @PathParam("fileName") @NotEmpty final String fileName,
+            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+        log.debug("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
+        val logFilePath = logInfo.logPathFor(appId, instanceId);
+        if (Strings.isNullOrEmpty(logFilePath)) {
+            return error("This only works if the 'drove' appender type is configured");
+        }
+        val extractedFileName = FilenameUtils.getName(fileName);
+        val fullPath = logFilePath + "/" + extractedFileName;
+        val logFile = new File(fullPath);
+        log.debug("File read request: file={} offset={} length={} full-path={}",
+                  extractedFileName, offset, length, fullPath);
+        if (!logFile.exists() || !logFile.isFile() || !logFile.canRead()) {
+            return error("Could not read log file: " + logFilePath);
+        }
+        if(offset == -1 && length==-1) {
+            return Response.ok(new LogBuffer("", logFile.length())).build();
+        }
+        val actualLength = length == -1 ? 32_768 : length;
+        try(val rf = new RandomAccessFile(logFile, "r")) {
+            rf.seek(offset);
+            var buf = new byte[actualLength];
+            val bytesRead = rf.read(buf);
+            return Response.ok(
+                    new LogBuffer(bytesRead > 0 ?
+                                  new String(buf, 0, bytesRead)
+                                  : "",
+                                  offset)).build();
+        }
+        catch (IOException e) {
+            return error("Error reading file " + logFilePath + ": " + e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{appId}/{instanceId}/read/{fileName}/old")
+    @Metered
+    public Response streamLogsOld(
             @Auth final DroveUser user,
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
@@ -134,12 +184,12 @@ public class LogFileStream {
         val so = new StreamingOutput() {
             @Override
             public void write(OutputStream output) throws IOException, WebApplicationException {
-                try(val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
-                    val bw = new BufferedWriter(new OutputStreamWriter(output), DEFAULT_BUFFER_SIZE)) {
+                try (val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
+                     val bw = new BufferedWriter(new OutputStreamWriter(output), DEFAULT_BUFFER_SIZE)) {
                     var buffer = new char[DEFAULT_BUFFER_SIZE];
                     int bytesRead;
 
-                    while((bytesRead = br.read(buffer, 0, DEFAULT_BUFFER_SIZE)) !=-1) {
+                    while ((bytesRead = br.read(buffer, 0, DEFAULT_BUFFER_SIZE)) != -1) {
                         bw.write(buffer, 0, bytesRead);
                     }
                     bw.flush();
@@ -152,7 +202,8 @@ public class LogFileStream {
     private Response readFwd(long startOffset, String logFilePath, File logFile, long bufferSize) {
         val fileLength = logFile.length();
         val startPos = startOffset > fileLength
-                       ? 0 // File might have rotated/truncated for any other reason
+                       ? 0
+                       // File might have rotated/truncated for any other reason
                        : startOffset;
         try (val rf = new RandomAccessFile(logFile, "r")) {
             rf.seek(startPos);
@@ -177,7 +228,8 @@ public class LogFileStream {
     private Response readRev(long endOffset, String logFilePath, File logFile, long bufferSize) {
         val fileLength = logFile.length();
         val endPos = endOffset == 0
-                     ? fileLength //If no offset is provided, end will be end of file
+                     ? fileLength
+                     //If no offset is provided, end will be end of file
                      : Math.min(fileLength, endOffset); //if provided, it can only read till end of file
         //Start can be start of buffer or start of file whichever comes later
         val startPos = Math.max(endPos - bufferSize, 0);

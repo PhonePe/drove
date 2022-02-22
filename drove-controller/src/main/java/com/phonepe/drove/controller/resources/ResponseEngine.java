@@ -99,6 +99,12 @@ public class ResponseEngine {
                                            .collect(Collectors.toUnmodifiableList()));
     }
 
+    public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
+        return applicationStateDB.instance(appId, instanceId)
+                .map(ApiResponse::success)
+                .orElseGet(() -> ApiResponse.failure("No such instance"));
+    }
+
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
         return ApiResponse.success(applicationStateDB.oldInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
