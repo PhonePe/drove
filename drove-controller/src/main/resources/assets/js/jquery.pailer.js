@@ -110,6 +110,7 @@
       if (scrollTop === 0) {
         this_.page();
       } else if (scrollTop + height >= (scrollHeight - 50)) {
+        // Drove::new::give a 50px headroom for comparison.
         if (!this_.tailing) {
           this_.tailing = true;
           this_.tail();
@@ -251,6 +252,7 @@
 
         // Check if we are still at the bottom (since this event might
         // have fired before the scroll event has been dispatched).
+        // Drove::new::give a 50px headroom for comparison.
         if (scrollTop + height < (scrollHeight - 50)) {
           this_.tailing = false;
           return;
@@ -289,7 +291,14 @@
         if (data.data.length === this_.truncate_length) {
           setTimeout(function() { this_.tail(); }, 0);
         } else {
-          setTimeout(function() { this_.tail(); }, 1000);
+          //Drove::new::If there is no data in last call, slow down the tail calls a bit to reduce load on
+          //controller and executor. If all calls are getting data, then it's fine to load every second
+          if(data.data.length == 0) {
+            setTimeout(function() { this_.tail(); }, 5000);
+          }
+          else {
+            setTimeout(function() { this_.tail(); }, 1000);
+          }
         }
       })
       .fail(function() {
