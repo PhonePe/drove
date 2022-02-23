@@ -92,7 +92,7 @@ public class LogFileStream {
             @PathParam("fileName") @NotEmpty final String fileName,
             @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
             @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
-        log.debug("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
+        log.trace("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
         val logFilePath = logInfo.logPathFor(appId, instanceId);
         if (Strings.isNullOrEmpty(logFilePath)) {
             return error("This only works if the 'drove' appender type is configured");
@@ -100,7 +100,7 @@ public class LogFileStream {
         val extractedFileName = FilenameUtils.getName(fileName);
         val fullPath = logFilePath + "/" + extractedFileName;
         val logFile = new File(fullPath);
-        log.debug("File read request: file={} offset={} length={} full-path={}",
+        log.trace("File read request: file={} offset={} length={} full-path={}",
                   extractedFileName, offset, length, fullPath);
         if (!logFile.exists() || !logFile.isFile() || !logFile.canRead()) {
             return error("Could not read log file: " + logFilePath);

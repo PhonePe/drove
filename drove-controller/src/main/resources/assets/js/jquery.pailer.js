@@ -109,7 +109,7 @@
 
       if (scrollTop === 0) {
         this_.page();
-      } else if (scrollTop + height >= scrollHeight) {
+      } else if (scrollTop + height >= (scrollHeight - 50)) {
         if (!this_.tailing) {
           this_.tailing = true;
           this_.tail();
@@ -251,7 +251,7 @@
 
         // Check if we are still at the bottom (since this event might
         // have fired before the scroll event has been dispatched).
-        if (scrollTop + height < scrollHeight) {
+        if (scrollTop + height < (scrollHeight - 50)) {
           this_.tailing = false;
           return;
         }

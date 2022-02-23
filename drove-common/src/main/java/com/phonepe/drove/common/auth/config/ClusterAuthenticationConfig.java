@@ -1,6 +1,9 @@
 package com.phonepe.drove.common.auth.config;
 
 import com.phonepe.drove.models.info.nodedata.NodeType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 import javax.validation.constraints.NotEmpty;
@@ -10,7 +13,9 @@ import java.util.List;
 /**
  *
  */
-@Value
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClusterAuthenticationConfig {
 
     public static final ClusterAuthenticationConfig DEFAULT

@@ -35,6 +35,13 @@ logging:
 zookeeper:
   connectionString: localhost:2181
 
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: LocalControllerSecret
+  - nodeType: EXECUTOR
+    secret: LocalExecutorSecret
+
 userAuth:
   enabled: true
   users:

@@ -50,6 +50,14 @@ resources:
   disableNUMAPinning: true
   tags:
   - local
+
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: LocalControllerSecret
+  - nodeType: EXECUTOR
+    secret: LocalExecutorSecret
+
 #
 #metrics:
 #  frequency: 1 minute
