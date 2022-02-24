@@ -5,7 +5,7 @@ import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.auth.clientfilter.DroveClientRequestFilter;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -32,17 +32,16 @@ import java.util.concurrent.locks.ReentrantLock;
 @Path("/v1/logs")
 @PermitAll
 public class InstanceLogStream {
-    private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
 
     @Inject
     public InstanceLogStream(
-            ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig clusterAuthenticationConfig) {
-        this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.secret = clusterAuthenticationConfig.getSecrets()
                 .stream()
@@ -58,7 +57,7 @@ public class InstanceLogStream {
             @Context SseEventSink sseEventSink,
             @PathParam("appId") final String appId,
             @PathParam("instanceId") final String instanceId) {
-        val executorHostInfo = applicationStateDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
+        val executorHostInfo = instanceInfoDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
                 .flatMap(clusterResourcesDB::currentSnapshot)
                 .map(ExecutorHostInfo::getNodeData)
                 .orElse(null);

@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.managed;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -44,13 +45,15 @@ public class ApplicationMonitor implements Managed {
     private final Condition checkCond = checkLock.newCondition();
 
     private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ApplicationEngine engine;
 
     @Inject
     public ApplicationMonitor(
             ApplicationStateDB applicationStateDB,
-            ApplicationEngine engine) {
+            InstanceInfoDB instanceInfoDB, ApplicationEngine engine) {
         this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.engine = engine;
     }
 
@@ -94,7 +97,7 @@ public class ApplicationMonitor implements Managed {
                     }
 
                     val expectedInstances = app.getInstances();
-                    val actualInstances = applicationStateDB.instanceCount(appId, InstanceState.HEALTHY);
+                    val actualInstances = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
                                   appId, actualInstances, expectedInstances);

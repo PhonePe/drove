@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.ui.views.*;
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -36,13 +37,15 @@ public class UI {
         }
     }
 
-    private final ResponseEngine responseEngine;
     private final ApplicationStateDB stateDB;
+    private final InstanceInfoDB instanceInfoDB;
 
     @Inject
-    public UI(ResponseEngine responseEngine, ApplicationStateDB stateDB) {
-        this.responseEngine = responseEngine;
+    public UI(
+            ApplicationStateDB stateDB,
+            InstanceInfoDB instanceInfoDB) {
         this.stateDB = stateDB;
+        this.instanceInfoDB = instanceInfoDB;
     }
 
     @GET
@@ -68,7 +71,7 @@ public class UI {
         if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new InstanceDetailsPage(appId, instanceId, stateDB.instance(appId, instanceId).orElse(null));
+        return new InstanceDetailsPage(appId, instanceId, instanceInfoDB.instance(appId, instanceId).orElse(null));
     }
 
     @GET

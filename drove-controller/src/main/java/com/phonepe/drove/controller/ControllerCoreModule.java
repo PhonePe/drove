@@ -20,10 +20,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.MapBasedClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ExecutorStateDB;
-import com.phonepe.drove.controller.statedb.MapBasedApplicationStateDB;
-import com.phonepe.drove.controller.statedb.MapBasedExecutorStateDB;
+import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -72,7 +69,8 @@ public class ControllerCoreModule extends AbstractModule {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
         bind(ExecutorStateDB.class).to(MapBasedExecutorStateDB.class);
         bind(ClusterResourcesDB.class).to(MapBasedClusterResourcesDB.class);
-        bind(ApplicationStateDB.class).to(MapBasedApplicationStateDB.class);
+        bind(ApplicationStateDB.class).to(ZkApplicationStateDB.class);
+        bind(InstanceInfoDB.class).to(MapBasedInstanceInfoDB.class);
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
                 .to(RemoteExecutorMessageSender.class);

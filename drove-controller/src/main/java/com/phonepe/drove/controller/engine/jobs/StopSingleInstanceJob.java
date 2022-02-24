@@ -10,7 +10,7 @@ import com.phonepe.drove.controller.jobexecutor.JobContext;
 import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -33,7 +33,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     private final String appId;
     private final String instanceId;
     private final ClusterOpSpec clusterOpSpec;
-    private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
 
@@ -41,13 +41,12 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             String appId,
             String instanceId,
             ClusterOpSpec clusterOpSpec,
-            ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator) {
         this.appId = appId;
         this.instanceId = instanceId;
         this.clusterOpSpec = clusterOpSpec;
-        this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
     }
@@ -70,7 +69,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
                 .withMaxDuration(Duration.ofMinutes(3))
                 .handle(Exception.class)
                 .handleResultIf(r -> !r);
-        val instanceInfo = applicationStateDB.instance(appId, instanceId).orElse(null);
+        val instanceInfo = instanceInfoDB.instance(appId, instanceId).orElse(null);
         if (null == instanceInfo) {
             return true;
         }
@@ -117,7 +116,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
             return false;
         }
-        return ensureInstanceState(applicationStateDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED);
+        return ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED);
     }
 
 }

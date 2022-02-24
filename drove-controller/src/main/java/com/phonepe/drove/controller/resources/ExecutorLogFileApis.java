@@ -6,7 +6,7 @@ import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.auth.model.DroveUser;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -41,7 +41,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 @PermitAll
 @Slf4j
 public class ExecutorLogFileApis {
-    private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
@@ -49,10 +49,9 @@ public class ExecutorLogFileApis {
 
     @Inject
     public ExecutorLogFileApis(
-            ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig config) {
-        this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.secret = Objects.requireNonNullElse(config, ClusterAuthenticationConfig.DEFAULT)
                 .getSecrets()
@@ -121,7 +120,7 @@ public class ExecutorLogFileApis {
             String path,
             Map<String, Object> queryParams,
             Map<String, String> responseHeaders) {
-        val executorHostInfo = applicationStateDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
+        val executorHostInfo = instanceInfoDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
                 .flatMap(clusterResourcesDB::currentSnapshot)
                 .map(ExecutorHostInfo::getNodeData)
                 .orElse(null);

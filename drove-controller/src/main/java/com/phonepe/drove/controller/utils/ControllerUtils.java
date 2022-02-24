@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.utils;
 
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -34,7 +34,7 @@ public class ControllerUtils {
     }
 
     public static boolean ensureInstanceState(
-            ApplicationStateDB applicationStateDB,
+            final InstanceInfoDB instanceInfoDB,
             ClusterOpSpec clusterOpSpec,
             String appId,
             String instanceId,
@@ -54,13 +54,13 @@ public class ControllerUtils {
                             log.error("Error starting instance: {}", failure.getMessage());
                         }
                     })
-                    .get(() -> ensureInstanceState(currentInstanceInfo(applicationStateDB, appId, instanceId),
+                    .get(() -> ensureInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
                                                    required));
             if (status) {
                 return true;
             }
             else {
-                val curr = currentInstanceInfo(applicationStateDB, appId, instanceId);
+                val curr = currentInstanceInfo(instanceInfoDB, appId, instanceId);
                 if (null == curr) {
                     log.error("No instance info found at all for: {}/{}", appId, instanceId);
                 }
@@ -89,10 +89,10 @@ public class ControllerUtils {
     }
 
     private static InstanceInfo currentInstanceInfo(
-            final ApplicationStateDB applicationStateDB,
+            final InstanceInfoDB instanceInfoDB,
             String appId,
             String instanceId) {
-        return applicationStateDB.instance(appId, instanceId).orElse(null);
+        return instanceInfoDB.instance(appId, instanceId).orElse(null);
     }
 
     private static boolean ensureInstanceState(final InstanceInfo instanceInfo, final InstanceState instanceState) {

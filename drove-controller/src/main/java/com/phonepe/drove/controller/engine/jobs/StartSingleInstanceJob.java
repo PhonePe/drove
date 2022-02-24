@@ -10,7 +10,7 @@ import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobContext;
 import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -37,7 +37,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final ApplicationSpec applicationSpec;
     private final ClusterOpSpec clusterOpSpec;
     private final InstanceScheduler scheduler;
-    private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ControllerCommunicator communicator;
     private final String schedulingSessionId;
 
@@ -45,12 +45,13 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             ApplicationSpec applicationSpec,
             ClusterOpSpec clusterOpSpec,
             InstanceScheduler scheduler,
-            ApplicationStateDB applicationStateDB,
-            ControllerCommunicator communicator, String schedulingSessionId) {
+            InstanceInfoDB instanceInfoDB,
+            ControllerCommunicator communicator,
+            String schedulingSessionId) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
-        this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.communicator = communicator;
         this.schedulingSessionId = schedulingSessionId;
     }
@@ -144,7 +145,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             else {
                 log.info("Start message for instance {}/{} accepted by executor {}",
                          appId, instanceId, node.getExecutorId());
-                successful = ensureInstanceState(applicationStateDB,
+                successful = ensureInstanceState(instanceInfoDB,
                                                  clusterOpSpec,
                                                  appId,
                                                  instanceId,

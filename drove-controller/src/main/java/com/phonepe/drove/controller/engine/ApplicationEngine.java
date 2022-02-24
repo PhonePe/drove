@@ -6,6 +6,7 @@ import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;
@@ -44,6 +45,7 @@ public class ApplicationEngine {
     private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final CommandValidator commandValidator;
     private final DroveEventBus droveEventBus;
 
@@ -53,10 +55,11 @@ public class ApplicationEngine {
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
-            CommandValidator commandValidator,
+            InstanceInfoDB instanceInfoDB, CommandValidator commandValidator,
             DroveEventBus droveEventBus) {
         this.factory = factory;
         this.stateDB = stateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.commandValidator = commandValidator;
         this.droveEventBus = droveEventBus;
     }
@@ -108,7 +111,7 @@ public class ApplicationEngine {
     public void moveInstancesFromExecutor(final String executorId) {
         stateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
-                .flatMap(app -> stateDB.healthyInstances(app.getAppId()).stream())
+                .flatMap(app -> instanceInfoDB.healthyInstances(app.getAppId()).stream())
                 .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
                 .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
                 .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
@@ -130,7 +133,7 @@ public class ApplicationEngine {
             public ApplicationOperation visit(ApplicationDeployOperation deploy) {
                 val appId = deploy.getAppId();
                 log.info("Translating deploy op to scaling op for {}", appId);
-                val existing = stateDB.instanceCount(appId, InstanceState.HEALTHY);
+                val existing = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
                 return new ApplicationScaleOperation(appId,
                                                      existing + deploy.getInstances(),
                                                      deploy.getOpSpec());
@@ -205,6 +208,7 @@ public class ApplicationEngine {
                 stateMachines.computeIfPresent(appId, (id, sm) -> {
                     sm.stop();
                     stateDB.deleteApplicationState(appId);
+                    instanceInfoDB.deleteAllInstancesForApp(appId);
                     log.info("State machine stopped for: {}", appId);
                     return null;
                 });

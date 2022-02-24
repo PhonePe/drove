@@ -9,6 +9,7 @@ import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.jobexecutor.JobTopology;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -29,6 +30,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
  */
 public class StopAppInstancesAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
 
@@ -36,10 +38,12 @@ public class StopAppInstancesAction extends AppAsyncAction {
     public StopAppInstancesAction(
             final JobExecutor<Boolean> jobExecutor,
             final ApplicationStateDB applicationStateDB,
+            InstanceInfoDB instanceInfoDB,
             final ClusterResourcesDB clusterResourcesDB,
             final ControllerCommunicator communicator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
     }
@@ -55,11 +59,11 @@ public class StopAppInstancesAction extends AppAsyncAction {
                 .addParallel(stopAction.getOpSpec().getParallelism(), stopAction.getInstanceIds()
                         .stream()
                         .map(instanceId -> (Job<Boolean>)new StopSingleInstanceJob(stopAction.getAppId(),
-                                                                     instanceId,
-                                                                     stopAction.getOpSpec(),
-                                                                     applicationStateDB,
-                                                                     clusterResourcesDB,
-                                                                     communicator))
+                                                                                   instanceId,
+                                                                                   stopAction.getOpSpec(),
+                                                                                   instanceInfoDB,
+                                                                                   clusterResourcesDB,
+                                                                                   communicator))
                         .toList())
                 .build());
     }
@@ -78,7 +82,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
                            ? "Could not stop application instances"
                            : "Could not stop application instances: " + executionResult.getFailure().getMessage();
 
-        if (applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) > 0) {
+        if (instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errorMessage);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errorMessage);

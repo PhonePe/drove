@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -76,15 +77,18 @@ public class CommandValidator {
     private final Provider<ApplicationEngine> engine;
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final InstanceInfoDB instanceInfoStore;
 
     @Inject
     public CommandValidator(
             Provider<ApplicationEngine> engine,
             ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB) {
+            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoStore) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.instanceInfoStore = instanceInfoStore;
     }
 
     @MonitoredFunction
@@ -110,7 +114,8 @@ public class CommandValidator {
                 }
             }
         }
-        return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB));
+        return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB,
+                                                        instanceInfoStore));
     }
 
     private static final class OpValidationVisitor implements ApplicationOperationVisitor<ValidationResult> {
@@ -118,14 +123,17 @@ public class CommandValidator {
         private final String appId;
         private final ApplicationStateDB applicationStateDB;
         private final ClusterResourcesDB clusterResourcesDB;
+        private final InstanceInfoDB instancesDB;
 
         private OpValidationVisitor(
                 String appId,
                 ApplicationStateDB applicationStateDB,
-                ClusterResourcesDB clusterResourcesDB) {
+                ClusterResourcesDB clusterResourcesDB,
+                InstanceInfoDB instancesDB) {
             this.appId = appId;
             this.applicationStateDB = applicationStateDB;
             this.clusterResourcesDB = clusterResourcesDB;
+            this.instancesDB = instancesDB;
         }
 
         @Override
@@ -148,7 +156,7 @@ public class CommandValidator {
 
         @Override
         public ValidationResult visit(ApplicationStopInstancesOperation stopInstances) {
-            val validIds = applicationStateDB.activeInstances(appId, 0, Integer.MAX_VALUE)
+            val validIds = instancesDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                     .stream()
                     .map(InstanceInfo::getInstanceId)
                     .collect(Collectors.toUnmodifiableSet());
@@ -162,7 +170,7 @@ public class CommandValidator {
 
         @Override
         public ValidationResult visit(ApplicationScaleOperation scale) {
-            val currentInstances = applicationStateDB.instanceCount(
+            val currentInstances = instancesDB.instanceCount(
                     appId, Set.of(PENDING, PROVISIONING, HEALTHY, STARTING, UNREADY, READY));
             val requiredInstances = scale.getRequiredInstances();
             if (requiredInstances <= currentInstances) {

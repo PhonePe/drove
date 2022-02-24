@@ -11,6 +11,7 @@ import com.phonepe.drove.controller.jobexecutor.JobTopology;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -26,7 +27,6 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 
@@ -36,6 +36,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 @Slf4j
 public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
@@ -44,10 +45,11 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
     public ReplaceInstancesAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler, ControllerCommunicator communicator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
         this.communicator = communicator;
@@ -61,7 +63,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             ApplicationOperation operation) {
         val restartOp = safeCast(operation, ApplicationReplaceInstancesOperation.class);
         val appId = restartOp.getAppId();
-        val instances = applicationStateDB.healthyInstances(restartOp.getAppId())
+        val instances = instanceInfoDB.healthyInstances(restartOp.getAppId())
                 .stream()
                 .filter(instanceInfo -> (restartOp.getInstanceIds() == null || restartOp.getInstanceIds().isEmpty())
                                             || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
@@ -79,14 +81,12 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                         .addJob(List.of(new StartSingleInstanceJob(appSpec,
                                                                    clusterOpSpec,
                                                                    scheduler,
-                                                                   applicationStateDB,
-                                                                   communicator,
+                                                                   instanceInfoDB, communicator,
                                                                    schedulingSessionId),
                                         new StopSingleInstanceJob(appId,
                                                                   instanceInfo.getInstanceId(),
                                                                   clusterOpSpec,
-                                                                  applicationStateDB,
-                                                                  clusterResourcesDB,
+                                                                  instanceInfoDB, clusterResourcesDB,
                                                                   communicator)))
                         .build())
                 .toList();
@@ -107,7 +107,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                      : (executionResult.getFailure() == null
                         ? "Execution failed"
                         : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage());
-        val count = applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+        val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
         if (count > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }

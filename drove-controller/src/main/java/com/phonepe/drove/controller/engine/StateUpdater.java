@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -20,14 +20,14 @@ import java.util.Objects;
 @Singleton
 public class StateUpdater {
     private final ClusterResourcesDB resourcesDB;
-    private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
 
     @Inject
     public StateUpdater(
             ClusterResourcesDB resourcesDB,
-            ApplicationStateDB applicationStateDB) {
+            InstanceInfoDB instanceInfoDB) {
         this.resourcesDB = resourcesDB;
-        this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
     }
 
     public void updateClusterResources(final List<ExecutorNodeData> children) {
@@ -45,7 +45,7 @@ public class StateUpdater {
                 .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
                 .filter(Objects::nonNull)
                 .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
-                        .forEach(instance -> applicationStateDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
+                        .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
 
         resourcesDB.remove(executorIds);
     }
@@ -57,7 +57,7 @@ public class StateUpdater {
 
 
     private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
-        return applicationStateDB.updateInstanceState(instanceInfo.getAppId(),
+        return instanceInfoDB.updateInstanceState(instanceInfo.getAppId(),
                                                       instanceInfo.getInstanceId(),
                                                       instanceInfo);
     }

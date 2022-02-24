@@ -12,6 +12,7 @@ import com.phonepe.drove.controller.jobexecutor.JobTopology;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.controller.statemachine.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -39,6 +40,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 @Slf4j
 public class ScaleAppAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
@@ -47,10 +49,11 @@ public class ScaleAppAction extends AppAsyncAction {
     public ScaleAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler, ControllerCommunicator communicator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
         this.communicator = communicator;
@@ -64,7 +67,7 @@ public class ScaleAppAction extends AppAsyncAction {
             ApplicationOperation operation) {
         val scaleOp = safeCast(operation, ApplicationScaleOperation.class);
         long required = scaleOp.getRequiredInstances();
-        val currentInstances = applicationStateDB.healthyInstances(scaleOp.getAppId());
+        val currentInstances = instanceInfoDB.healthyInstances(scaleOp.getAppId());
         val currentInstancesCount = currentInstances.size();
         if (currentInstancesCount == required) {
             log.info("Nothing needs to be done for scaling as app {} already has required number of instances: {}",
@@ -86,7 +89,7 @@ public class ScaleAppAction extends AppAsyncAction {
                                                        .mapToObj(i -> (Job<Boolean>)new StartSingleInstanceJob(applicationSpec,
                                                                                                                clusterOpSpec,
                                                                                                                scheduler,
-                                                                                                               applicationStateDB,
+                                                                                                               instanceInfoDB,
                                                                                                                communicator,
                                                                                                                schedulingSessionId))
                                                        .toList())
@@ -96,7 +99,7 @@ public class ScaleAppAction extends AppAsyncAction {
             val numToBeStopped = currentInstancesCount - required;
             log.info("{} instances to be stopped", numToBeStopped);
             val healthyInstances = new ArrayList<>(
-                    applicationStateDB.activeInstances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
+                    instanceInfoDB.activeInstances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
                             .stream()
                             .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
                             .toList());
@@ -114,11 +117,11 @@ public class ScaleAppAction extends AppAsyncAction {
                                                    .stream()
                                                    .map(InstanceInfo::getInstanceId)
                                                    .map(iid -> (Job<Boolean>)new StopSingleInstanceJob(scaleOp.getAppId(),
-                                                                                         iid,
-                                                                                         scaleOp.getOpSpec(),
-                                                                                         applicationStateDB,
-                                                                                         clusterResourcesDB,
-                                                                                         communicator))
+                                                                                                       iid,
+                                                                                                       scaleOp.getOpSpec(),
+                                                                                                       instanceInfoDB,
+                                                                                                       clusterResourcesDB,
+                                                                                                       communicator))
                                                    .toList())
                                            .build());
             }
@@ -141,7 +144,7 @@ public class ScaleAppAction extends AppAsyncAction {
         var errMsg = Boolean.TRUE.equals(executionResult.getResult())
                      ? ""
                      : message;
-        val count = applicationStateDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+        val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
         val scaleOp = safeCast(operation, ApplicationScaleOperation.class);
         if (scaleOp.getRequiredInstances() == count) {
             log.info("Required scale {} has been reached.", count);

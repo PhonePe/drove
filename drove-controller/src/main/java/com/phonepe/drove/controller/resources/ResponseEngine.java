@@ -10,6 +10,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -53,6 +54,7 @@ public class ResponseEngine {
                                                                                     InstanceState.STOPPING);
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
+    private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
 
@@ -60,10 +62,11 @@ public class ResponseEngine {
     public ResponseEngine(
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
+        this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
     }
@@ -93,20 +96,20 @@ public class ResponseEngine {
         val checkStates = null == state || state.isEmpty()
                           ? ACTIVE_INSTANCE_STATES
                           : state;
-        return ApiResponse.success(applicationStateDB.activeInstances(appId, 0, Integer.MAX_VALUE)
+        return ApiResponse.success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
                                            .filter(info -> checkStates.contains(info.getState()))
                                            .toList());
     }
 
     public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
-        return applicationStateDB.instance(appId, instanceId)
+        return instanceInfoDB.instance(appId, instanceId)
                 .map(ApiResponse::success)
                 .orElseGet(() -> ApiResponse.failure("No such instance"));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
-        return ApiResponse.success(applicationStateDB.oldInstances(appId, 0, Integer.MAX_VALUE)
+        return ApiResponse.success(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
                                            .toList());
     }
@@ -155,7 +158,7 @@ public class ResponseEngine {
     private AppDetails toAppDetails(final ApplicationInfo info) {
         val spec = info.getSpec();
         val requiredInstances = info.getInstances();
-        val instances = applicationStateDB.activeInstances(info.getAppId(), 0, Integer.MAX_VALUE);
+        val instances = instanceInfoDB.activeInstances(info.getAppId(), 0, Integer.MAX_VALUE);
         val cpus = totalCPU(spec, requiredInstances);
         val memory = totalMemory(spec, requiredInstances);
         return new AppDetails(info.getAppId(),
@@ -176,7 +179,7 @@ public class ResponseEngine {
     private AppSummary toAppSummary(final ApplicationInfo info) {
         val spec = info.getSpec();
         val instances = info.getInstances();
-        val healthyInstances = applicationStateDB.instanceCount(info.getAppId(), InstanceState.HEALTHY);
+        val healthyInstances = instanceInfoDB.instanceCount(info.getAppId(), InstanceState.HEALTHY);
         val cpus = totalCPU(spec, instances);
         val memory = totalMemory(spec, instances);
         return new AppSummary(info.getAppId(),
@@ -294,7 +297,7 @@ public class ResponseEngine {
                                            .map(app -> {
                                                val spec = app.getSpec().getExposureSpec();
                                                return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
-                                                                         applicationStateDB.healthyInstances(app.getAppId())
+                                                                         instanceInfoDB.healthyInstances(app.getAppId())
                                                                                  .stream()
                                                                                  .sorted(Comparator.comparing(
                                                                                          InstanceInfo::getCreated)) //Reduce chaos
