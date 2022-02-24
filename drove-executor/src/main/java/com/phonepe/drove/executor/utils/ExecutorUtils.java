@@ -57,7 +57,7 @@ public class ExecutorUtils {
                 state.getState(),
                 Collections.emptyMap(),
                 state.getError(),
-                new Date(),
+                data.getCreated(),
                 new Date());
     }
 

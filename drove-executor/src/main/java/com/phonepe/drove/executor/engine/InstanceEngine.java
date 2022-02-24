@@ -6,12 +6,12 @@ import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.InstanceActionFactory;
-import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
@@ -30,7 +30,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
 
@@ -146,7 +145,7 @@ public class InstanceEngine implements Closeable {
         return stateMachines.values()
                 .stream()
                 .map(v -> ExecutorUtils.convert(v.getStateMachine().getCurrentState()))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     @MonitoredFunction

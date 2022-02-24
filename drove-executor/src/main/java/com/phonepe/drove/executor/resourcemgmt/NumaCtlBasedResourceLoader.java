@@ -84,7 +84,7 @@ public class NumaCtlBasedResourceLoader {
                             + ": Cores: " + info.getAvailableCores()
                             .stream()
                             .sorted()
-                            .collect(Collectors.toUnmodifiableList())
+                            .toList()
                             + " Memory (MB): " + info.getMemoryInMB()));
 
         }

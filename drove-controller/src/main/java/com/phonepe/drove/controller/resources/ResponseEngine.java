@@ -96,7 +96,7 @@ public class ResponseEngine {
         return ApiResponse.success(applicationStateDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
                                            .filter(info -> checkStates.contains(info.getState()))
-                                           .collect(Collectors.toUnmodifiableList()));
+                                           .toList());
     }
 
     public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
@@ -108,7 +108,7 @@ public class ResponseEngine {
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
         return ApiResponse.success(applicationStateDB.oldInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
-                                           .collect(Collectors.toUnmodifiableList()));
+                                           .toList());
     }
 
     public ApiResponse<ClusterSummary> cluster() {
@@ -149,7 +149,7 @@ public class ResponseEngine {
                         .stream()
                         .map(hostInfo -> toExecutorSummary(hostInfo).orElse(null))
                         .filter(Objects::nonNull)
-                        .collect(Collectors.toUnmodifiableList()));
+                        .toList());
     }
 
     private AppDetails toAppDetails(final ApplicationInfo info) {
@@ -312,9 +312,9 @@ public class ResponseEngine {
                                                                                                  .getPorts()
                                                                                                  .get(spec.getPortName())
                                                                                                  .getPortType()))
-                                                                                 .collect(Collectors.toUnmodifiableList()));
+                                                                                 .toList());
                                            })
-                                           .collect(Collectors.toUnmodifiableList()));
+                                           .toList());
     }
 
     public ApiResponse<Void> blacklistExecutor(final String executorId) {

@@ -38,7 +38,7 @@ public class ResourcePopulator implements Managed {
         var lines = Collections.<String>emptyList();
         try (val input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             lines = input.lines()
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
         }
         val exitCode = process.waitFor();
         if (exitCode != 0) {

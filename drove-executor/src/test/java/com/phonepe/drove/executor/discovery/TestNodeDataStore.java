@@ -33,7 +33,7 @@ public class TestNodeDataStore implements NodeDataStore {
         return nodes.values()
                 .stream()
                 .filter(node -> node.getType().equals(nodeType))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     @Override

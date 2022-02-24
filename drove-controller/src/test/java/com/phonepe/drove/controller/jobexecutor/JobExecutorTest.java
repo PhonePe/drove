@@ -9,7 +9,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonTestUtils.delay;
@@ -30,8 +29,8 @@ class JobExecutorTest {
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> validateResults(done, failed, res));
         val topology = JobTopology.<Integer>builder().addJob(IntStream.rangeClosed(1, 10)
-                                                                     .mapToObj(Adder::new)
-                                                                     .collect(Collectors.toUnmodifiableList()))
+                                                                     .mapToObj(i -> (Job<Integer>)new Adder(i))
+                                                                     .toList())
                 .build();
         exec.schedule(topology, responseCombiner, r -> {});
         waitUntil(done::get);
@@ -49,8 +48,8 @@ class JobExecutorTest {
         exec.schedule(Collections.singletonList(
                 new JobLevel<>(3,
                                IntStream.rangeClosed(1, 10)
-                                       .mapToObj(Adder::new)
-                                       .collect(Collectors.toUnmodifiableList()))), responseCombiner, r -> {});
+                                       .mapToObj(i -> (Job<Integer>)new Adder(i))
+                                       .toList())), responseCombiner, r -> {});
         log.debug("Waiting for jobs to complete");
         waitUntil(done::get);
         assertTrue(done.get());
@@ -66,8 +65,8 @@ class JobExecutorTest {
         val topology = JobTopology.<Integer>builder()
                 .addJob(new Adder(1))
                 .addParallel(3, IntStream.rangeClosed(1, 10)
-                        .mapToObj(Adder::new)
-                        .collect(Collectors.toUnmodifiableList()))
+                        .mapToObj(i -> (Job<Integer>)new Adder(i))
+                        .toList())
                 .addJob(new Adder(1))
                 .build();
         exec.schedule(topology, responseCombiner, r -> {});
@@ -100,8 +99,8 @@ class JobExecutorTest {
         val topology = JobTopology.<Integer>builder()
                 .addJob(new Adder(1))
                 .addParallel(3, IntStream.rangeClosed(1, 10)
-                        .mapToObj(Adder::new)
-                        .collect(Collectors.toUnmodifiableList()))
+                        .mapToObj(i -> (Job<Integer>)new Adder(i))
+                        .toList())
                 .addJob(new ErrorJob())
                 .addJob(new Adder(1))
                 .build();

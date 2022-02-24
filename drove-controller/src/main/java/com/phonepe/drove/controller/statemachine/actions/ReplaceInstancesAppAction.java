@@ -65,7 +65,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                 .stream()
                 .filter(instanceInfo -> (restartOp.getInstanceIds() == null || restartOp.getInstanceIds().isEmpty())
                                             || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
         val clusterOpSpec = restartOp.getOpSpec();
         val appSpec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
         if (null == appSpec) {
@@ -89,7 +89,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                                                                   clusterResourcesDB,
                                                                   communicator)))
                         .build())
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
         return Optional.of(JobTopology.<Boolean>builder()
                 .addParallel(parallelism, restartJobs)
                 .build());

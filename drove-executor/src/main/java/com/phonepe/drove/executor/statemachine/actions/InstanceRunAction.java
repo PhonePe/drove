@@ -130,9 +130,9 @@ public class InstanceRunAction extends InstanceAction {
                                                                              .equals(MountedVolume.MountMode.READ_ONLY)
                                                                      ? AccessMode.ro
                                                                      : AccessMode.rw))
-                                             .collect(Collectors.toUnmodifiableList()));
+                                             .toList());
             }
-            val instanceInfo = instanceInfo(currentState, portMappings, instanceSpec.getResources(), hostName);
+            val instanceInfo = instanceInfo(currentState, portMappings, instanceSpec.getResources(), hostName, currentState.getData());
             val labels = new HashMap<String, String>();
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
@@ -141,7 +141,7 @@ public class InstanceRunAction extends InstanceAction {
                                .entrySet()
                                .stream()
                                .map(e -> e.getKey() + "=" + e.getValue())
-                               .collect(Collectors.toUnmodifiableList()));
+                               .toList());
             log.debug("Environment: {}", env);
             val id = containerCmd
                     .withHostConfig(hostConfig)
@@ -176,7 +176,8 @@ public class InstanceRunAction extends InstanceAction {
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,
             List<ResourceAllocation> resources,
-            String hostName) {
+            String hostName,
+            ExecutorInstanceInfo oldData) {
         val data = currentState.getData();
         return new ExecutorInstanceInfo(
                 data.getAppId(),
@@ -186,7 +187,7 @@ public class InstanceRunAction extends InstanceAction {
                 new LocalInstanceInfo(hostName, portMappings),
                 resources,
                 Collections.emptyMap(),
-                new Date(),
+                null == oldData ? new Date() : oldData.getCreated(),
                 new Date());
     }
 

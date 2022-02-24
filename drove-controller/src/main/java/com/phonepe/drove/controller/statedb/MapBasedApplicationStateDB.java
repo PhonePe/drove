@@ -15,7 +15,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
 
@@ -206,6 +205,6 @@ public class MapBasedApplicationStateDB implements ApplicationStateDB {
                 .values()
                 .stream()
                 .sorted(Comparator.comparing(InstanceInfo::getUpdated).reversed())
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 }

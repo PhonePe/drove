@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -22,6 +21,7 @@ final class JobLevel<T> implements Job<T> {
 
     private final List<Job<T>> jobs;
 
+    @SafeVarargs
     public JobLevel(int parallelism, Job<T>... jobs) {
         this(parallelism, Arrays.asList(jobs));
     }
@@ -44,7 +44,7 @@ final class JobLevel<T> implements Job<T> {
         val workList = List.copyOf(this.jobs);
         val futures = workList.stream()
                 .map(job -> executorService.submit(() -> JobUtils.executeSingleJob(context, responseCombiner, job)))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
 
         IntStream.range(0, futures.size())
                 .forEach(i -> {

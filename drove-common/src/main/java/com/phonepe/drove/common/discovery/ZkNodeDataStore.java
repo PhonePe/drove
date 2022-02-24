@@ -65,7 +65,7 @@ public class ZkNodeDataStore implements NodeDataStore {
                         }
                     })
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
         }
         catch (KeeperException.NoNodeException e) {
             log.trace("No controller found");

@@ -48,7 +48,7 @@ public class ZkUtils {
                 .stream()
                 .map(nodeReader)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
         if(nodes.isEmpty()) {
             return nodes;
         }

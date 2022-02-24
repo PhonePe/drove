@@ -34,7 +34,7 @@ public interface ApplicationStateDB {
         return activeInstances(appId, 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     List<InstanceInfo> activeInstances(String appId, int start, int size);

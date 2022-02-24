@@ -52,7 +52,7 @@ public class ContainerHelperExtension implements BeforeAllCallback, BeforeEachCa
                 .stream()
                 .filter(c -> c.getImage().equals(IMAGE_NAME))
                 .map(Container::getId)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
         if(alreadyRunning.isEmpty()) {
             log.debug("No pre-existing containers running for image: {}", IMAGE_NAME);
             return;

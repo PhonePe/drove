@@ -5,6 +5,7 @@ import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
+import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.jobexecutor.JobTopology;
@@ -28,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
@@ -83,13 +83,13 @@ public class ScaleAppAction extends AppAsyncAction {
                                        .addParallel(
                                                parallelism,
                                                LongStream.range(0, numNew)
-                                                       .mapToObj(i -> new StartSingleInstanceJob(applicationSpec,
-                                                                                                 clusterOpSpec,
-                                                                                                 scheduler,
-                                                                                                 applicationStateDB,
-                                                                                                 communicator,
-                                                                                                 schedulingSessionId))
-                                                       .collect(Collectors.toUnmodifiableList()))
+                                                       .mapToObj(i -> (Job<Boolean>)new StartSingleInstanceJob(applicationSpec,
+                                                                                                               clusterOpSpec,
+                                                                                                               scheduler,
+                                                                                                               applicationStateDB,
+                                                                                                               communicator,
+                                                                                                               schedulingSessionId))
+                                                       .toList())
                                        .build());
         }
         else {
@@ -99,12 +99,12 @@ public class ScaleAppAction extends AppAsyncAction {
                     applicationStateDB.activeInstances(scaleOp.getAppId(), 0, Integer.MAX_VALUE)
                             .stream()
                             .filter(instance -> instance.getState().equals(InstanceState.HEALTHY))
-                            .collect(Collectors.toUnmodifiableList()));
+                            .toList());
             Collections.shuffle(healthyInstances);  //This is needed to reduce chances of selected instances to be skewed
             val instancesToBeStopped = healthyInstances
                     .stream()
                     .limit(numToBeStopped)
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
             if (instancesToBeStopped.isEmpty()) {
                 log.warn("Looks like instances are in inconsistent state. Tried to find extra instances but could not");
             }
@@ -113,13 +113,13 @@ public class ScaleAppAction extends AppAsyncAction {
                                            .addParallel(clusterOpSpec.getParallelism(), instancesToBeStopped
                                                    .stream()
                                                    .map(InstanceInfo::getInstanceId)
-                                                   .map(iid -> new StopSingleInstanceJob(scaleOp.getAppId(),
+                                                   .map(iid -> (Job<Boolean>)new StopSingleInstanceJob(scaleOp.getAppId(),
                                                                                          iid,
                                                                                          scaleOp.getOpSpec(),
                                                                                          applicationStateDB,
                                                                                          clusterResourcesDB,
                                                                                          communicator))
-                                                   .collect(Collectors.toUnmodifiableList()))
+                                                   .toList())
                                            .build());
             }
         }

@@ -63,7 +63,8 @@ public class JobTopology<T> implements Job<T> {
             return this;
         }
 
-        public Builder<T> addParallel(int parallelism, Job<T>... job) {
+        @SafeVarargs
+        public final Builder<T> addParallel(int parallelism, Job<T>... job) {
             this.jobs.add(new JobLevel<>(parallelism, job));
             return this;
         }

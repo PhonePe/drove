@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statemachine.actions;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
+import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.jobexecutor.JobTopology;
@@ -19,9 +20,7 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.val;
 
 import javax.inject.Inject;
-
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 
@@ -55,13 +54,13 @@ public class StopAppInstancesAction extends AppAsyncAction {
         return Optional.of(JobTopology.<Boolean>builder()
                 .addParallel(stopAction.getOpSpec().getParallelism(), stopAction.getInstanceIds()
                         .stream()
-                        .map(instanceId -> new StopSingleInstanceJob(stopAction.getAppId(),
+                        .map(instanceId -> (Job<Boolean>)new StopSingleInstanceJob(stopAction.getAppId(),
                                                                      instanceId,
                                                                      stopAction.getOpSpec(),
                                                                      applicationStateDB,
                                                                      clusterResourcesDB,
                                                                      communicator))
-                        .collect(Collectors.toUnmodifiableList()))
+                        .toList())
                 .build());
     }
 

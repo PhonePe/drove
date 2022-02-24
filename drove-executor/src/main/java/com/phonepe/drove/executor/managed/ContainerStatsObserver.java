@@ -285,7 +285,7 @@ public class ContainerStatsObserver implements Managed {
                                                                        .values()
                                                                        .stream()
                                                                        .filter(Objects::nonNull)
-                                                                       .collect(Collectors.toUnmodifiableList())));
+                                                                       .toList()));
             }
         }
     }
