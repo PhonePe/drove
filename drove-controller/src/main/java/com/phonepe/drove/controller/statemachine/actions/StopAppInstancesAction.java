@@ -18,6 +18,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationStopInstancesOperation;
 import io.appform.functionmetrics.MonitoredFunction;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -28,6 +29,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 /**
  *
  */
+@Slf4j
 public class StopAppInstancesAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
@@ -76,6 +78,21 @@ public class StopAppInstancesAction extends AppAsyncAction {
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
         if (Boolean.TRUE.equals(executionResult.getResult())) {
+            val stopAction = safeCast(operation, ApplicationStopInstancesOperation.class);
+            val appId = stopAction.getAppId();
+            val instanceIds = stopAction.getInstanceIds();
+            if (stopAction.isSkipRespawn()) {
+
+                val currCount = applicationStateDB.application(appId).map(ApplicationInfo::getInstances).orElse(0L);
+                val requested = (currCount - instanceIds.size()) < 0 ? 0 : (currCount - instanceIds.size());
+                applicationStateDB.updateInstanceCount(appId, requested);
+                log.info("Respawn skip has been specified. App {} instances will not be scaled up. Old count: {} New count: {}",
+                         appId, currCount, requested);
+                if(requested == 0) {
+                    return StateData.from(currentState, ApplicationState.MONITORING);
+                }
+            }
+
             return StateData.from(currentState, ApplicationState.RUNNING);
         }
         val errorMessage = null == executionResult.getFailure()

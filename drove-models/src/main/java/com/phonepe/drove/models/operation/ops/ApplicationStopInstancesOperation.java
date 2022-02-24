@@ -28,6 +28,8 @@ public class ApplicationStopInstancesOperation extends ApplicationOperation {
     @NotEmpty
     List<String> instanceIds;
 
+    boolean skipRespawn;
+
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
@@ -35,10 +37,11 @@ public class ApplicationStopInstancesOperation extends ApplicationOperation {
     public ApplicationStopInstancesOperation(
             String appId,
             List<String> instanceIds,
-            ClusterOpSpec opSpec) {
+            boolean skipRespawn, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.STOP_INSTANCES);
         this.appId = appId;
         this.instanceIds = instanceIds;
+        this.skipRespawn = skipRespawn;
         this.opSpec = opSpec;
     }
 
