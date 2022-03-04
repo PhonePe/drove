@@ -70,7 +70,7 @@ public class ControllerCoreModule extends AbstractModule {
         bind(ExecutorStateDB.class).to(MapBasedExecutorStateDB.class);
         bind(ClusterResourcesDB.class).to(MapBasedClusterResourcesDB.class);
         bind(ApplicationStateDB.class).to(ZkApplicationStateDB.class);
-        bind(InstanceInfoDB.class).to(MapBasedInstanceInfoDB.class);
+        bind(InstanceInfoDB.class).to(ZkInstanceInfoDB.class);
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
                 .to(RemoteExecutorMessageSender.class);

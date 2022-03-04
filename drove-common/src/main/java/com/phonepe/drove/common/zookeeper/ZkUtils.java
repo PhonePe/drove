@@ -5,11 +5,13 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.KeeperException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
 
@@ -43,16 +45,23 @@ public class ZkUtils {
             int start,
             int size,
             Function<String, T> nodeReader) throws Exception {
-        val nodes = curatorFramework.getChildren()
-                .forPath(parentPath)
-                .stream()
-                .map(nodeReader)
-                .filter(Objects::nonNull)
-                .toList();
-        if(nodes.isEmpty()) {
-            return nodes;
+        try {
+            val nodes = curatorFramework.getChildren()
+                    .forPath(parentPath)
+                    .stream()
+                    .map(nodeReader)
+                    .filter(Objects::nonNull)
+                    .toList();
+            if(nodes.isEmpty()) {
+                return nodes;
+            }
+            return sublist(nodes, start, size);        }
+        catch (KeeperException e) {
+            if(!e.code().equals(KeeperException.Code.NONODE)) {
+                log.error("ZK Error reading {} : {}", parentPath, e.getMessage());
+            }
         }
-        return sublist(nodes, start, size);
+        return Collections.emptyList();
     }
 
     public static boolean deleteNode(CuratorFramework curatorFramework, String path) {
@@ -60,6 +69,7 @@ public class ZkUtils {
             curatorFramework.delete()
                     .idempotent()
                     .guaranteed()
+                    .deletingChildrenIfNeeded()
                     .forPath(path);
             return true;
         }
@@ -70,12 +80,22 @@ public class ZkUtils {
     }
 
     public static <T> T readNodeData(
+        CuratorFramework curatorFramework,
+        String path,
+        ObjectMapper mapper,
+        Class<T> clazz) {
+        return readNodeData(curatorFramework, path, mapper, clazz, x -> true);
+    }
+
+    public static <T> T readNodeData(
             CuratorFramework curatorFramework,
             String path,
             ObjectMapper mapper,
-            Class<T> clazz) {
+            Class<T> clazz,
+            Predicate<T> filter) {
         try {
-            return mapper.readValue(curatorFramework.getData().forPath(path), clazz);
+            val value = mapper.readValue(curatorFramework.getData().forPath(path), clazz);
+            return (null != value && filter.test(value)) ? value : null;
         }
         catch (Exception e) {
             log.error("Error reading node data: " + path, e);

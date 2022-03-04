@@ -69,7 +69,7 @@ public class CommonUtils {
 
     private static String readHostname() {
         try {
-            return InetAddress.getLocalHost().getHostName();
+            return InetAddress.getLocalHost().getCanonicalHostName();
         }
         catch (UnknownHostException e) {
             log.error("Error getting hostname: " + e.getMessage(), e);

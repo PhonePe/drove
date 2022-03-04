@@ -17,12 +17,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Date;
 
 /**
  *
@@ -31,18 +26,10 @@ import java.util.concurrent.locks.ReentrantLock;
 @Order(30)
 @Singleton
 public class ApplicationMonitor implements Managed {
-    private static final Set<ApplicationState> SKIPPED_STATES = EnumSet.of(ApplicationState.INIT,
-                                                                           ApplicationState.DESTROYED,
-                                                                           ApplicationState.FAILED,
-                                                                           ApplicationState.SCALING_REQUESTED);
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
             .initialDelay(Duration.ofSeconds(5))
             .interval(Duration.ofSeconds(3))
             .build();
-
-    private final AtomicBoolean check = new AtomicBoolean();
-    private final Lock checkLock = new ReentrantLock();
-    private final Condition checkCond = checkLock.newCondition();
 
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
@@ -59,17 +46,7 @@ public class ApplicationMonitor implements Managed {
 
     @Override
     public void start() throws Exception {
-        refreshSignal.connect(time -> {
-/*             checkLock.lock();
-             try {
-                 check.set(true);
-                 checkCond.signalAll();
-             }
-             finally {
-                 checkLock.unlock();
-             }*/
-            checkAllApps();
-        });
+        refreshSignal.connect(this::checkAllApps);
     }
 
     @Override
@@ -86,7 +63,7 @@ public class ApplicationMonitor implements Managed {
         }
     }
 
-    private void checkAllApps() {
+    private void checkAllApps(final Date checkTime) {
         applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .forEach(app -> {
                     val appId = app.getAppId();
@@ -104,5 +81,6 @@ public class ApplicationMonitor implements Managed {
                         notifyOperation(new ApplicationRecoverOperation(appId));
                     }
                 });
+        log.debug("Application check triggered at {} is completed.", checkTime);
     }
 }
