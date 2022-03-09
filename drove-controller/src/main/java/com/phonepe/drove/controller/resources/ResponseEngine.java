@@ -45,13 +45,6 @@ public class ResponseEngine {
                                                                                   ApplicationState.REPLACE_INSTANCES_REQUESTED,
                                                                                   ApplicationState.DESTROY_REQUESTED);
 
-    private static final EnumSet<InstanceState> ACTIVE_INSTANCE_STATES = EnumSet.of(InstanceState.PENDING,
-                                                                                    InstanceState.PROVISIONING,
-                                                                                    InstanceState.STARTING,
-                                                                                    InstanceState.UNHEALTHY,
-                                                                                    InstanceState.HEALTHY,
-                                                                                    InstanceState.DEPROVISIONING,
-                                                                                    InstanceState.STOPPING);
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
@@ -94,7 +87,7 @@ public class ResponseEngine {
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                          ? ACTIVE_INSTANCE_STATES
+                          ? InstanceState.ACTIVE_STATES
                           : state;
         return ApiResponse.success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()

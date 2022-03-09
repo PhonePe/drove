@@ -3,25 +3,24 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+
+import static com.phonepe.drove.models.instance.InstanceState.*;
 
 /**
  *
  */
 public interface InstanceInfoDB {
+
     default List<InstanceInfo> healthyInstances(String appId) {
-        return activeInstances(appId, 0, Integer.MAX_VALUE)
-                .stream()
-                .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
-                .toList();
+        return activeInstances(appId, Collections.singleton(HEALTHY), 0, Integer.MAX_VALUE);
     }
 
-    List<InstanceInfo> activeInstances(String appId, int start, int size);
+    List<InstanceInfo> activeInstances(String appId, Set<InstanceState> validStates, int start, int size);
 
-    List<InstanceInfo> oldInstances(String appId, int start, int size);
+    default List<InstanceInfo> activeInstances(String appId, int start, int size) {
+        return activeInstances(appId, ACTIVE_STATES, start, size);
+    }
 
     Optional<InstanceInfo> instance(String appId, String instanceId);
 
@@ -30,10 +29,7 @@ public interface InstanceInfoDB {
     }
 
     default long instanceCount(final String appId, Set<InstanceState> requiredStates) {
-        return activeInstances(appId, 0, Integer.MAX_VALUE)
-                .stream()
-                .filter(instance -> requiredStates.contains(instance.getState()))
-                .count();
+        return activeInstances(appId, requiredStates, 0, Integer.MAX_VALUE).size();
     }
 
     boolean updateInstanceState(String appId, String instanceId, InstanceInfo instanceInfo);
@@ -41,4 +37,8 @@ public interface InstanceInfoDB {
     boolean deleteInstanceState(String appId, String instanceId);
 
     boolean deleteAllInstancesForApp(String appId);
+
+    long pruneStaleInstances(final String appId);
+
+    List<InstanceInfo> oldInstances(String appId, int start, int size);
 }

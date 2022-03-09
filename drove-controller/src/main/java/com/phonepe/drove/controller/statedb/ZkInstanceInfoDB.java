@@ -4,14 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
@@ -20,15 +19,11 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
 /**
  *
  */
+@Slf4j
 public class ZkInstanceInfoDB implements InstanceInfoDB {
-    private static final Set<InstanceState> ACTIVE_STATES = EnumSet.of(PENDING,
-                                                                       PROVISIONING,
-                                                                       STARTING,
-                                                                       UNREADY,
-                                                                       HEALTHY,
-                                                                       UNHEALTHY,
-                                                                       DEPROVISIONING,
-                                                                       STOPPING);
+    private static final Duration MAX_ACCEPTABLE_UPDATE_INTERVAL = Duration.ofMinutes(1);
+
+
     private static final String INSTANCE_STATE_PATH = "/instances";
 
     private final CuratorFramework curatorFramework;
@@ -42,8 +37,13 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
 
     @Override
     @SneakyThrows
-    public List<InstanceInfo> activeInstances(String appId, int start, int size) {
-        return listInstances(appId, start, size, instanceInfo -> ACTIVE_STATES.contains(instanceInfo.getState()));
+    public List<InstanceInfo> activeInstances(String appId, Set<InstanceState> validStates, int start, int size) {
+        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        return listInstances(appId,
+                             start,
+                             size,
+                             instanceInfo -> validStates.contains(instanceInfo.getState())
+                                     && instanceInfo.getUpdated().after(validUpdateDate));
     }
 
     @Override
@@ -64,9 +64,9 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     public boolean updateInstanceState(
             String appId, String instanceId, InstanceInfo instanceInfo) {
         return setNodeData(curatorFramework,
-                                   instancePath(appId, instanceId),
-                                   mapper,
-                                   instanceInfo);
+                           instancePath(appId, instanceId),
+                           mapper,
+                           instanceInfo);
     }
 
     @Override
@@ -78,6 +78,37 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     @SneakyThrows
     public boolean deleteAllInstancesForApp(String appId) {
         return deleteNode(curatorFramework, instancePath(appId));
+    }
+
+    @Override
+    @SneakyThrows
+    public long pruneStaleInstances(String appId) {
+        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        //Find all instances in active states
+        val instances = listInstances(appId,
+                                      0,
+                                      Integer.MAX_VALUE,
+                                      instanceInfo -> ACTIVE_STATES.contains(instanceInfo.getState()));
+        //Find all nodes that have not been updated in stipulated time and move them to unknown state
+        return instances.stream()
+                .filter(instanceInfo -> instanceInfo.getUpdated().before(validUpdateDate))
+                .filter(instanceInfo -> {
+                    log.warn("Found stale instance {}/{}", appId, instanceInfo.getInstanceId());
+                    return updateInstanceState(appId,
+                                        instanceInfo.getInstanceId(),
+                                        new InstanceInfo(instanceInfo.getAppId(),
+                                                         instanceInfo.getAppName(),
+                                                         instanceInfo.getInstanceId(),
+                                                         instanceInfo.getExecutorId(),
+                                                         instanceInfo.getLocalInfo(),
+                                                         instanceInfo.getResources(),
+                                                         LOST,
+                                                         instanceInfo.getMetadata(),
+                                                         "Instance lost",
+                                                         instanceInfo.getCreated(),
+                                                         new Date()));
+                })
+                .count();
     }
 
     private static String instancePath(final String applicationId) {

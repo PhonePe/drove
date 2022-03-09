@@ -26,6 +26,7 @@ import java.util.Date;
 @Order(30)
 @Singleton
 public class ApplicationMonitor implements Managed {
+
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
             .initialDelay(Duration.ofSeconds(5))
             .interval(Duration.ofSeconds(3))
@@ -74,6 +75,7 @@ public class ApplicationMonitor implements Managed {
                     }
 
                     val expectedInstances = app.getInstances();
+                    instanceInfoDB.pruneStaleInstances(appId);
                     val actualInstances = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",

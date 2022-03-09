@@ -29,7 +29,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -83,7 +82,7 @@ public class ContainerStatsObserver implements Managed {
                         log.info("Starting to track instance: {}", instanceInfo.getInstanceId());
                     }
                     else {
-                        if (EnumSet.of(InstanceState.DEPROVISIONING, InstanceState.STOPPED, InstanceState.UNREACHABLE)
+                        if (EnumSet.of(InstanceState.DEPROVISIONING, InstanceState.STOPPED, InstanceState.LOST)
                                 .contains(instanceInfo.getState())) {
                             unregisterTrackedContainer(instanceInfo.getInstanceId());
                             log.info("Stopped tracking instance: {}", instanceInfo.getInstanceId());
