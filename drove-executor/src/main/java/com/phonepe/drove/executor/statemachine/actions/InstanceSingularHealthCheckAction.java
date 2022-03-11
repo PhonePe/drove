@@ -41,6 +41,7 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                return StateData.create(InstanceState.STOPPING, currentState.getData());
             }
         }
         val retryPolicy = new RetryPolicy<CheckResult>()
@@ -72,7 +73,7 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
                     return StateData.create(InstanceState.HEALTHY, currentState.getData());
                 case STOPPED:
                 case UNHEALTHY:
-                    log.info("Instance still unhealthy with state: {}. Will be killing this.", status);
+                    log.warn("Instance still unhealthy with state: {}. Will be killing this.", status);
                 default:
                     return StateData.create(InstanceState.STOPPING, currentState.getData());
             }

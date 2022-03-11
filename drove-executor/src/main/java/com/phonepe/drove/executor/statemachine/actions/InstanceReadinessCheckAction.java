@@ -67,15 +67,11 @@ public class InstanceReadinessCheckAction extends InstanceAction {
                         }
                         return checker.call();
                     });
-            switch (result.getStatus()) {
-                case HEALTHY:
-                    return StateData.create(InstanceState.READY, currentState.getData());
-                case STOPPED:
-                    return StateData.create(InstanceState.STOPPING, currentState.getData());
-                case UNHEALTHY:
-                default:
-                    return StateData.create(InstanceState.READINESS_CHECK_FAILED, currentState.getData());
-            }
+            return switch (result.getStatus()) {
+                case HEALTHY -> StateData.create(InstanceState.READY, currentState.getData());
+                case STOPPED -> StateData.create(InstanceState.STOPPING, currentState.getData());
+                case UNHEALTHY -> StateData.create(InstanceState.READINESS_CHECK_FAILED, currentState.getData());
+            };
         }
         catch (Exception e) {
             return StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, e.getMessage());

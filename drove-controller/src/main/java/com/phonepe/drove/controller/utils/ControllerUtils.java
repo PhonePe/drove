@@ -121,7 +121,7 @@ public class ControllerUtils {
             }
 
             @Override
-            public String visit(ApplicationDeployOperation deploy) {
+            public String visit(ApplicationStartInstancesOperation deploy) {
                 return deploy.getAppId();
             }
 

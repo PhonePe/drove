@@ -130,7 +130,7 @@ public class ApplicationEngine {
     private ApplicationOperation translateOp(final ApplicationOperation original) {
         return original.accept(new ApplicationOperationVisitorAdapter<>(original) {
             @Override
-            public ApplicationOperation visit(ApplicationDeployOperation deploy) {
+            public ApplicationOperation visit(ApplicationStartInstancesOperation deploy) {
                 val appId = deploy.getAppId();
                 log.info("Translating deploy op to scaling op for {}", appId);
                 val existing = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
@@ -181,7 +181,7 @@ public class ApplicationEngine {
         log.info("App state: {}", state);
         if (state.equals(ApplicationState.SCALING_REQUESTED)) {
             val scalingOperation = context.getUpdate()
-                    .filter(op -> op.getType().equals(ApplicationOperationType.SCALE))
+                    .filter(op -> op.getType().equals(ApplicationOperationType.SCALE_INSTANCES))
                     .map(op -> {
                         val scaleOp = (ApplicationScaleOperation) op;
                         stateDB.updateInstanceCount(scaleOp.getAppId(), scaleOp.getRequiredInstances());

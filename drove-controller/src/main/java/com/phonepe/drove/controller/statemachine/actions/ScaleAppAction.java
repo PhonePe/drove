@@ -49,8 +49,10 @@ public class ScaleAppAction extends AppAsyncAction {
     public ScaleAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
-            InstanceScheduler scheduler, ControllerCommunicator communicator) {
+            InstanceInfoDB instanceInfoDB,
+            ClusterResourcesDB clusterResourcesDB,
+            InstanceScheduler scheduler,
+            ControllerCommunicator communicator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;

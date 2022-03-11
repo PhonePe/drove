@@ -22,7 +22,7 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
-public class ApplicationDeployOperation extends ApplicationOperation {
+public class ApplicationStartInstancesOperation extends ApplicationOperation {
     @NotEmpty
     String appId;
 
@@ -34,8 +34,8 @@ public class ApplicationDeployOperation extends ApplicationOperation {
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationDeployOperation(String appId, long instances, ClusterOpSpec opSpec) {
-        super(ApplicationOperationType.DEPLOY);
+    public ApplicationStartInstancesOperation(String appId, long instances, ClusterOpSpec opSpec) {
+        super(ApplicationOperationType.START_INSTANCES);
         this.appId = appId;
         this.instances = instances;
         this.opSpec = opSpec;

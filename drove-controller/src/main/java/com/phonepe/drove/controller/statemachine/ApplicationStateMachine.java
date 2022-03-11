@@ -9,10 +9,8 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import lombok.NonNull;
-import lombok.val;
 
 import java.util.List;
-import java.util.Set;
 
 import static com.phonepe.drove.models.application.ApplicationState.*;
 
@@ -23,14 +21,6 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
     private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS;
 
     static {
-        val actionStates = Set.of(
-                STOP_INSTANCES_REQUESTED,
-                DESTROY_REQUESTED,
-                SCALING_REQUESTED,
-                REPLACE_INSTANCES_REQUESTED,
-                OUTAGE_DETECTED,
-                MONITORING,
-                RUNNING);
         TRANSITIONS = List.of(
                 new Transition<>(INIT,
                                  CreateAppAction.class,
@@ -38,10 +28,16 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                                  RUNNING),
                 new Transition<>(MONITORING,
                                  AppOperationRouterAction.class,
-                                 actionStates),
+                                 DESTROY_REQUESTED,
+                                 SCALING_REQUESTED,
+                                 MONITORING),
                 new Transition<>(RUNNING,
                                  AppOperationRouterAction.class,
-                                 actionStates),
+                                 STOP_INSTANCES_REQUESTED,
+                                 SCALING_REQUESTED,
+                                 REPLACE_INSTANCES_REQUESTED,
+                                 OUTAGE_DETECTED,
+                                 RUNNING),
                 new Transition<>(OUTAGE_DETECTED,
                                  RecoverAppAction.class,
                                  SCALING_REQUESTED),

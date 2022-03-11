@@ -5,13 +5,11 @@ package com.phonepe.drove.models.operation;
  */
 public enum ApplicationOperationType {
     CREATE,
-    UPDATE,
-    INFO,
     DESTROY,
-    DEPLOY,
-    STOP_INSTANCES,
-    SCALE,
-    REPLACE_INSTANCES,
     SUSPEND,
     RECOVER,
+    START_INSTANCES,
+    STOP_INSTANCES,
+    SCALE_INSTANCES,
+    REPLACE_INSTANCES,
 }

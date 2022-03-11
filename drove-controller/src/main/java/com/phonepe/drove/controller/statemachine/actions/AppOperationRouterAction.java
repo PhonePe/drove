@@ -57,7 +57,7 @@ public class AppOperationRouterAction extends AppAction {
             }
 
             @Override
-            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationDeployOperation deploy) {
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationStartInstancesOperation deploy) {
                 throw new IllegalStateException("DEPLOY operations should have been changed to scale operation");
             }
 

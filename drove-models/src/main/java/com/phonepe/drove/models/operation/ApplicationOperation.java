@@ -12,7 +12,7 @@ import lombok.Data;
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "CREATE", value = ApplicationCreateOperation.class),
         @JsonSubTypes.Type(name = "DESTROY", value = ApplicationDestroyOperation.class),
-        @JsonSubTypes.Type(name = "DEPLOY", value = ApplicationDeployOperation.class),
+        @JsonSubTypes.Type(name = "DEPLOY", value = ApplicationStartInstancesOperation.class),
         @JsonSubTypes.Type(name = "STOP_INSTANCES", value = ApplicationStopInstancesOperation.class),
         @JsonSubTypes.Type(name = "SCALE", value = ApplicationScaleOperation.class),
         @JsonSubTypes.Type(name = "REPLACE_INSTANCES", value = ApplicationReplaceInstancesOperation.class),

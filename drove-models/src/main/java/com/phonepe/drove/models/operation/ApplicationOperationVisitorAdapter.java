@@ -23,7 +23,7 @@ public class ApplicationOperationVisitorAdapter<T> implements ApplicationOperati
     }
 
     @Override
-    public T visit(ApplicationDeployOperation deploy) {
+    public T visit(ApplicationStartInstancesOperation deploy) {
         return defaultValue;
     }
 
