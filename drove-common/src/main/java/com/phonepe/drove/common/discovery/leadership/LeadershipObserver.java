@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor.discovery;
+package com.phonepe.drove.common.discovery.leadership;
 
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
@@ -6,10 +6,8 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import io.appform.signals.signals.ScheduledSignal;
-import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -22,10 +20,9 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  *
  */
-@Order(30)
 @Slf4j
 @Singleton
-public class LeadershipObserver implements Managed {
+public class LeadershipObserver {
 
     private final ScheduledSignal leaderRefresher = new ScheduledSignal(Duration.ofSeconds(5));
     private final NodeDataStore nodeDataStore;
@@ -40,13 +37,11 @@ public class LeadershipObserver implements Managed {
         return Optional.ofNullable(leader.get());
     }
 
-    @Override
     public void start() throws Exception {
         leaderRefresher.connect(this::refresh);
         refresh(new Date());
     }
 
-    @Override
     public void stop() throws Exception {
         leaderRefresher.close();
     }

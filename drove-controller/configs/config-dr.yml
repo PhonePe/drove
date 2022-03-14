@@ -2,6 +2,13 @@ server:
   applicationConnectors:
     - type: http
       port: 5000
+#    - type: https
+#      port: 5000
+#      bindHost: ssdev.test
+#      keyStorePath: /home/santanu/certs/keystore.jks
+#      keyStorePassword: "password"
+#      validateCerts: false
+#      validatePeers: false
   adminConnectors:
     - type: http
       port: 5001
@@ -12,6 +19,7 @@ server:
         timeZone: IST
   gzip:
     syncFlush: true
+
 
 logging:
   level: INFO
@@ -26,3 +34,20 @@ logging:
 
 zookeeper:
   connectionString: localhost:2181
+
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: LocalControllerSecret
+  - nodeType: EXECUTOR
+    secret: LocalExecutorSecret
+
+userAuth:
+  enabled: true
+  users:
+    - username: admin
+      password: admin
+      role: EXTERNAL_READ_WRITE
+    - username: guest
+      password: guest
+      role: EXTERNAL_READ_ONLY

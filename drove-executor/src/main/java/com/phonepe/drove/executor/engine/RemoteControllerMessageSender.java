@@ -8,7 +8,7 @@ import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.RemoteHost;
 import com.phonepe.drove.common.net.RemoteMessageSender;
-import com.phonepe.drove.executor.discovery.LeadershipObserver;
+import com.phonepe.drove.executor.discovery.ManagedLeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.RetryPolicy;
@@ -24,11 +24,11 @@ import java.util.Optional;
 @Singleton
 @Slf4j
 public class RemoteControllerMessageSender extends RemoteMessageSender<ControllerMessageType, ControllerMessage> {
-    private final LeadershipObserver observer;
+    private final ManagedLeadershipObserver observer;
 
     @Inject
     public RemoteControllerMessageSender(
-            LeadershipObserver observer, ObjectMapper mapper, ClusterAuthenticationConfig clusterAuthenticationConfig) {
+            ManagedLeadershipObserver observer, ObjectMapper mapper, ClusterAuthenticationConfig clusterAuthenticationConfig) {
         super(mapper, clusterAuthenticationConfig, NodeType.EXECUTOR);
         this.observer = observer;
     }

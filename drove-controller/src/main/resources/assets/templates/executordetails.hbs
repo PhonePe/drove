@@ -145,6 +145,9 @@
                 });
                 ii.clear();
                 ii.rows.add(instances).draw();
+            })
+            .fail(function(e) {
+                location.reload();
             });
     }
 
