@@ -38,12 +38,6 @@ import java.util.stream.Collectors;
 @Singleton
 @Slf4j
 public class ResponseEngine {
-    private static final EnumSet<ApplicationState> ACTIVE_APP_STATES = EnumSet.of(ApplicationState.RUNNING,
-                                                                                  ApplicationState.OUTAGE_DETECTED,
-                                                                                  ApplicationState.SCALING_REQUESTED,
-                                                                                  ApplicationState.STOP_INSTANCES_REQUESTED,
-                                                                                  ApplicationState.REPLACE_INSTANCES_REQUESTED,
-                                                                                  ApplicationState.DESTROY_REQUESTED);
 
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
@@ -111,7 +105,7 @@ public class ResponseEngine {
         var liveApps = 0;
         var allApps = 0;
         for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
-            liveApps += ACTIVE_APP_STATES.contains(engine.applicationState(appInfo.getAppId())
+            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(engine.applicationState(appInfo.getAppId())
                                                            .orElse(ApplicationState.FAILED))
                         ? 1
                         : 0;

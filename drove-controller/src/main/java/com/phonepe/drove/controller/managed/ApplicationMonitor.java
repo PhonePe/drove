@@ -75,7 +75,7 @@ public class ApplicationMonitor implements Managed {
                     }
 
                     val expectedInstances = app.getInstances();
-                    instanceInfoDB.pruneStaleInstances(appId);
+                    instanceInfoDB.markStaleInstances(appId);
                     val actualInstances = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",

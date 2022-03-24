@@ -10,11 +10,15 @@ import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
 import java.time.Duration;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
-import static com.phonepe.drove.models.instance.InstanceState.*;
+import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
+import static com.phonepe.drove.models.instance.InstanceState.LOST;
 
 /**
  *
@@ -82,7 +86,7 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
 
     @Override
     @SneakyThrows
-    public long pruneStaleInstances(String appId) {
+    public long markStaleInstances(String appId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         //Find all instances in active states
         val instances = listInstances(appId,
@@ -136,5 +140,12 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
                                                             mapper,
                                                             InstanceInfo.class,
                                                             filter));
+    }
+
+    /**
+     * This method will remove instances inactive instances older than 100 days
+     */
+    private void pruneOldInstances() {
+
     }
 }

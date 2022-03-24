@@ -38,7 +38,7 @@ public interface InstanceInfoDB {
 
     boolean deleteAllInstancesForApp(String appId);
 
-    long pruneStaleInstances(final String appId);
+    long markStaleInstances(final String appId);
 
     List<InstanceInfo> oldInstances(String appId, int start, int size);
 }
