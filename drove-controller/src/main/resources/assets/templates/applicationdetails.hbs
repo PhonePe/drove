@@ -92,7 +92,7 @@
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
             { 'data' : 'totalMemory' },
-            { 'data' : 'state' }
+            { 'data' : 'state', 'render' : renderAppState }
         ]
     });
     function instanceDataHandler(res) {
@@ -137,7 +137,7 @@
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory' },
-            { 'data' : 'state' },
+            { 'data' : 'state', 'render' : renderInstanceState },
             { 'data' : 'details',
                 'render' : function(data, type, row, meta) {
                     return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
@@ -160,7 +160,7 @@
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory' },
-            { 'data' : 'state' },
+            { 'data' : 'state', 'render': renderInstanceState },
             { 'data' : 'details',
                 'render' : function(data, type, row, meta) {
                     return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';

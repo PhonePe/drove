@@ -91,7 +91,7 @@
                 { 'data' : 'ports' },
                 { 'data' : 'usedCores' },
                 { 'data' : 'usedMemory' },
-                { 'data' : 'state' },
+                { 'data' : 'state', 'render' : renderInstanceState },
                 { 'data' : 'logStream',
                   'render' : function(data, type, row, meta) {
                     return '<a href="/applications/' + row['appId'] + '/instances/' + row['instanceId'] + '">Details</a>';

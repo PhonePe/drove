@@ -28,6 +28,7 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
                                  RUNNING),
                 new Transition<>(MONITORING,
                                  AppOperationRouterAction.class,
+                                 OUTAGE_DETECTED,
                                  DESTROY_REQUESTED,
                                  SCALING_REQUESTED,
                                  MONITORING),

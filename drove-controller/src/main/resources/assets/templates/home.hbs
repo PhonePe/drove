@@ -122,7 +122,7 @@
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
             { 'data' : 'totalMemory' },
-            { 'data' : 'state' }
+            { 'data' : 'state', render: renderAppState }
         ]
     });
     var executors = $('#executors').DataTable({

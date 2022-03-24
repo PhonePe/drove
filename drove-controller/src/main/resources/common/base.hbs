@@ -102,6 +102,41 @@ $(document).ready(function() {
 {{#block "page_js"}}
 
 {{/block}}
+    function renderAppState(data, type, row, meta) {
+        switch(data) {
+            case 'INIT' : return '<span class="font-weight-bold text-primary">Initializing</span>';
+            case 'MONITORING' : return '<span class="font-weight-bold text-info">Monitoring</span>';
+            case 'RUNNING' : return '<span class="font-weight-bold text-success">Running</span>';
+            case 'OUTAGE_DETECTED' : return '<span class="font-weight-bold text-danger">Outage Detected</span>';
+            case 'SCALING_REQUESTED' : return '<span class="font-weight-bold text-warning">Scaling</span>';
+            case 'STOP_INSTANCES_REQUESTED' : return '<span class="font-weight-bold text-warning">Stopping instances</span>';
+            case 'REPLACE_INSTANCES_REQUESTED' : return '<span class="font-weight-bold text-warning">Restarting</span>';
+            case 'DESTROY_REQUESTED' : return '<span class="font-weight-bold text-danger">Destruction Underway</span>';
+            case 'DESTROYED' : return '<span class="font-weight-bold text-danger">Destroyed</span>';
+            case 'FAILED' : return '<span class="font-weight-bold text-secondary">Failed</span>';
+        }
+    }
+
+    function renderInstanceState(data, type, row, meta) {
+        switch(data) {
+            case 'PENDING' : return '<span class="font-weight-bold text-primary">Pending</span>';
+            case 'PROVISIONING' : return '<span class="font-weight-bold text-warning">Provisioning</span>';
+            case 'PROVISIONING_FAILED' : return '<span class="font-weight-bold text-danger">Provisioning Failed</span>';
+            case 'STARTING' : return '<span class="font-weight-bold text-warning">Starting</span>';
+            case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Start Failed</span>';
+            case 'UNREADY' : return '<span class="font-weight-bold text-warning">Unready</span>';
+            case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Readiness Check Failed</span>';
+            case 'READY' : return '<span class="font-weight-bold text-warning">Ready</span>';
+            case 'HEALTHY' : return '<span class="font-weight-bold text-success">Healthy</span>';
+            case 'UNHEALTHY' : return '<span class="font-weight-bold text-danger">Unhealthy</span>';
+            case 'DEPROVISIONING' : return '<span class="font-weight-bold text-warning">Deprovisioning</span>';
+            case 'STOPPING' : return '<span class="font-weight-bold text-warning">Stopping</span>';
+            case 'STOPPED' : return '<span class="font-weight-bold text-secondary">Stopped</span>';
+            case 'LOST' : return '<span class="font-weight-bold text-secondary">Lost</span>';
+            case 'UNKNOWN' : return '<span class="font-weight-bold text-danger">UNKNOWN</span>';
+        }
+    }
+
 	$('.data-table').DataTable({
 		paging: false,
 		ordering: false,
