@@ -140,7 +140,9 @@
             {
                 'data' : 'executorId' ,
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/executors/' + data + '">' + data + '</a>';
+                    return row.blacklisted
+                        ? '<del><a href="/executors/' + data + '">' + data + '</a></del>'
+                        : '<a href="/executors/' + data + '">' + data + '</a>';
                 }
             },
             { 'data' : 'hostname' },

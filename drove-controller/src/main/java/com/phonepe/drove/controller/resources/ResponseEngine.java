@@ -255,12 +255,13 @@ public class ResponseEngine {
                                                                        .stream()
                                                                        .mapToLong(v -> v)
                                                                        .sum(),
-                                                               executorData.getTags()));
+                                                               executorData.getTags(),
+                                                               executorData.isBlacklisted()));
                     }
                 });
     }
 
-    public ApiResponse<com.phonepe.drove.models.info.nodedata.ExecutorNodeData> executorDetails(String executorId) {
+    public ApiResponse<ExecutorNodeData> executorDetails(String executorId) {
         return clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
                 .map(ApiResponse::success)

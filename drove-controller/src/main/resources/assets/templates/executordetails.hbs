@@ -13,6 +13,7 @@
                         <th>Uses Memory</th>
                         <th>Free Memory</th>
                         <th>Tags</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                 </table>
@@ -70,6 +71,13 @@
                     }
                     return tagStr;
                 }
+            },
+            { 'data' : 'blacklisted',
+                'render' : function(data, type, row, meta) {
+                    return data
+                            ? '<span class="badge badge-danger">BLACKLISTED</span>'
+                            : '<span class="badge badge-success">ONLINE</span>';
+                }
             }
         ]
     });
@@ -117,6 +125,7 @@
                 esum['freeMemory'] = Object.values(data.state.memory.freeMemory)
                                         .reduce((acc, v) => acc + v, 0);
                 esum['tags'] = data.tags;
+                esum['blacklisted'] = data.blacklisted;
                 summary.clear();
                 summary.rows.add([esum]).draw();
 
