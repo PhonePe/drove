@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.codahale.metrics.MetricRegistry;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.MemoryStatsConfig;
 import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
@@ -227,6 +228,11 @@ public class ContainerStatsObserver implements Managed {
             try {
                 instanceData.getDataReceived().dispatch(callback.awaitResult());
             }
+            catch (NotFoundException e) {
+                log.warn("Looks like the container {}/{} being tracked is not available anymore. Time to disconnect..",
+                         instanceData.getInstanceInfo().getAppId(), instanceId);
+                instances.remove(instanceId);
+            }
             catch (RuntimeException e) {
                 log.error("Error running ", e);
             }
@@ -278,7 +284,7 @@ public class ContainerStatsObserver implements Managed {
             if (null != data.getNetworks()) {
                 val networkData
                         = Objects.<Map<String, StatisticNetworksConfig>>requireNonNullElse(
-                                data.getNetworks(), Collections.emptyMap());
+                        data.getNetworks(), Collections.emptyMap());
                 networkStatsReceived.dispatch(new SignalData<>(instanceInfo,
                                                                networkData
                                                                        .values()

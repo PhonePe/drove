@@ -54,7 +54,7 @@ public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Voi
                              DEPROVISIONING),
             new Transition<>(UNHEALTHY,
                              InstanceStopAction.class,
-                             STOPPING),
+                             DEPROVISIONING),
             new Transition<>(PROVISIONING_FAILED,
                              InstanceDestroyAction.class,
                              DEPROVISIONING),
@@ -66,7 +66,7 @@ public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Voi
                              STOPPED),
             new Transition<>(READINESS_CHECK_FAILED,
                              InstanceStopAction.class,
-                             STOPPING));
+                             DEPROVISIONING));
 
     public InstanceStateMachine(
             String executorId,

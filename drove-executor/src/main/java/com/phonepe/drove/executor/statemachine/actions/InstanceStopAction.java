@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -17,6 +18,7 @@ import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
@@ -43,6 +45,9 @@ public class InstanceStopAction extends InstanceAction {
             val dockerClient = context.getClient();
             try {
                 dockerClient.stopContainerCmd(context.getDockerInstanceId()).exec();
+            }
+            catch (NotFoundException e) {
+                log.error("Container already exited");
             }
             catch (Exception e) {
                 log.error("Error stopping instance: " + context.getDockerInstanceId(), e);
@@ -132,6 +137,9 @@ public class InstanceStopAction extends InstanceAction {
             }
             val responseBody = response.body();
             log.error("Pre-shutdown hook failed. Status code: {} response: {}", response.statusCode(), responseBody);
+        }
+        catch (ConnectException e) {
+            log.error("Unable to connect to instance");
         }
         catch (IOException e) {
             log.error("Pre-shutdown hook failed. Error Message: " + e.getMessage(), e);
