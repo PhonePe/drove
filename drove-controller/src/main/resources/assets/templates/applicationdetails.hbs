@@ -10,7 +10,7 @@
                         <th>Expected Instances</th>
                         <th>Healthy Instances</th>
                         <th>CPU</th>
-                        <th>Memory (MB)</th>
+                        <th>Memory</th>
                         <th>State</th>
                     </tr>
                     </thead>
@@ -35,6 +35,7 @@
                                 <th>Ports</th>
                                 <th>Cores</th>
                                 <th>Memory</th>
+                                <th>Current Age</th>
                                 <th>State</th>
                                 <th></th>
                             </tr>
@@ -63,6 +64,10 @@
                                 <th>Cores</th>
                                 <th>Memory</th>
                                 <th>State</th>
+                                <th>Lifetime</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>Error Message</th>
                                 <th></th>
                             </tr>
                             </thead>
@@ -91,7 +96,7 @@
             { 'data' : 'requiredInstances' },
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory' },
+            { 'data' : 'totalMemory', 'render' : formatBytes },
             { 'data' : 'state', 'render' : renderAppState }
         ]
     });
@@ -122,6 +127,14 @@
         });
         return res.data;
     }
+
+    function executorLink(data, type, row, meta) {
+        if(type === "display") {
+            return '<a href="/executors/' + data + '">' + data + '</a>';
+        }
+        return data;
+    }
+
     var instances = $('#instances').DataTable({
         'processing' : true,
         'ajax': {
@@ -132,18 +145,21 @@
         'info' : false,
         'columns' : [
             { 'data' : 'instanceId' },
-            { 'data' : 'executorId' },
+            { 'data' : 'executorId', 'render' : executorLink },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory' },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'created', 'render' : timeSince },
             { 'data' : 'state', 'render' : renderInstanceState },
             { 'data' : 'details',
                 'render' : function(data, type, row, meta) {
                     return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
                 }
             }
-        ]
+        ],
+        'order' : [[6, 'desc']]
+
     });
     var oldinstances = $('#oldinstances').DataTable({
         'processing' : true,
@@ -155,18 +171,35 @@
         'info' : false,
         'columns' : [
             { 'data' : 'instanceId' },
-            { 'data' : 'executorId' },
+            { 'data' : 'executorId', 'render' : executorLink },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory' },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
             { 'data' : 'state', 'render': renderInstanceState },
+            { 'data' : 'created', 'render' : timeSince },
+            { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+            { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+            { 'data' : 'errorMessage',
+                'render' : function (data, type, full, meta) {
+                    if(type === 'display') {
+                        if(data) {
+                            return '<div style="white-space:normal; width:200px; word-break: break-word; word-break: break-all; " class="text-danger">' + data + '</div>';
+                        }
+                        else {
+                            return 'No Errors';
+                        }
+                    }
+                    return data;
+                }
+            },
             { 'data' : 'details',
                 'render' : function(data, type, row, meta) {
                     return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
                 }
             }
-        ]
+        ],
+        'order' : [[9, 'desc']]
     });
     setInterval(() => {
         summary.ajax.reload();

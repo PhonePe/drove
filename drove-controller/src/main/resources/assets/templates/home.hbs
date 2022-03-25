@@ -36,7 +36,7 @@
                                 <th>Expected Instances</th>
                                 <th>Healthy Instances</th>
                                 <th>CPU</th>
-                                <th>Memory (MB)</th>
+                                <th>Memory</th>
                                 <th>State</th>
                             </tr>
                             </thead>
@@ -89,9 +89,9 @@
             { 'data' : 'freeCores' },
             { 'data' : 'usedCores' },
             { 'data' : 'totalCores' },
-            { 'data' : 'freeMemory' },
-            { 'data' : 'usedMemory' },
-            { 'data' : 'totalMemory' }
+            { 'data' : 'freeMemory', 'render' : formatBytes },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'totalMemory', 'render' : formatBytes }
         ]
     });
     var applications = $('#applications').DataTable({
@@ -121,7 +121,7 @@
             { 'data' : 'requiredInstances' },
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory' },
+            { 'data' : 'totalMemory', 'render' : formatBytes },
             { 'data' : 'state', render: renderAppState }
         ]
     });
@@ -148,8 +148,8 @@
             { 'data' : 'hostname' },
             { 'data' : 'freeCores' },
             { 'data' : 'usedCores' },
-            { 'data' : 'freeMemory' },
-            { 'data' : 'usedMemory' },
+            { 'data' : 'freeMemory', 'render' : formatBytes },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
             {  'data' : 'tags',
                 'render' : function(data, type, row, meta) {
                    var tagStr = "";

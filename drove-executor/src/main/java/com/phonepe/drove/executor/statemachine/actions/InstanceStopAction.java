@@ -48,6 +48,7 @@ public class InstanceStopAction extends InstanceAction {
             }
             catch (NotFoundException e) {
                 log.error("Container already exited");
+                return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
             }
             catch (Exception e) {
                 log.error("Error stopping instance: " + context.getDockerInstanceId(), e);

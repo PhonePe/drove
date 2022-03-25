@@ -142,10 +142,4 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
                                                             filter));
     }
 
-    /**
-     * This method will remove instances inactive instances older than 100 days
-     */
-    private void pruneOldInstances() {
-
-    }
 }

@@ -31,6 +31,9 @@
                         <th>Port</th>
                         <th>Cores</th>
                         <th>Memory</th>
+                        <th>Current Age</th>
+                        <th>Created</th>
+                        <th>Last Updated</th>
                         <th>State</th>
                         <th></th>
                     </tr>
@@ -56,8 +59,8 @@
             { 'data' : 'port' },
             { 'data' : 'usedCores' },
             { 'data' : 'freeCores' },
-            { 'data' : 'usedMemory' },
-            { 'data' : 'freeMemory' },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'freeMemory', 'render' : formatBytes },
             {
                 'data' : 'tags',
                 'render' : function(data, type, row, meta) {
@@ -87,18 +90,26 @@
         'info' : false,
         'columns' : [
                 { 'data' : 'instanceId' },
-                { 'data' : 'appId' },
+                { 'data' : 'appId',
+                    'render' : function(data, type, row, meta) {
+                        return '<a href="/applications/' + data + '">' + data + '</a>';
+                    }
+                },
                 { 'data' : 'ports' },
                 { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory' },
+                { 'data' : 'usedMemory', 'render' : formatBytes },
+                { 'data' : 'created', 'render' : timeSince },
+                { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+                { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
                 { 'data' : 'state', 'render' : renderInstanceState },
                 { 'data' : 'logStream',
                   'render' : function(data, type, row, meta) {
                     return '<a href="/applications/' + row['appId'] + '/instances/' + row['instanceId'] + '">Details</a>';
                   }
                 }
-            ]
-        });
+            ],
+            'order' : [[5, 'desc']]
+    });
     function loadExecutorSnapshot() {
         $.get('/apis/v1/cluster/executors/{{executorId}}',
             function(res) {

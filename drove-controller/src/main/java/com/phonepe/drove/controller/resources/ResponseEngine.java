@@ -96,9 +96,7 @@ public class ResponseEngine {
     }
 
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
-        return ApiResponse.success(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)
-                                           .stream()
-                                           .toList());
+        return ApiResponse.success(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE));
     }
 
     public ApiResponse<ClusterSummary> cluster() {

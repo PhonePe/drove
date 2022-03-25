@@ -7,7 +7,7 @@
                     <tbody>
                     <tr>
                         <th scope="row">App</th>
-                        <td><a href="/applications/{{appId}}">{{appName}}</a></td>
+                        <td><a href="/applications/{{appId}}">{{appId}}</a></td>
                     </tr>
                     <tr>
                         <th scope="row">Instance ID</th>
@@ -58,6 +58,10 @@
                             </td>
                         </tr>
                     {{/with}}
+                    <tr>
+                        <th scope="row">Error Message</th>
+                        <td>{{errorMessage}}</td>
+                    </tr>
                     <tr>
                         <th scope="row">Created</th>
                         <td>{{created}}</td>
