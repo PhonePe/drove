@@ -8,5 +8,6 @@ public enum PlacementPolicyType {
     MAX_N_PER_HOST,
     MATCH_TAG,
     RULE_BASED,
-    ANY
+    ANY,
+    COMPOSITE
 }

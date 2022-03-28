@@ -15,6 +15,7 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "MATCH_TAG", value = MatchTagPlacementPolicy.class),
         @JsonSubTypes.Type(name = "RULE_BASED", value = RuleBasedPlacementPolicy.class),
         @JsonSubTypes.Type(name = "ANY", value = AnyPlacementPolicy.class),
+        @JsonSubTypes.Type(name = "COMPOSITE", value = CompositePlacementPolicy.class),
 })
 @Data
 public abstract class PlacementPolicy {

@@ -20,8 +20,6 @@ import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 
-import java.util.Set;
-
 /**
  *
  */
@@ -29,9 +27,7 @@ import java.util.Set;
 public class CustomHelpers {
 
     public CharSequence resourceRepr(final ResourceAllocation resource) {
-        record NodeResource(Set<Integer> cores, long mem) {
-        }
-        ;
+
         return resource.accept(new ResourceAllocationVisitor<CharSequence>() {
             @Override
             public CharSequence visit(CPUAllocation cpu) {

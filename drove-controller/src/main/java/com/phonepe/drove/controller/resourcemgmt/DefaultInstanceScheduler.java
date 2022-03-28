@@ -53,10 +53,12 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             String schedulingSessionId, ApplicationSpec applicationSpec) {
         //Take a snapshot of all instances in this cluster at the onset of the session
         //This will get augmented every time a new node is allocated in this session
-        schedulingSessionData.computeIfAbsent(schedulingSessionId, id -> new HashMap<>(clusterSnapshot(applicationSpec)));
+        schedulingSessionData.computeIfAbsent(schedulingSessionId,
+                                              id -> new HashMap<>(clusterSnapshot(applicationSpec)));
         val selectedNode = clusterResourcesDB.selectNodes(applicationSpec.getResources(),
                                                           allocatedNode -> validateNode(applicationSpec,
-                                                                                        schedulingSessionData.get(schedulingSessionId),
+                                                                                        schedulingSessionData.get(
+                                                                                                schedulingSessionId),
                                                                                         allocatedNode));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
@@ -65,7 +67,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                 schedulingSessionId,
                 (sid, executors) -> {
                     executors.compute(allocatedExecutorNode.getExecutorId(),
-                            (eid, existingCount) -> null == existingCount ? 1L : existingCount + 1L);
+                                      (eid, existingCount) -> null == existingCount
+                                                              ? 1L
+                                                              : existingCount + 1L);
                     return executors;
                 }));
         return selectedNode;
@@ -110,7 +114,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             @Override
             public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
                 val numExistingInstances = sessionLevelData.getOrDefault(allocatedExecutorId, 0L);
-                log.debug("Existing Instances: {} on allocated executor: {}", numExistingInstances, allocatedExecutorId);
+                log.debug("Existing Instances: {} on allocated executor: {}",
+                          numExistingInstances,
+                          allocatedExecutorId);
                 return numExistingInstances < maxNPerHost.getMax();
             }
 
@@ -128,6 +134,19 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             @Override
             public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
                 return true;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                val combiner
+                        = Objects.requireNonNullElse(compositePlacementPolicy.getCombiner(),
+                                                     CompositePlacementPolicy.CombinerType.AND);
+                val policiesStream = compositePlacementPolicy
+                        .getPolicies()
+                        .stream();
+                return combiner == CompositePlacementPolicy.CombinerType.AND
+                       ? policiesStream.allMatch(placementPolicy -> placementPolicy.accept(this))
+                       : policiesStream.anyMatch(placementPolicy -> placementPolicy.accept(this));
             }
         });
     }

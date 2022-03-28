@@ -15,4 +15,6 @@ public interface PlacementPolicyVisitor<T> {
     T visit(RuleBasedPlacementPolicy ruleBased);
 
     T visit(AnyPlacementPolicy anyPlacementPolicy);
+
+    T visit(CompositePlacementPolicy compositePlacementPolicy);
 }
