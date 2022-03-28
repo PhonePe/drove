@@ -8,6 +8,7 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.checks.CheckMode;
+import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -23,6 +24,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -72,11 +74,17 @@ public class InstanceStopAction extends InstanceAction {
     private void executePreShutdownHook(
             final InstanceActionContext context,
             final StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        val preShutdownHook = context.getInstanceSpec().getPreShutdownHook();
-        if (preShutdownHook == null) {
+        val preShutdownHook = Objects.requireNonNullElse(context.getInstanceSpec().getPreShutdownHook(),
+                                                         Collections.<CheckModeSpec>emptyList());
+        if (preShutdownHook.isEmpty()) {
             log.info("No pre-shutdown hook configured");
             return;
         }
+        log.info("Calling {} pre-shutdown hooks", preShutdownHook.size());
+        preShutdownHook.forEach(hook -> executeHook(currentState, hook));
+    }
+
+    private void executeHook(StateData<InstanceState, ExecutorInstanceInfo> currentState, CheckModeSpec preShutdownHook) {
         val httpSpec = CheckMode.HTTP == preShutdownHook.getType()
                        ? (HTTPCheckModeSpec) preShutdownHook
                        : null;

@@ -28,5 +28,5 @@ public class InstanceSpec {
     CheckSpec readiness;
     LoggingSpec loggingSpec;
     Map<String, String> env;
-    CheckModeSpec preShutdownHook;
+    List<CheckModeSpec> preShutdownHook;
 }

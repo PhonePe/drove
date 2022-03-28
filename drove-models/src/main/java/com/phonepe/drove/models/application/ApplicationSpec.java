@@ -70,5 +70,5 @@ public class ApplicationSpec {
     ExposureSpec exposureSpec;
 
     @Valid
-    CheckModeSpec preShutdownHook;
+    List<CheckModeSpec> preShutdownHook;
 }
