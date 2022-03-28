@@ -112,7 +112,7 @@ public class ApplicationStateMachineExecutor {
                 Failsafe.with(retryPolicy)
                         .onFailure(e -> log.error("Completion wait for " + appId + " completed with error:",
                                                   e.getFailure()))
-                        .run(() -> currentState.isDone());
+                        .get(() -> currentState.isDone());
                 log.info("State machine for app {} has shut down", appId);
             }
             catch (TimeoutExceededException e) {

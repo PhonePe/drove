@@ -123,7 +123,7 @@ public class InstanceStopAction extends InstanceAction {
         try {
             Failsafe.with(retryPolicy)
                     .onFailure(e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()))
-                    .run(() -> makeHTTPCall(httpClient, httpSpec, uri));
+                    .get(() -> makeHTTPCall(httpClient, httpSpec, uri));
         }
         catch (TimeoutExceededException e) {
             log.error("Timeout calling shutdown hook.");

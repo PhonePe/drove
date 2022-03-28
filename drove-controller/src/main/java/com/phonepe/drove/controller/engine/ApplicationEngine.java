@@ -71,7 +71,9 @@ public class ApplicationEngine {
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             stateMachines.computeIfAbsent(appId, id -> createApp(operation));
             stateMachines.computeIfPresent(appId, (id, monitor) -> {
-                monitor.notifyUpdate(translateOp(operation));
+                if(!monitor.notifyUpdate(translateOp(operation))) {
+                    log.warn("Update could not be sent");
+                }
                 return monitor;
             });
         }
