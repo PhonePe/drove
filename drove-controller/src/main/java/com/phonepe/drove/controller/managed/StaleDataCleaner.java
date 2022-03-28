@@ -66,7 +66,7 @@ public class StaleDataCleaner implements Managed {
             log.info("Skipping stale data cleanup as I'm not leader");
             return;
         }
-        val maxLastUpdated = new Date(new Date().getTime() - 30L * 24 * 60 * 60 * 1000); //30 days before now
+        val maxLastUpdated = new Date(new Date().getTime() - 7L * 24 * 60 * 60 * 1000); //30 days before now
         val allApps = applicationStateDB.applications(0, Integer.MAX_VALUE);
         val candidateAppIds = allApps
                 .stream()
