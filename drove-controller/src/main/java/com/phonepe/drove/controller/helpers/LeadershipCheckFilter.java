@@ -43,25 +43,32 @@ public class LeadershipCheckFilter implements ContainerRequestFilter {
             val uriInfo = requestContext.getUriInfo();
             final var absolutePath = uriInfo.getAbsolutePath().getPath();
             if (null == leader) {
-                requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST)
-                                                 .entity(new ApiResponse<Void>(
-                                                         ApiErrorCode.FAILED,
-                                                         null,
-                                                         "This node is not the leader controller"))
-                                                 .build());
+                fail(requestContext);
             }
             else {
-                val uri = UriBuilder.fromPath(absolutePath.contains("/ui/")
-                                              ? absolutePath.replace("/apis/ui", "")
-                                              : "")
-                        .host(leader.getHostname())
-                        .port(leader.getPort())
-                        .scheme(leader.getTransportType() == NodeTransportType.HTTP
-                                ? "http"
-                                : "https")
-                        .build();
-                requestContext.abortWith(Response.seeOther(uri).build());
+                if(absolutePath.contains("/ui/")) {
+                    val uri = UriBuilder.fromPath(absolutePath.replace("/apis/ui", ""))
+                            .host(leader.getHostname())
+                            .port(leader.getPort())
+                            .scheme(leader.getTransportType() == NodeTransportType.HTTP
+                                    ? "http"
+                                    : "https")
+                            .build();
+                    requestContext.abortWith(Response.seeOther(uri).build());
+                }
+                else {
+                    fail(requestContext);
+                }
             }
         }
+    }
+
+    private void fail(ContainerRequestContext requestContext) {
+        requestContext.abortWith(Response.status(Response.Status.BAD_REQUEST)
+                                         .entity(new ApiResponse<Void>(
+                                                 ApiErrorCode.FAILED,
+                                                 null,
+                                                 "This node is not the leader controller"))
+                                         .build());
     }
 }
