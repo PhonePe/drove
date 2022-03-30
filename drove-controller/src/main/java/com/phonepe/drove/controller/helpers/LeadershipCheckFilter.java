@@ -7,8 +7,10 @@ import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.val;
 
+import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Response;
@@ -21,6 +23,7 @@ import java.io.IOException;
  */
 @Provider
 @Singleton
+@Priority(Priorities.USER)
 public class LeadershipCheckFilter implements ContainerRequestFilter {
     private final LeadershipEnsurer leadershipEnsurer;
     private final LeadershipObserver leadershipObserver;
@@ -48,7 +51,6 @@ public class LeadershipCheckFilter implements ContainerRequestFilter {
                                                  .build());
             }
             else {
-
                 val uri = UriBuilder.fromPath(absolutePath.contains("/ui/")
                                               ? absolutePath.replace("/apis/ui", "")
                                               : "")
