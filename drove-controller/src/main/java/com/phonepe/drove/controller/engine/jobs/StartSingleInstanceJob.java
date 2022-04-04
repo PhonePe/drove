@@ -1,11 +1,13 @@
 package com.phonepe.drove.controller.engine.jobs;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobContext;
 import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
@@ -19,10 +21,8 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
-import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +40,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final InstanceInfoDB instanceInfoDB;
     private final ControllerCommunicator communicator;
     private final String schedulingSessionId;
+    private final ControllerRetrySpecFactory retrySpecFactory;
 
     public StartSingleInstanceJob(
             ApplicationSpec applicationSpec,
@@ -47,13 +48,15 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             InstanceScheduler scheduler,
             InstanceInfoDB instanceInfoDB,
             ControllerCommunicator communicator,
-            String schedulingSessionId) {
+            String schedulingSessionId,
+            ControllerRetrySpecFactory retrySpecFactory) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
         this.instanceInfoDB = instanceInfoDB;
         this.communicator = communicator;
         this.schedulingSessionId = schedulingSessionId;
+        this.retrySpecFactory = retrySpecFactory;
     }
 
     @Override
@@ -69,11 +72,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = new RetryPolicy<Boolean>()
-                .withDelay(Duration.ofSeconds(30))
-                .withMaxDuration(Duration.ofMinutes(3))
-                .handle(Exception.class)
-                .handleResultIf(instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(),
+                                                      instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.appId(applicationSpec);
         try {
             val status = Failsafe.with(retryPolicy)
@@ -149,7 +149,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                  clusterOpSpec,
                                                  appId,
                                                  instanceId,
-                                                 InstanceState.HEALTHY);
+                                                 InstanceState.HEALTHY,
+                                                 retrySpecFactory);
             }
         }
         finally {

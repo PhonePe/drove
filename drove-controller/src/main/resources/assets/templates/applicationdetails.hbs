@@ -12,6 +12,7 @@
                         <th>CPU</th>
                         <th>Memory</th>
                         <th>State</th>
+                        <th></th>
                     </tr>
                     </thead>
                 </table>
@@ -77,9 +78,33 @@
             </div>
         </div>
     </section>
+
+    <div class="modal fade bd-example-modal-lg" tabindex="-1" id="appSpec"role="dialog" aria-labelledby="myLargeModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="overflow-y: initial !important">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <pre id="appSpecJson"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 {{/partial}}
 
 {{#partial "page_js"}}
+    //Preload config as it won't change
+    $.get('/apis/v1/applications/{{appId}}', function(data) {
+        if(data.status === 'SUCCESS') {
+            $('#appSpecJson').html(JSON.stringify(data.data.spec, null, 4));
+        }
+        else {
+            $('#appSpecJson').html('Could not load config');
+        }
+    });
+
     var summary = $('#appsummary').DataTable({
         'processing' : true,
         'ajax': {
@@ -90,6 +115,11 @@
         'searching' : false,
         'ordering' : false,
         'info' : false,
+        'columnDefs': [ {
+            'targets': 7,
+            'data': null,
+            'defaultContent': '<button type="button" class="btn btn-small btn-primary" data-toggle="modal" data-target="#appSpec">Spec</button>'
+        } ],
         'columns' : [
             { 'data' : 'id' },
             { 'data' : 'spec.name' },

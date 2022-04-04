@@ -48,6 +48,7 @@ public class ApplicationEngine {
     private final InstanceInfoDB instanceInfoDB;
     private final CommandValidator commandValidator;
     private final DroveEventBus droveEventBus;
+    private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
 
@@ -55,13 +56,16 @@ public class ApplicationEngine {
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
-            InstanceInfoDB instanceInfoDB, CommandValidator commandValidator,
-            DroveEventBus droveEventBus) {
+            InstanceInfoDB instanceInfoDB,
+            CommandValidator commandValidator,
+            DroveEventBus droveEventBus,
+            ControllerRetrySpecFactory retrySpecFactory) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.commandValidator = commandValidator;
         this.droveEventBus = droveEventBus;
+        this.retrySpecFactory = retrySpecFactory;
     }
 
     @MonitoredFunction
@@ -167,13 +171,12 @@ public class ApplicationEngine {
                 val monitor = new ApplicationStateMachineExecutor(
                         appId,
                         stateMachine,
-                        monitorExecutor);
+                        monitorExecutor, retrySpecFactory);
                 monitor.start();
                 return monitor;
             }
         });
     }
-
 
     private void handleAppStateUpdate(
             String appId,

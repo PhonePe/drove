@@ -13,6 +13,8 @@ import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.DefaultControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InjectingAppActionFactory;
 import com.phonepe.drove.controller.engine.RemoteExecutorMessageSender;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
@@ -76,6 +78,7 @@ public class ControllerCoreModule extends AbstractModule {
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>>(){})
                 .to(InjectingAppActionFactory.class);
+        bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }
 
     @Provides

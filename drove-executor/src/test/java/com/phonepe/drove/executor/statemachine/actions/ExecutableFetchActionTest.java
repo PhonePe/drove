@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.statemachine.actions;
 import com.github.dockerjava.api.model.Image;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -46,7 +47,7 @@ class ExecutableFetchActionTest extends AbstractTestBase {
 
     @Test
     void testFetchWrongImage() {
-        val spec = ExecutorTestingUtils.testSpec(ExecutorTestingUtils.IMAGE_NAME + "-invalid");
+        val spec = ExecutorTestingUtils.testSpec(CommonTestUtils.IMAGE_NAME + "-invalid");
         val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID,
                                             spec,
                                             ExecutorTestingUtils.DOCKER_CLIENT);
@@ -58,7 +59,7 @@ class ExecutableFetchActionTest extends AbstractTestBase {
 
     @Test
     void testFetchInterrupt() {
-        val spec = ExecutorTestingUtils.testSpec(ExecutorTestingUtils.IMAGE_NAME + "-invalid");
+        val spec = ExecutorTestingUtils.testSpec(CommonTestUtils.IMAGE_NAME + "-invalid");
         val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID,
                                             spec,
                                             ExecutorTestingUtils.DOCKER_CLIENT);

@@ -1,5 +1,7 @@
 package com.phonepe.drove.controller.utils;
 
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -16,9 +18,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 
-import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
 
@@ -38,14 +38,12 @@ public class ControllerUtils {
             ClusterOpSpec clusterOpSpec,
             String appId,
             String instanceId,
-            InstanceState required) {
-        val retryPolicy = new RetryPolicy<Boolean>()
-                .withDelay(Duration.ofSeconds(3))
-                .withMaxAttempts(50)
-                .withMaxDuration(Duration.ofMillis(clusterOpSpec.getTimeout().toMilliseconds()))
-                .handle(Exception.class)
-                .handleResultIf(r -> !r);
-
+            InstanceState required,
+            ControllerRetrySpecFactory retrySpecFactory) {
+        val retryPolicy =
+                CommonUtils.<Boolean>policy(
+                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        r -> !r);
         try {
             val status = Failsafe.with(retryPolicy)
                     .onComplete(e -> {
@@ -101,8 +99,11 @@ public class ControllerUtils {
         }
         log.trace("Instance state for {}/{}: {}",
                   instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceInfo.getState());
-        if(instanceInfo.getState() == instanceState) {
-            log.info("Instance {}/{} reached desired state: {}", instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceState);
+        if (instanceInfo.getState() == instanceState) {
+            log.info("Instance {}/{} reached desired state: {}",
+                     instanceInfo.getAppId(),
+                     instanceInfo.getInstanceId(),
+                     instanceState);
             return true;
         }
         return false;

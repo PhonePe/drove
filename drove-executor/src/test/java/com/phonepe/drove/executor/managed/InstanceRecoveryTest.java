@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.managed;
 import com.github.dockerjava.api.model.HostConfig;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
@@ -47,7 +48,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     void testRecoverNonDroveContainers() {
         var containerId = "";
         try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(UUID.randomUUID().toString())) {
-            containerId = createCmd.withImage(ExecutorTestingUtils.IMAGE_NAME)
+            containerId = createCmd.withImage(CommonTestUtils.IMAGE_NAME)
                     .withName("test-container")
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec()

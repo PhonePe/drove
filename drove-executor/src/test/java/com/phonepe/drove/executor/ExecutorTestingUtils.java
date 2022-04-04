@@ -8,6 +8,7 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.google.common.collect.ImmutableList;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
@@ -54,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Slf4j
 @UtilityClass
 public class ExecutorTestingUtils {
-    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.3";
     public static final String EXECUTOR_ID = "TEST_EXEC";
     public static final DockerClient DOCKER_CLIENT
             = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder().build(),
@@ -63,7 +63,7 @@ public class ExecutorTestingUtils {
                                                    .build());
 
     public static InstanceSpec testSpec() {
-        return testSpec(ExecutorTestingUtils.IMAGE_NAME);
+        return testSpec(CommonTestUtils.IMAGE_NAME);
     }
 
     public static InstanceSpec testSpec(final String imageName) {
@@ -107,7 +107,7 @@ public class ExecutorTestingUtils {
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
-        return createExecutorInfo(testSpec(IMAGE_NAME), wm);
+        return createExecutorInfo(testSpec(CommonTestUtils.IMAGE_NAME), wm);
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(InstanceSpec spec, WireMockRuntimeInfo wm) {
@@ -206,7 +206,7 @@ public class ExecutorTestingUtils {
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT
-                .createContainerCmd(IMAGE_NAME)
+                .createContainerCmd(CommonTestUtils.IMAGE_NAME)
                 .withName("RecoveryTest")
                 .withLabels(Map.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
                                    spec.getInstanceId(),

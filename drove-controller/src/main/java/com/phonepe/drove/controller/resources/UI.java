@@ -4,8 +4,6 @@ import com.google.common.base.Strings;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.ui.views.*;
-import lombok.AllArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.guicey.gsp.views.template.Template;
 
@@ -15,8 +13,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  *
@@ -27,15 +23,6 @@ import java.util.Collections;
 @Produces({MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
 @PermitAll
 public class UI {
-    @Value
-    @AllArgsConstructor
-    private static class DataTableResponse<T> {
-        Collection<T> data;
-
-        public DataTableResponse(T param) {
-            this(Collections.singletonList(param));
-        }
-    }
 
     private final ApplicationStateDB stateDB;
     private final InstanceInfoDB instanceInfoDB;

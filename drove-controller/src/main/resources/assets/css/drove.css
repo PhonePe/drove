@@ -29,3 +29,14 @@ a {
 .nowrap {
   white-space:nowrap;
 }
+
+pre {
+    height: 75vh;
+    overflow-y: auto;
+    margin: 1rem;
+    background: #212529;
+    color: wheat;
+    padding: 1rem;
+    font-weight: bold;
+    font-family: courier;
+}

@@ -1,10 +1,12 @@
 package com.phonepe.drove.controller.engine.jobs;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobContext;
 import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
@@ -18,10 +20,7 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
-
-import java.time.Duration;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
 
@@ -36,19 +35,22 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
+    private final ControllerRetrySpecFactory retrySpecFactory;
 
     public StopSingleInstanceJob(
             String appId,
             String instanceId,
             ClusterOpSpec clusterOpSpec,
             InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
-            ControllerCommunicator communicator) {
+            ControllerCommunicator communicator,
+            ControllerRetrySpecFactory retrySpecFactory) {
         this.appId = appId;
         this.instanceId = instanceId;
         this.clusterOpSpec = clusterOpSpec;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
+        this.retrySpecFactory = retrySpecFactory;
     }
 
     @Override
@@ -64,11 +66,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = new RetryPolicy<Boolean>()
-                .withDelay(Duration.ofSeconds(30))
-                .withMaxDuration(Duration.ofMinutes(3))
-                .handle(Exception.class)
-                .handleResultIf(r -> !r);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(), r -> !r);
         val instanceInfo = instanceInfoDB.instance(appId, instanceId).orElse(null);
         if (null == instanceInfo) {
             return true;
@@ -116,7 +114,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
             return false;
         }
-        return ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED);
+        return ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED, retrySpecFactory);
     }
 
 }

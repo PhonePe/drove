@@ -9,10 +9,8 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.util.stream.Collectors;
-
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.IMAGE_NAME;
+import static com.phonepe.drove.common.CommonTestUtils.IMAGE_NAME;
 
 /**
  *

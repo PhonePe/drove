@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statemachine.actions;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.Job;
@@ -44,6 +45,7 @@ public class ScaleAppAction extends AppAsyncAction {
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
+    private final ControllerRetrySpecFactory retrySpecFactory;
 
     @Inject
     public ScaleAppAction(
@@ -52,13 +54,15 @@ public class ScaleAppAction extends AppAsyncAction {
             InstanceInfoDB instanceInfoDB,
             ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler,
-            ControllerCommunicator communicator) {
+            ControllerCommunicator communicator,
+            ControllerRetrySpecFactory retrySpecFactory) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
         this.communicator = communicator;
+        this.retrySpecFactory = retrySpecFactory;
     }
 
     @Override
@@ -93,7 +97,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                                scheduler,
                                                                                                                instanceInfoDB,
                                                                                                                communicator,
-                                                                                                               schedulingSessionId))
+                                                                                                               schedulingSessionId,
+                                                                                                               retrySpecFactory))
                                                        .toList())
                                        .build());
         }
@@ -123,7 +128,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                        scaleOp.getOpSpec(),
                                                                                                        instanceInfoDB,
                                                                                                        clusterResourcesDB,
-                                                                                                       communicator))
+                                                                                                       communicator,
+                                                                                                       retrySpecFactory))
                                                    .toList())
                                            .build());
             }

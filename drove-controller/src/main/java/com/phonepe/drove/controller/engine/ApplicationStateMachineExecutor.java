@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -7,11 +8,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 import org.slf4j.MDC;
 
-import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +33,8 @@ public class ApplicationStateMachineExecutor {
     @Getter
     private final ApplicationStateMachine stateMachine;
     private final ExecutorService executorService;
+    private final ControllerRetrySpecFactory retrySpecFactory;
+
     private Future<ApplicationState> currentState;
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
@@ -41,10 +42,13 @@ public class ApplicationStateMachineExecutor {
 
     public ApplicationStateMachineExecutor(
             String appId,
-            ApplicationStateMachine stateMachine, ExecutorService executorService) {
+            ApplicationStateMachine stateMachine,
+            ExecutorService executorService,
+            ControllerRetrySpecFactory retrySpecFactory) {
         this.appId = appId;
         this.stateMachine = stateMachine;
         this.executorService = executorService;
+        this.retrySpecFactory = retrySpecFactory;
     }
 
     public void start() {
@@ -102,12 +106,7 @@ public class ApplicationStateMachineExecutor {
         if (null != currentState) {
             stateMachine.stop();
 //            currentState.cancel(true);
-            val retryPolicy = new RetryPolicy<Boolean>()
-                    .withDelay(Duration.ofSeconds(3))
-                    .withMaxAttempts(50)
-                    .withMaxDuration(Duration.ofSeconds(60))
-                    .handle(Exception.class)
-                    .handleResultIf(r -> !r);
+            val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
                 Failsafe.with(retryPolicy)
                         .onFailure(e -> log.error("Completion wait for " + appId + " completed with error:",

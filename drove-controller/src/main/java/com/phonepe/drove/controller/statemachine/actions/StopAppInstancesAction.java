@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.statemachine.actions;
 
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
@@ -35,6 +36,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
     private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
+    private final ControllerRetrySpecFactory retrySpecFactory;
 
     @Inject
     public StopAppInstancesAction(
@@ -42,12 +44,14 @@ public class StopAppInstancesAction extends AppAsyncAction {
             final ApplicationStateDB applicationStateDB,
             InstanceInfoDB instanceInfoDB,
             final ClusterResourcesDB clusterResourcesDB,
-            final ControllerCommunicator communicator) {
+            final ControllerCommunicator communicator,
+            ControllerRetrySpecFactory retrySpecFactory) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
+        this.retrySpecFactory = retrySpecFactory;
     }
 
     @Override
@@ -65,7 +69,8 @@ public class StopAppInstancesAction extends AppAsyncAction {
                                                                                    stopAction.getOpSpec(),
                                                                                    instanceInfoDB,
                                                                                    clusterResourcesDB,
-                                                                                   communicator))
+                                                                                   communicator,
+                                                                                   retrySpecFactory))
                         .toList())
                 .build());
     }

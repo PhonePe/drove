@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.logging.LogBus;
@@ -31,7 +32,7 @@ class InstanceRunActionTest extends AbstractTestBase {
 
     @Test
     void testRunFail() {
-        val spec = testSpec(IMAGE_NAME + "-invalid");
+        val spec = testSpec(CommonTestUtils.IMAGE_NAME + "-invalid");
         val action = new InstanceRunAction(new LogBus(), new ResourceConfig());
         val context = new InstanceActionContext(EXECUTOR_ID, spec, DOCKER_CLIENT);
         val resp = action.execute(context, StateData.create(STARTING, createExecutorInfo(spec, 8080)));

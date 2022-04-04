@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
@@ -19,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  *
@@ -75,5 +78,45 @@ public class CommonUtils {
             log.error("Error getting hostname: " + e.getMessage(), e);
         }
         return null;
+    }
+
+    public static <T> RetryPolicy<T> policy(final RetrySpec spec, final Predicate<T> resultChecker) {
+        val policy = new RetryPolicy<T>();
+        spec.accept(new RetrySpecVisitor<Void>() {
+            @Override
+            public Void visit(CompositeRetrySpec composite) {
+                Objects.requireNonNullElse(composite.getSpecs(), Collections.<RetrySpec>emptyList())
+                        .forEach(rs -> rs.accept(this));
+                return null;
+            }
+
+            @Override
+            public Void visit(IntervalRetrySpec interval) {
+                policy.withDelay(interval.getInterval());
+                return null;
+            }
+
+            @Override
+            public Void visit(MaxDurationRetrySpec maxDuration) {
+                policy.withMaxDuration(maxDuration.getMaxDuration());
+                return null;
+            }
+
+            @Override
+            public Void visit(MaxRetriesRetrySpec maxRetries) {
+                policy.withMaxAttempts(maxRetries.getMaxRetries());
+                return null;
+            }
+
+            @Override
+            public Void visit(RetryOnAllExceptionsSpec exceptionRetry) {
+                policy.handle(Exception.class);
+                return null;
+            }
+        });
+        if(null != resultChecker) {
+            policy.handleResultIf(resultChecker);
+        }
+        return policy;
     }
 }
