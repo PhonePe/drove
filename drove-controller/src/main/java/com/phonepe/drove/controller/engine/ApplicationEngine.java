@@ -21,6 +21,7 @@ import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -51,6 +52,9 @@ public class ApplicationEngine {
     private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
+    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted = ConsumingFireForgetSignal.<ApplicationStateMachineExecutor>builder()
+            .executorService(monitorExecutor)
+            .build();
 
     @Inject
     public ApplicationEngine(
@@ -66,6 +70,10 @@ public class ApplicationEngine {
         this.commandValidator = commandValidator;
         this.droveEventBus = droveEventBus;
         this.retrySpecFactory = retrySpecFactory;
+        this.stateMachineCompleted.connect(stoppedExecutor -> {
+            stoppedExecutor.stop();
+            log.info("State machine executor is done for {}", stoppedExecutor.getAppId());
+        });
     }
 
     @MonitoredFunction
@@ -171,7 +179,9 @@ public class ApplicationEngine {
                 val monitor = new ApplicationStateMachineExecutor(
                         appId,
                         stateMachine,
-                        monitorExecutor, retrySpecFactory);
+                        monitorExecutor,
+                        retrySpecFactory,
+                        stateMachineCompleted);
                 monitor.start();
                 return monitor;
             }
@@ -211,10 +221,9 @@ public class ApplicationEngine {
         else {
             if (state.equals(ApplicationState.DESTROYED)) {
                 stateMachines.computeIfPresent(appId, (id, sm) -> {
-                    sm.stop();
                     stateDB.deleteApplicationState(appId);
                     instanceInfoDB.deleteAllInstancesForApp(appId);
-                    log.info("State machine stopped for: {}", appId);
+                    log.info("Application state machine and instance data cleaned up for: {}", appId);
                     return null;
                 });
             }

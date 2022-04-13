@@ -4,6 +4,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -13,6 +14,7 @@ import org.slf4j.MDC;
 
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,11 +31,13 @@ public class ApplicationStateMachineExecutor {
                                                                           ApplicationState.RUNNING);
 
     public static final String MDC_PARAM = "appId";
+    @Getter
     private final String appId;
     @Getter
     private final ApplicationStateMachine stateMachine;
     private final ExecutorService executorService;
     private final ControllerRetrySpecFactory retrySpecFactory;
+    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted;
 
     private Future<ApplicationState> currentState;
     private final Lock checkLock = new ReentrantLock();
@@ -44,11 +48,13 @@ public class ApplicationStateMachineExecutor {
             String appId,
             ApplicationStateMachine stateMachine,
             ExecutorService executorService,
-            ControllerRetrySpecFactory retrySpecFactory) {
+            ControllerRetrySpecFactory retrySpecFactory,
+            ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted) {
         this.appId = appId;
         this.stateMachine = stateMachine;
         this.executorService = executorService;
         this.retrySpecFactory = retrySpecFactory;
+        this.stateMachineCompleted = stateMachineCompleted;
     }
 
     public void start() {
@@ -79,6 +85,7 @@ public class ApplicationStateMachineExecutor {
                     }
                 } while (null != state && !state.isTerminal());
                 log.info("State machine exited with final state: {}", state);
+                stateMachineCompleted.dispatch(this);
             }
             finally {
                 MDC.remove(MDC_PARAM);
@@ -108,14 +115,23 @@ public class ApplicationStateMachineExecutor {
 //            currentState.cancel(true);
             val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
-                Failsafe.with(retryPolicy)
+                val status = Failsafe.with(retryPolicy)
                         .onFailure(e -> log.error("Completion wait for " + appId + " completed with error:",
                                                   e.getFailure()))
                         .get(() -> currentState.isDone());
-                log.info("State machine for app {} has shut down", appId);
+                if(status) {
+                    log.info("State machine for app {} has shut down with final state {}", appId, currentState.get());
+                }
+                else {
+                    log.warn("Could not ensure state machine has shut down for {}. There might be a leak somewhere.", appId);
+                }
             }
-            catch (TimeoutExceededException e) {
-                log.error("Wait for SM for {} to stop has exceeded 60 secs. There might be thread leak.", appId);
+            catch (InterruptedException e) {
+                log.warn("State machine for {} has been interrupted", appId);
+                Thread.currentThread().interrupt();
+            }
+            catch (TimeoutExceededException | ExecutionException e) {
+                log.error("Wait for SM for " + appId + " to stop has exceeded 60 secs. There might be thread leak.", e);
             }
         }
     }
