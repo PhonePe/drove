@@ -30,8 +30,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
+import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
 
 /**
  *
@@ -67,6 +69,14 @@ public class InstanceEngine implements Closeable {
 
     public boolean exists(final String instanceId) {
         return stateMachines.containsKey(instanceId);
+    }
+
+    public Set<String> instanceIds(final Set<InstanceState> matchingStates) {
+        return stateMachines.entrySet()
+                .stream()
+                .filter(e -> matchingStates.contains(e.getValue().getStateMachine().getCurrentState().getState()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public boolean startInstance(final InstanceSpec spec) {
@@ -118,6 +128,12 @@ public class InstanceEngine implements Closeable {
         val info = stateMachines.get(instanceId);
         if (null == info) {
             log.error("No such instance: {}. Nothing will be stopped", instanceId);
+            return false;
+        }
+        val currState = info.getStateMachine().getCurrentState().getState();
+        if(!RUNNING_STATES.contains(currState)) {
+            log.error("Cannot stop {} as it is not in active running state. Current state: {} Acceptable states: {}",
+                      instanceId, currState, RUNNING_STATES);
             return false;
         }
         info.getStateMachine().stop();

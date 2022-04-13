@@ -37,6 +37,8 @@ public enum InstanceState implements StateEnum {
             DEPROVISIONING,
             STOPPING);
 
+    public static final Set<InstanceState> RUNNING_STATES = Set.of(UNREADY, READY, HEALTHY);
+
     private final boolean terminal;
     private final boolean error;
 
