@@ -207,7 +207,7 @@
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory', 'render' : formatBytes },
             { 'data' : 'state', 'render': renderInstanceState },
-            { 'data' : 'created', 'render' : timeSince },
+            { 'data' : 'created', 'render' : lifetime },
             { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
             { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
             { 'data' : 'errorMessage',

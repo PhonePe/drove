@@ -1,6 +1,10 @@
 package com.phonepe.drove.controller;
 
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.retry.CompositeRetrySpec;
+import com.phonepe.drove.common.retry.MaxRetriesRetrySpec;
+import com.phonepe.drove.common.retry.RetryOnAllExceptionsSpec;
+import com.phonepe.drove.common.retry.RetrySpec;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -27,6 +31,9 @@ import java.util.List;
  */
 @UtilityClass
 public class ControllerTestUtils {
+    public static final RetrySpec NO_RETRY_SPEC = new CompositeRetrySpec(List.of(new MaxRetriesRetrySpec(1),
+                                                                                 new RetryOnAllExceptionsSpec()));
+
     public static ApplicationSpec appSpec() {
         return new ApplicationSpec("T001",
                                    "TEST_SPEC",

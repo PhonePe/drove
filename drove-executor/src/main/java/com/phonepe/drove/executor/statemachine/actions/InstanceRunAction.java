@@ -156,7 +156,7 @@ public class InstanceRunAction extends InstanceAction {
             client.startContainerCmd(id)
                     .exec();
             client.logContainerCmd(id)
-                    .withTail(0)
+                    .withTailAll()
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
