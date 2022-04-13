@@ -9,4 +9,9 @@ public class InstanceDestroyAction extends InstanceDummyAction {
     public InstanceDestroyAction() {
         super(InstanceState.DEPROVISIONING);
     }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.DEPROVISIONING;
+    }
 }

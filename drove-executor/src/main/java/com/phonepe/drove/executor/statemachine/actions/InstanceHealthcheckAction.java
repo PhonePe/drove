@@ -43,7 +43,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
-        val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheckSpec);
+        val checker = ExecutorUtils.createChecker(currentState.getData(), healthcheckSpec);
         log.info("Starting healthcheck");
         try {
             val currentContext = MDC.getCopyOfContextMap();
@@ -63,7 +63,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
             monitor();
             if (stop.get()) {
                 log.info("Stopping health-checks");
-                return StateData.create(InstanceState.STOPPING, currentState.getData());
+                return StateData.from(currentState, InstanceState.STOPPING);
             }
             val result = currentResult.get();
             if (null == result || result.getStatus().equals(CheckResult.Status.UNHEALTHY)) {
@@ -83,6 +83,11 @@ public class InstanceHealthcheckAction extends InstanceAction {
             checkLock.unlock();
         }
         return StateData.errorFrom(currentState, InstanceState.UNHEALTHY, "Node is unhealthy");
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.UNHEALTHY;
     }
 
     private void monitor() {

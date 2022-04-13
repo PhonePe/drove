@@ -70,4 +70,9 @@ public class InstanceRecoveryAction extends InstanceAction {
     protected boolean isStopAllowed() {
         return false;
     }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.STOPPED;
+    }
 }

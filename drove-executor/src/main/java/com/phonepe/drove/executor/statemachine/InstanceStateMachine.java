@@ -23,7 +23,8 @@ public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Voi
             = List.of(
             new Transition<>(PENDING,
                              InstanceSpecValidator.class,
-                             PROVISIONING),
+                             PROVISIONING,
+                             STOPPING),
             new Transition<>(PROVISIONING,
                              ExecutableFetchAction.class,
                              STARTING,

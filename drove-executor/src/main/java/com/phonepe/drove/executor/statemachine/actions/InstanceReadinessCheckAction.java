@@ -33,7 +33,7 @@ public class InstanceReadinessCheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();
-        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), readinessCheckSpec);
+        final Checker checker = ExecutorUtils.createChecker(currentState.getData(), readinessCheckSpec);
         val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if(initDelay > 0) {
@@ -68,14 +68,19 @@ public class InstanceReadinessCheckAction extends InstanceAction {
                         return checker.call();
                     });
             return switch (result.getStatus()) {
-                case HEALTHY -> StateData.create(InstanceState.READY, currentState.getData());
-                case STOPPED -> StateData.create(InstanceState.STOPPING, currentState.getData());
-                case UNHEALTHY -> StateData.create(InstanceState.READINESS_CHECK_FAILED, currentState.getData(), "Readiness check failed");
+                case HEALTHY -> StateData.from(currentState, InstanceState.READY);
+                case STOPPED -> StateData.from(currentState, InstanceState.STOPPING);
+                case UNHEALTHY -> StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, "Readiness check failed");
             };
         }
         catch (Exception e) {
             return StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, e.getMessage());
         }
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.READINESS_CHECK_FAILED;
     }
 
     @Override

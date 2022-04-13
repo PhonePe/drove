@@ -28,7 +28,7 @@ public class ExecutableFetchAction extends InstanceAction {
             val imageId = client.inspectImageCmd(image).exec().getId();
             log.info("Pulled image {} with image ID: {}", image, imageId);
             context.setDockerImageId(image);
-            return StateData.create(InstanceState.STARTING, currentState.getData());
+            return StateData.from(currentState, InstanceState.STARTING);
         }
         catch (InterruptedException e) {
             log.info("Action has been interrupted");
@@ -42,6 +42,11 @@ public class ExecutableFetchAction extends InstanceAction {
                                        InstanceState.PROVISIONING_FAILED,
                                        "Error while pulling image " + image + ": " + e.getMessage());
         }
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.PROVISIONING_FAILED;
     }
 
     @Override

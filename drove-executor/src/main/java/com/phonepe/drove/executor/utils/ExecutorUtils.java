@@ -6,7 +6,6 @@ import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
-import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
@@ -29,13 +28,12 @@ import java.util.Date;
 @UtilityClass
 public class ExecutorUtils {
     public static Checker createChecker(
-            InstanceActionContext context,
             ExecutorInstanceInfo instanceInfo,
-            CheckSpec readinessCheckSpec) {
-        return context.getInstanceSpec().getReadiness().getMode().accept(new CheckModeSpecVisitor<>() {
+            CheckSpec checkSpec) {
+        return checkSpec.getMode().accept(new CheckModeSpecVisitor<>() {
             @Override
             public Checker visit(HTTPCheckModeSpec httpCheck) {
-                return new HttpChecker(readinessCheckSpec, httpCheck, instanceInfo);
+                return new HttpChecker(checkSpec, httpCheck, instanceInfo);
             }
 
             @Override
@@ -70,28 +68,22 @@ public class ExecutorUtils {
     public static HttpRequest.Builder buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
         val requestBuilder = HttpRequest.newBuilder(uri);
         switch (httpSpec.getVerb()) {
-
-            case GET: {
-                requestBuilder.GET();
-                break;
-            }
-            case POST: {
+            case GET -> requestBuilder.GET();
+            case POST -> {
                 if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
                     requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
                 }
                 else {
                     requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
                 }
-                break;
             }
-            case PUT: {
+            case PUT -> {
                 if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
                     requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
                 }
                 else {
                     requestBuilder.PUT(HttpRequest.BodyPublishers.noBody());
                 }
-                break;
             }
         }
         return requestBuilder;

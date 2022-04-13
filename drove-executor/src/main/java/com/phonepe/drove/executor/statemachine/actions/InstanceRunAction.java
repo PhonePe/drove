@@ -181,6 +181,11 @@ public class InstanceRunAction extends InstanceAction {
         }
     }
 
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.START_FAILED;
+    }
+
     private ExecutorInstanceInfo instanceInfo(
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,

@@ -57,7 +57,7 @@ public class InstanceStopAction extends InstanceAction {
                 return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
             }
         }
-        return StateData.create(InstanceState.DEPROVISIONING, currentState.getData());
+        return StateData.from(currentState, InstanceState.DEPROVISIONING);
     }
 
     @Override
@@ -69,6 +69,11 @@ public class InstanceStopAction extends InstanceAction {
     @Override
     protected boolean isStopAllowed() {
         return false;
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.DEPROVISIONING;
     }
 
     private void executePreShutdownHook(

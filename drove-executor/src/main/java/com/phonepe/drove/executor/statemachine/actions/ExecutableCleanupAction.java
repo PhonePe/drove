@@ -42,6 +42,11 @@ public class ExecutableCleanupAction extends InstanceAction {
     }
 
     @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.STOPPED;
+    }
+
+    @Override
     public void stop() {
         //Nothing to do here
     }

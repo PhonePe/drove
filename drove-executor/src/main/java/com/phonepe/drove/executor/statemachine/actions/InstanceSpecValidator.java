@@ -19,6 +19,11 @@ public class InstanceSpecValidator extends InstanceAction {
     }
 
     @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.STOPPING;
+    }
+
+    @Override
     public void stop() {
         //Ignore this
     }

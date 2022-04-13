@@ -32,7 +32,7 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
-        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck);
+        final Checker checker = ExecutorUtils.createChecker(currentState.getData(), healthcheck);
         val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if (initDelay > 0) {
@@ -41,7 +41,7 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                return StateData.create(InstanceState.STOPPING, currentState.getData());
+                return StateData.from(currentState, InstanceState.STOPPING);
             }
         }
         val retryPolicy = new RetryPolicy<CheckResult>()
@@ -70,12 +70,12 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
             val status = result.getStatus();
             switch (status) {
                 case HEALTHY:
-                    return StateData.create(InstanceState.HEALTHY, currentState.getData());
+                    return StateData.from(currentState, InstanceState.HEALTHY);
                 case STOPPED:
                 case UNHEALTHY:
                     log.warn("Instance still unhealthy with state: {}. Will be killing this.", status);
                 default:
-                    return StateData.create(InstanceState.STOPPING, currentState.getData());
+                    return StateData.from(currentState, InstanceState.STOPPING);
             }
         }
         catch (Exception e) {
@@ -83,6 +83,11 @@ public class InstanceSingularHealthCheckAction extends InstanceAction {
                                        InstanceState.STOPPING,
                                        "Error running health-checks: " + e.getMessage());
         }
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.STOPPING;
     }
 
     @Override
