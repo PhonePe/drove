@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
@@ -16,6 +15,7 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
@@ -36,6 +36,8 @@ import javax.inject.Inject;
 import java.net.ServerSocket;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.phonepe.drove.common.CommonUtils.hostname;
 
 /**
  *
@@ -105,7 +107,7 @@ public class InstanceRunAction extends InstanceAction {
             val exposedPorts = new ArrayList<ExposedPort>();
             val env = new ArrayList<String>();
             val portMappings = new HashMap<String, InstancePort>();
-            val hostName = CommonUtils.hostname();
+            val hostName = hostname();
             env.add("HOST=" + hostName);
             instanceSpec.getPorts().forEach(
                     portSpec -> {
@@ -142,6 +144,13 @@ public class InstanceRunAction extends InstanceAction {
                                .stream()
                                .map(e -> e.getKey() + "=" + e.getValue())
                                .toList());
+            instanceSpec.getExecutable().accept((ExecutableTypeVisitor<Void>) dockerCoordinates -> {
+                env.add("DROVE_CONTAINER_ID=" + dockerCoordinates.getUrl());
+                return null;
+            });
+            env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());
+            env.add("DROVE_EXECUTOR_HOST=" + hostname());
+
             log.debug("Environment: {}", env);
             val id = containerCmd
                     .withHostConfig(hostConfig)
