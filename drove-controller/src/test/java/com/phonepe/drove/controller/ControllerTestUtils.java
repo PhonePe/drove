@@ -42,7 +42,6 @@ public class ControllerTestUtils {
                                    List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
                                    JobType.SERVICE,
                                    LocalLoggingSpec.DEFAULT,
-                                   null,
                                    List.of(new CPURequirement(1), new MemoryRequirement(512)),
                                    new AnyPlacementPolicy(),
                                    new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
