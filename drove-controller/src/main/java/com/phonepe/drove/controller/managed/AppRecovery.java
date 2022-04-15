@@ -46,7 +46,7 @@ public class AppRecovery implements Managed {
                                                                                                    applicationInfo.getInstances(),
                                                                                                    ClusterOpSpec.DEFAULT));
                         if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-                            log.error("Error sending command to state machine. Error: " + res.getMessage());
+                            log.error("Error sending command to state machine. Error: " + res.getMessages());
                         }
                     });
         }

@@ -1,6 +1,5 @@
 package com.phonepe.drove.models.application;
 
-import com.phonepe.drove.models.application.changenotification.StateChangeNotificationSpec;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
@@ -13,6 +12,7 @@ import lombok.Value;
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import java.util.List;
 import java.util.Map;
 
@@ -21,33 +21,32 @@ import java.util.Map;
  */
 @Value
 public class ApplicationSpec {
-    @NotEmpty
+    @NotEmpty(message = "- Application name is mandatory")
+    @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
     String name;
 
-    @NotEmpty
+    @NotEmpty(message = "- App version is mandatory")
+    @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
     String version;
 
-    @NotNull
+    @NotNull(message = "- Executable details is required")
     @Valid
     ExecutableCoordinates executable;
 
-    @NotEmpty
+    @NotEmpty(message = "- Port specifications are needed")
     @Valid
     List<PortSpec> exposedPorts;
 
     @Valid
     List<MountedVolume> volumes;
 
-    @NotNull
+    @NotNull(message = "- Specify if job is a computation or a service")
     JobType type;
 
     @Valid
     LoggingSpec logging;
 
-    @Valid
-    StateChangeNotificationSpec stateChangeNotificationReceivers;
-
-    @NotEmpty
+    @NotEmpty(message = "- CPU/Memory requirements must be specified")
     @Valid
     List<ResourceRequirement> resources;
 

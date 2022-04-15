@@ -60,7 +60,7 @@ public class ApplicationMonitor implements Managed {
     public void notifyOperation(final ApplicationOperation operation) {
         val res = engine.handleOperation(operation);
         if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-            log.error("Error sending command to state machine. Error: " + res.getMessage());
+            log.error("Error sending command to state machine. Error: " + res.getMessages());
         }
     }
 

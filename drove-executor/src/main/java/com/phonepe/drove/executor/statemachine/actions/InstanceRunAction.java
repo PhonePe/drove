@@ -201,7 +201,9 @@ public class InstanceRunAction extends InstanceAction {
                 new LocalInstanceInfo(hostName, portMappings),
                 resources,
                 Collections.emptyMap(),
-                null == oldData ? new Date() : oldData.getCreated(),
+                null == oldData
+                ? new Date()
+                : oldData.getCreated(),
                 new Date());
     }
 

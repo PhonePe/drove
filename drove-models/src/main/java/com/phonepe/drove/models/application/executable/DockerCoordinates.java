@@ -15,10 +15,10 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class DockerCoordinates extends ExecutableCoordinates {
-    @NotEmpty
+    @NotEmpty(message = "- Specify url for container")
     String url;
 
-    @NotNull
+    @NotNull(message = "- Specify container fetch (docker pull) timeout")
     Duration dockerPullTimeout;
 
     public DockerCoordinates(String url, Duration dockerPullTimeout) {

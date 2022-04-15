@@ -20,11 +20,11 @@ import javax.validation.constraints.NotEmpty;
 public class LocalLoggingSpec extends LoggingSpec {
     public static final LoggingSpec DEFAULT = new LocalLoggingSpec("10m", 3, true);
 
-    @NotEmpty
+    @NotEmpty(message = "- Specify max size of logs. Use 10m, 1g etc. Files bigger than this will be rotated")
     String maxSize;
 
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "- At least one log will be present, so min value is 1")
+    @Max(value = 100, message = "- Maximum 100 log files can be retained")
     int maxFiles;
     boolean compress;
 

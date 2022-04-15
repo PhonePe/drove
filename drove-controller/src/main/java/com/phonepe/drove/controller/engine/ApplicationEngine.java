@@ -215,7 +215,7 @@ public class ApplicationEngine {
                     });
             val res = handleOperation(scalingOperation);
             if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-                log.error("Error sending command to state machine. Error: " + res.getMessage());
+                log.error("Error sending command to state machine. Error: " + res.getMessages());
             }
         }
         else {

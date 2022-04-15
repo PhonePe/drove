@@ -9,9 +9,12 @@ import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
+import com.phonepe.drove.models.application.checks.CheckSpec;
+import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
+import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.application.requirements.*;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
@@ -25,9 +28,8 @@ import org.apache.commons.lang3.StringUtils;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
@@ -62,15 +64,19 @@ public class CommandValidator {
     @Value
     public static class ValidationResult {
         ValidationStatus status;
-        String message;
+        List<String> messages;
 
         public static ValidationResult success() {
-            return new ValidationResult(ValidationStatus.SUCCESS, "Success");
+            return new ValidationResult(ValidationStatus.SUCCESS, List.of("Success"));
         }
 
         public static ValidationResult failure(final String message) {
-            Objects.requireNonNull(message, "Validation failure message cannot be empty");
-            return new ValidationResult(ValidationStatus.FAILURE, message);
+            return failure(List.of(message));
+        }
+
+        public static ValidationResult failure(final List<String> messages) {
+            Objects.requireNonNull(messages, "Validation failure message cannot be empty");
+            return new ValidationResult(ValidationStatus.FAILURE, messages);
         }
     }
 
@@ -138,9 +144,29 @@ public class CommandValidator {
 
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {
-            return /*applicationStateDB.application(appId).isPresent()
-                   ? ValidationResult.failure("App " + appId + " already exists")
-                   : */ValidationResult.success();
+            if (applicationStateDB.application(appId).isPresent()) {
+                return CommandValidator.ValidationResult.failure("App " + appId + " already exists");
+            }
+            val errs = new ArrayList<String>();
+            val spec = create.getSpec();
+            val ports = spec.getExposedPorts()
+                    .stream()
+                    .collect(Collectors.toMap(PortSpec::getName, Function.identity()));
+            validateCheckSpec(spec.getHealthcheck(), ports).ifPresent(errs::add);
+            validateCheckSpec(spec.getReadiness(), ports).ifPresent(errs::add);
+            val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType, Collectors.counting()));
+            if(!reqs.containsKey(ResourceType.CPU)) {
+                errs.add("Cpu requirements are mandatory");
+            }
+            else if(!reqs.containsKey(ResourceType.MEMORY)) {
+                errs.add("Memory requirements are mandatory");
+            }
+            if(null != spec.getExposureSpec() && !ports.containsKey(spec.getExposureSpec().getPortName())) {
+                errs.add("Exposed port name " + spec.getExposureSpec().getPortName() + " is undefined");
+            }
+            return errs.isEmpty()
+                ? ValidationResult.success()
+                : ValidationResult.failure(errs);
         }
 
         @Override
@@ -245,5 +271,22 @@ public class CommandValidator {
             }
             return ValidationResult.success();
         }
+    }
+
+    private static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
+        return spec.getMode()
+                .accept(new CheckModeSpecVisitor<Optional<String>>() {
+                    @Override
+                    public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
+                        return ports.containsKey(httpCheck.getPortName())
+                               ? Optional.empty()
+                               : Optional.of("Invalid port name for health check: " + httpCheck.getPortName());
+                    }
+
+                    @Override
+                    public Optional<String> visit(CmdCheckModeSpec cmdCheck) {
+                        return Optional.empty();
+                    }
+                });
     }
 }

@@ -104,7 +104,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             Map<String, Long> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();
-        return spec.getPlacementPolicy().accept(new PlacementPolicyVisitor<>() {
+        val placementPolicy = Objects.requireNonNullElse(spec.getPlacementPolicy(), new AnyPlacementPolicy());
+        return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
                 log.debug("Existing: {} allocated: {}", sessionLevelData.keySet(), allocatedExecutorId);

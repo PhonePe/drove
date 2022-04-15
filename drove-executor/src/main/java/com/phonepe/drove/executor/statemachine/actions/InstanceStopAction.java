@@ -115,7 +115,7 @@ public class InstanceStopAction extends InstanceAction {
             return;
         }
         val uri = URI.create(String.format("%s://localhost:%d%s",
-                                           httpSpec.getProtocol(),
+                                           httpSpec.getProtocol().name().toLowerCase(),
                                            port.getHostPort(),
                                            httpSpec.getPath()));
 

@@ -75,7 +75,7 @@ public class ExecutorTestingUtils {
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                 Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                 List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
-                                new CheckSpec(new HTTPCheckModeSpec("http",
+                                new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                                                     "main",
                                                                     "/",
                                                                     HTTPVerb.GET,
@@ -86,7 +86,7 @@ public class ExecutorTestingUtils {
                                               Duration.seconds(3),
                                               3,
                                               Duration.seconds(0)),
-                                new CheckSpec(new HTTPCheckModeSpec("http",
+                                new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                                                     "main",
                                                                     "/",
                                                                     HTTPVerb.GET,
@@ -137,7 +137,7 @@ public class ExecutorTestingUtils {
     }
 
     public static HTTPCheckModeSpec httpCheck(HTTPVerb verb, String body) {
-        return new HTTPCheckModeSpec("http",
+        return new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                      "main",
                                      "/",
                                      verb,

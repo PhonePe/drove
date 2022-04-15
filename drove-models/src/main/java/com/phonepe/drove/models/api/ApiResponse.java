@@ -16,6 +16,10 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> failure(final String message) {
-        return new ApiResponse<>(ApiErrorCode.FAILED, null, message);
+        return failure(null, message);
+    }
+
+    public static <T> ApiResponse<T> failure(final T data, final String message) {
+        return new ApiResponse<>(ApiErrorCode.FAILED, data, message);
     }
 }

@@ -13,8 +13,10 @@ public class MountedVolume {
         READ_WRITE,
         READ_ONLY
     }
-    @NotEmpty
+    @NotEmpty(message = "- Provide mount path inside container")
     String pathInContainer;
+    @NotEmpty(message = "- Provide host directory to mount")
     String pathOnHost;
+    @NotEmpty(message = "- Specify whether mount is read-only or read-write")
     MountMode mode;
 }

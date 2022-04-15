@@ -168,7 +168,7 @@ class HttpCheckerTest {
     void testInvalidPort(WireMockRuntimeInfo wm) {
 
         val info = createExecutorInfo(wm);
-        val httpSpec = new HTTPCheckModeSpec("http",
+        val httpSpec = new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                              "wrongPort",
                                              "/",
                                              HTTPVerb.GET,

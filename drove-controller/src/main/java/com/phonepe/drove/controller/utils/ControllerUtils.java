@@ -4,6 +4,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
 
+import javax.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.Set;
 
@@ -224,5 +226,15 @@ public class ControllerUtils {
                                 .sum();
                     }
                 });
+    }
+
+    public static <T> Response ok(final T data) {
+        return Response.ok(ApiResponse.success(data)).build();
+    }
+
+    public static <T> Response badRequest(T data, String message) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ApiResponse.failure(data, message))
+                .build();
     }
 }

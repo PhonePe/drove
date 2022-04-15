@@ -27,7 +27,7 @@ public class CompositePlacementPolicy extends PlacementPolicy {
         OR
     }
 
-    @NotEmpty
+    @NotEmpty(message = "- Specify one or more policies to combine")
     List<PlacementPolicy> policies;
 
     CombinerType combiner;

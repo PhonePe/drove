@@ -21,7 +21,7 @@ import javax.validation.constraints.NotEmpty;
 @Builder
 public class MatchTagPlacementPolicy extends PlacementPolicy {
 
-    @NotEmpty
+    @NotEmpty(message = "- Tag is mandatory")
     String tag;
 
     boolean negate;
