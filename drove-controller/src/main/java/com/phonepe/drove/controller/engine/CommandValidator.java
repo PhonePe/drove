@@ -121,7 +121,7 @@ public class CommandValidator {
             }
         }
         return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB,
-                                                        instanceInfoStore));
+                                                        instanceInfoStore, engine.get()));
     }
 
     private static final class OpValidationVisitor implements ApplicationOperationVisitor<ValidationResult> {
@@ -131,20 +131,22 @@ public class CommandValidator {
         private final ClusterResourcesDB clusterResourcesDB;
         private final InstanceInfoDB instancesDB;
 
+        private final ApplicationEngine engine;
         private OpValidationVisitor(
                 String appId,
                 ApplicationStateDB applicationStateDB,
                 ClusterResourcesDB clusterResourcesDB,
-                InstanceInfoDB instancesDB) {
+                InstanceInfoDB instancesDB, ApplicationEngine engine) {
             this.appId = appId;
             this.applicationStateDB = applicationStateDB;
             this.clusterResourcesDB = clusterResourcesDB;
             this.instancesDB = instancesDB;
+            this.engine = engine;
         }
 
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {
-            if (applicationStateDB.application(appId).isPresent()) {
+            if (engine.exists(appId)) {
                 return CommandValidator.ValidationResult.failure("App " + appId + " already exists");
             }
             val errs = new ArrayList<String>();

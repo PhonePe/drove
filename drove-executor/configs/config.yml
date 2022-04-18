@@ -35,9 +35,9 @@ logging:
       logPath: "/home/santanu/drove/drove-executor"
       archivedLogFileSuffix: "%d"
       archivedFileCount: 3
-      threshold: TRACE
+      threshold: INFO
       timeZone: IST
-      logFormat: "%(%-5level) [%date] [%logger{0}] %message%n"
+      logFormat: "%(%-5level) | %-23date | %-30logger{0} | %message%n"
       archive: true
 
 

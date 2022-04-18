@@ -44,7 +44,6 @@ public class InstanceHealthcheckAction extends InstanceAction {
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
         val checker = ExecutorUtils.createChecker(currentState.getData(), healthcheckSpec);
-        log.info("Starting healthcheck");
         try {
             val currentContext = MDC.getCopyOfContextMap();
             val mdc = null != currentContext
@@ -76,7 +75,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
             }
         }
         catch (Exception e) {
-            log.info("Error occurred: ", e);
+            log.error("Error occurred: ", e);
         }
         finally {
             stopJob();
@@ -171,7 +170,12 @@ public class InstanceHealthcheckAction extends InstanceAction {
                     attemptCount++;
                     return;
                 }
-                log.info("Health check results: {}", result);
+                if(result.getStatus().equals(CheckResult.Status.UNHEALTHY)) {
+                    log.warn("Healthcheck returned unhealthy. {}", result);
+                }
+                else {
+                    log.debug("Health check results: {}", result);
+                }
                 currentResult.set(result);
             }
             catch (Exception e) {

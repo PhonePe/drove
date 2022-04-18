@@ -3,27 +3,34 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title></title>
-    <style>
-      body {
-        line-height: 16px;
-        font-size: 14px;
-      }
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
 
-      .indicator {
-        background: #000000;
-        color: #FFFFFF;
-        left: 5px;
-        position: absolute;
-        text-decoration: none;
-        top: 5px;
-      }
-    </style>
+    <title>D R O V E - Log Viewer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="/css/drove.css" rel="stylesheet">
+
 </head>
+<body style="overflow: hidden;" class="container-fluid pailer-body">
+<header style="margin-bottom: 0px;">
+    <nav class="navbar navbar-expand navbar-dark bg-primary justify-content-right">
 
-<body style="overflow: hidden;">
-<pre id="data"></pre>
-<div class="indicator" id="indicator"></div>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <a class="navbar-brand cm-icon mb-0 h4" href="/" style="font-size: x-large;"><img
+                    src="/images/drove-logo-white.png" width="60" height="45" alt=""><span class="pl-2">Logs for {{appId}}/{{instanceId}}</span></a>
+            <ul class="navbar-nav mr-auto mt-2 mt-lg-0"></ul>
+
+        </div>
+    </nav>
+</header>
+
+<div class="pailer-indicator" id="indicator"></div>
+<pre class="pailer-data" id="data"></pre>
+
 
 <script src="/js/jquery-3.3.1.min.js"></script>
 <script src="/js/underscore-1.4.3.min.js"></script>
@@ -38,8 +45,8 @@
         var margin_top = parseInt($body.css('margin-top'));
         var margin_bottom = parseInt($body.css('margin-bottom'));
         $data
-          .width($(window).width() - margin_left)
-          .height($(window).height() - margin_top - margin_bottom);
+          .width($('#data-container').width() - margin_left)
+          .height($(window).height() - 88 - margin_top - margin_bottom);
       }
 
       $(window).resize(resize);
