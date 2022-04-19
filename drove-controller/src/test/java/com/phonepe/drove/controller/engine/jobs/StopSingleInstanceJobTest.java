@@ -6,7 +6,6 @@ import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.BooleanResponseCombiner;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;

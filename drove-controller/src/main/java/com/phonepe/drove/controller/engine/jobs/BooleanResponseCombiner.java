@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.engine;
+package com.phonepe.drove.controller.engine.jobs;
 
 import com.phonepe.drove.controller.jobexecutor.AbstractJobResponseCombiner;
 import com.phonepe.drove.controller.jobexecutor.Job;
@@ -7,7 +7,7 @@ import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- *
+ * This will mimic an OR combiner
  */
 public class BooleanResponseCombiner extends AbstractJobResponseCombiner<Boolean> {
     private final AtomicBoolean current = new AtomicBoolean();

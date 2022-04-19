@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.statemachine;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.controller.engine.BooleanResponseCombiner;
+import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.jobexecutor.JobTopology;
