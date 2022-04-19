@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
+import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.BooleanResponseCombiner;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-class StartSingleInstanceJobTest {
+class StartSingleInstanceJobTest extends ControllerTestBase {
 
     private static final ApplicationSpec APP_SPEC = appSpec();
 

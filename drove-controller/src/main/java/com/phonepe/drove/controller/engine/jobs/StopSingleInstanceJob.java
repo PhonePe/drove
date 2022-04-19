@@ -60,7 +60,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
 
     @Override
     public void cancel() {
-
+        //This job type cannot be cancelled
     }
 
     @Override
@@ -69,6 +69,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(), r -> !r);
         val instanceInfo = instanceInfoDB.instance(appId, instanceId).orElse(null);
         if (null == instanceInfo) {
+            log.warn("No instance found for {}/{}", appId, instanceId);
             return true;
         }
         try {
@@ -76,19 +77,19 @@ public class StopSingleInstanceJob implements Job<Boolean> {
                     .onFailure(event -> {
                         val failure = event.getFailure();
                         if (null != failure) {
-                            log.error("Error setting up instance for " + appId, failure);
+                            log.error("Error stopping instance for " + appId, failure);
                         }
                         else {
-                            log.error("Error setting up instance for {}. Event: {}", appId, event);
+                            log.error("Error stopping instance for {}. Event: {}", appId, event);
                         }
                     })
                     .get(() -> stopInstance(instanceInfo, clusterOpSpec));
         }
         catch (TimeoutExceededException e) {
-            log.error("Could not allocate an instance for {} after retires.", appId);
+            log.error("Could not stop an instance for {} after retires.", appId);
         }
         catch (Exception e) {
-            log.error("Could not allocate an instance for " + appId + " after retires.", e);
+            log.error("Could not stop an instance for " + appId + " after retires.", e);
         }
         return false;
     }
