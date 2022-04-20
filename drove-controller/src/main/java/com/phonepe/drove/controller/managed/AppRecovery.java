@@ -21,7 +21,6 @@ import javax.inject.Singleton;
 @Singleton
 public class AppRecovery implements Managed {
 
-    private final LeadershipEnsurer leadershipEnsurer;
     private final ApplicationEngine applicationEngine;
     private final ApplicationStateDB applicationStateDB;
 
@@ -30,7 +29,6 @@ public class AppRecovery implements Managed {
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
             ApplicationStateDB applicationStateDB) {
-        this.leadershipEnsurer = leadershipEnsurer;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChange);

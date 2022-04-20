@@ -24,6 +24,10 @@ public final class JobExecutor<T> {
 
     public JobExecutor(ExecutorService executorService) {
         this.executorService = executorService;
+        this.jobCompleted.connect(r -> {
+            log.debug("Cleaning up context for job: {}", r.getJobId());
+            contexts.remove(r.getJobId());
+        });
     }
 
     public ConsumingSyncSignal<JobExecutionResult<T>> onComplete() {

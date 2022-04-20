@@ -2,7 +2,7 @@
 <configuration>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d %5p | %t | %m %n</pattern>
+            <pattern>%d %5p | %t | %class{0}::%M | %m %n</pattern>
         </encoder>
     </appender>
 

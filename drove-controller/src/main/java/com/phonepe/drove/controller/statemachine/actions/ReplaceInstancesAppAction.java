@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statemachine.actions;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.Job;
@@ -42,6 +43,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
+    private final InstanceIdGenerator instanceIdGenerator;
 
     @Inject
     public ReplaceInstancesAppAction(
@@ -51,7 +53,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
-            ControllerRetrySpecFactory retrySpecFactory) {
+            ControllerRetrySpecFactory retrySpecFactory,
+            InstanceIdGenerator instanceIdGenerator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -59,6 +62,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         this.scheduler = scheduler;
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
+        this.instanceIdGenerator = instanceIdGenerator;
     }
 
     @Override
@@ -89,7 +93,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                                                                    scheduler,
                                                                    instanceInfoDB, communicator,
                                                                    schedulingSessionId,
-                                                                   retrySpecFactory),
+                                                                   retrySpecFactory,
+                                                                   instanceIdGenerator),
                                         new StopSingleInstanceJob(appId,
                                                                   instanceInfo.getInstanceId(),
                                                                   clusterOpSpec,

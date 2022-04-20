@@ -8,6 +8,7 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.jobexecutor.Job;
 import com.phonepe.drove.controller.jobexecutor.JobContext;
 import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
@@ -25,7 +26,6 @@ import net.jodah.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
 
@@ -42,6 +42,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final String schedulingSessionId;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
+    private final InstanceIdGenerator instanceIdGenerator;
+
     public StartSingleInstanceJob(
             ApplicationSpec applicationSpec,
             ClusterOpSpec clusterOpSpec,
@@ -49,7 +51,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             InstanceInfoDB instanceInfoDB,
             ControllerCommunicator communicator,
             String schedulingSessionId,
-            ControllerRetrySpecFactory retrySpecFactory) {
+            ControllerRetrySpecFactory retrySpecFactory, InstanceIdGenerator instanceIdGenerator) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
@@ -57,6 +59,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         this.communicator = communicator;
         this.schedulingSessionId = schedulingSessionId;
         this.retrySpecFactory = retrySpecFactory;
+        this.instanceIdGenerator = instanceIdGenerator;
     }
 
     @Override
@@ -111,7 +114,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             return false;
         }
         val appId = ControllerUtils.appId(applicationSpec);
-        val instanceId = UUID.randomUUID().toString();
+        val instanceId = instanceIdGenerator.generate();
         val startMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                     new ExecutorAddress(node.getExecutorId(),
                                                                         node.getHostname(),

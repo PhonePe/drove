@@ -13,10 +13,7 @@ import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
-import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
-import com.phonepe.drove.controller.engine.DefaultControllerRetrySpecFactory;
-import com.phonepe.drove.controller.engine.InjectingAppActionFactory;
-import com.phonepe.drove.controller.engine.RemoteExecutorMessageSender;
+import com.phonepe.drove.controller.engine.*;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
@@ -74,6 +71,7 @@ public class ControllerCoreModule extends AbstractModule {
         bind(ApplicationStateDB.class).to(ZkApplicationStateDB.class);
         bind(InstanceInfoDB.class).to(ZkInstanceInfoDB.class);
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
+        bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
         bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>>(){})

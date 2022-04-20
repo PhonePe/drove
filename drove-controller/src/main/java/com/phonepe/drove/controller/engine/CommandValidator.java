@@ -26,7 +26,6 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.function.Function;
@@ -80,31 +79,28 @@ public class CommandValidator {
         }
     }
 
-    private final Provider<ApplicationEngine> engine;
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceInfoDB instanceInfoStore;
 
     @Inject
     public CommandValidator(
-            Provider<ApplicationEngine> engine,
             ApplicationStateDB applicationStateDB,
             ClusterResourcesDB clusterResourcesDB,
             InstanceInfoDB instanceInfoStore) {
-        this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.instanceInfoStore = instanceInfoStore;
     }
 
     @MonitoredFunction
-    public ValidationResult validate(final ApplicationOperation operation) {
+    public ValidationResult validate(final ApplicationEngine engine, final ApplicationOperation operation) {
         val appId = appId(operation);
         if (Strings.isNullOrEmpty(appId)) {
             return ValidationResult.failure("no app id found in operation");
         }
         if (!operation.getType().equals(CREATE)) {
-            val currState = engine.get().applicationState(appId).orElse(null);
+            val currState = engine.applicationState(appId).orElse(null);
             if (null == currState) {
                 return ValidationResult.failure("No state found for app: " + appId);
             }
@@ -121,7 +117,7 @@ public class CommandValidator {
             }
         }
         return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB,
-                                                        instanceInfoStore, engine.get()));
+                                                        instanceInfoStore, engine));
     }
 
     private static final class OpValidationVisitor implements ApplicationOperationVisitor<ValidationResult> {

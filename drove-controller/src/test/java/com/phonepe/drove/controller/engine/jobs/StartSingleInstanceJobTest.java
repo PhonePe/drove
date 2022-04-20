@@ -8,6 +8,8 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
+import com.phonepe.drove.controller.engine.RandomInstanceIdGenerator;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
@@ -39,6 +41,7 @@ import static org.mockito.Mockito.when;
 class StartSingleInstanceJobTest extends ControllerTestBase {
 
     private static final ApplicationSpec APP_SPEC = appSpec();
+    private final InstanceIdGenerator instanceIdGenerator = new RandomInstanceIdGenerator();
 
     @Test
     void testJobSuccess() {
@@ -82,7 +85,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf);
+                                             rf, instanceIdGenerator);
         val testStatus = new AtomicBoolean();
         val exec = new JobExecutor<Boolean>(MoreExecutors.newDirectExecutorService());
         exec.schedule(Collections.singletonList(job), new BooleanResponseCombiner(), r -> {
@@ -108,7 +111,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,
-                                             sessionId, rf);
+                                             sessionId, rf, instanceIdGenerator);
         assertFailure(job);
     }
 
@@ -155,7 +158,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf);
+                                             rf, instanceIdGenerator);
         assertFailure(job);
     }
 
@@ -183,7 +186,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf);
+                                             rf, instanceIdGenerator);
         assertFailure(job);
     }
 
@@ -228,7 +231,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf);
+                                             rf, instanceIdGenerator);
 
         assertFailure(job);
     }

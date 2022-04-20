@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.Job;
@@ -46,6 +47,7 @@ public class ScaleAppAction extends AppAsyncAction {
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
+    private final InstanceIdGenerator instanceIdGenerator;
 
     @Inject
     public ScaleAppAction(
@@ -55,7 +57,8 @@ public class ScaleAppAction extends AppAsyncAction {
             ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
-            ControllerRetrySpecFactory retrySpecFactory) {
+            ControllerRetrySpecFactory retrySpecFactory,
+            InstanceIdGenerator instanceIdGenerator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -63,6 +66,7 @@ public class ScaleAppAction extends AppAsyncAction {
         this.scheduler = scheduler;
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
+        this.instanceIdGenerator = instanceIdGenerator;
     }
 
     @Override
@@ -98,7 +102,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                                instanceInfoDB,
                                                                                                                communicator,
                                                                                                                schedulingSessionId,
-                                                                                                               retrySpecFactory))
+                                                                                                               retrySpecFactory,
+                                                                                                               instanceIdGenerator))
                                                        .toList())
                                        .build());
         }

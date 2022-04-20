@@ -1,11 +1,13 @@
 package com.phonepe.drove.controller.engine;
 
+import java.util.UUID;
+
 /**
  *
  */
 public class RandomInstanceIdGenerator implements InstanceIdGenerator {
     @Override
-    public String generateInstanceId() {
-        return null;
+    public String generate() {
+        return UUID.randomUUID().toString();
     }
 }
