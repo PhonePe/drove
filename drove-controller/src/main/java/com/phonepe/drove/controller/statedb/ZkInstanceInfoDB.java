@@ -9,6 +9,7 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
@@ -24,6 +25,7 @@ import static com.phonepe.drove.models.instance.InstanceState.LOST;
  *
  */
 @Slf4j
+@Singleton
 public class ZkInstanceInfoDB implements InstanceInfoDB {
     private static final Duration MAX_ACCEPTABLE_UPDATE_INTERVAL = Duration.ofMinutes(1);
 

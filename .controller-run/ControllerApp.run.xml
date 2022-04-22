@@ -6,7 +6,7 @@
     <option name="VM_PARAMETERS" value="-Djdk.internal.httpclient.disableHostnameVerification " />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.phonepe.drove.controller.*" />
+        <option name="PATTERN" value="com.phonepe.drove.controller.testsupport.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

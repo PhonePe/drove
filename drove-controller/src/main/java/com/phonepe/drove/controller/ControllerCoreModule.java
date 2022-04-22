@@ -66,7 +66,6 @@ public class ControllerCoreModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
-        bind(ExecutorStateDB.class).to(MapBasedExecutorStateDB.class);
         bind(ClusterResourcesDB.class).to(MapBasedClusterResourcesDB.class);
         bind(ApplicationStateDB.class).to(ZkApplicationStateDB.class);
         bind(InstanceInfoDB.class).to(ZkInstanceInfoDB.class);

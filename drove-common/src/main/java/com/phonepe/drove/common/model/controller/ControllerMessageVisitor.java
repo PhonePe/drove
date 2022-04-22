@@ -7,7 +7,5 @@ public interface ControllerMessageVisitor<T> {
 
     T visit(InstanceStateReportMessage instanceStateReport);
 
-    T visit(ExecutorStateReportMessage executorStateReport);
-
     T visit(ExecutorSnapshotMessage executorSnapshot);
 }
