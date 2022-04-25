@@ -40,6 +40,8 @@ logging:
       logFormat: "%(%-5level) | %-23date | %-30logger{0} | %message%n"
       archive: true
 
+options:
+  cacheImages: true
 
 zookeeper:
   connectionString: localhost:2181

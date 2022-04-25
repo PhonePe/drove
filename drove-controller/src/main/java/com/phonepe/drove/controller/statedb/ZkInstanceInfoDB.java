@@ -81,7 +81,6 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     }
 
     @Override
-    @SneakyThrows
     public boolean deleteAllInstancesForApp(String appId) {
         return deleteNode(curatorFramework, instancePath(appId));
     }

@@ -121,4 +121,10 @@ public class ExecutorCoreModule extends AbstractModule {
     public LogInfo logInfo(final AppConfig appConfig) {
         return LogInfo.create(appConfig);
     }
+
+    @Provides
+    @Singleton
+    public ExecutorOptions executorOptions(final AppConfig config) {
+        return Objects.requireNonNullElse(config.getOptions(), new ExecutorOptions());
+    }
 }

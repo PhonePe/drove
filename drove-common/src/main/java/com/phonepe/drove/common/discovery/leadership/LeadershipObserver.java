@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @Singleton
 public class LeadershipObserver {
 
+    private final String LEADERSHIP_OBSERVER_HANDLER = "LEADERSHIP_OBSERVER_HANDLER";
+
     private final ScheduledSignal leaderRefresher = new ScheduledSignal(Duration.ofSeconds(5));
     private final NodeDataStore nodeDataStore;
     private final AtomicReference<ControllerNodeData> leader = new AtomicReference<>();
@@ -37,12 +39,13 @@ public class LeadershipObserver {
         return Optional.ofNullable(leader.get());
     }
 
-    public void start() throws Exception {
-        leaderRefresher.connect(this::refresh);
+    public void start() {
+        leaderRefresher.connect(LEADERSHIP_OBSERVER_HANDLER, this::refresh);
         refresh(new Date());
     }
 
-    public void stop() throws Exception {
+    public void stop() {
+        leaderRefresher.disconnect(LEADERSHIP_OBSERVER_HANDLER);
         leaderRefresher.close();
     }
 

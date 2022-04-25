@@ -27,5 +27,8 @@ public class AppConfig extends Configuration {
     private ResourceConfig resources = new ResourceConfig();
 
     @Valid
-    ClusterAuthenticationConfig clusterAuth;
+    private ClusterAuthenticationConfig clusterAuth;
+
+    @Valid
+    private ExecutorOptions options;
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.ToLongFunction;
 
 import static com.codahale.metrics.MetricRegistry.name;
+import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
 
 /**
  *
@@ -83,8 +84,7 @@ public class ContainerStatsObserver implements Managed {
                         log.info("Starting to track instance: {}", instanceInfo.getInstanceId());
                     }
                     else {
-                        if (EnumSet.of(InstanceState.DEPROVISIONING, InstanceState.STOPPED, InstanceState.LOST)
-                                .contains(instanceInfo.getState())) {
+                        if (!ACTIVE_STATES.contains(instanceInfo.getState())) {
                             unregisterTrackedContainer(instanceInfo.getInstanceId());
                             log.info("Stopped tracking instance: {}", instanceInfo.getInstanceId());
                         }
@@ -231,10 +231,17 @@ public class ContainerStatsObserver implements Managed {
             catch (NotFoundException e) {
                 log.warn("Looks like the container {}/{} being tracked is not available anymore. Time to disconnect..",
                          instanceData.getInstanceInfo().getAppId(), instanceId);
+                unregisterTrackedContainer(instanceId);
                 instances.remove(instanceId);
             }
             catch (RuntimeException e) {
-                log.error("Error running ", e);
+                if(null != e.getCause() && e.getCause() instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    log.info("Stats call interrupted");
+                }
+                else {
+                    log.error("Error running ", e);
+                }
             }
             finally {
                 try {

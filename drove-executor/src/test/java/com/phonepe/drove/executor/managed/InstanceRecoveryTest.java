@@ -12,8 +12,6 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -47,9 +45,8 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @SneakyThrows
     void testRecoverNonDroveContainers() {
         var containerId = "";
-        try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(UUID.randomUUID().toString())) {
-            containerId = createCmd.withImage(CommonTestUtils.IMAGE_NAME)
-                    .withName("test-container")
+        try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(CommonTestUtils.IMAGE_NAME)) {
+            containerId = createCmd.withName("test-container")
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec()
                     .getId();
