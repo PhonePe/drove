@@ -39,8 +39,12 @@ public class ControllerTestUtils {
                                                                                  new MaxDurationRetrySpec(java.time.Duration.ofMillis(100))));
 
     public static ApplicationSpec appSpec() {
-        return new ApplicationSpec("T001",
-                                   "TEST_SPEC",
+        return appSpec(1);
+    }
+
+    public static ApplicationSpec appSpec(int version) {
+        return new ApplicationSpec("TEST_SPEC",
+                                   String.format("%05d", version),
                                    new DockerCoordinates(CommonTestUtils.IMAGE_NAME, Duration.seconds(100)),
                                    Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                    List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),

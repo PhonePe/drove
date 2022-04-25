@@ -2,10 +2,8 @@ package com.phonepe.drove.controller.statedb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.application.ApplicationInfo;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.KeeperException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,7 +31,6 @@ public class ZkApplicationStateDB implements ApplicationStateDB {
     }
 
     @Override
-    @SneakyThrows
     public List<ApplicationInfo> applications(int start, int size) {
         try {
             return readChildrenNodes(curatorFramework,
@@ -45,7 +42,8 @@ public class ZkApplicationStateDB implements ApplicationStateDB {
                                                                           mapper,
                                                                           ApplicationInfo.class));
         }
-        catch (KeeperException.NoNodeException e) {
+        catch (Exception e) {
+            log.error("Error reading application list: " + e.getMessage(), e);
             return Collections.emptyList();
         }
     }
