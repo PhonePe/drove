@@ -24,11 +24,11 @@
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.2</junit.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <guice.version>5.0.1</guice.version>
+        <guice.version>5.1.0</guice.version>
         <dw-guicey.version>5.4.0</dw-guicey.version>
         <curator.version>5.2.1</curator.version>
-        <failsafe.version>2.4.3</failsafe.version>
-        <aspectj.version>1.9.8</aspectj.version>
+        <failsafe.version>2.4.4</failsafe.version>
+        <aspectj.version>1.9.9.1</aspectj.version>
         <junit.version>5.8.2</junit.version>
         <mockito.version>4.4.0</mockito.version>
     </properties>
