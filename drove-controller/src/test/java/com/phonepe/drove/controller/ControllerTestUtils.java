@@ -24,6 +24,7 @@ import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
+import lombok.val;
 
 import java.util.*;
 
@@ -109,4 +110,27 @@ public class ControllerTestUtils {
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
 
+    public static ExecutorNodeData generateExecutorNode(int index) {
+        return generateExecutorNode(index, Set.of());
+    }
+    public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags) {
+        val executorId = executorId(index);
+        return new ExecutorNodeData(String.format("host%05d", index),
+                                    8080,
+                                    NodeTransportType.HTTP,
+                                    new Date(),
+                                    new ExecutorResourceSnapshot(executorId,
+                                                                 new AvailableCPU(Map.of(0, Set.of(0, 1, 2, 3, 4)),
+                                                                                  Map.of(0, Set.of())),
+                                                                 new AvailableMemory(
+                                                                         Map.of(0, 5 * 512L ),
+                                                                         Map.of(0, 0L))),
+                                    List.of(),
+                                    tags,
+                                    false);
+    }
+
+    public static String executorId(int index) {
+        return "EXECUTOR_" + index;
+    }
 }

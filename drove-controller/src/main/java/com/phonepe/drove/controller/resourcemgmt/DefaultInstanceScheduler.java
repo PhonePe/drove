@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -33,16 +32,13 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                                                             InstanceState.UNHEALTHY,
                                                                                             InstanceState.DEPROVISIONING,
                                                                                             InstanceState.STOPPING);
-    private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final Map<String, Map<String, Long>> schedulingSessionData = new ConcurrentHashMap<>();
 
     @Inject
     public DefaultInstanceScheduler(
-            ApplicationStateDB applicationStateDB,
             InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB) {
-        this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
     }

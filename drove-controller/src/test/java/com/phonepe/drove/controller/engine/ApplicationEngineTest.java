@@ -18,7 +18,7 @@ import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.resourcemgmt.MapBasedClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
@@ -86,7 +86,7 @@ class ApplicationEngineTest extends ControllerTestBase {
                 bind(InstanceInfoDB.class).to(InMemoryInstanceInfoDB.class).asEagerSingleton();
                 bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class).asEagerSingleton();
                 bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
-                bind(ClusterResourcesDB.class).to(MapBasedClusterResourcesDB.class);
+                bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);
                 bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
                 bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>>() {
                 }).to(InjectingAppActionFactory.class);

@@ -23,16 +23,9 @@ public class ExecutorHostInfo {
     }
 
     @Data
-    @AllArgsConstructor
-    public static final class CPUCoreInfo {
-        private final int coreId;
-        private CoreState state;
-    }
-
-    @Data
     public static final class MemInfo {
         long available = 0L;
-        long used = 0l;
+        long used = 0L;
     }
 
     @Value

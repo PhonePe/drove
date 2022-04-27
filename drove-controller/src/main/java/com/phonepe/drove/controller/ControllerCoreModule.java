@@ -18,7 +18,7 @@ import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.resourcemgmt.MapBasedClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
@@ -66,7 +66,7 @@ public class ControllerCoreModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
-        bind(ClusterResourcesDB.class).to(MapBasedClusterResourcesDB.class);
+        bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);
         bind(ApplicationStateDB.class).to(ZkApplicationStateDB.class);
         bind(InstanceInfoDB.class).to(ZkInstanceInfoDB.class);
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);

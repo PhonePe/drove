@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  */
 @Singleton
 @Slf4j
-public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
+public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
     private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
     private final Map<String, Boolean> blackListedNodes = new ConcurrentHashMap<>();
 
@@ -56,7 +56,6 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
                              .map(this::convertState)
                              .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
                                                                    Function.identity())));
-//        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override
@@ -64,7 +63,6 @@ public class MapBasedClusterResourcesDB implements ClusterResourcesDB {
     @MonitoredFunction
     public synchronized void update(final ExecutorResourceSnapshot snapshot) {
         nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
-//        log.info("Snapshot: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
     }
 
     @Override

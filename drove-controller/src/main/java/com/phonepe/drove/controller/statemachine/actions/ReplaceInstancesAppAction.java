@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
@@ -85,6 +86,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         }
         int parallelism = clusterOpSpec.getParallelism();
         val schedulingSessionId = UUID.randomUUID().toString();
+        context.setSchedulingSessionId(schedulingSessionId);
+
         log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}", instances.size(), parallelism, schedulingSessionId);
         val restartJobs = instances.stream()
                 .map(instanceInfo -> (Job<Boolean>) JobTopology.<Boolean>builder()
@@ -118,6 +121,11 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                      ? ""
                      : errorMessage(executionResult);
         val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+            scheduler.finaliseSession(context.getSchedulingSessionId());
+            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
+            context.setSchedulingSessionId(null);
+        }
         if (count > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }
