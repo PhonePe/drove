@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.managed;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -27,6 +28,7 @@ import java.util.Date;
 @Singleton
 public class ApplicationMonitor implements Managed {
 
+    private static final String HANDLER_NAME = "APP_CHECK_MONITOR";
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
             .initialDelay(Duration.ofSeconds(5))
             .interval(Duration.ofSeconds(3))
@@ -39,7 +41,8 @@ public class ApplicationMonitor implements Managed {
     @Inject
     public ApplicationMonitor(
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB, ApplicationEngine engine) {
+            InstanceInfoDB instanceInfoDB,
+            ApplicationEngine engine) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.engine = engine;
@@ -47,24 +50,19 @@ public class ApplicationMonitor implements Managed {
 
     @Override
     public void start() throws Exception {
-        refreshSignal.connect(this::checkAllApps);
+        refreshSignal.connect(HANDLER_NAME, this::checkAllApps);
     }
 
     @Override
     public void stop() throws Exception {
         log.debug("Shutting down {}", this.getClass().getSimpleName());
+        refreshSignal.disconnect(HANDLER_NAME);
         refreshSignal.close();
         log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
-    public void notifyOperation(final ApplicationOperation operation) {
-        val res = engine.handleOperation(operation);
-        if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-            log.error("Error sending command to state machine. Error: " + res.getMessages());
-        }
-    }
-
-    private void checkAllApps(final Date checkTime) {
+    @VisibleForTesting
+    public void checkAllApps(final Date checkTime) {
         applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .forEach(app -> {
                     val appId = app.getAppId();
@@ -85,4 +83,12 @@ public class ApplicationMonitor implements Managed {
                 });
         log.debug("Application check triggered at {} is completed.", checkTime);
     }
+
+    private void notifyOperation(final ApplicationOperation operation) {
+        val res = engine.handleOperation(operation);
+        if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            log.error("Error sending command to state machine. Error: " + res.getMessages());
+        }
+    }
+
 }

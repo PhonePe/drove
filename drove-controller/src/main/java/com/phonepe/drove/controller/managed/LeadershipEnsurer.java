@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.managed;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
@@ -88,6 +89,7 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     }
 
     @Override
+    @VisibleForTesting
     public void serverStarted(Server server) {
         val cf = server.getConnectors()[0].getConnectionFactory("ssl");
 

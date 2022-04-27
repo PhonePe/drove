@@ -34,6 +34,16 @@ public class AppRecovery implements Managed {
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChange);
     }
 
+    @Override
+    public void start() {
+        log.info("Application recover manager started");
+    }
+
+    @Override
+    public void stop() {
+        log.debug("Shut down {}", this.getClass().getSimpleName());
+    }
+
     private void handleLeadershipChange(boolean isLeader) {
         if (isLeader) {
             log.info("This controller is now the leader.");
@@ -52,15 +62,5 @@ public class AppRecovery implements Managed {
             log.info("This controller is not the leader anymore. All executors will be stopped");
             applicationEngine.stopAll();
         }
-    }
-
-    @Override
-    public void start() throws Exception {
-
-    }
-
-    @Override
-    public void stop() throws Exception {
-        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 }

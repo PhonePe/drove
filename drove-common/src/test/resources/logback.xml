@@ -6,6 +6,9 @@
         </encoder>
     </appender>
 
+    <logger name="org.apache.zookeeper">
+        <level value="ERROR" />
+    </logger>
     <logger name="com.phonepe">
         <level value="INFO" />
     </logger>
