@@ -114,6 +114,9 @@ public class ControllerTestUtils {
         return generateExecutorNode(index, Set.of());
     }
     public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags) {
+        return generateExecutorNode(index, tags, false);
+    }
+    public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags, boolean blacklisted) {
         val executorId = executorId(index);
         return new ExecutorNodeData(String.format("host%05d", index),
                                     8080,
@@ -127,7 +130,7 @@ public class ControllerTestUtils {
                                                                          Map.of(0, 0L))),
                                     List.of(),
                                     tags,
-                                    false);
+                                    blacklisted);
     }
 
     public static String executorId(int index) {

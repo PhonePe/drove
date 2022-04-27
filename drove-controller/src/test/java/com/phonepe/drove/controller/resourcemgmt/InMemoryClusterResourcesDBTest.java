@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.google.common.collect.Sets;
+import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
@@ -16,12 +17,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.controller.ControllerTestUtils.executorId;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  */
-class InMemoryClusterResourcesDBTest {
+class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testHostDetails() {
@@ -35,8 +37,8 @@ class InMemoryClusterResourcesDBTest {
         }
         {
             IntStream.rangeClosed(1, 100)
-                    .forEach(i -> assertEquals(ControllerTestUtils.executorId(i),
-                                               db.currentSnapshot(ControllerTestUtils.executorId(i))
+                    .forEach(i -> assertEquals(executorId(i),
+                                               db.currentSnapshot(executorId(i))
                                                        .map(ExecutorHostInfo::getExecutorId)
                                                        .orElse(null)));
         }
@@ -131,5 +133,28 @@ class InMemoryClusterResourcesDBTest {
                               .orElse(null));
     }
 
+    @Test
+    void testBlacklisting() {
+        val db = new InMemoryClusterResourcesDB();
+        IntStream.rangeClosed(1, 10)
+                .forEach(i -> db.markBlacklisted(executorId(i)));
+        assertTrue(IntStream.rangeClosed(1, 10)
+                .allMatch(i -> db.isBlacklisted(executorId(i))));
+        db.update(IntStream.rangeClosed(1, 5)
+                .mapToObj(ControllerTestUtils::generateExecutorNode)
+                .toList());
+        assertTrue(IntStream.rangeClosed(1, 10)
+                           .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will prioritise the info in local map
+        IntStream.rangeClosed(1, 10)
+                .forEach(i -> db.unmarkBlacklisted(executorId(i)));
+        assertTrue(IntStream.rangeClosed(1, 10)
+                           .noneMatch(i -> db.isBlacklisted(executorId(i))));
+        db.update(IntStream.rangeClosed(1, 10)
+                          .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true))
+                          .toList());
+        assertTrue(IntStream.rangeClosed(1, 10)
+                           .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will use node level data
+
+    }
 
 }

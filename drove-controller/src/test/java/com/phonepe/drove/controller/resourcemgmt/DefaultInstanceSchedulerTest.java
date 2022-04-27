@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -24,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /**
  *
  */
-class DefaultInstanceSchedulerTest {
+class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testScheduling() {
@@ -265,5 +266,24 @@ class DefaultInstanceSchedulerTest {
             sched.finaliseSession(schedId);
         }
 
+    }
+
+    @Test
+    void testBlacklistSkipping() {
+        val rdb = new InMemoryClusterResourcesDB();
+        val instanceInfoDB = new InMemoryInstanceInfoDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val spec = appSpec();
+
+        //Load cluster nodes
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        rdb.update(IntStream.rangeClosed(4, 5).mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true)).toList());
+        val schedId = "SCHED_ID_1";
+        val node = sched.schedule(schedId, spec).orElse(null);
+        IntStream.rangeClosed(2, 15)
+                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
+        assertNull(sched.schedule(schedId, spec).orElse(null));
+        sched.discardAllocation(schedId, node);
+        assertNotNull(sched.schedule(schedId, spec).orElse(null));
     }
 }

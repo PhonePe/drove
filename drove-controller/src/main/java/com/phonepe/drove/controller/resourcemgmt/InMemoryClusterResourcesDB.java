@@ -92,7 +92,7 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
     @Override
     @MonitoredFunction
     public boolean isBlacklisted(String executorId) {
-        return Optional.of(nodes.get(executorId))
+        return Optional.ofNullable(nodes.get(executorId))
                 .map(node -> node.getNodeData().isBlacklisted())
                 .orElse(false)
                 || blackListedNodes.getOrDefault(executorId, false);
