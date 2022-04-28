@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.managed;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -35,7 +36,7 @@ public class StaleDataCleaner implements Managed {
     private final LeadershipEnsurer leadershipEnsurer;
     private final ApplicationEngine applicationEngine;
 
-    private final ScheduledSignal refresher = new ScheduledSignal(Duration.ofHours(6));
+    private final ScheduledSignal refresher;
 
     @Inject
     public StaleDataCleaner(
@@ -43,21 +44,33 @@ public class StaleDataCleaner implements Managed {
             InstanceInfoDB instanceInfoDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine) {
+        this(applicationStateDB, instanceInfoDB, leadershipEnsurer, applicationEngine, Duration.ofHours(6));
+    }
+
+    @VisibleForTesting
+    StaleDataCleaner(
+            ApplicationStateDB applicationStateDB,
+            InstanceInfoDB instanceInfoDB,
+            LeadershipEnsurer leadershipEnsurer,
+            ApplicationEngine applicationEngine,
+            Duration interval) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.leadershipEnsurer = leadershipEnsurer;
         this.applicationEngine = applicationEngine;
+        refresher = new ScheduledSignal(interval);
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
         refresher.connect(HANDLER_NAME, this::cleanupData);
         log.info("Stale data cleaner started");
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         refresher.disconnect(HANDLER_NAME);
+        refresher.close();
         log.info("Stale data cleaner stopped");
     }
 
@@ -66,14 +79,14 @@ public class StaleDataCleaner implements Managed {
             log.info("Skipping stale data cleanup as I'm not leader");
             return;
         }
-        val maxLastUpdated = new Date(new Date().getTime() - 7L * 24 * 60 * 60 * 1000); //30 days before now
+        val maxLastUpdated = new Date(new Date().getTime() - 7L * 24 * 60 * 60 * 1000); //7 days before now
         val allApps = applicationStateDB.applications(0, Integer.MAX_VALUE);
         val candidateAppIds = allApps
                 .stream()
                 .filter(applicationInfo -> applicationInfo.getUpdated().before(maxLastUpdated))
                 .map(ApplicationInfo::getAppId)
                 .filter(appId -> applicationEngine.applicationState(appId)
-                        .map(ApplicationState::isTerminal)
+                        .map(applicationState -> applicationState.equals(ApplicationState.MONITORING))
                         .orElse(false))
                 .toList();
         candidateAppIds.forEach(appId -> {
@@ -88,8 +101,7 @@ public class StaleDataCleaner implements Managed {
                         .collect(Collectors.toUnmodifiableSet()),
                 Set.copyOf(candidateAppIds));
         otherApps.stream()
-                .flatMap(appId ->
-                                 instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)
+                .flatMap(appId -> instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)
                                          .stream()
                                          .filter(instanceInfo -> instanceInfo.getUpdated().before(maxLastUpdated)))
                 .forEach(instanceInfo -> {

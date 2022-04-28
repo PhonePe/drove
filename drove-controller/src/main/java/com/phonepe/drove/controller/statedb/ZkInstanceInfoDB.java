@@ -43,19 +43,13 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
 
     @Override
     @SneakyThrows
-    public List<InstanceInfo> activeInstances(String appId, Set<InstanceState> validStates, int start, int size) {
+    public List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         return listInstances(appId,
                              start,
                              size,
                              instanceInfo -> validStates.contains(instanceInfo.getState())
                                      && instanceInfo.getUpdated().after(validUpdateDate));
-    }
-
-    @Override
-    @SneakyThrows
-    public List<InstanceInfo> oldInstances(String appId, int start, int size) {
-        return listInstances(appId, start, size, instanceInfo -> !ACTIVE_STATES.contains(instanceInfo.getState()));
     }
 
     @Override

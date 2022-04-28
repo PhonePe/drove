@@ -22,11 +22,17 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.instance.InstancePort;
+import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
 import java.util.*;
+
+import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 
 /**
  *
@@ -135,5 +141,33 @@ public class ControllerTestUtils {
 
     public static String executorId(int index) {
         return "EXECUTOR_" + index;
+    }
+
+    public static InstanceInfo generateInstanceInfo(final String appId, final ApplicationSpec spec, int idx) {
+        return generateInstanceInfo(appId, spec, idx, HEALTHY);
+    }
+
+    public static InstanceInfo generateInstanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state) {
+        return generateInstanceInfo(appId, spec, idx, state, new Date());
+    }
+
+    public static InstanceInfo generateInstanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state, Date date) {
+        return new InstanceInfo(appId,
+                                spec.getName(),
+                                String.format("TI-%05d", idx),
+                                EXECUTOR_ID,
+                                new LocalInstanceInfo("localhost",
+                                                      Collections.singletonMap("main",
+                                                                               new InstancePort(
+                                                                                       8000,
+                                                                                       32000,
+                                                                                       PortType.HTTP))),
+                                List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
+                                        new MemoryAllocation(Map.of(0, 512L))),
+                                state,
+                                Collections.emptyMap(),
+                                null,
+                                date,
+                                date);
     }
 }

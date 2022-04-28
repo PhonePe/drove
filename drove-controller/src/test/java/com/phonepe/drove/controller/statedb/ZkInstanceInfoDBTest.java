@@ -3,14 +3,8 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.models.application.ApplicationSpec;
-import com.phonepe.drove.models.application.PortType;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -46,7 +40,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val appId = appId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
-                            val ii = instanceInfo(appId, spec, i);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                             return ii.getInstanceId();
                         })
@@ -93,13 +87,13 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val appId = appId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
-                            val ii = instanceInfo(appId, spec, i, PROVISIONING);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, PROVISIONING);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                             return ii.getInstanceId();
                         })
                         .collect(Collectors.toSet());
                 {
-                    val retrieved = db.activeInstances(appId, Set.of(PROVISIONING), 0, Integer.MAX_VALUE)
+                    val retrieved = db.instances(appId, Set.of(PROVISIONING), 0, Integer.MAX_VALUE)
                             .stream()
                             .map(InstanceInfo::getInstanceId)
                             .collect(Collectors.toSet());
@@ -137,7 +131,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val appId = appId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
-                            val ii = instanceInfo(appId, spec, i);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                             return ii.getInstanceId();
                         })
@@ -168,7 +162,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val appId = appId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
-                            val ii = instanceInfo(appId, spec, i, HEALTHY);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, HEALTHY);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                             return ii.getInstanceId();
                         })
@@ -181,7 +175,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val oldDate = new Date(new Date().getTime() - 120_000L);
                 IntStream.rangeClosed(1, 100)
                         .forEach(i -> {
-                            val ii = instanceInfo(appId, spec, i, HEALTHY, oldDate);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, HEALTHY, oldDate);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                         });
                 assertEquals(0, db.healthyInstances(appId).size());
@@ -212,7 +206,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val appId = appId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
-                            val ii = instanceInfo(appId, spec, i, InstanceState.STOPPED);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, InstanceState.STOPPED);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                             return ii.getInstanceId();
                         })
@@ -225,34 +219,6 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 assertTrue(instances.containsAll(retrieved));
             }
         }
-    }
-
-    private InstanceInfo instanceInfo(final String appId, final ApplicationSpec spec, int idx) {
-        return instanceInfo(appId, spec, idx, HEALTHY);
-    }
-
-    private InstanceInfo instanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state) {
-        return instanceInfo(appId, spec, idx, state, new Date());
-    }
-
-    private InstanceInfo instanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state, Date date) {
-        return new InstanceInfo(appId,
-                                spec.getName(),
-                                String.format("TI-%05d", idx),
-                                ControllerTestUtils.EXECUTOR_ID,
-                                new LocalInstanceInfo("localhost",
-                                                      Collections.singletonMap("main",
-                                                                               new InstancePort(
-                                                                                       8000,
-                                                                                       32000,
-                                                                                       PortType.HTTP))),
-                                List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
-                                        new MemoryAllocation(Map.of(0, 512L))),
-                                state,
-                                Collections.emptyMap(),
-                                null,
-                                date,
-                                date);
     }
 
 }
