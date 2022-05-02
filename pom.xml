@@ -19,7 +19,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <lombok.version>1.18.22</lombok.version>
+        <lombok.version>1.18.24</lombok.version>
         <dropwizard.version>2.0.25</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.2</junit.version>
@@ -113,6 +113,11 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <excludes>
+                        <exclude>**/model/**</exclude>
+                        <exclude>**/models/**</exclude>
+                        <exclude>**/*Log*Stream.class</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 

@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Metered;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.auth.model.DroveUser;
 import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.executor.logging.LogInfo;
 import io.dropwizard.auth.Auth;
 import lombok.Value;
@@ -32,6 +33,7 @@ import java.util.Map;
 @Slf4j
 @Path("/v1/logs/filestream")
 @RolesAllowed(DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE)
+@IgnoreInJacocoGeneratedReport
 public class LogFileStream {
 
     private static final String ERROR_FIELD = "error";

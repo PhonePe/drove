@@ -15,6 +15,7 @@
 package com.phonepe.drove.controller.ui;
 
 import com.github.jknack.handlebars.Helper;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import io.dropwizard.Configuration;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -22,6 +23,7 @@ import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@IgnoreInJacocoGeneratedReport
 public abstract class HandlebarsHelperBundle<C extends Configuration> implements ConfiguredBundle<C> {
 
     protected abstract void configureHandlebars(C configuration);

@@ -48,7 +48,9 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
                                           ? LogBus.LogChannel.STDERR
                                           : LogBus.LogChannel.STDOUT,
                                           logLine));
-        MDC.setContextMap(mdc);
+        if(null != mdc) {
+            MDC.setContextMap(mdc);
+        }
         switch (object.getStreamType()) {
             case STDOUT -> log.info(logLine.replaceAll("\\n$", ""));
             case STDERR -> log.error(logLine.replaceAll("\\n$", ""));

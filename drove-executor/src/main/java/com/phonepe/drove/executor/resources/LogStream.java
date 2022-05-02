@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.resources;
 import com.codahale.metrics.annotation.Metered;
 import com.phonepe.drove.common.auth.model.DroveUser;
 import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.executor.logging.LogBus;
 import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Path("/v1/logs")
 @RolesAllowed(DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE)
+@IgnoreInJacocoGeneratedReport
 public class LogStream {
     private final LogBus logBus;
 

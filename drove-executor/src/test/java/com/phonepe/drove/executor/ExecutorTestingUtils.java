@@ -99,7 +99,13 @@ public class ExecutorTestingUtils {
                                               Duration.seconds(1)),
                                 LocalLoggingSpec.DEFAULT,
                                 Collections.emptyMap(),
-                                null);
+                                List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                                                            "main",
+                                                                            "/",
+                                                                            HTTPVerb.GET,
+                                                                            Collections.singleton(200),
+                                                                            "",
+                                                                            Duration.seconds(1))));
     }
 
     public static ExecutorAddress localAddress() {

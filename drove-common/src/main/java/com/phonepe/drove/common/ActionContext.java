@@ -20,8 +20,7 @@ public class ActionContext<D> {
     }
 
     public boolean recordUpdate(D update) {
-        currentUpdate.getAndSet(update);
-        return true;
+        return currentUpdate.compareAndSet(null, update);
     }
 
     public boolean ackUpdate() {

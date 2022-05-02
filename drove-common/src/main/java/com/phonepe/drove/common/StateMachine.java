@@ -3,7 +3,6 @@ package com.phonepe.drove.common;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -31,7 +30,7 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
     private final AtomicReference<A> currentAction = new AtomicReference<>();
 
     protected StateMachine(
-            @NonNull final StateData<S, T> initalState,
+            final StateData<S, T> initalState,
             C context,
             ActionFactory<T, D, S,C,A> actionFactory,
             List<Transition<T, D, S, C, A>> transitions) {
