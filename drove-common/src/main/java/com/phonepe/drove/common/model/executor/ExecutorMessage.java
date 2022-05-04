@@ -4,11 +4,15 @@ import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageHeader;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
  *
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
 public abstract class ExecutorMessage extends Message<ExecutorMessageType> {
 
     private final ExecutorAddress address;
