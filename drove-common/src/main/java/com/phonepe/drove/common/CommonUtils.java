@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import lombok.experimental.UtilityClass;
@@ -32,6 +33,7 @@ import java.util.function.Predicate;
 public class CommonUtils {
     private static final String DEFAULT_NAMESPACE = "drove";
 
+    @IgnoreInJacocoGeneratedReport
     public static void configureMapper(ObjectMapper objectMapper) {
         objectMapper.registerModule(new ParameterNamesModule());
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
@@ -41,6 +43,7 @@ public class CommonUtils {
         objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
     }
 
+    @IgnoreInJacocoGeneratedReport
     public static String hostname() {
         val hostname = Objects.requireNonNullElseGet(readHostname(), () -> System.getenv("HOSTNAME"));
         Objects.requireNonNull(hostname, "Hostname cannot be empty");
@@ -48,10 +51,12 @@ public class CommonUtils {
     }
 
 
+    @IgnoreInJacocoGeneratedReport
     public static String executorId(int port) {
         return UUID.nameUUIDFromBytes((hostname() + ":" + port).getBytes()).toString();
     }
 
+    @IgnoreInJacocoGeneratedReport
     public static CuratorFramework buildCurator(ZkConfig config) {
         return CuratorFrameworkFactory.builder()
                      .connectString(config.getConnectionString())
@@ -72,6 +77,7 @@ public class CommonUtils {
         return list.subList(start, end);
     }
 
+    @IgnoreInJacocoGeneratedReport
     private static String readHostname() {
         try {
             return InetAddress.getLocalHost().getCanonicalHostName();
