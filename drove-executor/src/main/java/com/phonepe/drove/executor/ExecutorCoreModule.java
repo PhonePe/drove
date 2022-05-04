@@ -18,6 +18,7 @@ import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.logging.LogInfo;
@@ -126,5 +127,11 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     public ExecutorOptions executorOptions(final AppConfig config) {
         return Objects.requireNonNullElse(config.getOptions(), new ExecutorOptions());
+    }
+
+    @Provides
+    @Singleton
+    public DockerAuthConfig dockerAuthConfig(final AppConfig config) {
+        return Objects.requireNonNullElse(config.getAuth(), new DockerAuthConfig());
     }
 }

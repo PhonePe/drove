@@ -60,7 +60,7 @@ class InstanceRunActionTest extends AbstractTestBase {
                                             null);
         val executorId = CommonUtils.executorId(3000);
         val ctx = new InstanceActionContext(executorId, instanceSpec, ExecutorTestingUtils.DOCKER_CLIENT);
-        new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
+        new ExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new InstanceRunAction(new LogBus(),
                                         new ResourceConfig())
