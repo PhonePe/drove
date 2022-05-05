@@ -132,7 +132,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                      applicationSpec.getReadiness(),
                                                                      applicationSpec.getLogging(),
                                                                      applicationSpec.getEnv(),
-                                                                     applicationSpec.getPreShutdownHook()));
+                                                                     applicationSpec.getPreShutdown()));
         var successful = false;
         try {
             val response = communicator.send(startMessage);

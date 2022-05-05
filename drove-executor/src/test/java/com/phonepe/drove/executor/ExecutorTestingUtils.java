@@ -22,6 +22,7 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
+import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -99,13 +100,14 @@ public class ExecutorTestingUtils {
                                               Duration.seconds(1)),
                                 LocalLoggingSpec.DEFAULT,
                                 Collections.emptyMap(),
-                                List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                            "main",
-                                                                            "/",
-                                                                            HTTPVerb.GET,
-                                                                            Collections.singleton(200),
-                                                                            "",
-                                                                            Duration.seconds(1))));
+                                new PreShutdownSpec(List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                                                                  "main",
+                                                                                  "/",
+                                                                                  HTTPVerb.GET,
+                                                                                  Collections.singleton(200),
+                                                                                  "",
+                                                                                  Duration.seconds(1))),
+                                                    Duration.seconds(1)));
     }
 
     public static ExecutorAddress localAddress() {

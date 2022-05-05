@@ -28,7 +28,7 @@ class ExecutableFetchActionTest extends AbstractTestBase {
         val response = action.execute(ctx,
                                       StateData.create(PENDING, ExecutorTestingUtils.createExecutorInfo(spec, 8080)));
         try {
-            assertEquals(STARTING, response.getState());
+            assertEquals(STARTING, response.getState(), "Error:" + response.getError());
         }
         finally {
             val imageId = ExecutorTestingUtils.DOCKER_CLIENT.listImagesCmd()

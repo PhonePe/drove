@@ -7,6 +7,7 @@ import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
+import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -25,6 +26,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -43,7 +45,7 @@ public class InstanceStopAction extends InstanceAction {
                      context.getInstanceSpec().getInstanceId());
         }
         else {
-            executePreShutdownHook(context, currentState);
+            handlePreShutdown(context, currentState);
             val dockerClient = context.getClient();
             try {
                 dockerClient.stopContainerCmd(context.getDockerInstanceId()).exec();
@@ -76,17 +78,21 @@ public class InstanceStopAction extends InstanceAction {
         return InstanceState.DEPROVISIONING;
     }
 
-    private void executePreShutdownHook(
+    private void handlePreShutdown(
             final InstanceActionContext context,
             final StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        val preShutdownHook = Objects.requireNonNullElse(context.getInstanceSpec().getPreShutdownHook(),
+        val instanceSpec = context.getInstanceSpec();
+        val preShutdown = Objects.requireNonNullElse(instanceSpec.getPreShutdown(), PreShutdownSpec.DEFAULT);
+        val preShutdownHook = Objects.requireNonNullElse(preShutdown.getHooks(),
                                                          Collections.<CheckModeSpec>emptyList());
         if (preShutdownHook.isEmpty()) {
             log.info("No pre-shutdown hook configured");
-            return;
         }
-        log.info("Calling {} pre-shutdown hooks", preShutdownHook.size());
-        preShutdownHook.forEach(hook -> executeHook(currentState, hook));
+        else {
+            log.info("Calling {} pre-shutdown hooks", preShutdownHook.size());
+            preShutdownHook.forEach(hook -> executeHook(currentState, hook));
+        }
+        sleepBeforeKill(preShutdown);
     }
 
     private void executeHook(StateData<InstanceState, ExecutorInstanceInfo> currentState, CheckModeSpec preShutdownHook) {
@@ -126,7 +132,7 @@ public class InstanceStopAction extends InstanceAction {
                 .handle(Exception.class)
                 .handleResultIf(r -> !r);
         try {
-            Failsafe.with(retryPolicy)
+            Failsafe.with(List.of(retryPolicy))
                     .onFailure(e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()))
                     .get(() -> makeHTTPCall(httpClient, httpSpec, uri));
         }
@@ -163,5 +169,22 @@ public class InstanceStopAction extends InstanceAction {
             log.error("Pre-shutdown hook failed. Interrupted");
         }
         return false;
+    }
+
+    private void sleepBeforeKill(PreShutdownSpec preShutdown) {
+        val sleepMillis = Objects.requireNonNullElse(preShutdown.getWaitBeforeKill(),
+                                                     io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
+        if(sleepMillis == 0) {
+            log.warn("No sleep specified. This is not a good practise");
+            return;
+        }
+        log.info("Waiting {} ms before killing container", sleepMillis);
+        try {
+            Thread.sleep(sleepMillis);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.info("Sleep before kill interrupted");
+        }
     }
 }

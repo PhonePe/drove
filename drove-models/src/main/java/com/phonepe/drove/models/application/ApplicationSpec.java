@@ -1,6 +1,5 @@
 package com.phonepe.drove.models.application;
 
-import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
@@ -69,5 +68,5 @@ public class ApplicationSpec {
     ExposureSpec exposureSpec;
 
     @Valid
-    List<CheckModeSpec> preShutdownHook;
+    PreShutdownSpec preShutdown;
 }

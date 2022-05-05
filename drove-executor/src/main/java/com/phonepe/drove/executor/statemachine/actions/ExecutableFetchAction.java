@@ -75,6 +75,10 @@ public class ExecutableFetchAction extends InstanceAction {
 
     @SneakyThrows
     private void addAuth(PullImageCmd pullImageCmd) {
+        if(null == dockerAuthConfig) {
+            log.debug("No docker auth specified");
+            return;
+        }
         val authEntries = dockerAuthConfig.getEntries();
         val imageUri = Objects.requireNonNullElse(pullImageCmd.getRepository(), "");
         val registry = imageUri.substring(0, imageUri.indexOf("/"));

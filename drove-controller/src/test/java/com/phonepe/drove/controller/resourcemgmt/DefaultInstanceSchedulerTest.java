@@ -66,7 +66,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
                                        originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdownHook());
+                                       originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
         val node = sched.schedule(schedId, spec).orElse(null);
@@ -97,7 +97,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
                                        originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdownHook());
+                                       originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
         val node = sched.schedule(schedId, spec).orElse(null);
@@ -128,7 +128,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
                                        originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdownHook());
+                                       originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
@@ -160,7 +160,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
                                        originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdownHook());
+                                       originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
@@ -195,7 +195,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
                                        originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdownHook());
+                                       originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
@@ -230,7 +230,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
                                        originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdownHook());
+                                       originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 2).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(2, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test2"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());

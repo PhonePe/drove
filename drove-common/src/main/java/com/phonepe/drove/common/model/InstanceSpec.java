@@ -1,12 +1,12 @@
 package com.phonepe.drove.common.model;
 
-import com.phonepe.drove.models.application.checks.CheckModeSpec;
-import com.phonepe.drove.models.application.logging.LoggingSpec;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
+import com.phonepe.drove.models.application.logging.LoggingSpec;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import lombok.Value;
 
 import java.util.List;
@@ -28,5 +28,5 @@ public class InstanceSpec {
     CheckSpec readiness;
     LoggingSpec loggingSpec;
     Map<String, String> env;
-    List<CheckModeSpec> preShutdownHook;
+    PreShutdownSpec preShutdown;
 }
