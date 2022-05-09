@@ -27,7 +27,7 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered"  id="instances">
+                        <table class="table table-bordered"  id="instances" style="width: 100%">
                             <thead>
                             <tr>
                                 <th>ID</th>
@@ -171,8 +171,9 @@
             'url' : '/apis/v1/applications/{{appId}}/instances',
             'dataSrc' : instanceDataHandler
         },
-        'paging': false,
-        'info' : false,
+        'paging': true,
+        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'columns' : [
             { 'data' : 'instanceId' },
             { 'data' : 'executorId', 'render' : executorLink },
@@ -197,7 +198,9 @@
             'url' : '/apis/v1/applications/{{appId}}/instances/old',
             'dataSrc' : instanceDataHandler
         },
-        'paging': false,
+        'paging': true,
+        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columns' : [
             { 'data' : 'instanceId' },
@@ -232,9 +235,9 @@
         'order' : [[9, 'desc']]
     });
     setInterval(() => {
-        summary.ajax.reload();
-        instances.ajax.reload();
-        oldinstances.ajax.reload();
+        summary.ajax.reload(null, false);
+        instances.ajax.reload(null, false);
+        oldinstances.ajax.reload(null, false);
     }, 5000);
 {{/partial}}
 {{> common/base}}

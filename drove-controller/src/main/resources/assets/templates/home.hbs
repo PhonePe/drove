@@ -102,7 +102,8 @@
                 return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
             }
         },
-        'paging': false,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -128,7 +129,8 @@
     var executors = $('#executors').DataTable({
         'processing' : true,
         'ajax': '/apis/v1/cluster/executors',
-        'paging': false,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {

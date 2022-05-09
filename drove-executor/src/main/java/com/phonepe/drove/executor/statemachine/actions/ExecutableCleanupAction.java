@@ -1,5 +1,7 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
+import com.github.dockerjava.api.exception.ConflictException;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ExecutorOptions;
@@ -30,23 +32,30 @@ public class ExecutableCleanupAction extends InstanceAction {
     @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        if (Strings.isNullOrEmpty(context.getDockerImageId())) {
+        val dockerImageId = context.getDockerImageId();
+        if (Strings.isNullOrEmpty(dockerImageId)) {
             log.warn("No docker image id found. Nothing to be cleaned up.");
         }
         else {
             if(options.isCacheImages()) {
-                log.info("Skipped image delete for {} as image caching is enabled.", context.getDockerImageId());
+                log.info("Skipped image delete for {} as image caching is enabled.", dockerImageId);
             }
             else {
                 val dockerClient = context.getClient();
                 try {
-                    dockerClient.removeImageCmd(context.getDockerImageId())
+                    dockerClient.removeImageCmd(dockerImageId)
                             .withForce(true)
                             .exec();
-                    log.info("Removed image: {}", context.getDockerImageId());
+                    log.info("Removed image: {}", dockerImageId);
+                }
+                catch (NotFoundException e) {
+                    log.info("Looks like image {} has already been deleted", dockerImageId);
+                }
+                catch (ConflictException e) {
+                    log.info("Skipping image delete as other containers running with same image {}", dockerImageId);
                 }
                 catch (Exception e) {
-                    log.error("Error trying to cleanup image {}: {}", context.getDockerImageId(), e.getMessage());
+                    log.error("Error trying to cleanup image {}: {}", dockerImageId, e.getMessage());
                     return StateData.create(InstanceState.STOPPED, currentState.getData(), e.getMessage());
                 }
             }

@@ -95,8 +95,8 @@ public class ResponseEngine {
                 .orElseGet(() -> ApiResponse.failure("No such instance"));
     }
 
-    public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
-        return ApiResponse.success(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE));
+    public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId, int start, int length) {
+        return ApiResponse.success(instanceInfoDB.oldInstances(appId, start, length));
     }
 
     public ApiResponse<ClusterSummary> cluster() {

@@ -24,7 +24,7 @@ public interface InstanceInfoDB {
 
     default List<InstanceInfo> oldInstances(String appId, int start, int size) {
         return instances(
-                appId, Sets.difference(EnumSet.allOf(InstanceState.class), ACTIVE_STATES), start, size);
+                appId, Sets.difference(EnumSet.allOf(InstanceState.class), ACTIVE_STATES), start, size, true);
     }
 
     default long instanceCount(final String appId, InstanceState requiredState) {
@@ -35,7 +35,11 @@ public interface InstanceInfoDB {
         return instances(appId, requiredStates, 0, Integer.MAX_VALUE).size();
     }
 
-    List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size);
+    default List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size) {
+        return instances(appId, validStates, start, size, false);
+    }
+
+    List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size, boolean skipStaleCheck);
 
     Optional<InstanceInfo> instance(String appId, String instanceId);
 

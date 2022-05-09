@@ -33,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
+import static com.phonepe.drove.models.instance.InstanceState.LOST;
 import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
 
 /**
@@ -113,7 +114,14 @@ public class InstanceEngine implements Closeable {
             MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
             InstanceState state = null;
             do {
-                state = stateMachine.execute();
+                try {
+                    state = stateMachine.execute();
+                }
+                catch (Exception e) {
+                    state = LOST;
+                    log.error("Error in state machine execution: {}", e.getMessage(), e);
+                    handleStateChange(StateData.errorFrom(stateMachine.getCurrentState(), LOST, "SM Execution error: " + e.getMessage()));
+                }
             } while (!state.isTerminal());
             log.info(FINALIZE_SESSION_MARKER, "Completed");
             MDC.remove("instanceLogId");

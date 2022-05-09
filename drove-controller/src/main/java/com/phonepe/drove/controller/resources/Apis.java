@@ -112,9 +112,11 @@ public class Apis {
     @Path("/applications/{id}/instances/old")
     @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(
-            @PathParam("id") @NotEmpty final String appId) {
+            @PathParam("id") @NotEmpty final String appId,
+            @QueryParam("start") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("0") int start,
+            @QueryParam("length") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("65535") int length) {
 
-        return responseEngine.applicationOldInstances(appId);
+        return responseEngine.applicationOldInstances(appId, start, length);
     }
 
     @GET

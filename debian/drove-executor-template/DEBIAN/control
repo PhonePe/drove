@@ -1,0 +1,9 @@
+Package: drove-executor
+Version: VERSIONSTR
+Section: misc
+Priority: standard
+Architecture: all
+Depends: openjdk-17-jre,numactl,docker.io
+Installed-Size: JARSIZE
+Maintainer: Santanu Sinha <santanu@phonepe.com>
+Description: Executor for Drove Container Orchestrator System

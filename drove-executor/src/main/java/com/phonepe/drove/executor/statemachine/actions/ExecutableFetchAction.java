@@ -46,7 +46,7 @@ public class ExecutableFetchAction extends InstanceAction {
             pullImageCmd.exec(new ImagePullProgressHandler(image)).awaitCompletion();
             val imageId = client.inspectImageCmd(image).exec().getId();
             log.info("Pulled image {} with image ID: {}", image, imageId);
-            context.setDockerImageId(image);
+            context.setDockerImageId(imageId);
             return StateData.from(currentState, InstanceState.STARTING);
         }
         catch (InterruptedException e) {

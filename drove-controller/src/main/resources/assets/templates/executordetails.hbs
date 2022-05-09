@@ -23,22 +23,29 @@
     <section>
         <div class="row">
             <div class="col">
-                <table class="table table-bordered" id="instances">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>App Id</th>
-                        <th>Port</th>
-                        <th>Cores</th>
-                        <th>Memory</th>
-                        <th>Current Age</th>
-                        <th>Created</th>
-                        <th>Last Updated</th>
-                        <th>State</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                </table>
+                <div class="row">
+                    <div class="col"><h4>Instances</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered" id="instances">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>App Id</th>
+                                <th>Port</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>Current Age</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>State</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -84,9 +91,58 @@
             }
         ]
     });
+    function executorDataTransformer(res) {
+        if(!res || !res.data) {
+            console.error("No data");
+            return [];
+        }
+        var data = res.data;
+        var esum = {};
+        esum['executorId'] = data.state.executorId;
+        esum['hostname'] = data.hostname;
+        esum['port'] = data.port;
+        esum['port'] = data.port;
+        var uc = data.state.cpus.usedCores;
+        esum['usedCores'] = Object.values(uc).map(v => v.length).reduce((acc, v) => acc + v, 0);
+        var fc = data.state.cpus.freeCores;
+        esum['freeCores'] = Object.values(fc).map(v => v.length).reduce((acc, v) => acc + v, 0);
+        esum['usedMemory'] = Object.values(data.state.memory.usedMemory).reduce((acc, v) => acc + v, 0);
+        esum['freeMemory'] = Object.values(data.state.memory.freeMemory).reduce((acc, v) => acc + v, 0);
+        esum['tags'] = data.tags;
+        esum['blacklisted'] = data.blacklisted;
+        summary.clear();
+        summary.rows.add([esum]).draw();
+
+        var instances = res.data.instances;
+        instances.forEach( (info, i) => {
+                if(info.localInfo) {
+                    info['hostname'] = info.localInfo.hostname;
+                    info['ports'] = Object.keys(info.localInfo.ports)
+                        .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
+                        .join(",");
+            }
+            else {
+                info['hostname'] = '';
+                info['ports'] = '';
+            }
+            info.resources.forEach((r,i) => {
+                if(r.type === 'CPU') {
+                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+                }
+                if(r.type === 'MEMORY') {
+                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+                }
+            });
+
+            info['logStream'] = "/apis/v1/logs/" + info['appId'] + "/" + info['instanceId'];
+        });
+        return instances;
+    }
+
     var ii = $('#instances').DataTable({
         'processing' : true,
-        'paging': false,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columns' : [
                 { 'data' : 'instanceId' },
@@ -108,74 +164,18 @@
                   }
                 }
             ],
-            'order' : [[5, 'desc']]
+            'order' : [[5, 'desc']],
+            'ajax' : {
+               'url' : '/apis/v1/cluster/executors/{{executorId}}',
+               'dataSrc' : executorDataTransformer
+            }
     });
-    function loadExecutorSnapshot() {
-        $.get('/apis/v1/cluster/executors/{{executorId}}',
-            function(res) {
-                if(!res || !res.data) {
-                    console.error("No data");
-                }
-                var data = res.data;
-                console.log(JSON.stringify(data));
-                var esum = {};
-                esum['executorId'] = data.state.executorId;
-                esum['hostname'] = data.hostname;
-                esum['port'] = data.port;
-                esum['port'] = data.port;
-                var uc = data.state.cpus.usedCores;
-                esum['usedCores'] = Object.values(uc)
-                                        .map(v => v.length)
-                                        .reduce((acc, v) => acc + v, 0);
-                var fc = data.state.cpus.freeCores;
-                esum['freeCores'] = Object.values(fc)
-                                        .map(v => v.length)
-                                        .reduce((acc, v) => acc + v, 0);
-                esum['usedMemory'] = Object.values(data.state.memory.usedMemory)
-                                        .reduce((acc, v) => acc + v, 0);
-                esum['freeMemory'] = Object.values(data.state.memory.freeMemory)
-                                        .reduce((acc, v) => acc + v, 0);
-                esum['tags'] = data.tags;
-                esum['blacklisted'] = data.blacklisted;
-                summary.clear();
-                summary.rows.add([esum]).draw();
 
-                var instances = res.data.instances;
-                instances.forEach( (info, i) => {
-                    if(info.localInfo) {
-                        info['hostname'] = info.localInfo.hostname;
-                        info['ports'] = Object.keys(info.localInfo.ports)
-                            .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
-                        .join(",");
-                    }
-                    else {
-                        info['hostname'] = '';
-                        info['ports'] = '';
-                    }
-                    info.resources.forEach((r,i) => {
-                        if(r.type === 'CPU') {
-                            info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
-                        }
-                        if(r.type === 'MEMORY') {
-                            info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
-                        }
-                    });
-
-                    info['logStream'] = "/apis/v1/logs/" + info['appId'] + "/" + info['instanceId'];
-                });
-                ii.clear();
-                ii.rows.add(instances).draw();
-            })
-            .fail(function(e) {
-                location.reload();
-            });
-    }
-
-
-    loadExecutorSnapshot();
+    //loadExecutorSnapshot();
 
     setInterval(() => {
-        loadExecutorSnapshot();
+        //loadExecutorSnapshot();
+        ii.ajax.reload(null, false);
     }, 3000);
 
 {{/partial}}

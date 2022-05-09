@@ -1,0 +1,7 @@
+3b09e25d801ef51f94c7604522a73d1e  ./etc/init.d/drove-controller
+2d5658784a2cee8379f0c275608a00af  ./etc/drove-controller.yml
+ad71ca4e65de8b5f729f868ce12807e5  ./etc/init/drove-controller.conf
+c2ddbf45387812fdf8214a335ef2c369  ./etc/drove-controller.jvm.conf
+cb5f2df6a13c5b5c654df9dccc127d3d  ./usr/share/java/drove-controller.jar
+85f0b284416bfc9eb7272767c91a4a2a  ./usr/bin/drove-controller
+af9eadb118021aa8c20570a3dec22f03  ./lib/systemd/system/drove-controller.service

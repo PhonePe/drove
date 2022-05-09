@@ -1,8 +1,8 @@
 #! /bin/bash
 
-#pushd ..
-#mvn clean package -DskipTests
-#popd
+pushd ..
+mvn package -DskipTests
+popd
 
 mkdir packages
 pushd packages

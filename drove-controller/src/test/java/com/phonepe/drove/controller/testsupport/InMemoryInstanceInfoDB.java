@@ -16,7 +16,7 @@ public class InMemoryInstanceInfoDB implements InstanceInfoDB {
     private final Map<String, Map<String, InstanceInfo>> instances = new ConcurrentHashMap<>();
 
     @Override
-    public List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size) {
+    public List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size, boolean skipStaleCheck) {
         return instances.getOrDefault(appId, Collections.emptyMap())
                 .values()
                 .stream()

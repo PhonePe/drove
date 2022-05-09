@@ -132,6 +132,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public DockerAuthConfig dockerAuthConfig(final AppConfig config) {
-        return config.getAuth();
+        return Objects.requireNonNullElse(config.getAuth(), DockerAuthConfig.DEFAULT);
+
     }
 }

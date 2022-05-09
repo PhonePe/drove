@@ -1,0 +1,12 @@
+[Unit]
+Description=drove-controller
+
+[Service]
+ExecStart=/usr/bin/drove-controller
+Restart=always
+OOMScoreAdjust=-1000
+User=drove
+Group=drove
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# SystemD
+if which systemctl >/dev/null; then
+    echo "Registering SystemD service: drove-controller"
+    systemctl daemon-reload
+    systemctl enable "drove-controller"
+    systemctl start "drove-controller"
+    exit 0
+fi
+
+# Upstart
+if which initctl >/dev/null; then
+    echo "Registering Upstart service: drove-controller"
+    initctl reload-configuration
+    initctl start "drove-controller"
+    exit 0
+fi
+
+# SystemV
+if which invoke-rc.d >/dev/null; then
+    echo "Registering SystemV service: drove-controller"
+    update-rc.d "drove-controller" defaults
+    invoke-rc.d "drove-controller" start
+    exit 0
+fi
+
+echo "Unable to find supported init system."
+exit 1

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+case "$1" in
+    purge)
+        rm -rf "/var/log/drove/drove-executor"
+    ;;
+esac
+
+exit 0

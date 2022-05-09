@@ -43,7 +43,19 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
 
     @Override
     @SneakyThrows
-    public List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size) {
+    public List<InstanceInfo> instances(
+            String appId,
+            Set<InstanceState> validStates,
+            int start,
+            int size,
+            boolean skipStaleCheck) {
+        if (skipStaleCheck) {
+            return listInstances(appId,
+                                 start,
+                                 size,
+                                 instanceInfo -> validStates.contains(instanceInfo.getState()));
+        }
+
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         return listInstances(appId,
                              start,
@@ -83,31 +95,30 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     @SneakyThrows
     public long markStaleInstances(String appId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
-        //Find all instances in active states
+        //Find all instances in active states that have not been updated in stipulated time and move them to unknown state
         val instances = listInstances(appId,
                                       0,
                                       Integer.MAX_VALUE,
-                                      instanceInfo -> ACTIVE_STATES.contains(instanceInfo.getState()));
-        //Find all nodes that have not been updated in stipulated time and move them to unknown state
-        return instances.stream()
-                .filter(instanceInfo -> instanceInfo.getUpdated().before(validUpdateDate))
-                .filter(instanceInfo -> {
-                    log.warn("Found stale instance {}/{}", appId, instanceInfo.getInstanceId());
-                    return updateInstanceState(appId,
-                                        instanceInfo.getInstanceId(),
-                                        new InstanceInfo(instanceInfo.getAppId(),
-                                                         instanceInfo.getAppName(),
-                                                         instanceInfo.getInstanceId(),
-                                                         instanceInfo.getExecutorId(),
-                                                         instanceInfo.getLocalInfo(),
-                                                         instanceInfo.getResources(),
-                                                         LOST,
-                                                         instanceInfo.getMetadata(),
-                                                         "Instance lost",
-                                                         instanceInfo.getCreated(),
-                                                         new Date()));
-                })
-                .count();
+                                      instanceInfo -> ACTIVE_STATES.contains(instanceInfo.getState())
+                                              && instanceInfo.getUpdated().before(validUpdateDate));
+        instances.forEach(instanceInfo -> {
+                    log.warn("Found stale instance {}/{}. Current state: {} Last updated at: {}",
+                             appId, instanceInfo.getInstanceId(), instanceInfo.getState(), instanceInfo.getUpdated());
+                    updateInstanceState(appId,
+                                               instanceInfo.getInstanceId(),
+                                               new InstanceInfo(instanceInfo.getAppId(),
+                                                                instanceInfo.getAppName(),
+                                                                instanceInfo.getInstanceId(),
+                                                                instanceInfo.getExecutorId(),
+                                                                instanceInfo.getLocalInfo(),
+                                                                instanceInfo.getResources(),
+                                                                LOST,
+                                                                instanceInfo.getMetadata(),
+                                                                "Instance lost",
+                                                                instanceInfo.getCreated(),
+                                                                new Date()));
+                });
+        return instances.size();
     }
 
     private static String instancePath(final String applicationId) {

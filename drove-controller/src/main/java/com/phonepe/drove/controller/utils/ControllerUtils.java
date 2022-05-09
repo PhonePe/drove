@@ -21,8 +21,12 @@ import lombok.val;
 import net.jodah.failsafe.Failsafe;
 
 import javax.ws.rs.core.Response;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 
 /**
  *
@@ -31,6 +35,7 @@ import java.util.Set;
 @UtilityClass
 public class ControllerUtils {
 
+    private static final Set<StateCheckStatus> CHECK_COMPLETED_STATES = EnumSet.of(MISNMATCH_NONRECOVERABLE, MATCH);
     public static String appId(ApplicationSpec applicationSpec) {
         return applicationSpec.getName() + "-" + applicationSpec.getVersion();
     }
@@ -43,11 +48,11 @@ public class ControllerUtils {
             InstanceState required,
             ControllerRetrySpecFactory retrySpecFactory) {
         val retryPolicy =
-                CommonUtils.<Boolean>policy(
+                CommonUtils.<StateCheckStatus>policy(
                         retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
-                        r -> !r);
+                        MISMATCH::equals);
         try {
-            val status = Failsafe.with(retryPolicy)
+            val status = Failsafe.with(List.of(retryPolicy))
                     .onComplete(e -> {
                         val failure = e.getFailure();
                         if (null != failure) {
@@ -56,7 +61,7 @@ public class ControllerUtils {
                     })
                     .get(() -> ensureInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
                                                    required));
-            if (status) {
+            if (status.equals(MATCH)) {
                 return true;
             }
             else {
@@ -65,8 +70,14 @@ public class ControllerUtils {
                     log.error("No instance info found at all for: {}/{}", appId, instanceId);
                 }
                 else {
-                    log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
-                              appId, instanceId, curr.getState(), curr);
+                    if(status.equals(MISMATCH)) {
+                        log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                                  appId, instanceId, curr.getState(), curr);
+                    }
+                    else {
+                        log.error("Looks like {}/{} has failed permanently and reached state: {}. Detailed instance data: {}}",
+                                  appId, instanceId, curr.getState(), curr);
+                    }
                 }
             }
         }
@@ -95,20 +106,23 @@ public class ControllerUtils {
         return instanceInfoDB.instance(appId, instanceId).orElse(null);
     }
 
-    private static boolean ensureInstanceState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
-        if (null == instanceInfo) {
-            return false;
+    private static StateCheckStatus ensureInstanceState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
+        if (null != instanceInfo) {
+            val currState = instanceInfo.getState();
+            log.trace("Instance state for {}/{}: {}",
+                      instanceInfo.getAppId(), instanceInfo.getInstanceId(), currState);
+            if (currState == instanceState) {
+                log.info("Instance {}/{} reached desired state: {}",
+                         instanceInfo.getAppId(),
+                         instanceInfo.getInstanceId(),
+                         instanceState);
+                return MATCH;
+            }
+            if(currState.isTerminal()) { //Useless to wait if it has died anyways
+                return MISNMATCH_NONRECOVERABLE;
+            }
         }
-        log.trace("Instance state for {}/{}: {}",
-                  instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceInfo.getState());
-        if (instanceInfo.getState() == instanceState) {
-            log.info("Instance {}/{} reached desired state: {}",
-                     instanceInfo.getAppId(),
-                     instanceInfo.getInstanceId(),
-                     instanceState);
-            return true;
-        }
-        return false;
+        return MISMATCH;
     }
 
     public static String appId(final ApplicationOperation operation) {
