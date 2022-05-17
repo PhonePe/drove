@@ -3,6 +3,7 @@ package com.phonepe.drove.models.application;
 import lombok.Value;
 
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 /**
  * Description of host directories to be mounted in containers
@@ -17,6 +18,6 @@ public class MountedVolume {
     String pathInContainer;
     @NotEmpty(message = "- Provide host directory to mount")
     String pathOnHost;
-    @NotEmpty(message = "- Specify whether mount is read-only or read-write")
+    @NotNull(message = "- Specify whether mount is read-only or read-write")
     MountMode mode;
 }
