@@ -1,14 +1,14 @@
 package com.phonepe.drove.executor.statemachine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.common.StateMachine;
-import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.actions.*;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.simplefsm.StateData;
+import io.appform.simplefsm.StateMachine;
+import io.appform.simplefsm.Transition;
 import lombok.NonNull;
 
 import java.util.List;

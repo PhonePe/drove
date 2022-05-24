@@ -3,13 +3,13 @@ package com.phonepe.drove.executor.statemachine.actions;
 import com.github.dockerjava.api.exception.ConflictException;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

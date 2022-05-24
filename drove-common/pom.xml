@@ -12,8 +12,9 @@
     <artifactId>drove-common</artifactId>
 
     <properties>
-        <signals.version>1.3</signals.version>
-        <function-metrics.version>1.0.12</function-metrics.version>
+        <signals.version>1.4</signals.version>
+        <simplefsm.version>1.0</simplefsm.version>
+        <function-metrics.version>1.0.13</function-metrics.version>
     </properties>
 
     <dependencies>
@@ -30,6 +31,11 @@
             <groupId>io.appform.signals</groupId>
             <artifactId>signals</artifactId>
             <version>${signals.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.appform.simplefsm</groupId>
+            <artifactId>simplefsm</artifactId>
+            <version>${simplefsm.version}</version>
         </dependency>
 
         <dependency>

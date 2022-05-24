@@ -29,7 +29,15 @@
 </header>
 
 <div class="pailer-indicator" id="indicator"></div>
-<pre class="pailer-data" id="data"></pre>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col pailer-data-container" id="data-container">
+            <pre class="pailer-data" id="data"></pre>
+        </div>
+    </div>
+</div>
+
+
 
 
 <script src="/js/jquery-3.3.1.min.js"></script>
@@ -45,8 +53,8 @@
         var margin_top = parseInt($body.css('margin-top'));
         var margin_bottom = parseInt($body.css('margin-bottom'));
         $data
-          .width($('#data-container').width() - margin_left)
-          .height($(window).height() - 88 - margin_top - margin_bottom);
+          .width($('#data-container').width() - parseInt($data.css('padding-left')) - parseInt($data.css('padding-right')) - margin_left)
+          .height($(window).height() - Math.ceil($('header').height()) - parseInt($data.css('padding-top')) - margin_top - parseInt($data.css('padding-bottom')) - margin_bottom);
       }
 
       $(window).resize(resize);

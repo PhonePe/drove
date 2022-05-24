@@ -1,9 +1,10 @@
 package com.phonepe.drove.executor.statemachine;
 
-import com.phonepe.drove.common.Action;
-import com.phonepe.drove.common.StateData;
+
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.simplefsm.Action;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -11,7 +12,7 @@ import lombok.val;
  *
  */
 @Slf4j
-public abstract class InstanceAction extends Action<ExecutorInstanceInfo, InstanceState, InstanceActionContext, Void> {
+public abstract class InstanceAction implements Action<ExecutorInstanceInfo, InstanceState, InstanceActionContext, Void> {
 
     @Override
     public final StateData<InstanceState, ExecutorInstanceInfo> execute(

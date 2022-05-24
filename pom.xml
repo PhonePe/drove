@@ -31,7 +31,7 @@
         <aspectj.version>1.9.9.1</aspectj.version>
         <junit.version>5.8.2</junit.version>
         <mockito.version>4.4.0</mockito.version>
-        <wiremock.version>2.32.0</wiremock.version>
+        <wiremock.version>2.33.2</wiremock.version>
     </properties>
 
     <dependencyManagement>

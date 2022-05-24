@@ -1,7 +1,6 @@
 package com.phonepe.drove.executor.engine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
@@ -19,6 +18,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingParallelSignal;
+import io.appform.simplefsm.StateData;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

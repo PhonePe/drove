@@ -2,7 +2,6 @@ package com.phonepe.drove.executor.statemachine.actions;
 
 import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.model.AuthConfig;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -11,6 +10,7 @@ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import io.dropwizard.util.Strings;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

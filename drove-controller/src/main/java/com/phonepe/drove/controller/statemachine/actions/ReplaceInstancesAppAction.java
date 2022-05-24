@@ -1,7 +1,6 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
@@ -23,6 +22,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

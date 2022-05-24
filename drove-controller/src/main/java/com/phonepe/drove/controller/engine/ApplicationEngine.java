@@ -1,7 +1,5 @@
 package com.phonepe.drove.controller.engine;
 
-import com.phonepe.drove.common.ActionFactory;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
@@ -22,6 +20,8 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
+import io.appform.simplefsm.ActionFactory;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

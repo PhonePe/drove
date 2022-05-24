@@ -14,7 +14,7 @@ public class PortSpec {
     @Pattern(regexp = "[a-zA-Z0-9\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
     String name;
 
-    @Min(value = 0, message = "- Port cannot be negative")
+    @Min(value = 1, message = "- Port cannot be negative or 0")
     @Max(value = 65_535, message = "- Port cannot be more than 65K")
     int port;
 

@@ -9,28 +9,12 @@ section {
 a {
   color: #4b7bc5;
 }
-.idm-section {
-  border: darkgray solid 1px;
-  padding: 1rem;
-  margin: 1rem;
-}
-
-.cm-first-row {
-  padding: 1rem;
-}
-
-.cm-text-box {
-  padding-left: 1rem;
-  padding-right: 1rem;
-  border: solid darkgray !important;
-  border-width: 1px !important;
-}
 
 .nowrap {
   white-space:nowrap;
 }
 
-/*pre {
+.code-display {
     height: 75vh;
     overflow-y: auto;
     margin: 1rem;
@@ -39,7 +23,8 @@ a {
     padding: 1rem;
     font-weight: bold;
     font-family: courier;
-}*/
+}
+
 .pailer-body {
     padding: 0px;
 }
@@ -51,6 +36,7 @@ a {
     position: absolute;
     left: 5px;
     top: 90px;
+    z-index: 999;
 }
 
 .pailer-data {
@@ -67,4 +53,8 @@ a {
     left: 5px;
     top: 5px;
     display: block;
+}
+
+.pailer-data-container {
+    padding: 0px;
 }

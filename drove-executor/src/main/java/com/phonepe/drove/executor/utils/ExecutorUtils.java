@@ -1,7 +1,6 @@
 package com.phonepe.drove.executor.utils;
 
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -13,6 +12,7 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.simplefsm.StateData;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.apache.commons.lang3.NotImplementedException;

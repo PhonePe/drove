@@ -1,7 +1,6 @@
 package com.phonepe.drove.controller.statemachine;
 
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
@@ -10,6 +9,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
