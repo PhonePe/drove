@@ -7,7 +7,7 @@ import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.event.DroveInstanceFailedEvent;
+import com.phonepe.drove.controller.event.events.DroveInstanceFailedEvent;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

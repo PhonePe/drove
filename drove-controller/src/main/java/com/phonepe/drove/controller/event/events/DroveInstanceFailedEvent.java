@@ -1,5 +1,7 @@
-package com.phonepe.drove.controller.event;
+package com.phonepe.drove.controller.event.events;
 
+import com.phonepe.drove.controller.event.DroveEvent;
+import com.phonepe.drove.controller.event.DroveEventType;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
