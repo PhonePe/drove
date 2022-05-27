@@ -175,7 +175,7 @@ public class ContainerStatsObserver implements Managed {
                                    net -> net.getData()
                                            .stream()
                                            .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
+                                           .mapToLong(n -> Objects.requireNonNullElse(n.getRxErrors(), 0L))
                                            .sum()))
                     .connect(gauge("network_rx_dropped",
                                    instanceInfo,
