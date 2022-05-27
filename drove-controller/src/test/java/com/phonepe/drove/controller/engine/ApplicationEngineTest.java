@@ -5,6 +5,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
@@ -19,6 +20,8 @@ import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.CachingProxyApplicationStateDB;
+import com.phonepe.drove.controller.statedb.CachingProxyInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
@@ -34,6 +37,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.*;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import io.appform.simplefsm.ActionFactory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -82,13 +86,20 @@ class ApplicationEngineTest extends ControllerTestBase {
         val injector = Guice.createInjector(new AbstractModule() {
             @Override
             protected void configure() {
-                bind(ApplicationStateDB.class).to(InMemoryApplicationStateDB.class).asEagerSingleton();
-                bind(InstanceInfoDB.class).to(InMemoryInstanceInfoDB.class).asEagerSingleton();
+                bind(ApplicationStateDB.class).to(CachingProxyApplicationStateDB.class);
+                bind(ApplicationStateDB.class)
+                        .annotatedWith(Names.named("StoredApplicationStateDB"))
+                        .to(InMemoryApplicationStateDB.class);
+                bind(InstanceInfoDB.class).to(CachingProxyInstanceInfoDB.class);
+                bind(InstanceInfoDB.class)
+                        .annotatedWith(Names.named("StoredInstanceInfoDB"))
+                        .to(InMemoryInstanceInfoDB.class);
                 bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class).asEagerSingleton();
                 bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
                 bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);
                 bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
-                bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>>() {
+                bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState,
+                        AppActionContext, AppAction>>() {
                 }).to(InjectingAppActionFactory.class);
                 bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
                 })
@@ -100,6 +111,7 @@ class ApplicationEngineTest extends ControllerTestBase {
             public LeadershipEnsurer leadershipEnsurer() {
                 val l = mock(LeadershipEnsurer.class);
                 when(l.isLeader()).thenReturn(true);
+                when(l.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
                 return l;
             }
 

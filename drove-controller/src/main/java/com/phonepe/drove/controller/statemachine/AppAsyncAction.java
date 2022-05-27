@@ -5,8 +5,10 @@ import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
 import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.controller.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.jobexecutor.JobTopology;
+import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.simplefsm.StateData;
@@ -28,11 +30,13 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
     private final Lock jobLock = new ReentrantLock();
     private final Condition condition = jobLock.newCondition();
     private final JobExecutor<Boolean> jobExecutor;
+    private final InstanceInfoDB instanceInfoDB;
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final AtomicReference<StateData<ApplicationState, ApplicationInfo>> result = new AtomicReference<>();
 
-    protected AppAsyncAction(JobExecutor<Boolean> jobExecutor) {
+    protected AppAsyncAction(JobExecutor<Boolean> jobExecutor, InstanceInfoDB instanceInfoDB) {
         this.jobExecutor = jobExecutor;
+        this.instanceInfoDB = instanceInfoDB;
     }
 
     @Override
@@ -43,7 +47,10 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
             ApplicationOperation operation) {
         val topology = jobsToRun(context, currentState, operation).orElse(null);
         if(topology == null) {
-            return StateData.from(currentState, ApplicationState.RUNNING); //TODO RETURN MONITORING IF 0
+            if(instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) == 0) {
+                return StateData.from(currentState, ApplicationState.MONITORING);
+            }
+            return StateData.from(currentState, ApplicationState.RUNNING);
         }
         val jobId = jobExecutor.schedule(topology,
                                          new BooleanResponseCombiner(),

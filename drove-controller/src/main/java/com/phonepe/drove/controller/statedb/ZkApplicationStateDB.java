@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.statedb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 
@@ -31,6 +32,7 @@ public class ZkApplicationStateDB implements ApplicationStateDB {
     }
 
     @Override
+    @MonitoredFunction
     public List<ApplicationInfo> applications(int start, int size) {
         try {
             return readChildrenNodes(curatorFramework,
@@ -49,6 +51,7 @@ public class ZkApplicationStateDB implements ApplicationStateDB {
     }
 
     @Override
+    @MonitoredFunction
     public Optional<ApplicationInfo> application(String appId) {
         return Optional.ofNullable(readNodeData(curatorFramework,
                                                 appInfoPath(appId),
@@ -57,6 +60,7 @@ public class ZkApplicationStateDB implements ApplicationStateDB {
     }
 
     @Override
+    @MonitoredFunction
     public boolean updateApplicationState(
             String appId, ApplicationInfo applicationInfo) {
         return setNodeData(curatorFramework, appInfoPath(appId), mapper, applicationInfo);
@@ -64,6 +68,7 @@ public class ZkApplicationStateDB implements ApplicationStateDB {
 
 
     @Override
+    @MonitoredFunction
     public boolean deleteApplicationState(String appId) {
         return deleteNode(curatorFramework, appInfoPath(appId));
     }

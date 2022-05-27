@@ -46,7 +46,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
             final ClusterResourcesDB clusterResourcesDB,
             final ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory) {
-        super(jobExecutor);
+        super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;

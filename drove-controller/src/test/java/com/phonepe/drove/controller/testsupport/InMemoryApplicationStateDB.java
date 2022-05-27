@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.testsupport;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  *
  */
+@Singleton
 public class InMemoryApplicationStateDB implements ApplicationStateDB {
 
     private final Map<String, ApplicationInfo> apps = new ConcurrentHashMap<>();

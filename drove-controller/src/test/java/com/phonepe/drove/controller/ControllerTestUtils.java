@@ -50,7 +50,10 @@ public class ControllerTestUtils {
     }
 
     public static ApplicationSpec appSpec(int version) {
-        return new ApplicationSpec("TEST_SPEC",
+        return appSpec("TEST_SPEC", version);
+    }
+    public static ApplicationSpec appSpec(final String name, final int version) {
+        return new ApplicationSpec(name,
                                    String.format("%05d", version),
                                    new DockerCoordinates(CommonTestUtils.IMAGE_NAME, Duration.seconds(100)),
                                    Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),

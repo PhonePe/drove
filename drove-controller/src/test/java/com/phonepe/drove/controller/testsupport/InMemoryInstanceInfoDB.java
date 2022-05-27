@@ -5,12 +5,14 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.val;
 
+import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  */
+@Singleton
 public class InMemoryInstanceInfoDB implements InstanceInfoDB {
 
     private final Map<String, Map<String, InstanceInfo>> instances = new ConcurrentHashMap<>();

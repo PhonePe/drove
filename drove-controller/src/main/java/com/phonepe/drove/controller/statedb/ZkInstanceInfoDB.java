@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statedb;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -43,6 +44,7 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
 
     @Override
     @SneakyThrows
+    @MonitoredFunction
     public List<InstanceInfo> instances(
             String appId,
             Set<InstanceState> validStates,
@@ -65,6 +67,7 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     }
 
     @Override
+    @MonitoredFunction
     public Optional<InstanceInfo> instance(String appId, String instanceId) {
         return Optional.ofNullable(readNodeData(curatorFramework,
                                                 instancePath(appId, instanceId),
@@ -73,6 +76,7 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     }
 
     @Override
+    @MonitoredFunction
     public boolean updateInstanceState(
             String appId, String instanceId, InstanceInfo instanceInfo) {
         return setNodeData(curatorFramework,
@@ -82,17 +86,20 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     }
 
     @Override
+    @MonitoredFunction
     public boolean deleteInstanceState(String appId, String instanceId) {
         return deleteNode(curatorFramework, instancePath(appId, instanceId));
     }
 
     @Override
+    @MonitoredFunction
     public boolean deleteAllInstancesForApp(String appId) {
         return deleteNode(curatorFramework, instancePath(appId));
     }
 
     @Override
     @SneakyThrows
+    @MonitoredFunction
     public long markStaleInstances(String appId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         //Find all instances in active states that have not been updated in stipulated time and move them to unknown state

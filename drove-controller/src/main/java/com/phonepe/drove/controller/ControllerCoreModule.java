@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.discovery.NodeDataStore;
@@ -18,10 +19,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ZkApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ZkInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -70,13 +68,19 @@ public class ControllerCoreModule extends AbstractModule {
     protected void configure() {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
         bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);
-        bind(ApplicationStateDB.class).to(ZkApplicationStateDB.class);
-        bind(InstanceInfoDB.class).to(ZkInstanceInfoDB.class);
+        bind(ApplicationStateDB.class).to(CachingProxyApplicationStateDB.class);
+        bind(ApplicationStateDB.class).annotatedWith(Names.named("StoredApplicationStateDB"))
+                .to(ZkApplicationStateDB.class);
+        bind(InstanceInfoDB.class).to(CachingProxyInstanceInfoDB.class);
+        bind(InstanceInfoDB.class).annotatedWith(Names.named("StoredInstanceInfoDB")).to(ZkInstanceInfoDB.class);
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
-        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
+        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
+        })
                 .to(RemoteExecutorMessageSender.class);
-        bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>>(){})
+        bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
+                AppAction>>() {
+        })
                 .to(InjectingAppActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }

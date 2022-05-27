@@ -49,12 +49,19 @@ public class AppRecovery implements Managed {
             log.info("This controller is now the leader.");
             applicationStateDB.applications(0, Integer.MAX_VALUE)
                     .forEach(applicationInfo -> {
-                        log.info("Found app: {}. Starting it.", applicationInfo.getAppId());
-                        val res = applicationEngine.handleOperation(new ApplicationCreateOperation(applicationInfo.getSpec(),
-                                                                                                   applicationInfo.getInstances(),
-                                                                                                   ClusterOpSpec.DEFAULT));
-                        if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-                            log.error("Error sending command to state machine. Error: " + res.getMessages());
+                        val appId = applicationInfo.getAppId();
+                        log.info("Found app: {}. Starting it.", appId);
+                        try {
+                            val res = applicationEngine.handleOperation(
+                                    new ApplicationCreateOperation(applicationInfo.getSpec(),
+                                                                   applicationInfo.getInstances(),
+                                                                   ClusterOpSpec.DEFAULT));
+                            if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+                                log.error("Error sending command to state machine. Error: " + res.getMessages());
+                            }
+                        }
+                        catch (Exception e) {
+                            log.error("Error recovering state machine for " + appId, e);
                         }
                     });
         }
