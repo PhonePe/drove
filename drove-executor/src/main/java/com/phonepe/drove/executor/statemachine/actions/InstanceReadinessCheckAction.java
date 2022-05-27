@@ -1,6 +1,5 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
@@ -9,6 +8,7 @@ import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -33,7 +33,7 @@ public class InstanceReadinessCheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();
-        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), readinessCheckSpec);
+        final Checker checker = ExecutorUtils.createChecker(currentState.getData(), readinessCheckSpec);
         val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if(initDelay > 0) {
@@ -67,19 +67,20 @@ public class InstanceReadinessCheckAction extends InstanceAction {
                         }
                         return checker.call();
                     });
-            switch (result.getStatus()) {
-                case HEALTHY:
-                    return StateData.create(InstanceState.READY, currentState.getData());
-                case STOPPED:
-                    return StateData.create(InstanceState.STOPPING, currentState.getData());
-                case UNHEALTHY:
-                default:
-                    return StateData.create(InstanceState.READINESS_CHECK_FAILED, currentState.getData());
-            }
+            return switch (result.getStatus()) {
+                case HEALTHY -> StateData.from(currentState, InstanceState.READY);
+                case STOPPED -> StateData.from(currentState, InstanceState.STOPPING);
+                case UNHEALTHY -> StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, "Readiness check failed");
+            };
         }
         catch (Exception e) {
             return StateData.errorFrom(currentState, InstanceState.READINESS_CHECK_FAILED, e.getMessage());
         }
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.READINESS_CHECK_FAILED;
     }
 
     @Override

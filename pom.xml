@@ -19,17 +19,19 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <lombok.version>1.18.22</lombok.version>
+        <lombok.version>1.18.24</lombok.version>
         <dropwizard.version>2.0.25</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.2</junit.version>
-        <awaitility.version>4.1.1</awaitility.version>
-        <guice.version>5.0.1</guice.version>
+        <awaitility.version>4.2.0</awaitility.version>
+        <guice.version>5.1.0</guice.version>
         <dw-guicey.version>5.4.0</dw-guicey.version>
-        <curator.version>5.2.0</curator.version>
-        <failsafe.version>2.4.3</failsafe.version>
-        <aspectj.version>1.9.8</aspectj.version>
+        <curator.version>5.2.1</curator.version>
+        <failsafe.version>2.4.4</failsafe.version>
+        <aspectj.version>1.9.9.1</aspectj.version>
         <junit.version>5.8.2</junit.version>
+        <mockito.version>4.4.0</mockito.version>
+        <wiremock.version>2.33.2</wiremock.version>
     </properties>
 
     <dependencyManagement>
@@ -74,6 +76,12 @@
             <version>${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -112,6 +120,11 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <excludes>
+                        <exclude>**/model/**</exclude>
+                        <exclude>**/models/**</exclude>
+                        <exclude>**/*Log*Stream.class</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 

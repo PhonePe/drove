@@ -36,7 +36,7 @@
                                 <th>Expected Instances</th>
                                 <th>Healthy Instances</th>
                                 <th>CPU</th>
-                                <th>Memory (MB)</th>
+                                <th>Memory</th>
                                 <th>State</th>
                             </tr>
                             </thead>
@@ -89,9 +89,9 @@
             { 'data' : 'freeCores' },
             { 'data' : 'usedCores' },
             { 'data' : 'totalCores' },
-            { 'data' : 'freeMemory' },
-            { 'data' : 'usedMemory' },
-            { 'data' : 'totalMemory' }
+            { 'data' : 'freeMemory', 'render' : formatBytes },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'totalMemory', 'render' : formatBytes }
         ]
     });
     var applications = $('#applications').DataTable({
@@ -102,7 +102,8 @@
                 return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
             }
         },
-        'paging': false,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -121,14 +122,15 @@
             { 'data' : 'requiredInstances' },
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory' },
-            { 'data' : 'state' }
+            { 'data' : 'totalMemory', 'render' : formatBytes },
+            { 'data' : 'state', render: renderAppState }
         ]
     });
     var executors = $('#executors').DataTable({
         'processing' : true,
         'ajax': '/apis/v1/cluster/executors',
-        'paging': false,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -140,14 +142,16 @@
             {
                 'data' : 'executorId' ,
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/executors/' + data + '">' + data + '</a>';
+                    return row.blacklisted
+                        ? '<del><a href="/executors/' + data + '">' + data + '</a></del>'
+                        : '<a href="/executors/' + data + '">' + data + '</a>';
                 }
             },
             { 'data' : 'hostname' },
             { 'data' : 'freeCores' },
             { 'data' : 'usedCores' },
-            { 'data' : 'freeMemory' },
-            { 'data' : 'usedMemory' },
+            { 'data' : 'freeMemory', 'render' : formatBytes },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
             {  'data' : 'tags',
                 'render' : function(data, type, row, meta) {
                    var tagStr = "";

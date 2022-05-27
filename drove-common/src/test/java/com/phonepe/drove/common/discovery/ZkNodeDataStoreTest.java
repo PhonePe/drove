@@ -27,39 +27,40 @@ class ZkNodeDataStoreTest {
     @Test
     @SneakyThrows
     void testDS() {
-        val cluster = new TestingCluster(1);
-        cluster.start();
-        val config = new ZkConfig();
-        config.setConnectionString(cluster.getConnectString());
-        val mapper = new ObjectMapper();
-        CommonUtils.configureMapper(mapper);
+        try(val cluster = new TestingCluster(1)) {
+            cluster.start();
+            val config = new ZkConfig();
+            config.setConnectionString(cluster.getConnectString());
+            val mapper = new ObjectMapper();
+            CommonUtils.configureMapper(mapper);
 
-        val curator = CommonUtils.buildCurator(config);
-        curator.start();
-        curator.blockUntilConnected();
+            val curator = CommonUtils.buildCurator(config);
+            curator.start();
+            curator.blockUntilConnected();
 
-        val store = new ZkNodeDataStore(curator, mapper);
+            val store = new ZkNodeDataStore(curator, mapper);
 
-        val state = new ExecutorResourceSnapshot(
-                "abc",
-                new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
-                                 Collections.singletonMap(0, Collections.singleton(0))),
-                new AvailableMemory(Collections.singletonMap(0, 1024L),
-                                    Collections.singletonMap(0, 1024L)));
-        val nodeData = new ExecutorNodeData("localhost",
-                                            8080,
-                                            NodeTransportType.HTTP,
-                                            new Date(),
-                                            state,
-                                            Collections.emptyList(),
-                                            Collections.emptySet(),
-                                            false);
-        store.updateNodeData(nodeData);
-        var executors = store.nodes(NodeType.EXECUTOR);
-        assertFalse(executors.isEmpty());
-        assertEquals(nodeData, executors.get(0));
-        store.removeNodeData(nodeData);
-        executors = store.nodes(NodeType.EXECUTOR);
-        assertTrue(executors.isEmpty());
+            val state = new ExecutorResourceSnapshot(
+                    "abc",
+                    new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
+                                     Collections.singletonMap(0, Collections.singleton(0))),
+                    new AvailableMemory(Collections.singletonMap(0, 1024L),
+                                        Collections.singletonMap(0, 1024L)));
+            val nodeData = new ExecutorNodeData("localhost",
+                                                8080,
+                                                NodeTransportType.HTTP,
+                                                new Date(),
+                                                state,
+                                                Collections.emptyList(),
+                                                Collections.emptySet(),
+                                                false);
+            store.updateNodeData(nodeData);
+            var executors = store.nodes(NodeType.EXECUTOR);
+            assertFalse(executors.isEmpty());
+            assertEquals(nodeData, executors.get(0));
+            store.removeNodeData(nodeData);
+            executors = store.nodes(NodeType.EXECUTOR);
+            assertTrue(executors.isEmpty());
+        }
     }
 }

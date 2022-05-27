@@ -135,7 +135,6 @@ public class ExecutorLogFileApis {
                                 executorHostInfo.getPort(),
                                 appId,
                                 instanceId);
-        log.debug("Calling executor URL: {}", url);
         val uriBuilder = UriBuilder.fromPath(url);
         Objects.<Map<String, Object>>requireNonNullElse(queryParams, Map.of())
                 .forEach(uriBuilder::queryParam);

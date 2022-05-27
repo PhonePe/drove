@@ -33,10 +33,12 @@ class ContainerStatsObserverTest extends AbstractExecutorEngineEnabledTestBase {
             return info.getInstanceId();
         });
         assertNotNull(instanceId);
+        waitUntil(() -> !engine.exists(instanceId));
         assertTrue(METRIC_REGISTRY.getGauges(MetricFilter.endsWith("nr_throttled"))
                            .keySet()
                            .stream()
-                           .noneMatch(name -> name.contains(instanceId)));
+                           .noneMatch(name -> name.contains(instanceId)),
+                   "Existing gauges: " + METRIC_REGISTRY.getGauges().keySet());
         statsObserver.stop();
     }
 

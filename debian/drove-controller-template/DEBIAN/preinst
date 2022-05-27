@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+case "$1" in
+    install|upgrade)
+        if ! getent passwd "drove" >/dev/null; then
+            adduser --system --group "drove" --home /var/lib/misc --no-create-home > /dev/null
+        fi
+
+        mkdir -p "/var/log/drove/drove-controller" && chown -R "drove:drove" "/var/log/drove/drove-controller"
+    ;;
+
+esac
+
+exit 0

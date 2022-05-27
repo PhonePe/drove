@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.managed;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -17,12 +18,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Date;
 
 /**
  *
@@ -31,18 +27,12 @@ import java.util.concurrent.locks.ReentrantLock;
 @Order(30)
 @Singleton
 public class ApplicationMonitor implements Managed {
-    private static final Set<ApplicationState> SKIPPED_STATES = EnumSet.of(ApplicationState.INIT,
-                                                                           ApplicationState.DESTROYED,
-                                                                           ApplicationState.FAILED,
-                                                                           ApplicationState.SCALING_REQUESTED);
+
+    private static final String HANDLER_NAME = "APP_CHECK_MONITOR";
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
             .initialDelay(Duration.ofSeconds(5))
             .interval(Duration.ofSeconds(3))
             .build();
-
-    private final AtomicBoolean check = new AtomicBoolean();
-    private final Lock checkLock = new ReentrantLock();
-    private final Condition checkCond = checkLock.newCondition();
 
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
@@ -51,7 +41,8 @@ public class ApplicationMonitor implements Managed {
     @Inject
     public ApplicationMonitor(
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB, ApplicationEngine engine) {
+            InstanceInfoDB instanceInfoDB,
+            ApplicationEngine engine) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.engine = engine;
@@ -59,34 +50,19 @@ public class ApplicationMonitor implements Managed {
 
     @Override
     public void start() throws Exception {
-        refreshSignal.connect(time -> {
-/*             checkLock.lock();
-             try {
-                 check.set(true);
-                 checkCond.signalAll();
-             }
-             finally {
-                 checkLock.unlock();
-             }*/
-            checkAllApps();
-        });
+        refreshSignal.connect(HANDLER_NAME, this::checkAllApps);
     }
 
     @Override
     public void stop() throws Exception {
         log.debug("Shutting down {}", this.getClass().getSimpleName());
+        refreshSignal.disconnect(HANDLER_NAME);
         refreshSignal.close();
         log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
-    public void notifyOperation(final ApplicationOperation operation) {
-        val res = engine.handleOperation(operation);
-        if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-            log.error("Error sending command to state machine. Error: " + res.getMessage());
-        }
-    }
-
-    private void checkAllApps() {
+    @VisibleForTesting
+    public void checkAllApps(final Date checkTime) {
         applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .forEach(app -> {
                     val appId = app.getAppId();
@@ -97,6 +73,7 @@ public class ApplicationMonitor implements Managed {
                     }
 
                     val expectedInstances = app.getInstances();
+                    instanceInfoDB.markStaleInstances(appId);
                     val actualInstances = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
@@ -104,5 +81,14 @@ public class ApplicationMonitor implements Managed {
                         notifyOperation(new ApplicationRecoverOperation(appId));
                     }
                 });
+        log.debug("Application check triggered at {} is completed.", checkTime);
     }
+
+    private void notifyOperation(final ApplicationOperation operation) {
+        val res = engine.handleOperation(operation);
+        if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            log.error("Error sending command to state machine. Error: " + res.getMessages());
+        }
+    }
+
 }

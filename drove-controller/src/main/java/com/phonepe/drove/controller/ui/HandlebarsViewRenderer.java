@@ -24,6 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import io.dropwizard.views.View;
 import io.dropwizard.views.ViewRenderer;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ import java.util.concurrent.ExecutionException;
  * A {@link ViewRenderer} which renders Handlebars ({@code .hbs}) templates.
  */
 @Slf4j
+@IgnoreInJacocoGeneratedReport
 public class HandlebarsViewRenderer implements ViewRenderer {
     /**
      * For use by Handlebars.java internally.

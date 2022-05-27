@@ -5,11 +5,9 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
-import com.phonepe.drove.common.model.controller.ExecutorStateReportMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.event.DroveInstanceFailedEvent;
-import com.phonepe.drove.controller.statedb.ExecutorStateDB;
+import com.phonepe.drove.controller.event.events.DroveInstanceFailedEvent;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -20,14 +18,11 @@ import java.util.Collections;
  */
 @Slf4j
 public class ControllerMessageHandler implements ControllerMessageVisitor<MessageResponse> {
-    private final ExecutorStateDB executorStateDB;
     private final StateUpdater stateUpdater;
     private final DroveEventBus droveEventBus;
 
     public ControllerMessageHandler(
-            ExecutorStateDB executorStateDB,
             StateUpdater stateUpdater, DroveEventBus droveEventBus) {
-        this.executorStateDB = executorStateDB;
         this.stateUpdater = stateUpdater;
         this.droveEventBus = droveEventBus;
     }
@@ -46,16 +41,6 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
                                                                instanceInfo.getErrorMessage()));
         }
         return new MessageResponse(instanceStateReport.getHeader(),
-                                   status
-                                   ? MessageDeliveryStatus.ACCEPTED
-                                   : MessageDeliveryStatus.FAILED);
-    }
-
-    @Override
-    public MessageResponse visit(ExecutorStateReportMessage executorStateReport) {
-        val executorState = executorStateReport.getExecutorState();
-        val status = executorStateDB.updateExecutorState(executorState.getExecutorId(), executorState);
-        return new MessageResponse(executorStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
                                    : MessageDeliveryStatus.FAILED);

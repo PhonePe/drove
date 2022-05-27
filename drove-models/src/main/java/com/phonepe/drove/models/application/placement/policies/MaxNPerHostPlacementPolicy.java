@@ -21,8 +21,8 @@ import javax.validation.constraints.Min;
 @Jacksonized
 @Builder
 public class MaxNPerHostPlacementPolicy extends PlacementPolicy {
-    @Min(1)
-    @Max(32)
+    @Min(value = 1, message = "- Min one hose needs to be specified")
+    @Max(value = 64, message = "- Maximum 64 containers can be specified per host")
     int max;
 
     public MaxNPerHostPlacementPolicy(int max) {

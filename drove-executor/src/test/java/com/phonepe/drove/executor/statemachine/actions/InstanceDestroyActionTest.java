@@ -1,9 +1,9 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.simplefsm.StateData;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 

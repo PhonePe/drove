@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -16,6 +14,7 @@ import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
@@ -27,6 +26,7 @@ import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +36,8 @@ import javax.inject.Inject;
 import java.net.ServerSocket;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.phonepe.drove.common.CommonUtils.hostname;
 
 /**
  *
@@ -105,7 +107,7 @@ public class InstanceRunAction extends InstanceAction {
             val exposedPorts = new ArrayList<ExposedPort>();
             val env = new ArrayList<String>();
             val portMappings = new HashMap<String, InstancePort>();
-            val hostName = CommonUtils.hostname();
+            val hostName = hostname();
             env.add("HOST=" + hostName);
             instanceSpec.getPorts().forEach(
                     portSpec -> {
@@ -142,6 +144,13 @@ public class InstanceRunAction extends InstanceAction {
                                .stream()
                                .map(e -> e.getKey() + "=" + e.getValue())
                                .toList());
+            instanceSpec.getExecutable().accept((ExecutableTypeVisitor<Void>) dockerCoordinates -> {
+                env.add("DROVE_CONTAINER_ID=" + dockerCoordinates.getUrl());
+                return null;
+            });
+            env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());
+            env.add("DROVE_EXECUTOR_HOST=" + hostname());
+
             log.debug("Environment: {}", env);
             val id = containerCmd
                     .withHostConfig(hostConfig)
@@ -156,7 +165,7 @@ public class InstanceRunAction extends InstanceAction {
             client.startContainerCmd(id)
                     .exec();
             client.logContainerCmd(id)
-                    .withTail(0)
+                    .withTailAll()
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
@@ -170,6 +179,11 @@ public class InstanceRunAction extends InstanceAction {
             log.error("Error creating container: ", e);
             return StateData.errorFrom(currentState, InstanceState.START_FAILED, e.getMessage());
         }
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.START_FAILED;
     }
 
     private ExecutorInstanceInfo instanceInfo(
@@ -187,7 +201,9 @@ public class InstanceRunAction extends InstanceAction {
                 new LocalInstanceInfo(hostName, portMappings),
                 resources,
                 Collections.emptyMap(),
-                null == oldData ? new Date() : oldData.getCreated(),
+                null == oldData
+                ? new Date()
+                : oldData.getCreated(),
                 new Date());
     }
 

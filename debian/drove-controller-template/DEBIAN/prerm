@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# SystemD
+if which systemctl >/dev/null; then
+    echo "Removing SystemD service: drove-controller"
+    systemctl stop "drove-controller"
+    systemctl disable "drove-controller"
+    systemctl daemon-reload
+    exit 0
+fi
+
+# Upstart
+if which initctl >/dev/null; then
+    echo "Removing Upstart service: drove-controller"
+    initctl stop "drove-controller"
+    initctl reload-configuration
+    exit 0
+fi
+
+# SystemV
+if which invoke-rc.d >/dev/null; then
+    echo "Removing SystemV service: drove-controller"
+    invoke-rc.d "drove-controller" stop
+    update-rc.d "drove-controller" remove
+    exit 0
+fi
+
+echo "Unable to find supported init system."
+exit 1

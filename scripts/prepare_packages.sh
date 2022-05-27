@@ -1,7 +1,7 @@
 #! /bin/bash
 
 pushd ..
-mvn clean package -DskipTests
+mvn package -DskipTests
 popd
 
 mkdir packages

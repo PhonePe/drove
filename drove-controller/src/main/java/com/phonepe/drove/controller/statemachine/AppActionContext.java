@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.statemachine;
 
-import com.phonepe.drove.common.ActionContext;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import io.appform.simplefsm.ActionContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

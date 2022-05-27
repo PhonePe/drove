@@ -3,13 +3,13 @@ package com.phonepe.drove.controller.engine;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
-import com.phonepe.drove.common.ActionFactory;
-import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import io.appform.simplefsm.ActionFactory;
+import io.appform.simplefsm.Transition;
 
 /**
  *

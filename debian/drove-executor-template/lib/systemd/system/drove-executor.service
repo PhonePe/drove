@@ -1,0 +1,12 @@
+[Unit]
+Description=drove-executor
+
+[Service]
+ExecStart=/usr/bin/drove-executor
+Restart=always
+OOMScoreAdjust=-1000
+User=drove
+Group=drove
+
+[Install]
+WantedBy=multi-user.target

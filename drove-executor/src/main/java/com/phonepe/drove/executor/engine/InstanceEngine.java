@@ -1,7 +1,6 @@
 package com.phonepe.drove.executor.engine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
@@ -19,6 +18,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingParallelSignal;
+import io.appform.simplefsm.StateData;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -30,8 +30,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
+import static com.phonepe.drove.models.instance.InstanceState.LOST;
+import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
 
 /**
  *
@@ -69,6 +72,14 @@ public class InstanceEngine implements Closeable {
         return stateMachines.containsKey(instanceId);
     }
 
+    public Set<String> instanceIds(final Set<InstanceState> matchingStates) {
+        return stateMachines.entrySet()
+                .stream()
+                .filter(e -> matchingStates.contains(e.getValue().getStateMachine().getCurrentState().getState()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
     public boolean startInstance(final InstanceSpec spec) {
         val currDate = new Date();
         return registerInstance(spec.getInstanceId(),
@@ -103,7 +114,14 @@ public class InstanceEngine implements Closeable {
             MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
             InstanceState state = null;
             do {
-                state = stateMachine.execute();
+                try {
+                    state = stateMachine.execute();
+                }
+                catch (Exception e) {
+                    state = LOST;
+                    log.error("Error in state machine execution: {}", e.getMessage(), e);
+                    handleStateChange(StateData.errorFrom(stateMachine.getCurrentState(), LOST, "SM Execution error: " + e.getMessage()));
+                }
             } while (!state.isTerminal());
             log.info(FINALIZE_SESSION_MARKER, "Completed");
             MDC.remove("instanceLogId");
@@ -118,6 +136,12 @@ public class InstanceEngine implements Closeable {
         val info = stateMachines.get(instanceId);
         if (null == info) {
             log.error("No such instance: {}. Nothing will be stopped", instanceId);
+            return false;
+        }
+        val currState = info.getStateMachine().getCurrentState().getState();
+        if(!RUNNING_STATES.contains(currState)) {
+            log.error("Cannot stop {} as it is not in active running state. Current state: {} Acceptable states: {}",
+                      instanceId, currState, RUNNING_STATES);
             return false;
         }
         info.getStateMachine().stop();

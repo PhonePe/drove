@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.codahale.metrics.MetricRegistry;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.MemoryStatsConfig;
 import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
@@ -29,9 +30,9 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
+import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
 
 /**
  *
@@ -83,8 +84,7 @@ public class ContainerStatsObserver implements Managed {
                         log.info("Starting to track instance: {}", instanceInfo.getInstanceId());
                     }
                     else {
-                        if (EnumSet.of(InstanceState.DEPROVISIONING, InstanceState.STOPPED, InstanceState.UNREACHABLE)
-                                .contains(instanceInfo.getState())) {
+                        if (!ACTIVE_STATES.contains(instanceInfo.getState())) {
                             unregisterTrackedContainer(instanceInfo.getInstanceId());
                             log.info("Stopped tracking instance: {}", instanceInfo.getInstanceId());
                         }
@@ -228,8 +228,20 @@ public class ContainerStatsObserver implements Managed {
             try {
                 instanceData.getDataReceived().dispatch(callback.awaitResult());
             }
+            catch (NotFoundException e) {
+                log.warn("Looks like the container {}/{} being tracked is not available anymore. Time to disconnect..",
+                         instanceData.getInstanceInfo().getAppId(), instanceId);
+                unregisterTrackedContainer(instanceId);
+                instances.remove(instanceId);
+            }
             catch (RuntimeException e) {
-                log.error("Error running ", e);
+                if(null != e.getCause() && e.getCause() instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    log.info("Stats call interrupted");
+                }
+                else {
+                    log.error("Error running ", e);
+                }
             }
             finally {
                 try {
@@ -279,7 +291,7 @@ public class ContainerStatsObserver implements Managed {
             if (null != data.getNetworks()) {
                 val networkData
                         = Objects.<Map<String, StatisticNetworksConfig>>requireNonNullElse(
-                                data.getNetworks(), Collections.emptyMap());
+                        data.getNetworks(), Collections.emptyMap());
                 networkStatsReceived.dispatch(new SignalData<>(instanceInfo,
                                                                networkData
                                                                        .values()

@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.managed;
 import com.github.dockerjava.api.model.HostConfig;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
@@ -10,8 +11,6 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -46,9 +45,8 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @SneakyThrows
     void testRecoverNonDroveContainers() {
         var containerId = "";
-        try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(UUID.randomUUID().toString())) {
-            containerId = createCmd.withImage(ExecutorTestingUtils.IMAGE_NAME)
-                    .withName("test-container")
+        try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(CommonTestUtils.IMAGE_NAME)) {
+            containerId = createCmd.withName("test-container")
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec()
                     .getId();

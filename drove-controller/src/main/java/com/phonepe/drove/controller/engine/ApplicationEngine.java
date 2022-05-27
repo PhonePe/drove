@@ -1,7 +1,5 @@
 package com.phonepe.drove.controller.engine;
 
-import com.phonepe.drove.common.ActionFactory;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
@@ -21,6 +19,9 @@ import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.signals.signals.ConsumingFireForgetSignal;
+import io.appform.simplefsm.ActionFactory;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -48,20 +49,31 @@ public class ApplicationEngine {
     private final InstanceInfoDB instanceInfoDB;
     private final CommandValidator commandValidator;
     private final DroveEventBus droveEventBus;
+    private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
+    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted = ConsumingFireForgetSignal.<ApplicationStateMachineExecutor>builder()
+            .executorService(monitorExecutor)
+            .build();
 
     @Inject
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
-            InstanceInfoDB instanceInfoDB, CommandValidator commandValidator,
-            DroveEventBus droveEventBus) {
+            InstanceInfoDB instanceInfoDB,
+            CommandValidator commandValidator,
+            DroveEventBus droveEventBus,
+            ControllerRetrySpecFactory retrySpecFactory) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.commandValidator = commandValidator;
         this.droveEventBus = droveEventBus;
+        this.retrySpecFactory = retrySpecFactory;
+        this.stateMachineCompleted.connect(stoppedExecutor -> {
+            stoppedExecutor.stop();
+            log.info("State machine executor is done for {}", stoppedExecutor.getAppId());
+        });
     }
 
     @MonitoredFunction
@@ -71,7 +83,9 @@ public class ApplicationEngine {
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             stateMachines.computeIfAbsent(appId, id -> createApp(operation));
             stateMachines.computeIfPresent(appId, (id, monitor) -> {
-                monitor.notifyUpdate(translateOp(operation));
+                if(!monitor.notifyUpdate(translateOp(operation))) {
+                    log.warn("Update could not be sent");
+                }
                 return monitor;
             });
         }
@@ -121,16 +135,20 @@ public class ApplicationEngine {
                 });
     }
 
+    boolean exists(final String appId) {
+        return stateMachines.containsKey(appId);
+    }
+
     private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {
         //TODO::Check operation
         Objects.requireNonNull(operation, "Operation cannot be null");
-        return commandValidator.validate(operation);
+        return commandValidator.validate(this, operation);
     }
 
     private ApplicationOperation translateOp(final ApplicationOperation original) {
         return original.accept(new ApplicationOperationVisitorAdapter<>(original) {
             @Override
-            public ApplicationOperation visit(ApplicationDeployOperation deploy) {
+            public ApplicationOperation visit(ApplicationStartInstancesOperation deploy) {
                 val appId = deploy.getAppId();
                 log.info("Translating deploy op to scaling op for {}", appId);
                 val existing = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
@@ -165,13 +183,14 @@ public class ApplicationEngine {
                 val monitor = new ApplicationStateMachineExecutor(
                         appId,
                         stateMachine,
-                        monitorExecutor);
+                        monitorExecutor,
+                        retrySpecFactory,
+                        stateMachineCompleted);
                 monitor.start();
                 return monitor;
             }
         });
     }
-
 
     private void handleAppStateUpdate(
             String appId,
@@ -181,7 +200,7 @@ public class ApplicationEngine {
         log.info("App state: {}", state);
         if (state.equals(ApplicationState.SCALING_REQUESTED)) {
             val scalingOperation = context.getUpdate()
-                    .filter(op -> op.getType().equals(ApplicationOperationType.SCALE))
+                    .filter(op -> op.getType().equals(ApplicationOperationType.SCALE_INSTANCES))
                     .map(op -> {
                         val scaleOp = (ApplicationScaleOperation) op;
                         stateDB.updateInstanceCount(scaleOp.getAppId(), scaleOp.getRequiredInstances());
@@ -200,16 +219,15 @@ public class ApplicationEngine {
                     });
             val res = handleOperation(scalingOperation);
             if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-                log.error("Error sending command to state machine. Error: " + res.getMessage());
+                log.error("Error sending command to state machine. Error: " + res.getMessages());
             }
         }
         else {
             if (state.equals(ApplicationState.DESTROYED)) {
                 stateMachines.computeIfPresent(appId, (id, sm) -> {
-                    sm.stop();
                     stateDB.deleteApplicationState(appId);
                     instanceInfoDB.deleteAllInstancesForApp(appId);
-                    log.info("State machine stopped for: {}", appId);
+                    log.info("Application state machine and instance data cleaned up for: {}", appId);
                     return null;
                 });
             }

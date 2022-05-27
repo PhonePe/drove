@@ -1,8 +1,9 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.Job;
@@ -22,6 +23,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -44,19 +46,27 @@ public class ScaleAppAction extends AppAsyncAction {
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
+    private final ControllerRetrySpecFactory retrySpecFactory;
+    private final InstanceIdGenerator instanceIdGenerator;
 
     @Inject
     public ScaleAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
-            InstanceScheduler scheduler, ControllerCommunicator communicator) {
+            InstanceInfoDB instanceInfoDB,
+            ClusterResourcesDB clusterResourcesDB,
+            InstanceScheduler scheduler,
+            ControllerCommunicator communicator,
+            ControllerRetrySpecFactory retrySpecFactory,
+            InstanceIdGenerator instanceIdGenerator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
         this.communicator = communicator;
+        this.retrySpecFactory = retrySpecFactory;
+        this.instanceIdGenerator = instanceIdGenerator;
     }
 
     @Override
@@ -91,7 +101,9 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                                scheduler,
                                                                                                                instanceInfoDB,
                                                                                                                communicator,
-                                                                                                               schedulingSessionId))
+                                                                                                               schedulingSessionId,
+                                                                                                               retrySpecFactory,
+                                                                                                               instanceIdGenerator))
                                                        .toList())
                                        .build());
         }
@@ -121,7 +133,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                        scaleOp.getOpSpec(),
                                                                                                        instanceInfoDB,
                                                                                                        clusterResourcesDB,
-                                                                                                       communicator))
+                                                                                                       communicator,
+                                                                                                       retrySpecFactory))
                                                    .toList())
                                            .build());
             }

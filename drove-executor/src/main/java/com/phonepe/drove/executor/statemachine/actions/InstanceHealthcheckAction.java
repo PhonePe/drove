@@ -1,14 +1,14 @@
 package com.phonepe.drove.executor.statemachine.actions;
 
-import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
@@ -43,8 +43,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
-        val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheckSpec);
-        log.info("Starting healthcheck");
+        val checker = ExecutorUtils.createChecker(currentState.getData(), healthcheckSpec);
         try {
             val currentContext = MDC.getCopyOfContextMap();
             val mdc = null != currentContext
@@ -63,7 +62,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
             monitor();
             if (stop.get()) {
                 log.info("Stopping health-checks");
-                return StateData.create(InstanceState.STOPPING, currentState.getData());
+                return StateData.from(currentState, InstanceState.STOPPING);
             }
             val result = currentResult.get();
             if (null == result || result.getStatus().equals(CheckResult.Status.UNHEALTHY)) {
@@ -76,13 +75,18 @@ public class InstanceHealthcheckAction extends InstanceAction {
             }
         }
         catch (Exception e) {
-            log.info("Error occurred: ", e);
+            log.error("Error occurred: ", e);
         }
         finally {
             stopJob();
             checkLock.unlock();
         }
         return StateData.errorFrom(currentState, InstanceState.UNHEALTHY, "Node is unhealthy");
+    }
+
+    @Override
+    protected InstanceState defaultErrorState() {
+        return InstanceState.UNHEALTHY;
     }
 
     private void monitor() {
@@ -166,7 +170,12 @@ public class InstanceHealthcheckAction extends InstanceAction {
                     attemptCount++;
                     return;
                 }
-                log.info("Health check results: {}", result);
+                if(result.getStatus().equals(CheckResult.Status.UNHEALTHY)) {
+                    log.warn("Healthcheck returned unhealthy. {}", result);
+                }
+                else {
+                    log.debug("Health check results: {}", result);
+                }
                 currentResult.set(result);
             }
             catch (Exception e) {

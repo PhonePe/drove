@@ -35,7 +35,7 @@ public class ApplicationScaleOperation extends ApplicationOperation {
     ClusterOpSpec opSpec;
 
     public ApplicationScaleOperation(String appId, long requiredInstances, ClusterOpSpec opSpec) {
-        super(ApplicationOperationType.SCALE);
+        super(ApplicationOperationType.SCALE_INSTANCES);
         this.appId = appId;
         this.requiredInstances = requiredInstances;
         this.opSpec = opSpec;

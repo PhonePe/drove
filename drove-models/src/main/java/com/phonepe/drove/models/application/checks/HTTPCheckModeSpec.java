@@ -18,8 +18,12 @@ import java.util.Set;
 @ToString(callSuper = true)
 public class HTTPCheckModeSpec extends CheckModeSpec {
 
-    @NotEmpty
-    String protocol;
+    public enum Protocol {
+        HTTP,
+        HTTPS
+    }
+
+    Protocol protocol;
     @NotEmpty
     String portName;
     @NotEmpty
@@ -33,7 +37,7 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
     Duration connectionTimeout;
 
     public HTTPCheckModeSpec(
-            String protocol,
+            Protocol protocol,
             String portName,
             String path,
             HTTPVerb verb,

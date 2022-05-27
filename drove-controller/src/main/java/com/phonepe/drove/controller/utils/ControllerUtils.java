@@ -1,7 +1,10 @@
 package com.phonepe.drove.controller.utils;
 
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -16,11 +19,14 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 
-import java.time.Duration;
+import javax.ws.rs.core.Response;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 
 /**
  *
@@ -29,6 +35,7 @@ import java.util.Set;
 @UtilityClass
 public class ControllerUtils {
 
+    private static final Set<StateCheckStatus> CHECK_COMPLETED_STATES = EnumSet.of(MISNMATCH_NONRECOVERABLE, MATCH);
     public static String appId(ApplicationSpec applicationSpec) {
         return applicationSpec.getName() + "-" + applicationSpec.getVersion();
     }
@@ -38,16 +45,14 @@ public class ControllerUtils {
             ClusterOpSpec clusterOpSpec,
             String appId,
             String instanceId,
-            InstanceState required) {
-        val retryPolicy = new RetryPolicy<Boolean>()
-                .withDelay(Duration.ofSeconds(3))
-                .withMaxAttempts(50)
-                .withMaxDuration(Duration.ofMillis(clusterOpSpec.getTimeout().toMilliseconds()))
-                .handle(Exception.class)
-                .handleResultIf(r -> !r);
-
+            InstanceState required,
+            ControllerRetrySpecFactory retrySpecFactory) {
+        val retryPolicy =
+                CommonUtils.<StateCheckStatus>policy(
+                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        MISMATCH::equals);
         try {
-            val status = Failsafe.with(retryPolicy)
+            val status = Failsafe.with(List.of(retryPolicy))
                     .onComplete(e -> {
                         val failure = e.getFailure();
                         if (null != failure) {
@@ -56,7 +61,7 @@ public class ControllerUtils {
                     })
                     .get(() -> ensureInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
                                                    required));
-            if (status) {
+            if (status.equals(MATCH)) {
                 return true;
             }
             else {
@@ -65,8 +70,14 @@ public class ControllerUtils {
                     log.error("No instance info found at all for: {}/{}", appId, instanceId);
                 }
                 else {
-                    log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
-                              appId, instanceId, curr.getState(), curr);
+                    if(status.equals(MISMATCH)) {
+                        log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                                  appId, instanceId, curr.getState(), curr);
+                    }
+                    else {
+                        log.error("Looks like {}/{} has failed permanently and reached state: {}. Detailed instance data: {}}",
+                                  appId, instanceId, curr.getState(), curr);
+                    }
                 }
             }
         }
@@ -95,17 +106,23 @@ public class ControllerUtils {
         return instanceInfoDB.instance(appId, instanceId).orElse(null);
     }
 
-    private static boolean ensureInstanceState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
-        if (null == instanceInfo) {
-            return false;
+    private static StateCheckStatus ensureInstanceState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
+        if (null != instanceInfo) {
+            val currState = instanceInfo.getState();
+            log.trace("Instance state for {}/{}: {}",
+                      instanceInfo.getAppId(), instanceInfo.getInstanceId(), currState);
+            if (currState == instanceState) {
+                log.info("Instance {}/{} reached desired state: {}",
+                         instanceInfo.getAppId(),
+                         instanceInfo.getInstanceId(),
+                         instanceState);
+                return MATCH;
+            }
+            if(currState.isTerminal()) { //Useless to wait if it has died anyways
+                return MISNMATCH_NONRECOVERABLE;
+            }
         }
-        log.trace("Instance state for {}/{}: {}",
-                  instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceInfo.getState());
-        if(instanceInfo.getState() == instanceState) {
-            log.info("Instance {}/{} reached desired state: {}", instanceInfo.getAppId(), instanceInfo.getInstanceId(), instanceState);
-            return true;
-        }
-        return false;
+        return MISMATCH;
     }
 
     public static String appId(final ApplicationOperation operation) {
@@ -121,7 +138,7 @@ public class ControllerUtils {
             }
 
             @Override
-            public String visit(ApplicationDeployOperation deploy) {
+            public String visit(ApplicationStartInstancesOperation deploy) {
                 return deploy.getAppId();
             }
 
@@ -223,5 +240,15 @@ public class ControllerUtils {
                                 .sum();
                     }
                 });
+    }
+
+    public static <T> Response ok(final T data) {
+        return Response.ok(ApiResponse.success(data)).build();
+    }
+
+    public static <T> Response badRequest(T data, String message) {
+        return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ApiResponse.failure(data, message))
+                .build();
     }
 }

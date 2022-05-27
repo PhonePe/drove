@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.controller.statemachine.AppAction;
 import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -9,6 +8,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -57,7 +57,7 @@ public class AppOperationRouterAction extends AppAction {
             }
 
             @Override
-            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationDeployOperation deploy) {
+            public Optional<StateData<ApplicationState, ApplicationInfo>> visit(ApplicationStartInstancesOperation deploy) {
                 throw new IllegalStateException("DEPLOY operations should have been changed to scale operation");
             }
 

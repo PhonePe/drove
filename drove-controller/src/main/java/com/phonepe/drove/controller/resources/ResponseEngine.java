@@ -38,20 +38,7 @@ import java.util.stream.Collectors;
 @Singleton
 @Slf4j
 public class ResponseEngine {
-    private static final EnumSet<ApplicationState> ACTIVE_APP_STATES = EnumSet.of(ApplicationState.RUNNING,
-                                                                                  ApplicationState.OUTAGE_DETECTED,
-                                                                                  ApplicationState.SCALING_REQUESTED,
-                                                                                  ApplicationState.STOP_INSTANCES_REQUESTED,
-                                                                                  ApplicationState.REPLACE_INSTANCES_REQUESTED,
-                                                                                  ApplicationState.DESTROY_REQUESTED);
 
-    private static final EnumSet<InstanceState> ACTIVE_INSTANCE_STATES = EnumSet.of(InstanceState.PENDING,
-                                                                                    InstanceState.PROVISIONING,
-                                                                                    InstanceState.STARTING,
-                                                                                    InstanceState.UNHEALTHY,
-                                                                                    InstanceState.HEALTHY,
-                                                                                    InstanceState.DEPROVISIONING,
-                                                                                    InstanceState.STOPPING);
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
@@ -94,7 +81,7 @@ public class ResponseEngine {
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                          ? ACTIVE_INSTANCE_STATES
+                          ? InstanceState.ACTIVE_STATES
                           : state;
         return ApiResponse.success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
                                            .stream()
@@ -108,17 +95,15 @@ public class ResponseEngine {
                 .orElseGet(() -> ApiResponse.failure("No such instance"));
     }
 
-    public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId) {
-        return ApiResponse.success(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)
-                                           .stream()
-                                           .toList());
+    public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId, int start, int length) {
+        return ApiResponse.success(instanceInfoDB.oldInstances(appId, start, length));
     }
 
     public ApiResponse<ClusterSummary> cluster() {
         var liveApps = 0;
         var allApps = 0;
         for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
-            liveApps += ACTIVE_APP_STATES.contains(engine.applicationState(appInfo.getAppId())
+            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(engine.applicationState(appInfo.getAppId())
                                                            .orElse(ApplicationState.FAILED))
                         ? 1
                         : 0;
@@ -268,12 +253,13 @@ public class ResponseEngine {
                                                                        .stream()
                                                                        .mapToLong(v -> v)
                                                                        .sum(),
-                                                               executorData.getTags()));
+                                                               executorData.getTags(),
+                                                               executorData.isBlacklisted()));
                     }
                 });
     }
 
-    public ApiResponse<com.phonepe.drove.models.info.nodedata.ExecutorNodeData> executorDetails(String executorId) {
+    public ApiResponse<ExecutorNodeData> executorDetails(String executorId) {
         return clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
                 .map(ApiResponse::success)

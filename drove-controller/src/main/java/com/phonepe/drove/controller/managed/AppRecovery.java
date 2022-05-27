@@ -21,7 +21,6 @@ import javax.inject.Singleton;
 @Singleton
 public class AppRecovery implements Managed {
 
-    private final LeadershipEnsurer leadershipEnsurer;
     private final ApplicationEngine applicationEngine;
     private final ApplicationStateDB applicationStateDB;
 
@@ -30,10 +29,19 @@ public class AppRecovery implements Managed {
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
             ApplicationStateDB applicationStateDB) {
-        this.leadershipEnsurer = leadershipEnsurer;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChange);
+    }
+
+    @Override
+    public void start() {
+        log.info("Application recover manager started");
+    }
+
+    @Override
+    public void stop() {
+        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
     private void handleLeadershipChange(boolean isLeader) {
@@ -46,7 +54,7 @@ public class AppRecovery implements Managed {
                                                                                                    applicationInfo.getInstances(),
                                                                                                    ClusterOpSpec.DEFAULT));
                         if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-                            log.error("Error sending command to state machine. Error: " + res.getMessage());
+                            log.error("Error sending command to state machine. Error: " + res.getMessages());
                         }
                     });
         }
@@ -54,15 +62,5 @@ public class AppRecovery implements Managed {
             log.info("This controller is not the leader anymore. All executors will be stopped");
             applicationEngine.stopAll();
         }
-    }
-
-    @Override
-    public void start() throws Exception {
-
-    }
-
-    @Override
-    public void stop() throws Exception {
-        log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 }

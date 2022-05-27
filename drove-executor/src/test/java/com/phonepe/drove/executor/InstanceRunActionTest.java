@@ -3,7 +3,6 @@ package com.phonepe.drove.executor;
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.StateData;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -19,6 +18,7 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import io.appform.simplefsm.StateData;
 import io.dropwizard.util.Duration;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;
@@ -60,7 +60,7 @@ class InstanceRunActionTest extends AbstractTestBase {
                                             null);
         val executorId = CommonUtils.executorId(3000);
         val ctx = new InstanceActionContext(executorId, instanceSpec, ExecutorTestingUtils.DOCKER_CLIENT);
-        new ExecutableFetchAction().execute(ctx, StateData.create(InstanceState.PENDING, null));
+        new ExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new InstanceRunAction(new LogBus(),
                                         new ResourceConfig())

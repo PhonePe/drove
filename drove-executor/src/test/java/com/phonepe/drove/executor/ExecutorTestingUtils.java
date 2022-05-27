@@ -8,6 +8,7 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.google.common.collect.ImmutableList;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
@@ -21,6 +22,7 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
+import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -54,7 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Slf4j
 @UtilityClass
 public class ExecutorTestingUtils {
-    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.3";
     public static final String EXECUTOR_ID = "TEST_EXEC";
     public static final DockerClient DOCKER_CLIENT
             = DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder().build(),
@@ -63,7 +64,7 @@ public class ExecutorTestingUtils {
                                                    .build());
 
     public static InstanceSpec testSpec() {
-        return testSpec(ExecutorTestingUtils.IMAGE_NAME);
+        return testSpec(CommonTestUtils.IMAGE_NAME);
     }
 
     public static InstanceSpec testSpec(final String imageName) {
@@ -75,7 +76,7 @@ public class ExecutorTestingUtils {
                                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                 Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                 List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
-                                new CheckSpec(new HTTPCheckModeSpec("http",
+                                new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                                                     "main",
                                                                     "/",
                                                                     HTTPVerb.GET,
@@ -86,7 +87,7 @@ public class ExecutorTestingUtils {
                                               Duration.seconds(3),
                                               3,
                                               Duration.seconds(0)),
-                                new CheckSpec(new HTTPCheckModeSpec("http",
+                                new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                                                     "main",
                                                                     "/",
                                                                     HTTPVerb.GET,
@@ -99,7 +100,14 @@ public class ExecutorTestingUtils {
                                               Duration.seconds(1)),
                                 LocalLoggingSpec.DEFAULT,
                                 Collections.emptyMap(),
-                                null);
+                                new PreShutdownSpec(List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                                                                  "main",
+                                                                                  "/",
+                                                                                  HTTPVerb.GET,
+                                                                                  Collections.singleton(200),
+                                                                                  "",
+                                                                                  Duration.seconds(1))),
+                                                    Duration.seconds(1)));
     }
 
     public static ExecutorAddress localAddress() {
@@ -107,7 +115,7 @@ public class ExecutorTestingUtils {
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
-        return createExecutorInfo(testSpec(IMAGE_NAME), wm);
+        return createExecutorInfo(testSpec(CommonTestUtils.IMAGE_NAME), wm);
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(InstanceSpec spec, WireMockRuntimeInfo wm) {
@@ -137,7 +145,7 @@ public class ExecutorTestingUtils {
     }
 
     public static HTTPCheckModeSpec httpCheck(HTTPVerb verb, String body) {
-        return new HTTPCheckModeSpec("http",
+        return new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                      "main",
                                      "/",
                                      verb,
@@ -206,7 +214,7 @@ public class ExecutorTestingUtils {
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT
-                .createContainerCmd(IMAGE_NAME)
+                .createContainerCmd(CommonTestUtils.IMAGE_NAME)
                 .withName("RecoveryTest")
                 .withLabels(Map.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
                                    spec.getInstanceId(),

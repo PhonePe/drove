@@ -1,17 +1,19 @@
 package com.phonepe.drove.executor.statemachine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.StateData;
-import com.phonepe.drove.common.StateMachine;
-import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.actions.*;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.simplefsm.StateData;
+import io.appform.simplefsm.StateMachine;
+import io.appform.simplefsm.Transition;
 import lombok.NonNull;
 
 import java.util.List;
+
+import static com.phonepe.drove.models.instance.InstanceState.*;
 
 /**
  *
@@ -19,55 +21,53 @@ import java.util.List;
 public class InstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext, InstanceAction> {
     private static final List<Transition<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext, InstanceAction>> transitions
             = List.of(
-            new Transition<>(InstanceState.PENDING,
+            new Transition<>(PENDING,
                              InstanceSpecValidator.class,
-                             InstanceState.PROVISIONING,
-                             InstanceState.STOPPING),
-            new Transition<>(InstanceState.PROVISIONING,
+                             PROVISIONING,
+                             STOPPING),
+            new Transition<>(PROVISIONING,
                              ExecutableFetchAction.class,
-                             InstanceState.STARTING,
-                             InstanceState.PROVISIONING_FAILED,
-                             InstanceState.STOPPING),
-            new Transition<>(InstanceState.STARTING,
+                             STARTING,
+                             PROVISIONING_FAILED),
+            new Transition<>(STARTING,
                              InstanceRunAction.class,
-                             InstanceState.UNREADY,
-                             InstanceState.START_FAILED,
-                             InstanceState.STOPPING),
-            new Transition<>(InstanceState.UNKNOWN,
+                             UNREADY,
+                             START_FAILED),
+            new Transition<>(UNKNOWN,
                              InstanceRecoveryAction.class,
-                             InstanceState.UNREADY,
-                             InstanceState.STOPPED),
-            new Transition<>(InstanceState.UNREADY,
+                             UNREADY,
+                             STOPPED),
+            new Transition<>(UNREADY,
                              InstanceReadinessCheckAction.class,
-                             InstanceState.READY,
-                             InstanceState.READINESS_CHECK_FAILED,
-                             InstanceState.STOPPING),
-            new Transition<>(InstanceState.READY,
+                             READY,
+                             READINESS_CHECK_FAILED,
+                             STOPPING),
+            new Transition<>(READY,
                              InstanceSingularHealthCheckAction.class,
-                             InstanceState.HEALTHY,
-                             InstanceState.STOPPING),
-            new Transition<>(InstanceState.HEALTHY,
+                             HEALTHY,
+                             STOPPING),
+            new Transition<>(HEALTHY,
                              InstanceHealthcheckAction.class,
-                             InstanceState.UNHEALTHY,
-                             InstanceState.STOPPING),
-            new Transition<>(InstanceState.STOPPING,
+                             UNHEALTHY,
+                             STOPPING),
+            new Transition<>(STOPPING,
                              InstanceStopAction.class,
-                             InstanceState.DEPROVISIONING),
-            new Transition<>(InstanceState.UNHEALTHY,
+                             DEPROVISIONING),
+            new Transition<>(UNHEALTHY,
                              InstanceStopAction.class,
-                             InstanceState.DEPROVISIONING),
-            new Transition<>(InstanceState.PROVISIONING_FAILED,
+                             DEPROVISIONING),
+            new Transition<>(PROVISIONING_FAILED,
                              InstanceDestroyAction.class,
-                             InstanceState.DEPROVISIONING),
-            new Transition<>(InstanceState.START_FAILED,
+                             DEPROVISIONING),
+            new Transition<>(START_FAILED,
                              InstanceDestroyAction.class,
-                             InstanceState.DEPROVISIONING),
-            new Transition<>(InstanceState.DEPROVISIONING,
+                             DEPROVISIONING),
+            new Transition<>(DEPROVISIONING,
                              ExecutableCleanupAction.class,
-                             InstanceState.STOPPED),
-            new Transition<>(InstanceState.READINESS_CHECK_FAILED,
+                             STOPPED),
+            new Transition<>(READINESS_CHECK_FAILED,
                              InstanceStopAction.class,
-                             InstanceState.DEPROVISIONING));
+                             DEPROVISIONING));
 
     public InstanceStateMachine(
             String executorId,

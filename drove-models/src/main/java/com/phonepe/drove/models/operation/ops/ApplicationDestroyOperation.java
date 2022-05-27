@@ -21,7 +21,7 @@ import javax.validation.constraints.NotNull;
 @ToString(callSuper = true)
 @Jacksonized
 public class ApplicationDestroyOperation extends ApplicationOperation {
-    @NotEmpty
+    @NotEmpty()
     String appId;
 
     @NotNull

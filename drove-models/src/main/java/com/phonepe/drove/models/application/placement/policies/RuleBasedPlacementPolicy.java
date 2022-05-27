@@ -21,7 +21,7 @@ import javax.validation.constraints.NotEmpty;
 @Builder
 public class RuleBasedPlacementPolicy extends PlacementPolicy {
 
-    @NotEmpty
+    @NotEmpty(message = "- Specify a hope rule to select/reject node based")
     String rule;
 
     public RuleBasedPlacementPolicy(String rule) {

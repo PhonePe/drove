@@ -92,7 +92,7 @@ class SerTest {
                             "            \"portName\": \"main\",\n" +
                             "            \"mode\": \"ALL\"\n" +
                             "        },\n" +
-                            "        \"preShutdownHook\" :  {\n" +
+                            "        \"preShutdownHook\" :  [{\n" +
                             "                \"payload\": \"\",\n" +
                             "                \"verb\": \"GET\",\n" +
                             "                \"portName\": \"main\",\n" +
@@ -103,7 +103,7 @@ class SerTest {
                             "                \"protocol\": \"http\",\n" +
                             "                \"type\": \"HTTP\",\n" +
                             "                \"path\": \"/\"\n" +
-                            "            }\n" +
+                            "            }]\n" +
                             "    },\n" +
                             "    \"opSpec\": {\n" +
                             "        \"timeout\": \"5m\",\n" +

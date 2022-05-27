@@ -1,7 +1,9 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
-import com.phonepe.drove.common.StateData;
+import com.google.common.base.Strings;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.jobexecutor.Job;
@@ -20,6 +22,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.simplefsm.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -40,19 +43,27 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
+    private final ControllerRetrySpecFactory retrySpecFactory;
+    private final InstanceIdGenerator instanceIdGenerator;
 
     @Inject
     public ReplaceInstancesAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
-            InstanceScheduler scheduler, ControllerCommunicator communicator) {
+            InstanceInfoDB instanceInfoDB,
+            ClusterResourcesDB clusterResourcesDB,
+            InstanceScheduler scheduler,
+            ControllerCommunicator communicator,
+            ControllerRetrySpecFactory retrySpecFactory,
+            InstanceIdGenerator instanceIdGenerator) {
         super(jobExecutor);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
         this.communicator = communicator;
+        this.retrySpecFactory = retrySpecFactory;
+        this.instanceIdGenerator = instanceIdGenerator;
     }
 
     @Override
@@ -75,6 +86,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         }
         int parallelism = clusterOpSpec.getParallelism();
         val schedulingSessionId = UUID.randomUUID().toString();
+        context.setSchedulingSessionId(schedulingSessionId);
+
         log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}", instances.size(), parallelism, schedulingSessionId);
         val restartJobs = instances.stream()
                 .map(instanceInfo -> (Job<Boolean>) JobTopology.<Boolean>builder()
@@ -82,12 +95,14 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                                                                    clusterOpSpec,
                                                                    scheduler,
                                                                    instanceInfoDB, communicator,
-                                                                   schedulingSessionId),
+                                                                   schedulingSessionId,
+                                                                   retrySpecFactory,
+                                                                   instanceIdGenerator),
                                         new StopSingleInstanceJob(appId,
                                                                   instanceInfo.getInstanceId(),
                                                                   clusterOpSpec,
                                                                   instanceInfoDB, clusterResourcesDB,
-                                                                  communicator)))
+                                                                  communicator, retrySpecFactory)))
                         .build())
                 .toList();
         return Optional.of(JobTopology.<Boolean>builder()
@@ -104,13 +119,22 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             JobExecutionResult<Boolean> executionResult) {
         var errMsg = Boolean.TRUE.equals(executionResult.getResult())
                      ? ""
-                     : (executionResult.getFailure() == null
-                        ? "Execution failed"
-                        : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage());
+                     : errorMessage(executionResult);
         val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+            scheduler.finaliseSession(context.getSchedulingSessionId());
+            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
+            context.setSchedulingSessionId(null);
+        }
         if (count > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
+    }
+
+    private String errorMessage(JobExecutionResult<Boolean> executionResult) {
+        return executionResult.getFailure() == null
+               ? "Execution failed"
+               : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 }

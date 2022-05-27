@@ -1,11 +1,11 @@
 package com.phonepe.drove.executor;
 
 import com.google.inject.Injector;
-import com.phonepe.drove.common.Transition;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.simplefsm.Transition;
 
 /**
  *

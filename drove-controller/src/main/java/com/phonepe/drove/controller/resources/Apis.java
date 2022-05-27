@@ -24,7 +24,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.Collections;
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,22 +55,22 @@ public class Apis {
     @Path("/operations")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public ApiResponse<Map<String, String>> acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
+    public Response acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
         val res = engine.handleOperation(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-            return ApiResponse.success(Collections.singletonMap("appId", ControllerUtils.appId(operation)));
+            return ControllerUtils.ok(Map.of("appId", ControllerUtils.appId(operation)));
         }
-        return ApiResponse.failure(res.getMessage());
+        return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
     }
 
     @POST
     @Path("/operations/{appId}/cancel")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public ApiResponse<Void> cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
+    public Response cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
         return engine.cancelCurrentJob(appId)
-               ? ApiResponse.success(null)
-               : ApiResponse.failure("Current operation could not be cancelled");
+               ? ControllerUtils.ok(null)
+               : ControllerUtils.badRequest(null, "Current operation could not be cancelled");
     }
 
     @GET
@@ -112,9 +112,11 @@ public class Apis {
     @Path("/applications/{id}/instances/old")
     @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(
-            @PathParam("id") @NotEmpty final String appId) {
+            @PathParam("id") @NotEmpty final String appId,
+            @QueryParam("start") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("0") int start,
+            @QueryParam("length") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("65535") int length) {
 
-        return responseEngine.applicationOldInstances(appId);
+        return responseEngine.applicationOldInstances(appId, start, length);
     }
 
     @GET
@@ -167,4 +169,5 @@ public class Apis {
     public ApiResponse<String> ping() {
         return ApiResponse.success("pong");
     }
+
 }

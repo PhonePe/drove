@@ -19,4 +19,5 @@ public class ExecutorSummary {
     long freeMemory;
     long usedMemory;
     Set<String> tags;
+    boolean blacklisted;
 }

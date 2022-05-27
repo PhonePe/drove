@@ -54,6 +54,13 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
 
             @Provides
             @Singleton
+            public ExecutorOptions executorOptions() {
+                return new ExecutorOptions()
+                        .setCacheImages(true);
+            }
+
+            @Provides
+            @Singleton
             public InstanceEngine engine(
                     final Injector injector,
                     final ResourceManager resourceDB,

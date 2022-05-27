@@ -11,7 +11,7 @@ public interface ApplicationOperationVisitor<T> {
 
     T visit(ApplicationDestroyOperation destroy);
 
-    T visit(ApplicationDeployOperation deploy);
+    T visit(ApplicationStartInstancesOperation deploy);
 
     T visit(ApplicationStopInstancesOperation stopInstances);
 

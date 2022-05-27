@@ -20,6 +20,8 @@ import static org.awaitility.Awaitility.await;
  */
 @UtilityClass
 public class CommonTestUtils {
+    public static final String IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.3";
+
     public void delay(final Duration duration) {
         val wait = duration.toMillis();
         val end = new Date(new Date().getTime() + wait);
