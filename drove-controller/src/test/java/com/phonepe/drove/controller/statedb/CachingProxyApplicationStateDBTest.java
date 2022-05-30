@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.statedb;
 
+import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-class CachingProxyApplicationStateDBTest {
+class CachingProxyApplicationStateDBTest extends ControllerTestBase {
 
     @Test
     void testCaching() {

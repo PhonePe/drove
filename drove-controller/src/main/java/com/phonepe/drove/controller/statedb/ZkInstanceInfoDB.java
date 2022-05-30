@@ -11,7 +11,6 @@ import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +27,6 @@ import static com.phonepe.drove.models.instance.InstanceState.LOST;
 @Slf4j
 @Singleton
 public class ZkInstanceInfoDB implements InstanceInfoDB {
-    private static final Duration MAX_ACCEPTABLE_UPDATE_INTERVAL = Duration.ofMinutes(1);
 
 
     private static final String INSTANCE_STATE_PATH = "/instances";
@@ -51,19 +49,12 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
             int start,
             int size,
             boolean skipStaleCheck) {
-        if (skipStaleCheck) {
-            return listInstances(appId,
-                                 start,
-                                 size,
-                                 instanceInfo -> validStates.contains(instanceInfo.getState()));
-        }
-
-        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         return listInstances(appId,
                              start,
                              size,
                              instanceInfo -> validStates.contains(instanceInfo.getState())
-                                     && instanceInfo.getUpdated().after(validUpdateDate));
+                                     && (skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate)));
     }
 
     @Override

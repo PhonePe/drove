@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 
+import java.time.Duration;
 import java.util.*;
 
 import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
@@ -13,6 +14,8 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
  *
  */
 public interface InstanceInfoDB {
+
+    Duration MAX_ACCEPTABLE_UPDATE_INTERVAL = Duration.ofMinutes(1);
 
     default List<InstanceInfo> healthyInstances(String appId) {
         return instances(appId, Set.of(HEALTHY), 0, Integer.MAX_VALUE);

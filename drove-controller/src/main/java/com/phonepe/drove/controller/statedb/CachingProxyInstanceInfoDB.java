@@ -44,9 +44,9 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
         var stamp = lock.readLock();
         try {
             var appInstances = cache.get(appId);
-            if (appInstances == null) {
+            if (appInstances == null || appInstances.isEmpty()) {
                 val status = lock.tryConvertToWriteLock(stamp);
-                if (status == 0) { //Did not loc, try explicit lock
+                if (status == 0) { //Did not lock, try explicit lock
                     lock.unlockRead(stamp);
                     stamp = lock.writeLock();
                 }
@@ -56,10 +56,12 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
                 //Definitely locked for write here
                 appInstances = reloadInstancesForApp(appId);
             }
+            val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
 
             return sublist(appInstances.values()
                                    .stream()
                                    .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
+                                   .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
                                    .toList(), start, size);
         }
         finally {
@@ -147,7 +149,8 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
         val instances = new HashMap<>(root.instances(appId,
                                                      EnumSet.allOf(InstanceState.class),
                                                      0,
-                                                     Integer.MAX_VALUE)
+                                                     Integer.MAX_VALUE,
+                                                     true)
                                               .stream()
                                               .collect(Collectors.toMap(InstanceInfo::getInstanceId,
                                                                         Function.identity())));
