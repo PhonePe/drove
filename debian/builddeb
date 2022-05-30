@@ -83,7 +83,7 @@ TIMESTAMP=$(date +%Y%m%d%H%M%S)
 
 echo "Building deb version ${VERSION}-${TIMESTAMP}"
 
-rm -f *.deb drove-controller drove-executor
+rm -rf *.deb drove-controller drove-executor
 
 if [ ${REBUILD} -eq 1 ]; then
     build_project

@@ -27,9 +27,9 @@ import org.slf4j.MDC;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
@@ -46,7 +46,9 @@ public class InstanceEngine implements Closeable {
     private final InstanceActionFactory actionFactory;
     private final ResourceManager resourceDB;
     private final BlacklistingManager blacklistManager;
-    private final Map<String, SMInfo> stateMachines;
+    private final Map<String, SMInfo> stateMachines = new HashMap<>();
+    private final StampedLock lock = new StampedLock();
+
     private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
     private final DockerClient client;
 
@@ -61,7 +63,6 @@ public class InstanceEngine implements Closeable {
         this.resourceDB = resourceDB;
         this.blacklistManager = blacklistManager;
         this.client = client;
-        this.stateMachines = new ConcurrentHashMap<>();
     }
 
     public MessageResponse handleMessage(final ExecutorMessage message) {
@@ -69,15 +70,27 @@ public class InstanceEngine implements Closeable {
     }
 
     public boolean exists(final String instanceId) {
-        return stateMachines.containsKey(instanceId);
+        val stamp = lock.readLock();
+        try {
+            return stateMachines.containsKey(instanceId);
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     public Set<String> instanceIds(final Set<InstanceState> matchingStates) {
-        return stateMachines.entrySet()
-                .stream()
-                .filter(e -> matchingStates.contains(e.getValue().getStateMachine().getCurrentState().getState()))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toUnmodifiableSet());
+        val stamp = lock.readLock();
+        try {
+            return stateMachines.entrySet()
+                    .stream()
+                    .filter(e -> matchingStates.contains(e.getValue().getStateMachine().getCurrentState().getState()))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     public boolean startInstance(final InstanceSpec spec) {
@@ -101,75 +114,102 @@ public class InstanceEngine implements Closeable {
             final String instanceId,
             final InstanceSpec spec,
             final StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        if (!lockRequiredResources(spec)) {
-            return false;
+        val stamp = lock.writeLock();
+        try {
+            if (!lockRequiredResources(spec)) {
+                return false;
+            }
+            val stateMachine = new InstanceStateMachine(executorIdManager.executorId().orElse(null),
+                                                        spec,
+                                                        currentState,
+                                                        actionFactory,
+                                                        client);
+            stateMachine.onStateChange().connect(this::handleStateChange);
+            val f = service.submit(() -> {
+                MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
+                InstanceState state = null;
+                do {
+                    try {
+                        state = stateMachine.execute();
+                    }
+                    catch (Exception e) {
+                        state = LOST;
+                        log.error("Error in state machine execution: {}", e.getMessage(), e);
+                        handleStateChange(StateData.errorFrom(stateMachine.getCurrentState(),
+                                                              LOST,
+                                                              "SM Execution error: " + e.getMessage()));
+                    }
+                } while (!state.isTerminal());
+                log.info(FINALIZE_SESSION_MARKER, "Completed");
+                MDC.remove("instanceLogId");
+                return state;
+            });
+            stateMachines.put(instanceId, new SMInfo(stateMachine, f));
+            return true;
         }
-        val stateMachine = new InstanceStateMachine(executorIdManager.executorId().orElse(null),
-                                                    spec,
-                                                    currentState,
-                                                    actionFactory,
-                                                    client);
-        stateMachine.onStateChange().connect(this::handleStateChange);
-        val f = service.submit(() -> {
-            MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
-            InstanceState state = null;
-            do {
-                try {
-                    state = stateMachine.execute();
-                }
-                catch (Exception e) {
-                    state = LOST;
-                    log.error("Error in state machine execution: {}", e.getMessage(), e);
-                    handleStateChange(StateData.errorFrom(stateMachine.getCurrentState(), LOST, "SM Execution error: " + e.getMessage()));
-                }
-            } while (!state.isTerminal());
-            log.info(FINALIZE_SESSION_MARKER, "Completed");
-            MDC.remove("instanceLogId");
-            return state;
-        });
-        stateMachines.put(instanceId, new SMInfo(stateMachine, f));
-        return true;
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     @MonitoredFunction
     public boolean stopInstance(final String instanceId) {
-        val info = stateMachines.get(instanceId);
-        if (null == info) {
-            log.error("No such instance: {}. Nothing will be stopped", instanceId);
-            return false;
-        }
-        val currState = info.getStateMachine().getCurrentState().getState();
-        if(!RUNNING_STATES.contains(currState)) {
-            log.error("Cannot stop {} as it is not in active running state. Current state: {} Acceptable states: {}",
-                      instanceId, currState, RUNNING_STATES);
-            return false;
-        }
-        info.getStateMachine().stop();
-        service.submit(() -> {
-            try {
-                val finalState = info.getStateMachineFuture().get();
-                log.info("Final state: {}", finalState);
+        val stamp = lock.writeLock();
+        try {
+            val info = stateMachines.get(instanceId);
+            if (null == info) {
+                log.error("No such instance: {}. Nothing will be stopped", instanceId);
+                return false;
             }
-            catch (Exception e) {
-                log.error("Error stopping instance: ", e);
+            val currState = info.getStateMachine().getCurrentState().getState();
+            if (!RUNNING_STATES.contains(currState)) {
+                log.error("Cannot stop {} as it is not in active running state. Current state: {} Acceptable states: " +
+                                  "{}",
+                          instanceId, currState, RUNNING_STATES);
+                return false;
             }
-        });
-        return true;
+            info.getStateMachine().stop();
+            service.submit(() -> {
+                try {
+                    val finalState = info.getStateMachineFuture().get();
+                    log.info("Final state: {}", finalState);
+                }
+                catch (Exception e) {
+                    log.error("Error stopping instance: ", e);
+                }
+            });
+            return true;
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     public Optional<InstanceInfo> currentState(final String instanceId) {
-        val smInfo = stateMachines.get(instanceId);
-        if (null == smInfo) {
-            return Optional.empty();
+        val stamp = lock.readLock();
+        try {
+            val smInfo = stateMachines.get(instanceId);
+            if (null == smInfo) {
+                return Optional.empty();
+            }
+            return Optional.of(ExecutorUtils.convert(smInfo.getStateMachine().getCurrentState()));
         }
-        return Optional.of(ExecutorUtils.convert(smInfo.getStateMachine().getCurrentState()));
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     public List<InstanceInfo> currentState() {
-        return stateMachines.values()
-                .stream()
-                .map(v -> ExecutorUtils.convert(v.getStateMachine().getCurrentState()))
-                .toList();
+        val stamp = lock.readLock();
+        try {
+            return stateMachines.values()
+                    .stream()
+                    .map(v -> ExecutorUtils.convert(v.getStateMachine().getCurrentState()))
+                    .toList();
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     @MonitoredFunction

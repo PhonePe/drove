@@ -15,7 +15,7 @@ import lombok.val;
 
 import javax.inject.Singleton;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.LongBinaryOperator;
 import java.util.function.Predicate;
@@ -27,87 +27,153 @@ import java.util.stream.Collectors;
 @Singleton
 @Slf4j
 public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
-    private final Map<String, ExecutorHostInfo> nodes = new ConcurrentHashMap<>();
-    private final Map<String, Boolean> blackListedNodes = new ConcurrentHashMap<>();
+    private final Map<String, ExecutorHostInfo> nodes = new HashMap<>();
+    private final Map<String, Boolean> blackListedNodes = new HashMap<>();
+
+    private final StampedLock lock = new StampedLock();
 
     @Override
     @MonitoredFunction
     public List<ExecutorHostInfo> currentSnapshot() {
-        return List.copyOf(nodes.values());
+        val stamp = lock.readLock();
+        try {
+            return List.copyOf(nodes.values());
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     @Override
     @MonitoredFunction
     public Optional<ExecutorHostInfo> currentSnapshot(final String executorId) {
-        return Optional.ofNullable(nodes.get(executorId));
+        val stamp = lock.readLock();
+        try {
+            return Optional.ofNullable(nodes.get(executorId));
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     @Override
     @MonitoredFunction
-    public synchronized void remove(Collection<String> executorIds) {
-        executorIds.forEach(nodes::remove);
-    }
-
-    @Override
-    @SneakyThrows
-    @MonitoredFunction
-    public synchronized void update(List<ExecutorNodeData> nodeData) {
-        nodes.putAll(nodeData.stream()
-                             .map(this::convertState)
-                             .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
-                                                                   Function.identity())));
-    }
-
-    @Override
-    @SneakyThrows
-    @MonitoredFunction
-    public synchronized void update(final ExecutorResourceSnapshot snapshot) {
-        nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
+    public void remove(Collection<String> executorIds) {
+        val stamp = lock.writeLock();
+        try {
+            executorIds.forEach(nodes::remove);
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     @Override
     @SneakyThrows
     @MonitoredFunction
-    public synchronized Optional<AllocatedExecutorNode> selectNodes(
+    public void update(List<ExecutorNodeData> nodeData) {
+        val stamp = lock.writeLock();
+        try {
+            nodes.putAll(nodeData.stream()
+                                 .map(this::convertState)
+                                 .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
+                                                                       Function.identity())));
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    @MonitoredFunction
+    public void update(final ExecutorResourceSnapshot snapshot) {
+        val stamp = lock.writeLock();
+        try {
+            nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+
+    @Override
+    @SneakyThrows
+    @MonitoredFunction
+    public Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter) {
-        val rawNodes = new ArrayList<>(nodes.values());
-        Collections.shuffle(rawNodes);
-        return rawNodes
-                .stream()
-                .filter(node -> !isBlacklisted(node.executorId))
-                .map(node -> ensureResource(node, requirements))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .filter(filter)
-                .peek(this::softLockResources)
-                .findFirst();
+        val stamp = lock.writeLock();
+        try {
+            val rawNodes = new ArrayList<>(nodes.values());
+            Collections.shuffle(rawNodes);
+            return rawNodes
+                    .stream()
+                    .filter(node -> !isBlackListedInternal(node.executorId))
+                    .map(node -> ensureResource(node, requirements))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(filter)
+                    .peek(this::softLockResources)
+                    .findFirst();
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     @Override
     @MonitoredFunction
-    public synchronized void deselectNode(AllocatedExecutorNode executorNode) {
-        softUnlockResources(executorNode);
+    public void deselectNode(AllocatedExecutorNode executorNode) {
+        val stamp = lock.writeLock();
+        try {
+            softUnlockResources(executorNode);
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     @Override
     @MonitoredFunction
     public boolean isBlacklisted(String executorId) {
-        return Optional.ofNullable(nodes.get(executorId))
-                .map(node -> node.getNodeData().isBlacklisted())
-                .orElse(false)
-                || blackListedNodes.getOrDefault(executorId, false);
+        val stamp = lock.readLock();
+        try {
+            return isBlackListedInternal(executorId);
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
     }
 
     @Override
     @MonitoredFunction
     public void markBlacklisted(String executorId) {
-        blackListedNodes.putIfAbsent(executorId, true);
+        val stamp = lock.writeLock();
+        try {
+            blackListedNodes.putIfAbsent(executorId, true);
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     @Override
     @MonitoredFunction
     public void unmarkBlacklisted(String executorId) {
-        blackListedNodes.remove(executorId);
+        val stamp = lock.writeLock();
+        try {
+            blackListedNodes.remove(executorId);
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+
+    private boolean isBlackListedInternal(String executorId) {
+        return Optional.ofNullable(nodes.get(executorId))
+                .map(node -> node.getNodeData().isBlacklisted())
+                .orElse(false)
+                || blackListedNodes.getOrDefault(executorId, false);
     }
 
     private void softLockResources(AllocatedExecutorNode node) {
