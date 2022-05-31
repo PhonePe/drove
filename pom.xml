@@ -29,7 +29,7 @@
         <function-metrics.version>1.0.13</function-metrics.version>
         <awaitility.version>4.2.0</awaitility.version>
         <guice.version>5.1.0</guice.version>
-        <dw-guicey.version>5.4.0</dw-guicey.version>
+        <dw-guicey.version>5.5.0</dw-guicey.version>
         <curator.version>5.2.1</curator.version>
         <metrics-core.version>4.2.9</metrics-core.version>
         <logback.version>1.2.11</logback.version>
@@ -130,6 +130,8 @@
                         <exclude>**/model/**</exclude>
                         <exclude>**/models/**</exclude>
                         <exclude>**/*Log*Stream.class</exclude>
+                        <exclude>com/phonepe/drove/controller/*.class</exclude>
+                        <exclude>com/phonepe/drove/controller/ui/*.class</exclude>
                     </excludes>
                 </configuration>
             </plugin>

@@ -11,7 +11,7 @@ import javax.ws.rs.ext.Provider;
 import java.util.Map;
 
 /**
- *
+ * Handles param validations from jersey and returns standard error
  */
 @Provider
 public class ValidationErrorHandler implements ExceptionMapper<JerseyViolationException> {

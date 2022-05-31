@@ -155,10 +155,16 @@ public class ControllerTestUtils {
     }
 
     public static InstanceInfo generateInstanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state) {
-        return generateInstanceInfo(appId, spec, idx, state, new Date());
+        return generateInstanceInfo(appId, spec, idx, state, new Date(), null);
     }
 
-    public static InstanceInfo generateInstanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state, Date date) {
+    public static InstanceInfo generateInstanceInfo(
+            final String appId,
+            final ApplicationSpec spec,
+            int idx,
+            InstanceState state,
+            Date date,
+            String errorMessage) {
         return new InstanceInfo(appId,
                                 spec.getName(),
                                 String.format("TI-%05d", idx),
@@ -173,7 +179,7 @@ public class ControllerTestUtils {
                                         new MemoryAllocation(Map.of(0, 512L))),
                                 state,
                                 Collections.emptyMap(),
-                                null,
+                                errorMessage,
                                 date,
                                 date);
     }

@@ -11,10 +11,10 @@ import com.phonepe.drove.controller.event.events.DroveInstanceFailedEvent;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.util.Collections;
+import java.util.List;
 
 /**
- *
+ * Handles received remote messages from executor and updates meta etc as necessary based on message type
  */
 @Slf4j
 public class ControllerMessageHandler implements ControllerMessageVisitor<MessageResponse> {
@@ -30,10 +30,8 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
     @Override
     public MessageResponse visit(InstanceStateReportMessage instanceStateReport) {
         val instanceInfo = instanceStateReport.getInstanceInfo();
-        log.info("Received instance update from executor: {}",
-                 instanceInfo);
-        val status = stateUpdater.updateSingle(instanceStateReport.getResourceSnapshot(),
-                                               instanceInfo);
+        log.info("Received instance update from executor: {}", instanceInfo);
+        val status = stateUpdater.updateSingle(instanceStateReport.getResourceSnapshot(), instanceInfo);
         if (!Strings.isNullOrEmpty(instanceInfo.getErrorMessage())) {
             droveEventBus.publish(new DroveInstanceFailedEvent(instanceInfo.getAppId(),
                                                                instanceInfo.getInstanceId(),
@@ -48,7 +46,7 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
 
     @Override
     public MessageResponse visit(ExecutorSnapshotMessage executorSnapshot) {
-        stateUpdater.updateClusterResources(Collections.singletonList(executorSnapshot.getNodeData()));
+        stateUpdater.updateClusterResources(List.of(executorSnapshot.getNodeData()));
         return new MessageResponse(executorSnapshot.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 }

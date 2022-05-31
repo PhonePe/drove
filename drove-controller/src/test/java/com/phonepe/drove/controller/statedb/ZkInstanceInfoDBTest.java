@@ -175,7 +175,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 val oldDate = new Date(new Date().getTime() - 120_000L);
                 IntStream.rangeClosed(1, 100)
                         .forEach(i -> {
-                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, HEALTHY, oldDate);
+                            val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, HEALTHY, oldDate, null);
                             assertTrue(db.updateInstanceState(appId, ii.getInstanceId(), ii));
                         });
                 assertEquals(0, db.healthyInstances(appId).size());

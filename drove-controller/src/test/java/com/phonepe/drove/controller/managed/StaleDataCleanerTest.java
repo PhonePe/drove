@@ -82,7 +82,8 @@ class StaleDataCleanerTest {
         appStateDB.updateApplicationState(appId, new ApplicationInfo(appId, spec, 0, oldDate, oldDate));
         IntStream.rangeClosed(1, 100)
                 .forEach(i -> {
-                    val instance = ControllerTestUtils.generateInstanceInfo(appId, spec, i, InstanceState.STOPPED, oldDate);
+                    val instance = ControllerTestUtils.generateInstanceInfo(appId, spec, i, InstanceState.STOPPED, oldDate,
+                                                                            null);
                     instanceDB.updateInstanceState(appId, instance.getInstanceId(), instance);
                 });
         when(engine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
