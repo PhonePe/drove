@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.jobexecutor;
+package com.phonepe.drove.jobexecutor;
 
 import lombok.Value;
 

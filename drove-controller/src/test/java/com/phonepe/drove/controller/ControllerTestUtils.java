@@ -101,6 +101,10 @@ public class ControllerTestUtils {
     }
 
     public static ExecutorHostInfo executorHost(int port) {
+        return executorHost(port, List.of());
+    }
+
+    public static ExecutorHostInfo executorHost(int port, List<InstanceInfo> instances) {
         return new ExecutorHostInfo(
                 "Ex1",
                 new ExecutorNodeData(EXECUTOR_ID,
@@ -113,7 +117,7 @@ public class ControllerTestUtils {
                                                                   new AvailableMemory(
                                                                           Map.of(0, 3 * 128 * (2L ^ 20)),
                                                                           Map.of(0, 128 * (2L ^ 20)))),
-                                     List.of(),
+                                     instances,
                                      Set.of(),
                                      false),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));

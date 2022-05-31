@@ -3,7 +3,7 @@ package com.phonepe.drove.controller.statemachine;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

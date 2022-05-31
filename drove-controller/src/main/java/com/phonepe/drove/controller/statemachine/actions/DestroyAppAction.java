@@ -6,7 +6,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 
 /**
  *

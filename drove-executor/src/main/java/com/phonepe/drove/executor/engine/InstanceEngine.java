@@ -18,7 +18,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingParallelSignal;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

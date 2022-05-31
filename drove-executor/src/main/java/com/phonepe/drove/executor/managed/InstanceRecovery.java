@@ -8,7 +8,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;

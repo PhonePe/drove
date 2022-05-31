@@ -3,8 +3,8 @@ package com.phonepe.drove.executor.statemachine;
 
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.simplefsm.Action;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.Action;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

@@ -10,7 +10,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.RandomInstanceIdGenerator;
-import com.phonepe.drove.controller.jobexecutor.JobExecutor;
+import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;

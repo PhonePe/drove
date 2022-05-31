@@ -4,10 +4,10 @@ import com.phonepe.drove.controller.statemachine.actions.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import io.appform.simplefsm.ActionFactory;
-import io.appform.simplefsm.StateData;
-import io.appform.simplefsm.StateMachine;
-import io.appform.simplefsm.Transition;
+import com.phonepe.drove.statemachine.ActionFactory;
+import com.phonepe.drove.statemachine.StateData;
+import com.phonepe.drove.statemachine.StateMachine;
+import com.phonepe.drove.statemachine.Transition;
 import lombok.NonNull;
 
 import java.util.List;

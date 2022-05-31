@@ -72,7 +72,7 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
     @Override
     @MonitoredFunction
     public Optional<InstanceInfo> instance(String appId, String instanceId) {
-        return instances(appId, EnumSet.allOf(InstanceState.class), 0, Integer.MAX_VALUE)
+        return instances(appId, EnumSet.allOf(InstanceState.class), 0, Integer.MAX_VALUE, true)
                 .stream()
                 .filter(instanceInfo -> instanceInfo.getInstanceId().equals(instanceId))
                 .findAny();

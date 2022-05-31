@@ -8,7 +8,7 @@ import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;

@@ -12,7 +12,7 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.apache.commons.lang3.NotImplementedException;

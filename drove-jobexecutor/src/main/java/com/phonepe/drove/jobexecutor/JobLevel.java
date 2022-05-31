@@ -1,6 +1,5 @@
-package com.phonepe.drove.controller.jobexecutor;
+package com.phonepe.drove.jobexecutor;
 
-import com.phonepe.drove.controller.utils.JobUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

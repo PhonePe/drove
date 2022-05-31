@@ -8,7 +8,7 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
-import com.phonepe.drove.controller.jobexecutor.JobExecutor;
+import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;

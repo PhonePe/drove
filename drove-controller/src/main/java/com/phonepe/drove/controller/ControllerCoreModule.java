@@ -14,7 +14,7 @@ import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.engine.*;
-import com.phonepe.drove.controller.jobexecutor.JobExecutor;
+import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
@@ -25,7 +25,7 @@ import com.phonepe.drove.controller.statemachine.AppActionContext;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import io.appform.simplefsm.ActionFactory;
+import com.phonepe.drove.statemachine.ActionFactory;
 import io.dropwizard.setup.Environment;
 import org.apache.curator.framework.CuratorFramework;
 

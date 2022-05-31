@@ -12,7 +12,7 @@ import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;

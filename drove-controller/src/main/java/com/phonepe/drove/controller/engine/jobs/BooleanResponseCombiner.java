@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.engine.jobs;
 
-import com.phonepe.drove.controller.jobexecutor.AbstractJobResponseCombiner;
-import com.phonepe.drove.controller.jobexecutor.Job;
-import com.phonepe.drove.controller.jobexecutor.JobExecutionResult;
+import com.phonepe.drove.jobexecutor.AbstractJobResponseCombiner;
+import com.phonepe.drove.jobexecutor.Job;
+import com.phonepe.drove.jobexecutor.JobExecutionResult;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

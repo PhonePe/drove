@@ -45,7 +45,7 @@ public class StateUpdater {
                 .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
                 .filter(Objects::nonNull)
                 .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
-                        .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
+                .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
 
         resourcesDB.remove(executorIds);
     }
@@ -58,7 +58,7 @@ public class StateUpdater {
 
     private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
         return instanceInfoDB.updateInstanceState(instanceInfo.getAppId(),
-                                                      instanceInfo.getInstanceId(),
-                                                      instanceInfo);
+                                                  instanceInfo.getInstanceId(),
+                                                  instanceInfo);
     }
 }

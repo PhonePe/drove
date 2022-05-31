@@ -6,7 +6,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;

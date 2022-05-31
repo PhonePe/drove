@@ -20,8 +20,8 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
-import io.appform.simplefsm.ActionFactory;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.ActionFactory;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.jobexecutor;
+package com.phonepe.drove.jobexecutor;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -7,12 +7,14 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.common.CommonTestUtils.delay;
-import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -171,4 +173,23 @@ class JobExecutorTest {
         }
     }
 
+    public void waitUntil(final Callable<Boolean> condition) {
+        waitUntil(condition, Duration.ofMinutes(3));
+    }
+
+    public void waitUntil(final Callable<Boolean> condition, final Duration duration) {
+        await()
+                .pollDelay(Duration.ofSeconds(1))
+                .timeout(duration)
+                .until(condition);
+    }
+
+    public void delay(final Duration duration) {
+        val wait = duration.toMillis();
+        val end = new Date(new Date().getTime() + wait);
+        await()
+                .pollDelay(Duration.ofSeconds(1))
+                .timeout(wait + 5_000, TimeUnit.SECONDS)
+                .until(() -> new Date().after(end));
+    }
 }

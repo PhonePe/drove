@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.utils;
 
-import com.phonepe.drove.controller.jobexecutor.Job;
-import com.phonepe.drove.controller.jobexecutor.JobContext;
-import com.phonepe.drove.controller.jobexecutor.JobResponseCombiner;
+import com.phonepe.drove.jobexecutor.Job;
+import com.phonepe.drove.jobexecutor.JobContext;
+import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 

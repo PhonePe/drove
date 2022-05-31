@@ -1,13 +1,13 @@
-package com.phonepe.drove.controller.jobexecutor;
+package com.phonepe.drove.jobexecutor;
 
 /**
  *
  */
-public class ErrorJob implements Job<Integer> {
+public class StuckJob implements Job<Integer> {
 
     @Override
     public String jobId() {
-        return "error-job";
+        return "stuck-job";
     }
 
     @Override
@@ -19,6 +19,7 @@ public class ErrorJob implements Job<Integer> {
     public Integer execute(
             JobContext<Integer> context,
             JobResponseCombiner<Integer> responseCombiner) {
-        throw new IllegalStateException("Error for testing");
+        while (!context.isStopped());
+        return 0;
     }
 }

@@ -2,7 +2,7 @@ package com.phonepe.drove.executor.statemachine;
 
 import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.model.InstanceSpec;
-import io.appform.simplefsm.ActionContext;
+import com.phonepe.drove.statemachine.ActionContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

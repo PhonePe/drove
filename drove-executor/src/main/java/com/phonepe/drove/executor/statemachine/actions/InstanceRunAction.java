@@ -26,7 +26,7 @@ import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;

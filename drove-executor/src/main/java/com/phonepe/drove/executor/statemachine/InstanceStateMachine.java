@@ -6,9 +6,9 @@ import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.actions.*;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.simplefsm.StateData;
-import io.appform.simplefsm.StateMachine;
-import io.appform.simplefsm.Transition;
+import com.phonepe.drove.statemachine.StateData;
+import com.phonepe.drove.statemachine.StateMachine;
+import com.phonepe.drove.statemachine.Transition;
 import lombok.NonNull;
 
 import java.util.List;

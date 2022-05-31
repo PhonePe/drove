@@ -18,7 +18,7 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.util.Duration;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;

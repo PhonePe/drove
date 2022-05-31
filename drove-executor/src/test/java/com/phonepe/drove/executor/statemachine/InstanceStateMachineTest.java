@@ -7,7 +7,7 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Disabled;

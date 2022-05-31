@@ -10,7 +10,7 @@ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.util.Strings;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

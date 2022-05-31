@@ -68,14 +68,18 @@ class CachingProxyInstanceInfoDBTest extends ControllerTestBase {
 
         {
             val oldDate = new Date(new Date().getTime() - 36_00_000);
+            val generatedInstanceIds = new ArrayList<String>();
             IntStream.rangeClosed(1, 100)
                     .mapToObj(i -> generateInstanceInfo(appId, spec, i, InstanceState.HEALTHY, oldDate))
+                    .peek(i -> generatedInstanceIds.add(i.getInstanceId()))
                     .forEach(ii -> db.updateInstanceState(appId, ii.getInstanceId(), ii));
             assertTrue(db.instances(appId, EnumSet.allOf(InstanceState.class), 0, Integer.MAX_VALUE).isEmpty());
             assertEquals(100,
-                         db.instances(appId, EnumSet.allOf(InstanceState.class), 0, Integer.MAX_VALUE, true).size());
+                         db.instances(appId, EnumSet.of(InstanceState.HEALTHY), 0, Integer.MAX_VALUE, true).size());
+            generatedInstanceIds.forEach(iId -> assertTrue(db.instance(appId, iId).isPresent()));
             db.markStaleInstances(appId);
             assertEquals(100, db.instances(appId, EnumSet.of(InstanceState.LOST), 0, Integer.MAX_VALUE).size());
+
         }
 
     }

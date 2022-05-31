@@ -6,7 +6,7 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.simplefsm.StateData;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;

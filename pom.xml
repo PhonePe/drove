@@ -10,6 +10,8 @@
     <version>1.0-SNAPSHOT</version>
 
     <modules>
+        <module>drove-statemachine</module>
+        <module>drove-jobexecutor</module>
         <module>drove-models</module>
         <module>drove-common</module>
         <module>drove-executor</module>
@@ -23,10 +25,14 @@
         <dropwizard.version>2.0.25</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.2</junit.version>
+        <signals.version>1.4</signals.version>
+        <function-metrics.version>1.0.13</function-metrics.version>
         <awaitility.version>4.2.0</awaitility.version>
         <guice.version>5.1.0</guice.version>
         <dw-guicey.version>5.4.0</dw-guicey.version>
         <curator.version>5.2.1</curator.version>
+        <metrics-core.version>4.2.9</metrics-core.version>
+        <logback.version>1.2.11</logback.version>
         <failsafe.version>2.4.4</failsafe.version>
         <aspectj.version>1.9.9.1</aspectj.version>
         <junit.version>5.8.2</junit.version>
