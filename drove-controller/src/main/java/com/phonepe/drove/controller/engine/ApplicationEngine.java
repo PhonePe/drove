@@ -78,8 +78,11 @@ public class ApplicationEngine {
         val appId = ControllerUtils.appId(operation);
         val res = validateOp(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-            stateMachines.computeIfAbsent(appId, id -> createApp(operation));
-            stateMachines.computeIfPresent(appId, (id, monitor) -> {
+            stateMachines.compute(appId, (id, monitor) -> {
+                if(null == monitor) {
+                    log.info("App {} is unknown. Going to create it now.", appId);
+                    return createApp(operation);
+                }
                 if(!monitor.notifyUpdate(translateOp(operation))) {
                     log.warn("Update could not be sent");
                 }
@@ -183,6 +186,11 @@ public class ApplicationEngine {
                         monitorExecutor,
                         retrySpecFactory,
                         stateMachineCompleted);
+                //Record the update first then start the monitor
+                // as the first thing it will do is look for the update
+                if(!monitor.notifyUpdate(create)) {
+                    log.error("Create operation could not be registered for app: {}", appId);
+                }
                 monitor.start();
                 return monitor;
             }
