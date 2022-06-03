@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Returns responses for use in apis
  */
 @Singleton
 @Slf4j
@@ -49,7 +49,8 @@ public class ResponseEngine {
     public ResponseEngine(
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
+            InstanceInfoDB instanceInfoDB,
+            ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
@@ -70,13 +71,6 @@ public class ResponseEngine {
         return applicationStateDB.application(appId)
                 .map(appInfo -> ApiResponse.success(toAppSummary(appInfo)))
                 .orElse(ApiResponse.failure("App " + appId + " not found"));
-    }
-
-    public ApiResponse<AppDetails> appDetails(String appId) {
-        return applicationStateDB.application(appId)
-                .map(this::toAppDetails)
-                .map(ApiResponse::success)
-                .orElse(ApiResponse.failure("No app found with id: " + appId));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
