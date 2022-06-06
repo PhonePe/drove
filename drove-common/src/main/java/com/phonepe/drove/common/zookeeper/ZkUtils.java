@@ -39,6 +39,17 @@ public class ZkUtils {
         return false;
     }
 
+    public static boolean exists(
+            CuratorFramework curatorFramework,
+            String path) {
+        try {
+            return null != curatorFramework.checkExists().forPath(path);
+        }
+        catch (Exception e) {
+            return false;
+        }
+    }
+
     public static <T> List<T> readChildrenNodes(
             CuratorFramework curatorFramework,
             String parentPath,

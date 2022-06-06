@@ -4,6 +4,7 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -34,10 +35,13 @@ class ResponseEngineTest {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
 
-        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB, clusterResourcesDB, communicator);
+        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB, communicator);
         val rng = new SecureRandom();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE))
                 .thenReturn(IntStream.range(0, 100)
@@ -59,10 +63,13 @@ class ResponseEngineTest {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
 
-        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB, clusterResourcesDB, communicator);
+        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB, communicator);
 
         val spec = appSpec();
         val appId = appId(spec);
@@ -83,10 +90,13 @@ class ResponseEngineTest {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
 
-        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB, clusterResourcesDB, communicator);
+        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB, communicator);
         val spec = appSpec();
         val appId = appId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -109,10 +119,13 @@ class ResponseEngineTest {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
 
-        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB, clusterResourcesDB, communicator);
+        val re = new ResponseEngine(engine, applicationStateDB, instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB, communicator);
         val spec = appSpec();
         val appId = appId(spec);
         val instance = generateInstanceInfo(appId, spec, 1, InstanceState.STARTING);

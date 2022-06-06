@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
@@ -10,6 +11,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -19,6 +21,8 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.common.ClusterState;
+import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
@@ -32,6 +36,10 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.models.api.ApiResponse.failure;
+import static com.phonepe.drove.models.api.ApiResponse.success;
+import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
+
 /**
  * Returns responses for use in apis
  */
@@ -42,6 +50,7 @@ public class ResponseEngine {
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
+    private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
 
@@ -50,47 +59,48 @@ public class ResponseEngine {
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
             InstanceInfoDB instanceInfoDB,
-            ClusterResourcesDB clusterResourcesDB,
+            ClusterStateDB clusterStateDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
+        this.clusterStateDB = clusterStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
     }
 
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
-        return ApiResponse.success(applicationStateDB.applications(from, size)
-                                           .stream()
-                                           .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
-                                                                                 this::toAppSummary)));
+        return success(applicationStateDB.applications(from, size)
+                               .stream()
+                               .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
+                                                                     this::toAppSummary)));
     }
 
 
     public ApiResponse<AppSummary> application(final String appId) {
         return applicationStateDB.application(appId)
-                .map(appInfo -> ApiResponse.success(toAppSummary(appInfo)))
-                .orElse(ApiResponse.failure("App " + appId + " not found"));
+                .map(appInfo -> success(toAppSummary(appInfo)))
+                .orElse(failure("App " + appId + " not found"));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
         val checkStates = null == state || state.isEmpty()
                           ? InstanceState.ACTIVE_STATES
                           : state;
-        return ApiResponse.success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
-                                           .stream()
-                                           .filter(info -> checkStates.contains(info.getState()))
-                                           .toList());
+        return success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
+                               .stream()
+                               .filter(info -> checkStates.contains(info.getState()))
+                               .toList());
     }
 
     public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
         return instanceInfoDB.instance(appId, instanceId)
                 .map(ApiResponse::success)
-                .orElseGet(() -> ApiResponse.failure("No such instance"));
+                .orElseGet(() -> failure("No such instance"));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId, int start, int length) {
-        return ApiResponse.success(instanceInfoDB.oldInstances(appId, start, length));
+        return success(instanceInfoDB.oldInstances(appId, start, length));
     }
 
     public ApiResponse<ClusterSummary> cluster() {
@@ -98,7 +108,7 @@ public class ResponseEngine {
         var allApps = 0;
         for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
             liveApps += ApplicationState.ACTIVE_APP_STATES.contains(engine.applicationState(appInfo.getAppId())
-                                                           .orElse(ApplicationState.FAILED))
+                                                                            .orElse(ApplicationState.FAILED))
                         ? 1
                         : 0;
             allApps++;
@@ -114,19 +124,24 @@ public class ResponseEngine {
             freeMemory += ControllerUtils.freeMemory(executor);
             usedMemory += ControllerUtils.usedMemory(executor);
         }
-        return ApiResponse.success(new ClusterSummary(executors.size(),
-                                                      allApps,
-                                                      liveApps,
-                                                      freeCores,
-                                                      usedCores,
-                                                      freeCores + usedCores,
-                                                      freeMemory,
-                                                      usedMemory,
-                                                      freeMemory + usedMemory));
+        return success(
+                new ClusterSummary(
+                        clusterStateDB.currentState()
+                                .map(ClusterStateData::getState)
+                                .orElse(ClusterState.NORMAL),
+                        executors.size(),
+                        allApps,
+                        liveApps,
+                        freeCores,
+                        usedCores,
+                        freeCores + usedCores,
+                        freeMemory,
+                        usedMemory,
+                        freeMemory + usedMemory));
     }
 
     public ApiResponse<List<ExecutorSummary>> nodes() {
-        return ApiResponse.success(
+        return success(
                 clusterResourcesDB.currentSnapshot()
                         .stream()
                         .map(hostInfo -> toExecutorSummary(hostInfo).orElse(null))
@@ -257,47 +272,56 @@ public class ResponseEngine {
         return clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
                 .map(ApiResponse::success)
-                .orElse(ApiResponse.failure("No executor found with id: " + executorId));
+                .orElse(failure("No executor found with id: " + executorId));
     }
 
     public ApiResponse<List<ExposedAppInfo>> endpoints() {
         //TODO::HANDLE EXPOSURE MODE
-        return ApiResponse.success(applicationStateDB.applications(0, Integer.MAX_VALUE)
-                                           .stream()
-                                           .filter(app -> engine.applicationState(app.getAppId())
-                                                   .filter(s -> s.equals(ApplicationState.RUNNING)
-                                                           || s.equals(ApplicationState.SCALING_REQUESTED)
-                                                           || s.equals(ApplicationState.REPLACE_INSTANCES_REQUESTED))
-                                                   .isPresent()) //Only running
-                                           .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
-                                           .filter(app -> !app.getSpec()
-                                                   .getExposedPorts()
-                                                   .isEmpty()) //Has any exposed ports
-                                           .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
-                                           .map(app -> {
-                                               val spec = app.getSpec().getExposureSpec();
-                                               return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
-                                                                         instanceInfoDB.healthyInstances(app.getAppId())
-                                                                                 .stream()
-                                                                                 .sorted(Comparator.comparing(
-                                                                                         InstanceInfo::getCreated)) //Reduce chaos
-                                                                                 .filter(instanceInfo -> instanceInfo.getLocalInfo()
-                                                                                         .getPorts()
-                                                                                         .containsKey(spec.getPortName())) //Has the specified port exposed
-                                                                                 .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
-                                                                                         instanceInfo.getLocalInfo()
-                                                                                                 .getHostname(),
-                                                                                         instanceInfo.getLocalInfo()
-                                                                                                 .getPorts()
-                                                                                                 .get(spec.getPortName())
-                                                                                                 .getHostPort(),
-                                                                                         instanceInfo.getLocalInfo()
-                                                                                                 .getPorts()
-                                                                                                 .get(spec.getPortName())
-                                                                                                 .getPortType()))
-                                                                                 .toList());
-                                           })
-                                           .toList());
+        return success(applicationStateDB.applications(0, Integer.MAX_VALUE)
+                               .stream()
+                               .filter(app -> engine.applicationState(app.getAppId())
+                                       .filter(s -> s.equals(ApplicationState.RUNNING)
+                                               || s.equals(ApplicationState.SCALING_REQUESTED)
+                                               || s.equals(ApplicationState.REPLACE_INSTANCES_REQUESTED))
+                                       .isPresent()) //Only running
+                               .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
+                               .filter(app -> !app.getSpec()
+                                       .getExposedPorts()
+                                       .isEmpty()) //Has any exposed ports
+                               .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
+                               .map(app -> {
+                                   val spec = app.getSpec().getExposureSpec();
+                                   return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
+                                                             instanceInfoDB.instances(app.getAppId(),
+                                                                                      Set.of(HEALTHY),
+                                                                                      0,
+                                                                                      Integer.MAX_VALUE,
+                                                                                      isInMaintenanceWindow())//Skip stale check if cluster is in maintenance mode
+                                                                     .stream()
+                                                                     .sorted(Comparator.comparing(
+                                                                             InstanceInfo::getCreated)) //Reduce chaos
+                                                                     .filter(instanceInfo -> instanceInfo.getLocalInfo()
+                                                                             .getPorts()
+                                                                             .containsKey(spec.getPortName())) //Has
+                                                                     // the specified port exposed
+                                                                     .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
+                                                                             instanceInfo.getLocalInfo()
+                                                                                     .getHostname(),
+                                                                             instanceInfo.getLocalInfo()
+                                                                                     .getPorts()
+                                                                                     .get(spec.getPortName())
+                                                                                     .getHostPort(),
+                                                                             instanceInfo.getLocalInfo()
+                                                                                     .getPorts()
+                                                                                     .get(spec.getPortName())
+                                                                                     .getPortType()))
+                                                                     .toList());
+                               })
+                               .toList());
+    }
+
+    private boolean isInMaintenanceWindow() {
+        return CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null));
     }
 
     public ApiResponse<Void> blacklistExecutor(final String executorId) {
@@ -313,11 +337,11 @@ public class ResponseEngine {
                 clusterResourcesDB.markBlacklisted(executorId);
                 log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
                 engine.moveInstancesFromExecutor(executorId);
-                return ApiResponse.success(null);
+                return success(null);
             }
-            return ApiResponse.failure("Error sending remote message");
+            return failure("Error sending remote message");
         }
-        return ApiResponse.failure("No such executor");
+        return failure("No such executor");
     }
 
     public ApiResponse<Void> unblacklistExecutor(final String executorId) {
@@ -332,10 +356,22 @@ public class ResponseEngine {
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.unmarkBlacklisted(executorId);
                 log.debug("Executor {} marked unblacklisted.", executorId);
-                return ApiResponse.success(null);
+                return success(null);
             }
-            return ApiResponse.failure("Error sending remote message");
+            return failure("Error sending remote message");
         }
-        return ApiResponse.failure("No such executor");
+        return failure("No such executor");
+    }
+
+    public ApiResponse<Void> setClusterMaintenanceMode() {
+        return clusterStateDB.setClusterState(ClusterState.MAINTENANCE).isPresent()
+               ? success(null)
+               : failure("Could not set cluster to maintenance mode");
+    }
+
+    public ApiResponse<Void> unsetClusterMaintenanceMode() {
+        return clusterStateDB.setClusterState(ClusterState.NORMAL).isPresent()
+               ? success(null)
+               : failure("Could not set cluster to maintenance mode");
     }
 }

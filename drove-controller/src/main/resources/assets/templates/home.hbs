@@ -14,6 +14,7 @@
                         <th class="text-center">Free Memory</th>
                         <th class="text-center">Used Memory</th>
                         <th class="text-center">Total Memory</th>
+                        <th class="text-central">State</th>
                     </tr>
                     </thead>
                 </table>
@@ -91,7 +92,15 @@
             { 'data' : 'totalCores' },
             { 'data' : 'freeMemory', 'render' : formatBytes },
             { 'data' : 'usedMemory', 'render' : formatBytes },
-            { 'data' : 'totalMemory', 'render' : formatBytes }
+            { 'data' : 'totalMemory', 'render' : formatBytes },
+            { 'data' : 'state', 'render' : function(data, type, row, meta) {
+                    var tagStr = "";
+                    if(data === 'NORMAL') {
+                        return '<span class="badge badge-success">Normal</span> ';
+                    }
+                    return '<span class="badge badge-danger">Maintenance</span> ';
+                }
+            }
         ]
     });
     var applications = $('#applications').DataTable({

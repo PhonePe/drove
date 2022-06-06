@@ -7,8 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
+import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.models.common.ClusterState;
+import com.phonepe.drove.models.common.ClusterStateData;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -19,10 +22,7 @@ import org.apache.curator.retry.RetryForever;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
 
 /**
@@ -126,5 +126,14 @@ public class CommonUtils {
             policy.handleResultIf(resultChecker);
         }
         return policy;
+    }
+
+    public static boolean isInMaintenanceWindow(final ClusterStateData clusterState) {
+        if(null != clusterState) {
+            val checktimeSkipWindowEnd = new Date(clusterState.getUpdated().getTime() + 2 * Constants.EXECUTOR_REFRESH_INTERVAL.toMillis());
+            return clusterState.getState().equals(ClusterState.MAINTENANCE)
+                    || new Date().before(checktimeSkipWindowEnd);
+        }
+        return false;
     }
 }

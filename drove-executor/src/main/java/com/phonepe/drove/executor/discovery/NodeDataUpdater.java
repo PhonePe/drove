@@ -2,14 +2,15 @@ package com.phonepe.drove.executor.discovery;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ScheduledSignal;
@@ -23,7 +24,6 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -46,7 +46,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ResourceConfig resourceConfig;
     private final BlacklistingManager blacklistingManager;
 
-    private final ScheduledSignal refreshSignal = new ScheduledSignal(Duration.ofSeconds(10));
+    private final ScheduledSignal refreshSignal = new ScheduledSignal(Constants.EXECUTOR_REFRESH_INTERVAL);
     private final AtomicBoolean started = new AtomicBoolean();
     private ExecutorNodeData currentData;
     private final Lock stateLock = new ReentrantLock();

@@ -73,14 +73,15 @@ public class ControllerCoreModule extends AbstractModule {
                 .to(ZkApplicationStateDB.class);
         bind(InstanceInfoDB.class).to(CachingProxyInstanceInfoDB.class);
         bind(InstanceInfoDB.class).annotatedWith(Names.named("StoredInstanceInfoDB")).to(ZkInstanceInfoDB.class);
+        bind(ClusterStateDB.class).to(CachingProxyClusterStateDB.class);
+        bind(ClusterStateDB.class).annotatedWith(Names.named("StoredClusterStateDB")).to(ZkClusterStateDB.class);
+
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
-        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
-        })
+        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
-                AppAction>>() {
-        })
+                AppAction>>() {})
                 .to(InjectingAppActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }

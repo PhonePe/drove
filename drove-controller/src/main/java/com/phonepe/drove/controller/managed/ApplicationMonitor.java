@@ -1,9 +1,11 @@
 package com.phonepe.drove.controller.managed;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -36,15 +38,18 @@ public class ApplicationMonitor implements Managed {
 
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
+    private ClusterStateDB clusterStateDB;
     private final ApplicationEngine engine;
 
     @Inject
     public ApplicationMonitor(
             ApplicationStateDB applicationStateDB,
             InstanceInfoDB instanceInfoDB,
+            ClusterStateDB clusterStateDB,
             ApplicationEngine engine) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
+        this.clusterStateDB = clusterStateDB;
         this.engine = engine;
     }
 
@@ -63,6 +68,10 @@ public class ApplicationMonitor implements Managed {
 
     @VisibleForTesting
     public void checkAllApps(final Date checkTime) {
+        if(CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            log.warn("Application check skipped as cluster is in maintenance window");
+            return;
+        }
         applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .forEach(app -> {
                     val appId = app.getAppId();
