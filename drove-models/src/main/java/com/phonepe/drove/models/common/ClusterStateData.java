@@ -8,8 +8,7 @@ import java.util.Date;
  *
  */
 @Value
-public
-class ClusterStateData {
+public class ClusterStateData {
     ClusterState state;
     Date updated;
 }

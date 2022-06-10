@@ -149,6 +149,110 @@ public class ResponseEngine {
                         .toList());
     }
 
+    public ApiResponse<ExecutorNodeData> executorDetails(String executorId) {
+        return clusterResourcesDB.currentSnapshot(executorId)
+                .map(ExecutorHostInfo::getNodeData)
+                .map(ApiResponse::success)
+                .orElse(failure("No executor found with id: " + executorId));
+    }
+
+    public ApiResponse<List<ExposedAppInfo>> endpoints() {
+        //TODO::HANDLE EXPOSURE MODE
+        return success(applicationStateDB.applications(0, Integer.MAX_VALUE)
+                               .stream()
+                               .filter(app -> engine.applicationState(app.getAppId())
+                                       .filter(s -> s.equals(ApplicationState.RUNNING)
+                                               || s.equals(ApplicationState.SCALING_REQUESTED)
+                                               || s.equals(ApplicationState.REPLACE_INSTANCES_REQUESTED))
+                                       .isPresent()) //Only running
+                               .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
+                               .filter(app -> !app.getSpec()
+                                       .getExposedPorts()
+                                       .isEmpty()) //Has any exposed ports
+                               .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
+                               .map(app -> {
+                                   val spec = app.getSpec().getExposureSpec();
+                                   return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
+                                                             instanceInfoDB.instances(app.getAppId(),
+                                                                                      Set.of(HEALTHY),
+                                                                                      0,
+                                                                                      Integer.MAX_VALUE,
+                                                                                      isInMaintenanceWindow())//Skip stale check if cluster is in maintenance mode
+                                                                     .stream()
+                                                                     .sorted(Comparator.comparing(
+                                                                             InstanceInfo::getCreated)) //Reduce chaos
+                                                                     .filter(instanceInfo -> instanceInfo.getLocalInfo()
+                                                                             .getPorts()
+                                                                             .containsKey(spec.getPortName())) //Has
+                                                                     // the specified port exposed
+                                                                     .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
+                                                                             instanceInfo.getLocalInfo()
+                                                                                     .getHostname(),
+                                                                             instanceInfo.getLocalInfo()
+                                                                                     .getPorts()
+                                                                                     .get(spec.getPortName())
+                                                                                     .getHostPort(),
+                                                                             instanceInfo.getLocalInfo()
+                                                                                     .getPorts()
+                                                                                     .get(spec.getPortName())
+                                                                                     .getPortType()))
+                                                                     .toList());
+                               })
+                               .toList());
+    }
+
+
+    public ApiResponse<Void> blacklistExecutor(final String executorId) {
+        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+        if (null != executor) {
+            val msgResponse = communicator.send(
+                    new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                 new ExecutorAddress(executor.getExecutorId(),
+                                                                     executor.getNodeData().getHostname(),
+                                                                     executor.getNodeData().getPort(),
+                                                                     executor.getNodeData().getTransportType())));
+            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                clusterResourcesDB.markBlacklisted(executorId);
+                log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
+                engine.moveInstancesFromExecutor(executorId);
+                return success(null);
+            }
+            return failure("Error sending remote message");
+        }
+        return failure("No such executor");
+    }
+
+    public ApiResponse<Void> unblacklistExecutor(final String executorId) {
+        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+        if (null != executor) {
+            val msgResponse = communicator.send(
+                    new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                   new ExecutorAddress(executor.getExecutorId(),
+                                                                       executor.getNodeData().getHostname(),
+                                                                       executor.getNodeData().getPort(),
+                                                                       executor.getNodeData().getTransportType())));
+            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                clusterResourcesDB.unmarkBlacklisted(executorId);
+                log.debug("Executor {} marked unblacklisted.", executorId);
+                return success(null);
+            }
+            return failure("Error sending remote message");
+        }
+        return failure("No such executor");
+    }
+
+    public ApiResponse<Void> setClusterMaintenanceMode() {
+        return clusterStateDB.setClusterState(ClusterState.MAINTENANCE).isPresent()
+               ? success(null)
+               : failure("Could not set cluster to maintenance mode");
+    }
+
+    public ApiResponse<Void> unsetClusterMaintenanceMode() {
+        return clusterStateDB.setClusterState(ClusterState.NORMAL).isPresent()
+               ? success(null)
+               : failure("Could not set cluster to maintenance mode");
+    }
+
     private AppDetails toAppDetails(final ApplicationInfo info) {
         val spec = info.getSpec();
         val requiredInstances = info.getInstances();
@@ -268,110 +372,7 @@ public class ResponseEngine {
                 });
     }
 
-    public ApiResponse<ExecutorNodeData> executorDetails(String executorId) {
-        return clusterResourcesDB.currentSnapshot(executorId)
-                .map(ExecutorHostInfo::getNodeData)
-                .map(ApiResponse::success)
-                .orElse(failure("No executor found with id: " + executorId));
-    }
-
-    public ApiResponse<List<ExposedAppInfo>> endpoints() {
-        //TODO::HANDLE EXPOSURE MODE
-        return success(applicationStateDB.applications(0, Integer.MAX_VALUE)
-                               .stream()
-                               .filter(app -> engine.applicationState(app.getAppId())
-                                       .filter(s -> s.equals(ApplicationState.RUNNING)
-                                               || s.equals(ApplicationState.SCALING_REQUESTED)
-                                               || s.equals(ApplicationState.REPLACE_INSTANCES_REQUESTED))
-                                       .isPresent()) //Only running
-                               .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
-                               .filter(app -> !app.getSpec()
-                                       .getExposedPorts()
-                                       .isEmpty()) //Has any exposed ports
-                               .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
-                               .map(app -> {
-                                   val spec = app.getSpec().getExposureSpec();
-                                   return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
-                                                             instanceInfoDB.instances(app.getAppId(),
-                                                                                      Set.of(HEALTHY),
-                                                                                      0,
-                                                                                      Integer.MAX_VALUE,
-                                                                                      isInMaintenanceWindow())//Skip stale check if cluster is in maintenance mode
-                                                                     .stream()
-                                                                     .sorted(Comparator.comparing(
-                                                                             InstanceInfo::getCreated)) //Reduce chaos
-                                                                     .filter(instanceInfo -> instanceInfo.getLocalInfo()
-                                                                             .getPorts()
-                                                                             .containsKey(spec.getPortName())) //Has
-                                                                     // the specified port exposed
-                                                                     .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
-                                                                             instanceInfo.getLocalInfo()
-                                                                                     .getHostname(),
-                                                                             instanceInfo.getLocalInfo()
-                                                                                     .getPorts()
-                                                                                     .get(spec.getPortName())
-                                                                                     .getHostPort(),
-                                                                             instanceInfo.getLocalInfo()
-                                                                                     .getPorts()
-                                                                                     .get(spec.getPortName())
-                                                                                     .getPortType()))
-                                                                     .toList());
-                               })
-                               .toList());
-    }
-
     private boolean isInMaintenanceWindow() {
         return CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null));
-    }
-
-    public ApiResponse<Void> blacklistExecutor(final String executorId) {
-        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-        if (null != executor) {
-            val msgResponse = communicator.send(
-                    new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                 new ExecutorAddress(executor.getExecutorId(),
-                                                                     executor.getNodeData().getHostname(),
-                                                                     executor.getNodeData().getPort(),
-                                                                     executor.getNodeData().getTransportType())));
-            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                clusterResourcesDB.markBlacklisted(executorId);
-                log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
-                engine.moveInstancesFromExecutor(executorId);
-                return success(null);
-            }
-            return failure("Error sending remote message");
-        }
-        return failure("No such executor");
-    }
-
-    public ApiResponse<Void> unblacklistExecutor(final String executorId) {
-        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-        if (null != executor) {
-            val msgResponse = communicator.send(
-                    new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                   new ExecutorAddress(executor.getExecutorId(),
-                                                                       executor.getNodeData().getHostname(),
-                                                                       executor.getNodeData().getPort(),
-                                                                       executor.getNodeData().getTransportType())));
-            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                clusterResourcesDB.unmarkBlacklisted(executorId);
-                log.debug("Executor {} marked unblacklisted.", executorId);
-                return success(null);
-            }
-            return failure("Error sending remote message");
-        }
-        return failure("No such executor");
-    }
-
-    public ApiResponse<Void> setClusterMaintenanceMode() {
-        return clusterStateDB.setClusterState(ClusterState.MAINTENANCE).isPresent()
-               ? success(null)
-               : failure("Could not set cluster to maintenance mode");
-    }
-
-    public ApiResponse<Void> unsetClusterMaintenanceMode() {
-        return clusterStateDB.setClusterState(ClusterState.NORMAL).isPresent()
-               ? success(null)
-               : failure("Could not set cluster to maintenance mode");
     }
 }

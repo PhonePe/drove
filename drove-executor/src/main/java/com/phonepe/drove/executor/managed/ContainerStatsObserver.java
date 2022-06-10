@@ -13,6 +13,7 @@ import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.metrics.AverageCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.LongGauge;
 import com.phonepe.drove.executor.metrics.PerCoreCpuUsageGauge;
+import com.phonepe.drove.executor.metrics.TimeDiffGauge;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -149,6 +150,13 @@ public class ContainerStatsObserver implements Managed {
                                            .filter(Objects::nonNull)
                                            .mapToLong(n -> Objects.requireNonNullElse(n.getTxBytes(), 0L))
                                            .sum()))
+                    .connect(diffGauge("network_tx_per_sec_bytes",
+                                       instanceInfo,
+                                       net -> net.getData()
+                                               .stream()
+                                               .filter(Objects::nonNull)
+                                               .mapToLong(n -> Objects.requireNonNullElse(n.getTxBytes(), 0L))
+                                               .sum()))
                     .connect(gauge("network_tx_errors",
                                    instanceInfo,
                                    net -> net.getData()
@@ -170,6 +178,13 @@ public class ContainerStatsObserver implements Managed {
                                            .filter(Objects::nonNull)
                                            .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
                                            .sum()))
+                    .connect(diffGauge("network_rx_per_sec_bytes",
+                                       instanceInfo,
+                                       net -> net.getData()
+                                               .stream()
+                                               .filter(Objects::nonNull)
+                                               .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
+                                               .sum()))
                     .connect(gauge("network_rx_errors",
                                    instanceInfo,
                                    net -> net.getData()
@@ -255,6 +270,17 @@ public class ContainerStatsObserver implements Managed {
         });
     }
 
+
+    private <T> TimeDiffGauge<T> diffGauge(final String name, InstanceInfo instanceInfo, ToLongFunction<T> generator) {
+        val metricName = metricName(instanceInfo, name);
+        return metricRegistry.register(metricName,
+                                       new TimeDiffGauge<T>() {
+                                           @Override
+                                           public void consume(T data) {
+                                               setValue(generator.applyAsLong(data));
+                                           }
+                                       });
+    }
 
     private <T> LongGauge<T> gauge(final String name, InstanceInfo instanceInfo, ToLongFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
