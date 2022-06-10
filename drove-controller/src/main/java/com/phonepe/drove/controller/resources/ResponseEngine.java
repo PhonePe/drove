@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
@@ -47,6 +48,10 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 @Slf4j
 public class ResponseEngine {
 
+    private static final Set<ApplicationState> EXPOSED_STATES = EnumSet.of(ApplicationState.RUNNING,
+                                                                           ApplicationState.SCALING_REQUESTED,
+                                                                           ApplicationState.REPLACE_INSTANCES_REQUESTED);
+
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final InstanceInfoDB instanceInfoDB;
@@ -68,6 +73,8 @@ public class ResponseEngine {
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
     }
+
+
 
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
         return success(applicationStateDB.applications(from, size)
@@ -161,9 +168,7 @@ public class ResponseEngine {
         return success(applicationStateDB.applications(0, Integer.MAX_VALUE)
                                .stream()
                                .filter(app -> engine.applicationState(app.getAppId())
-                                       .filter(s -> s.equals(ApplicationState.RUNNING)
-                                               || s.equals(ApplicationState.SCALING_REQUESTED)
-                                               || s.equals(ApplicationState.REPLACE_INSTANCES_REQUESTED))
+                                       .filter(EXPOSED_STATES::contains)
                                        .isPresent()) //Only running
                                .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
                                .filter(app -> !app.getSpec()
@@ -177,7 +182,8 @@ public class ResponseEngine {
                                                                                       Set.of(HEALTHY),
                                                                                       0,
                                                                                       Integer.MAX_VALUE,
-                                                                                      isInMaintenanceWindow())//Skip stale check if cluster is in maintenance mode
+                                                                                      isInMaintenanceWindow())//Skip
+                                                                     // stale check if cluster is in maintenance mode
                                                                      .stream()
                                                                      .sorted(Comparator.comparing(
                                                                              InstanceInfo::getCreated)) //Reduce chaos
@@ -241,18 +247,19 @@ public class ResponseEngine {
         return failure("No such executor");
     }
 
-    public ApiResponse<Void> setClusterMaintenanceMode() {
-        return clusterStateDB.setClusterState(ClusterState.MAINTENANCE).isPresent()
-               ? success(null)
-               : failure("Could not set cluster to maintenance mode");
+    public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
+        return clusterStateDB.setClusterState(ClusterState.MAINTENANCE)
+                .map(ApiResponse::success)
+                .orElse(failure("Could not change cluster state"));
     }
 
-    public ApiResponse<Void> unsetClusterMaintenanceMode() {
-        return clusterStateDB.setClusterState(ClusterState.NORMAL).isPresent()
-               ? success(null)
-               : failure("Could not set cluster to maintenance mode");
+    public ApiResponse<ClusterStateData> unsetClusterMaintenanceMode() {
+        return clusterStateDB.setClusterState(ClusterState.NORMAL)
+                .map(ApiResponse::success)
+                .orElse(failure("Could not change cluster state"));
     }
 
+    @IgnoreInJacocoGeneratedReport
     private AppDetails toAppDetails(final ApplicationInfo info) {
         val spec = info.getSpec();
         val requiredInstances = info.getInstances();

@@ -1,5 +1,8 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
+import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -8,6 +11,7 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.api.ApiErrorCode;
+import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.common.ClusterState;
@@ -24,6 +28,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -221,6 +228,7 @@ class ResponseEngineTest {
                                     .toList());
         when(engine.applicationState(anyString())).thenAnswer(new Answer<Optional<ApplicationState>>() {
             int count = 0;
+
             @Override
             public Optional<ApplicationState> answer(InvocationOnMock invocationOnMock) {
                 return (++count) > 50 ? Optional.of(ApplicationState.RUNNING) : Optional.empty();
@@ -350,7 +358,9 @@ class ResponseEngineTest {
         when(engine.applicationState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
         val instances = apps.stream()
                 .flatMap(applicationInfo -> LongStream.rangeClosed(1, applicationInfo.getInstances())
-                        .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(), applicationInfo.getSpec(), (int)i))
+                        .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(),
+                                                            applicationInfo.getSpec(),
+                                                            (int) i))
                         .toList()
                         .stream())
                 .collect(Collectors.groupingBy(InstanceInfo::getAppId));
@@ -363,6 +373,101 @@ class ResponseEngineTest {
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
         assertEquals(100, r.getData().size());
         r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
+    }
+
+    @Test
+    void testBlacklistExecutor() {
+        testBlacklistingFunctionality(ResponseEngine::blacklistExecutor);
+    }
+
+    @Test
+    void testUnblacklistExecutor() {
+        testBlacklistingFunctionality(ResponseEngine::unblacklistExecutor);
+    }
+
+    @Test
+    void testSetClusterMaintenanceMode() {
+        testMaintenanceFunctionality(ClusterState.MAINTENANCE, ResponseEngine::setClusterMaintenanceMode);
+    }
+    @Test
+    void testUnsetClusterMaintenanceMode() {
+        testMaintenanceFunctionality(ClusterState.NORMAL, ResponseEngine::unsetClusterMaintenanceMode);
+    }
+
+    private void testBlacklistingFunctionality(final BiFunction<ResponseEngine, String, ApiResponse<Void>> func) {
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val communicator = mock(ControllerCommunicator.class);
+
+        val re = new ResponseEngine(engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB,
+                                    communicator);
+        val executor = executorHost(8080);
+        when(clusterResourcesDB.currentSnapshot(executor.getExecutorId())).thenReturn(Optional.of(executor));
+
+        val success = new AtomicBoolean(true);
+        when(communicator.send(any(ExecutorMessage.class))).thenAnswer((Answer<MessageResponse>) invocationOnMock -> {
+            val header = invocationOnMock.getArgument(0, ExecutorMessage.class).getHeader();
+            return success.get()
+                   ? new MessageResponse(header, MessageDeliveryStatus.ACCEPTED)
+                   : new MessageResponse(header, MessageDeliveryStatus.FAILED);
+        });
+        {
+            val r = func.apply(re, executor.getExecutorId());
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+        {
+            success.set(false);
+            val r = func.apply(re, executor.getExecutorId());
+            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals("Error sending remote message", r.getMessage());
+        }
+        {
+            val r = func.apply(re, "invalid-exec");
+            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals("No such executor", r.getMessage());
+        }
+    }
+
+    private void testMaintenanceFunctionality(
+            final ClusterState state,
+            final Function<ResponseEngine, ApiResponse<ClusterStateData>> func) {
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val communicator = mock(ControllerCommunicator.class);
+
+        val re = new ResponseEngine(engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB,
+                                    communicator);
+        val executor = executorHost(8080);
+        val success = new AtomicBoolean(true);
+        when(clusterStateDB.setClusterState(state))
+                .thenAnswer((Answer<Optional<ClusterStateData>>) invocationOnMock ->
+                        success.get()
+                        ? Optional.of(new ClusterStateData(state, new Date()))
+                        : Optional.empty());
+        {
+            val r = func.apply(re);
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+        {
+            success.set(false);
+            val r = func.apply(re);
+            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals("Could not change cluster state", r.getMessage());
+        }
     }
 
     private ApplicationInfo createApp(int i, int instances) {
