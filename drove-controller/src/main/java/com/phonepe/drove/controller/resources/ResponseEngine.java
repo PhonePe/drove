@@ -209,6 +209,9 @@ public class ResponseEngine {
 
 
     public ApiResponse<Void> blacklistExecutor(final String executorId) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ApiResponse.failure("Cluster is in maintenance mode");
+        }
         val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
         if (null != executor) {
             val msgResponse = communicator.send(
@@ -229,6 +232,9 @@ public class ResponseEngine {
     }
 
     public ApiResponse<Void> unblacklistExecutor(final String executorId) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ApiResponse.failure("Cluster is in maintenance mode");
+        }
         val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
         if (null != executor) {
             val msgResponse = communicator.send(

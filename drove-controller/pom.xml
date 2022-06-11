@@ -12,7 +12,7 @@
     <artifactId>drove-controller</artifactId>
 
     <properties>
-        <guicey-server-pages.version>5.3.0-1</guicey-server-pages.version>
+        <guicey-server-pages.version>5.5.0-1</guicey-server-pages.version>
         <handlebars.version>4.3.0</handlebars.version>
         <handlebars-guava-cache.version>4.3.0</handlebars-guava-cache.version>
         <jersey-media-sse.version>2.33</jersey-media-sse.version>
@@ -102,6 +102,10 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-testing</artifactId>
         </dependency>
     </dependencies>
 

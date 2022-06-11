@@ -8,6 +8,7 @@ import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
+import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -123,10 +124,10 @@ public class Apis {
     @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(
             @PathParam("id") @NotEmpty final String appId,
-            @QueryParam("start") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("0") int start,
-            @QueryParam("length") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("65535") int length) {
+            @QueryParam("start") @Min(0) @Max(1024) @DefaultValue("0") int start,
+            @QueryParam("size") @Min(0) @Max(1024) @DefaultValue("1024") int size) {
 
-        return responseEngine.applicationOldInstances(appId, start, length);
+        return responseEngine.applicationOldInstances(appId, start, size);
     }
 
     @GET
@@ -155,9 +156,6 @@ public class Apis {
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Void> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure("Cluster is in maintenance mode");
-        }
         return responseEngine.blacklistExecutor(executorId);
     }
 
@@ -166,9 +164,6 @@ public class Apis {
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Void> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure("Cluster is in maintenance mode");
-        }
         return responseEngine.unblacklistExecutor(executorId);
     }
 
@@ -176,7 +171,7 @@ public class Apis {
     @Path("/cluster/maintenance/set")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public ApiResponse<Void> setClusterMaintenanceMode() {
+    public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
         return responseEngine.setClusterMaintenanceMode();
     }
 
@@ -184,7 +179,7 @@ public class Apis {
     @Path("/cluster/maintenance/unset")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public ApiResponse<Void> unsetClusterMaintenanceMode() {
+    public ApiResponse<ClusterStateData> unsetClusterMaintenanceMode() {
         return responseEngine.unsetClusterMaintenanceMode();
     }
 
