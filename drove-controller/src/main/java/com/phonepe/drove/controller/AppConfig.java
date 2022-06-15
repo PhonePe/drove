@@ -26,5 +26,5 @@ public class AppConfig extends Configuration {
     private ClusterAuthenticationConfig clusterAuth;
 
     @Valid
-    BasicAuthConfig userAuth;
+    private BasicAuthConfig userAuth;
 }

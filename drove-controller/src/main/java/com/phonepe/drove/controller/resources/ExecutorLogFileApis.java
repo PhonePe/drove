@@ -1,8 +1,9 @@
 package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Metered;
-import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.model.ClusterCommHeaders;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 /**
@@ -138,7 +138,7 @@ public class ExecutorLogFileApis {
         requestBuilder.header(CONTENT_TYPE, "application/json");
         requestBuilder.header(NODE_ID_HEADER, nodeId);
         if (null != secret) {
-            requestBuilder.header(AUTHORIZATION, "Bearer " + secret.getSecret());
+            requestBuilder.header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
         }
         val request = requestBuilder.GET().build();
         val so = new StreamingOutput() {

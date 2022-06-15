@@ -3,6 +3,7 @@ package com.phonepe.drove.common.net;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.model.ClusterCommHeaders;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
@@ -24,7 +25,6 @@ import java.time.Duration;
 import java.util.Optional;
 
 import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 /**
@@ -97,7 +97,7 @@ public abstract class RemoteMessageSender<
             requestBuilder.header(CONTENT_TYPE, "application/json");
             requestBuilder.header(NODE_ID_HEADER, nodeId);
             if(null != secret) {
-                requestBuilder.header(AUTHORIZATION, "Bearer " + secret.getSecret());
+                requestBuilder.header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
             }
             requestBuilder.POST(HttpRequest.BodyPublishers.ofByteArray(mapper.writeValueAsBytes(message)));
         }

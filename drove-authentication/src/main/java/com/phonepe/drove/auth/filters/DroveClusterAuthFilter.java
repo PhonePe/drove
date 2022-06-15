@@ -1,6 +1,7 @@
 package com.phonepe.drove.auth.filters;
 
 import com.phonepe.drove.auth.core.ClusterCredentials;
+import com.phonepe.drove.auth.model.ClusterCommHeaders;
 import com.phonepe.drove.auth.model.DroveUser;
 import io.dropwizard.auth.AuthFilter;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,6 @@ import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
 import java.util.Optional;
@@ -34,18 +34,7 @@ public class DroveClusterAuthFilter extends AuthFilter<ClusterCredentials, Drove
     }
 
     private Optional<String> secretFromHeader(final ContainerRequestContext requestContext) {
-        val header = requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (header != null) {
-            int space = header.indexOf(' ');
-            if (space > 0) {
-                final String method = header.substring(0, space);
-                if ("Bearer".equalsIgnoreCase(method)) {
-                    final String rawToken = header.substring(space + 1);
-                    return Optional.of(rawToken);
-                }
-            }
-        }
-        return Optional.empty();
+        return Optional.ofNullable(requestContext.getHeaders().getFirst(ClusterCommHeaders.CLUSTER_AUTHORIZATION));
     }
 
     public static class Builder extends AuthFilter.AuthFilterBuilder<ClusterCredentials, DroveUser, DroveClusterAuthFilter> {
