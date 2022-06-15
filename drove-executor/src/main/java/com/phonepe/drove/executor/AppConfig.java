@@ -1,6 +1,6 @@
 package com.phonepe.drove.executor;
 
-import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;

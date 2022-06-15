@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.resources;
 
-import com.phonepe.drove.common.auth.model.DroveExternalUser;
-import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveExternalUser;
+import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;

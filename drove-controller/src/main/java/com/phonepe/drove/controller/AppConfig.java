@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller;
 
-import com.phonepe.drove.common.auth.config.BasicAuthConfig;
-import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.config.BasicAuthConfig;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import io.dropwizard.Configuration;
 import lombok.Data;

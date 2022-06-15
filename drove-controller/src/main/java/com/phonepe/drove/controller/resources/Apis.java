@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;

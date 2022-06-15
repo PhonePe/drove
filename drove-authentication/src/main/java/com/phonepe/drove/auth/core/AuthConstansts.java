@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.auth.core;
+package com.phonepe.drove.auth.core;
 
 import lombok.experimental.UtilityClass;
 

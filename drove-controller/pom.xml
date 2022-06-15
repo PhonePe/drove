@@ -26,6 +26,11 @@
         </dependency>
         <dependency>
             <groupId>com.phonepe.drove</groupId>
+            <artifactId>drove-authentication</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.phonepe.drove</groupId>
             <artifactId>drove-jobexecutor</artifactId>
             <version>${project.version}</version>
         </dependency>

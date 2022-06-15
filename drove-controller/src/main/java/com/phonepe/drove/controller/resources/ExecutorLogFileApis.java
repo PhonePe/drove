@@ -2,15 +2,13 @@ package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Metered;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
-import com.phonepe.drove.common.auth.model.DroveUser;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.eclipse.jetty.http.HttpStatus;
@@ -30,7 +28,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.phonepe.drove.common.auth.core.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
@@ -82,7 +80,6 @@ public class ExecutorLogFileApis {
     @Path("/{appId}/{instanceId}/read/{fileName}")
     @Metered
     public Response streamLogs(
-            @Auth final DroveUser user,
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName,
@@ -100,7 +97,6 @@ public class ExecutorLogFileApis {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Metered
     public Response downloadLogFile(
-            @Auth final DroveUser user,
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName) {

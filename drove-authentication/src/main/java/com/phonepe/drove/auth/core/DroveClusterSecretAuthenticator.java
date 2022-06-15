@@ -1,9 +1,9 @@
-package com.phonepe.drove.common.auth.core;
+package com.phonepe.drove.auth.core;
 
-import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
-import com.phonepe.drove.common.auth.model.DroveClusterNode;
-import com.phonepe.drove.common.auth.model.DroveUser;
-import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveClusterNode;
 import io.dropwizard.auth.Authenticator;
 
 import java.util.Optional;

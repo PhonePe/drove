@@ -1,9 +1,9 @@
-package com.phonepe.drove.common.auth.core;
+package com.phonepe.drove.auth.core;
 
-import com.phonepe.drove.common.auth.config.BasicAuthConfig;
-import com.phonepe.drove.common.auth.model.DroveExternalUser;
-import com.phonepe.drove.common.auth.model.DroveExternalUserInfo;
-import com.phonepe.drove.common.auth.model.DroveUser;
+import com.phonepe.drove.auth.config.BasicAuthConfig;
+import com.phonepe.drove.auth.model.DroveExternalUserInfo;
+import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.auth.model.DroveExternalUser;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
 

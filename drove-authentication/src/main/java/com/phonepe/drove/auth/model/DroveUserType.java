@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.auth.model;
+package com.phonepe.drove.auth.model;
 
 /**
  *

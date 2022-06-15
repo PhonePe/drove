@@ -23,8 +23,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-auth</artifactId>
+            <groupId>com.phonepe.drove</groupId>
+            <artifactId>drove-authentication</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.appform.signals</groupId>

@@ -2,11 +2,9 @@ package com.phonepe.drove.executor.resources;
 
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.auth.model.DroveUser;
-import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.executor.logging.LogInfo;
-import io.dropwizard.auth.Auth;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -63,7 +61,6 @@ public class LogFileStream {
     @Path("/{appId}/{instanceId}/list")
     @Metered
     public Response listLogs(
-            @Auth final DroveUser user,
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId) {
         val logPath = logInfo.logPathFor(appId, instanceId);
@@ -88,13 +85,11 @@ public class LogFileStream {
     @Path("/{appId}/{instanceId}/read/{fileName}")
     @Metered
     public Response streamLogs(
-            @Auth final DroveUser user,
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName,
             @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
             @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
-        log.trace("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
         val logFilePath = logInfo.logPathFor(appId, instanceId);
         if (Strings.isNullOrEmpty(logFilePath)) {
             return error("This only works if the 'drove' appender type is configured");
@@ -131,11 +126,9 @@ public class LogFileStream {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Metered
     public Response downloadLogFile(
-            @Auth final DroveUser user,
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName) {
-        log.debug("Received connection request from: {}. AppID: {} InstanceId: {}", user.getName(), appId, instanceId);
         val logFilePath = logInfo.logPathFor(appId, instanceId);
         if (Strings.isNullOrEmpty(logFilePath)) {
             return error("This only works if the 'drove' appender type is configured");

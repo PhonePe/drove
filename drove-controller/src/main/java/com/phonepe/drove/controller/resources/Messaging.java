@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
-import com.phonepe.drove.common.auth.model.DroveUser;
-import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;

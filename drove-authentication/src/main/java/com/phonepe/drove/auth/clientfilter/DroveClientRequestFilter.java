@@ -1,6 +1,6 @@
-package com.phonepe.drove.common.auth.clientfilter;
+package com.phonepe.drove.auth.clientfilter;
 
-import com.phonepe.drove.common.auth.core.AuthConstansts;
+import com.phonepe.drove.auth.core.AuthConstansts;
 
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;

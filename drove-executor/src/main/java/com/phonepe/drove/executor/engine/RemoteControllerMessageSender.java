@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;

@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.auth.clientfilter.DroveClientRequestFilter;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.auth.config.ClusterAuthenticationConfig;
-import com.phonepe.drove.common.auth.clientfilter.DroveClientRequestFilter;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;

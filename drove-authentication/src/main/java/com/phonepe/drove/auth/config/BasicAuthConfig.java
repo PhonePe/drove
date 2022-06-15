@@ -1,7 +1,7 @@
-package com.phonepe.drove.common.auth.config;
+package com.phonepe.drove.auth.config;
 
-import com.phonepe.drove.common.auth.model.DroveExternalUserInfo;
-import com.phonepe.drove.common.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveExternalUserInfo;
+import com.phonepe.drove.auth.model.DroveUserRole;
 import lombok.Value;
 
 import javax.validation.constraints.NotEmpty;

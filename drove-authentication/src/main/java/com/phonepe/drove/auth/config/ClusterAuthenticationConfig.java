@@ -1,4 +1,4 @@
-package com.phonepe.drove.common.auth.config;
+package com.phonepe.drove.auth.config;
 
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.AllArgsConstructor;

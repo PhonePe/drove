@@ -13,6 +13,7 @@
         <module>drove-statemachine</module>
         <module>drove-jobexecutor</module>
         <module>drove-models</module>
+        <module>drove-authentication</module>
         <module>drove-common</module>
         <module>drove-executor</module>
         <module>drove-controller</module>
