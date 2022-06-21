@@ -27,8 +27,9 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
     private final StampedLock lock = new StampedLock();
 
     @Inject
-    public CachingProxyInstanceInfoDB(@Named("StoredInstanceInfoDB") final InstanceInfoDB root,
-                                      final LeadershipEnsurer leadershipEnsurer) {
+    public CachingProxyInstanceInfoDB(
+            @Named("StoredInstanceInfoDB") final InstanceInfoDB root,
+            final LeadershipEnsurer leadershipEnsurer) {
         this.root = root;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::purge);
     }
@@ -61,7 +62,8 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
             return sublist(appInstances.values()
                                    .stream()
                                    .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
-                                   .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
+                                   .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated()
+                                           .after(validUpdateDate))
                                    .toList(), start, size);
         }
         finally {
@@ -85,7 +87,13 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
         try {
             val status = root.updateInstanceState(appId, instanceId, instanceInfo);
             if (status) {
-                reloadInstancesForApp(appId);
+                cache.compute(appId, (aId, oldInstances) -> {
+                    val instances = null != oldInstances
+                                    ? oldInstances
+                                    : new HashMap<String, InstanceInfo>();
+                    instances.put(instanceId, instanceInfo);
+                    return instances;
+                });
             }
             return status;
         }

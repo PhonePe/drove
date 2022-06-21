@@ -9,5 +9,5 @@ import java.time.Duration;
  */
 @UtilityClass
 public class Constants {
-    public static Duration EXECUTOR_REFRESH_INTERVAL = Duration.ofSeconds(10);
+    public static Duration EXECUTOR_REFRESH_INTERVAL = Duration.ofSeconds(20);
 }

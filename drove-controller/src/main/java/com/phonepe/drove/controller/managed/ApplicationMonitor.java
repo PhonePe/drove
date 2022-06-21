@@ -33,7 +33,7 @@ public class ApplicationMonitor implements Managed {
     private static final String HANDLER_NAME = "APP_CHECK_MONITOR";
     private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
             .initialDelay(Duration.ofSeconds(5))
-            .interval(Duration.ofSeconds(3))
+            .interval(Duration.ofSeconds(30))
             .build();
 
     private final ApplicationStateDB applicationStateDB;
