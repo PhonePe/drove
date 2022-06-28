@@ -68,6 +68,10 @@ public class ExecutorTestingUtils {
     }
 
     public static InstanceSpec testSpec(final String imageName) {
+        return testSpec(imageName, 3);
+    }
+
+    public static InstanceSpec testSpec(final String imageName, int attempt) {
         return new InstanceSpec("T001",
                                 "TEST_SPEC",
                                 UUID.randomUUID().toString(),
@@ -85,7 +89,7 @@ public class ExecutorTestingUtils {
                                                                     Duration.seconds(1)),
                                               Duration.seconds(1),
                                               Duration.seconds(3),
-                                              3,
+                                              attempt,
                                               Duration.seconds(0)),
                                 new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                                                     "main",
@@ -96,7 +100,7 @@ public class ExecutorTestingUtils {
                                                                     Duration.seconds(1)),
                                               Duration.seconds(1),
                                               Duration.seconds(3),
-                                              3,
+                                              attempt,
                                               Duration.seconds(1)),
                                 LocalLoggingSpec.DEFAULT,
                                 Collections.emptyMap(),

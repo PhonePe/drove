@@ -175,6 +175,7 @@ public class InstanceHealthcheckAction extends InstanceAction {
                 }
                 else {
                     log.debug("Health check results: {}", result);
+                    attemptCount = 0;
                 }
                 currentResult.set(result);
             }

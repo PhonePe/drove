@@ -51,6 +51,37 @@ class InstanceHealthcheckActionTest extends AbstractTestBase {
     }
 
     @Test
+    @SneakyThrows
+    void testUsualFlowRecovery(final WireMockRuntimeInfo wm) {
+        stubFor(get("/")
+                        .inScenario("health-check-test")
+                        .whenScenarioStateIs(Scenario.STARTED)
+                        .willReturn(ok())
+                        .willSetStateTo("unhealthyState"));
+        stubFor(get("/")
+                        .inScenario("health-check-test")
+                        .whenScenarioStateIs("unhealthyState")
+                        .willReturn(serverError())
+                        .willSetStateTo("recoveryState"));
+        stubFor(get("/")
+                        .inScenario("health-check-test")
+                        .whenScenarioStateIs("recoveryState")
+                        .willReturn(ok())
+                        .willSetStateTo(Scenario.STARTED));
+
+        val spec = testSpec("hello-world", 1);
+        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val action = new InstanceHealthcheckAction();
+        val f = Executors.newSingleThreadExecutor()
+                .submit(() -> action.execute(ctx,
+                                             StateData.create(InstanceState.HEALTHY,
+                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
+        delay(Duration.ofSeconds(5));
+        action.stop();
+        assertEquals(InstanceState.STOPPING, f.get().getState());
+    }
+
+    @Test
     void testException(final WireMockRuntimeInfo wm) {
         stubFor(get("/")
                         .inScenario("health-check-test")
