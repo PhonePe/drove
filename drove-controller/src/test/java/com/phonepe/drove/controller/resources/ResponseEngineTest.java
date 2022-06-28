@@ -102,6 +102,36 @@ class ResponseEngineTest {
         assertNotNull(res.getData());
     }
 
+    @Test
+    void testApplicationSpec() {
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val communicator = mock(ControllerCommunicator.class);
+
+        val re = new ResponseEngine(engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    clusterStateDB,
+                                    clusterResourcesDB,
+                                    communicator);
+
+        val spec = appSpec();
+        val appId = appId(spec);
+
+        val applicationInfo = new ApplicationInfo(appId, spec, 5, new Date(), new Date());
+        when(applicationStateDB.application(appId))
+                .thenReturn(Optional.of(applicationInfo));
+
+        val res = re.applicationSpec(appId);
+        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertNotNull(res.getData());
+        assertEquals(spec, res.getData());
+    }
+
 
     @Test
     void testApplicationInstances() {

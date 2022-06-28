@@ -4,6 +4,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.models.api.*;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
@@ -197,6 +198,22 @@ class ApisTest {
                     });
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(appSummary, r.getData());
+        }
+    }
+
+    @Test
+    void applicationSpec() {
+        val spec = appSpec();
+
+        when(responseEngine.applicationSpec("TEST_APP_1"))
+                .thenReturn(ApiResponse.success(spec));
+        {
+            val r = EXT.target("/v1/applications/TEST_APP_1/spec")
+                    .request()
+                    .get(new GenericType<ApiResponse<ApplicationSpec>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(spec, r.getData());
         }
     }
 
