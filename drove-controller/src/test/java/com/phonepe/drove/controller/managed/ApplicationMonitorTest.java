@@ -10,15 +10,15 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationRecoverOperation;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,12 +51,15 @@ class ApplicationMonitorTest {
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
-        when(instanceInfoDB.instanceCount(anyString(), eq(HEALTHY))).thenReturn(10L);
+        when(instanceInfoDB.instanceCount(ArgumentMatchers.<Collection<String>>any(), eq(HEALTHY))).thenAnswer(
+                invocationOnMock -> ((Collection<String>)invocationOnMock.getArgument(0, Collection.class))
+                        .stream()
+                        .collect(Collectors.toMap(Function.identity(), i -> 10L)));
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new ArrayList<String>();
-        when(appEngine.handleOperation(any(ApplicationOperation.class)))
+        when(appEngine.handleOperation(any(ApplicationRecoverOperation.class)))
                 .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
-                    ids.add(invocationOnMock.getArgument(0, String.class));
+                    ids.add(invocationOnMock.getArgument(0, ApplicationRecoverOperation.class).getAppId());
                     return CommandValidator.ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());
@@ -80,7 +83,10 @@ class ApplicationMonitorTest {
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(MONITORING));
-        when(instanceInfoDB.instanceCount(anyString(), eq(HEALTHY))).thenReturn(0L);
+        when(instanceInfoDB.instanceCount(ArgumentMatchers.<Collection<String>>any(), eq(HEALTHY))).thenAnswer(
+                invocationOnMock -> ((Collection<String>)invocationOnMock.getArgument(0, Collection.class))
+                        .stream()
+                        .collect(Collectors.toMap(Function.identity(), i -> 0L)));
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new ArrayList<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))
@@ -109,7 +115,10 @@ class ApplicationMonitorTest {
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
-        when(instanceInfoDB.instanceCount(anyString(), eq(HEALTHY))).thenReturn(9L);
+        when(instanceInfoDB.instanceCount(ArgumentMatchers.<Collection<String>>any(), eq(HEALTHY))).thenAnswer(
+                invocationOnMock -> ((Collection<String>)invocationOnMock.getArgument(0, Collection.class))
+                        .stream()
+                        .collect(Collectors.toMap(Function.identity(), i -> 0L)));
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new HashSet<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))

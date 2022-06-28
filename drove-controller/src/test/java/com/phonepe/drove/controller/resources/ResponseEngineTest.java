@@ -25,7 +25,6 @@ import org.mockito.stubbing.Answer;
 
 import java.security.SecureRandom;
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -365,9 +364,8 @@ class ResponseEngineTest {
                         .stream())
                 .collect(Collectors.groupingBy(InstanceInfo::getAppId));
 
-        when(instanceInfoDB.instances(anyString(), anySet(), eq(0), eq(Integer.MAX_VALUE), eq(false)))
-                .thenAnswer(invocationOnMock -> instances.getOrDefault(invocationOnMock.getArgument(0, String.class),
-                                                                       List.of()));
+        when(instanceInfoDB.instances(anyList(), anySet(), eq(false))).thenReturn(instances);
+
 
         val r = re.endpoints();
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());

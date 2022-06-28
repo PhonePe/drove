@@ -80,10 +80,9 @@ public class App extends Application<AppConfig> {
 
     private void setupAuth(AppConfig appConfig, Environment environment, JerseyEnvironment jersey) {
         val basicAuthConfig = Objects.requireNonNullElse(appConfig.getUserAuth(), BasicAuthConfig.DEFAULT);
-        val filters = new ArrayList<AuthFilter<?, DroveUser>>();
+        val filters = new ArrayList<AuthFilter<?, ? extends DroveUser>>();
         filters.add(new DroveClusterAuthFilter.Builder()
-                            .setAuthenticator(new DroveClusterSecretAuthenticator(Objects.requireNonNullElse(appConfig.getClusterAuth(),
-                                                                                                             ClusterAuthenticationConfig.DEFAULT)))
+                            .setAuthenticator(new DroveClusterSecretAuthenticator(Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT)))
                             .setAuthorizer(new DroveAuthorizer())
                             .buildAuthFilter());
         if(basicAuthConfig.isEnabled()) {

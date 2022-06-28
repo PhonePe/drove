@@ -75,18 +75,25 @@ public class ResponseEngine {
     }
 
 
-
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
-        return success(applicationStateDB.applications(from, size)
-                               .stream()
+        val apps = applicationStateDB.applications(from, size);
+        val appIds = apps.stream().map(ApplicationInfo::getAppId).toList();
+        val instanceCounts = instanceInfoDB.instanceCount(appIds, HEALTHY);
+        return success(apps.stream()
                                .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
-                                                                     this::toAppSummary)));
+                                                                     info -> toAppSummary(info, instanceCounts))));
     }
 
 
     public ApiResponse<AppSummary> application(final String appId) {
         return applicationStateDB.application(appId)
-                .map(appInfo -> success(toAppSummary(appInfo)))
+                .map(appInfo -> success(toAppSummary(appInfo, instanceInfoDB.instanceCount(Set.of(appId), HEALTHY))))
+                .orElse(failure("App " + appId + " not found"));
+    }
+
+    public ApiResponse<ApplicationSpec> applicationSpec(final String appId) {
+        return applicationStateDB.application(appId)
+                .map(appInfo -> success(appInfo.getSpec()))
                 .orElse(failure("App " + appId + " not found"));
     }
 
@@ -165,25 +172,25 @@ public class ResponseEngine {
 
     public ApiResponse<List<ExposedAppInfo>> endpoints() {
         //TODO::HANDLE EXPOSURE MODE
-        return success(applicationStateDB.applications(0, Integer.MAX_VALUE)
-                               .stream()
-                               .filter(app -> engine.applicationState(app.getAppId())
-                                       .filter(EXPOSED_STATES::contains)
-                                       .isPresent()) //Only running
-                               .filter(app -> app.getSpec().getExposureSpec() != null) //Has exposure spec
-                               .filter(app -> !app.getSpec()
-                                       .getExposedPorts()
-                                       .isEmpty()) //Has any exposed ports
-                               .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos
+        val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
+                .stream()
+                .filter(app -> engine.applicationState(app.getAppId())
+                        .filter(EXPOSED_STATES::contains)
+                        .isPresent()) //Only running
+                .filter(app -> app.getSpec().getExposureSpec() != null && !app.getSpec()
+                        .getExposedPorts()
+                        .isEmpty()) //Has any exposed ports
+                .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos by sorting so that order
+                // remains same
+                .toList();
+        val appIds = apps.stream().map(ApplicationInfo::getAppId).toList();
+        //Skip stale check if cluster is in maintenance mode
+        val instances = instanceInfoDB.instances(appIds, Set.of(HEALTHY), isInMaintenanceWindow());
+        return success(apps.stream()
                                .map(app -> {
                                    val spec = app.getSpec().getExposureSpec();
                                    return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
-                                                             instanceInfoDB.instances(app.getAppId(),
-                                                                                      Set.of(HEALTHY),
-                                                                                      0,
-                                                                                      Integer.MAX_VALUE,
-                                                                                      isInMaintenanceWindow())//Skip
-                                                                     // stale check if cluster is in maintenance mode
+                                                             instances.getOrDefault(app.getAppId(), List.of())
                                                                      .stream()
                                                                      .sorted(Comparator.comparing(
                                                                              InstanceInfo::getCreated)) //Reduce chaos
@@ -287,14 +294,14 @@ public class ResponseEngine {
 
     }
 
-    private AppSummary toAppSummary(final ApplicationInfo info) {
+    private AppSummary toAppSummary(final ApplicationInfo info, Map<String, Long> instanceCounts) {
         val spec = info.getSpec();
         val instances = info.getInstances();
-        val healthyInstances = instanceInfoDB.instanceCount(info.getAppId(), InstanceState.HEALTHY);
+        val healthyInstances = instanceCounts.getOrDefault(info.getAppId(), 0L);
         val cpus = totalCPU(spec, instances);
         val memory = totalMemory(spec, instances);
         return new AppSummary(info.getAppId(),
-                              spec,
+                              spec.getName(),
                               instances,
                               healthyInstances,
                               cpus,

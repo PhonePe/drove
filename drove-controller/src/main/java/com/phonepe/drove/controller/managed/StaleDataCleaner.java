@@ -100,8 +100,10 @@ public class StaleDataCleaner implements Managed {
                         .map(ApplicationInfo::getAppId)
                         .collect(Collectors.toUnmodifiableSet()),
                 Set.copyOf(candidateAppIds));
-        otherApps.stream()
-                .flatMap(appId -> instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)
+        instanceInfoDB.oldInstances(otherApps)
+                .entrySet()
+                .stream()
+                .flatMap(entry -> entry.getValue()
                                          .stream()
                                          .filter(instanceInfo -> instanceInfo.getUpdated().before(maxLastUpdated)))
                 .forEach(instanceInfo -> {

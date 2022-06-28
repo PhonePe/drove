@@ -7,6 +7,7 @@ import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -21,6 +22,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -72,7 +75,11 @@ public class ApplicationMonitor implements Managed {
             log.warn("Application check skipped as cluster is in maintenance window");
             return;
         }
-        applicationStateDB.applications(0, Integer.MAX_VALUE)
+        val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
+                .stream()
+                .collect(Collectors.toMap(ApplicationInfo::getAppId, Function.identity()));
+        val instances = instanceInfoDB.instanceCount(apps.keySet(), InstanceState.HEALTHY);
+        apps.values()
                 .forEach(app -> {
                     val appId = app.getAppId();
                     val state = engine.applicationState(appId).orElse(ApplicationState.FAILED);
@@ -83,7 +90,7 @@ public class ApplicationMonitor implements Managed {
 
                     val expectedInstances = app.getInstances();
                     instanceInfoDB.markStaleInstances(appId);
-                    val actualInstances = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
+                    val actualInstances = instances.getOrDefault(appId, 0L);
                     if (actualInstances != expectedInstances) {
                         log.error("Number of instances for app {} is currently {}. Requested: {}, needs recovery.",
                                   appId, actualInstances, expectedInstances);

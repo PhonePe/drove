@@ -27,10 +27,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,7 +49,8 @@ public class ApplicationEngine {
     private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
-    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted = ConsumingFireForgetSignal.<ApplicationStateMachineExecutor>builder()
+    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted =
+            ConsumingFireForgetSignal.<ApplicationStateMachineExecutor>builder()
             .executorService(monitorExecutor)
             .build();
 
@@ -82,11 +80,11 @@ public class ApplicationEngine {
         val res = validateOp(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             stateMachines.compute(appId, (id, monitor) -> {
-                if(null == monitor) {
+                if (null == monitor) {
                     log.info("App {} is unknown. Going to create it now.", appId);
                     return createApp(operation);
                 }
-                if(!monitor.notifyUpdate(translateOp(operation))) {
+                if (!monitor.notifyUpdate(translateOp(operation))) {
                     log.warn("Update could not be sent");
                 }
                 return monitor;
@@ -104,14 +102,14 @@ public class ApplicationEngine {
     @MonitoredFunction
     public boolean cancelCurrentJob(final String appId) {
         val sm = stateMachines.get(appId);
-        if(null == sm) {
+        if (null == sm) {
             return false;
         }
         val appSm = sm.getStateMachine();
         val action = (AppAsyncAction) appSm.currentAction()
                 .filter(a -> a instanceof AppAsyncAction)
                 .orElse(null);
-        if(null == action) {
+        if (null == action) {
             return false;
         }
         return action.cancel(appSm.getContext());
@@ -126,15 +124,26 @@ public class ApplicationEngine {
 
     @MonitoredFunction
     public void moveInstancesFromExecutor(final String executorId) {
-        stateDB.applications(0, Integer.MAX_VALUE)
+        val appIds = stateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
-                .flatMap(app -> instanceInfoDB.healthyInstances(app.getAppId()).stream())
+                .map(ApplicationInfo::getAppId)
+                .toList();
+        instanceInfoDB.healthyInstances(appIds)
+                        .values()
+                                .stream()
+                .flatMap(Collection::stream)
                 .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
                 .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
-                .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
+                .collect(Collectors.groupingBy(Pair::getFirst,
+                                               Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
                 .forEach((appId, instances) -> {
-                    val res = handleOperation(new ApplicationReplaceInstancesOperation(appId, instances, ClusterOpSpec.DEFAULT));
-                    log.info("Instances to be replaced for {}: {}. command acceptance status: {}", appId, instances, res);
+                    val res = handleOperation(new ApplicationReplaceInstancesOperation(appId,
+                                                                                       instances,
+                                                                                       ClusterOpSpec.DEFAULT));
+                    log.info("Instances to be replaced for {}: {}. command acceptance status: {}",
+                             appId,
+                             instances,
+                             res);
                 });
     }
 
@@ -191,7 +200,7 @@ public class ApplicationEngine {
                         stateMachineCompleted);
                 //Record the update first then start the monitor
                 // as the first thing it will do is look for the update
-                if(!monitor.notifyUpdate(create)) {
+                if (!monitor.notifyUpdate(create)) {
                     log.error("Create operation could not be registered for app: {}", appId);
                 }
                 monitor.start();

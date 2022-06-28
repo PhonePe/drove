@@ -11,11 +11,9 @@ import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
 import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
@@ -41,20 +39,19 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     }
 
     @Override
-    @SneakyThrows
     @MonitoredFunction
-    public List<InstanceInfo> instances(
-            String appId,
+    public Map<String, List<InstanceInfo>> instances(
+            Collection<String> appIds,
             Set<InstanceState> validStates,
-            int start,
-            int size,
             boolean skipStaleCheck) {
         val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
-        return listInstances(appId,
-                             start,
-                             size,
-                             instanceInfo -> validStates.contains(instanceInfo.getState())
-                                     && (skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate)));
+        return appIds.stream()
+                .flatMap(appId -> listInstances(appId,
+                                                0,
+                                                Integer.MAX_VALUE,
+                                                instanceInfo -> validStates.contains(instanceInfo.getState())
+                                                        && (skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))).stream())
+                .collect(Collectors.groupingBy(InstanceInfo::getAppId, Collectors.toUnmodifiableList()));
     }
 
     @Override
@@ -131,11 +128,12 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
         return instanceInfoPath(instancePath(appId), instanceId);
     }
 
+    @SneakyThrows
     private List<InstanceInfo> listInstances(
             String appId,
             int start,
             int size,
-            Predicate<InstanceInfo> filter) throws Exception {
+            Predicate<InstanceInfo> filter) {
         val parentPath = instancePath(appId);
         return readChildrenNodes(curatorFramework,
                                  parentPath, start, size,

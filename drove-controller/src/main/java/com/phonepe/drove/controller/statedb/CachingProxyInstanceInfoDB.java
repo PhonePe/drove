@@ -1,9 +1,11 @@
 package com.phonepe.drove.controller.statedb;
 
+import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.functionmetrics.MonitoredFunction;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -14,12 +16,11 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.common.CommonUtils.sublist;
-
 /**
  *
  */
 @Singleton
+@Slf4j
 public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
     private final InstanceInfoDB root;
 
@@ -34,18 +35,19 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
         leadershipEnsurer.onLeadershipStateChanged().connect(this::purge);
     }
 
-    @Override
-    @MonitoredFunction
-    public List<InstanceInfo> instances(
-            String appId,
+   @Override
+   @MonitoredFunction
+    public Map<String, List<InstanceInfo>> instances(
+            Collection<String> appIds,
             Set<InstanceState> validStates,
-            int start,
-            int size,
             boolean skipStaleCheck) {
+        if(appIds.isEmpty()) {
+            return Map.of();
+        }
         var stamp = lock.readLock();
         try {
-            var appInstances = cache.get(appId);
-            if (appInstances == null || appInstances.isEmpty()) {
+            val availableApps = cache.keySet();
+            if(!availableApps.containsAll(appIds)) {
                 val status = lock.tryConvertToWriteLock(stamp);
                 if (status == 0) { //Did not lock, try explicit lock
                     lock.unlockRead(stamp);
@@ -54,17 +56,19 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
                 else {
                     stamp = status;
                 }
-                //Definitely locked for write here
-                appInstances = reloadInstancesForApp(appId);
+                val missingApps = Sets.difference(Set.copyOf(appIds), availableApps);
+                log.info("Loading instance data for: {}", missingApps);
+                reloadInstancesForApps(missingApps);
             }
-            val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
 
-            return sublist(appInstances.values()
-                                   .stream()
-                                   .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
-                                   .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated()
-                                           .after(validUpdateDate))
-                                   .toList(), start, size);
+            val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+            return appIds.stream()
+                    .map(cache::get)
+                    .filter(Objects::nonNull)
+                    .flatMap(instances -> instances.values().stream())
+                    .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
+                    .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
+                    .collect(Collectors.groupingBy(InstanceInfo::getAppId, Collectors.toUnmodifiableList()));
         }
         finally {
             lock.unlock(stamp);
@@ -164,6 +168,16 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
                                                                         Function.identity())));
         cache.put(appId, instances);
         return instances;
+    }
+
+    private void reloadInstancesForApps(Collection<String> appIds) {
+        cache.putAll(root.instances(appIds,
+                       EnumSet.allOf(InstanceState.class),
+                                    true)
+                             .entrySet()
+                             .stream()
+                             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
+                                     .collect(Collectors.toMap(InstanceInfo::getInstanceId, Function.identity())))));
     }
 
     private void purge(boolean leader) {

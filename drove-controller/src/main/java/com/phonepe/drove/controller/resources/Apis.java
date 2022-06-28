@@ -8,6 +8,7 @@ import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -98,6 +99,13 @@ public class Apis {
     @Timed
     public ApiResponse<AppSummary> application(@PathParam("id") @NotEmpty final String appId) {
         return responseEngine.application(appId);
+    }
+
+    @GET
+    @Path("/applications/{id}/spec")
+    @Timed
+    public ApiResponse<ApplicationSpec> applicationSpec(@PathParam("id") @NotEmpty final String appId) {
+        return responseEngine.applicationSpec(appId);
     }
 
     @GET

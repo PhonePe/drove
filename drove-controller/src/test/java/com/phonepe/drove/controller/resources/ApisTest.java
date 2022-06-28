@@ -180,7 +180,7 @@ class ApisTest {
     void application() {
         val spec = appSpec();
         val appSummary = new AppSummary(appId(spec),
-                                        spec,
+                                        spec.getName(),
                                         10,
                                         10,
                                         100,

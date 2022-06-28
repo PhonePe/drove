@@ -8,6 +8,7 @@ import lombok.val;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
 import static com.phonepe.drove.models.instance.InstanceState.LOST;
@@ -21,14 +22,18 @@ public class InMemoryInstanceInfoDB implements InstanceInfoDB {
     private final Map<String, Map<String, InstanceInfo>> instances = new ConcurrentHashMap<>();
 
     @Override
-    public List<InstanceInfo> instances(String appId, Set<InstanceState> validStates, int start, int size, boolean skipStaleCheck) {
+    public Map<String, List<InstanceInfo>> instances(
+            Collection<String> appIds,
+            Set<InstanceState> validStates,
+            boolean skipStaleCheck) {
         val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
-        return instances.getOrDefault(appId, Collections.emptyMap())
-                .values()
-                .stream()
-                .filter(i -> validStates.contains(i.getState()))
-                .filter(i -> skipStaleCheck || i.getUpdated().after(validUpdateDate))
-                .toList();
+        return appIds.stream()
+                .map(instances::get)
+                .filter(Objects::nonNull)
+                .flatMap(instances -> instances.values().stream())
+                .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
+                .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
+                .collect(Collectors.groupingBy(InstanceInfo::getAppId, Collectors.toUnmodifiableList()));
     }
 
     @Override
