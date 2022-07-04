@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import io.appform.functionmetrics.MonitoredFunction;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -22,6 +23,7 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
  *
  */
 @Singleton
+@Slf4j
 public class CachingProxyApplicationStateDB implements ApplicationStateDB {
 
     private final ApplicationStateDB root;
@@ -30,8 +32,9 @@ public class CachingProxyApplicationStateDB implements ApplicationStateDB {
     private final StampedLock lock = new StampedLock();
 
     @Inject
-    public CachingProxyApplicationStateDB(@Named("StoredApplicationStateDB") ApplicationStateDB root,
-                                          final LeadershipEnsurer leadershipEnsurer) {
+    public CachingProxyApplicationStateDB(
+            @Named("StoredApplicationStateDB") ApplicationStateDB root,
+            final LeadershipEnsurer leadershipEnsurer) {
         this.root = root;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::purge);
     }
@@ -74,8 +77,8 @@ public class CachingProxyApplicationStateDB implements ApplicationStateDB {
         val stamp = lock.writeLock();
         try {
             val status = root.updateApplicationState(appId, applicationInfo);
-            if(status) {
-                loadApps();
+            if (status) {
+                loadApp(appId);
             }
             return status;
         }
@@ -89,11 +92,11 @@ public class CachingProxyApplicationStateDB implements ApplicationStateDB {
     public boolean deleteApplicationState(String appId) {
         val stamp = lock.writeLock();
         try {
-        val status = root.deleteApplicationState(appId);
-        if(status) {
-            loadApps();
-        }
-        return status;
+            val status = root.deleteApplicationState(appId);
+            if (status) {
+                cache.remove(appId);
+            }
+            return status;
         }
         finally {
             lock.unlock(stamp);
@@ -109,11 +112,24 @@ public class CachingProxyApplicationStateDB implements ApplicationStateDB {
             lock.unlock(stamp);
         }
     }
+
     private void loadApps() {
+        log.info("Loading app info for all apps");
         cache.clear();
         cache.putAll(root.applications(0, Integer.MAX_VALUE)
                              .stream()
                              .collect(Collectors.toMap(ApplicationInfo::getAppId, Function.identity())));
+    }
+
+    private void loadApp(String appId) {
+        log.info("Loading app info for {}", appId);
+        val app = root.application(appId).orElse(null);
+        if (null == app) {
+            cache.remove(appId);
+        }
+        else {
+            cache.put(appId, app);
+        }
     }
 
 }

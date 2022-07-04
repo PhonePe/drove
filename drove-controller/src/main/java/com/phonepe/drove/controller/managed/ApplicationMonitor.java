@@ -9,7 +9,6 @@ import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationRecoverOperation;
 import io.appform.signals.signals.ScheduledSignal;
@@ -24,6 +23,8 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 
 /**
  *
@@ -78,7 +79,7 @@ public class ApplicationMonitor implements Managed {
         val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
                 .collect(Collectors.toMap(ApplicationInfo::getAppId, Function.identity()));
-        val instances = instanceInfoDB.instanceCount(apps.keySet(), InstanceState.HEALTHY);
+        val instances = instanceInfoDB.instanceCount(apps.keySet(), HEALTHY);
         apps.values()
                 .forEach(app -> {
                     val appId = app.getAppId();

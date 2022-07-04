@@ -42,6 +42,7 @@ import java.util.Set;
 @Singleton
 @Slf4j
 @PermitAll
+@Timed
 public class Apis {
 
     private final ApplicationEngine engine;

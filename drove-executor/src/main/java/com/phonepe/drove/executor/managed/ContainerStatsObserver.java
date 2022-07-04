@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
@@ -40,6 +41,7 @@ import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
  */
 @Order(60)
 @Slf4j
+@Singleton
 public class ContainerStatsObserver implements Managed {
     private static final String STATS_OBSERVER_HANDLER_NAME = "stats-observer";
     private static final String REPORTER_HANDLER_NAME = "timed-reporter";

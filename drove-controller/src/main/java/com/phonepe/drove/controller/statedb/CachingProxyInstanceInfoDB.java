@@ -33,6 +33,7 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
             final LeadershipEnsurer leadershipEnsurer) {
         this.root = root;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::purge);
+        log.info("Created object");
     }
 
    @Override
@@ -148,7 +149,7 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
         try {
             val count = root.markStaleInstances(appId);
             if (count > 0) {
-                reloadInstancesForApp(appId);
+                reloadInstancesForApps(List.of(appId));
             }
             return count;
         }
@@ -157,27 +158,17 @@ public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
         }
     }
 
-    private HashMap<String, InstanceInfo> reloadInstancesForApp(String appId) {
-        val instances = new HashMap<>(root.instances(appId,
-                                                     EnumSet.allOf(InstanceState.class),
-                                                     0,
-                                                     Integer.MAX_VALUE,
-                                                     true)
-                                              .stream()
-                                              .collect(Collectors.toMap(InstanceInfo::getInstanceId,
-                                                                        Function.identity())));
-        cache.put(appId, instances);
-        return instances;
-    }
-
     private void reloadInstancesForApps(Collection<String> appIds) {
-        cache.putAll(root.instances(appIds,
-                       EnumSet.allOf(InstanceState.class),
-                                    true)
-                             .entrySet()
-                             .stream()
-                             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
-                                     .collect(Collectors.toMap(InstanceInfo::getInstanceId, Function.identity())))));
+        val appsWithInstances = root.instances(appIds, EnumSet.allOf(InstanceState.class), true)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
+                        .collect(Collectors.toMap(InstanceInfo::getInstanceId, Function.identity()))));
+        cache.putAll(appsWithInstances);
+        //For apps that don't have any running nodes (in monitoring states etc), add empty maps
+        val appsWithoutInstances = Sets.difference(Set.copyOf(appIds), cache.keySet());
+        appsWithoutInstances.forEach(appId -> cache.put(appId, new HashMap<>()));
+        log.info("Loaded app instance data {}. Empty: {}", appsWithInstances.keySet(), appsWithoutInstances);
     }
 
     private void purge(boolean leader) {
