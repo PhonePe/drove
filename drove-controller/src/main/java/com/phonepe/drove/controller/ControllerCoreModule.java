@@ -58,8 +58,9 @@ public class ControllerCoreModule extends AbstractModule {
     public JobExecutor<Boolean> jobExecutor(final Environment environment) {
         return new JobExecutor<>(environment.lifecycle()
                                          .executorService("job-executor-%d")
-                                         .maxThreads(1024)
-                                         .minThreads(8)
+                                         .maxThreads(Integer.MAX_VALUE)
+                                         .minThreads(1024)
+                                         .allowCoreThreadTimeOut(false)
                                          .keepAliveTime(Duration.seconds(60))
                                          .build());
     }
@@ -69,9 +70,9 @@ public class ControllerCoreModule extends AbstractModule {
     @Named("MonitorThreadPool")
     public ExecutorService monitorExecutor(final Environment environment) {
         return environment.lifecycle().executorService("application-monitor-%d")
-                .maxThreads(1024)
-                .keepAliveTime(Duration.seconds(60))
-                .minThreads(8)
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(1024)
+                .allowCoreThreadTimeOut(false)
                 .keepAliveTime(Duration.seconds(60))
                 .build();
     }
@@ -103,10 +104,12 @@ public class ControllerCoreModule extends AbstractModule {
 
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
-        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
+        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
+        })
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
-                AppAction>>() {})
+                AppAction>>() {
+        })
                 .to(InjectingAppActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }

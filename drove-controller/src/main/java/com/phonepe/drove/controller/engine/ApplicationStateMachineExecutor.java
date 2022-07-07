@@ -59,6 +59,7 @@ public class ApplicationStateMachineExecutor {
 
     public void start() {
         currentState = executorService.submit(() -> {
+            log.info("Monitor started for app: {}", appId);
             MDC.put(MDC_PARAM, this.appId);
             ApplicationState state = null;
             try {
@@ -70,14 +71,14 @@ public class ApplicationStateMachineExecutor {
                         log.error("Error running action: ", t);
                     }
                     if (PAUSED_STATES.contains(state)) {
-                        log.info("State machine is being suspended");
+                        log.info("State machine is being suspended for app: {}", appId);
                         checkLock.lock();
                         wake.set(false);
                         try {
                             while (!wake.get()) {
                                 checkCondition.await();
                             }
-                            log.info("State machine resumed");
+                            log.info("State machine resumed for app: {}", appId);
                         }
                         finally {
                             checkLock.unlock();
