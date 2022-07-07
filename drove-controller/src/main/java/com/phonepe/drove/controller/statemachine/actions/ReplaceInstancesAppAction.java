@@ -27,9 +27,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadFactory;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 
@@ -46,6 +48,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
 
+    private final ThreadFactory threadFactory;
+
     @Inject
     public ReplaceInstancesAppAction(
             JobExecutor<Boolean> jobExecutor,
@@ -55,7 +59,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
-            InstanceIdGenerator instanceIdGenerator) {
+            InstanceIdGenerator instanceIdGenerator,
+            @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
         super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -64,6 +69,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.threadFactory = threadFactory;
     }
 
     @Override
@@ -77,7 +83,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         val instances = instanceInfoDB.healthyInstances(restartOp.getAppId())
                 .stream()
                 .filter(instanceInfo -> (restartOp.getInstanceIds() == null || restartOp.getInstanceIds().isEmpty())
-                                            || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
+                        || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
                 .toList();
         val clusterOpSpec = restartOp.getOpSpec();
         val appSpec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
@@ -88,9 +94,13 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         val schedulingSessionId = UUID.randomUUID().toString();
         context.setSchedulingSessionId(schedulingSessionId);
 
-        log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}", instances.size(), parallelism, schedulingSessionId);
+        log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}",
+                 instances.size(),
+                 parallelism,
+                 schedulingSessionId);
         val restartJobs = instances.stream()
                 .map(instanceInfo -> (Job<Boolean>) JobTopology.<Boolean>builder()
+                        .withThreadFactory(threadFactory)
                         .addJob(List.of(new StartSingleInstanceJob(appSpec,
                                                                    clusterOpSpec,
                                                                    scheduler,
@@ -106,8 +116,9 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                         .build())
                 .toList();
         return Optional.of(JobTopology.<Boolean>builder()
-                .addParallel(parallelism, restartJobs)
-                .build());
+                                   .withThreadFactory(threadFactory)
+                                   .addParallel(parallelism, restartJobs)
+                                   .build());
     }
 
     @Override

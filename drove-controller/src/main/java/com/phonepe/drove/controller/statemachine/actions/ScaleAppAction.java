@@ -28,10 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.LongStream;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
@@ -48,6 +50,7 @@ public class ScaleAppAction extends AppAsyncAction {
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
+    private final ThreadFactory threadFactory;
 
     @Inject
     public ScaleAppAction(
@@ -58,7 +61,8 @@ public class ScaleAppAction extends AppAsyncAction {
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
-            InstanceIdGenerator instanceIdGenerator) {
+            InstanceIdGenerator instanceIdGenerator,
+            @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
         super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -67,6 +71,7 @@ public class ScaleAppAction extends AppAsyncAction {
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.threadFactory = threadFactory;
     }
 
     @Override
@@ -93,6 +98,7 @@ public class ScaleAppAction extends AppAsyncAction {
             context.setSchedulingSessionId(schedulingSessionId);
             log.info("{} new instances to be started. Sched session ID: {}", numNew, schedulingSessionId);
             return Optional.of(JobTopology.<Boolean>builder()
+                                       .withThreadFactory(threadFactory)
                                        .addParallel(
                                                parallelism,
                                                LongStream.range(0, numNew)
@@ -125,6 +131,7 @@ public class ScaleAppAction extends AppAsyncAction {
             }
             else {
                 return Optional.of(JobTopology.<Boolean>builder()
+                                           .withThreadFactory(threadFactory)
                                            .addParallel(clusterOpSpec.getParallelism(), instancesToBeStopped
                                                    .stream()
                                                    .map(InstanceInfo::getInstanceId)

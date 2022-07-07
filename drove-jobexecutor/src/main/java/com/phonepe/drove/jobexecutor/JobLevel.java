@@ -3,11 +3,11 @@ package com.phonepe.drove.jobexecutor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.IntStream;
 
 /**
@@ -17,20 +17,16 @@ import java.util.stream.IntStream;
 final class JobLevel<T> implements Job<T> {
     private final String jobId;
     private final ExecutorService executorService;
-
     private final List<Job<T>> jobs;
 
-    @SafeVarargs
-    public JobLevel(int parallelism, Job<T>... jobs) {
-        this(parallelism, Arrays.asList(jobs));
+    public JobLevel(int parallelism, List<Job<T>> jobs) {
+        this(parallelism, Executors.defaultThreadFactory(), jobs);
     }
 
-    public JobLevel(
-            int parallelism,
-            List<Job<T>> jobs) {
-        this.executorService = Executors.newFixedThreadPool(parallelism);
+    public JobLevel(int parallelism, ThreadFactory threadFactory, List<Job<T>> jobs) {
+        this.executorService = Executors.newFixedThreadPool(parallelism, threadFactory);
         this.jobs = jobs;
-        jobId = JobUtils.idFromChildren(jobs);
+        this.jobId = JobUtils.idFromChildren(jobs);
     }
 
     @Override
@@ -57,6 +53,9 @@ final class JobLevel<T> implements Job<T> {
                         log.error("Error running job: " + workList.get(i).jobId(), e);
                     }
                 });
+        if(!executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
         return responseCombiner.current();
     }
 
@@ -67,7 +66,9 @@ final class JobLevel<T> implements Job<T> {
 
     @Override
     public void cancel() {
-        jobs.forEach(Job::cancel);
-        executorService.shutdownNow();
+        if(!executorService.isShutdown()) {
+            jobs.forEach(Job::cancel);
+            executorService.shutdownNow();
+        }
     }
 }

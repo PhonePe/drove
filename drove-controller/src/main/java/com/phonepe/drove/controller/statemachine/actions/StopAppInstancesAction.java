@@ -23,7 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.Optional;
+import java.util.concurrent.ThreadFactory;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 
@@ -37,6 +39,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
+    private final ThreadFactory threadFactory;
 
     @Inject
     public StopAppInstancesAction(
@@ -45,13 +48,15 @@ public class StopAppInstancesAction extends AppAsyncAction {
             InstanceInfoDB instanceInfoDB,
             final ClusterResourcesDB clusterResourcesDB,
             final ControllerCommunicator communicator,
-            ControllerRetrySpecFactory retrySpecFactory) {
+            ControllerRetrySpecFactory retrySpecFactory,
+            @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
         super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
+        this.threadFactory = threadFactory;
     }
 
     @Override
@@ -62,6 +67,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
             ApplicationOperation operation) {
         val stopAction = safeCast(operation, ApplicationStopInstancesOperation.class);
         return Optional.of(JobTopology.<Boolean>builder()
+                                   .withThreadFactory(threadFactory)
                 .addParallel(stopAction.getOpSpec().getParallelism(), stopAction.getInstanceIds()
                         .stream()
                         .map(instanceId -> (Job<Boolean>)new StopSingleInstanceJob(stopAction.getAppId(),

@@ -79,13 +79,13 @@ class ManagedLeadershipObserverTest {
         when(nds.nodes(NodeType.CONTROLLER)).thenAnswer(new Answer<List<NodeData>>() {
             @Override
             public List<NodeData> answer(InvocationOnMock mock) throws Throwable {
-                val currVal = ctr.incrementAndGet();
-                if (currVal == 2) {
+                val currVal = ctr.get();
+                if (currVal == 1) {
                     log.info("Returning leader : h2");
                     return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), false),
                                    new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), true));
                 }
-                if (currVal == 3) {
+                if (currVal == 2) {
                     log.info("Returning leader : h1");
                     return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), true),
                                    new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), false));
@@ -97,9 +97,18 @@ class ManagedLeadershipObserverTest {
         });
         val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
         obs.start();
-
         {
-            waitUntil(() -> ctr.get() == 2);
+            ctr.set(0);
+            waitUntil(() -> obs.leader().isEmpty());
+            val leader = obs.leader().orElse(null);
+            assertNull(leader);
+        }
+        {
+            ctr.set(1);
+            waitUntil(() -> {
+                val leader = obs.leader().orElse(null);
+                return null != leader && leader.getHostname().equals("h2");
+            });
             val leader = obs.leader().orElse(null);
 
             assertNotNull(leader);
@@ -107,7 +116,11 @@ class ManagedLeadershipObserverTest {
             assertEquals("h2", leader.getHostname());
         }
         {
-            waitUntil(() -> ctr.get() == 3);
+            ctr.set(2);
+            waitUntil(() -> {
+                val leader = obs.leader().orElse(null);
+                return null != leader && leader.getHostname().equals("h1");
+            });
             val leader = obs.leader().orElse(null);
 
             assertNotNull(leader);
@@ -115,7 +128,8 @@ class ManagedLeadershipObserverTest {
             assertEquals("h1", leader.getHostname());
         }
         {
-            waitUntil(() -> ctr.get() > 3);
+            ctr.set(3);
+            waitUntil(() -> obs.leader().isEmpty());
             val leader = obs.leader().orElse(null);
             assertNull(leader);
         }

@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
@@ -27,10 +28,14 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.statemachine.ActionFactory;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
 import org.apache.curator.framework.CuratorFramework;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 /**
  *
@@ -54,8 +59,28 @@ public class ControllerCoreModule extends AbstractModule {
         return new JobExecutor<>(environment.lifecycle()
                                          .executorService("job-executor-%d")
                                          .maxThreads(1024)
-                                         .minThreads(1024)
+                                         .minThreads(8)
+                                         .keepAliveTime(Duration.seconds(60))
                                          .build());
+    }
+
+    @Provides
+    @Singleton
+    @Named("MonitorThreadPool")
+    public ExecutorService monitorExecutor(final Environment environment) {
+        return environment.lifecycle().executorService("application-monitor-%d")
+                .maxThreads(1024)
+                .keepAliveTime(Duration.seconds(60))
+                .minThreads(8)
+                .keepAliveTime(Duration.seconds(60))
+                .build();
+    }
+
+    @Provides
+    @Singleton
+    @Named("JobLevelThreadFactory")
+    public ThreadFactory jobLevelThreadFactory() {
+        return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
     }
 
     @Provides
@@ -91,4 +116,5 @@ public class ControllerCoreModule extends AbstractModule {
     public ClusterAuthenticationConfig clusterAuth(final AppConfig appConfig) {
         return Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT);
     }
+
 }

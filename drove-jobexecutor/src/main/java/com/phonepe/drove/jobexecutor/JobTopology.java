@@ -5,7 +5,11 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,6 +55,12 @@ public class JobTopology<T> implements Job<T> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder<T> {
         private final List<Job<T>> jobs = new ArrayList<>();
+        private ThreadFactory threadFactory;
+
+        public Builder<T> withThreadFactory(final ThreadFactory threadFactory) {
+            this.threadFactory = threadFactory;
+            return this;
+        }
 
         public Builder<T> addJob(final Job<T> job) {
             this.jobs.add(job);
@@ -64,12 +74,16 @@ public class JobTopology<T> implements Job<T> {
 
         @SafeVarargs
         public final Builder<T> addParallel(int parallelism, Job<T>... job) {
-            this.jobs.add(new JobLevel<>(parallelism, job));
+            this.jobs.add(new JobLevel<>(parallelism,
+                                         Objects.requireNonNullElse(threadFactory, Executors.defaultThreadFactory()),
+                                         Arrays.asList(job)));
             return this;
         }
 
         public Builder<T> addParallel(int parallelism, List<Job<T>> jobs) {
-            this.jobs.add(new JobLevel<>(parallelism, jobs));
+            this.jobs.add(new JobLevel<>(parallelism,
+                                         Objects.requireNonNullElse(threadFactory, Executors.defaultThreadFactory()),
+                                         jobs));
             return this;
         }
 

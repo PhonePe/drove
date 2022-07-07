@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -23,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 class JobExecutorTest {
     private final JobExecutor<Integer> exec = new JobExecutor<>(Executors.newSingleThreadExecutor());
-
+    private final ThreadFactory threadFactory = Executors.defaultThreadFactory();
     @Test
     void test() {
         val responseCombiner = new IntResponseCombiner();
@@ -49,6 +50,7 @@ class JobExecutorTest {
 
         exec.schedule(Collections.singletonList(
                 new JobLevel<>(3,
+                               threadFactory,
                                IntStream.rangeClosed(1, 10)
                                        .mapToObj(i -> (Job<Integer>)new Adder(i))
                                        .toList())), responseCombiner, r -> {});
@@ -65,6 +67,7 @@ class JobExecutorTest {
         val failed = new AtomicBoolean();
         exec.onComplete().connect(res -> validateResults(done, failed, res, 57));
         val topology = JobTopology.<Integer>builder()
+                .withThreadFactory(threadFactory)
                 .addJob(new Adder(1))
                 .addParallel(3, IntStream.rangeClosed(1, 10)
                         .mapToObj(i -> (Job<Integer>)new Adder(i))

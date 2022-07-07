@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.google.common.base.Joiner;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
@@ -13,7 +14,6 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
-import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
@@ -29,6 +29,7 @@ import com.phonepe.drove.controller.testsupport.DummyExecutor;
 import com.phonepe.drove.controller.testsupport.DummyExecutorMessageSender;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -37,8 +38,8 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.*;
-import io.appform.signals.signals.ConsumingSyncSignal;
 import com.phonepe.drove.statemachine.ActionFactory;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterEach;
@@ -46,10 +47,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import static com.phonepe.drove.controller.engine.CommandValidator.ValidationStatus.SUCCESS;
 import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
@@ -120,6 +124,21 @@ class ApplicationEngineTest extends ControllerTestBase {
             @Singleton
             public JobExecutor<Boolean> jobExecutor() {
                 return new JobExecutor<>(Executors.newCachedThreadPool());
+            }
+
+
+            @Provides
+            @Singleton
+            @Named("MonitorThreadPool")
+            public ExecutorService monitorExecutor() {
+                return Executors.newCachedThreadPool();
+            }
+
+            @Provides
+            @Singleton
+            @Named("JobLevelThreadFactory")
+            public ThreadFactory jobLevelThreadFactory() {
+                return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
             }
 
         });

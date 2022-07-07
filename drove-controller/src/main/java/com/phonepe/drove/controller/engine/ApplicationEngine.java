@@ -26,11 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -48,11 +48,8 @@ public class ApplicationEngine {
     private final DroveEventBus droveEventBus;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
-    private final ExecutorService monitorExecutor = Executors.newFixedThreadPool(1024);
-    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted =
-            ConsumingFireForgetSignal.<ApplicationStateMachineExecutor>builder()
-            .executorService(monitorExecutor)
-            .build();
+    private final ExecutorService monitorExecutor;
+    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted = new ConsumingFireForgetSignal<>();
 
     @Inject
     public ApplicationEngine(
@@ -61,13 +58,15 @@ public class ApplicationEngine {
             InstanceInfoDB instanceInfoDB,
             CommandValidator commandValidator,
             DroveEventBus droveEventBus,
-            ControllerRetrySpecFactory retrySpecFactory) {
+            ControllerRetrySpecFactory retrySpecFactory,
+            @Named("MonitorThreadPool") ExecutorService monitorExecutor) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.commandValidator = commandValidator;
         this.droveEventBus = droveEventBus;
         this.retrySpecFactory = retrySpecFactory;
+        this.monitorExecutor = monitorExecutor;
         this.stateMachineCompleted.connect(stoppedExecutor -> {
             stoppedExecutor.stop();
             log.info("State machine executor is done for {}", stoppedExecutor.getAppId());

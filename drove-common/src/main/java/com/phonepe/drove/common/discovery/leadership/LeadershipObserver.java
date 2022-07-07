@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Singleton
 public class LeadershipObserver {
 
-    private final String LEADERSHIP_OBSERVER_HANDLER = "LEADERSHIP_OBSERVER_HANDLER";
+    private static final String LEADERSHIP_OBSERVER_HANDLER = "LEADERSHIP_OBSERVER_HANDLER";
 
     private final ScheduledSignal leaderRefresher = new ScheduledSignal(Duration.ofSeconds(5));
     private final NodeDataStore nodeDataStore;
