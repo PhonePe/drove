@@ -35,6 +35,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -59,8 +60,8 @@ public class ControllerCoreModule extends AbstractModule {
         return new JobExecutor<>(environment.lifecycle()
                                          .executorService("job-executor-%d")
                                          .maxThreads(Integer.MAX_VALUE)
-                                         .minThreads(1024)
-                                         .allowCoreThreadTimeOut(false)
+                                         .minThreads(0)
+                                         .workQueue(new SynchronousQueue<>())
                                          .keepAliveTime(Duration.seconds(60))
                                          .build());
     }
@@ -71,8 +72,8 @@ public class ControllerCoreModule extends AbstractModule {
     public ExecutorService monitorExecutor(final Environment environment) {
         return environment.lifecycle().executorService("application-monitor-%d")
                 .maxThreads(Integer.MAX_VALUE)
-                .minThreads(1024)
-                .allowCoreThreadTimeOut(false)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
                 .keepAliveTime(Duration.seconds(60))
                 .build();
     }

@@ -69,10 +69,7 @@ public abstract class RemoteMessageSender<
                 log.error("Message sending failed with error: {}", failure.getMessage());
             }
             else {
-                val response = result.getResult();
-                if (response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                    log.error("Message sending failed with response: {}", response);
-                }
+                log.error("Message sending failed with response: {}", result.getResult());
             }
         }).get(() -> sendRemoteMessage(message));
     }
@@ -118,7 +115,7 @@ public abstract class RemoteMessageSender<
             }
         }
         catch (IOException e) {
-            log.error("Error building message: ", e);
+            log.error("Error sending message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
         catch (InterruptedException e) {

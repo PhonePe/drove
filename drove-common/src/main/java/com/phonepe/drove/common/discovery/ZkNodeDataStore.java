@@ -12,8 +12,10 @@ import org.apache.zookeeper.KeeperException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  *
@@ -101,7 +103,7 @@ public class ZkNodeDataStore implements NodeDataStore {
         }
     }
 
-    final String nodePath(final NodeData nodeData) {
+    private String nodePath(final NodeData nodeData) {
         return String.format("/%s/%s-%d",
                              nodeData.getType().name().toLowerCase(),
                              nodeData.getHostname(),

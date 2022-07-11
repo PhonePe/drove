@@ -1,11 +1,15 @@
 package com.phonepe.drove.common;
 
+import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.retry.*;
+import com.phonepe.drove.models.common.ClusterState;
+import com.phonepe.drove.models.common.ClusterStateData;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,5 +86,24 @@ class CommonUtilsTest {
             val ctr = new AtomicInteger();
             assertEquals(5, Failsafe.with(List.of(p)).get(ctr::incrementAndGet));
         }
+    }
+
+    @Test
+    void testIsInMaintenanceWindow() {
+        assertFalse(CommonUtils.isInMaintenanceWindow(null));
+        val currTime = new Date();
+        { //It is in maintenance window
+            val data = new ClusterStateData(ClusterState.MAINTENANCE, currTime);
+            assertTrue(CommonUtils.isInMaintenanceWindow(data));
+        }
+        { //It is in normal mode but in maintenance window buffer time
+            val data = new ClusterStateData(ClusterState.NORMAL, new Date(currTime.getTime() - Constants.EXECUTOR_REFRESH_INTERVAL.toMillis()));
+            assertTrue(CommonUtils.isInMaintenanceWindow(data));
+        }
+        { //It is in maintenance window and after buffer time
+            val data = new ClusterStateData(ClusterState.NORMAL, new Date(currTime.getTime() - 2 * Constants.EXECUTOR_REFRESH_INTERVAL.toMillis() + 1));
+            assertFalse(CommonUtils.isInMaintenanceWindow(data));
+        }
+
     }
 }

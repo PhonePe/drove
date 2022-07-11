@@ -27,7 +27,7 @@ class ZkNodeDataStoreTest {
     @Test
     @SneakyThrows
     void testDS() {
-        try(val cluster = new TestingCluster(1)) {
+        try (val cluster = new TestingCluster(1)) {
             cluster.start();
             val config = new ZkConfig();
             config.setConnectionString(cluster.getConnectString());
@@ -40,6 +40,7 @@ class ZkNodeDataStoreTest {
 
             val store = new ZkNodeDataStore(curator, mapper);
 
+            assertTrue(store.nodes(NodeType.EXECUTOR).isEmpty());
             val state = new ExecutorResourceSnapshot(
                     "abc",
                     new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
@@ -61,6 +62,28 @@ class ZkNodeDataStoreTest {
             store.removeNodeData(nodeData);
             executors = store.nodes(NodeType.EXECUTOR);
             assertTrue(executors.isEmpty());
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testNoNode() {
+        try (val cluster = new TestingCluster(1)) {
+            cluster.start();
+            val config = new ZkConfig();
+            config.setConnectionString(cluster.getConnectString());
+            val mapper = new ObjectMapper();
+            CommonUtils.configureMapper(mapper);
+
+            val curator = CommonUtils.buildCurator(config);
+            curator.start();
+            curator.blockUntilConnected();
+
+            val store = new ZkNodeDataStore(curator, mapper);
+            var executors = store.nodes(NodeType.EXECUTOR);
+            assertTrue(executors.isEmpty());
+
+//            store.updateNodeData();
         }
     }
 }

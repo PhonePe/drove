@@ -2,8 +2,10 @@ package com.phonepe.drove.common.net;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.Message;
@@ -22,23 +24,23 @@ import net.jodah.failsafe.RetryPolicy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
 import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.okForJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.phonepe.drove.common.CommonUtils.configureMapper;
 import static com.phonepe.drove.common.model.MessageDeliveryStatus.ACCEPTED;
+import static com.phonepe.drove.common.model.MessageDeliveryStatus.FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  */
 @WireMockTest
-class RemoteMessageSenderTest {
+class RemoteMessageSenderTest extends AbstractTestBase {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private enum TestMessageType {
         TEST_MESSAGE
     }
@@ -55,30 +57,20 @@ class RemoteMessageSenderTest {
         }
     }
 
-    private static class TestMessageSender extends RemoteMessageSender<TestMessageType, TestMessage> {
+    private static abstract class TestMessageSender extends RemoteMessageSender<TestMessageType, TestMessage> {
 
-        private final WireMockRuntimeInfo runtimeInfo;
-
-        private TestMessageSender(WireMockRuntimeInfo runtimeInfo) {
-            super(MAPPER, new ClusterAuthenticationConfig().setSecrets(List.of()), NodeType.CONTROLLER);
-            this.runtimeInfo = runtimeInfo;
+        private TestMessageSender() {
+            super(MAPPER, ClusterAuthenticationConfig.DEFAULT, NodeType.CONTROLLER);
         }
 
         @Override
         protected RetryPolicy<MessageResponse> retryStrategy() {
-            return CommonUtils.policy(new RetryOnAllExceptionsSpec(), null);
-        }
+            return new RetryPolicy<MessageResponse>()
+                    .withDelay(Duration.ofSeconds(1))
+                    .withMaxAttempts(1)
+                    .handle(Exception.class)
+                    .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()));        }
 
-        @Override
-        protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
-            return Optional.of(new RemoteHost("localhost", runtimeInfo.getHttpPort(), NodeTransportType.HTTP));
-        }
-    }
-
-    @BeforeAll
-    static void setupClass() {
-        configureMapper(MAPPER);
-        FunctionMetricsManager.initialize("com.phonepe.drove", SharedMetricRegistries.getOrCreate("test"));
     }
 
     @Test
@@ -86,8 +78,86 @@ class RemoteMessageSenderTest {
         val header = MessageHeader.controllerRequest();
         stubFor(post("/apis/v1/messages")
                         .willReturn(okForJson(new MessageResponse(header, ACCEPTED))));
-        val msgSender = new TestMessageSender(wireMockRuntimeInfo);
+        val msgSender = new TestMessageSender() {
+            @Override
+            protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
+                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+            }
+        };
         val res = msgSender.send(new TestMessage(header, "Test"));
         assertEquals(MessageDeliveryStatus.ACCEPTED, res.getStatus());
+    }
+    @Test
+    void testMessageSendNoSecret(final WireMockRuntimeInfo wireMockRuntimeInfo) {
+        val header = MessageHeader.controllerRequest();
+        stubFor(post("/apis/v1/messages")
+                        .willReturn(okForJson(new MessageResponse(header, ACCEPTED))));
+        val msgSender = new TestMessageSender() {
+            @Override
+            protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
+                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+            }
+        };
+        val res = msgSender.send(new TestMessage(header, "Test"));
+        assertEquals(MessageDeliveryStatus.ACCEPTED, res.getStatus());
+    }
+
+    @Test
+    void testServerError(final WireMockRuntimeInfo wireMockRuntimeInfo) {
+        val header = MessageHeader.controllerRequest();
+        stubFor(post("/apis/v1/messages")
+                        .willReturn(serverError()));
+        val msgSender = new TestMessageSender() {
+            @Override
+            protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
+                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+            }
+        };
+        val res = msgSender.send(new TestMessage(header, "Test"));
+        assertEquals(MessageDeliveryStatus.FAILED, res.getStatus());
+    }
+
+    @Test
+    void testIOError(final WireMockRuntimeInfo wireMockRuntimeInfo) {
+        val header = MessageHeader.controllerRequest();
+        stubFor(post("/apis/v1/messages")
+                        .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+        val msgSender = new TestMessageSender() {
+            @Override
+            protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
+                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+            }
+        };
+        val res = msgSender.send(new TestMessage(header, "Test"));
+        assertEquals(MessageDeliveryStatus.FAILED, res.getStatus());
+    }
+
+    @Test
+    void testNoRemoteFound() {
+        val header = MessageHeader.controllerRequest();
+        val msgSender = new TestMessageSender() {
+
+            @Override
+            protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
+                return Optional.empty();
+            }
+        };
+        val res = msgSender.send(new TestMessage(header, "Test"));
+        assertEquals(MessageDeliveryStatus.FAILED, res.getStatus());
+    }
+
+    @Test
+    void testFailedStatus(final WireMockRuntimeInfo wireMockRuntimeInfo) {
+        val header = MessageHeader.controllerRequest();
+        stubFor(post("/apis/v1/messages")
+                        .willReturn(okForJson(new MessageResponse(header, FAILED))));
+        val msgSender = new TestMessageSender() {
+            @Override
+            protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
+                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+            }
+        };
+        val res = msgSender.send(new TestMessage(header, "Test"));
+        assertEquals(FAILED, res.getStatus());
     }
 }

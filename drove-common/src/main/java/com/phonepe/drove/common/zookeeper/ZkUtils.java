@@ -46,8 +46,9 @@ public class ZkUtils {
             return null != curatorFramework.checkExists().forPath(path);
         }
         catch (Exception e) {
-            return false;
+            log.error("Error checking node data for " + path, e);
         }
+        return false;
     }
 
     public static <T> List<T> readChildrenNodes(
@@ -66,7 +67,8 @@ public class ZkUtils {
             if(nodes.isEmpty()) {
                 return nodes;
             }
-            return sublist(nodes, start, size);        }
+            return sublist(nodes, start, size);
+        }
         catch (KeeperException e) {
             if(!e.code().equals(KeeperException.Code.NONODE)) {
                 log.error("ZK Error reading {} : {}", parentPath, e.getMessage());

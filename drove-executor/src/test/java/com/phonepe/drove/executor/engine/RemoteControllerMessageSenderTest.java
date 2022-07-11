@@ -95,4 +95,42 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
                         .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
         assertEquals(FAILED, msgSender.send(new ExecutorSnapshotMessage(header, null)).getStatus());
     }
+
+    @Test
+    @SneakyThrows
+    void testNoLeader() {
+        val leaderObserver = mock(ManagedLeadershipObserver.class);
+        when(leaderObserver.leader())
+                .thenReturn(Optional.empty());
+
+        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+                                                          AbstractTestBase.MAPPER,
+                                                          ClusterAuthenticationConfig.DEFAULT);
+
+        val header = MessageHeader.executorRequest();
+        assertEquals(FAILED, msgSender.send(new ExecutorSnapshotMessage(header, null)).getStatus());
+    }
+
+    @Test
+    @SneakyThrows
+    void testFailedStatus(final WireMockRuntimeInfo wm) {
+        val leaderObserver = mock(ManagedLeadershipObserver.class);
+        when(leaderObserver.leader())
+                .thenReturn(Optional.of(new ControllerNodeData("localhost",
+                                                               wm.getHttpPort(),
+                                                               NodeTransportType.HTTP,
+                                                               new Date(),
+                                                               true)));
+
+        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+                                                          AbstractTestBase.MAPPER,
+                                                          ClusterAuthenticationConfig.DEFAULT);
+
+        val header = MessageHeader.executorRequest();
+        stubFor(post("/apis/v1/messages")
+                        .willReturn(okForJson(new MessageResponse(header, FAILED))));
+        assertEquals(FAILED, msgSender.send(new ExecutorSnapshotMessage(header, null)).getStatus());
+    }
+
+
 }

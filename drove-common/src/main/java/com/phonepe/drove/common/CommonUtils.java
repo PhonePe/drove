@@ -77,17 +77,6 @@ public class CommonUtils {
         return list.subList(start, end);
     }
 
-    @IgnoreInJacocoGeneratedReport
-    private static String readHostname() {
-        try {
-            return InetAddress.getLocalHost().getCanonicalHostName();
-        }
-        catch (UnknownHostException e) {
-            log.error("Error getting hostname: " + e.getMessage(), e);
-        }
-        return null;
-    }
-
     public static <T> RetryPolicy<T> policy(final RetrySpec spec, final Predicate<T> resultChecker) {
         val policy = new RetryPolicy<T>();
         spec.accept(new RetrySpecVisitor<Void>() {
@@ -135,5 +124,16 @@ public class CommonUtils {
                     || new Date().before(checktimeSkipWindowEnd);
         }
         return false;
+    }
+
+    @IgnoreInJacocoGeneratedReport
+    private static String readHostname() {
+        try {
+            return InetAddress.getLocalHost().getCanonicalHostName();
+        }
+        catch (UnknownHostException e) {
+            log.error("Error getting hostname: " + e.getMessage(), e);
+        }
+        return null;
     }
 }
