@@ -9,6 +9,9 @@
     <logger name="org.apache.zookeeper">
         <level value="ERROR" />
     </logger>
+    <logger name="org.eclipse.jetty">
+        <level value="ERROR" />
+    </logger>
     <logger name="com.phonepe">
         <level value="INFO" />
     </logger>

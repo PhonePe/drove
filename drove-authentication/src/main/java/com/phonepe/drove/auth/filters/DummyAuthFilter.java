@@ -4,11 +4,12 @@ import com.phonepe.drove.auth.config.BasicAuthConfig;
 import com.phonepe.drove.auth.model.DroveExternalUser;
 import com.phonepe.drove.auth.model.DroveUser;
 import io.dropwizard.auth.AuthFilter;
-import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
 import lombok.val;
 
+import javax.annotation.Priority;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
@@ -18,11 +19,12 @@ import java.util.Optional;
 /**
  *
  */
+@Priority(Priorities.AUTHENTICATION)
 public class DummyAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
     public static final class DummyAuthenticator implements Authenticator<BasicCredentials, DroveUser> {
 
         @Override
-        public Optional<DroveUser> authenticate(BasicCredentials credentials) throws AuthenticationException {
+        public Optional<DroveUser> authenticate(BasicCredentials credentials) {
             val dummyUser = BasicAuthConfig.DEFAULT.getUsers().get(0);
             return Optional.of(new DroveExternalUser(dummyUser.getUsername(), dummyUser.getRole(), null));
         }

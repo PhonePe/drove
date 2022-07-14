@@ -1,21 +1,21 @@
 package com.phonepe.drove.auth.config;
 
 import com.phonepe.drove.models.info.nodedata.NodeType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Value;
+import io.dropwizard.validation.ValidationMethod;
+import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Value
+@Jacksonized
+@Builder
 public class ClusterAuthenticationConfig {
 
     public static final ClusterAuthenticationConfig DEFAULT
@@ -33,4 +33,14 @@ public class ClusterAuthenticationConfig {
 
     @NotEmpty
     List<SecretConfig> secrets;
+
+    @ValidationMethod(message = "Secrets must be unique")
+    boolean isUniqueSecrets() {
+        val secretConfigs = Objects.<List<SecretConfig>>requireNonNullElse(secrets, List.of());
+        return secretConfigs
+                .stream()
+                .map(SecretConfig::getSecret)
+                .distinct()
+                .count() == secretConfigs.size();
+    }
 }
