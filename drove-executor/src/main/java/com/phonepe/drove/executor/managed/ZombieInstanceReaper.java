@@ -15,7 +15,6 @@ import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
@@ -31,7 +30,6 @@ public class ZombieInstanceReaper implements Managed {
     private final ScheduledSignal zombieCheckSignal = new ScheduledSignal(Duration.ofSeconds(30));
     private final DockerClient client;
     private final InstanceEngine instanceEngine;
-    private Future<?> job;
 
     @Inject
     public ZombieInstanceReaper(

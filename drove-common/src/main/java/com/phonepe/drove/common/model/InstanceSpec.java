@@ -29,4 +29,5 @@ public class InstanceSpec {
     LoggingSpec loggingSpec;
     Map<String, String> env;
     PreShutdownSpec preShutdown;
+    String instanceAuthToken;
 }

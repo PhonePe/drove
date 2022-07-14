@@ -111,7 +111,8 @@ public class ExecutorTestingUtils {
                                                                                   Collections.singleton(200),
                                                                                   "",
                                                                                   Duration.seconds(1))),
-                                                    Duration.seconds(1)));
+                                                    Duration.seconds(1)),
+                                "TestToken");
     }
 
     public static ExecutorAddress localAddress() {

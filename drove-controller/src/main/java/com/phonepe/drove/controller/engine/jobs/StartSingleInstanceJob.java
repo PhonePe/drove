@@ -1,5 +1,7 @@
 package com.phonepe.drove.controller.engine.jobs;
 
+import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
+import com.phonepe.drove.auth.model.DroveApplicationInstanceInfo;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.InstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
@@ -9,6 +11,7 @@ import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
+import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
@@ -44,6 +47,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
 
     private final InstanceIdGenerator instanceIdGenerator;
 
+    private final ApplicationInstanceTokenManager tokenManager;
+
     public StartSingleInstanceJob(
             ApplicationSpec applicationSpec,
             ClusterOpSpec clusterOpSpec,
@@ -51,7 +56,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             InstanceInfoDB instanceInfoDB,
             ControllerCommunicator communicator,
             String schedulingSessionId,
-            ControllerRetrySpecFactory retrySpecFactory, InstanceIdGenerator instanceIdGenerator) {
+            ControllerRetrySpecFactory retrySpecFactory, InstanceIdGenerator instanceIdGenerator,
+            ApplicationInstanceTokenManager tokenManager) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
@@ -60,6 +66,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         this.schedulingSessionId = schedulingSessionId;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.tokenManager = tokenManager;
     }
 
     @Override
@@ -132,7 +139,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                      applicationSpec.getReadiness(),
                                                                      applicationSpec.getLogging(),
                                                                      applicationSpec.getEnv(),
-                                                                     applicationSpec.getPreShutdown()));
+                                                                     applicationSpec.getPreShutdown(),
+                                                                     generateAppInstanceToken(node, appId, instanceId)));
         var successful = false;
         try {
             val response = communicator.send(startMessage);
@@ -164,6 +172,13 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         }
         return successful;
         //TODO::IDENTIFY THE STATES AND DO NOT GIVE UP QUICKLY IF IT IS IN STARTING STATE ETC
+    }
+
+    private String generateAppInstanceToken(AllocatedExecutorNode node, String appId, String instanceId) {
+        return tokenManager.generate(new DroveApplicationInstanceInfo(
+                appId,
+                instanceId,
+                node.getExecutorId())).orElse(null);
     }
 
 }

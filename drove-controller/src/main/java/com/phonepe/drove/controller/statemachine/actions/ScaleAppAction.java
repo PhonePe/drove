@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.statemachine.actions;
 
 import com.google.common.base.Strings;
+import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
@@ -52,6 +53,8 @@ public class ScaleAppAction extends AppAsyncAction {
     private final InstanceIdGenerator instanceIdGenerator;
     private final ThreadFactory threadFactory;
 
+    private final ApplicationInstanceTokenManager tokenManager;
+
     @Inject
     public ScaleAppAction(
             JobExecutor<Boolean> jobExecutor,
@@ -62,7 +65,8 @@ public class ScaleAppAction extends AppAsyncAction {
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
-            @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
+            @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
+            ApplicationInstanceTokenManager tokenManager) {
         super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -72,6 +76,7 @@ public class ScaleAppAction extends AppAsyncAction {
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
         this.threadFactory = threadFactory;
+        this.tokenManager = tokenManager;
     }
 
     @Override
@@ -109,7 +114,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                                communicator,
                                                                                                                schedulingSessionId,
                                                                                                                retrySpecFactory,
-                                                                                                               instanceIdGenerator))
+                                                                                                               instanceIdGenerator,
+                                                                                                               tokenManager))
                                                        .toList())
                                        .build());
         }

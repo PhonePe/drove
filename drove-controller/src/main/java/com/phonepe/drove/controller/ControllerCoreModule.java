@@ -6,6 +6,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.phonepe.drove.auth.config.ApplicationAuthConfig;
+import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
+import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.discovery.NodeDataStore;
@@ -105,6 +108,7 @@ public class ControllerCoreModule extends AbstractModule {
 
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
+        bind(ApplicationInstanceTokenManager.class).to(JWTApplicationInstanceTokenManager.class);
         bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
         })
                 .to(RemoteExecutorMessageSender.class);
@@ -119,6 +123,12 @@ public class ControllerCoreModule extends AbstractModule {
     @Singleton
     public ClusterAuthenticationConfig clusterAuth(final AppConfig appConfig) {
         return Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT);
+    }
+
+    @Provides
+    @Singleton
+    public ApplicationAuthConfig applicationAuthConfig(final AppConfig appConfig) {
+        return Objects.requireNonNullElse(appConfig.getInstanceAuth(), ApplicationAuthConfig.DEFAULT);
     }
 
 }

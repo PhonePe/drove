@@ -132,7 +132,8 @@ class InstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                   io.dropwizard.util.Duration.seconds(0)),
                                     LocalLoggingSpec.DEFAULT,
                                     Collections.emptyMap(),
-                                    null);
+                                    null,
+                                    "TestToken");
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,

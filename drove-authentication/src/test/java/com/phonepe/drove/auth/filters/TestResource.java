@@ -16,7 +16,11 @@ import javax.ws.rs.core.MediaType;
 /**
  *
  */
-@RolesAllowed({DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE})
+@RolesAllowed({
+        DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE,
+        DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE,
+        DroveUserRole.Values.DROVE_APPLICATION_INSTANCE_ROLE
+})
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 public class TestResource {

@@ -7,6 +7,9 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.phonepe.drove.auth.config.ApplicationAuthConfig;
+import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
+import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
@@ -102,6 +105,7 @@ class ApplicationEngineTest extends ControllerTestBase {
                 bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
                 bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);
                 bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
+                bind(ApplicationInstanceTokenManager.class).to(JWTApplicationInstanceTokenManager.class);
                 bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState,
                         AppActionContext, AppAction>>() {
                 }).to(InjectingAppActionFactory.class);
@@ -139,6 +143,12 @@ class ApplicationEngineTest extends ControllerTestBase {
             @Named("JobLevelThreadFactory")
             public ThreadFactory jobLevelThreadFactory() {
                 return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
+            }
+
+            @Provides
+            @Singleton
+            public ApplicationAuthConfig applicationAuthConfig() {
+                return ApplicationAuthConfig.DEFAULT;
             }
 
         });

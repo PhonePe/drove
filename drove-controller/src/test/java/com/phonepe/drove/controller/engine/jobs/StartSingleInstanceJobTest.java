@@ -1,6 +1,9 @@
 package com.phonepe.drove.controller.engine.jobs;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import com.phonepe.drove.auth.config.ApplicationAuthConfig;
+import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
+import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
@@ -42,6 +45,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
 
     private static final ApplicationSpec APP_SPEC = appSpec();
     private final InstanceIdGenerator instanceIdGenerator = new RandomInstanceIdGenerator();
+    private final ApplicationInstanceTokenManager tokenManager = new JWTApplicationInstanceTokenManager(ApplicationAuthConfig.DEFAULT);
 
     @Test
     void testJobSuccess() {
@@ -85,7 +89,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf, instanceIdGenerator);
+                                             rf, instanceIdGenerator, tokenManager);
         val testStatus = new AtomicBoolean();
         val exec = new JobExecutor<Boolean>(MoreExecutors.newDirectExecutorService());
         exec.schedule(Collections.singletonList(job), new BooleanResponseCombiner(), r -> {
@@ -111,7 +115,10 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,
-                                             sessionId, rf, instanceIdGenerator);
+                                             sessionId,
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager);
         assertFailure(job);
     }
 
@@ -158,7 +165,9 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf, instanceIdGenerator);
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager);
         assertFailure(job);
     }
 
@@ -186,7 +195,9 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf, instanceIdGenerator);
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager);
         assertFailure(job);
     }
 
@@ -231,7 +242,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf, instanceIdGenerator);
+                                             rf, instanceIdGenerator, tokenManager);
 
         assertFailure(job);
     }

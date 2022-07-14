@@ -2,11 +2,11 @@ package com.phonepe.drove.controller;
 
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import com.google.inject.Stage;
+import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.config.BasicAuthConfig;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
-import com.phonepe.drove.auth.core.DroveAuthorizer;
-import com.phonepe.drove.auth.core.DroveClusterSecretAuthenticator;
-import com.phonepe.drove.auth.core.DroveExternalAuthenticator;
+import com.phonepe.drove.auth.core.*;
+import com.phonepe.drove.auth.filters.DroveApplicationInstanceAuthFilter;
 import com.phonepe.drove.auth.filters.DroveClusterAuthFilter;
 import com.phonepe.drove.auth.filters.DummyAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
@@ -69,7 +69,7 @@ public class App extends Application<AppConfig> {
     @Override
     public void run(AppConfig appConfig, Environment environment) throws Exception {
         configureMapper(environment.getObjectMapper());
-        ((AbstractServerFactory)appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
+        ((AbstractServerFactory) appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         val jersey = environment.jersey();
         jersey.register(SseFeature.class);
         jersey.getResourceConfig().register(SseFeature.class);
@@ -81,17 +81,27 @@ public class App extends Application<AppConfig> {
     private void setupAuth(AppConfig appConfig, Environment environment, JerseyEnvironment jersey) {
         val basicAuthConfig = Objects.requireNonNullElse(appConfig.getUserAuth(), BasicAuthConfig.DEFAULT);
         val filters = new ArrayList<AuthFilter<?, ? extends DroveUser>>();
+        val clusterAuthConfig = Objects.requireNonNullElse(appConfig.getClusterAuth(),
+                                                                          ClusterAuthenticationConfig.DEFAULT);
+        val applicationAuthConfig = Objects.requireNonNullElse(appConfig.getInstanceAuth(),
+                                                               ApplicationAuthConfig.DEFAULT);
         filters.add(new DroveClusterAuthFilter.Builder()
-                            .setAuthenticator(new DroveClusterSecretAuthenticator(Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT)))
+                            .setAuthenticator(new DroveClusterSecretAuthenticator(clusterAuthConfig))
                             .setAuthorizer(new DroveAuthorizer())
                             .buildAuthFilter());
-        if(basicAuthConfig.isEnabled()) {
+        filters.add(new DroveApplicationInstanceAuthFilter.Builder()
+                            .setAuthenticator(new DroveApplicationInstanceAuthenticator(
+                                    new JWTApplicationInstanceTokenManager(applicationAuthConfig)))
+                            .setAuthorizer(new DroveAuthorizer())
+                            .buildAuthFilter());
+        if (basicAuthConfig.isEnabled()) {
             val cacheConfig = Strings.isNullOrEmpty(basicAuthConfig.getCachingPolicy())
                               ? BasicAuthConfig.DEFAULT_CACHE_POLICY
                               : basicAuthConfig.getCachingPolicy();
             filters.add(new BasicCredentialAuthFilter.Builder<DroveUser>()
                                 .setAuthenticator(new CachingAuthenticator<>(environment.metrics(),
-                                                                             new DroveExternalAuthenticator(basicAuthConfig),
+                                                                             new DroveExternalAuthenticator(
+                                                                                     basicAuthConfig),
                                                                              CaffeineSpec.parse(cacheConfig)))
                                 .setAuthorizer(new CachingAuthorizer<>(environment.metrics(),
                                                                        new DroveAuthorizer(),

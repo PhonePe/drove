@@ -152,7 +152,7 @@ public class InstanceRunAction extends InstanceAction {
             env.add("DROVE_EXECUTOR_HOST=" + hostname());
             env.add("DROVE_APP_ID=" + instanceSpec.getAppId());
             env.add("DROVE_APP_NAME=" + instanceSpec.getAppName());
-
+            env.add("DROVE_APP_INSTANCE_AUTH_TOKEN=" + instanceSpec.getInstanceAuthToken());
             log.debug("Environment: {}", env);
             val id = containerCmd
                     .withHostConfig(hostConfig)
