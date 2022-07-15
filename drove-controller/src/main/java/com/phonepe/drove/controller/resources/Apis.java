@@ -65,6 +65,22 @@ public class Apis {
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public Response acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
+        return acceptAppOperation(operation);
+    }
+
+    @POST
+    @Path("/operations/{appId}/cancel")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public Response cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
+        return cancelJobForCurrentAppOp(appId);
+    }
+
+    @POST
+    @Path("/applications/operations")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public Response acceptAppOperation(@NotNull @Valid final ApplicationOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ControllerUtils.badRequest(Map.of("validationErrors", List.of("Cluster is in maintenance mode")),
                                               "Command validation failure");
@@ -77,10 +93,10 @@ public class Apis {
     }
 
     @POST
-    @Path("/operations/{appId}/cancel")
+    @Path("/applications/operations/{appId}/cancel")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public Response cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
+    public Response cancelJobForCurrentAppOp(@PathParam("appId") @NotEmpty final String appId) {
         return engine.cancelCurrentJob(appId)
                ? ControllerUtils.ok(null)
                : ControllerUtils.badRequest(null, "Current operation could not be cancelled");
