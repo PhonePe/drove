@@ -69,20 +69,10 @@ public class AppSupport {
     }
 
     private DroveApplicationInstanceInfo extractInstanceInfo(DroveUser droveUser) {
-        return droveUser.accept(new DroveUserVisitor<>() {
-            @Override
-            public DroveApplicationInstanceInfo visit(DroveClusterNode clusterNode) {
-                return null;
-            }
-
+        return droveUser.accept(new DroveUserVisitorAdaptor<>(null) {
             @Override
             public DroveApplicationInstanceInfo visit(DroveApplicationInstance applicationInstance) {
                 return applicationInstance.getTokenInfo();
-            }
-
-            @Override
-            public DroveApplicationInstanceInfo visit(DroveExternalUser externalUser) {
-                return null;
             }
         });
     }
