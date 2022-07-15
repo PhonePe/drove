@@ -14,8 +14,8 @@ import lombok.Value;
 public class DroveClusterNode extends DroveUser {
     NodeType nodeType;
 
-    public DroveClusterNode(String id, DroveUserRole role, NodeType nodeType) {
-        super(DroveUserType.CLUSTER_NODE, id, role);
+    public DroveClusterNode(String id, NodeType nodeType) {
+        super(DroveUserType.CLUSTER_NODE, id, DroveUserRole.CLUSTER_NODE);
         this.nodeType = nodeType;
     }
 

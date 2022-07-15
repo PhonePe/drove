@@ -14,11 +14,11 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
+import static com.phonepe.drove.models.instance.InstanceState.*;
 
 /**
  *
@@ -38,18 +38,23 @@ public class AppSupport {
 
     @GET
     @Path("/instances")
-    public ApiResponse<List<InstanceInfo>> siblingInstances(@Auth final DroveUser droveUser) {
+    public ApiResponse<List<InstanceInfo>> siblingInstances(
+            @Auth final DroveUser droveUser,
+            @QueryParam("state") final Set<InstanceState> requiredStates) {
         val info = extractInstanceInfo(droveUser);
         if (info == null) {
             return ApiResponse.failure(
                     "This api is applicable for calls by app instances from inside the cluster only");
         }
-        if(!hasAccess(info)) {
+        if (!hasAccess(info)) {
             return ApiResponse.failure(
                     "Please send valid token for you app instance. " +
                             "The token value is available in the DROVE_APP_INSTANCE_AUTH_TOKEN environment variable");
         }
-        return ApiResponse.success(instanceInfoDB.instances(Set.of(info.getAppId()), InstanceState.ACTIVE_STATES)
+        val states = null == requiredStates || requiredStates.isEmpty()
+                     ? RUNNING_STATES
+                     : requiredStates;
+        return ApiResponse.success(instanceInfoDB.instances(Set.of(info.getAppId()), states)
                                            .values()
                                            .stream()
                                            .flatMap(Collection::stream)

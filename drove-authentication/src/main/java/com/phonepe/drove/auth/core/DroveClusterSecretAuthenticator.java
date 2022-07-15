@@ -2,7 +2,6 @@ package com.phonepe.drove.auth.core;
 
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.auth.model.DroveUser;
-import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.auth.model.DroveClusterNode;
 import io.dropwizard.auth.Authenticator;
 
@@ -27,7 +26,6 @@ public class DroveClusterSecretAuthenticator implements Authenticator<ClusterCre
                 .map(secret -> (DroveUser) new DroveClusterNode(String.format("%s-%s",
                                                                               secret.getNodeType(),
                                                                               clusterCredentials.getNodeId()),
-                                                                DroveUserRole.CLUSTER_NODE,
                                                                 secret.getNodeType()))
                 .findAny();
     }

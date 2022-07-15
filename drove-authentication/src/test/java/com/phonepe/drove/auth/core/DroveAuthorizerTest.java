@@ -17,9 +17,9 @@ class DroveAuthorizerTest {
     @Test
     void test() {
         val da = new DroveAuthorizer();
-        assertFalse(da.authorize(new DroveClusterNode("Test", DroveUserRole.CLUSTER_NODE, NodeType.CONTROLLER),
+        assertFalse(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
                      DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE));
-        assertTrue(da.authorize(new DroveClusterNode("Test", DroveUserRole.CLUSTER_NODE, NodeType.CONTROLLER),
+        assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
                      DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE));
     }
 
