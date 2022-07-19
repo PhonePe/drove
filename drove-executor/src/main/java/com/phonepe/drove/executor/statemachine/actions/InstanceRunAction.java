@@ -12,6 +12,7 @@ import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
@@ -136,6 +137,7 @@ public class InstanceRunAction extends InstanceAction {
             }
             val instanceInfo = instanceInfo(currentState, portMappings, instanceSpec.getResources(), hostName, currentState.getData());
             val labels = new HashMap<String, String>();
+            labels.put(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.COMPUTATION.name());
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
             labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
