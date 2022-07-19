@@ -9,7 +9,7 @@ import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.core.InvocationBuilder;
 import com.google.inject.Inject;
 import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.metrics.AverageCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.LongGauge;
 import com.phonepe.drove.executor.metrics.PerCoreCpuUsageGauge;
@@ -48,7 +48,7 @@ public class ContainerStatsObserver implements Managed {
 
     private final MetricRegistry metricRegistry;
     private final Map<String, InstanceData> instances = new ConcurrentHashMap<>();
-    private final InstanceEngine instanceEngine;
+    private final ApplicationInstanceEngine instanceEngine;
     private final ScheduledSignal statsChecker;
     private final DockerClient client;
 
@@ -62,14 +62,14 @@ public class ContainerStatsObserver implements Managed {
     @Inject
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
-            InstanceEngine instanceEngine,
+            ApplicationInstanceEngine instanceEngine,
             DockerClient client) {
         this(metricRegistry, instanceEngine, client, Duration.ofSeconds(30));
     }
 
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
-            InstanceEngine instanceEngine,
+            ApplicationInstanceEngine instanceEngine,
             DockerClient client,
             Duration refreshDuration) {
         this.metricRegistry = metricRegistry;

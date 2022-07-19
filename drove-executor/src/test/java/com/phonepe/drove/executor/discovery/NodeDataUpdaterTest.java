@@ -5,7 +5,7 @@ import com.google.inject.Guice;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingInstanceActionFactory;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -54,12 +54,12 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         val env = mock(Environment.class);
         when(env.lifecycle()).thenReturn(new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test")));
         val blm = new BlacklistingManager();
-        val ie = new InstanceEngine(eim,
-                                    Executors.newSingleThreadExecutor(),
-                                    new InjectingInstanceActionFactory(Guice.createInjector()),
-                                    rdb,
-                                    blm,
-                                    ExecutorTestingUtils.DOCKER_CLIENT);
+        val ie = new ApplicationInstanceEngine(eim,
+                                               Executors.newSingleThreadExecutor(),
+                                               new InjectingInstanceActionFactory(Guice.createInjector()),
+                                               rdb,
+                                               blm,
+                                               ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
         val ndu = new NodeDataUpdater(eim, nds, rdb, env, ie, rCfg, blm);
         ndu.start();

@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.managed;
 import com.github.dockerjava.api.DockerClient;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -29,12 +29,12 @@ public class ZombieInstanceReaper implements Managed {
 
     private final ScheduledSignal zombieCheckSignal = new ScheduledSignal(Duration.ofSeconds(30));
     private final DockerClient client;
-    private final InstanceEngine instanceEngine;
+    private final ApplicationInstanceEngine instanceEngine;
 
     @Inject
     public ZombieInstanceReaper(
             DockerClient client,
-            InstanceEngine instanceEngine) {
+            ApplicationInstanceEngine instanceEngine) {
         this.client = client;
         this.instanceEngine = instanceEngine;
     }

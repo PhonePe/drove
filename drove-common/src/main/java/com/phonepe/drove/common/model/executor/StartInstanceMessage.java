@@ -1,7 +1,7 @@
 package com.phonepe.drove.common.model.executor;
 
 import com.phonepe.drove.common.model.ExecutorMessageType;
-import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.MessageHeader;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -14,12 +14,12 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class StartInstanceMessage extends ExecutorMessage {
-    InstanceSpec spec;
+    ApplicationInstanceSpec spec;
 
     public StartInstanceMessage(
             MessageHeader header,
             ExecutorAddress address,
-            InstanceSpec spec) {
+            ApplicationInstanceSpec spec) {
         super(ExecutorMessageType.START_INSTANCE, header, address);
         this.spec = spec;
     }

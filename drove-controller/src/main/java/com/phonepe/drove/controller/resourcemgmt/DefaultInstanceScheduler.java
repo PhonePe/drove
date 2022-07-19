@@ -2,11 +2,11 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -46,7 +46,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, ApplicationSpec applicationSpec) {
+            String schedulingSessionId, DeploymentSpec applicationSpec) {
         //Take a snapshot of all instances in this cluster at the onset of the session
         //This will get augmented every time a new node is allocated in this session
         schedulingSessionData.computeIfAbsent(schedulingSessionId,
@@ -88,7 +88,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         return true;
     }
 
-    private Map<String, Long> clusterSnapshot(ApplicationSpec applicationSpec) {
+    private Map<String, Long> clusterSnapshot(DeploymentSpec applicationSpec) {
         return instanceInfoDB.activeInstances(ControllerUtils.appId(applicationSpec), 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instanceInfo -> RESOURCE_CONSUMING_INSTANCE_STATES.contains(instanceInfo.getState()))
@@ -96,7 +96,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     private boolean validateNode(
-            final ApplicationSpec spec,
+            final DeploymentSpec spec,
             Map<String, Long> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();

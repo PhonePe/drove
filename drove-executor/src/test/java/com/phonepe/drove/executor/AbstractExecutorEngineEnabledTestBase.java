@@ -3,7 +3,7 @@ package com.phonepe.drove.executor;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.*;
 import com.phonepe.drove.common.AbstractTestBase;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.BlacklistingManager;
@@ -31,7 +31,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
     protected BlacklistingManager blacklistingManager;
 
     @Inject
-    protected InstanceEngine engine;
+    protected ApplicationInstanceEngine engine;
 
 
     @BeforeEach
@@ -61,13 +61,13 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
 
             @Provides
             @Singleton
-            public InstanceEngine engine(
+            public ApplicationInstanceEngine engine(
                     final Injector injector,
                     final ResourceManager resourceDB,
                     final ExecutorIdManager executorIdManager,
                     final BlacklistingManager blacklistManager) {
                 val executorService = Executors.newSingleThreadExecutor();
-                return new InstanceEngine(
+                return new ApplicationInstanceEngine(
                         executorIdManager,
                         executorService,
                         new InjectingInstanceActionFactory(injector),

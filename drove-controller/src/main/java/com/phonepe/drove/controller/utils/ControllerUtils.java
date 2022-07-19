@@ -5,12 +5,12 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.api.ApiResponse;
-import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -36,8 +36,8 @@ import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 public class ControllerUtils {
 
     private static final Set<StateCheckStatus> CHECK_COMPLETED_STATES = EnumSet.of(MISNMATCH_NONRECOVERABLE, MATCH);
-    public static String appId(ApplicationSpec applicationSpec) {
-        return applicationSpec.getName() + "-" + applicationSpec.getVersion();
+    public static String appId(DeploymentSpec deploymentSpec) {
+        return deploymentSpec.getName() + "-" + deploymentSpec.getVersion();
     }
 
     public static boolean ensureInstanceState(

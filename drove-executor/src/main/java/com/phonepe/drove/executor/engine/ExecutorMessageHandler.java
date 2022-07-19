@@ -11,9 +11,9 @@ import lombok.val;
  */
 @Slf4j
 public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageResponse> {
-    private final InstanceEngine engine;
+    private final ApplicationInstanceEngine engine;
 
-    public ExecutorMessageHandler(InstanceEngine engine) {
+    public ExecutorMessageHandler(ApplicationInstanceEngine engine) {
         this.engine = engine;
     }
 
@@ -53,6 +53,18 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
             log.error("Could not start: ", e);
             return new MessageResponse(stopInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
+    }
+
+    @Override
+    public MessageResponse visit(StartTaskInstanceMessage startTaskInstanceMessage) {
+        //TODO
+        return new MessageResponse(startTaskInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+    }
+
+    @Override
+    public MessageResponse visit(StopTaskInstanceMessage stopTaskInstanceMessage) {
+        //TODO
+        return new MessageResponse(stopTaskInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
     }
 
     @Override

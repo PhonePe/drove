@@ -3,9 +3,9 @@ package com.phonepe.drove.executor.managed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
@@ -25,13 +25,13 @@ import java.util.List;
 @Slf4j
 @Order(70)
 public class InstanceRecovery implements Managed {
-    private final InstanceEngine engine;
+    private final ApplicationInstanceEngine engine;
     private final ObjectMapper mapper;
     private final DockerClient client;
 
     @Inject
     public InstanceRecovery(
-            InstanceEngine engine,
+            ApplicationInstanceEngine engine,
             ObjectMapper mapper,
             DockerClient client) {
         this.engine = engine;
@@ -63,7 +63,7 @@ public class InstanceRecovery implements Managed {
                 val id = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
                 val spec = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_SPEC_LABEL),
-                                            InstanceSpec.class);
+                                            ApplicationInstanceSpec.class);
                 val data = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
                                             ExecutorInstanceInfo.class);

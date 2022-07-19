@@ -5,7 +5,7 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import io.dropwizard.lifecycle.Managed;
@@ -26,11 +26,11 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
     private static final String STATE_CHANGE_HANDLER_NAME = "state-change-notifier";
     private final ResourceManager resourceDB;
     private final ExecutorCommunicator communicator;
-    private final InstanceEngine engine;
+    private final ApplicationInstanceEngine engine;
 
     @Inject
     public ExecutorInstanceStateChangeNotifier(
-            ResourceManager resourceDB, ExecutorCommunicator communicator, InstanceEngine engine) {
+            ResourceManager resourceDB, ExecutorCommunicator communicator, ApplicationInstanceEngine engine) {
         this.resourceDB = resourceDB;
         this.communicator = communicator;
         this.engine = engine;

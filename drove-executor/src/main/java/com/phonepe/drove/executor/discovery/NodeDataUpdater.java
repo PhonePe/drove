@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
@@ -42,7 +42,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ExecutorIdManager executorIdManager;
     private final NodeDataStore nodeDataStore;
     private final ResourceManager resourceDB;
-    private final InstanceEngine engine;
+    private final ApplicationInstanceEngine engine;
     private final ResourceConfig resourceConfig;
     private final BlacklistingManager blacklistingManager;
 
@@ -57,7 +57,7 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             NodeDataStore nodeDataStore,
             ResourceManager resourceDB,
             Environment environment,
-            InstanceEngine engine,
+            ApplicationInstanceEngine engine,
             ResourceConfig resourceConfig,
             BlacklistingManager blacklistingManager) {
         this.executorIdManager = executorIdManager;

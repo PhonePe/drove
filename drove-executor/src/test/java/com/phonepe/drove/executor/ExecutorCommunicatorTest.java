@@ -7,7 +7,7 @@ import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class ExecutorCommunicatorTest extends AbstractTestBase {
     @Test
     void testComms() {
-        val engine = mock(InstanceEngine.class);
+        val engine = mock(ApplicationInstanceEngine.class);
         when(engine.handleMessage(any(ExecutorMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) mock -> {
                     val param = (ExecutorMessage) mock.getArguments()[0];
@@ -49,7 +49,7 @@ class ExecutorCommunicatorTest extends AbstractTestBase {
 
     @Test
     void testCommsFailure() {
-        val engine = mock(InstanceEngine.class);
+        val engine = mock(ApplicationInstanceEngine.class);
         when(engine.handleMessage(any(ExecutorMessage.class)))
                 .thenThrow(new IllegalArgumentException());
         val comm = new ExecutorCommunicator(engine,

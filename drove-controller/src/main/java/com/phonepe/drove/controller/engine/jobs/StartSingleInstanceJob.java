@@ -3,7 +3,7 @@ package com.phonepe.drove.controller.engine.jobs;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.model.DroveApplicationInstanceInfo;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
@@ -127,20 +127,20 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                         node.getHostname(),
                                                                         node.getPort(),
                                                                         node.getTransportType()),
-                                                    new InstanceSpec(appId,
-                                                                     applicationSpec.getName(),
-                                                                     instanceId,
-                                                                     applicationSpec.getExecutable(),
-                                                                     List.of(node.getCpu(),
+                                                    new ApplicationInstanceSpec(appId,
+                                                                                applicationSpec.getName(),
+                                                                                instanceId,
+                                                                                applicationSpec.getExecutable(),
+                                                                                List.of(node.getCpu(),
                                                                              node.getMemory()),
-                                                                     applicationSpec.getExposedPorts(),
-                                                                     applicationSpec.getVolumes(),
-                                                                     applicationSpec.getHealthcheck(),
-                                                                     applicationSpec.getReadiness(),
-                                                                     applicationSpec.getLogging(),
-                                                                     applicationSpec.getEnv(),
-                                                                     applicationSpec.getPreShutdown(),
-                                                                     generateAppInstanceToken(node, appId, instanceId)));
+                                                                                applicationSpec.getExposedPorts(),
+                                                                                applicationSpec.getVolumes(),
+                                                                                applicationSpec.getHealthcheck(),
+                                                                                applicationSpec.getReadiness(),
+                                                                                applicationSpec.getLogging(),
+                                                                                applicationSpec.getEnv(),
+                                                                                applicationSpec.getPreShutdown(),
+                                                                                generateAppInstanceToken(node, appId, instanceId)));
         var successful = false;
         try {
             val response = communicator.send(startMessage);

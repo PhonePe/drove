@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
 
 import java.util.Optional;
 
@@ -10,7 +11,7 @@ import java.util.Optional;
 public interface InstanceScheduler {
     Optional<AllocatedExecutorNode> schedule(
             String schedulingSessionId,
-            final ApplicationSpec applicationSpec);
+            final DeploymentSpec applicationSpec);
 
     void finaliseSession(String schedulingSessionId);
 

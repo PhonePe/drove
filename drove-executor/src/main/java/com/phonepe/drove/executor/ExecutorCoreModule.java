@@ -19,7 +19,7 @@ import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -49,7 +49,7 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public InstanceEngine engine(
+    public ApplicationInstanceEngine engine(
             final Environment environment,
             final Injector injector,
             final ResourceManager resourceDB,
@@ -61,7 +61,7 @@ public class ExecutorCoreModule extends AbstractModule {
                 .minThreads(128)
                 .maxThreads(128)
                 .build();
-        return new InstanceEngine(
+        return new ApplicationInstanceEngine(
                 executorIdManager,
                 executorService,
                 new InjectingInstanceActionFactory(injector),

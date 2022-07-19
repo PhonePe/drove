@@ -12,7 +12,7 @@ import java.util.Map;
  *
  */
 @Value
-public class ExecutorInstanceInfo {
+public class ExecutorInstanceInfo extends DeployedExecutorInstanceInfo {
     String appId;
     String appName;
     String instanceId;
