@@ -339,7 +339,7 @@ public class ContainerStatsObserver implements Managed {
                     "phonepe",
                     "drove",
                     "executor",
-                    "containers",
+                    "applications",
                     instanceInfo.getAppName(),
                     "instance",
                     instanceInfo.getInstanceId(),
