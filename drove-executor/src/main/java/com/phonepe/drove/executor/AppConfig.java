@@ -34,5 +34,5 @@ public class AppConfig extends Configuration {
     private ExecutorOptions options;
 
     @Valid
-    private DockerAuthConfig auth;
+    private DockerAuthConfig dockerAuth;
 }
