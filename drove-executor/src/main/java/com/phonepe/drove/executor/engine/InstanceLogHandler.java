@@ -54,7 +54,7 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
         switch (object.getStreamType()) {
             case STDOUT -> log.info(logLine.replaceAll("\\n$", ""));
             case STDERR -> log.error(logLine.replaceAll("\\n$", ""));
-            case STDIN, RAW -> {
+            default -> {
                 //Nothing to do here
             }
         }

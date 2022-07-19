@@ -76,7 +76,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
 
     @Override
     public void cancel() {
-
+        //Nothing to do here
     }
 
     @Override
