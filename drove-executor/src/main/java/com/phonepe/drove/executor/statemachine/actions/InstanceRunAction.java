@@ -137,7 +137,7 @@ public class InstanceRunAction extends InstanceAction {
             }
             val instanceInfo = instanceInfo(currentState, portMappings, instanceSpec.getResources(), hostName, currentState.getData());
             val labels = new HashMap<String, String>();
-            labels.put(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.COMPUTATION.name());
+            labels.put(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.SERVICE.name());
             labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
             labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
             labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
