@@ -3,5 +3,6 @@ package com.phonepe.drove.executor.model;
 /**
  *
  */
-public class DeployedExecutorInstanceInfo {
+public interface DeployedExecutorInstanceInfo {
+    String getInstanceId();
 }

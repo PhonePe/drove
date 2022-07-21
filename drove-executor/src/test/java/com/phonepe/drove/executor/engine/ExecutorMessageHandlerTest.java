@@ -7,6 +7,7 @@ import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
+import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +26,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testCreateInstanceMessage() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(false);
         when(engine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(true);
         assertEquals(MessageDeliveryStatus.ACCEPTED,
@@ -38,7 +40,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testCreateInstanceMessageExists() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(true);
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new StartInstanceMessage(MessageHeader.controllerRequest(),
@@ -50,7 +53,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testCreateInstanceMessageFail() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(false);
         when(engine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(false);
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -63,7 +67,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testCreateInstanceMessageException() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(false);
         when(engine.startInstance(any(ApplicationInstanceSpec.class))).thenThrow(new IllegalStateException("Forced failure"));
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -76,7 +81,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testStopInstanceMessage() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(true);
         when(engine.stopInstance(anyString())).thenReturn(true);
         assertEquals(MessageDeliveryStatus.ACCEPTED,
@@ -89,7 +95,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testStopInstanceMessageWongId() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(false);
         when(engine.stopInstance(anyString())).thenReturn(true);
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -102,7 +109,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testStopInstanceMessageFail() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(true);
         when(engine.stopInstance(anyString())).thenReturn(false);
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -115,7 +123,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testStopInstanceMessageThrow() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         when(engine.exists(anyString())).thenReturn(true);
         when(engine.stopInstance(anyString())).thenThrow(new IllegalArgumentException("Forced fail"));
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -128,7 +137,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testBlacklist() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      mh.visit(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                            executor())).getStatus());
@@ -137,8 +147,9 @@ class ExecutorMessageHandlerTest {
     @Test
     void testBlacklistException() {
         val engine = mock(ApplicationInstanceEngine.class);
-        doThrow(new IllegalArgumentException()).when(engine).blacklist();
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        doThrow(new IllegalArgumentException()).when(blacklistingManager).blacklist();
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                            executor())).getStatus());
@@ -147,7 +158,8 @@ class ExecutorMessageHandlerTest {
     @Test
     void testUnBlacklist() {
         val engine = mock(ApplicationInstanceEngine.class);
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                              executor())).getStatus());
@@ -156,8 +168,9 @@ class ExecutorMessageHandlerTest {
     @Test
     void testUnBlacklistException() {
         val engine = mock(ApplicationInstanceEngine.class);
-        doThrow(new IllegalArgumentException()).when(engine).unblacklist();
-        val mh = new ExecutorMessageHandler(engine);
+        val blacklistingManager = mock(BlacklistingManager.class);
+        doThrow(new IllegalArgumentException()).when(blacklistingManager).unblacklist();
+        val mh = new ExecutorMessageHandler(engine, blacklistingManager);
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                            executor())).getStatus());

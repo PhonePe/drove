@@ -4,7 +4,10 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.*;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -111,7 +114,7 @@ public class DockerUtils {
                     .withMemorySwappiness(0L)
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any
 //                    stats
-                    .withAutoRemove(true)
+                    .withAutoRemove(autoremove(deploymentUnitSpec))
                     .withLogConfig(logConfig(deploymentUnitSpec));
 
             deploymentUnitSpec.getResources()
@@ -187,6 +190,20 @@ public class DockerUtils {
             log.debug("Created container id: {}", containerId);
             return containerId;
         }
+    }
+
+    private static Boolean autoremove(DeploymentUnitSpec deploymentUnitSpec) {
+        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
+            @Override
+            public Boolean visit(ApplicationInstanceSpec instanceSpec) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(TaskInstanceSpec taskInstanceSpec) {
+                return false;
+            }
+        });
     }
 
     private static LogConfig logConfig(final DeploymentUnitSpec deploymentUnitSpec) {

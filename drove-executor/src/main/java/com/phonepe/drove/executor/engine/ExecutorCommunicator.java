@@ -20,19 +20,22 @@ import javax.inject.Singleton;
 @Singleton
 public class ExecutorCommunicator extends ThreadedCommunicator<ControllerMessageType, ExecutorMessageType, ControllerMessage, ExecutorMessage> {
     private final ApplicationInstanceEngine engine;
+    private final ExecutorMessageHandler messageHandler;
 
     @Inject
     public ExecutorCommunicator(
             ApplicationInstanceEngine engine,
-            MessageSender<ControllerMessageType, ControllerMessage> messageSender) {
+            MessageSender<ControllerMessageType, ControllerMessage> messageSender,
+            ExecutorMessageHandler messageHandler) {
         super(messageSender);
         this.engine = engine;
+        this.messageHandler = messageHandler;
     }
 
     @Override
     protected MessageResponse handleReceivedMessage(ExecutorMessage message) {
         try {
-            return engine.handleMessage(message);
+            return message.accept(messageHandler);
         }
         catch (Exception e) {
             log.error("Error handling message: ", e);

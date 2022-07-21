@@ -17,12 +17,10 @@ import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.models.application.MountedVolume;
-import com.phonepe.drove.models.application.PortSpec;
-import com.phonepe.drove.models.application.PortType;
-import com.phonepe.drove.models.application.PreShutdownSpec;
+import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -76,42 +74,45 @@ public class ExecutorTestingUtils {
                                            "TEST_SPEC",
                                            UUID.randomUUID().toString(),
                                            new DockerCoordinates(imageName, Duration.seconds(100)),
-                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
-                                                 new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                       Set.of(2, 3))),
+                                                            new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                            Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
-                                           List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                                           List.of(new MountedVolume("/tmp",
+                                                                     "/tmp",
+                                                                     MountedVolume.MountMode.READ_ONLY)),
                                            new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                    "main",
-                                                                    "/",
-                                                                    HTTPVerb.GET,
-                                                                    Collections.singleton(200),
-                                                                    "",
-                                                                    Duration.seconds(1)),
-                                              Duration.seconds(1),
-                                              Duration.seconds(3),
-                                              attempt,
-                                              Duration.seconds(0)),
+                                                                               "main",
+                                                                               "/",
+                                                                               HTTPVerb.GET,
+                                                                               Collections.singleton(200),
+                                                                               "",
+                                                                               Duration.seconds(1)),
+                                                         Duration.seconds(1),
+                                                         Duration.seconds(3),
+                                                         attempt,
+                                                         Duration.seconds(0)),
                                            new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                    "main",
-                                                                    "/",
-                                                                    HTTPVerb.GET,
-                                                                    Collections.singleton(200),
-                                                                    "",
-                                                                    Duration.seconds(1)),
-                                              Duration.seconds(1),
-                                              Duration.seconds(3),
-                                              attempt,
-                                              Duration.seconds(1)),
+                                                                               "main",
+                                                                               "/",
+                                                                               HTTPVerb.GET,
+                                                                               Collections.singleton(200),
+                                                                               "",
+                                                                               Duration.seconds(1)),
+                                                         Duration.seconds(1),
+                                                         Duration.seconds(3),
+                                                         attempt,
+                                                         Duration.seconds(1)),
                                            LocalLoggingSpec.DEFAULT,
                                            Collections.emptyMap(),
                                            new PreShutdownSpec(List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                                  "main",
-                                                                                  "/",
-                                                                                  HTTPVerb.GET,
-                                                                                  Collections.singleton(200),
-                                                                                  "",
-                                                                                  Duration.seconds(1))),
-                                                    Duration.seconds(1)),
+                                                                                             "main",
+                                                                                             "/",
+                                                                                             HTTPVerb.GET,
+                                                                                             Collections.singleton(200),
+                                                                                             "",
+                                                                                             Duration.seconds(1))),
+                                                               Duration.seconds(1)),
                                            "TestToken");
     }
 
@@ -184,10 +185,11 @@ public class ExecutorTestingUtils {
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val startResponse = engine.handleMessage(startInstanceMessage);
+        val messageHandler = new ExecutorMessageHandler(engine, null);
+        val startResponse = startInstanceMessage.accept(messageHandler);
         try {
             assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
-            assertEquals(MessageDeliveryStatus.FAILED, engine.handleMessage(startInstanceMessage).getStatus());
+            assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
             waitUntil(() -> engine.currentState(instanceId)
                     .map(InstanceInfo::getState)
                     .map(instanceState -> instanceState.equals(HEALTHY))
@@ -200,7 +202,7 @@ public class ExecutorTestingUtils {
             val stopInstanceMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
                                                               executorAddress,
                                                               instanceId);
-            assertEquals(MessageDeliveryStatus.ACCEPTED, engine.handleMessage(stopInstanceMessage).getStatus());
+            assertEquals(MessageDeliveryStatus.ACCEPTED, stopInstanceMessage.accept(messageHandler).getStatus());
             waitUntil(() -> engine.currentState(instanceId).isEmpty());
         }
     }
@@ -221,12 +223,15 @@ public class ExecutorTestingUtils {
         val createContainerResponse = DOCKER_CLIENT
                 .createContainerCmd(CommonTestUtils.IMAGE_NAME)
                 .withName("RecoveryTest")
-                .withLabels(Map.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
-                                   spec.getInstanceId(),
-                                   DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
-                                   mapper.writeValueAsString(spec),
-                                   DockerLabels.DROVE_INSTANCE_DATA_LABEL,
-                                   mapper.writeValueAsString(instanceData)))
+                .withLabels(Map.of(
+                        DockerLabels.DROVE_JOB_TYPE_LABEL,
+                        JobType.SERVICE.name(),
+                        DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                        spec.getInstanceId(),
+                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                        mapper.writeValueAsString(spec),
+                        DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                        mapper.writeValueAsString(instanceData)))
                 .withHostConfig(new HostConfig()
                                         .withAutoRemove(true))
                 .exec();

@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -12,6 +13,8 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -51,6 +54,22 @@ public class ExecutorUtils {
                 data.getInstanceId(),
                 data.getExecutorId(),
                 data.getLocalInfo(),
+                data.getResources(),
+                state.getState(),
+                Collections.emptyMap(),
+                state.getError(),
+                data.getCreated(),
+                new Date());
+    }
+
+    public static TaskInstanceInfo convertToTaskInfo(final StateData<TaskInstanceState, ExecutorTaskInstanceInfo> state) {
+        val data = state.getData();
+        return new TaskInstanceInfo(
+                data.getTaskId(),
+                data.getTaskName(),
+                data.getInstanceId(),
+                data.getExecutorId(),
+                data.getHostname(),
                 data.getResources(),
                 state.getState(),
                 Collections.emptyMap(),

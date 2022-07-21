@@ -11,7 +11,7 @@ import java.util.Map;
  *
  */
 @Value
-public class ExecutorTaskInstanceInfo extends DeployedExecutorInstanceInfo {
+public class ExecutorTaskInstanceInfo implements DeployedExecutorInstanceInfo {
     String taskId;
     String taskName;
     String instanceId;

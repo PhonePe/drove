@@ -1,7 +1,10 @@
 package com.phonepe.drove.executor;
 
 import com.codahale.metrics.SharedMetricRegistries;
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -12,6 +15,8 @@ import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -64,15 +69,13 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             public ApplicationInstanceEngine engine(
                     final Injector injector,
                     final ResourceManager resourceDB,
-                    final ExecutorIdManager executorIdManager,
-                    final BlacklistingManager blacklistManager) {
+                    final ExecutorIdManager executorIdManager) {
                 val executorService = Executors.newSingleThreadExecutor();
                 return new ApplicationInstanceEngine(
                         executorIdManager,
                         executorService,
                         new InjectingInstanceActionFactory(injector),
                         resourceDB,
-                        blacklistManager,
                         ExecutorTestingUtils.DOCKER_CLIENT);
             }
         });

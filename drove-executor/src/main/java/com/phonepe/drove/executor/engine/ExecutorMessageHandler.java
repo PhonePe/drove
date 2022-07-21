@@ -3,18 +3,26 @@ package com.phonepe.drove.executor.engine;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
+import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  *
  */
 @Slf4j
+@Singleton
 public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageResponse> {
     private final ApplicationInstanceEngine engine;
+    private final BlacklistingManager blacklistingManager;
 
-    public ExecutorMessageHandler(ApplicationInstanceEngine engine) {
+    @Inject
+    public ExecutorMessageHandler(ApplicationInstanceEngine engine, BlacklistingManager blacklistingManager) {
         this.engine = engine;
+        this.blacklistingManager = blacklistingManager;
     }
 
     @Override
@@ -70,7 +78,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(BlacklistExecutorMessage blacklistExecutorMessage) {
         try {
-            engine.blacklist();
+            blacklistingManager.blacklist();
         }
         catch (Exception e) {
             return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);
@@ -81,7 +89,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage) {
         try {
-            engine.unblacklist();
+            blacklistingManager.unblacklist();
         }
         catch (Exception e) {
             return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);

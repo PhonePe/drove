@@ -52,9 +52,10 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val startResponse = engine.handleMessage(startInstanceMessage);
+        val messageHandler = new ExecutorMessageHandler(engine, blacklistingManager);
+        val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
-        assertEquals(MessageDeliveryStatus.FAILED, engine.handleMessage(startInstanceMessage).getStatus());
+        assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
         waitUntil(() -> engine.currentState(instanceId)
                         .map(InstanceInfo::getState)
                         .map(instanceState -> instanceState.equals(HEALTHY))
@@ -71,9 +72,9 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val stopInstanceMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
                                                           executorAddress,
                                                           instanceId);
-        assertEquals(MessageDeliveryStatus.ACCEPTED, engine.handleMessage(stopInstanceMessage).getStatus());
+        assertEquals(MessageDeliveryStatus.ACCEPTED, stopInstanceMessage.accept(messageHandler).getStatus());
         waitUntil(() -> engine.currentState(instanceId).isEmpty());
-        assertEquals(MessageDeliveryStatus.FAILED, engine.handleMessage(stopInstanceMessage).getStatus());
+        assertEquals(MessageDeliveryStatus.FAILED, stopInstanceMessage.accept(messageHandler).getStatus());
         val statesDiff = Sets.difference(stateChanges,
                                          EnumSet.of(PENDING,
                                                     PROVISIONING,
@@ -85,15 +86,6 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                     STOPPING,
                                                     STOPPED));
         assertTrue(statesDiff.isEmpty());
-    }
-
-    @Test
-    void testBlacklisting() {
-        assertFalse(blacklistingManager.isBlacklisted());
-        engine.blacklist();
-        assertTrue(blacklistingManager.isBlacklisted());
-        engine.unblacklist();
-        assertFalse(blacklistingManager.isBlacklisted());
     }
 
     @Test
@@ -138,7 +130,8 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val startResponse = engine.handleMessage(startInstanceMessage);
+        val messageHandler = new ExecutorMessageHandler(engine, blacklistingManager);
+        val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.FAILED, startResponse.getStatus());
     }
 

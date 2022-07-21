@@ -1,6 +1,7 @@
 package com.phonepe.drove.models.taskinstance;
 
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
@@ -17,7 +18,7 @@ import java.util.Map;
 @Jacksonized
 @Builder
 @AllArgsConstructor
-public class TaskInstanceInfo {
+public class TaskInstanceInfo implements DeployedInstanceInfo {
     String taskId;
     String taskName;
     String instanceId;

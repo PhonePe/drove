@@ -12,6 +12,7 @@ import java.util.Map;
  *
  */
 public interface DeploymentUnitSpec {
+    String getInstanceId();
     ExecutableCoordinates getExecutable();
     List<ResourceAllocation> getResources();
     List<MountedVolume> getVolumes();

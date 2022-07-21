@@ -1,6 +1,7 @@
 package com.phonepe.drove.models.instance;
 
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
@@ -17,7 +18,7 @@ import java.util.Map;
 @Jacksonized
 @Builder
 @AllArgsConstructor
-public class InstanceInfo {
+public class InstanceInfo implements DeployedInstanceInfo {
     String appId;
     String appName;
     String instanceId;

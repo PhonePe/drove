@@ -19,7 +19,6 @@ import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -29,7 +28,10 @@ import org.slf4j.MDC;
 
 import javax.inject.Inject;
 import java.net.ServerSocket;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
@@ -64,7 +66,6 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
                     client, CommonUtils.instanceId(context.getInstanceSpec()),
                     instanceSpec,
                     params -> {
-                        val portMappings = new HashMap<String, InstancePort>();
                         val instanceInfo = instanceInfo(currentState,
                                                         instanceSpec.getResources(),
                                                         params.getHostname(),
@@ -99,12 +100,12 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);
-            return StateData.errorFrom(currentState, TaskInstanceState.START_FAILED, e.getMessage());
+            return StateData.errorFrom(currentState, TaskInstanceState.RUN_FAILED, e.getMessage());
         }    }
 
     @Override
     protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.START_FAILED;
+        return TaskInstanceState.RUN_FAILED;
     }
 
     private ExecutorTaskInstanceInfo instanceInfo(

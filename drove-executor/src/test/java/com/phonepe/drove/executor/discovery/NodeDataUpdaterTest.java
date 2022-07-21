@@ -58,7 +58,6 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                Executors.newSingleThreadExecutor(),
                                                new InjectingInstanceActionFactory(Guice.createInjector()),
                                                rdb,
-                                               blm,
                                                ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
         val ndu = new NodeDataUpdater(eim, nds, rdb, env, ie, rCfg, blm);
