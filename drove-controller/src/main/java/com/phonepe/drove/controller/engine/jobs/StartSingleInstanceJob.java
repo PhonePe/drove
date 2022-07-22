@@ -12,12 +12,12 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
-import com.phonepe.drove.jobexecutor.Job;
-import com.phonepe.drove.jobexecutor.JobContext;
-import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.jobexecutor.Job;
+import com.phonepe.drove.jobexecutor.JobContext;
+import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -121,7 +121,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             return false;
         }
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
-        val instanceId = instanceIdGenerator.generate();
+        val instanceId = instanceIdGenerator.generate(applicationSpec);
         val startMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                     new ExecutorAddress(node.getExecutorId(),
                                                                         node.getHostname(),
@@ -157,11 +157,11 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                 log.info("Start message for instance {}/{} accepted by executor {}",
                          appId, instanceId, node.getExecutorId());
                 successful = ensureInstanceState(instanceInfoDB,
-                                                 clusterOpSpec,
-                                                 appId,
-                                                 instanceId,
-                                                 InstanceState.HEALTHY,
-                                                 retrySpecFactory);
+                                             clusterOpSpec,
+                                             appId,
+                                             instanceId,
+                                             InstanceState.HEALTHY,
+                                             retrySpecFactory);
             }
         }
         finally {

@@ -14,6 +14,7 @@ import java.util.Map;
 public class ExecutorTaskInstanceInfo implements DeployedExecutorInstanceInfo {
     String taskId;
     String sourceAppName;
+    String instanceId;
     String executorId;
     String hostname;
     List<ResourceAllocation> resources;

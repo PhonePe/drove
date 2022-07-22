@@ -7,7 +7,9 @@ import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
@@ -17,12 +19,14 @@ import java.util.stream.Collectors;
  *
  */
 @Slf4j
+@Singleton
 public class CachingProxyTaskDB implements TaskDB {
     private final TaskDB root;
 
     private final Map<String, Map<String, TaskInstanceInfo>> cache = new HashMap<>();
     private final StampedLock lock = new StampedLock();
 
+    @Inject
     public CachingProxyTaskDB(
             @Named("StoredTaskDB") TaskDB root,
             final LeadershipEnsurer leadershipEnsurer) {
@@ -72,7 +76,7 @@ public class CachingProxyTaskDB implements TaskDB {
     }
 
     @Override
-    public Optional<TaskInstanceInfo> instance(String sourceAppName, String taskId) {
+    public Optional<TaskInstanceInfo> task(String sourceAppName, String taskId) {
         return tasks(Set.of(sourceAppName), EnumSet.allOf(TaskInstanceState.class), true)
                 .getOrDefault(sourceAppName, List.of())
                 .stream()

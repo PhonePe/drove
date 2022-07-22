@@ -9,6 +9,7 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -20,6 +21,7 @@ import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
  *
  */
 @Slf4j
+@Singleton
 public class ZkTaskDB implements TaskDB {
     private static final String TASK_STATE_PATH = "/tasks";
 
@@ -49,7 +51,7 @@ public class ZkTaskDB implements TaskDB {
     }
 
     @Override
-    public Optional<TaskInstanceInfo> instance(String sourceAppName, String taskId) {
+    public Optional<TaskInstanceInfo> task(String sourceAppName, String taskId) {
         return Optional.ofNullable(readNodeData(curatorFramework,
                                                 instancePath(sourceAppName, taskId),
                                                 mapper,
@@ -61,7 +63,7 @@ public class ZkTaskDB implements TaskDB {
         return setNodeData(curatorFramework,
                            instancePath(sourceAppName, taskId),
                            mapper,
-                           taskId);
+                           instanceInfo);
     }
 
     @Override
@@ -84,8 +86,9 @@ public class ZkTaskDB implements TaskDB {
                      sourceAppName, instanceInfo.getTaskId(), instanceInfo.getState(), instanceInfo.getUpdated());
             updateTask(sourceAppName,
                        instanceInfo.getTaskId(),
-                       new TaskInstanceInfo(instanceInfo.getTaskId(),
-                                            instanceInfo.getSourceAppName(),
+                       new TaskInstanceInfo(instanceInfo.getSourceAppName(),
+                                            instanceInfo.getTaskId(),
+                                            instanceInfo.getInstanceId(),
                                             instanceInfo.getExecutorId(),
                                             instanceInfo.getHostname(),
                                             instanceInfo.getResources(),

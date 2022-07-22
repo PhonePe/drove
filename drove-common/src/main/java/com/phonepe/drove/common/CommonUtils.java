@@ -16,10 +16,6 @@ import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
-import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -145,6 +141,7 @@ public class CommonUtils {
         return null;
     }
 
+/*
     public static String deployableObjectIfd(final DeployedInstanceInfo instanceInfo) {
         return instanceInfo.accept(new DeployedInstanceInfoVisitor<String>() {
             @Override
@@ -171,7 +168,7 @@ public class CommonUtils {
                 return taskInstanceSpec.getTaskId();
             }
         });
-    }
+    }*/
 
     public static String instanceId(final DeploymentUnitSpec deploymentUnitSpec) {
         return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
@@ -182,7 +179,7 @@ public class CommonUtils {
 
             @Override
             public String visit(TaskInstanceSpec taskInstanceSpec) {
-                return taskInstanceSpec.getTaskId();
+                return taskInstanceSpec.getInstanceId();
             }
         });
     }

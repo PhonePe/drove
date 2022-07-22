@@ -4,6 +4,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
@@ -18,6 +19,8 @@ import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.task.TaskSpec;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -72,8 +75,8 @@ public class ControllerUtils {
                             log.error("Error starting instance: {}", failure.getMessage());
                         }
                     })
-                    .get(() -> ensureInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
-                                                   required));
+                    .get(() -> ensureTaskState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
+                                               required));
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -100,9 +103,56 @@ public class ControllerUtils {
         return false;
     }
 
+    public static boolean ensureTaskState(
+            final TaskDB taskDB,
+            ClusterOpSpec clusterOpSpec,
+            String sourceAppName,
+            String taskId,
+            TaskInstanceState required,
+            ControllerRetrySpecFactory retrySpecFactory) {
+        val retryPolicy =
+                CommonUtils.<StateCheckStatus>policy(
+                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        MISMATCH::equals);
+        try {
+            val status = Failsafe.with(List.of(retryPolicy))
+                    .onComplete(e -> {
+                        val failure = e.getFailure();
+                        if (null != failure) {
+                            log.error("Error starting instance: {}", failure.getMessage());
+                        }
+                    })
+                    .get(() -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId),
+                                                   required));
+            if (status.equals(MATCH)) {
+                return true;
+            }
+            else {
+                val curr = currentTaskInfo(taskDB, sourceAppName, taskId);
+                if (null == curr) {
+                    log.error("No instance info found at all for: {}/{}", sourceAppName, taskId);
+                }
+                else {
+                    if(status.equals(MISMATCH)) {
+                        log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                                  sourceAppName, taskId, curr.getState(), curr);
+                    }
+                    else {
+                        log.error("Looks like {}/{} has failed permanently and reached state: {}. Detailed instance data: {}}",
+                                  sourceAppName, taskId, curr.getState(), curr);
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+            log.error("Error starting instance: " + sourceAppName + "/" + taskId, e);
+        }
+        return false;
+    }
+
     public static <O extends ApplicationOperation> O safeCast(
             final ApplicationOperation applicationOperation,
-            Class<O> clazz) {
+            final Class<O> clazz) {
         val obj = applicationOperation.getClass().equals(clazz)
                   ? clazz.cast(applicationOperation)
                   : null;
@@ -112,6 +162,17 @@ public class ControllerUtils {
         return obj;
     }
 
+    public static <O extends TaskOperation> O safeCast(
+            final TaskOperation taskOperation,
+            final Class<O> clazz) {
+        val obj = taskOperation.getClass().equals(clazz)
+                  ? clazz.cast(taskOperation)
+                  : null;
+        Objects.requireNonNull(obj,
+                               "Cannot cast op " + taskOperation.getClass()
+                                       .getSimpleName() + " to " + clazz.getSimpleName());
+        return obj;
+    }
     private static InstanceInfo currentInstanceInfo(
             final ApplicationInstanceInfoDB instanceInfoDB,
             String appId,
@@ -119,7 +180,14 @@ public class ControllerUtils {
         return instanceInfoDB.instance(appId, instanceId).orElse(null);
     }
 
-    private static StateCheckStatus ensureInstanceState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
+    private static TaskInstanceInfo currentTaskInfo(
+            final TaskDB taskDB,
+            String sourceAppName,
+            String taskId) {
+        return taskDB.task(sourceAppName, taskId).orElse(null);
+    }
+
+    private static StateCheckStatus ensureTaskState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Instance state for {}/{}: {}",
@@ -128,6 +196,24 @@ public class ControllerUtils {
                 log.info("Instance {}/{} reached desired state: {}",
                          instanceInfo.getAppId(),
                          instanceInfo.getInstanceId(),
+                         instanceState);
+                return MATCH;
+            }
+            if(currState.isTerminal()) { //Useless to wait if it has died anyways
+                return MISNMATCH_NONRECOVERABLE;
+            }
+        }
+        return MISMATCH;
+    }
+    private static StateCheckStatus ensureTaskState(final TaskInstanceInfo instanceInfo, final TaskInstanceState instanceState) {
+        if (null != instanceInfo) {
+            val currState = instanceInfo.getState();
+            log.trace("Task state for {}/{}: {}",
+                      instanceInfo.getSourceAppName(), instanceInfo.getTaskId(), currState);
+            if (currState == instanceState) {
+                log.info("Task {}/{} reached desired state: {}",
+                         instanceInfo.getSourceAppName(),
+                         instanceInfo.getTaskId(),
                          instanceState);
                 return MATCH;
             }

@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.operation.taskops;
 
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationType;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
@@ -8,6 +9,10 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 /**
  *
@@ -19,11 +24,17 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 public class TaskKillOperation extends TaskOperation {
 
+    @NotEmpty
     String taskId;
 
-    public TaskKillOperation(String taskId) {
+    @NotNull
+    @Valid
+    ClusterOpSpec opSpec;
+
+    public TaskKillOperation(String taskId, ClusterOpSpec opSpec) {
         super(TaskOperationType.KILL);
         this.taskId = taskId;
+        this.opSpec = opSpec;
     }
 
     @Override

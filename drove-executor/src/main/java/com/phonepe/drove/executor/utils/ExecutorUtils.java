@@ -67,8 +67,9 @@ public class ExecutorUtils {
     public static TaskInstanceInfo convertToTaskInfo(final StateData<TaskInstanceState, ExecutorTaskInstanceInfo> state) {
         val data = state.getData();
         return new TaskInstanceInfo(
-                data.getTaskId(),
                 data.getSourceAppName(),
+                data.getTaskId(),
+                data.getInstanceId(),
                 data.getExecutorId(),
                 data.getHostname(),
                 data.getResources(),
@@ -118,7 +119,7 @@ public class ExecutorUtils {
 
             @Override
             public String visit(ExecutorTaskInstanceInfo taskInstanceInfo) {
-                return taskInstanceInfo.getTaskId();
+                return taskInstanceInfo.getInstanceId();
             }
         });
     }

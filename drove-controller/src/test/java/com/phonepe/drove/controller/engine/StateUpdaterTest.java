@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -31,6 +32,7 @@ class StateUpdaterTest {
     @SuppressWarnings("unchecked")
     void testUpdater() {
         val cDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
@@ -52,7 +54,7 @@ class StateUpdaterTest {
             return null;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
 
-        val su = new StateUpdater(cDB, iiDB);
+        val su = new StateUpdater(cDB, taskDB, iiDB);
         su.updateClusterResources(nodes);
         su.updateClusterResources(List.of());
         assertEquals(2, counter.get());
@@ -61,6 +63,7 @@ class StateUpdaterTest {
     @Test
     void testRemove() {
         val cDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
@@ -83,7 +86,7 @@ class StateUpdaterTest {
             return null;
         }).when(iiDB).deleteInstanceState(anyString(), anyString());
 
-        val su = new StateUpdater(cDB, iiDB);
+        val su = new StateUpdater(cDB, taskDB, iiDB);
         su.remove(List.of(executor.getExecutorId()));
         assertEquals(2, count.get());
     }
@@ -91,6 +94,7 @@ class StateUpdaterTest {
     @Test
     void testUpdateSingle() {
         val cDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
@@ -109,7 +113,7 @@ class StateUpdaterTest {
             return null;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
 
-        val su = new StateUpdater(cDB, iiDB);
+        val su = new StateUpdater(cDB, taskDB, iiDB);
         su.updateSingle(new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                      new AvailableCPU(Map.of(), Map.of()),
                                                      new AvailableMemory(Map.of(), Map.of())), instance);

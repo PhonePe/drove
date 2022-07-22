@@ -223,8 +223,9 @@ public class ControllerTestUtils {
             TaskInstanceState state,
             Date date,
             String errorMessage) {
-        return new TaskInstanceInfo(String.format("TI-%05d", idx),
-                                spec.getSourceApp(),
+        return new TaskInstanceInfo(spec.getSourceApp(),
+                                spec.getTaskId(),
+                                String.format("TI-%05d", idx),
                                 EXECUTOR_ID,
                                 "localhost",
                                 List.of(new CPUAllocation(Map.of(0, Set.of(idx))),

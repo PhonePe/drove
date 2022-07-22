@@ -48,7 +48,7 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                              return new MessageResponse(message.getHeader(),
                                                                         MessageDeliveryStatus.ACCEPTED);
                                          },
-                                         messageHandler), applicationInstanceEngine);
+                                         messageHandler), applicationInstanceEngine, taskInstanceEngine);
         scn.start();
         applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(1, ctr.get());

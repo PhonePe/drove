@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -35,7 +36,6 @@ import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateExecutorNode;
 import static com.phonepe.drove.controller.engine.CommandValidator.ValidationResult.failure;
 import static com.phonepe.drove.controller.engine.CommandValidator.ValidationResult.success;
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -49,16 +49,17 @@ import static org.mockito.Mockito.*;
 class ApisTest {
 
     private static final ApplicationEngine applicationEngine = mock(ApplicationEngine.class);
+    private static final TaskEngine taskEngine = mock(TaskEngine.class);
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new Apis(applicationEngine, responseEngine, clusterStateDB))
+            .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB))
             .build();
 
     @AfterEach
     void teardown() {
-        reset(applicationEngine);
+        reset(taskEngine);
         reset(responseEngine);
         reset(clusterStateDB);
     }

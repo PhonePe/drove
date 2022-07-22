@@ -4,50 +4,50 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
-import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopTaskInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import io.appform.functionmetrics.MonitoredFunction;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.TimeoutExceededException;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
+import static com.phonepe.drove.controller.utils.ControllerUtils.ensureTaskState;
 
 /**
- * Starts  a single instance by whatever means necessary
+ *
  */
 @Slf4j
-public class StopSingleInstanceJob implements Job<Boolean> {
-    private final String appId;
-    private final String instanceId;
+public class StopTaskJob implements Job<Boolean> {
+    private final String sourceAppName;
+    private final String taskId;
     private final ClusterOpSpec clusterOpSpec;
-    private final ApplicationInstanceInfoDB instanceInfoDB;
+    private final TaskDB taskDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
-    public StopSingleInstanceJob(
-            String appId,
-            String instanceId,
+    public StopTaskJob(
+            String sourceAppName,
+            String taskId,
             ClusterOpSpec clusterOpSpec,
-            ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
+            TaskDB taskDB,
+            ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory) {
-        this.appId = appId;
-        this.instanceId = instanceId;
+        this.sourceAppName = sourceAppName;
+        this.taskId = taskId;
         this.clusterOpSpec = clusterOpSpec;
-        this.instanceInfoDB = instanceInfoDB;
+        this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
@@ -55,7 +55,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
 
     @Override
     public String jobId() {
-        return "stop-instance-" + appId + "-" + instanceId;
+        return "stop-task-" + sourceAppName + "-" + taskId;
     }
 
     @Override
@@ -64,38 +64,36 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     }
 
     @Override
-    @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(), r -> !r);
-        val instanceInfo = instanceInfoDB.instance(appId, instanceId).orElse(null);
-        if (null == instanceInfo) {
-            log.warn("No instance found for {}/{}", appId, instanceId);
-            return true;
+        val task = taskDB.task(sourceAppName, taskId).orElse(null);
+        if(null == task) {
+            log.warn("No task found for {}/{}", sourceAppName, taskId);
         }
         try {
             return Failsafe.with(retryPolicy)
                     .onFailure(event -> {
                         val failure = event.getFailure();
                         if (null != failure) {
-                            log.error("Error stopping instance for " + appId, failure);
+                            log.error("Error stopping instance for " + sourceAppName, failure);
                         }
                         else {
-                            log.error("Error stopping instance for {}. Event: {}", appId, event);
+                            log.error("Error stopping instance for {}. Event: {}", sourceAppName, event);
                         }
                     })
-                    .get(() -> stopInstance(instanceInfo, clusterOpSpec));
+                    .get(() -> stopTask(task, clusterOpSpec));
         }
         catch (TimeoutExceededException e) {
-            log.error("Could not stop an instance for {} after retires.", appId);
+            log.error("Could not stop an instance for {} after retires.", sourceAppName);
         }
         catch (Exception e) {
-            log.error("Could not stop an instance for " + appId + " after retires.", e);
+            log.error("Could not stop an instance for " + sourceAppName + " after retires.", e);
         }
         return false;
     }
 
-    private boolean stopInstance(final InstanceInfo instanceInfo, final ClusterOpSpec clusterOpSpec) {
-        val executorId = instanceInfo.getExecutorId();
+    private boolean stopTask(final TaskInstanceInfo task, final ClusterOpSpec clusterOpSpec) {
+        val executorId = task.getExecutorId();
         val node = clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
                 .orElse(null);
@@ -103,19 +101,18 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             log.warn("No node found in the cluster with ID {}.", executorId);
             return false;
         }
-        val stopMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                   new ExecutorAddress(executorId,
-                                                                       instanceInfo.getLocalInfo().getHostname(),
-                                                                       node.getPort(),
-                                                                       node.getTransportType()),
-                                                   instanceId);
+        val stopMessage = new StopTaskInstanceMessage(MessageHeader.controllerRequest(),
+                                                      new ExecutorAddress(executorId,
+                                                                      task.getHostname(),
+                                                                      node.getPort(),
+                                                                      node.getTransportType()),
+                                                      task.getInstanceId());
         val response = communicator.send(stopMessage);
-        log.trace("Sent message to stop instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
+        log.trace("Sent message to stop task: {}/{}. Message: {}", sourceAppName, taskId, stopMessage);
         if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-            log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
+            log.warn("Task {} could not be stopped. Sending message failed: {}", task.getExecutorId(), executorId);
             return false;
         }
-        return ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED, retrySpecFactory);
+        return ensureTaskState(taskDB, clusterOpSpec, sourceAppName, taskId, TaskInstanceState.STOPPED, retrySpecFactory);
     }
-
 }

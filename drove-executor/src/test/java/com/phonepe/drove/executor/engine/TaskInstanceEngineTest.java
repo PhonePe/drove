@@ -40,7 +40,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         val instanceId = CommonUtils.instanceId(spec);
         val stateChanges = new HashSet<TaskInstanceState>();
         taskInstanceEngine.onStateChange().connect(state -> {
-            if (state.getTaskId().equals(instanceId)) {
+            if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
         });
@@ -69,12 +69,6 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         waitUntil(() -> STOPPED.equals(taskInstanceEngine.currentState(instanceId)
                                                .map(TaskInstanceInfo::getState)
                                                .orElse(STOPPED)));
-        /*val stopInstanceMessage = new StopTaskInstanceMessage(MessageHeader.controllerRequest(),
-                                                              executorAddress,
-                                                              instanceId);
-        assertEquals(MessageDeliveryStatus.ACCEPTED, stopInstanceMessage.accept(messageHandler).getStatus());
-        waitUntil(() -> taskInstanceEngine.currentState(instanceId).isEmpty());
-        assertEquals(MessageDeliveryStatus.FAILED, stopInstanceMessage.accept(messageHandler).getStatus());*/
         val statesDiff = Sets.difference(stateChanges,
                                          EnumSet.of(PENDING,
                                                     PROVISIONING,
@@ -93,7 +87,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         val instanceId = CommonUtils.instanceId(spec);
         val stateChanges = new HashSet<TaskInstanceState>();
         taskInstanceEngine.onStateChange().connect(state -> {
-            if (state.getTaskId().equals(instanceId)) {
+            if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
         });
@@ -122,12 +116,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         waitUntil(() -> STOPPED.equals(taskInstanceEngine.currentState(instanceId)
                                                .map(TaskInstanceInfo::getState)
                                                .orElse(STOPPED)));
-        /*val stopInstanceMessage = new StopTaskInstanceMessage(MessageHeader.controllerRequest(),
-                                                              executorAddress,
-                                                              instanceId);
-        assertEquals(MessageDeliveryStatus.ACCEPTED, stopInstanceMessage.accept(messageHandler).getStatus());
-        waitUntil(() -> taskInstanceEngine.currentState(instanceId).isEmpty());
-        assertEquals(MessageDeliveryStatus.FAILED, stopInstanceMessage.accept(messageHandler).getStatus());*/
+
         val statesDiff = Sets.difference(stateChanges,
                                          EnumSet.of(PENDING,
                                                     PROVISIONING,
@@ -143,10 +132,10 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     void testBasicRunTestCancel() {
         val spec = ExecutorTestingUtils.testTaskInstanceSpec(Map.of("ITERATIONS", "200"));
-        val instanceId = spec.getTaskId();
+        val instanceId = spec.getInstanceId();
         val stateChanges = new HashSet<TaskInstanceState>();
         taskInstanceEngine.onStateChange().connect(state -> {
-            if (state.getTaskId().equals(instanceId)) {
+            if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
         });
@@ -198,6 +187,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
     void testInvalidResourceAllocation() {
         val spec = new TaskInstanceSpec("T001",
                                         "TEST_SPEC",
+                                        UUID.randomUUID().toString(),
                                         new DockerCoordinates(
                                                 CommonTestUtils.TASK_IMAGE_NAME,
                                                        io.dropwizard.util.Duration.seconds(100)),

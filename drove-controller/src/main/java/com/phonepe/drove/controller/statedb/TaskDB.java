@@ -15,7 +15,7 @@ public interface TaskDB {
     Map<String, List<TaskInstanceInfo>> tasks(
             Collection<String> sourceAppIds, Set<TaskInstanceState> validStates, boolean skipStaleCheck);
 
-    Optional<TaskInstanceInfo> instance(String sourceAppName, String taskId);
+    Optional<TaskInstanceInfo> task(String sourceAppName, String taskId);
 
     boolean updateTask(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo);
 

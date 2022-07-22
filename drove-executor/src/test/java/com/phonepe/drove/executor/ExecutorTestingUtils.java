@@ -131,6 +131,7 @@ public class ExecutorTestingUtils {
     public static TaskInstanceSpec testTaskInstanceSpec(final String imageName, Map<String, String> env) {
         return new TaskInstanceSpec("T001",
                                            "TEST_TASK_SPEC",
+                                           UUID.randomUUID().toString(),
                                            new DockerCoordinates(imageName, Duration.seconds(100)),
                                            ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
                                                                                                        Set.of(2, 3))),
@@ -175,6 +176,7 @@ public class ExecutorTestingUtils {
     public static ExecutorTaskInstanceInfo createExecutorTaskInstanceInfo(TaskInstanceSpec spec) {
         return new ExecutorTaskInstanceInfo(spec.getTaskId(),
                                         spec.getSourceAppName(),
+                                        spec.getInstanceId(),
                                         EXECUTOR_ID,
                                             "localhost",
                                         spec.getResources(),

@@ -5,6 +5,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
+import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -14,6 +15,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.TaskOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -46,6 +48,8 @@ import java.util.Set;
 public class Apis {
 
     private final ApplicationEngine engine;
+    private final TaskEngine taskEngine;
+
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
 
@@ -53,9 +57,10 @@ public class Apis {
     @Inject
     public Apis(
             ApplicationEngine engine,
-            ResponseEngine responseEngine,
+            TaskEngine taskEngine, ResponseEngine responseEngine,
             ClusterStateDB clusterStateDB) {
         this.engine = engine;
+        this.taskEngine = taskEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
     }
@@ -90,6 +95,22 @@ public class Apis {
             return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
         return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
+    }
+
+    @POST
+    @Path("/task/operations")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public Response acceptTaskOperation(@NotNull @Valid final TaskOperation operation) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ControllerUtils.badRequest(Map.of("validationErrors", List.of("Cluster is in maintenance mode")),
+                                              "Command validation failure");
+        }
+        val res = taskEngine.handleTaskOp(operation);
+        if (res) {
+            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
+        }
+        return ControllerUtils.badRequest(Map.of(), "Command validation failure");
     }
 
     @POST

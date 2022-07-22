@@ -22,6 +22,7 @@ import java.util.Map;
 public class TaskInstanceInfo implements DeployedInstanceInfo {
     String sourceAppName;
     String taskId;
+    String instanceId;
     String executorId;
     String hostname;
     List<ResourceAllocation> resources;

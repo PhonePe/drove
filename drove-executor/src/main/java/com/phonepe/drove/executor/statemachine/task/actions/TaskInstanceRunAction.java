@@ -27,7 +27,6 @@ import lombok.val;
 import org.slf4j.MDC;
 
 import javax.inject.Inject;
-import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -82,6 +81,7 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
                         val env = params.getCustomEnv();
                         env.add("DROVE_EXECUTOR_HOST=" + hostname());
                         env.add("DROVE_TASK_ID=" + instanceSpec.getTaskId());
+                        env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());
                         env.add("DROVE_SOURCE_APP_NAME=" + instanceSpec.getSourceAppName());
                     });
 
@@ -118,6 +118,7 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
         return new ExecutorTaskInstanceInfo(
                 data.getTaskId(),
                 data.getSourceAppName(),
+                data.getInstanceId(),
                 data.getExecutorId(),
                 hostName,
                 resources,
@@ -131,19 +132,6 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
     @Override
     public void stop() {
         //Nothing to do here
-    }
-
-    private int findFreePort() {
-        /*//IANA recommended range
-        IntStream.rangeClosed(49152, 65535)
-                .filter(port -> try(val s ))*/
-        try (val s = new ServerSocket(0)) {
-            return s.getLocalPort();
-        }
-        catch (Exception e) {
-            log.error("Port allocation failure");
-        }
-        return 0;
     }
 
     private LogConfig logConfig(final ApplicationInstanceSpec instanceSpec) {

@@ -83,6 +83,18 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    @Named("TaskThreadPool")
+    public ExecutorService taskThreadPool(final Environment environment) {
+        return environment.lifecycle().executorService("task-runner-%d")
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
+                .keepAliveTime(Duration.seconds(60))
+                .build();
+    }
+
+    @Provides
+    @Singleton
     @Named("JobLevelThreadFactory")
     public ThreadFactory jobLevelThreadFactory() {
         return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
@@ -104,6 +116,8 @@ public class ControllerCoreModule extends AbstractModule {
         bind(ApplicationInstanceInfoDB.class).to(CachingProxyApplicationInstanceInfoDB.class);
         bind(ApplicationInstanceInfoDB.class).annotatedWith(Names.named("StoredInstanceInfoDB")).to(
                 ZkApplicationInstanceInfoDB.class);
+        bind(TaskDB.class).to(CachingProxyTaskDB.class);
+        bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(ZkTaskDB.class);
         bind(ClusterStateDB.class).to(CachingProxyClusterStateDB.class);
         bind(ClusterStateDB.class).annotatedWith(Names.named("StoredClusterStateDB")).to(ZkClusterStateDB.class);
 

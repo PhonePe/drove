@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor.statemachine.task.actions;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -55,8 +56,13 @@ public class TaskMonitoringAction extends TaskInstanceAction {
                 dockerClient.killContainerCmd(containerId).exec();
                 return StateData.from(currentState, TaskInstanceState.RUN_CANCELLED);
             }
-            val exitCode = Objects.requireNonNullElse(result.get(), new TaskResult(-1)).getStatus();
-
+            val runResult = Objects.requireNonNullElse(result.get(), new TaskResult(-1, false));
+            if (runResult.isContainerLost()) {
+                return StateData.errorFrom(currentState,
+                                           TaskInstanceState.RUN_FAILED,
+                                           "Task instance lost for container: " + containerId);
+            }
+            val exitCode = runResult.getStatus();
             if (exitCode == 0) {
                 return StateData.from(currentState, TaskInstanceState.RUN_COMPLETED);
             }
@@ -133,13 +139,20 @@ public class TaskMonitoringAction extends TaskInstanceAction {
                 log.info("Task instance completed with status: {}", currState);
                 val setStatus = result.compareAndSet(null,
                                                      new TaskResult(Objects.requireNonNullElse(currState.getExitCodeLong(),
-                                                                                               -1L)));
+                                                                                               -1L), false));
                 log.debug("Result set status: {}", setStatus);
                 stateChanged.signalAll();
             }
         }
+        catch (NotFoundException e) {
+            log.error("Container {} has gone away", containerId);
+            val setStatus = result.compareAndSet(null, new TaskResult(-1, true));
+            log.debug("Result set status: {}", setStatus);
+            stateChanged.signalAll();
+        }
         catch (CancellationException e) {
             log.info("Task execution has been cancelled");
+
         }
         catch (Exception e) {
             log.error("Error checking task status: ", e);
@@ -152,6 +165,7 @@ public class TaskMonitoringAction extends TaskInstanceAction {
     @Value
     private static class TaskResult {
         long status;
+        boolean containerLost;
     }
 
 }

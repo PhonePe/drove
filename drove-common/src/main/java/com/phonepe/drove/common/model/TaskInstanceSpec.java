@@ -16,6 +16,7 @@ import java.util.Map;
 public class TaskInstanceSpec implements DeploymentUnitSpec {
     String taskId;
     String sourceAppName;
+    String instanceId;
     ExecutableCoordinates executable;
     List<ResourceAllocation> resources;
     List<MountedVolume> volumes;

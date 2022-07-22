@@ -21,6 +21,7 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -63,6 +64,26 @@ public class ExecutorCoreModule extends AbstractModule {
                 executorIdManager,
                 executorService,
                 new InjectingApplicationInstanceActionFactory(injector),
+                resourceDB,
+                client);
+    }
+    @Provides
+    @Singleton
+    public TaskInstanceEngine taskEngine(
+            final Environment environment,
+            final Injector injector,
+            final ResourceManager resourceDB,
+            final ExecutorIdManager executorIdManager,
+            final DockerClient client) {
+        val executorService = environment.lifecycle()
+                .executorService("instance-engine")
+                .minThreads(128)
+                .maxThreads(128)
+                .build();
+        return new TaskInstanceEngine(
+                executorIdManager,
+                executorService,
+                new InjectingTaskInstanceActionFactory(injector),
                 resourceDB,
                 client);
     }
