@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.engine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
@@ -36,10 +37,10 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     void testBasicRun() {
         val spec = ExecutorTestingUtils.testTaskInstanceSpec();
-        val instanceId = spec.getInstanceId();
+        val instanceId = CommonUtils.instanceId(spec);
         val stateChanges = new HashSet<TaskInstanceState>();
         taskInstanceEngine.onStateChange().connect(state -> {
-            if (state.getInstanceId().equals(instanceId)) {
+            if (state.getTaskId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
         });
@@ -64,7 +65,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         assertEquals(RUNNING, info.getState());
         val allInfo = taskInstanceEngine.currentState();
         assertEquals(1, allInfo.size());
-        assertEquals(info.getInstanceId(), allInfo.get(0).getInstanceId());
+        assertEquals(info.getTaskId(), allInfo.get(0).getTaskId());
         waitUntil(() -> STOPPED.equals(taskInstanceEngine.currentState(instanceId)
                                                .map(TaskInstanceInfo::getState)
                                                .orElse(STOPPED)));
@@ -89,10 +90,10 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     void testBasicRunTestFailed() {
         val spec = ExecutorTestingUtils.testTaskInstanceSpec(Map.of("ITERATIONS", "2", "EXIT_CODE", "-1"));
-        val instanceId = spec.getInstanceId();
+        val instanceId = CommonUtils.instanceId(spec);
         val stateChanges = new HashSet<TaskInstanceState>();
         taskInstanceEngine.onStateChange().connect(state -> {
-            if (state.getInstanceId().equals(instanceId)) {
+            if (state.getTaskId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
         });
@@ -117,7 +118,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         assertEquals(RUNNING, info.getState());
         val allInfo = taskInstanceEngine.currentState();
         assertEquals(1, allInfo.size());
-        assertEquals(info.getInstanceId(), allInfo.get(0).getInstanceId());
+        assertEquals(info.getTaskId(), allInfo.get(0).getTaskId());
         waitUntil(() -> STOPPED.equals(taskInstanceEngine.currentState(instanceId)
                                                .map(TaskInstanceInfo::getState)
                                                .orElse(STOPPED)));
@@ -142,10 +143,10 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     void testBasicRunTestCancel() {
         val spec = ExecutorTestingUtils.testTaskInstanceSpec(Map.of("ITERATIONS", "200"));
-        val instanceId = spec.getInstanceId();
+        val instanceId = spec.getTaskId();
         val stateChanges = new HashSet<TaskInstanceState>();
         taskInstanceEngine.onStateChange().connect(state -> {
-            if (state.getInstanceId().equals(instanceId)) {
+            if (state.getTaskId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
         });
@@ -170,7 +171,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         assertEquals(RUNNING, info.getState());
         val allInfo = taskInstanceEngine.currentState();
         assertEquals(1, allInfo.size());
-        assertEquals(info.getInstanceId(), allInfo.get(0).getInstanceId());
+        assertEquals(info.getTaskId(), allInfo.get(0).getTaskId());
         waitUntil(() -> RUNNING.equals(taskInstanceEngine.currentState(instanceId)
                                                .map(TaskInstanceInfo::getState)
                                                .orElse(STOPPED)));
@@ -197,7 +198,6 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
     void testInvalidResourceAllocation() {
         val spec = new TaskInstanceSpec("T001",
                                         "TEST_SPEC",
-                                        UUID.randomUUID().toString(),
                                         new DockerCoordinates(
                                                 CommonTestUtils.TASK_IMAGE_NAME,
                                                        io.dropwizard.util.Duration.seconds(100)),

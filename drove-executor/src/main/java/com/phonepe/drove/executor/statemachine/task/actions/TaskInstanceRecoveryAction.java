@@ -7,6 +7,7 @@ import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.TaskInstanceAction;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import com.phonepe.drove.statemachine.StateData;
@@ -40,7 +41,7 @@ public class TaskInstanceRecoveryAction extends TaskInstanceAction {
     protected StateData<TaskInstanceState, ExecutorTaskInstanceInfo> executeImpl(
             InstanceActionContext<TaskInstanceSpec> context, StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState) {
         val client = context.getClient();
-        val instanceId = currentState.getData().getInstanceId();
+        val instanceId = ExecutorUtils.instanceId(currentState.getData());
         val container = client.listContainersCmd()
                 .withLabelFilter(
                         Map.of(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.COMPUTATION.name(),

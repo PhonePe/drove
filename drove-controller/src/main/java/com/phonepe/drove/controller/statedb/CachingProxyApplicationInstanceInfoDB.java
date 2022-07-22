@@ -21,15 +21,15 @@ import java.util.stream.Collectors;
  */
 @Singleton
 @Slf4j
-public class CachingProxyInstanceInfoDB implements InstanceInfoDB {
-    private final InstanceInfoDB root;
+public class CachingProxyApplicationInstanceInfoDB implements ApplicationInstanceInfoDB {
+    private final ApplicationInstanceInfoDB root;
 
     private final Map<String, Map<String, InstanceInfo>> cache = new HashMap<>();
     private final StampedLock lock = new StampedLock();
 
     @Inject
-    public CachingProxyInstanceInfoDB(
-            @Named("StoredInstanceInfoDB") final InstanceInfoDB root,
+    public CachingProxyApplicationInstanceInfoDB(
+            @Named("StoredInstanceInfoDB") final ApplicationInstanceInfoDB root,
             final LeadershipEnsurer leadershipEnsurer) {
         this.root = root;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::purge);

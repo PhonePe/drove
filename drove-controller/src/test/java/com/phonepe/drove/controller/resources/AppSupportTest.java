@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.auth.model.*;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.info.nodedata.NodeType;
@@ -31,7 +31,7 @@ class AppSupportTest {
     void testSuccess() {
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));
@@ -68,7 +68,7 @@ class AppSupportTest {
     void testSuccessSpecificState() {
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));
@@ -93,7 +93,7 @@ class AppSupportTest {
     void testFailNoInfo() {
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));
@@ -125,7 +125,7 @@ class AppSupportTest {
     void testNoAccess() {
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));

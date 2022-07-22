@@ -8,14 +8,18 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.Constants;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -141,16 +145,44 @@ public class CommonUtils {
         return null;
     }
 
-    public static String instanceId(final DeploymentUnitSpec deploymentUnitSpec) {
-        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
+    public static String deployableObjectIfd(final DeployedInstanceInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<String>() {
+            @Override
+            public String visit(InstanceInfo applicationInstanceInfo) {
+                return applicationInstanceInfo.getAppId();
+            }
+
+            @Override
+            public String visit(TaskInstanceInfo taskInstanceInfo) {
+                return taskInstanceInfo.getTaskId();
+            }
+        });
+    }
+
+    public static String deployedObjectId(final DeploymentUnitSpec deploymentUnitSpec) {
+        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<String>() {
             @Override
             public String visit(ApplicationInstanceSpec instanceSpec) {
-                return instanceSpec.getAppId() + "-" + instanceSpec.getInstanceId();
+                return instanceSpec.getAppId();
             }
 
             @Override
             public String visit(TaskInstanceSpec taskInstanceSpec) {
-                return taskInstanceSpec.getTaskId() + "-" + taskInstanceSpec.getInstanceId();
+                return taskInstanceSpec.getTaskId();
+            }
+        });
+    }
+
+    public static String instanceId(final DeploymentUnitSpec deploymentUnitSpec) {
+        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
+            @Override
+            public String visit(ApplicationInstanceSpec instanceSpec) {
+                return instanceSpec.getInstanceId();
+            }
+
+            @Override
+            public String visit(TaskInstanceSpec taskInstanceSpec) {
+                return taskInstanceSpec.getTaskId();
             }
         });
     }

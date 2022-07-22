@@ -4,11 +4,11 @@ import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
-import com.phonepe.drove.controller.statemachine.AppAction;
-import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.statemachine.AppAsyncAction;
-import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statemachine.applications.AppAction;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
+import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
+import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -43,7 +43,7 @@ public class ApplicationEngine {
     private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final CommandValidator commandValidator;
     private final DroveEventBus droveEventBus;
     private final ControllerRetrySpecFactory retrySpecFactory;
@@ -55,7 +55,7 @@ public class ApplicationEngine {
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
-            InstanceInfoDB instanceInfoDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
             CommandValidator commandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,

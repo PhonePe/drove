@@ -13,9 +13,6 @@ import java.util.Map;
  *
  */
 public interface DeploymentSpec {
-    String getName();
-
-    String getVersion();
 
     ExecutableCoordinates getExecutable();
 
@@ -30,4 +27,6 @@ public interface DeploymentSpec {
     Map<String, String> getTags();
 
     Map<String, String> getEnv();
+
+    <T> T accept(final DeploymentSpecVisitor<T> visitor);
 }

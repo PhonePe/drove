@@ -209,24 +209,22 @@ public class ControllerTestUtils {
                                 date);
     }
 
-    public static TaskInstanceInfo generateTaskInstanceInfo(final String appId, final TaskSpec spec, int idx) {
-        return generateTaskInstanceInfo(appId, spec, idx, TaskInstanceState.RUNNING);
+    public static TaskInstanceInfo generateTaskInstanceInfo(final TaskSpec spec, int idx) {
+        return generateTaskInstanceInfo(spec, idx, TaskInstanceState.RUNNING);
     }
 
-    public static TaskInstanceInfo generateTaskInstanceInfo(final String appId, final TaskSpec spec, int idx, TaskInstanceState state) {
-        return generateTaskInstanceInfo(appId, spec, idx, state, new Date(), null);
+    public static TaskInstanceInfo generateTaskInstanceInfo(final TaskSpec spec, int idx, TaskInstanceState state) {
+        return generateTaskInstanceInfo(spec, idx, state, new Date(), null);
     }
 
     public static TaskInstanceInfo generateTaskInstanceInfo(
-            final String appId,
             final TaskSpec spec,
             int idx,
             TaskInstanceState state,
             Date date,
             String errorMessage) {
-        return new TaskInstanceInfo(appId,
-                                spec.getName(),
-                                String.format("TI-%05d", idx),
+        return new TaskInstanceInfo(String.format("TI-%05d", idx),
+                                spec.getSourceApp(),
                                 EXECUTOR_ID,
                                 "localhost",
                                 List.of(new CPUAllocation(Map.of(0, Set.of(idx))),

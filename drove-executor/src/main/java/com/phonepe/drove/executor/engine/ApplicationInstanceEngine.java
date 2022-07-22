@@ -4,7 +4,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -27,31 +27,31 @@ import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
  *
  */
 @Slf4j
-public class ApplicationInstanceEngine extends InstanceEngine<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec, InstanceInfo> {
+public class ApplicationInstanceEngine extends InstanceEngine<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec, InstanceInfo> {
 
 
     public ApplicationInstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
-            InstanceActionFactory<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
+            InstanceActionFactory<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
             ResourceManager resourceDB, DockerClient client) {
         super(executorIdManager, service, actionFactory, resourceDB, client);
     }
 
     @Override
-    protected StateData<InstanceState, ExecutorInstanceInfo> createInitialState(
+    protected StateData<InstanceState, ExecutorApplicationInstanceInfo> createInitialState(
             ApplicationInstanceSpec spec,
             Date currDate,
             ExecutorIdManager executorIdManager) {
         return StateData.create(InstanceState.PENDING,
-                                new ExecutorInstanceInfo(spec.getAppId(),
-                                                         spec.getAppName(),
-                                                         spec.getInstanceId(),
-                                                         executorIdManager.executorId().orElse(null),
-                                                         null,
-                                                         spec.getResources(),
-                                                         Collections.emptyMap(),
-                                                         currDate,
-                                                         currDate));
+                                new ExecutorApplicationInstanceInfo(spec.getAppId(),
+                                                                    spec.getAppName(),
+                                                                    spec.getInstanceId(),
+                                                                    executorIdManager.executorId().orElse(null),
+                                                                    null,
+                                                                    spec.getResources(),
+                                                                    Collections.emptyMap(),
+                                                                    currDate,
+                                                                    currDate));
     }
 
     @Override
@@ -75,12 +75,12 @@ public class ApplicationInstanceEngine extends InstanceEngine<ExecutorInstanceIn
     }
 
     @Override
-    protected StateMachine<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>,
-            InstanceActionBase<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec>> createStateMachine(
+    protected StateMachine<ExecutorApplicationInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>,
+            InstanceActionBase<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec>> createStateMachine(
             String executorId,
             ApplicationInstanceSpec spec,
-            StateData<InstanceState, ExecutorInstanceInfo> currentState,
-            InstanceActionFactory<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
+            StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState,
+            InstanceActionFactory<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
             DockerClient client) {
         return new ApplicationInstanceStateMachine(executorId,
                                                    spec,
@@ -90,7 +90,7 @@ public class ApplicationInstanceEngine extends InstanceEngine<ExecutorInstanceIn
     }
 
     @Override
-    protected InstanceInfo convertStateToInstanceInfo(StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+    protected InstanceInfo convertStateToInstanceInfo(StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
         return ExecutorUtils.convert(currentState);
     }
 }

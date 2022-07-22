@@ -11,6 +11,7 @@ import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
@@ -33,6 +34,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
+import static com.phonepe.drove.common.CommonUtils.instanceId;
 
 /**
  *
@@ -89,7 +91,7 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
 
     public boolean startInstance(final T spec) {
         val currDate = new Date();
-        return registerInstance(spec.getInstanceId(),
+        return registerInstance(instanceId(spec),
                                 spec,
                                 createInitialState(spec, currDate, executorIdManager));
     }
@@ -120,13 +122,13 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
                 spec.accept(new DeploymentUnitSpecVisitor<Void>() {
                     @Override
                     public Void visit(ApplicationInstanceSpec applicationInstanceSpec) {
-                        MDC.put("instanceLogId", applicationInstanceSpec.getAppId() + ":" + spec.getInstanceId());
+                        MDC.put("instanceLogId", applicationInstanceSpec.getAppId() + ":" + applicationInstanceSpec.getInstanceId());
                         return null;
                     }
 
                     @Override
                     public Void visit(TaskInstanceSpec taskInstanceSpec) {
-                        MDC.put("instanceLogId", taskInstanceSpec.getTaskId() + ":" + spec.getInstanceId());
+                        MDC.put("instanceLogId", taskInstanceSpec.getSourceAppName() + ":" + taskInstanceSpec.getTaskId());
                         return null;
                     }
                 });
@@ -279,7 +281,7 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
                         return null;
                     }
                 }));
-        return resourceDB.lockResources(new ResourceManager.ResourceUsage(spec.getInstanceId(),
+        return resourceDB.lockResources(new ResourceManager.ResourceUsage(instanceId(spec),
                                                                           ResourceManager.ResourceLockType.HARD,
                                                                           resourceUsage));
     }
@@ -297,9 +299,10 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
         if (isTerminal(state)) {
             val data = currentState.getData();
             if (null != data) {
-                resourceDB.reclaimResources(data.getInstanceId());
-                stateMachines.remove(data.getInstanceId());
-                log.info("State machine {} has been successfully terminated", data.getInstanceId());
+                val instanceId = ExecutorUtils.instanceId(data);
+                resourceDB.reclaimResources(instanceId);
+                stateMachines.remove(instanceId);
+                log.info("State machine {} has been successfully terminated", instanceId);
             }
             else {
                 log.warn("State data is not present");

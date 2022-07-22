@@ -9,7 +9,7 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -53,12 +53,12 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
 
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorApplicationInstanceInfo> executeImpl(
+            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val client = context.getClient();
         try {
-            val instanceInfoRef = new AtomicReference<ExecutorInstanceInfo>();
+            val instanceInfoRef = new AtomicReference<ExecutorApplicationInstanceInfo>();
             val containerId = DockerUtils.createContainer(
                     schedulingConfig,
                     client, instanceSpec.getAppId() + "-" + instanceSpec.getInstanceId(),
@@ -126,14 +126,14 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
         return InstanceState.START_FAILED;
     }
 
-    private ExecutorInstanceInfo instanceInfo(
-            StateData<InstanceState, ExecutorInstanceInfo> currentState,
+    private ExecutorApplicationInstanceInfo instanceInfo(
+            StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,
             List<ResourceAllocation> resources,
             String hostName,
-            ExecutorInstanceInfo oldData) {
+            ExecutorApplicationInstanceInfo oldData) {
         val data = currentState.getData();
-        return new ExecutorInstanceInfo(
+        return new ExecutorApplicationInstanceInfo(
                 data.getAppId(),
                 data.getAppName(),
                 data.getInstanceId(),

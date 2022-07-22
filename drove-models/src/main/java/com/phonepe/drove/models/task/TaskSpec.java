@@ -6,6 +6,7 @@ import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
+import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import lombok.Value;
 
 import javax.validation.Valid;
@@ -20,13 +21,13 @@ import java.util.Map;
  */
 @Value
 public class TaskSpec implements DeploymentSpec {
-    @NotEmpty(message = "- Application name is mandatory")
+    @NotEmpty(message = "- Source Application name is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
-    String name;
+    String sourceApp;
 
-    @NotEmpty(message = "- App version is mandatory")
+    @NotEmpty(message = "- Task ID is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
-    String version;
+    String taskId;
 
     @NotNull(message = "- Executable details is required")
     @Valid
@@ -47,4 +48,9 @@ public class TaskSpec implements DeploymentSpec {
     Map<String, String> tags;
 
     Map<String, String> env;
+
+    @Override
+    public <T> T accept(DeploymentSpecVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

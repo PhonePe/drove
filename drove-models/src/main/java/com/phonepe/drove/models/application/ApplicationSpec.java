@@ -7,6 +7,7 @@ import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
+import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import lombok.Value;
 
 import javax.validation.Valid;
@@ -70,4 +71,9 @@ public class ApplicationSpec implements DeploymentSpec {
 
     @Valid
     PreShutdownSpec preShutdown;
+
+    @Override
+    public <T> T accept(DeploymentSpecVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

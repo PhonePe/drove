@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.statemachine;
+package com.phonepe.drove.controller.statemachine.applications;
 
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;

@@ -8,7 +8,7 @@ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
  */
 public interface TaskOperationVisitor<T> {
 
-    T visit(TaskCreateOperation create);
+    T visit(final TaskCreateOperation create);
 
-    T visit(TaskKillOperation kill);
+    T visit(final TaskKillOperation kill);
 }

@@ -28,7 +28,7 @@ public class TaskCreateOperation extends TaskOperation {
     }
 
     @Override
-    public <T> T accept(TaskOperationVisitor<T> visitor) {
+    public <T> T accept(final TaskOperationVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

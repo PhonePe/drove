@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -31,12 +31,12 @@ class StateUpdaterTest {
     @SuppressWarnings("unchecked")
     void testUpdater() {
         val cDB = mock(ClusterResourcesDB.class);
-        val iiDB = mock(InstanceInfoDB.class);
+        val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
         val taskSpec = taskSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val taskInstance = generateTaskInstanceInfo(ControllerUtils.deployableObjectId(taskSpec), taskSpec, 0);
+        val taskInstance = generateTaskInstanceInfo(taskSpec, 0);
         val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance));
         val nodes = List.of(executor.getNodeData());
         val counter = new AtomicInteger();
@@ -61,12 +61,12 @@ class StateUpdaterTest {
     @Test
     void testRemove() {
         val cDB = mock(ClusterResourcesDB.class);
-        val iiDB = mock(InstanceInfoDB.class);
+        val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
         val taskSpec = taskSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val taskInstance = generateTaskInstanceInfo(ControllerUtils.deployableObjectId(taskSpec), taskSpec, 0);
+        val taskInstance = generateTaskInstanceInfo(taskSpec, 0);
         val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance));
 
         doReturn(Optional.of(executor))
@@ -91,7 +91,7 @@ class StateUpdaterTest {
     @Test
     void testUpdateSingle() {
         val cDB = mock(ClusterResourcesDB.class);
-        val iiDB = mock(InstanceInfoDB.class);
+        val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
         val appId = ControllerUtils.deployableObjectId(spec);

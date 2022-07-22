@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
@@ -39,8 +39,8 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
 
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorApplicationInstanceInfo> executeImpl(
+            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
         if (Strings.isNullOrEmpty(context.getDockerInstanceId())) {
             log.warn("No docker id found for instance {}. Nothing to be done for stop.",
                      context.getInstanceSpec().getInstanceId());
@@ -81,7 +81,7 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
 
     private void handlePreShutdown(
             final InstanceActionContext<ApplicationInstanceSpec> context,
-            final StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+            final StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val preShutdown = Objects.requireNonNullElse(instanceSpec.getPreShutdown(), PreShutdownSpec.DEFAULT);
         val preShutdownHook = Objects.requireNonNullElse(preShutdown.getHooks(),
@@ -96,7 +96,7 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         sleepBeforeKill(preShutdown);
     }
 
-    private void executeHook(StateData<InstanceState, ExecutorInstanceInfo> currentState, CheckModeSpec preShutdownHook) {
+    private void executeHook(StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState, CheckModeSpec preShutdownHook) {
         val httpSpec = CheckMode.HTTP == preShutdownHook.getType()
                        ? (HTTPCheckModeSpec) preShutdownHook
                        : null;

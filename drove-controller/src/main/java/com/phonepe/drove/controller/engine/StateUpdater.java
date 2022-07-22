@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -20,12 +20,12 @@ import java.util.Objects;
 @Singleton
 public class StateUpdater {
     private final ClusterResourcesDB resourcesDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
 
     @Inject
     public StateUpdater(
             ClusterResourcesDB resourcesDB,
-            InstanceInfoDB instanceInfoDB) {
+            ApplicationInstanceInfoDB instanceInfoDB) {
         this.resourcesDB = resourcesDB;
         this.instanceInfoDB = instanceInfoDB;
     }

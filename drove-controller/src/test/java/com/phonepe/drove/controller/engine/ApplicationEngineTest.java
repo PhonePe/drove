@@ -24,14 +24,14 @@ import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.CachingProxyApplicationStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
-import com.phonepe.drove.controller.statemachine.AppAction;
-import com.phonepe.drove.controller.statemachine.AppActionContext;
+import com.phonepe.drove.controller.statedb.CachingProxyApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statemachine.applications.AppAction;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.testsupport.DummyExecutor;
 import com.phonepe.drove.controller.testsupport.DummyExecutorMessageSender;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -79,7 +79,7 @@ class ApplicationEngineTest extends ControllerTestBase {
                                                                          FailureStrategy.STOP);
 
     @Inject
-    InstanceInfoDB instanceInfoDB;
+    ApplicationInstanceInfoDB instanceInfoDB;
     @Inject
     DroveEventBus droveEventBus;
 
@@ -98,10 +98,10 @@ class ApplicationEngineTest extends ControllerTestBase {
                 bind(ApplicationStateDB.class)
                         .annotatedWith(Names.named("StoredApplicationStateDB"))
                         .to(InMemoryApplicationStateDB.class);
-                bind(InstanceInfoDB.class).to(CachingProxyInstanceInfoDB.class);
-                bind(InstanceInfoDB.class)
+                bind(ApplicationInstanceInfoDB.class).to(CachingProxyApplicationInstanceInfoDB.class);
+                bind(ApplicationInstanceInfoDB.class)
                         .annotatedWith(Names.named("StoredInstanceInfoDB"))
-                        .to(InMemoryInstanceInfoDB.class);
+                        .to(InMemoryApplicationInstanceInfoDB.class);
                 bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class).asEagerSingleton();
                 bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
                 bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);

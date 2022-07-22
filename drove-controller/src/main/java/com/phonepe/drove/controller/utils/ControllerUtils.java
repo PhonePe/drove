@@ -3,18 +3,21 @@ package com.phonepe.drove.controller.utils;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
-import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import com.phonepe.drove.models.operation.*;
 import com.phonepe.drove.models.operation.ops.*;
+import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
+import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.task.TaskSpec;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -37,11 +40,21 @@ public class ControllerUtils {
 
     private static final Set<StateCheckStatus> CHECK_COMPLETED_STATES = EnumSet.of(MISNMATCH_NONRECOVERABLE, MATCH);
     public static String deployableObjectId(DeploymentSpec deploymentSpec) {
-        return deploymentSpec.getName() + "-" + deploymentSpec.getVersion();
+        return deploymentSpec.accept(new DeploymentSpecVisitor<String>() {
+            @Override
+            public String visit(ApplicationSpec applicationSpec) {
+                return applicationSpec.getName() + "-" + applicationSpec.getVersion();
+            }
+
+            @Override
+            public String visit(TaskSpec taskSpec) {
+                return taskSpec.getSourceApp() + "-" + taskSpec.getTaskId();
+            }
+        });
     }
 
     public static boolean ensureInstanceState(
-            final InstanceInfoDB instanceInfoDB,
+            final ApplicationInstanceInfoDB instanceInfoDB,
             ClusterOpSpec clusterOpSpec,
             String appId,
             String instanceId,
@@ -100,7 +113,7 @@ public class ControllerUtils {
     }
 
     private static InstanceInfo currentInstanceInfo(
-            final InstanceInfoDB instanceInfoDB,
+            final ApplicationInstanceInfoDB instanceInfoDB,
             String appId,
             String instanceId) {
         return instanceInfoDB.instance(appId, instanceId).orElse(null);
@@ -167,6 +180,20 @@ public class ControllerUtils {
                 return recover.getAppId();
             }
 
+        });
+    }
+    
+    public static String deployableObjectId(final TaskOperation operation) {
+        return operation.accept(new TaskOperationVisitor<String>() {
+            @Override
+            public String visit(TaskCreateOperation create) {
+                return deployableObjectId(create.getSpec());
+            }
+
+            @Override
+            public String visit(TaskKillOperation kill) {
+                return kill.getTaskId();
+            }
         });
     }
 

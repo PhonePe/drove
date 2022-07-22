@@ -3,7 +3,9 @@ package com.phonepe.drove.executor.utils;
 import com.google.common.base.Strings;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
@@ -31,7 +33,7 @@ import java.util.Date;
 @UtilityClass
 public class ExecutorUtils {
     public static Checker createChecker(
-            ExecutorInstanceInfo instanceInfo,
+            ExecutorApplicationInstanceInfo instanceInfo,
             CheckSpec checkSpec) {
         return checkSpec.getMode().accept(new CheckModeSpecVisitor<>() {
             @Override
@@ -46,7 +48,7 @@ public class ExecutorUtils {
         });
     }
 
-    public static InstanceInfo convert(final StateData<InstanceState, ExecutorInstanceInfo> state) {
+    public static InstanceInfo convert(final StateData<InstanceState, ExecutorApplicationInstanceInfo> state) {
         val data = state.getData();
         return new InstanceInfo(
                 data.getAppId(),
@@ -66,8 +68,7 @@ public class ExecutorUtils {
         val data = state.getData();
         return new TaskInstanceInfo(
                 data.getTaskId(),
-                data.getTaskName(),
-                data.getInstanceId(),
+                data.getSourceAppName(),
                 data.getExecutorId(),
                 data.getHostname(),
                 data.getResources(),
@@ -106,5 +107,19 @@ public class ExecutorUtils {
             }
         }
         return requestBuilder;
+    }
+
+    public static String instanceId(final DeployedExecutorInstanceInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedExecutorInstanceInfoVisitor<String>() {
+            @Override
+            public String visit(ExecutorApplicationInstanceInfo applicationInstanceInfo) {
+                return applicationInstanceInfo.getInstanceId();
+            }
+
+            @Override
+            public String visit(ExecutorTaskInstanceInfo taskInstanceInfo) {
+                return taskInstanceInfo.getTaskId();
+            }
+        });
     }
 }

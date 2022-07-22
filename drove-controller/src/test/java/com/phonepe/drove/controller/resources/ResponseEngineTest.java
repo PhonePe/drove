@@ -9,7 +9,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
@@ -49,7 +49,7 @@ class ResponseEngineTest {
     void testApplications() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -78,7 +78,7 @@ class ResponseEngineTest {
     void testApplication() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -107,7 +107,7 @@ class ResponseEngineTest {
     void testApplicationSpec() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -138,7 +138,7 @@ class ResponseEngineTest {
     void testApplicationInstances() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -170,7 +170,7 @@ class ResponseEngineTest {
     void testInstanceDetails() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -206,7 +206,7 @@ class ResponseEngineTest {
     void testApplicationOldInstances() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -236,7 +236,7 @@ class ResponseEngineTest {
     void testCluster() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -308,7 +308,7 @@ class ResponseEngineTest {
     void testNodes() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -335,7 +335,7 @@ class ResponseEngineTest {
     void testExecutorDetails() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -369,7 +369,7 @@ class ResponseEngineTest {
     void testEndpoints() {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -426,7 +426,7 @@ class ResponseEngineTest {
     private void testBlacklistingFunctionality(final BiFunction<ResponseEngine, String, ApiResponse<Void>> func) {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);
@@ -469,7 +469,7 @@ class ResponseEngineTest {
             final Function<ResponseEngine, ApiResponse<ClusterStateData>> func) {
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val communicator = mock(ControllerCommunicator.class);

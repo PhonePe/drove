@@ -1,11 +1,11 @@
-package com.phonepe.drove.controller.statemachine;
+package com.phonepe.drove.controller.statemachine.applications;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -30,11 +30,11 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
     private final Lock jobLock = new ReentrantLock();
     private final Condition condition = jobLock.newCondition();
     private final JobExecutor<Boolean> jobExecutor;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final AtomicReference<StateData<ApplicationState, ApplicationInfo>> result = new AtomicReference<>();
 
-    protected AppAsyncAction(JobExecutor<Boolean> jobExecutor, InstanceInfoDB instanceInfoDB) {
+    protected AppAsyncAction(JobExecutor<Boolean> jobExecutor, ApplicationInstanceInfoDB instanceInfoDB) {
         this.jobExecutor = jobExecutor;
         this.instanceInfoDB = instanceInfoDB;
     }

@@ -1,6 +1,6 @@
-package com.phonepe.drove.controller.statemachine;
+package com.phonepe.drove.controller.statemachine.applications;
 
-import com.phonepe.drove.controller.statemachine.actions.*;
+import com.phonepe.drove.controller.statemachine.applications.actions.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;

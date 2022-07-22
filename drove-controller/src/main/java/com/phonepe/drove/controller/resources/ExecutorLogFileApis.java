@@ -6,7 +6,7 @@ import com.phonepe.drove.auth.model.ClusterCommHeaders;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -39,7 +39,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 @PermitAll
 @Slf4j
 public class ExecutorLogFileApis {
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
@@ -47,7 +47,7 @@ public class ExecutorLogFileApis {
 
     @Inject
     public ExecutorLogFileApis(
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
+            ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig config) {
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;

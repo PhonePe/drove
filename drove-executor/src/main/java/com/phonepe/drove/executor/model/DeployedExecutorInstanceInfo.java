@@ -4,5 +4,5 @@ package com.phonepe.drove.executor.model;
  *
  */
 public interface DeployedExecutorInstanceInfo {
-    String getInstanceId();
+    <T> T accept(final DeployedExecutorInstanceInfoVisitor<T> visitor);
 }

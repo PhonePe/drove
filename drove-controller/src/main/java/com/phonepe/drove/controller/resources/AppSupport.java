@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.auth.model.*;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -29,10 +29,10 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
 @Timed
 public class AppSupport {
 
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
 
     @Inject
-    public AppSupport(InstanceInfoDB instanceInfoDB) {
+    public AppSupport(ApplicationInstanceInfoDB instanceInfoDB) {
         this.instanceInfoDB = instanceInfoDB;
     }
 

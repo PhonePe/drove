@@ -1,7 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
+import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMachine;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import io.appform.signals.signals.ConsumingFireForgetSignal;

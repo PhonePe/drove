@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.ui.views.*;
 import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.guicey.gsp.views.template.Template;
@@ -25,12 +25,12 @@ import java.net.URI;
 public class UI {
 
     private final ApplicationStateDB stateDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
 
     @Inject
     public UI(
             ApplicationStateDB stateDB,
-            InstanceInfoDB instanceInfoDB) {
+            ApplicationInstanceInfoDB instanceInfoDB) {
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
     }

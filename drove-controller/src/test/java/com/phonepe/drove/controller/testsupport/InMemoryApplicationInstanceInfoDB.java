@@ -1,6 +1,6 @@
 package com.phonepe.drove.controller.testsupport;
 
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.val;
@@ -17,7 +17,7 @@ import static com.phonepe.drove.models.instance.InstanceState.LOST;
  *
  */
 @Singleton
-public class InMemoryInstanceInfoDB implements InstanceInfoDB {
+public class InMemoryApplicationInstanceInfoDB implements ApplicationInstanceInfoDB {
 
     private final Map<String, Map<String, InstanceInfo>> instances = new ConcurrentHashMap<>();
 

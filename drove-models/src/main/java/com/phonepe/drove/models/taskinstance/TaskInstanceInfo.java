@@ -2,6 +2,7 @@ package com.phonepe.drove.models.taskinstance;
 
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
@@ -19,9 +20,8 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 public class TaskInstanceInfo implements DeployedInstanceInfo {
+    String sourceAppName;
     String taskId;
-    String taskName;
-    String instanceId;
     String executorId;
     String hostname;
     List<ResourceAllocation> resources;
@@ -30,4 +30,9 @@ public class TaskInstanceInfo implements DeployedInstanceInfo {
     String errorMessage;
     Date created;
     Date updated;
+
+    @Override
+    public <T> T accept(DeployedInstanceInfoVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

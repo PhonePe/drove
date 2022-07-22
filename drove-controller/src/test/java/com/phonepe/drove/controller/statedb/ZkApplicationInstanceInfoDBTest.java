@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-class ZkInstanceInfoDBTest extends ControllerTestBase {
+class ZkApplicationInstanceInfoDBTest extends ControllerTestBase {
 
     @Test
     @SneakyThrows
@@ -36,7 +36,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
             try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                     .setNameSpace("DTEST"))) {
                 curator.start();
-                val db = new ZkInstanceInfoDB(curator, MAPPER);
+                val db = new ZkApplicationInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
                 val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
@@ -65,7 +65,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
     void testException() {
         val curator = mock(CuratorFramework.class);
         when(curator.getChildren()).thenThrow(new IllegalStateException("Test error"));
-        val db = new ZkInstanceInfoDB(curator, MAPPER);
+        val db = new ZkApplicationInstanceInfoDB(curator, MAPPER);
         assertThrows(IllegalStateException.class,
                      () -> db.activeInstances("ERR", 0, 1));
         assertThrows(IllegalStateException.class,
@@ -83,7 +83,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
             try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                     .setNameSpace("DTEST"))) {
                 curator.start();
-                val db = new ZkInstanceInfoDB(curator, MAPPER);
+                val db = new ZkApplicationInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
                 val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
@@ -127,7 +127,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
             try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                     .setNameSpace("DTEST"))) {
                 curator.start();
-                val db = new ZkInstanceInfoDB(curator, MAPPER);
+                val db = new ZkApplicationInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
                 val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
@@ -158,7 +158,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
             try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                     .setNameSpace("DTEST"))) {
                 curator.start();
-                val db = new ZkInstanceInfoDB(curator, MAPPER);
+                val db = new ZkApplicationInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
                 val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
@@ -202,7 +202,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
             try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                     .setNameSpace("DTEST"))) {
                 curator.start();
-                val db = new ZkInstanceInfoDB(curator, MAPPER);
+                val db = new ZkApplicationInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
                 val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)

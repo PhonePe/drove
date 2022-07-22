@@ -24,7 +24,7 @@ import static com.phonepe.drove.models.instance.InstanceState.LOST;
  */
 @Slf4j
 @Singleton
-public class ZkInstanceInfoDB implements InstanceInfoDB {
+public class ZkApplicationInstanceInfoDB implements ApplicationInstanceInfoDB {
 
 
     private static final String INSTANCE_STATE_PATH = "/instances";
@@ -33,7 +33,7 @@ public class ZkInstanceInfoDB implements InstanceInfoDB {
     private final ObjectMapper mapper;
 
     @Inject
-    public ZkInstanceInfoDB(CuratorFramework curatorFramework, ObjectMapper mapper) {
+    public ZkApplicationInstanceInfoDB(CuratorFramework curatorFramework, ObjectMapper mapper) {
         this.curatorFramework = curatorFramework;
         this.mapper = mapper;
     }

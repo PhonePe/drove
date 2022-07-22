@@ -2,6 +2,7 @@ package com.phonepe.drove.models.instance;
 
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
@@ -30,4 +31,9 @@ public class InstanceInfo implements DeployedInstanceInfo {
     String errorMessage;
     Date created;
     Date updated;
+
+    @Override
+    public <T> T accept(DeployedInstanceInfoVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

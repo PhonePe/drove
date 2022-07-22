@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.statemachine.actions;
+package com.phonepe.drove.controller.statemachine.applications.actions;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
@@ -14,9 +14,9 @@ import com.phonepe.drove.jobexecutor.JobTopology;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
-import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.statemachine.AppAsyncAction;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
+import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -42,7 +42,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 @Slf4j
 public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
@@ -56,7 +56,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
     public ReplaceInstancesAppAction(
             JobExecutor<Boolean> jobExecutor,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
             ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,

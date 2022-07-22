@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -81,13 +81,13 @@ public class CommandValidator {
 
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
-    private final InstanceInfoDB instanceInfoStore;
+    private final ApplicationInstanceInfoDB instanceInfoStore;
 
     @Inject
     public CommandValidator(
             ApplicationStateDB applicationStateDB,
             ClusterResourcesDB clusterResourcesDB,
-            InstanceInfoDB instanceInfoStore) {
+            ApplicationInstanceInfoDB instanceInfoStore) {
         this.applicationStateDB = applicationStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.instanceInfoStore = instanceInfoStore;
@@ -125,14 +125,14 @@ public class CommandValidator {
         private final String appId;
         private final ApplicationStateDB applicationStateDB;
         private final ClusterResourcesDB clusterResourcesDB;
-        private final InstanceInfoDB instancesDB;
+        private final ApplicationInstanceInfoDB instancesDB;
 
         private final ApplicationEngine engine;
         private OpValidationVisitor(
                 String appId,
                 ApplicationStateDB applicationStateDB,
                 ClusterResourcesDB clusterResourcesDB,
-                InstanceInfoDB instancesDB, ApplicationEngine engine) {
+                ApplicationInstanceInfoDB instancesDB, ApplicationEngine engine) {
             this.appId = appId;
             this.applicationStateDB = applicationStateDB;
             this.clusterResourcesDB = clusterResourcesDB;

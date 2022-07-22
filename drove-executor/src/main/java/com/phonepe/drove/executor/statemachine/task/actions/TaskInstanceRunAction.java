@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
+import static com.phonepe.drove.common.CommonUtils.instanceId;
 
 /**
  *
@@ -61,6 +62,7 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
         val client = context.getClient();
         try {
             val instanceInfoRef = new AtomicReference<ExecutorTaskInstanceInfo>();
+            val instanceId = instanceId(instanceSpec);
             val containerId = DockerUtils.createContainer(
                     schedulingConfig,
                     client, CommonUtils.instanceId(context.getInstanceSpec()),
@@ -73,15 +75,14 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
                         instanceInfoRef.set(instanceInfo);
                         val labels = params.getCustomLabels();
                         labels.put(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.COMPUTATION.name());
-                        labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
+                        labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceId);
                         labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
                         labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
 
                         val env = params.getCustomEnv();
-                        env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());
                         env.add("DROVE_EXECUTOR_HOST=" + hostname());
                         env.add("DROVE_TASK_ID=" + instanceSpec.getTaskId());
-                        env.add("DROVE_TASK_NAME=" + instanceSpec.getTaskName());
+                        env.add("DROVE_SOURCE_APP_NAME=" + instanceSpec.getSourceAppName());
                     });
 
             context.setDockerInstanceId(containerId);
@@ -93,8 +94,8 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
                     .withStdOut(true)
                     .withStdErr(true)
                     .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
-                                                 instanceSpec.getTaskId(),
-                                                 instanceSpec.getInstanceId(),
+                                                 instanceSpec.getSourceAppName(),
+                                                 instanceId,
                                                  logBus));
             return StateData.create(TaskInstanceState.RUNNING, instanceInfoRef.get());
         }
@@ -116,8 +117,7 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
         val data = currentState.getData();
         return new ExecutorTaskInstanceInfo(
                 data.getTaskId(),
-                data.getTaskName(),
-                data.getInstanceId(),
+                data.getSourceAppName(),
                 data.getExecutorId(),
                 hostName,
                 resources,

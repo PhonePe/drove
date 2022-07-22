@@ -2,7 +2,7 @@ package com.phonepe.drove.executor;
 
 import com.google.inject.Injector;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceActionFactory;
@@ -20,7 +20,7 @@ public class InjectingApplicationInstanceActionFactory extends ApplicationInstan
     }
 
     @Override
-    public InstanceActionBase<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> create(Transition<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>, InstanceActionBase<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec>> transition) {
+    public InstanceActionBase<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec> create(Transition<ExecutorApplicationInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>, InstanceActionBase<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec>> transition) {
         return injector.getInstance(transition.getAction());
 
     }

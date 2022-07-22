@@ -2,7 +2,7 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.checker.Checker;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
@@ -41,8 +41,8 @@ public class ApplicationInstanceHealthcheckAction extends ApplicationInstanceAct
 
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorApplicationInstanceInfo> executeImpl(
+            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
         val checker = ExecutorUtils.createChecker(currentState.getData(), healthcheckSpec);
         try {

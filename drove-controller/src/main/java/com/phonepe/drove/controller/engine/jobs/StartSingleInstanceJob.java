@@ -16,7 +16,7 @@ import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -40,7 +40,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final ApplicationSpec applicationSpec;
     private final ClusterOpSpec clusterOpSpec;
     private final InstanceScheduler scheduler;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ControllerCommunicator communicator;
     private final String schedulingSessionId;
     private final ControllerRetrySpecFactory retrySpecFactory;
@@ -53,7 +53,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             ApplicationSpec applicationSpec,
             ClusterOpSpec clusterOpSpec,
             InstanceScheduler scheduler,
-            InstanceInfoDB instanceInfoDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
             ControllerCommunicator communicator,
             String schedulingSessionId,
             ControllerRetrySpecFactory retrySpecFactory, InstanceIdGenerator instanceIdGenerator,

@@ -13,7 +13,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -54,7 +54,7 @@ public class ResponseEngine {
 
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
@@ -63,7 +63,7 @@ public class ResponseEngine {
     public ResponseEngine(
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
             ClusterStateDB clusterStateDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator) {
         this.engine = engine;

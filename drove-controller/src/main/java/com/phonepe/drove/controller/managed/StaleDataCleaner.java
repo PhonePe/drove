@@ -4,7 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -32,7 +32,7 @@ public class StaleDataCleaner implements Managed {
     private static final String HANDLER_NAME = "STALE_DATA_CLEANER";
 
     private final ApplicationStateDB applicationStateDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final LeadershipEnsurer leadershipEnsurer;
     private final ApplicationEngine applicationEngine;
 
@@ -41,7 +41,7 @@ public class StaleDataCleaner implements Managed {
     @Inject
     public StaleDataCleaner(
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine) {
         this(applicationStateDB, instanceInfoDB, leadershipEnsurer, applicationEngine, Duration.ofHours(6));
@@ -50,7 +50,7 @@ public class StaleDataCleaner implements Managed {
     @VisibleForTesting
     StaleDataCleaner(
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
             Duration interval) {

@@ -4,7 +4,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -39,7 +39,7 @@ class StaleDataCleanerTest {
     @Test
     void testStaleAppCleanup() {
         val appStateDB = new InMemoryApplicationStateDB();
-        val instanceDB = new InMemoryInstanceInfoDB();
+        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationEngine.class);
@@ -70,7 +70,7 @@ class StaleDataCleanerTest {
     @Test
     void testStaleInstanceCleanup() {
         val appStateDB = new InMemoryApplicationStateDB();
-        val instanceDB = new InMemoryInstanceInfoDB();
+        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationEngine.class);

@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.statedb;
 
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
-import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingSyncSignal;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-class CachingProxyInstanceInfoDBTest extends ControllerTestBase {
+class CachingProxyApplicationInstanceInfoDBTest extends ControllerTestBase {
 
     @Test
     void testCaching() {
@@ -34,8 +34,8 @@ class CachingProxyInstanceInfoDBTest extends ControllerTestBase {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(leadershipSignal);
 
-        val root = new InMemoryInstanceInfoDB();
-        val db = new CachingProxyInstanceInfoDB(root, leadershipEnsurer);
+        val root = new InMemoryApplicationInstanceInfoDB();
+        val db = new CachingProxyApplicationInstanceInfoDB(root, leadershipEnsurer);
         assertTrue(db.instances("ABC", EnumSet.allOf(InstanceState.class), 0, Integer.MAX_VALUE).isEmpty());
 
         val spec = appSpec();

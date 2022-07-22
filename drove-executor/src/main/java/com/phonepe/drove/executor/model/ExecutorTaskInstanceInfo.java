@@ -13,12 +13,16 @@ import java.util.Map;
 @Value
 public class ExecutorTaskInstanceInfo implements DeployedExecutorInstanceInfo {
     String taskId;
-    String taskName;
-    String instanceId;
+    String sourceAppName;
     String executorId;
     String hostname;
     List<ResourceAllocation> resources;
     Map<String, String> metadata;
     Date created;
     Date updated;
+
+    @Override
+    public <T> T accept(DeployedExecutorInstanceInfoVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.engine;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
@@ -66,7 +67,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
 
     @Override
     public MessageResponse visit(StartTaskInstanceMessage startTaskInstanceMessage) {
-        val instanceId = startTaskInstanceMessage.getSpec().getInstanceId();
+        val instanceId = CommonUtils.instanceId(startTaskInstanceMessage.getSpec());
         if (engine.exists(instanceId)) {
             return new MessageResponse(startTaskInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }

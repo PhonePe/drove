@@ -11,7 +11,7 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.PortType;
@@ -44,7 +44,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobSuccess() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val instanceId = "TEST_INSTANCE";
@@ -79,7 +79,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobNoInstance() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val instanceId = "TEST_INSTANCE";
@@ -113,7 +113,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobNoExecutor() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val instanceId = "TEST_INSTANCE";
@@ -148,7 +148,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobMsgThrow() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val sessionId = UUID.randomUUID().toString();
@@ -181,7 +181,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
     }
     @Test
     void testJobMsgMsgNoAccepted() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val sessionId = UUID.randomUUID().toString();

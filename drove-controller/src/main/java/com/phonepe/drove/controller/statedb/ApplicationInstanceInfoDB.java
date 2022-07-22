@@ -15,7 +15,7 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 /**
  *
  */
-public interface InstanceInfoDB {
+public interface ApplicationInstanceInfoDB {
 
     Duration MAX_ACCEPTABLE_UPDATE_INTERVAL = Duration.ofMinutes(1);
 

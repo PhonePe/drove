@@ -4,5 +4,5 @@ package com.phonepe.drove.models.interfaces;
  *
  */
 public interface DeployedInstanceInfo {
-    String getInstanceId();
+    <T> T accept(final DeployedInstanceInfoVisitor<T> visitor);
 }

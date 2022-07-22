@@ -5,7 +5,7 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.common.ClusterState;
@@ -40,7 +40,7 @@ class ApplicationMonitorTest {
     @SneakyThrows
     void testAllRunningPass() {
         val stateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
 
@@ -72,7 +72,7 @@ class ApplicationMonitorTest {
     @SneakyThrows
     void testAllMonitoringPass() {
         val stateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
 
@@ -104,7 +104,7 @@ class ApplicationMonitorTest {
     @SneakyThrows
     void testAllScale() {
         val stateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
 
@@ -138,7 +138,7 @@ class ApplicationMonitorTest {
     @SneakyThrows
     void testAllIgnore() {
         val stateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
 

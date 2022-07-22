@@ -5,7 +5,7 @@ import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -46,7 +46,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
     private static final int NUM_CPUS = 8;
     private static final long TOTAL_MEMORY = 8 * 512L;
 
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private Future<?> jobFuture;
@@ -65,7 +65,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
     private final AtomicLong availableMemory = new AtomicLong(TOTAL_MEMORY);
 
     @Inject
-    public DummyExecutor(InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB) {
+    public DummyExecutor(ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB) {
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
     }

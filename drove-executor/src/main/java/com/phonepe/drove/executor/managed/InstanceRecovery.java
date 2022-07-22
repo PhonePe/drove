@@ -8,7 +8,7 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -82,7 +82,7 @@ public class InstanceRecovery implements Managed {
                                             ApplicationInstanceSpec.class);
                 val data = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
-                                            ExecutorInstanceInfo.class);
+                                            ExecutorApplicationInstanceInfo.class);
                 val status = applicationInstanceEngine.registerInstance(id,
                                                                         spec,
                                                                         StateData.create(InstanceState.UNKNOWN, data));
