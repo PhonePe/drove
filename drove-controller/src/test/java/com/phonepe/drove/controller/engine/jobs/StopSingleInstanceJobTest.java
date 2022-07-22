@@ -55,7 +55,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
@@ -90,7 +90,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenReturn(Optional.empty());
         val rf = mock(ControllerRetrySpecFactory.class);
@@ -124,7 +124,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
@@ -158,7 +158,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenReturn(Optional.of(executorHost(8080)));
         when(comm.send(any(StopInstanceMessage.class)))
                 .thenThrow(new IllegalArgumentException("Test error"));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
@@ -192,7 +192,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(comm.send(any(StopInstanceMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
-                                               MessageDeliveryStatus.REJECTED));        val appId = ControllerUtils.appId(APP_SPEC);
+                                               MessageDeliveryStatus.REJECTED));        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));

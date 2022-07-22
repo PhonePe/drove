@@ -107,6 +107,7 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
         val stamp = lock.writeLock();
         try {
             if (!lockRequiredResources(spec)) {
+                log.error("Could not lock required resources. Instance has been leaked");
                 return false;
             }
             val stateMachine = createStateMachine(executorIdManager.executorId().orElse(null),

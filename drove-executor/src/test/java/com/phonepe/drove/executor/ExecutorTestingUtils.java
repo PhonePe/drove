@@ -21,6 +21,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
@@ -146,15 +147,15 @@ public class ExecutorTestingUtils {
         return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000, NodeTransportType.HTTP);
     }
 
-    public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
-        return createExecutorInfo(testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME), wm);
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(WireMockRuntimeInfo wm) {
+        return createExecutorAppInstanceInfo(testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME), wm);
     }
 
-    public static ExecutorInstanceInfo createExecutorInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
-        return createExecutorInfo(spec, wm.getHttpPort());
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
+        return createExecutorAppInstanceInfo(spec, wm.getHttpPort());
     }
 
-    public static ExecutorInstanceInfo createExecutorInfo(ApplicationInstanceSpec spec, int port) {
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, int port) {
         return new ExecutorInstanceInfo(spec.getAppId(),
                                         spec.getAppName(),
                                         spec.getInstanceId(),
@@ -166,6 +167,18 @@ public class ExecutorTestingUtils {
                                                                               8080,
                                                                               port,
                                                                               PortType.HTTP))),
+                                        spec.getResources(),
+                                        spec.getEnv(),
+                                        new Date(),
+                                        new Date());
+    }
+
+    public static ExecutorTaskInstanceInfo createExecutorTaskInstanceInfo(TaskInstanceSpec spec) {
+        return new ExecutorTaskInstanceInfo(spec.getTaskId(),
+                                        spec.getTaskName(),
+                                        spec.getInstanceId(),
+                                        EXECUTOR_ID,
+                                            "localhost",
                                         spec.getResources(),
                                         spec.getEnv(),
                                         new Date(),
@@ -242,14 +255,14 @@ public class ExecutorTestingUtils {
     }
 
     @SneakyThrows
-    public static void startTestContainer(
+    public static void startTestAppContainer(
             ApplicationInstanceSpec spec,
             ExecutorInstanceInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT
                 .createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)
-                .withName("RecoveryTest")
+                .withName("AppRecoveryTest")
                 .withLabels(Map.of(
                         DockerLabels.DROVE_JOB_TYPE_LABEL,
                         JobType.SERVICE.name(),
@@ -259,11 +272,33 @@ public class ExecutorTestingUtils {
                         mapper.writeValueAsString(spec),
                         DockerLabels.DROVE_INSTANCE_DATA_LABEL,
                         mapper.writeValueAsString(instanceData)))
-                .withHostConfig(new HostConfig()
-                                        .withAutoRemove(true))
+                .withHostConfig(new HostConfig().withAutoRemove(true))
                 .exec();
         containerId = createContainerResponse.getId();
-        DOCKER_CLIENT.startContainerCmd(containerId)
+        DOCKER_CLIENT.startContainerCmd(containerId).exec();
+    }
+
+    @SneakyThrows
+    public static void startTestTaskContainer(
+            TaskInstanceSpec spec,
+            ExecutorTaskInstanceInfo instanceData,
+            ObjectMapper mapper) {
+        String containerId;
+        val createContainerResponse = DOCKER_CLIENT
+                .createContainerCmd(CommonTestUtils.TASK_IMAGE_NAME)
+                .withName("TaskRecoveryTest")
+                .withLabels(Map.of(
+                        DockerLabels.DROVE_JOB_TYPE_LABEL,
+                        JobType.COMPUTATION.name(),
+                        DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                        spec.getInstanceId(),
+                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                        mapper.writeValueAsString(spec),
+                        DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                        mapper.writeValueAsString(instanceData)))
+                .withHostConfig(new HostConfig().withAutoRemove(true))
                 .exec();
+        containerId = createContainerResponse.getId();
+        DOCKER_CLIENT.startContainerCmd(containerId).exec();
     }
 }

@@ -36,7 +36,7 @@ import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 public class ControllerUtils {
 
     private static final Set<StateCheckStatus> CHECK_COMPLETED_STATES = EnumSet.of(MISNMATCH_NONRECOVERABLE, MATCH);
-    public static String appId(DeploymentSpec deploymentSpec) {
+    public static String deployableObjectId(DeploymentSpec deploymentSpec) {
         return deploymentSpec.getName() + "-" + deploymentSpec.getVersion();
     }
 
@@ -125,11 +125,11 @@ public class ControllerUtils {
         return MISMATCH;
     }
 
-    public static String appId(final ApplicationOperation operation) {
+    public static String deployableObjectId(final ApplicationOperation operation) {
         return operation.accept(new ApplicationOperationVisitor<>() {
             @Override
             public String visit(ApplicationCreateOperation create) {
-                return appId(create.getSpec());
+                return deployableObjectId(create.getSpec());
             }
 
             @Override

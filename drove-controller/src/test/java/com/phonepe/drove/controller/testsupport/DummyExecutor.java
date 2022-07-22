@@ -270,6 +270,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                new Date(),
                                                                resourceSnapshot,
                                                                List.copyOf(instances.values()),
+                                                               List.of(),
                                                                Set.of(),
                                                                false)));
         log.info("Snapshot updated");

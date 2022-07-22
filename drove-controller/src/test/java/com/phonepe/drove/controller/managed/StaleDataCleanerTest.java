@@ -5,6 +5,7 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
@@ -20,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.MONITORING;
 import static com.phonepe.drove.models.application.ApplicationState.RUNNING;
 import static org.awaitility.Awaitility.await;
@@ -46,7 +47,7 @@ class StaleDataCleanerTest {
         val sdc = new StaleDataCleaner(appStateDB, instanceDB, le, engine, Duration.ofSeconds(1));
 
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         val oldDate = Date.from(LocalDate.now().minusDays(32).atStartOfDay(ZoneId.systemDefault()).toInstant());
         appStateDB.updateApplicationState(appId, new ApplicationInfo(appId, spec, 0, oldDate, oldDate));
 
@@ -77,7 +78,7 @@ class StaleDataCleanerTest {
         val sdc = new StaleDataCleaner(appStateDB, instanceDB, le, engine, Duration.ofSeconds(1));
 
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         val oldDate = Date.from(LocalDate.now().minusDays(32).atStartOfDay(ZoneId.systemDefault()).toInstant());
         appStateDB.updateApplicationState(appId, new ApplicationInfo(appId, spec, 0, oldDate, oldDate));
         IntStream.rangeClosed(1, 100)

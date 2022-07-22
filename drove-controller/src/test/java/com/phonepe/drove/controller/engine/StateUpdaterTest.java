@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
@@ -17,7 +18,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
@@ -34,9 +34,10 @@ class StateUpdaterTest {
         val iiDB = mock(InstanceInfoDB.class);
 
         val spec = appSpec(1);
-        val appId = appId(spec);
-        val instance = generateInstanceInfo(appId, spec, 0);
-        val executor = ControllerTestUtils.executorHost(8080, List.of(instance));
+        val taskSpec = taskSpec(1);
+        val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
+        val taskInstance = generateTaskInstanceInfo(ControllerUtils.deployableObjectId(taskSpec), taskSpec, 0);
+        val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance));
         val nodes = List.of(executor.getNodeData());
         val counter = new AtomicInteger();
         doAnswer(invocationOnMock -> {
@@ -63,9 +64,10 @@ class StateUpdaterTest {
         val iiDB = mock(InstanceInfoDB.class);
 
         val spec = appSpec(1);
-        val appId = appId(spec);
-        val instance = generateInstanceInfo(appId, spec, 0);
-        val executor = ControllerTestUtils.executorHost(8080, List.of(instance));
+        val taskSpec = taskSpec(1);
+        val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
+        val taskInstance = generateTaskInstanceInfo(ControllerUtils.deployableObjectId(taskSpec), taskSpec, 0);
+        val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance));
 
         doReturn(Optional.of(executor))
                 .when(cDB).currentSnapshot(executor.getExecutorId());
@@ -92,7 +94,7 @@ class StateUpdaterTest {
         val iiDB = mock(InstanceInfoDB.class);
 
         val spec = appSpec(1);
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(appId, spec, 0);
 
         val counter = new AtomicInteger();

@@ -34,7 +34,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm)));
         assertEquals(InstanceState.HEALTHY, response.getState());
     }
 
@@ -55,7 +55,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm)));
         assertEquals(InstanceState.HEALTHY, response.getState());
     }
 
@@ -68,7 +68,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm)));
         assertEquals(InstanceState.STOPPING, response.getState());
     }
 
@@ -81,7 +81,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm)));
         assertEquals(InstanceState.STOPPING, response.getState());
     }
 
@@ -96,7 +96,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                          StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm))));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm))));
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
     }

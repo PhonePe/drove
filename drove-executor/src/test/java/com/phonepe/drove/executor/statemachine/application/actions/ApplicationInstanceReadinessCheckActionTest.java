@@ -48,7 +48,7 @@ class ApplicationInstanceReadinessCheckActionTest {
         val action = new ApplicationInstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm)));
         assertEquals(InstanceState.READY, response.getState());
     }
 
@@ -61,7 +61,7 @@ class ApplicationInstanceReadinessCheckActionTest {
         val action = new ApplicationInstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, wm)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm)));
         assertEquals(InstanceState.READINESS_CHECK_FAILED, response.getState());
     }
 
@@ -77,7 +77,7 @@ class ApplicationInstanceReadinessCheckActionTest {
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                              StateData.create(InstanceState.HEALTHY,
-                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
+                                                              ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm))));
         delay(Duration.ofSeconds(5));
         action.stop();
         assertEquals(InstanceState.STOPPING, f.get().getState());
@@ -93,7 +93,7 @@ class ApplicationInstanceReadinessCheckActionTest {
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,
                                              StateData.create(InstanceState.HEALTHY,
-                                                              ExecutorTestingUtils.createExecutorInfo(spec, wm))));
+                                                              ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, wm))));
         f.cancel(true);
         assertTrue(f.isCancelled());
     }

@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.task.actions;
 
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -24,6 +25,9 @@ public class TaskInstanceDestroyAction extends TaskInstanceAction {
             try (val cmd = context.getClient().removeContainerCmd(containerId).withForce(true)) {
                 cmd.exec();
                 log.info("Container {} removed", containerId);
+            }
+            catch (NotFoundException e) {
+                log.info("Container already stopped");
             }
             catch (Exception e) {
                 log.error("Error stopping container " + containerId, e);

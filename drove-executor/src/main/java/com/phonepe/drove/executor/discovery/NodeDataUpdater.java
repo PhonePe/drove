@@ -5,6 +5,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
@@ -42,7 +43,8 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
     private final ExecutorIdManager executorIdManager;
     private final NodeDataStore nodeDataStore;
     private final ResourceManager resourceDB;
-    private final ApplicationInstanceEngine engine;
+    private final ApplicationInstanceEngine applicationInstanceEngine;
+    private final TaskInstanceEngine taskInstanceEngine;
     private final ResourceConfig resourceConfig;
     private final BlacklistingManager blacklistingManager;
 
@@ -57,17 +59,18 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             NodeDataStore nodeDataStore,
             ResourceManager resourceDB,
             Environment environment,
-            ApplicationInstanceEngine engine,
-            ResourceConfig resourceConfig,
+            ApplicationInstanceEngine applicationInstanceEngine,
+            TaskInstanceEngine taskInstanceEngine, ResourceConfig resourceConfig,
             BlacklistingManager blacklistingManager) {
         this.executorIdManager = executorIdManager;
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
-        this.engine = engine;
+        this.applicationInstanceEngine = applicationInstanceEngine;
+        this.taskInstanceEngine = taskInstanceEngine;
         this.resourceConfig = resourceConfig;
         this.blacklistingManager = blacklistingManager;
         this.refreshSignal.connect(this::refresh);
-        this.engine.onStateChange().connect(info -> refresh(new Date()));
+        this.applicationInstanceEngine.onStateChange().connect(info -> refresh(new Date()));
         environment.lifecycle().addServerLifecycleListener(this);
     }
 
@@ -114,7 +117,8 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
                     transportType,
                     new Date(),
                     ExecutorUtils.executorSnapshot(resourceState, executorId),
-                    engine.currentState(),
+                    applicationInstanceEngine.currentState(),
+                    taskInstanceEngine.currentState(),
                     tags(),
                     blacklistingManager.isBlacklisted());
             nodeDataStore.updateNodeData(currentData);
@@ -139,7 +143,8 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             currentData = ExecutorNodeData.from(
                     currentData,
                     ExecutorUtils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
-                    engine.currentState(),
+                    applicationInstanceEngine.currentState(),
+                    taskInstanceEngine.currentState(),
                     tags(),
                     blacklistingManager.isBlacklisted());
             nodeDataStore.updateNodeData(currentData);

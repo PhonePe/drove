@@ -87,7 +87,7 @@ public class Apis {
         }
         val res = engine.handleOperation(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
-            return ControllerUtils.ok(Map.of("appId", ControllerUtils.appId(operation)));
+            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
         return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
     }

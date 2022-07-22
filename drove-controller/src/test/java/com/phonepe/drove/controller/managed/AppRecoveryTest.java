@@ -5,6 +5,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import io.appform.signals.signals.ConsumingSyncSignal;
@@ -18,7 +19,7 @@ import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -43,7 +44,7 @@ class AppRecoveryTest extends ControllerTestBase {
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
-                .map(spec -> new ApplicationInfo(appId(spec), spec, 10, new Date(), new Date()))
+                .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(asdb.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         val ids = new HashSet<String>();
@@ -51,7 +52,7 @@ class AppRecoveryTest extends ControllerTestBase {
                 .thenAnswer(new Answer<CommandValidator.ValidationResult>() {
                     @Override
                     public CommandValidator.ValidationResult answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        ids.add(appId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
+                        ids.add(deployableObjectId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
                         return CommandValidator.ValidationResult.success();
                     }
                 });
@@ -74,7 +75,7 @@ class AppRecoveryTest extends ControllerTestBase {
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
-                .map(spec -> new ApplicationInfo(appId(spec), spec, 10, new Date(), new Date()))
+                .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(asdb.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(ae.handleOperation(any(ApplicationOperation.class)))

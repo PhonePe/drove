@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
@@ -16,7 +17,7 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.common.CommonUtils.sublist;
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateInstanceInfo;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -38,7 +39,7 @@ class CachingProxyInstanceInfoDBTest extends ControllerTestBase {
         assertTrue(db.instances("ABC", EnumSet.allOf(InstanceState.class), 0, Integer.MAX_VALUE).isEmpty());
 
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         {
             val generatedInstanceIds = new ArrayList<String>();

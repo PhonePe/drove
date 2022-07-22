@@ -26,6 +26,9 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.task.TaskSpec;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -90,6 +93,26 @@ public class ControllerTestUtils {
                                    null);
     }
 
+    public static TaskSpec taskSpec() {
+        return taskSpec(1);
+    }
+
+    public static TaskSpec taskSpec(int version) {
+        return taskSpec("TEST_TASK_SPEC", version);
+    }
+
+    public static TaskSpec taskSpec(final String name, final int version) {
+        return new TaskSpec(name,
+                                   String.format("%05d", version),
+                                   new DockerCoordinates(CommonTestUtils.TASK_IMAGE_NAME, Duration.seconds(100)),
+                                   List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                                   LocalLoggingSpec.DEFAULT,
+                                   List.of(new CPURequirement(1), new MemoryRequirement(512)),
+                                   new AnyPlacementPolicy(),
+                                   Collections.emptyMap(),
+                                   Collections.emptyMap());
+    }
+
     public static AllocatedExecutorNode allocatedExecutorNode(int port) {
         return new AllocatedExecutorNode(EXECUTOR_ID,
                                          "localhost",
@@ -101,10 +124,11 @@ public class ControllerTestUtils {
     }
 
     public static ExecutorHostInfo executorHost(int port) {
-        return executorHost(port, List.of());
+        return executorHost(port, List.of(), List.of());
     }
 
-    public static ExecutorHostInfo executorHost(int port, List<InstanceInfo> instances) {
+    public static ExecutorHostInfo executorHost(int port, List<InstanceInfo> appInstances,
+                                                List<TaskInstanceInfo> taskInstances) {
         return new ExecutorHostInfo(
                 "Ex1",
                 new ExecutorNodeData(EXECUTOR_ID,
@@ -117,8 +141,8 @@ public class ControllerTestUtils {
                                                                   new AvailableMemory(
                                                                           Map.of(0, 3 * 128 * (2L ^ 20)),
                                                                           Map.of(0, 128 * (2L ^ 20)))),
-                                     instances,
-                                     Set.of(),
+                                     appInstances,
+                                     taskInstances, Set.of(),
                                      false),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
@@ -141,6 +165,7 @@ public class ControllerTestUtils {
                                                                  new AvailableMemory(
                                                                          Map.of(0, 5 * 512L ),
                                                                          Map.of(0, 0L))),
+                                    List.of(),
                                     List.of(),
                                     tags,
                                     blacklisted);
@@ -175,6 +200,35 @@ public class ControllerTestUtils {
                                                                                        8000,
                                                                                        32000,
                                                                                        PortType.HTTP))),
+                                List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
+                                        new MemoryAllocation(Map.of(0, 512L))),
+                                state,
+                                Collections.emptyMap(),
+                                errorMessage,
+                                date,
+                                date);
+    }
+
+    public static TaskInstanceInfo generateTaskInstanceInfo(final String appId, final TaskSpec spec, int idx) {
+        return generateTaskInstanceInfo(appId, spec, idx, TaskInstanceState.RUNNING);
+    }
+
+    public static TaskInstanceInfo generateTaskInstanceInfo(final String appId, final TaskSpec spec, int idx, TaskInstanceState state) {
+        return generateTaskInstanceInfo(appId, spec, idx, state, new Date(), null);
+    }
+
+    public static TaskInstanceInfo generateTaskInstanceInfo(
+            final String appId,
+            final TaskSpec spec,
+            int idx,
+            TaskInstanceState state,
+            Date date,
+            String errorMessage) {
+        return new TaskInstanceInfo(appId,
+                                spec.getName(),
+                                String.format("TI-%05d", idx),
+                                EXECUTOR_ID,
+                                "localhost",
                                 List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
                                         new MemoryAllocation(Map.of(0, 512L))),
                                 state,

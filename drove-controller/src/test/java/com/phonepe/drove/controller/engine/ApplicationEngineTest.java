@@ -32,6 +32,7 @@ import com.phonepe.drove.controller.testsupport.DummyExecutor;
 import com.phonepe.drove.controller.testsupport.DummyExecutorMessageSender;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryInstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -59,7 +60,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import static com.phonepe.drove.controller.engine.CommandValidator.ValidationStatus.SUCCESS;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -165,7 +166,7 @@ class ApplicationEngineTest extends ControllerTestBase {
     void testLifecycleAppBasicStartStop() {
 
         val spec = ControllerTestUtils.appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         val states = new HashSet<ApplicationState>();
 
@@ -187,7 +188,7 @@ class ApplicationEngineTest extends ControllerTestBase {
     @Test
     void testLifecycleApp() {
         val spec = ControllerTestUtils.appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         val states = new HashSet<ApplicationState>();
 
@@ -214,7 +215,7 @@ class ApplicationEngineTest extends ControllerTestBase {
     @Test
     void testAppRecovery() {
         val spec = ControllerTestUtils.appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         val states = new HashSet<ApplicationState>();
 
@@ -241,7 +242,7 @@ class ApplicationEngineTest extends ControllerTestBase {
     @Test
     void testAppRestart() {
         val spec = ControllerTestUtils.appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
 
         val states = new LinkedHashSet<ApplicationState>();

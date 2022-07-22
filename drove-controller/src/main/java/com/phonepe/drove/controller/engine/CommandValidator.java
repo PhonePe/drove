@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
@@ -95,7 +95,7 @@ public class CommandValidator {
 
     @MonitoredFunction
     public ValidationResult validate(final ApplicationEngine engine, final ApplicationOperation operation) {
-        val appId = appId(operation);
+        val appId = deployableObjectId(operation);
         if (Strings.isNullOrEmpty(appId)) {
             return ValidationResult.failure("no app id found in operation");
         }

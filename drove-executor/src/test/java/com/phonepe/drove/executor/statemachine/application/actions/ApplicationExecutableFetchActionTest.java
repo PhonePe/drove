@@ -26,7 +26,7 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
         val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, ExecutorTestingUtils.DOCKER_CLIENT);
         val action = new ApplicationExecutableFetchAction(null);
         val response = action.execute(ctx,
-                                      StateData.create(PENDING, ExecutorTestingUtils.createExecutorInfo(spec, 8080)));
+                                      StateData.create(PENDING, ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
         try {
             assertEquals(STARTING, response.getState(), "Error:" + response.getError());
         }
@@ -53,7 +53,7 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
                                             ExecutorTestingUtils.DOCKER_CLIENT);
         val action = new ApplicationExecutableFetchAction(null);
         val response = action.execute(ctx,
-                                      StateData.create(PENDING, ExecutorTestingUtils.createExecutorInfo(spec,8080)));
+                                      StateData.create(PENDING, ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(PROVISIONING_FAILED, response.getState());
     }
 
@@ -66,7 +66,7 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
         val action = new ApplicationExecutableFetchAction(null);
         Thread.currentThread().interrupt();
         val response = action.execute(ctx,
-                                      StateData.create(PENDING, ExecutorTestingUtils.createExecutorInfo(spec,8080)));
+                                      StateData.create(PENDING, ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(PROVISIONING_FAILED, response.getState());
     }
 }

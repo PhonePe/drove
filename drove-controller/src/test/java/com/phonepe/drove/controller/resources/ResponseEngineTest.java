@@ -10,6 +10,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -35,7 +36,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -90,7 +91,7 @@ class ResponseEngineTest {
                                     communicator);
 
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         val applicationInfo = new ApplicationInfo(appId, spec, 5, new Date(), new Date());
         when(applicationStateDB.application(appId))
@@ -119,7 +120,7 @@ class ResponseEngineTest {
                                     communicator);
 
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         val applicationInfo = new ApplicationInfo(appId, spec, 5, new Date(), new Date());
         when(applicationStateDB.application(appId))
@@ -149,7 +150,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     communicator);
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> generateInstanceInfo(appId, spec, i, InstanceState.STARTING))
                 .toList();
@@ -181,7 +182,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     communicator);
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(appId, spec, 1, InstanceState.STARTING);
 
         final var instanceId = instance.getInstanceId();
@@ -217,7 +218,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     communicator);
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> generateInstanceInfo(appId, spec, i, InstanceState.STOPPED))
                 .toList();
@@ -500,7 +501,7 @@ class ResponseEngineTest {
 
     private ApplicationInfo createApp(int i, int instances) {
         val appSpec = appSpec("TEST_APP_" + i, 1);
-        val appId = appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         return new ApplicationInfo(appId, appSpec, instances, new Date(), new Date());
     }
 

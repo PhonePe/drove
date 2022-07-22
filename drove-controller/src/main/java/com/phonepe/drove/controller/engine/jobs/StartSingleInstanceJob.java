@@ -71,7 +71,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
 
     @Override
     public String jobId() {
-        return "start-instance-" + ControllerUtils.appId(applicationSpec) + "-" + new Date().getTime();
+        return "start-instance-" + ControllerUtils.deployableObjectId(applicationSpec) + "-" + new Date().getTime();
     }
 
     @Override
@@ -84,7 +84,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(),
                                                       instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
-        val appId = ControllerUtils.appId(applicationSpec);
+        val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {
             val status = Failsafe.with(retryPolicy)
                     .onFailure(event -> {
@@ -117,10 +117,10 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         if (null == node) {
             log.warn("No node found in the cluster that can provide required resources" +
                              " and satisfy the placement policy needed for {}.",
-                     ControllerUtils.appId(applicationSpec));
+                     ControllerUtils.deployableObjectId(applicationSpec));
             return false;
         }
-        val appId = ControllerUtils.appId(applicationSpec);
+        val appId = ControllerUtils.deployableObjectId(applicationSpec);
         val instanceId = instanceIdGenerator.generate();
         val startMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                     new ExecutorAddress(node.getExecutorId(),

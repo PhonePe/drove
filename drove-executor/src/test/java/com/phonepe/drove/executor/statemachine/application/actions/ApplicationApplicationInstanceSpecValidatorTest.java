@@ -24,6 +24,6 @@ class ApplicationApplicationInstanceSpecValidatorTest extends AbstractTestBase {
         assertEquals(InstanceState.PROVISIONING,
                      action.execute(ctx,
                                     StateData.create(InstanceState.PENDING,
-                                                     ExecutorTestingUtils.createExecutorInfo(spec, 8080))).getState());
+                                                     ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080))).getState());
     }
 }

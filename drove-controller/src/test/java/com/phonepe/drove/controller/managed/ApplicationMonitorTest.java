@@ -6,6 +6,7 @@ import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
@@ -22,7 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +48,7 @@ class ApplicationMonitorTest {
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
-                .map(spec -> new ApplicationInfo(appId(spec), spec, 10, new Date(), new Date()))
+                .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
@@ -79,7 +80,7 @@ class ApplicationMonitorTest {
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
-                .map(spec -> new ApplicationInfo(appId(spec), spec, 0, new Date(), new Date()))
+                .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 0, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(MONITORING));
@@ -111,7 +112,7 @@ class ApplicationMonitorTest {
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
-                .map(spec -> new ApplicationInfo(appId(spec), spec, 10, new Date(), new Date()))
+                .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
@@ -123,7 +124,7 @@ class ApplicationMonitorTest {
         val ids = new HashSet<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))
                 .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
-                    ids.add(appId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
+                    ids.add(deployableObjectId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
                     return CommandValidator.ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());
@@ -145,7 +146,7 @@ class ApplicationMonitorTest {
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
-                .map(spec -> new ApplicationInfo(appId(spec), spec, 10, new Date(), new Date()))
+                .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
         when(appEngine.applicationState(anyString())).thenReturn(Optional.of(DESTROY_REQUESTED));
@@ -154,7 +155,7 @@ class ApplicationMonitorTest {
         val ids = new HashSet<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))
                 .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
-                    ids.add(appId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
+                    ids.add(deployableObjectId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
                     return CommandValidator.ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());

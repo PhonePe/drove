@@ -60,7 +60,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StartInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(eq(appId), anyString()))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(new InstanceInfo(appId,
@@ -136,7 +136,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StartInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         when(instanceInfoDB.instance(eq(appId), anyString()))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(new InstanceInfo(appId,
@@ -185,7 +185,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StartInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.REJECTED));
-        val appId = ControllerUtils.appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobStartRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
@@ -213,7 +213,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenReturn(Optional.of(allocatedExecutorNode));
         when(comm.send(any(StartInstanceMessage.class)))
                 .thenThrow(new RuntimeException("Test Exception"));
-        val appId = ControllerUtils.appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         when(instanceInfoDB.instance(eq(appId), anyString()))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(new InstanceInfo(appId,

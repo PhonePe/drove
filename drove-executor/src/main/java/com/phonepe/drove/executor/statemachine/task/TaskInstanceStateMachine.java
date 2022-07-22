@@ -56,6 +56,10 @@ public class TaskInstanceStateMachine extends StateMachine<ExecutorTaskInstanceI
                              DEPROVISIONING),
             new Transition<>(DEPROVISIONING,
                              TaskExecutableCleanupAction.class,
+                             STOPPED),
+            new Transition<>(UNKNOWN,
+                             TaskInstanceRecoveryAction.class,
+                             RUNNING,
                              STOPPED)
                      );
 

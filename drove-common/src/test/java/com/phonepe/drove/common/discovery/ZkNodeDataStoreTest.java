@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,8 +54,9 @@ class ZkNodeDataStoreTest {
                                                 NodeTransportType.HTTP,
                                                 new Date(),
                                                 state,
-                                                Collections.emptyList(),
-                                                Collections.emptySet(),
+                                                List.of(),
+                                                List.of(),
+                                                Set.of(),
                                                 false);
             store.updateNodeData(nodeData);
             var executors = store.nodes(NodeType.EXECUTOR);

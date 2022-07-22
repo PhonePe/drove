@@ -21,7 +21,7 @@ class ApplicationInstanceDestroyActionTest {
         val action = new ApplicationInstanceDestroyAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
-                                                       ExecutorTestingUtils.createExecutorInfo(spec, 8080)));
+                                                       ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(InstanceState.DEPROVISIONING, response.getState());
     }
 }

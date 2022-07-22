@@ -75,7 +75,7 @@ public class ApplicationEngine {
 
     @MonitoredFunction
     public CommandValidator.ValidationResult handleOperation(final ApplicationOperation operation) {
-        val appId = ControllerUtils.appId(operation);
+        val appId = ControllerUtils.deployableObjectId(operation);
         val res = validateOp(operation);
         if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
             stateMachines.compute(appId, (id, monitor) -> {
@@ -184,7 +184,7 @@ public class ApplicationEngine {
             public ApplicationStateMachineExecutor visit(ApplicationCreateOperation create) {
                 val appSpec = create.getSpec();
                 val now = new Date();
-                val appId = ControllerUtils.appId(appSpec);
+                val appId = ControllerUtils.deployableObjectId(appSpec);
                 val appInfo = new ApplicationInfo(appId, appSpec, create.getInstances(), now, now);
                 val context = new AppActionContext(appId, appSpec);
                 val stateMachine = new ApplicationStateMachine(StateData.create(

@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.SneakyThrows;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonUtils.buildCurator;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -37,7 +38,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 curator.start();
                 val db = new ZkInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
                             val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i);
@@ -84,7 +85,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 curator.start();
                 val db = new ZkInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
                             val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, PROVISIONING);
@@ -128,7 +129,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 curator.start();
                 val db = new ZkInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
                             val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i);
@@ -159,7 +160,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 curator.start();
                 val db = new ZkInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
                             val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, HEALTHY);
@@ -203,7 +204,7 @@ class ZkInstanceInfoDBTest extends ControllerTestBase {
                 curator.start();
                 val db = new ZkInstanceInfoDB(curator, MAPPER);
                 val spec = ControllerTestUtils.appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val instances = IntStream.rangeClosed(1, 100)
                         .mapToObj(i -> {
                             val ii = ControllerTestUtils.generateInstanceInfo(appId, spec, i, InstanceState.STOPPED);

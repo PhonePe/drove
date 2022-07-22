@@ -26,7 +26,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val spec = testAppInstanceSpec();
         val action = new ApplicationInstanceRunAction(new LogBus(), new ResourceConfig());
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT);
-        val resp = action.execute(context, StateData.create(STARTING, createExecutorInfo(spec, 8080)));
+        val resp = action.execute(context, StateData.create(STARTING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(UNREADY, resp.getState());
     }
 
@@ -35,7 +35,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val spec = testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid");
         val action = new ApplicationInstanceRunAction(new LogBus(), new ResourceConfig());
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT);
-        val resp = action.execute(context, StateData.create(STARTING, createExecutorInfo(spec, 8080)));
+        val resp = action.execute(context, StateData.create(STARTING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(START_FAILED, resp.getState());
     }
 

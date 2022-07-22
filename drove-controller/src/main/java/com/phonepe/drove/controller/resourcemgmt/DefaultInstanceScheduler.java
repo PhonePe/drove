@@ -89,7 +89,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     private Map<String, Long> clusterSnapshot(DeploymentSpec applicationSpec) {
-        return instanceInfoDB.activeInstances(ControllerUtils.appId(applicationSpec), 0, Integer.MAX_VALUE)
+        return instanceInfoDB.activeInstances(ControllerUtils.deployableObjectId(applicationSpec), 0, Integer.MAX_VALUE)
                 .stream()
                 .filter(instanceInfo -> RESOURCE_CONSUMING_INSTANCE_STATES.contains(instanceInfo.getState()))
                 .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));
