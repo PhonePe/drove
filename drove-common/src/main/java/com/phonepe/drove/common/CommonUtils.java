@@ -145,12 +145,12 @@ public class CommonUtils {
         return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
             @Override
             public String visit(ApplicationInstanceSpec instanceSpec) {
-                return instanceSpec.getAppId() + ":" + instanceSpec.getInstanceId();
+                return instanceSpec.getAppId() + "-" + instanceSpec.getInstanceId();
             }
 
             @Override
             public String visit(TaskInstanceSpec taskInstanceSpec) {
-                return taskInstanceSpec.getTaskId() + ":" + taskInstanceSpec.getInstanceId();
+                return taskInstanceSpec.getTaskId() + "-" + taskInstanceSpec.getInstanceId();
             }
         });
     }

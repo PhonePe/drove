@@ -21,7 +21,7 @@ public class TaskInstanceDestroyAction extends TaskInstanceAction {
             StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState) {
         val containerId = context.getDockerInstanceId();
         if(!Strings.isNullOrEmpty(containerId)) {
-            try (val cmd = context.getClient().removeContainerCmd(containerId)) {
+            try (val cmd = context.getClient().removeContainerCmd(containerId).withForce(true)) {
                 cmd.exec();
                 log.info("Container {} removed", containerId);
             }
@@ -35,12 +35,19 @@ public class TaskInstanceDestroyAction extends TaskInstanceAction {
     }
 
     @Override
+    protected boolean isStopAllowed() {
+        return false;
+    }
+
+    @Override
     protected TaskInstanceState defaultErrorState() {
         return TaskInstanceState.DEPROVISIONING;
     }
 
     @Override
     public void stop() {
-
+        //Nothing to do here. This job is not stoppable
     }
+
+
 }

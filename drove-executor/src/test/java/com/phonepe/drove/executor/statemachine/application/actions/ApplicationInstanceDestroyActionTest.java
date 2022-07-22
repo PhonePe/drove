@@ -16,8 +16,8 @@ class ApplicationInstanceDestroyActionTest {
 
     @Test
     void test() {
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new ApplicationInstanceDestroyAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,

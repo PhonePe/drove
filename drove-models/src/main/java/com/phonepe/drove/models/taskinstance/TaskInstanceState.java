@@ -2,6 +2,8 @@ package com.phonepe.drove.models.taskinstance;
 
 import lombok.Getter;
 
+import java.util.Set;
+
 /**
  *
  */
@@ -23,6 +25,13 @@ public enum TaskInstanceState {
     LOST(true, false),
     UNKNOWN(false, false);
 
+    public static final Set<TaskInstanceState> ACTIVE_STATES = Set.of(
+            PENDING,
+            PROVISIONING,
+            STARTING,
+            RUNNING,
+            DEPROVISIONING,
+            STOPPING);
     private final boolean terminal;
     private final boolean error;
 

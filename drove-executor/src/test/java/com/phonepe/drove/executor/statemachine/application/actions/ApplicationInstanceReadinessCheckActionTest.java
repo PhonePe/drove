@@ -16,7 +16,6 @@ import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.phonepe.drove.common.CommonTestUtils.delay;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.testSpec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,8 +43,8 @@ class ApplicationInstanceReadinessCheckActionTest {
                         .willReturn(ok())
                         .willSetStateTo("healthyState"));
 
-        val spec = testSpec("hello-world");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new ApplicationInstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -57,8 +56,8 @@ class ApplicationInstanceReadinessCheckActionTest {
     void testFail(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
 
-        val spec = testSpec("hello-world");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new ApplicationInstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -71,8 +70,8 @@ class ApplicationInstanceReadinessCheckActionTest {
     void testStop(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
 
-        val spec = testSpec("hello-world");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new ApplicationInstanceReadinessCheckAction();
 
         val f = Executors.newSingleThreadExecutor()
@@ -87,8 +86,8 @@ class ApplicationInstanceReadinessCheckActionTest {
     @Test
     void testInterrupt(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
-        val spec = testSpec("hello-world");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
         val action = new ApplicationInstanceReadinessCheckAction();
 
         val f = Executors.newSingleThreadExecutor()

@@ -62,7 +62,7 @@ public class ExecutorCoreModule extends AbstractModule {
         return new ApplicationInstanceEngine(
                 executorIdManager,
                 executorService,
-                new InjectingInstanceActionFactory(injector),
+                new InjectingApplicationInstanceActionFactory(injector),
                 resourceDB,
                 client);
     }

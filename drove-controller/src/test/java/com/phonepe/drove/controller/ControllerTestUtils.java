@@ -55,7 +55,7 @@ public class ControllerTestUtils {
     public static ApplicationSpec appSpec(final String name, final int version) {
         return new ApplicationSpec(name,
                                    String.format("%05d", version),
-                                   new DockerCoordinates(CommonTestUtils.IMAGE_NAME, Duration.seconds(100)),
+                                   new DockerCoordinates(CommonTestUtils.APP_IMAGE_NAME, Duration.seconds(100)),
                                    Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                    List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
                                    JobType.SERVICE,

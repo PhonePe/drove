@@ -22,8 +22,8 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
 
     @Test
     void testFetchSuccess() {
-        val spec = ExecutorTestingUtils.testSpec("hello-world");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID, spec, ExecutorTestingUtils.DOCKER_CLIENT);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, ExecutorTestingUtils.DOCKER_CLIENT);
         val action = new ApplicationExecutableFetchAction(null);
         val response = action.execute(ctx,
                                       StateData.create(PENDING, ExecutorTestingUtils.createExecutorInfo(spec, 8080)));
@@ -47,8 +47,8 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
 
     @Test
     void testFetchWrongImage() {
-        val spec = ExecutorTestingUtils.testSpec(CommonTestUtils.IMAGE_NAME + "-invalid");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID,
+        val spec = ExecutorTestingUtils.testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID,
                                             spec,
                                             ExecutorTestingUtils.DOCKER_CLIENT);
         val action = new ApplicationExecutableFetchAction(null);
@@ -59,8 +59,8 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
 
     @Test
     void testFetchInterrupt() {
-        val spec = ExecutorTestingUtils.testSpec(CommonTestUtils.IMAGE_NAME + "-invalid");
-        val ctx = new InstanceActionContext(ExecutorTestingUtils.EXECUTOR_ID,
+        val spec = ExecutorTestingUtils.testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID,
                                             spec,
                                             ExecutorTestingUtils.DOCKER_CLIENT);
         val action = new ApplicationExecutableFetchAction(null);

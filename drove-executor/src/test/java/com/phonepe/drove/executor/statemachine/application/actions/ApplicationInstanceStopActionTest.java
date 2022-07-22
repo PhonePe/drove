@@ -22,9 +22,9 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
 
     @Test
     void testStopProper() {
-        val spec = testSpec();
+        val spec = testAppInstanceSpec();
         val action = new ApplicationInstanceStopAction();
-        val context = new InstanceActionContext(EXECUTOR_ID, spec, DOCKER_CLIENT);
+        val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT);
         val startAction = new ApplicationInstanceRunAction(new LogBus(), new ResourceConfig());
         val state = startAction.execute(context,
                                         StateData.create(InstanceState.PROVISIONING, createExecutorInfo(spec, 8080)));
@@ -34,9 +34,9 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
 
     @Test
     void testStopInvalidContainer() {
-        val spec = testSpec();
+        val spec = testAppInstanceSpec();
         val action = new ApplicationInstanceStopAction();
-        val context = new InstanceActionContext(EXECUTOR_ID, spec, DOCKER_CLIENT);
+        val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT);
         context.setDockerInstanceId("INVALID_CONTAINER_ID");
         assertEquals(InstanceState.DEPROVISIONING,
                      action.execute(context, StateData.create(InstanceState.HEALTHY, createExecutorInfo(spec, 8080)))
@@ -44,9 +44,9 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
     }
     @Test
     void testStopNoContainer() {
-        val spec = testSpec();
+        val spec = testAppInstanceSpec();
         val action = new ApplicationInstanceStopAction();
-        val context = new InstanceActionContext(EXECUTOR_ID, spec, DOCKER_CLIENT);
+        val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT);
         assertEquals(InstanceState.DEPROVISIONING,
                      action.execute(context, StateData.create(InstanceState.HEALTHY, createExecutorInfo(spec, 8080)))
                              .getState());

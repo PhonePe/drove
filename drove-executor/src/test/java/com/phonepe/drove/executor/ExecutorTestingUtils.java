@@ -12,12 +12,14 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
-import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.models.application.*;
@@ -61,15 +63,15 @@ public class ExecutorTestingUtils {
                                                    .dockerHost(URI.create("unix:///var/run/docker.sock"))
                                                    .build());
 
-    public static ApplicationInstanceSpec testSpec() {
-        return testSpec(CommonTestUtils.IMAGE_NAME);
+    public static ApplicationInstanceSpec testAppInstanceSpec() {
+        return testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME);
     }
 
-    public static ApplicationInstanceSpec testSpec(final String imageName) {
-        return testSpec(imageName, 3);
+    public static ApplicationInstanceSpec testAppInstanceSpec(final String imageName) {
+        return testAppInstanceSpec(imageName, 3);
     }
 
-    public static ApplicationInstanceSpec testSpec(final String imageName, int attempt) {
+    public static ApplicationInstanceSpec testAppInstanceSpec(final String imageName, int attempt) {
         return new ApplicationInstanceSpec("T001",
                                            "TEST_SPEC",
                                            UUID.randomUUID().toString(),
@@ -116,12 +118,36 @@ public class ExecutorTestingUtils {
                                            "TestToken");
     }
 
+    public static TaskInstanceSpec testTaskInstanceSpec() {
+        return testTaskInstanceSpec(CommonTestUtils.TASK_IMAGE_NAME, Map.of("ITERATIONS", "3"));
+    }
+
+
+    public static TaskInstanceSpec testTaskInstanceSpec(Map<String, String> env) {
+        return testTaskInstanceSpec(CommonTestUtils.TASK_IMAGE_NAME, env);
+    }
+
+    public static TaskInstanceSpec testTaskInstanceSpec(final String imageName, Map<String, String> env) {
+        return new TaskInstanceSpec("T001",
+                                           "TEST_SPEC",
+                                           UUID.randomUUID().toString(),
+                                           new DockerCoordinates(imageName, Duration.seconds(100)),
+                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                       Set.of(2, 3))),
+                                                            new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                           List.of(new MountedVolume("/tmp",
+                                                                     "/tmp",
+                                                                     MountedVolume.MountMode.READ_ONLY)),
+                                           LocalLoggingSpec.DEFAULT,
+                                           env);
+    }
+
     public static ExecutorAddress localAddress() {
         return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000, NodeTransportType.HTTP);
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
-        return createExecutorInfo(testSpec(CommonTestUtils.IMAGE_NAME), wm);
+        return createExecutorInfo(testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME), wm);
     }
 
     public static ExecutorInstanceInfo createExecutorInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
@@ -178,14 +204,15 @@ public class ExecutorTestingUtils {
 
     public static <R> R executeOnceContainerStarted(
             final ApplicationInstanceEngine engine,
+            final TaskInstanceEngine taskInstanceEngine,
             final Function<InstanceInfo, R> check) {
-        val spec = ExecutorTestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val instanceId = spec.getInstanceId();
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(engine, null);
+        val messageHandler = new ExecutorMessageHandler(engine, taskInstanceEngine, null);
         val startResponse = startInstanceMessage.accept(messageHandler);
         try {
             assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
@@ -221,7 +248,7 @@ public class ExecutorTestingUtils {
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT
-                .createContainerCmd(CommonTestUtils.IMAGE_NAME)
+                .createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)
                 .withName("RecoveryTest")
                 .withLabels(Map.of(
                         DockerLabels.DROVE_JOB_TYPE_LABEL,

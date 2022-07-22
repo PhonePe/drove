@@ -14,14 +14,14 @@ import lombok.Value;
 @ToString(callSuper = true)
 public class StopTaskInstanceMessage extends ExecutorMessage {
 
-    String taskInstanceId;
+    String instanceId;
 
     public StopTaskInstanceMessage(
             MessageHeader header,
             ExecutorAddress address,
-            String taskInstanceId) {
+            String instanceId) {
         super(ExecutorMessageType.STOP_TASK_INSTANCE, header, address);
-        this.taskInstanceId = taskInstanceId;
+        this.instanceId = instanceId;
     }
 
     @Override

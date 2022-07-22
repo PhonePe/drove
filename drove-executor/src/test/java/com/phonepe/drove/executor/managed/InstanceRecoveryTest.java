@@ -23,21 +23,21 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     @SneakyThrows
     void testNoContainers() {
-        val ir = new InstanceRecovery(engine, AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ir = new InstanceRecovery(applicationInstanceEngine, AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
         ir.start();
-        assertEquals(0, engine.currentState().size());
+        assertEquals(0, applicationInstanceEngine.currentState().size());
         ir.stop();
     }
 
     @Test
     @SneakyThrows
     void testRecoverContainers() {
-        val spec = ExecutorTestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val instanceData = ExecutorTestingUtils.createExecutorInfo(spec, 8080);
         ExecutorTestingUtils.startTestContainer(spec, instanceData, AbstractTestBase.MAPPER);
-        val ir = new InstanceRecovery(engine, AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ir = new InstanceRecovery(applicationInstanceEngine, AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
         ir.start();
-        assertEquals(1, engine.currentState().size());
+        assertEquals(1, applicationInstanceEngine.currentState().size());
         ir.stop();
     }
 
@@ -45,16 +45,16 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @SneakyThrows
     void testRecoverNonDroveContainers() {
         var containerId = "";
-        try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(CommonTestUtils.IMAGE_NAME)) {
+        try (val createCmd = ExecutorTestingUtils.DOCKER_CLIENT.createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)) {
             containerId = createCmd.withName("test-container")
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec()
                     .getId();
             ExecutorTestingUtils.DOCKER_CLIENT.startContainerCmd(containerId)
                     .exec();
-            val ir = new InstanceRecovery(engine, AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+            val ir = new InstanceRecovery(applicationInstanceEngine, AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
             ir.start();
-            assertEquals(0, engine.currentState().size());
+            assertEquals(0, applicationInstanceEngine.currentState().size());
             ir.stop();
         }
         finally {

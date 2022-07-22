@@ -5,7 +5,7 @@ import com.google.inject.Stage;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.InjectingInstanceActionFactory;
+import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
@@ -28,11 +28,11 @@ import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 class ApplicationInstanceStateMachineTest extends AbstractTestBase {
     @Test
     void test() {
-        val instanceSpec = ExecutorTestingUtils.testSpec();
+        val instanceSpec = ExecutorTestingUtils.testAppInstanceSpec();
         val sm = new ApplicationInstanceStateMachine(UUID.randomUUID().toString(),
                                                      instanceSpec,
                                                      StateData.create(InstanceState.PROVISIONING, null),
-                                                     new InjectingInstanceActionFactory(Guice.createInjector(
+                                                     new InjectingApplicationInstanceActionFactory(Guice.createInjector(
                                                   Stage.DEVELOPMENT)),
                                                      ExecutorTestingUtils.DOCKER_CLIENT);
         sm.onStateChange().connect(sd -> log.info("Current state: {}", sd));

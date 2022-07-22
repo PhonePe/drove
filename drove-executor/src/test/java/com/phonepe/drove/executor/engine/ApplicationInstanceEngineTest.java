@@ -40,10 +40,10 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
 
     @Test
     void testBasicRun() {
-        val spec = ExecutorTestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val instanceId = spec.getInstanceId();
         val stateChanges = new HashSet<InstanceState>();
-        engine.onStateChange().connect(state -> {
+        applicationInstanceEngine.onStateChange().connect(state -> {
             if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
             }
@@ -52,20 +52,20 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(engine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
         assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
-        waitUntil(() -> engine.currentState(instanceId)
+        waitUntil(() -> applicationInstanceEngine.currentState(instanceId)
                         .map(InstanceInfo::getState)
                         .map(instanceState -> instanceState.equals(HEALTHY))
                         .orElse(false));
-        assertTrue(engine.exists(instanceId));
-        assertFalse(engine.exists("WrongId"));
-        val info = engine.currentState(instanceId).orElse(null);
+        assertTrue(applicationInstanceEngine.exists(instanceId));
+        assertFalse(applicationInstanceEngine.exists("WrongId"));
+        val info = applicationInstanceEngine.currentState(instanceId).orElse(null);
         assertNotNull(info);
         assertEquals(HEALTHY, info.getState());
-        val allInfo = engine.currentState();
+        val allInfo = applicationInstanceEngine.currentState();
         assertEquals(1, allInfo.size());
         assertEquals(info.getInstanceId(), allInfo.get(0).getInstanceId());
 
@@ -73,7 +73,7 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                           executorAddress,
                                                           instanceId);
         assertEquals(MessageDeliveryStatus.ACCEPTED, stopInstanceMessage.accept(messageHandler).getStatus());
-        waitUntil(() -> engine.currentState(instanceId).isEmpty());
+        waitUntil(() -> applicationInstanceEngine.currentState(instanceId).isEmpty());
         assertEquals(MessageDeliveryStatus.FAILED, stopInstanceMessage.accept(messageHandler).getStatus());
         val statesDiff = Sets.difference(stateChanges,
                                          EnumSet.of(PENDING,
@@ -130,13 +130,13 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(engine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.FAILED, startResponse.getStatus());
     }
 
     @Test
     void testInvalidStop() {
-        assertFalse(engine.stopInstance("test"));
+        assertFalse(applicationInstanceEngine.stopInstance("test"));
     }
 }

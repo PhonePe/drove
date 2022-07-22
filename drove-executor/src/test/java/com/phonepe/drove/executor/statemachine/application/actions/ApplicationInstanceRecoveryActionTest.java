@@ -23,7 +23,7 @@ class ApplicationInstanceRecoveryActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRecovery() {
-        val spec = ExecutorTestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testAppInstanceSpec();
 
         var containerId = "";
 
@@ -41,9 +41,9 @@ class ApplicationInstanceRecoveryActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRecoverNone() {
-        val spec = ExecutorTestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val ir = new ApplicationInstanceRecoveryAction(new LogBus());
-        val ctx = new InstanceActionContext("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT);
         val r = ir.execute(ctx,
                            StateData.create(InstanceState.UNKNOWN,
                                             ExecutorTestingUtils.createExecutorInfo(spec, 8080)));

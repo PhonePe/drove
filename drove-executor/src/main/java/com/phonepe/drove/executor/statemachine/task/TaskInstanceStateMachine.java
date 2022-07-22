@@ -6,9 +6,7 @@ import com.phonepe.drove.executor.InstanceActionFactory;
 import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.task.actions.TaskInstanceDestroyAction;
-import com.phonepe.drove.executor.statemachine.task.actions.TaskInstanceRunAction;
-import com.phonepe.drove.executor.statemachine.task.actions.TaskInstanceSpecValidator;
+import com.phonepe.drove.executor.statemachine.task.actions.*;
 import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import com.phonepe.drove.statemachine.StateMachine;
@@ -43,7 +41,7 @@ public class TaskInstanceStateMachine extends StateMachine<ExecutorTaskInstanceI
                              RUNNING,
                              RUN_FAILED),
             new Transition<>(RUNNING,
-                             TaskInstanceRunAction.class,
+                             TaskMonitoringAction.class,
                              RUN_COMPLETED,
                              RUN_CANCELLED,
                              RUN_FAILED),
@@ -57,7 +55,7 @@ public class TaskInstanceStateMachine extends StateMachine<ExecutorTaskInstanceI
                              TaskInstanceDestroyAction.class,
                              DEPROVISIONING),
             new Transition<>(DEPROVISIONING,
-                             TaskInstanceDestroyAction.class,
+                             TaskExecutableCleanupAction.class,
                              STOPPED)
                      );
 

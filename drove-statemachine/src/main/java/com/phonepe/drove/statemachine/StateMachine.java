@@ -98,7 +98,7 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         val state = currentState.getState();
         val transition = validTransitions.get(state);
         currentAction.set(actionFactory.create(transition));
-        log.debug("Action to be executed: {}", currentAction.get().getClass().getSimpleName());
+        log.info("Action to be executed: {}", currentAction.get().getClass().getSimpleName());
         val newStateData = currentAction.get().execute(context, currentState);
         val newState = newStateData.getState();
         if (!transition.getTo().contains(newState)) {

@@ -35,10 +35,10 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                    null,
                                    null);
         val ctr = new AtomicInteger();
-        val messageHandler = new ExecutorMessageHandler(engine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
         val scn = new ExecutorInstanceStateChangeNotifier(
                 resourceDB,
-                new ExecutorCommunicator(engine,
+                new ExecutorCommunicator(applicationInstanceEngine,
                                          message -> {
                                              ctr.incrementAndGet();
                                              if (ctr.get() > 1) {
@@ -48,15 +48,15 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                              return new MessageResponse(message.getHeader(),
                                                                         MessageDeliveryStatus.ACCEPTED);
                                          },
-                                         messageHandler), engine);
+                                         messageHandler), applicationInstanceEngine);
         scn.start();
-        engine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(1, ctr.get());
-        engine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(2, ctr.get());
         scn.stop();
-        engine.onStateChange().dispatch(iin);
-        engine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(2, ctr.get());
     }
 

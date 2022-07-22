@@ -4,7 +4,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.Guice;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.InjectingInstanceActionFactory;
+import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -56,7 +56,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         val blm = new BlacklistingManager();
         val ie = new ApplicationInstanceEngine(eim,
                                                Executors.newSingleThreadExecutor(),
-                                               new InjectingInstanceActionFactory(Guice.createInjector()),
+                                               new InjectingApplicationInstanceActionFactory(Guice.createInjector()),
                                                rdb,
                                                ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
