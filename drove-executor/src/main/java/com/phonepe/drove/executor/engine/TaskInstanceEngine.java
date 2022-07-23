@@ -16,8 +16,8 @@ import com.phonepe.drove.statemachine.StateData;
 import com.phonepe.drove.statemachine.StateMachine;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import static com.phonepe.drove.models.taskinstance.TaskInstanceState.LOST;
@@ -28,7 +28,8 @@ import static com.phonepe.drove.models.taskinstance.TaskInstanceState.RUNNING;
  *
  */
 @Slf4j
-public class TaskInstanceEngine extends InstanceEngine<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec, TaskInstanceInfo> {
+public class TaskInstanceEngine extends InstanceEngine<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec,
+        TaskInstanceInfo> {
 
 
     public TaskInstanceEngine(
@@ -45,14 +46,18 @@ public class TaskInstanceEngine extends InstanceEngine<ExecutorTaskInstanceInfo,
             ExecutorIdManager executorIdManager) {
         return StateData.create(TaskInstanceState.PENDING,
                                 new ExecutorTaskInstanceInfo(spec.getTaskId(),
-                                                         spec.getSourceAppName(),
-                                                         spec.getInstanceId(),
-                                                         executorIdManager.executorId().orElse(null),
-                                                         null,
-                                                         spec.getResources(),
-                                                         Collections.emptyMap(),
-                                                         currDate,
-                                                         currDate));
+                                                             spec.getSourceAppName(),
+                                                             spec.getInstanceId(),
+                                                             executorIdManager.executorId().orElse(null),
+                                                             null,
+                                                             spec.getExecutable(),
+                                                             spec.getResources(),
+                                                             spec.getVolumes(),
+                                                             spec.getLoggingSpec(),
+                                                             spec.getEnv(),
+                                                             Map.of(),
+                                                             currDate,
+                                                             currDate));
     }
 
     @Override

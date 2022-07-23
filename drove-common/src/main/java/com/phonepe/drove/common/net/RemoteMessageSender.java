@@ -31,6 +31,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
  *
  */
 @Slf4j
+@SuppressWarnings("java:S119")
 public abstract class RemoteMessageSender<
         SendMessageType extends Enum<SendMessageType>,
         SendMessage extends Message<SendMessageType>>

@@ -109,8 +109,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public ResourceConfig resourceConfig(final AppConfig appConfig) {
-        val resourceConfig = appConfig.getResources();
-        return resourceConfig == null ? ResourceConfig.DEFAULT : resourceConfig;
+        return Objects.requireNonNullElse(appConfig.getResources(), ResourceConfig.DEFAULT);
     }
 
     @Provides

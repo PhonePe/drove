@@ -2,22 +2,17 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.LogConfig;
 import com.github.dockerjava.api.model.Ports;
-import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
-import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
-import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
-import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -30,7 +25,10 @@ import org.slf4j.MDC;
 
 import javax.inject.Inject;
 import java.net.ServerSocket;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
@@ -163,33 +161,5 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
             log.error("Port allocation failure");
         }
         return 0;
-    }
-
-    private LogConfig logConfig(final ApplicationInstanceSpec instanceSpec) {
-        val spec = instanceSpec.getLoggingSpec() == null
-                   ? LocalLoggingSpec.DEFAULT
-                   : instanceSpec.getLoggingSpec();
-        val configBuilder = ImmutableMap.<String, String>builder()
-                .put("mode", "non-blocking")
-                .put("max-buffer-size", "10m");
-        return spec.accept(new LoggingSpecVisitor<>() {
-            @Override
-            public LogConfig visit(LocalLoggingSpec local) {
-                configBuilder.put("max-size", local.getMaxSize());
-                configBuilder.put("max-file", Integer.toString(local.getMaxFiles()));
-                configBuilder.put("compress", Boolean.toString(local.isCompress()));
-                return new LogConfig(LogConfig.LoggingType.LOCAL, configBuilder.build());
-            }
-
-            @Override
-            public LogConfig visit(RsyslogLoggingSpec rsyslog) {
-                configBuilder.put("syslog-address", rsyslog.getServer());
-                configBuilder.put("tag", Objects.requireNonNullElse(rsyslog.getTagPrefix(), "")
-                        + instanceSpec.getAppName()
-                        + Objects.requireNonNullElse(rsyslog.getTagSuffix(), ""));
-                configBuilder.put("syslog-facility", "daemon");
-                return new LogConfig(LogConfig.LoggingType.SYSLOG, configBuilder.build());
-            }
-        });
     }
 }

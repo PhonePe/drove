@@ -22,16 +22,10 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyApplicationStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppAction;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.testsupport.DummyExecutor;
-import com.phonepe.drove.controller.testsupport.DummyExecutorMessageSender;
-import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.*;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -60,7 +54,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import static com.phonepe.drove.controller.engine.CommandValidator.ValidationStatus.SUCCESS;
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,6 +95,8 @@ class ApplicationEngineTest extends ControllerTestBase {
                 bind(ApplicationInstanceInfoDB.class)
                         .annotatedWith(Names.named("StoredInstanceInfoDB"))
                         .to(InMemoryApplicationInstanceInfoDB.class);
+                bind(TaskDB.class).to(CachingProxyTaskDB.class);
+                bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(InMemoryTaskDB.class);
                 bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class).asEagerSingleton();
                 bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
                 bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);

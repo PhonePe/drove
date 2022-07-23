@@ -76,9 +76,7 @@ public class DockerUtils {
         return responseHandler.apply(imageId);
     }
 
-    public static <T> void cleanupImage(
-            final DockerClient dockerClient,
-            final String dockerImageId) {
+    public static void cleanupImage(final DockerClient dockerClient, final String dockerImageId) {
         dockerClient.removeImageCmd(dockerImageId)
                 .withForce(true)
                 .exec();
@@ -96,10 +94,12 @@ public class DockerUtils {
 
     @FunctionalInterface
     public interface DockerCreateParmAugmenter {
+        @SuppressWarnings("java:S112")
         void augment(final DockerRunParams params) throws Exception;
     }
+
     @SneakyThrows
-    public static <T> String createContainer(
+    public static String createContainer(
             final ResourceConfig resourceConfig,
             final DockerClient client,
             final String id,
@@ -114,7 +114,7 @@ public class DockerUtils {
                     .withMemorySwappiness(0L)
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any
 //                    stats
-                    .withAutoRemove(autoremove(deploymentUnitSpec))
+                    .withAutoRemove(autoRemove(deploymentUnitSpec))
                     .withLogConfig(logConfig(deploymentUnitSpec));
 
             deploymentUnitSpec.getResources()
@@ -192,7 +192,7 @@ public class DockerUtils {
         }
     }
 
-    private static Boolean autoremove(DeploymentUnitSpec deploymentUnitSpec) {
+    private static Boolean autoRemove(DeploymentUnitSpec deploymentUnitSpec) {
         return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
             @Override
             public Boolean visit(ApplicationInstanceSpec instanceSpec) {

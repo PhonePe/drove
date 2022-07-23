@@ -26,8 +26,6 @@ import net.jodah.failsafe.TimeoutExceededException;
 import java.util.Date;
 import java.util.List;
 
-import static com.phonepe.drove.common.model.MessageDeliveryStatus.ACCEPTED;
-
 /**
  * Starts  a single instance by whatever means necessary
  */
@@ -43,6 +41,7 @@ public class StartTaskJob implements Job<Boolean> {
 
     private final InstanceIdGenerator instanceIdGenerator;
 
+    @SuppressWarnings("java:S107")
     public StartTaskJob(
             TaskSpec taskSpec,
             ClusterOpSpec clusterOpSpec,
@@ -76,7 +75,7 @@ public class StartTaskJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val sourceApp = taskSpec.getSourceApp();
+        val sourceApp = taskSpec.getSourceAppName();
         val taskId = taskSpec.getTaskId();
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(),
                                                                     instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
@@ -93,7 +92,7 @@ public class StartTaskJob implements Job<Boolean> {
                             log.error("Error setting up task for {}/{}. Event: {}", sourceApp, taskId, event);
                         }
                     })
-                    .get(() -> startInstance(taskSpec, instanceId, clusterOpSpec));
+                    .get(() -> startInstance(taskSpec, instanceId));
 
             if (context.isStopped() || context.isCancelled()) {
                 return false;
@@ -109,58 +108,6 @@ public class StartTaskJob implements Job<Boolean> {
         return false;
     }
 
-    private MessageDeliveryStatus sendStartMessage(TaskSpec taskSpec, String instanceId) {
-        val sourceApp = taskSpec.getSourceApp();
-        val taskId = taskSpec.getTaskId();
-        val node = scheduler.schedule(schedulingSessionId, taskSpec)
-                .orElse(null);
-        if (null != node) {
-
-            val startMessage = new StartTaskInstanceMessage(MessageHeader.controllerRequest(),
-                                                            new ExecutorAddress(node.getExecutorId(),
-                                                                                node.getHostname(),
-                                                                                node.getPort(),
-                                                                                node.getTransportType()),
-                                                            new TaskInstanceSpec(taskId,
-                                                                                 sourceApp,
-                                                                                 instanceId,
-                                                                                 taskSpec.getExecutable(),
-                                                                                 List.of(node.getCpu(),
-                                                                                         node.getMemory()),
-                                                                                 taskSpec.getVolumes(),
-                                                                                 taskSpec.getLogging(),
-                                                                                 taskSpec.getEnv()));
-            var successful = false;
-            try {
-                val response = communicator.send(startMessage);
-                val status = response.getStatus();
-                if (ACCEPTED.equals(status)) {
-                    log.info("Start message for instance {}/{} accepted by executor {}",
-                             taskSpec.getSourceApp(), taskSpec.getTaskId(), node.getExecutorId());
-                }
-                else {
-                    log.info(
-                            "Start message for instance {}/{} was not accepted by executor {}. Response: {}. Message:" +
-                                    " {}",
-                            taskSpec.getSourceApp(),
-                            taskSpec.getTaskId(),
-                            node.getExecutorId(),
-                            response,
-                            startMessage);
-                }
-                return status;
-            }
-            catch (Exception e) {
-                log.error("Error sending message for {}/{}", sourceApp, taskId);
-            }
-        }
-        else {
-            log.warn("No node found in the cluster that can provide required resources" +
-                             " and satisfy the placement policy needed for {}/{}.", sourceApp, taskId);
-        }
-        return MessageDeliveryStatus.FAILED;
-    }
-
     private boolean ensureDataAvailability() {
         val retryPolicy =
                 CommonUtils.<Boolean>policy(
@@ -168,7 +115,7 @@ public class StartTaskJob implements Job<Boolean> {
                         r -> !r);
         try {
             return Failsafe.with(List.of(retryPolicy))
-                    .get(() -> taskDB.task(taskSpec.getSourceApp(), taskSpec.getTaskId()).isPresent());
+                    .get(() -> taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isPresent());
         }
         catch (Exception e) {
             log.error("Could not start task: ", e);
@@ -176,8 +123,8 @@ public class StartTaskJob implements Job<Boolean> {
         }
     }
 
-    private boolean startInstance(TaskSpec taskSpec, String instanceId, ClusterOpSpec clusterOpSpec) {
-        val sourceApp = taskSpec.getSourceApp();
+    private boolean startInstance(TaskSpec taskSpec, String instanceId) {
+        val sourceApp = taskSpec.getSourceAppName();
         val taskId = taskSpec.getTaskId();
         val node = scheduler.schedule(schedulingSessionId, taskSpec)
                 .orElse(null);

@@ -37,7 +37,7 @@ public class NumaCtlBasedResourceLoader {
                     return new Pair<>(node, cpus);
                 })
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-        val exposedMemPercentage = ((double) resourceConfig.getExposedMemPercentage()) / 100.0;
+        val exposedMemPercentage = (resourceConfig.getExposedMemPercentage()) / 100.0;
         val mem = lines.stream()
                 .filter(line -> line.matches("node \\d+ size: .*"))
                 .map(line -> {
@@ -96,7 +96,7 @@ public class NumaCtlBasedResourceLoader {
 
     private int nodeNum(final String cpuLine) {
         return new Scanner(new StringReader(cpuLine.substring(0, cpuLine.indexOf(':'))))
-                .findAll(Pattern.compile("\\p{Digit}+"))
+                .findAll(Pattern.compile("\\d+"))
                 .findAny()
                 .map(m -> Integer.parseInt(m.group()))
                 .filter(i -> i >= 0)
@@ -105,7 +105,7 @@ public class NumaCtlBasedResourceLoader {
 
     private Set<Integer> cores(final String line) {
         return new Scanner(new StringReader(line.substring(line.indexOf(':'))))
-                .findAll(Pattern.compile("\\p{Digit}+"))
+                .findAll(Pattern.compile("\\d+"))
                 .map(r -> Integer.parseInt(r.group()))
                 .filter(i -> i >= 0)
                 .filter(core -> !resourceConfig.getOsCores().contains(core))

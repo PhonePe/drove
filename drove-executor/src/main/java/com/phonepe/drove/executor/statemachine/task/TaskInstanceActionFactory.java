@@ -8,6 +8,6 @@ import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 /**
  *
  */
-public abstract class TaskInstanceActionFactory implements InstanceActionFactory<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec> {
+public interface TaskInstanceActionFactory extends InstanceActionFactory<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec> {
 
 }

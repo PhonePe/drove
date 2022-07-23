@@ -3,13 +3,13 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -17,6 +17,7 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,6 +31,7 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
 
     @Override
     @MonitoredFunction(method = "execute")
+    @SuppressWarnings("deprecation")
     protected StateData<InstanceState, ExecutorApplicationInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
@@ -51,7 +53,7 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
         try {
-            val result = Failsafe.with(retryPolicy)
+            val result = Failsafe.with(List.of(retryPolicy))
                     .onComplete(e -> {
                         val failure = e.getFailure();
                         if (failure != null) {
@@ -69,14 +71,11 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                         return checker.call();
                     });
             val status = result.getStatus();
-            switch (status) {
-                case HEALTHY:
-                    return StateData.from(currentState, InstanceState.HEALTHY);
-                case STOPPED:
-                case UNHEALTHY:
-                    log.warn("Instance still unhealthy with state: {}. Will be killing this.", status);
-                default:
-                    return StateData.from(currentState, InstanceState.STOPPING);
+            if(status == CheckResult.Status.HEALTHY) {
+                return StateData.from(currentState, InstanceState.HEALTHY);
+            }
+            else {
+                log.warn("Instance still unhealthy with state: {}. Will be killing this.", status);
             }
         }
         catch (Exception e) {
@@ -84,6 +83,7 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                                        InstanceState.STOPPING,
                                        "Error running health-checks: " + e.getMessage());
         }
+        return StateData.from(currentState, InstanceState.STOPPING);
     }
 
     @Override

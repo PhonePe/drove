@@ -14,6 +14,7 @@ public abstract class AppAction implements Action<ApplicationInfo, ApplicationSt
         //Nothing to do here
     }
 
+    @SuppressWarnings("unused")
     public boolean cancel(final AppActionContext context) {
         return false;
     }

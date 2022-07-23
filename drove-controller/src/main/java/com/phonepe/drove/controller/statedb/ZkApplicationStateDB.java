@@ -20,6 +20,7 @@ import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
 @Slf4j
 @Singleton
 public class ZkApplicationStateDB implements ApplicationStateDB {
+    @SuppressWarnings("java:S1075")
     private static final String APPLICATION_STATE_PATH = "/applications";
 
     private final CuratorFramework curatorFramework;

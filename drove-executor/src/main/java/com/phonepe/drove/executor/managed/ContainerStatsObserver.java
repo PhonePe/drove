@@ -252,7 +252,7 @@ public class ContainerStatsObserver implements Managed {
                 instances.remove(instanceId);
             }
             catch (RuntimeException e) {
-                if(null != e.getCause() && e.getCause() instanceof InterruptedException) {
+                if(e.getCause() instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                     log.info("Stats call interrupted");
                 }

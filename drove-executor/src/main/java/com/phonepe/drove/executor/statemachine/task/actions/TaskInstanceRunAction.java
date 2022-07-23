@@ -1,10 +1,7 @@
 package com.phonepe.drove.executor.statemachine.task.actions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.api.model.LogConfig;
-import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -15,9 +12,6 @@ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.TaskInstanceAction;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
-import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
-import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
-import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import com.phonepe.drove.statemachine.StateData;
@@ -27,10 +21,8 @@ import lombok.val;
 import org.slf4j.MDC;
 
 import javax.inject.Inject;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
@@ -121,8 +113,12 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
                 data.getInstanceId(),
                 data.getExecutorId(),
                 hostName,
+                data.getExecutable(),
                 resources,
-                Collections.emptyMap(),
+                data.getVolumes(),
+                data.getLoggingSpec(),
+                data.getEnv(),
+                data.getMetadata(),
                 null == oldData
                 ? new Date()
                 : oldData.getCreated(),
@@ -132,33 +128,5 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
     @Override
     public void stop() {
         //Nothing to do here
-    }
-
-    private LogConfig logConfig(final ApplicationInstanceSpec instanceSpec) {
-        val spec = instanceSpec.getLoggingSpec() == null
-                   ? LocalLoggingSpec.DEFAULT
-                   : instanceSpec.getLoggingSpec();
-        val configBuilder = ImmutableMap.<String, String>builder()
-                .put("mode", "non-blocking")
-                .put("max-buffer-size", "10m");
-        return spec.accept(new LoggingSpecVisitor<>() {
-            @Override
-            public LogConfig visit(LocalLoggingSpec local) {
-                configBuilder.put("max-size", local.getMaxSize());
-                configBuilder.put("max-file", Integer.toString(local.getMaxFiles()));
-                configBuilder.put("compress", Boolean.toString(local.isCompress()));
-                return new LogConfig(LogConfig.LoggingType.LOCAL, configBuilder.build());
-            }
-
-            @Override
-            public LogConfig visit(RsyslogLoggingSpec rsyslog) {
-                configBuilder.put("syslog-address", rsyslog.getServer());
-                configBuilder.put("tag", Objects.requireNonNullElse(rsyslog.getTagPrefix(), "")
-                        + instanceSpec.getAppName()
-                        + Objects.requireNonNullElse(rsyslog.getTagSuffix(), ""));
-                configBuilder.put("syslog-facility", "daemon");
-                return new LogConfig(LogConfig.LoggingType.SYSLOG, configBuilder.build());
-            }
-        });
     }
 }

@@ -1,5 +1,8 @@
 package com.phonepe.drove.models.taskinstance;
 
+import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
+import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
@@ -25,7 +28,11 @@ public class TaskInstanceInfo implements DeployedInstanceInfo {
     String instanceId;
     String executorId;
     String hostname;
+    ExecutableCoordinates executable;
     List<ResourceAllocation> resources;
+    List<MountedVolume> volumes;
+    LoggingSpec loggingSpec;
+    Map<String, String> env;
     TaskInstanceState state;
     Map<String, String> metadata;
     String errorMessage;

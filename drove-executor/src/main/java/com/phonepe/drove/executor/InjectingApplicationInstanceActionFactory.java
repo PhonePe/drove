@@ -12,7 +12,7 @@ import com.phonepe.drove.statemachine.Transition;
 /**
  *
  */
-public class InjectingApplicationInstanceActionFactory extends ApplicationInstanceActionFactory {
+public class InjectingApplicationInstanceActionFactory implements ApplicationInstanceActionFactory {
     private final Injector injector;
 
     public InjectingApplicationInstanceActionFactory(Injector injector) {

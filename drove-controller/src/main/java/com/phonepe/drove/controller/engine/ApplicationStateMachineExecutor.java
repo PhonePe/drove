@@ -13,6 +13,7 @@ import net.jodah.failsafe.TimeoutExceededException;
 import org.slf4j.MDC;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -113,10 +114,9 @@ public class ApplicationStateMachineExecutor {
     public void stop() {
         if (null != currentState) {
             stateMachine.stop();
-//            currentState.cancel(true);
             val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
-                val status = Failsafe.with(retryPolicy)
+                val status = Failsafe.with(List.of(retryPolicy))
                         .onFailure(e -> log.error("Completion wait for " + appId + " completed with error:",
                                                   e.getFailure()))
                         .get(() -> currentState.isDone());

@@ -49,6 +49,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
 
     private final ApplicationInstanceTokenManager tokenManager;
 
+    @SuppressWarnings("java:S107")
     public StartSingleInstanceJob(
             ApplicationSpec applicationSpec,
             ClusterOpSpec clusterOpSpec,

@@ -151,7 +151,6 @@ public class ApplicationEngine {
     }
 
     private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {
-        //TODO::Check operation
         Objects.requireNonNull(operation, "Operation cannot be null");
         return commandValidator.validate(this, operation);
     }

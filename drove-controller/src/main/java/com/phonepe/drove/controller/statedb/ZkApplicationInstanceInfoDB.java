@@ -26,7 +26,7 @@ import static com.phonepe.drove.models.instance.InstanceState.LOST;
 @Singleton
 public class ZkApplicationInstanceInfoDB implements ApplicationInstanceInfoDB {
 
-
+    @SuppressWarnings("java:S1075")
     private static final String INSTANCE_STATE_PATH = "/instances";
 
     private final CuratorFramework curatorFramework;

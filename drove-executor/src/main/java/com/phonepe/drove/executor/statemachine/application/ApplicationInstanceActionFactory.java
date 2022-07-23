@@ -8,6 +8,6 @@ import com.phonepe.drove.models.instance.InstanceState;
 /**
  *
  */
-public abstract class ApplicationInstanceActionFactory implements InstanceActionFactory<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec> {
+public interface ApplicationInstanceActionFactory extends InstanceActionFactory<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec> {
 
 }

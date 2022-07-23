@@ -72,7 +72,11 @@ public class ExecutorUtils {
                 data.getInstanceId(),
                 data.getExecutorId(),
                 data.getHostname(),
+                data.getExecutable(),
                 data.getResources(),
+                data.getVolumes(),
+                data.getLoggingSpec(),
+                data.getEnv(),
                 state.getState(),
                 Collections.emptyMap(),
                 state.getError(),
@@ -88,30 +92,19 @@ public class ExecutorUtils {
 
     public static HttpRequest.Builder buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
         val requestBuilder = HttpRequest.newBuilder(uri);
-        switch (httpSpec.getVerb()) {
+        return switch (httpSpec.getVerb()) {
             case GET -> requestBuilder.GET();
-            case POST -> {
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-                }
-                else {
-                    requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
-                }
-            }
-            case PUT -> {
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-                }
-                else {
-                    requestBuilder.PUT(HttpRequest.BodyPublishers.noBody());
-                }
-            }
-        }
-        return requestBuilder;
+            case POST -> Strings.isNullOrEmpty(httpSpec.getPayload())
+                         ? requestBuilder.POST(HttpRequest.BodyPublishers.noBody())
+                         : requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+            case PUT -> Strings.isNullOrEmpty(httpSpec.getPayload())
+                        ? requestBuilder.PUT(HttpRequest.BodyPublishers.noBody())
+                        : requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+        };
     }
 
     public static String instanceId(final DeployedExecutorInstanceInfo instanceInfo) {
-        return instanceInfo.accept(new DeployedExecutorInstanceInfoVisitor<String>() {
+        return instanceInfo.accept(new DeployedExecutorInstanceInfoVisitor<>() {
             @Override
             public String visit(ExecutorApplicationInstanceInfo applicationInstanceInfo) {
                 return applicationInstanceInfo.getInstanceId();

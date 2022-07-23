@@ -179,8 +179,12 @@ public class ExecutorTestingUtils {
                                         spec.getInstanceId(),
                                         EXECUTOR_ID,
                                             "localhost",
+                                        spec.getExecutable(),
                                         spec.getResources(),
+                                        spec.getVolumes(),
+                                        spec.getLoggingSpec(),
                                         spec.getEnv(),
+                                        Map.of(),
                                         new Date(),
                                         new Date());
     }

@@ -9,8 +9,6 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
-import com.phonepe.drove.models.operation.TaskOperation;
-import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
@@ -63,7 +61,7 @@ public class TaskRunner implements Runnable {
     private final AtomicReference<TaskInstanceState> state = new AtomicReference<>();
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
-    private ScheduledSignal checkSignal = new ScheduledSignal(Duration.ofSeconds(5));
+    private final ScheduledSignal checkSignal = new ScheduledSignal(Duration.ofSeconds(5));
 
     @Inject
     public TaskRunner(
@@ -93,23 +91,6 @@ public class TaskRunner implements Runnable {
         monitorTask();
     }
 
-    public String handleOperation(final TaskOperation taskOperation) {
-        val jobId = taskOperation.accept(new TaskOperationVisitor<String>() {
-            @Override
-            public String visit(TaskCreateOperation create) {
-                return startTask(create);
-            }
-
-            @Override
-            public String visit(TaskKillOperation kill) {
-                return stopTask(kill);
-            }
-        });
-        log.info("Operation of type {} being processed with jobId {} for {}/{}",
-                 taskOperation.getType(), jobId, sourceAppName, taskId);
-        return jobId;
-    }
-
     public String startTask(final TaskCreateOperation taskCreateOperation) {
         val schedulingSessionId = UUID.randomUUID().toString();
         val topology = JobTopology.<Boolean>builder()
@@ -132,8 +113,8 @@ public class TaskRunner implements Runnable {
     public String stopTask(final TaskKillOperation taskKillOperation) {
         val topology = JobTopology.<Boolean>builder()
                 .withThreadFactory(threadFactory)
-                .addJob(new StopTaskJob(sourceAppName,
-                                        taskId,
+                .addJob(new StopTaskJob(taskKillOperation.getSourceAppName(),
+                                        taskKillOperation.getTaskId(),
                                         taskKillOperation.getOpSpec(),
                                         taskDB,
                                         clusterResourcesDB,
@@ -189,6 +170,7 @@ public class TaskRunner implements Runnable {
         }
         catch (InterruptedException e) {
             log.info("Monitoring interrupted for {}/{}", sourceAppName, taskId);
+            Thread.currentThread().interrupt();
         }
         finally {
             checkLock.unlock();

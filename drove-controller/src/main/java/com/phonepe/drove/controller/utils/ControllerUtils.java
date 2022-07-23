@@ -27,7 +27,6 @@ import lombok.val;
 import net.jodah.failsafe.Failsafe;
 
 import javax.ws.rs.core.Response;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -41,9 +40,8 @@ import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 @UtilityClass
 public class ControllerUtils {
 
-    private static final Set<StateCheckStatus> CHECK_COMPLETED_STATES = EnumSet.of(MISNMATCH_NONRECOVERABLE, MATCH);
     public static String deployableObjectId(DeploymentSpec deploymentSpec) {
-        return deploymentSpec.accept(new DeploymentSpecVisitor<String>() {
+        return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
             @Override
             public String visit(ApplicationSpec applicationSpec) {
                 return applicationSpec.getName() + "-" + applicationSpec.getVersion();
@@ -51,7 +49,7 @@ public class ControllerUtils {
 
             @Override
             public String visit(TaskSpec taskSpec) {
-                return taskSpec.getSourceApp() + "-" + taskSpec.getTaskId();
+                return taskSpec.getSourceAppName() + "-" + taskSpec.getTaskId();
             }
         });
     }
@@ -199,7 +197,7 @@ public class ControllerUtils {
                          instanceState);
                 return MATCH;
             }
-            if(currState.isTerminal()) { //Useless to wait if it has died anyways
+            if(currState.isTerminal()) { //Useless to wait if it has died anyway
                 return MISNMATCH_NONRECOVERABLE;
             }
         }
@@ -217,7 +215,7 @@ public class ControllerUtils {
                          instanceState);
                 return MATCH;
             }
-            if(currState.isTerminal()) { //Useless to wait if it has died anyways
+            if(currState.isTerminal()) { //Useless to wait if it has died anyway
                 return MISNMATCH_NONRECOVERABLE;
             }
         }
@@ -270,7 +268,7 @@ public class ControllerUtils {
     }
     
     public static String deployableObjectId(final TaskOperation operation) {
-        return operation.accept(new TaskOperationVisitor<String>() {
+        return operation.accept(new TaskOperationVisitor<>() {
             @Override
             public String visit(TaskCreateOperation create) {
                 return deployableObjectId(create.getSpec());
@@ -285,7 +283,7 @@ public class ControllerUtils {
 
     public static long usedMemory(ExecutorHostInfo executor) {
         return executor.getNodeData()
-                .accept(new NodeDataVisitor<Long>() {
+                .accept(new NodeDataVisitor<>() {
                     @Override
                     public Long visit(ControllerNodeData controllerData) {
                         return 0L;
@@ -303,7 +301,7 @@ public class ControllerUtils {
 
     public static long freeMemory(ExecutorHostInfo executor) {
         return executor.getNodeData()
-                .accept(new NodeDataVisitor<Long>() {
+                .accept(new NodeDataVisitor<>() {
                     @Override
                     public Long visit(ControllerNodeData controllerData) {
                         return 0L;
@@ -321,7 +319,7 @@ public class ControllerUtils {
 
     public static int freeCores(ExecutorHostInfo executor) {
         return executor.getNodeData()
-                .accept(new NodeDataVisitor<Integer>() {
+                .accept(new NodeDataVisitor<>() {
                     @Override
                     public Integer visit(ControllerNodeData controllerData) {
                         return 0;
@@ -339,7 +337,7 @@ public class ControllerUtils {
 
     public static int usedCores(ExecutorHostInfo executor) {
         return executor.getNodeData()
-                .accept(new NodeDataVisitor<Integer>() {
+                .accept(new NodeDataVisitor<>() {
                     @Override
                     public Integer visit(ControllerNodeData controllerData) {
                         return 0;

@@ -36,7 +36,7 @@ class ExecutorCommunicatorTest extends AbstractTestBase {
                     return new MessageResponse(param.getHeader(), MessageDeliveryStatus.ACCEPTED);
                 });
 
-        val comm = new ExecutorCommunicator(engine, message -> {
+        val comm = new ExecutorCommunicator(message -> {
             assertEquals(ControllerMessageType.EXECUTOR_SNAPSHOT, message.getType());
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.ACCEPTED);
         }, messageHandler);
@@ -55,8 +55,8 @@ class ExecutorCommunicatorTest extends AbstractTestBase {
         val messageHandler = mock(ExecutorMessageHandler.class);
         when(messageHandler.visit(any(BlacklistExecutorMessage.class)))
                 .thenThrow(new IllegalArgumentException());
-        val comm = new ExecutorCommunicator(engine,
-                                            message -> new MessageResponse(message.getHeader(),
+        val comm = new ExecutorCommunicator(
+                message -> new MessageResponse(message.getHeader(),
                                                                            MessageDeliveryStatus.ACCEPTED),
                                             messageHandler);
         assertEquals(MessageDeliveryStatus.FAILED,

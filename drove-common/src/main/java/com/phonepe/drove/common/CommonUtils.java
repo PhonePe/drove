@@ -141,35 +141,6 @@ public class CommonUtils {
         return null;
     }
 
-/*
-    public static String deployableObjectIfd(final DeployedInstanceInfo instanceInfo) {
-        return instanceInfo.accept(new DeployedInstanceInfoVisitor<String>() {
-            @Override
-            public String visit(InstanceInfo applicationInstanceInfo) {
-                return applicationInstanceInfo.getAppId();
-            }
-
-            @Override
-            public String visit(TaskInstanceInfo taskInstanceInfo) {
-                return taskInstanceInfo.getTaskId();
-            }
-        });
-    }
-
-    public static String deployedObjectId(final DeploymentUnitSpec deploymentUnitSpec) {
-        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<String>() {
-            @Override
-            public String visit(ApplicationInstanceSpec instanceSpec) {
-                return instanceSpec.getAppId();
-            }
-
-            @Override
-            public String visit(TaskInstanceSpec taskInstanceSpec) {
-                return taskInstanceSpec.getTaskId();
-            }
-        });
-    }*/
-
     public static String instanceId(final DeploymentUnitSpec deploymentUnitSpec) {
         return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
             @Override

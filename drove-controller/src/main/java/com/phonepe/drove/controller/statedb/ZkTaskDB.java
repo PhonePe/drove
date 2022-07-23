@@ -15,7 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
-import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
+import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STATES;
 
 /**
  *
@@ -23,6 +23,7 @@ import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
 @Slf4j
 @Singleton
 public class ZkTaskDB implements TaskDB {
+    @SuppressWarnings("java:S1075")
     private static final String TASK_STATE_PATH = "/tasks";
 
     private final CuratorFramework curatorFramework;
@@ -41,9 +42,9 @@ public class ZkTaskDB implements TaskDB {
             boolean skipStaleCheck) {
         val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         return sourceAppIds.stream()
-                .flatMap(appId -> listInstances(appId,
-                                                0,
-                                                Integer.MAX_VALUE,
+                .flatMap(appId -> listTasks(appId,
+                                            0,
+                                            Integer.MAX_VALUE,
                                                 instanceInfo -> validStates.contains(instanceInfo.getState())
                                                         && (skipStaleCheck || instanceInfo.getUpdated().after(
                                                         validUpdateDate))).stream())
@@ -76,9 +77,9 @@ public class ZkTaskDB implements TaskDB {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         //Find all instances in active states that have not been updated in stipulated time and move them to unknown
         // state
-        val instances = listInstances(sourceAppName,
-                                      0,
-                                      Integer.MAX_VALUE,
+        val instances = listTasks(sourceAppName,
+                                  0,
+                                  Integer.MAX_VALUE,
                                       instanceInfo -> ACTIVE_STATES.contains(instanceInfo.getState())
                                               && instanceInfo.getUpdated().before(validUpdateDate));
         instances.forEach(instanceInfo -> {
@@ -91,7 +92,11 @@ public class ZkTaskDB implements TaskDB {
                                             instanceInfo.getInstanceId(),
                                             instanceInfo.getExecutorId(),
                                             instanceInfo.getHostname(),
+                                            instanceInfo.getExecutable(),
                                             instanceInfo.getResources(),
+                                            instanceInfo.getVolumes(),
+                                            instanceInfo.getLoggingSpec(),
+                                            instanceInfo.getEnv(),
                                             TaskInstanceState.LOST,
                                             instanceInfo.getMetadata(),
                                             "Instance lost",
@@ -102,7 +107,7 @@ public class ZkTaskDB implements TaskDB {
     }
 
     @SneakyThrows
-    private List<TaskInstanceInfo> listInstances(
+    private List<TaskInstanceInfo> listTasks(
             String appId,
             int start,
             int size,

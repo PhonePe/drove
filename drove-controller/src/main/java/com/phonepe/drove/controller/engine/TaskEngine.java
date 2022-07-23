@@ -38,7 +38,7 @@ public class TaskEngine {
     private final ThreadFactory threadFactory;
     private final ExecutorService executorService;
     private final JobExecutor<Boolean> jobExecutor;
-    private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<TaskRunner>();
+    private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
 
     private final Map<String, TaskRunner> runners = new ConcurrentHashMap<>();
 
@@ -62,7 +62,7 @@ public class TaskEngine {
         this.executorService = executorService;
         this.jobExecutor = jobExecutor;
         this.completed.connect(taskRunner -> {
-            val runTaskId = taskRunner.getSourceAppName() + "-" + taskRunner.getTaskId();
+            val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
             try {
                 taskRunner.stop();
                 runners.remove(runTaskId);
@@ -79,38 +79,23 @@ public class TaskEngine {
     }
 
     public boolean handleTaskOp(final TaskOperation operation) {
-        return operation.accept(new TaskOperationVisitor<Boolean>() {
+        return operation.accept(new TaskOperationVisitor<>() {
             @Override
             public Boolean visit(TaskCreateOperation create) {
 
                 val taskSpec = create.getSpec();
-                val runTaskId = taskSpec.getSourceApp() + "-" + taskSpec.getTaskId();
-                if(runners.containsKey(runTaskId) || taskDB.task(taskSpec.getSourceApp(), taskSpec.getTaskId()).isPresent()) {
+                val runTaskId = genRunTaskId(taskSpec.getSourceAppName(), taskSpec.getTaskId());
+                if(runners.containsKey(runTaskId) || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isPresent()) {
                     return false;
                 }
-                runners.computeIfAbsent(runTaskId, id -> {
-                    val runner = new TaskRunner(taskSpec.getSourceApp(),
-                                                taskSpec.getTaskId(),
-                                                jobExecutor,
-                                                taskDB,
-                                                clusterResourcesDB,
-                                                scheduler,
-                                                communicator,
-                                                retrySpecFactory,
-                                                instanceIdGenerator,
-                                                threadFactory,
-                                                completed);
-                    runner.startTask(create);
-                    val f = executorService.submit(runner);
-                    runner.setTaskFuture(f);
-                    return runner;
-                });
-                return true;
+                val jobId = runners.computeIfAbsent(runTaskId, id -> createRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId()))
+                        .startTask(create);
+                return !Strings.isNullOrEmpty(jobId);
             }
 
             @Override
             public Boolean visit(TaskKillOperation kill) {
-                val runner = runners.get(kill.getTaskId());
+                val runner = runners.get(genRunTaskId(kill.getSourceAppName(), kill.getTaskId()));
                 if(null == runner) {
                     return false;
                 }
@@ -118,4 +103,31 @@ public class TaskEngine {
             }
         });
     }
+
+    public TaskRunner registerTaskRunner(String sourceAppName, String taskId) {
+        val runTaskId = genRunTaskId(sourceAppName, taskId);
+        return runners.computeIfAbsent(runTaskId, id -> createRunner(sourceAppName, taskId));
+    }
+
+    private TaskRunner createRunner(String sourceAppName, String taskId) {
+        val runner = new TaskRunner(sourceAppName,
+                                    taskId,
+                                    jobExecutor,
+                                    taskDB,
+                                    clusterResourcesDB,
+                                    scheduler,
+                                    communicator,
+                                    retrySpecFactory,
+                                    instanceIdGenerator,
+                                    threadFactory,
+                                    completed);
+        val f = executorService.submit(runner);
+        runner.setTaskFuture(f);
+        return runner;
+    }
+
+    private String genRunTaskId(String sourceAppName, String taskId) {
+        return sourceAppName + "-" + taskId;
+    }
+
 }

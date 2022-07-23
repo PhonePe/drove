@@ -111,7 +111,7 @@ public class ZkUtils {
             return (null != value && filter.test(value)) ? value : null;
         }
         catch (Exception e) {
-            if(e instanceof KeeperException && ((KeeperException)e).code() == KeeperException.Code.NONODE) {
+            if(e instanceof KeeperException ke && ke.code() == KeeperException.Code.NONODE) {
                 //Nothing to do here
             }
             else {

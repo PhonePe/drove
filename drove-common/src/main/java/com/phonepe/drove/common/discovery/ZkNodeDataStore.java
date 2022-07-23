@@ -22,6 +22,7 @@ import java.util.Optional;
  */
 @Slf4j
 @Singleton
+@SuppressWarnings("java:S1075")
 public class ZkNodeDataStore implements NodeDataStore {
 
     final CuratorFramework curator;

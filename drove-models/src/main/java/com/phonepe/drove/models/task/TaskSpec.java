@@ -23,7 +23,7 @@ import java.util.Map;
 public class TaskSpec implements DeploymentSpec {
     @NotEmpty(message = "- Source Application name is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
-    String sourceApp;
+    String sourceAppName;
 
     @NotEmpty(message = "- Task ID is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")

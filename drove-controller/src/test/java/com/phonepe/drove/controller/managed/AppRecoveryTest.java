@@ -4,7 +4,9 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
+import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -16,12 +18,15 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,19 +39,21 @@ class AppRecoveryTest extends ControllerTestBase {
     void testRecovery() {
         val le = mock(LeadershipEnsurer.class);
         val ae = mock(ApplicationEngine.class);
+        val te = mock(TaskEngine.class);
         val asdb = mock(ApplicationStateDB.class);
-
+        val tdb = mock(TaskDB.class);
 
         val lsc = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(lsc);
 
-        val ar = new AppRecovery(le, ae, asdb);
+        val ar = new AppRecovery(le, ae, te, asdb, tdb);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
                 .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(asdb.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
+        when(tdb.tasks(any(), any(), anyBoolean())).thenReturn(Map.of());
         val ids = new HashSet<String>();
         when(ae.handleOperation(any(ApplicationOperation.class)))
                 .thenAnswer(new Answer<CommandValidator.ValidationResult>() {
@@ -65,19 +72,21 @@ class AppRecoveryTest extends ControllerTestBase {
     void testNoRecovery() {
         val le = mock(LeadershipEnsurer.class);
         val ae = mock(ApplicationEngine.class);
+        val te = mock(TaskEngine.class);
         val asdb = mock(ApplicationStateDB.class);
-
+        val tdb = mock(TaskDB.class);
 
         val lsc = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(lsc);
 
-        val ar = new AppRecovery(le, ae, asdb);
+        val ar = new AppRecovery(le, ae, te, asdb, tdb);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
                 .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(asdb.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
+        when(tdb.tasks(any(), any(), anyBoolean())).thenReturn(Map.of());
         when(ae.handleOperation(any(ApplicationOperation.class)))
                 .thenThrow(new IllegalStateException("Should not have been called"));
         try {

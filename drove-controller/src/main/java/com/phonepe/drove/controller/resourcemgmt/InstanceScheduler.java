@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 
 import java.util.Optional;

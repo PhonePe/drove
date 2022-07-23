@@ -23,9 +23,8 @@ public class AppConfig extends Configuration {
     @Valid
     private ZkConfig zookeeper;
 
-    @NotNull
     @Valid
-    private ResourceConfig resources = new ResourceConfig();
+    private ResourceConfig resources;
 
     @Valid
     private ClusterAuthenticationConfig clusterAuth;

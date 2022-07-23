@@ -19,16 +19,13 @@ import javax.inject.Singleton;
 @Slf4j
 @Singleton
 public class ExecutorCommunicator extends ThreadedCommunicator<ControllerMessageType, ExecutorMessageType, ControllerMessage, ExecutorMessage> {
-    private final ApplicationInstanceEngine engine;
     private final ExecutorMessageHandler messageHandler;
 
     @Inject
     public ExecutorCommunicator(
-            ApplicationInstanceEngine engine,
             MessageSender<ControllerMessageType, ControllerMessage> messageSender,
             ExecutorMessageHandler messageHandler) {
         super(messageSender);
-        this.engine = engine;
         this.messageHandler = messageHandler;
     }
 

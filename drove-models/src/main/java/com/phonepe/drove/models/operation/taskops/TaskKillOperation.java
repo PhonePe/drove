@@ -25,14 +25,18 @@ import javax.validation.constraints.NotNull;
 public class TaskKillOperation extends TaskOperation {
 
     @NotEmpty
+    String sourceAppName;
+
+    @NotEmpty
     String taskId;
 
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public TaskKillOperation(String taskId, ClusterOpSpec opSpec) {
+    public TaskKillOperation(String sourceAppName, String taskId, ClusterOpSpec opSpec) {
         super(TaskOperationType.KILL);
+        this.sourceAppName = sourceAppName;
         this.taskId = taskId;
         this.opSpec = opSpec;
     }

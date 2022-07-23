@@ -269,22 +269,24 @@ public class CommandValidator {
             }
             return ValidationResult.success();
         }
+
+        private static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
+            return spec.getMode()
+                    .accept(new CheckModeSpecVisitor<Optional<String>>() {
+                        @Override
+                        public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
+                            return ports.containsKey(httpCheck.getPortName())
+                                   ? Optional.empty()
+                                   : Optional.of("Invalid port name for health check: " + httpCheck.getPortName());
+                        }
+
+                        @Override
+                        public Optional<String> visit(CmdCheckModeSpec cmdCheck) {
+                            return Optional.empty();
+                        }
+                    });
+        }
     }
 
-    private static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
-        return spec.getMode()
-                .accept(new CheckModeSpecVisitor<Optional<String>>() {
-                    @Override
-                    public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
-                        return ports.containsKey(httpCheck.getPortName())
-                               ? Optional.empty()
-                               : Optional.of("Invalid port name for health check: " + httpCheck.getPortName());
-                    }
 
-                    @Override
-                    public Optional<String> visit(CmdCheckModeSpec cmdCheck) {
-                        return Optional.empty();
-                    }
-                });
-    }
 }

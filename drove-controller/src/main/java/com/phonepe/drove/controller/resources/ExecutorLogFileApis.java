@@ -152,21 +152,7 @@ public class ExecutorLogFileApis {
                                                                                  "Executor call returned: " + r.statusCode()))
                                                                   .build());
                     }
-                    try (val bi = new BufferedReader(new InputStreamReader(r.body()), 8192);
-                         val br = new BufferedWriter(new OutputStreamWriter(output), 8192)) {
-                        var buf = new char[8192];
-                        int c = -1;
-                        while ((c = bi.read(buf, 0, 8192)) != -1) {
-                            br.write(buf, 0, c);
-                            br.flush();
-                        }
-                    }
-                    catch (IOException ex) {
-                        log.error("Error writing output: " + ex.getMessage(), ex);
-                        throw new WebApplicationException(Response.serverError()
-                                                                  .entity(Map.of("error", ex.getMessage()))
-                                                                  .build());
-                    }
+                    streamCopy(output, r);
                 }
                 catch (InterruptedException e) {
                     log.error("Error: ", e);
@@ -180,5 +166,23 @@ public class ExecutorLogFileApis {
         Objects.<Map<String, String>>requireNonNullElse(responseHeaders, Map.of())
                 .forEach(responseBuilder::header);
         return responseBuilder.build();
+    }
+
+    private void streamCopy(OutputStream output, HttpResponse<InputStream> r) {
+        try (val bi = new BufferedReader(new InputStreamReader(r.body()), 8192);
+             val br = new BufferedWriter(new OutputStreamWriter(output), 8192)) {
+            var buf = new char[8192];
+            int c;
+            while ((c = bi.read(buf, 0, 8192)) != -1) {
+                br.write(buf, 0, c);
+                br.flush();
+            }
+        }
+        catch (IOException ex) {
+            log.error("Error writing output: " + ex.getMessage(), ex);
+            throw new WebApplicationException(Response.serverError()
+                                                      .entity(Map.of("error", ex.getMessage()))
+                                                      .build());
+        }
     }
 }
