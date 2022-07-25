@@ -7,9 +7,12 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.eclipse.jetty.http.HttpStatus;
@@ -28,6 +31,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
@@ -40,6 +44,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 @Slf4j
 public class ExecutorLogFileApis {
     private final ApplicationInstanceInfoDB instanceInfoDB;
+    private final TaskDB taskDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
@@ -47,9 +52,10 @@ public class ExecutorLogFileApis {
 
     @Inject
     public ExecutorLogFileApis(
-            ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
+            ApplicationInstanceInfoDB instanceInfoDB, TaskDB taskDB, ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig config) {
         this.instanceInfoDB = instanceInfoDB;
+        this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.secret = Objects.requireNonNullElse(config, ClusterAuthenticationConfig.DEFAULT)
                 .getSecrets()
@@ -65,61 +71,142 @@ public class ExecutorLogFileApis {
     }
 
     @GET
-    @Path("/{appId}/{instanceId}/list")
-    public Response listFiles(
+    @Path("/applications/{appId}/{instanceId}/list")
+    public Response listAppFiles(
             @PathParam("appId") final String appId,
             @PathParam("instanceId") final String instanceId) {
-        return callUpstream(appId,
-                            instanceId,
-                            "/list",
-                            Map.of(),
-                            Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+        return callUpstreamForAppLogs(appId,
+                                      instanceId,
+                                      "/list",
+                                      Map.of(),
+                                      Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
     @GET
-    @Path("/{appId}/{instanceId}/read/{fileName}")
+    @Path("/applications/{appId}/{instanceId}/read/{fileName}")
     @Metered
-    public Response streamLogs(
+    public Response streamAppLogs(
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName,
             @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
             @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
-        return callUpstream(appId,
-                            instanceId,
-                            "/read/" + fileName,
-                            Map.of("offset", offset, "length", length),
-                            Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+        return callUpstreamForAppLogs(appId,
+                                      instanceId,
+                                      "/read/" + fileName,
+                                      Map.of("offset", offset, "length", length),
+                                      Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
     @GET
-    @Path("/{appId}/{instanceId}/download/{fileName}")
+    @Path("/applications/{appId}/{instanceId}/download/{fileName}")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Metered
-    public Response downloadLogFile(
+    public Response downloadAppLogFile(
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName) {
-        return callUpstream(appId,
-                            instanceId,
-                            "/download/" + fileName,
-                            Map.of(),
-                            Map.of(HttpHeaders.CONTENT_TYPE,
+        return callUpstreamForAppLogs(appId,
+                                      instanceId,
+                                      "/download/" + fileName,
+                                      Map.of(),
+                                      Map.of(HttpHeaders.CONTENT_TYPE,
+                                   MediaType.TEXT_PLAIN,
+                                   HttpHeaders.CONTENT_DISPOSITION,
+                                   "attachment; filename=" + fileName));
+    }
+    @GET
+    @Path("/tasks/{sourceAppName}/{taskId}/list")
+    public Response listTaskLogFiles(
+            @PathParam("sourceAppName") final String sourceAppName,
+            @PathParam("taskId") final String taskId) {
+        return callUpstreamForTaskLogs(sourceAppName,
+                                      taskId,
+                                      "/list",
+                                      Map.of(),
+                                      Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+    }
+
+    @GET
+    @Path("/tasks/{sourceAppName}/{taskId}/read/{fileName}")
+    @Metered
+    public Response streamTaskLogs(
+            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
+            @PathParam("taskId") @NotEmpty final String taskId,
+            @PathParam("fileName") @NotEmpty final String fileName,
+            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+        return callUpstreamForTaskLogs(sourceAppName,
+                                       taskId,
+                                      "/read/" + fileName,
+                                      Map.of("offset", offset, "length", length),
+                                      Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+    }
+
+    @GET
+    @Path("/tasks/{sourceAppName}/{taskId}/download/{fileName}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Metered
+    public Response downloadTaskLogFile(
+            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
+            @PathParam("taskId") @NotEmpty final String taskId,
+            @PathParam("fileName") @NotEmpty final String fileName) {
+        return callUpstreamForTaskLogs(sourceAppName,
+                                       taskId,
+                                      "/download/" + fileName,
+                                      Map.of(),
+                                      Map.of(HttpHeaders.CONTENT_TYPE,
                                    MediaType.TEXT_PLAIN,
                                    HttpHeaders.CONTENT_DISPOSITION,
                                    "attachment; filename=" + fileName));
     }
 
-    private Response callUpstream(
+    private Response callUpstreamForAppLogs(
             String appId,
             String instanceId,
             String path,
             Map<String, Object> queryParams,
             Map<String, String> responseHeaders) {
-        val executorHostInfo = instanceInfoDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
+        val executorHostInfo = executorNodeForApp(appId, instanceId).orElse(null);
+        if(null == executorHostInfo) {
+            return Response.noContent().build();
+        }
+        return callUpStream(appId, instanceId, path, queryParams, responseHeaders, executorHostInfo);
+    }
+    
+    private Response callUpstreamForTaskLogs(
+            String sourceAppName,
+            String taskId,
+            String path,
+            Map<String, Object> queryParams,
+            Map<String, String> responseHeaders) {
+        val executorHostInfo = executorNodeForTask(sourceAppName, taskId).orElse(null);
+        if(null == executorHostInfo) {
+            return Response.noContent().build();
+        }
+        return callUpStream(sourceAppName, taskId, path, queryParams, responseHeaders, executorHostInfo);
+    }
+
+    private Optional<ExecutorNodeData> executorNodeForApp(String appId, String instanceId) {
+        return instanceInfoDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
                 .flatMap(clusterResourcesDB::currentSnapshot)
-                .map(ExecutorHostInfo::getNodeData)
-                .orElse(null);
+                .map(ExecutorHostInfo::getNodeData);
+    }
+
+    private Optional<ExecutorNodeData> executorNodeForTask(String sourceAppName, String taskId) {
+        return taskDB.task(sourceAppName, taskId)
+                .map(TaskInstanceInfo::getExecutorId)
+                .flatMap(clusterResourcesDB::currentSnapshot)
+                .map(ExecutorHostInfo::getNodeData);
+    }
+
+    private Response callUpStream(
+            String appId,
+            String instanceId,
+            String path,
+            Map<String, Object> queryParams,
+            Map<String, String> responseHeaders,
+            ExecutorNodeData executorHostInfo) {
         if (null == executorHostInfo) {
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }

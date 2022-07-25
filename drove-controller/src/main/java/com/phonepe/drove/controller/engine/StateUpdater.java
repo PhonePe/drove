@@ -73,7 +73,7 @@ public class StateUpdater {
     }
     private boolean updateTask(TaskInstanceInfo instanceInfo) {
         return taskDB.updateTask(instanceInfo.getSourceAppName(),
-                                                  instanceInfo.getTaskId(),
-                                                  instanceInfo);
+                                     instanceInfo.getTaskId(),
+                                     instanceInfo);
     }
 }

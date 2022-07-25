@@ -55,7 +55,7 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
     @Override
     public MessageResponse visit(TaskStateReportMessage taskStateReportMessage) {
         val instanceInfo = taskStateReportMessage.getInstanceInfo();
-        log.info("Received instance update from executor: {}", instanceInfo);
+        log.info("Received task update from executor: {}", instanceInfo);
         val status = stateUpdater.updateSingle(taskStateReportMessage.getResourceSnapshot(), instanceInfo);
         if (!Strings.isNullOrEmpty(instanceInfo.getErrorMessage())) {
             droveEventBus.publish(new DroveTaskFailedEvent(instanceInfo.getSourceAppName(),

@@ -3,8 +3,10 @@ package com.phonepe.drove.controller.managed;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
-import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
+import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -21,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.MONITORING;
 import static com.phonepe.drove.models.application.ApplicationState.RUNNING;
 import static org.awaitility.Awaitility.await;
@@ -40,11 +41,13 @@ class StaleDataCleanerTest {
     void testStaleAppCleanup() {
         val appStateDB = new InMemoryApplicationStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val taskDB = mock(TaskDB.class);
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationEngine.class);
+        val taskEngine = mock(TaskEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, le, engine, Duration.ofSeconds(1));
+        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, taskEngine, Duration.ofSeconds(1));
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -71,11 +74,13 @@ class StaleDataCleanerTest {
     void testStaleInstanceCleanup() {
         val appStateDB = new InMemoryApplicationStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val taskDB = mock(TaskDB.class);
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationEngine.class);
+        val taskEngine = mock(TaskEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, le, engine, Duration.ofSeconds(1));
+        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, taskEngine, Duration.ofSeconds(1));
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);

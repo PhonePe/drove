@@ -1,14 +1,20 @@
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
+import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.util.Strings;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -16,7 +22,11 @@ import lombok.val;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -38,9 +48,13 @@ public class TaskEngine {
     private final ThreadFactory threadFactory;
     private final ExecutorService executorService;
     private final JobExecutor<Boolean> jobExecutor;
+    private final ClusterStateDB clusterStateDB;
+
     private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
 
     private final Map<String, TaskRunner> runners = new ConcurrentHashMap<>();
+
+    private final ScheduledSignal checkSignal = new ScheduledSignal(Duration.ofSeconds(5));
 
     @Inject
     public TaskEngine(
@@ -51,7 +65,9 @@ public class TaskEngine {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
-            @Named("TaskThreadPool") ExecutorService executorService, JobExecutor<Boolean> jobExecutor) {
+            @Named("TaskThreadPool") ExecutorService executorService,
+            JobExecutor<Boolean> jobExecutor,
+            ClusterStateDB clusterStateDB) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -61,6 +77,7 @@ public class TaskEngine {
         this.threadFactory = threadFactory;
         this.executorService = executorService;
         this.jobExecutor = jobExecutor;
+        this.clusterStateDB = clusterStateDB;
         this.completed.connect(taskRunner -> {
             val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
             try {
@@ -76,6 +93,12 @@ public class TaskEngine {
                 log.error("Error in thread for " + runTaskId, e);
             }
         });
+        this.checkSignal.connect(this::monitorRunners);
+        this.taskDB.onStateChange().connect(newState -> {
+            if (newState.getState().equals(TaskInstanceState.RUNNING)) {
+                handleZombieTask(newState.getSourceAppName(), newState.getTaskId());
+            }
+        });
     }
 
     public boolean handleTaskOp(final TaskOperation operation) {
@@ -85,10 +108,13 @@ public class TaskEngine {
 
                 val taskSpec = create.getSpec();
                 val runTaskId = genRunTaskId(taskSpec.getSourceAppName(), taskSpec.getTaskId());
-                if(runners.containsKey(runTaskId) || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isPresent()) {
+                if (runners.containsKey(runTaskId) || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+                        .isPresent()) {
                     return false;
                 }
-                val jobId = runners.computeIfAbsent(runTaskId, id -> createRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId()))
+                val jobId = runners.computeIfAbsent(runTaskId,
+                                                    id -> createRunner(taskSpec.getSourceAppName(),
+                                                                       taskSpec.getTaskId()))
                         .startTask(create);
                 return !Strings.isNullOrEmpty(jobId);
             }
@@ -96,7 +122,7 @@ public class TaskEngine {
             @Override
             public Boolean visit(TaskKillOperation kill) {
                 val runner = runners.get(genRunTaskId(kill.getSourceAppName(), kill.getTaskId()));
-                if(null == runner) {
+                if (null == runner) {
                     return false;
                 }
                 return !Strings.isNullOrEmpty(runner.stopTask(kill));
@@ -107,6 +133,44 @@ public class TaskEngine {
     public TaskRunner registerTaskRunner(String sourceAppName, String taskId) {
         val runTaskId = genRunTaskId(sourceAppName, taskId);
         return runners.computeIfAbsent(runTaskId, id -> createRunner(sourceAppName, taskId));
+    }
+
+    public void handleZombieTask(String sourceAppName, String taskId) {
+        val runTaskId = genRunTaskId(sourceAppName, taskId);
+        if (runners.containsKey(runTaskId)) {
+            log.info("Task exists as expected for {}/{}", sourceAppName, taskId);
+            return;
+        }
+        log.info("Task {}/{} is zombie and needs to be killed", sourceAppName, taskId);
+        val runner = runners.computeIfAbsent(runTaskId, id -> createRunner(sourceAppName, taskId));
+        runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
+    }
+
+    public List<TaskInstanceInfo> activeTasks() {
+        return runners.values()
+                .stream()
+                .map(taskRunner -> taskDB.task(taskRunner.getSourceAppName(), taskRunner.getTaskId()).orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private void monitorRunners(Date triggerDate) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            log.warn("Task check skipped as cluster is in maintenance window");
+            return;
+            //Anything that finishes in this window will continue to show up in "Stopped" state on the ui till it is
+            // reaped once cluster is out of the maintenance window
+        }
+        runners.forEach((runTaskId, runner) -> {
+            val currState = runner.updateCurrentState().orElse(null);
+            if (null != currState && currState.equals(TaskInstanceState.LOST)) {
+                val sourceAppName = runner.getSourceAppName();
+                val taskId = runner.getTaskId();
+                log.info("Task {}/{} is lost. Runner will be stopped.", sourceAppName, taskId);
+                runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
+            }
+        });
+        log.info("Task check triggered at {} is completed", triggerDate);
     }
 
     private TaskRunner createRunner(String sourceAppName, String taskId) {

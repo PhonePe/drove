@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.testsupport;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Singleton;
@@ -10,11 +11,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STATES;
+
 /**
  *
  */
 @Singleton
-public class InMemoryTaskDB implements TaskDB {
+@Slf4j
+public class InMemoryTaskDB extends TaskDB {
     private final Map<String, Map<String, TaskInstanceInfo>> instances = new ConcurrentHashMap<>();
 
     @Override
@@ -38,7 +42,7 @@ public class InMemoryTaskDB implements TaskDB {
     }
 
     @Override
-    public boolean updateTask(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
+    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
         instances.compute(sourceAppName, (aId, old) -> {
             val ins = Objects.requireNonNullElse(old, new ConcurrentHashMap<String, TaskInstanceInfo>());
             ins.put(taskId, taskInstanceInfo);
@@ -53,33 +57,34 @@ public class InMemoryTaskDB implements TaskDB {
     }
 
     @Override
-    public long markStaleTask(String sourceAppName) {
+    public Optional<TaskInstanceInfo> checkedCurrentState(String sourceAppName, String taskId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
-        //Find all instances in active states that have not been updated in stipulated time and move them to unknown
-        // state
-        val tasks = tasks(Set.of(sourceAppName), TaskInstanceState.ACTIVE_STATES, true)
-                .getOrDefault(sourceAppName, List.of())
-                .stream().filter(i -> i.getUpdated().before(validUpdateDate))
-                .toList();
-        tasks.forEach(instanceInfo -> {
-            updateTask(sourceAppName,
-                       instanceInfo.getInstanceId(),
-                       new TaskInstanceInfo(instanceInfo.getSourceAppName(),
-                                            instanceInfo.getTaskId(),
-                                            instanceInfo.getInstanceId(),
-                                            instanceInfo.getExecutorId(),
-                                            instanceInfo.getHostname(),
-                                            instanceInfo.getExecutable(),
-                                            instanceInfo.getResources(),
-                                            instanceInfo.getVolumes(),
-                                            instanceInfo.getLoggingSpec(),
-                                            instanceInfo.getEnv(),
-                                            TaskInstanceState.LOST,
-                                            instanceInfo.getMetadata(),
-                                            "Instance lost",
-                                            instanceInfo.getCreated(),
-                                            new Date()));
-        });
-        return tasks.size();
+        val instance = task(sourceAppName, taskId).orElse(null);
+        if(null == instance
+                || !ACTIVE_STATES.contains(instance.getState())
+                || instance.getUpdated().after(validUpdateDate)) {
+            return Optional.ofNullable(instance);
+        }
+        log.warn("Found stale task instance {}/{}. Current state: {} Last updated at: {}",
+                 sourceAppName, instance.getTaskId(), instance.getState(), instance.getUpdated());
+        val updateStatus = updateTaskImpl(sourceAppName,
+                                          taskId,
+                                          new TaskInstanceInfo(instance.getSourceAppName(),
+                                                           instance.getTaskId(),
+                                                           instance.getInstanceId(),
+                                                           instance.getExecutorId(),
+                                                           instance.getHostname(),
+                                                           instance.getExecutable(),
+                                                           instance.getResources(),
+                                                           instance.getVolumes(),
+                                                           instance.getLoggingSpec(),
+                                                           instance.getEnv(),
+                                                           TaskInstanceState.LOST,
+                                                           instance.getMetadata(),
+                                                           "Instance lost",
+                                                           instance.getCreated(),
+                                                           new Date()));
+        log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
+        return task(sourceAppName, taskId);
     }
 }

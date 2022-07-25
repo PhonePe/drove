@@ -15,12 +15,14 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STATES;
+
 /**
  *
  */
 @Slf4j
 @Singleton
-public class CachingProxyTaskDB implements TaskDB {
+public class CachingProxyTaskDB extends TaskDB {
     private final TaskDB root;
 
     private final Map<String, Map<String, TaskInstanceInfo>> cache = new HashMap<>();
@@ -85,24 +87,33 @@ public class CachingProxyTaskDB implements TaskDB {
     }
 
     @Override
-    public boolean updateTask(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
+    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
         val stamp = lock.writeLock();
         try {
-            val status = root.updateTask(sourceAppName, taskId, taskInstanceInfo);
-            if (status) {
-                cache.compute(sourceAppName, (aId, oldInstances) -> {
-                    val instances = null != oldInstances
-                                    ? oldInstances
-                                    : new HashMap<String, TaskInstanceInfo>();
-                    instances.put(sourceAppName, taskInstanceInfo);
-                    return instances;
-                });
+            val existing = cache.getOrDefault(sourceAppName, Map.of()).get(taskId);
+            if(existing != null && existing.getUpdated().after(taskInstanceInfo.getUpdated())) {
+                log.warn("Ignoring stale update for {}/{}", sourceAppName, taskId);
+                return false;
             }
-            return status;
+            return updateTaskInternal(sourceAppName, taskId, taskInstanceInfo);
         }
         finally {
             lock.unlock(stamp);
         }
+    }
+
+    private boolean updateTaskInternal(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
+        val status = root.updateTaskImpl(sourceAppName, taskId, taskInstanceInfo);
+        if (status) {
+            cache.compute(sourceAppName, (aId, oldInstances) -> {
+                val instances = null != oldInstances
+                                ? oldInstances
+                                : new HashMap<String, TaskInstanceInfo>();
+                instances.put(taskId, taskInstanceInfo);
+                return instances;
+            });
+        }
+        return status;
     }
 
     @Override
@@ -124,18 +135,51 @@ public class CachingProxyTaskDB implements TaskDB {
     }
 
     @Override
-    public long markStaleTask(String sourceAppName) {
-        val stamp = lock.writeLock();
+    public Optional<TaskInstanceInfo> checkedCurrentState(String sourceAppName, String taskId) {
+        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        var stamp = lock.readLock();
         try {
-            val count = root.markStaleTask(sourceAppName);
-            if (count > 0) {
-                reloadTasksForApps(List.of(sourceAppName));
+            val instance = task(sourceAppName, taskId).orElse(null);
+            if (null == instance
+                    || !ACTIVE_STATES.contains(instance.getState())
+                    || instance.getUpdated().after(validUpdateDate)) {
+                return Optional.ofNullable(instance);
             }
-            return count;
+            // Ok need to update the task now...
+            val status = lock.tryConvertToWriteLock(stamp);
+            if (status == 0) { //Did not lock, try explicit lock
+                lock.unlockRead(stamp);
+                stamp = lock.writeLock();
+            }
+            else {
+                stamp = status;
+            }
+            log.warn("Found stale task instance {}/{}. Current state: {} Last updated at: {}",
+                     sourceAppName, instance.getTaskId(), instance.getState(), instance.getUpdated());
+            val updateStatus = updateTaskInternal(
+                    sourceAppName,
+                    taskId,
+                    new TaskInstanceInfo(instance.getSourceAppName(),
+                                         instance.getTaskId(),
+                                         instance.getInstanceId(),
+                                         instance.getExecutorId(),
+                                         instance.getHostname(),
+                                         instance.getExecutable(),
+                                         instance.getResources(),
+                                         instance.getVolumes(),
+                                         instance.getLoggingSpec(),
+                                         instance.getEnv(),
+                                         TaskInstanceState.LOST,
+                                         instance.getMetadata(),
+                                         "Instance lost",
+                                         instance.getCreated(),
+                                         new Date()));
+            log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
         }
         finally {
             lock.unlock(stamp);
         }
+        return task(sourceAppName, taskId);
     }
 
     private void reloadTasksForApps(Collection<String> sourceAppNames) {

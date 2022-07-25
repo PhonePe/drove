@@ -1,0 +1,96 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col-sm-12 col-md-6">
+                {{#with instanceInfo}}
+                <table class="table table-bordered" id="instanceDetails">
+                    <tbody>
+                    <tr>
+                        <th scope="row">Source App Name</th>
+                        <td>{{sourceAppName}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Task ID</th>
+                        <td>{{taskId}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">State</th>
+                        <td>{{state}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Host</th>
+                        <td>{{hostname}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Error Message</th>
+                        <td>{{errorMessage}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Created</th>
+                        <td>{{created}}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Updated</th>
+                        <td>{{updated}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                {{/with}}
+            </div>
+            <div class="col-sm-12 col-md-6">
+                <table class="table table-bordered" id="instanceLogs">
+                    <thead>
+                        <tr>
+                            <th>Logs</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+{{/partial}}
+
+{{#partial "page_js"}}
+
+
+    function logListExploder(res) {
+        if(!res.files) {
+            return [];
+        }
+        const ret = [];
+        res.files.forEach( (fileName, i) => {
+            const info = {};
+            info['fileName'] = '<a href="/tasks/{{sourceAppName}}/instances/{{taskId}}/stream?logFileName=' + encodeURIComponent(fileName) + '" target="_blank">' + fileName + '</a>';
+            info['downloadLink'] = '<a href="/apis/v1/logfiles/tasks/{{sourceAppName}}/{{taskId}}/download/' + fileName + '">Download</a>';
+            ret.push(info);
+        });
+        return ret;
+    }
+
+    var summary = $('#instanceLogs').DataTable({
+        'processing' : true,
+        'ajax': {
+            'url' : '/apis/v1/logfiles/tasks/{{sourceAppName}}/{{taskId}}/list',
+            'dataSrc' : logListExploder
+        },
+        'paging': false,
+        'searching' : false,
+        'ordering' : false,
+        'info' : false,
+        'columns' : [
+            { 'data' : 'fileName' },
+            { 'data' : 'downloadLink' },
+        ]
+    });
+
+
+    summary.ajax.reload();
+
+    setInterval(() => {
+        summary.ajax.reload();
+    }, 30000);
+
+{{/partial}}
+{{> common/base}}

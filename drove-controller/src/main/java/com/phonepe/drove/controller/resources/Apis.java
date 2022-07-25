@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.auth.model.DroveUserRole;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.engine.TaskEngine;
@@ -16,6 +16,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -34,6 +35,8 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.phonepe.drove.models.api.ApiResponse.success;
 
 /**
  *
@@ -98,22 +101,6 @@ public class Apis {
     }
 
     @POST
-    @Path("/task/operations")
-    @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public Response acceptTaskOperation(@NotNull @Valid final TaskOperation operation) {
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ControllerUtils.badRequest(Map.of("validationErrors", List.of("Cluster is in maintenance mode")),
-                                              "Command validation failure");
-        }
-        val res = taskEngine.handleTaskOp(operation);
-        if (res) {
-            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
-        }
-        return ControllerUtils.badRequest(Map.of(), "Command validation failure");
-    }
-
-    @POST
     @Path("/applications/operations/{appId}/cancel")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
@@ -163,6 +150,39 @@ public class Apis {
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId) {
         return responseEngine.instanceDetails(appId, instanceId);
+    }
+
+
+    @POST
+    @Path("/tasks/operations")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public Response acceptTaskOperation(@NotNull @Valid final TaskOperation operation) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ControllerUtils.badRequest(Map.of("validationErrors", List.of("Cluster is in maintenance mode")),
+                                              "Command validation failure");
+        }
+        val res = taskEngine.handleTaskOp(operation);
+        if (res) {
+            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
+        }
+        return ControllerUtils.badRequest(Map.of(), "Command validation failure");
+    }
+
+    @GET
+    @Path("/tasks")
+    @Timed
+    public ApiResponse<List<TaskInstanceInfo>> activeTasks() {
+        return success(taskEngine.activeTasks());
+    }
+
+    @GET
+    @Path("/tasks/{sourceAppName}/instances/{taskId}")
+    @Timed
+    public ApiResponse<TaskInstanceInfo> taskInstance(
+            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
+            @PathParam("taskId") @NotEmpty final String taskId) {
+        return responseEngine.taskDetails(sourceAppName, taskId);
     }
 
     @GET
@@ -240,7 +260,7 @@ public class Apis {
     @Path("/ping")
     @Timed
     public ApiResponse<String> ping() {
-        return ApiResponse.success("pong");
+        return success("pong");
     }
 
 }

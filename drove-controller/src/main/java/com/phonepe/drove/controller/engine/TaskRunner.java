@@ -14,14 +14,13 @@ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInstanceState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
-import io.appform.signals.signals.ScheduledSignal;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
-import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
@@ -61,7 +60,6 @@ public class TaskRunner implements Runnable {
     private final AtomicReference<TaskInstanceState> state = new AtomicReference<>();
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
-    private final ScheduledSignal checkSignal = new ScheduledSignal(Duration.ofSeconds(5));
 
     @Inject
     public TaskRunner(
@@ -87,7 +85,6 @@ public class TaskRunner implements Runnable {
 
     @Override
     public void run() {
-        checkSignal.connect("CHECKER", date -> updateCurrentState());
         monitorTask();
     }
 
@@ -127,8 +124,17 @@ public class TaskRunner implements Runnable {
     }
 
     public void stop() {
-        checkSignal.disconnect("CHECKER");
-        checkSignal.close();
+
+    }
+
+    public Optional<TaskInstanceState> updateCurrentState() {
+        val currState = taskDB.checkedCurrentState(sourceAppName, taskId).map(TaskInstanceInfo::getState).orElse(null);
+        val existingState = state.get();
+        if (existingState != currState) {
+            log.info("State for {}/{} changed to {}", sourceAppName, taskId, currState);
+            updateCurrentState(currState);
+        }
+        return Optional.ofNullable(currState);
     }
 
     private void handleJobCompletionResult(final JobExecutionResult<Boolean> executionResult) {
@@ -138,15 +144,6 @@ public class TaskRunner implements Runnable {
         else {
             log.error("Unable to start job for {}/{}", sourceAppName, taskId);
             updateCurrentState(TaskInstanceState.LOST);
-        }
-    }
-
-    private void updateCurrentState() {
-        val currState = taskDB.task(sourceAppName, taskId).map(TaskInstanceInfo::getState).orElse(null);
-        val existingState = state.get();
-        if (existingState != currState) {
-            log.info("State for {}/{} changed to {}", sourceAppName, taskId, currState);
-            updateCurrentState(currState);
         }
     }
 

@@ -58,3 +58,7 @@ a {
 .pailer-data-container {
     padding: 0px;
 }
+
+.tab-pane {
+    padding-top: 1rem;
+}

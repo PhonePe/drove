@@ -11,9 +11,9 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -30,6 +30,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -118,6 +119,12 @@ public class ResponseEngine {
 
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId, int start, int length) {
         return success(instanceInfoDB.oldInstances(appId, start, length));
+    }
+
+    public ApiResponse<TaskInstanceInfo> taskDetails(final String sourceAppName, final String taskId) {
+        return taskDB.task(sourceAppName, taskId)
+                .map(ApiResponse::success)
+                .orElseGet(() -> failure("No such instance"));
     }
 
     public ApiResponse<ClusterSummary> cluster() {

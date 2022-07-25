@@ -126,7 +126,7 @@ $(document).ready(function() {
             case 'STARTING' : return '<span class="font-weight-bold text-warning">Starting</span>';
             case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Start Failed</span>';
             case 'UNREADY' : return '<span class="font-weight-bold text-warning">Unready</span>';
-            case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Readiness Check Failed</span>';
+            case 'READINESS_CHECK_FAILED' : return '<span class="font-weight-bold text-danger">Readiness Check Failed</span>';
             case 'READY' : return '<span class="font-weight-bold text-warning">Ready</span>';
             case 'HEALTHY' : return '<span class="font-weight-bold text-success">Healthy</span>';
             case 'UNHEALTHY' : return '<span class="font-weight-bold text-danger">Unhealthy</span>';
@@ -136,6 +136,42 @@ $(document).ready(function() {
             case 'LOST' : return '<span class="font-weight-bold text-secondary">Lost</span>';
             case 'UNKNOWN' : return '<span class="font-weight-bold text-danger">UNKNOWN</span>';
         }
+    }
+
+    function renderTaskInstanceState(data, type, row, meta) {
+        switch(data) {
+            case 'PENDING' : return '<span class="font-weight-bold text-primary">Pending</span>';
+            case 'PROVISIONING' : return '<span class="font-weight-bold text-warning">Provisioning</span>';
+            case 'PROVISIONING_FAILED' : return '<span class="font-weight-bold text-danger">Provisioning Failed</span>';
+            case 'STARTING' : return '<span class="font-weight-bold text-warning">Starting</span>';
+            case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Start Failed</span>';
+            case 'RUNNING' : return '<span class="font-weight-bold text-success">Running</span>';
+            case 'RUN_FAILED' : return '<span class="font-weight-bold text-danger">Run Failed</span>';
+            case 'RUN_TIMEOUT' : return '<span class="font-weight-bold text-success">Run Timed Out</span>';
+            case 'RUN_COMPLETED' : return '<span class="font-weight-bold text-danger">Run Completed</span>';
+            case 'RUN_CANCELLED' : return '<span class="font-weight-bold text-warning">Run Cancelled</span>';
+            case 'DEPROVISIONING' : return '<span class="font-weight-bold text-warning">Deprovisioning</span>';
+            case 'STOPPING' : return '<span class="font-weight-bold text-warning">Stopping</span>';
+            case 'STOPPED' : return '<span class="font-weight-bold text-secondary">Stopped</span>';
+            case 'LOST' : return '<span class="font-weight-bold text-secondary">Lost</span>';
+            case 'UNKNOWN' : return '<span class="font-weight-bold text-danger">UNKNOWN</span>';
+        }
+    }
+
+    function updateResourceUsage(instances) {
+        instances.forEach( (info, i) => {
+            info.resources.forEach((r,i) => {
+                if(r.type === 'CPU') {
+                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+                }
+                if(r.type === 'MEMORY') {
+                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+                }
+            });
+
+            info['logStream'] = "/apis/v1/logs/" + info['appId'] + "/" + info['instanceId'];
+        });
+        return instances;
     }
 
     function timeSince(data, type, row, meta) {
