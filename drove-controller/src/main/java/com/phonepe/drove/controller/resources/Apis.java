@@ -25,13 +25,11 @@ import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -153,6 +151,17 @@ public class Apis {
     }
 
 
+    @GET
+    @Path("/applications/{id}/instances/old")
+    @Timed
+    public ApiResponse<List<InstanceInfo>> applicationOldInstances(
+            @PathParam("id") @NotEmpty final String appId,
+            @QueryParam("start") @Min(0) @Max(1024) @DefaultValue("0") int start,
+            @QueryParam("size") @Min(0) @Max(1024) @DefaultValue("1024") int size) {
+
+        return responseEngine.applicationOldInstances(appId, start, size);
+    }
+
     @POST
     @Path("/tasks/operations")
     @Timed
@@ -185,16 +194,23 @@ public class Apis {
         return responseEngine.taskDetails(sourceAppName, taskId);
     }
 
-    @GET
-    @Path("/applications/{id}/instances/old")
+    @POST
+    @Path("/tasks/search")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Timed
-    public ApiResponse<List<InstanceInfo>> applicationOldInstances(
-            @PathParam("id") @NotEmpty final String appId,
-            @QueryParam("start") @Min(0) @Max(1024) @DefaultValue("0") int start,
-            @QueryParam("size") @Min(0) @Max(1024) @DefaultValue("1024") int size) {
-
-        return responseEngine.applicationOldInstances(appId, start, size);
+    public Response searchTaskInstance(
+            @FormParam("taskSearchAppName") @Pattern(regexp = "[a-zA-Z\\d\\-_]*") @NotEmpty final String sourceAppName,
+            @FormParam("taskSearchTaskID") @Pattern(regexp = "[a-zA-Z\\d\\-_]*") @NotEmpty final String taskId) {
+        val redirectUri = responseEngine.taskDetails(sourceAppName, taskId)
+                                  .getStatus()
+                                  .equals(ApiErrorCode.SUCCESS)
+                        ? "/tasks/" + sourceAppName + "/" + taskId
+                        : "/";
+        return Response.seeOther(URI.create(
+                        redirectUri))
+                .build();
     }
+
 
     @GET
     @Path("/cluster")

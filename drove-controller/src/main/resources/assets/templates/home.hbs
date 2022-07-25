@@ -53,6 +53,7 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="taskdetails" role="tabpanel" aria-labelledby="taskdetails-tab">
+
                         <div class="row">
                             <div class="col">
                                 <table class="table table-bordered" id="tasks" title="Tasks" style="width: 100%">
@@ -68,6 +69,22 @@
                                     </tr>
                                     </thead>
                                 </table>
+                            </div>
+                        </div>
+
+                        <div class="row" style="padding-top: 1rem;">
+                            <div class="col">
+                                <form method="post" action="/apis/v1/tasks/search">
+                                    <div class="form-group row">
+                                        <label for="taskSearchAppName" class="col-sm-3">Source App Name</label>
+                                        <input type="text" class="form-control col" id="taskSearchAppName" name="taskSearchAppName" pattern="[a-zA-Z\d\-_]*" required placeholder="Source app name for the task">
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="taskSearchTaskID" class="col-sm-3">Task ID</label>
+                                        <input type="text" class="form-control col" id="taskSearchTaskID" name="taskSearchTaskID" pattern="[a-zA-Z\d\-_]*" required placeholder="Task ID used to start the task">
+                                    </div>
+                                    <button type="submit" class="btn btn-success pull-right">Find</button>
+                                </form>
                             </div>
                         </div>
                     </div>
