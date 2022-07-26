@@ -40,9 +40,9 @@ public class StateUpdater {
             return;
         }
         resourcesDB.update(children);
-        children.forEach(node -> node.getInstances()
+        children.forEach(node -> Objects.requireNonNullElse(node.getInstances(), List.<InstanceInfo>of())
                 .forEach(this::updateInstanceInfo));
-        children.forEach(node -> node.getTasks()
+        children.forEach(node -> Objects.requireNonNullElse(node.getTasks(), List.<TaskInfo>of())
                 .forEach(this::updateTask));
     }
 
