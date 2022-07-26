@@ -3,10 +3,10 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.task.TaskInstanceAction;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.executor.statemachine.task.TaskAction;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  */
 @Slf4j
-public class TaskMonitoringAction extends TaskInstanceAction {
+public class TaskMonitoringAction extends TaskAction {
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final Lock checkLock = new ReentrantLock();
     private final Condition stateChanged = checkLock.newCondition();
@@ -36,9 +36,9 @@ public class TaskMonitoringAction extends TaskInstanceAction {
     private ScheduledFuture<?> checkerJob;
 
     @Override
-    protected StateData<TaskInstanceState, ExecutorTaskInstanceInfo> executeImpl(
+    protected StateData<TaskState, ExecutorTaskInfo> executeImpl(
             InstanceActionContext<TaskInstanceSpec> context,
-            StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState) {
+            StateData<TaskState, ExecutorTaskInfo> currentState) {
         try {
             val currentContext = MDC.getCopyOfContextMap();
             val mdc = null != currentContext
@@ -54,25 +54,25 @@ public class TaskMonitoringAction extends TaskInstanceAction {
             monitor();
             if (stopped.get()) {
                 dockerClient.killContainerCmd(containerId).exec();
-                return StateData.from(currentState, TaskInstanceState.RUN_CANCELLED);
+                return StateData.from(currentState, TaskState.RUN_CANCELLED);
             }
             val runResult = Objects.requireNonNullElse(result.get(), new TaskResult(-1, false));
             if (runResult.isContainerLost()) {
                 return StateData.errorFrom(currentState,
-                                           TaskInstanceState.RUN_FAILED,
+                                           TaskState.RUN_FAILED,
                                            "Task instance lost for container: " + containerId);
             }
             val exitCode = runResult.getStatus();
             if (exitCode == 0) {
-                return StateData.from(currentState, TaskInstanceState.RUN_COMPLETED);
+                return StateData.from(currentState, TaskState.RUN_COMPLETED);
             }
             return StateData.errorFrom(currentState,
-                                       TaskInstanceState.RUN_FAILED,
+                                       TaskState.RUN_FAILED,
                                        "Task instance exited with status: " + exitCode);
 
         }
         catch (Exception e) {
-            return StateData.errorFrom(currentState, TaskInstanceState.RUN_FAILED, e.getMessage());
+            return StateData.errorFrom(currentState, TaskState.RUN_FAILED, e.getMessage());
         }
         finally {
             stopJob();
@@ -81,8 +81,8 @@ public class TaskMonitoringAction extends TaskInstanceAction {
     }
 
     @Override
-    protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.RUN_FAILED;
+    protected TaskState defaultErrorState() {
+        return TaskState.RUN_FAILED;
     }
 
     @Override

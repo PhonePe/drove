@@ -51,7 +51,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @SneakyThrows
     void testRecoverTaskContainers() {
         val taskSpec = ExecutorTestingUtils.testTaskInstanceSpec();
-        val taskInstanceData = ExecutorTestingUtils.createExecutorTaskInstanceInfo(taskSpec);
+        val taskInstanceData = ExecutorTestingUtils.createExecutorTaskInfo(taskSpec);
         ExecutorTestingUtils.startTestTaskContainer(taskSpec, taskInstanceData, MAPPER);
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,

@@ -6,14 +6,14 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.task.TaskInstanceAction;
+import com.phonepe.drove.executor.statemachine.task.TaskAction;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
@@ -32,27 +32,27 @@ import static com.phonepe.drove.common.CommonUtils.instanceId;
  *
  */
 @Slf4j
-public class TaskInstanceRunAction extends TaskInstanceAction {
+public class TaskRunAction extends TaskAction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final LogBus logBus;
     private final ResourceConfig schedulingConfig;
 
     @Inject
-    public TaskInstanceRunAction(LogBus logBus, ResourceConfig resourceConfig) {
+    public TaskRunAction(LogBus logBus, ResourceConfig resourceConfig) {
         this.logBus = logBus;
         this.schedulingConfig = resourceConfig;
     }
 
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<TaskInstanceState, ExecutorTaskInstanceInfo> executeImpl(
+    protected StateData<TaskState, ExecutorTaskInfo> executeImpl(
             InstanceActionContext<TaskInstanceSpec> context,
-            StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState) {
+            StateData<TaskState, ExecutorTaskInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val client = context.getClient();
         try {
-            val instanceInfoRef = new AtomicReference<ExecutorTaskInstanceInfo>();
+            val instanceInfoRef = new AtomicReference<ExecutorTaskInfo>();
             val instanceId = instanceId(instanceSpec);
             val containerId = DockerUtils.createContainer(
                     schedulingConfig,
@@ -89,25 +89,25 @@ public class TaskInstanceRunAction extends TaskInstanceAction {
                                                  instanceSpec.getSourceAppName(),
                                                  instanceId,
                                                  logBus));
-            return StateData.create(TaskInstanceState.RUNNING, instanceInfoRef.get());
+            return StateData.create(TaskState.RUNNING, instanceInfoRef.get());
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);
-            return StateData.errorFrom(currentState, TaskInstanceState.RUN_FAILED, e.getMessage());
+            return StateData.errorFrom(currentState, TaskState.RUN_FAILED, e.getMessage());
         }    }
 
     @Override
-    protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.RUN_FAILED;
+    protected TaskState defaultErrorState() {
+        return TaskState.RUN_FAILED;
     }
 
-    private ExecutorTaskInstanceInfo instanceInfo(
-            StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState,
+    private ExecutorTaskInfo instanceInfo(
+            StateData<TaskState, ExecutorTaskInfo> currentState,
             List<ResourceAllocation> resources,
             String hostName,
-            ExecutorTaskInstanceInfo oldData) {
+            ExecutorTaskInfo oldData) {
         val data = currentState.getData();
-        return new ExecutorTaskInstanceInfo(
+        return new ExecutorTaskInfo(
                 data.getTaskId(),
                 data.getSourceAppName(),
                 data.getInstanceId(),

@@ -19,8 +19,8 @@ import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.task.TaskSpec;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -106,7 +106,7 @@ public class ControllerUtils {
             ClusterOpSpec clusterOpSpec,
             String sourceAppName,
             String taskId,
-            TaskInstanceState required,
+            TaskState required,
             ControllerRetrySpecFactory retrySpecFactory) {
         val retryPolicy =
                 CommonUtils.<StateCheckStatus>policy(
@@ -178,7 +178,7 @@ public class ControllerUtils {
         return instanceInfoDB.instance(appId, instanceId).orElse(null);
     }
 
-    private static TaskInstanceInfo currentTaskInfo(
+    private static TaskInfo currentTaskInfo(
             final TaskDB taskDB,
             String sourceAppName,
             String taskId) {
@@ -203,7 +203,7 @@ public class ControllerUtils {
         }
         return MISMATCH;
     }
-    private static StateCheckStatus ensureTaskState(final TaskInstanceInfo instanceInfo, final TaskInstanceState instanceState) {
+    private static StateCheckStatus ensureTaskState(final TaskInfo instanceInfo, final TaskState instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Task state for {}/{}: {}",

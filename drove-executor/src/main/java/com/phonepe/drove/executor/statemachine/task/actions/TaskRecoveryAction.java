@@ -4,12 +4,12 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.task.TaskInstanceAction;
+import com.phonepe.drove.executor.statemachine.task.TaskAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.JobType;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +23,11 @@ import java.util.Map;
  *
  */
 @Slf4j
-public class TaskInstanceRecoveryAction extends TaskInstanceAction {
+public class TaskRecoveryAction extends TaskAction {
     private final LogBus logBus;
 
     @Inject
-    public TaskInstanceRecoveryAction(LogBus logBus) {
+    public TaskRecoveryAction(LogBus logBus) {
         this.logBus = logBus;
     }
 
@@ -38,8 +38,8 @@ public class TaskInstanceRecoveryAction extends TaskInstanceAction {
 
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<TaskInstanceState, ExecutorTaskInstanceInfo> executeImpl(
-            InstanceActionContext<TaskInstanceSpec> context, StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState) {
+    protected StateData<TaskState, ExecutorTaskInfo> executeImpl(
+            InstanceActionContext<TaskInstanceSpec> context, StateData<TaskState, ExecutorTaskInfo> currentState) {
         val client = context.getClient();
         val instanceId = ExecutorUtils.instanceId(currentState.getData());
         val container = client.listContainersCmd()
@@ -52,7 +52,7 @@ public class TaskInstanceRecoveryAction extends TaskInstanceAction {
                 .orElse(null);
         if (null == container) {
             return StateData.errorFrom(currentState,
-                                       TaskInstanceState.STOPPED,
+                                       TaskState.STOPPED,
                                        "No container found with drove id: " + instanceId);
         }
         val containerId = container.getId();
@@ -68,7 +68,7 @@ public class TaskInstanceRecoveryAction extends TaskInstanceAction {
                                              instanceId,
                                              logBus));
 
-        return StateData.from(currentState, TaskInstanceState.RUNNING);
+        return StateData.from(currentState, TaskState.RUNNING);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class TaskInstanceRecoveryAction extends TaskInstanceAction {
     }
 
     @Override
-    protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.STOPPED;
+    protected TaskState defaultErrorState() {
+        return TaskState.STOPPED;
     }
 }

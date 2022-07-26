@@ -13,14 +13,14 @@ import lombok.Value;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class StartTaskInstanceMessage extends ExecutorMessage {
+public class StartTaskMessage extends ExecutorMessage {
     TaskInstanceSpec spec;
 
-    public StartTaskInstanceMessage(
+    public StartTaskMessage(
             MessageHeader header,
             ExecutorAddress address,
             TaskInstanceSpec spec) {
-        super(ExecutorMessageType.START_TASK_INSTANCE, header, address);
+        super(ExecutorMessageType.START_TASK, header, address);
         this.spec = spec;
     }
 

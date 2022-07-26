@@ -20,8 +20,8 @@ import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
@@ -147,46 +147,46 @@ public class ExecutorTestingUtils {
         return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000, NodeTransportType.HTTP);
     }
 
-    public static ExecutorApplicationInstanceInfo createExecutorAppInstanceInfo(WireMockRuntimeInfo wm) {
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(WireMockRuntimeInfo wm) {
         return createExecutorAppInstanceInfo(testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME), wm);
     }
 
-    public static ExecutorApplicationInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
         return createExecutorAppInstanceInfo(spec, wm.getHttpPort());
     }
 
-    public static ExecutorApplicationInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, int port) {
-        return new ExecutorApplicationInstanceInfo(spec.getAppId(),
-                                                   spec.getAppName(),
-                                                   spec.getInstanceId(),
-                                                   EXECUTOR_ID,
-                                                   new LocalInstanceInfo("localhost",
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, int port) {
+        return new ExecutorInstanceInfo(spec.getAppId(),
+                                        spec.getAppName(),
+                                        spec.getInstanceId(),
+                                        EXECUTOR_ID,
+                                        new LocalInstanceInfo("localhost",
                                                               Collections.singletonMap(
                                                                       "main",
                                                                       new InstancePort(
                                                                               8080,
                                                                               port,
                                                                               PortType.HTTP))),
-                                                   spec.getResources(),
-                                                   spec.getEnv(),
-                                                   new Date(),
-                                                   new Date());
-    }
-
-    public static ExecutorTaskInstanceInfo createExecutorTaskInstanceInfo(TaskInstanceSpec spec) {
-        return new ExecutorTaskInstanceInfo(spec.getTaskId(),
-                                        spec.getSourceAppName(),
-                                        spec.getInstanceId(),
-                                        EXECUTOR_ID,
-                                            "localhost",
-                                        spec.getExecutable(),
                                         spec.getResources(),
-                                        spec.getVolumes(),
-                                        spec.getLoggingSpec(),
                                         spec.getEnv(),
-                                        Map.of(),
                                         new Date(),
                                         new Date());
+    }
+
+    public static ExecutorTaskInfo createExecutorTaskInfo(TaskInstanceSpec spec) {
+        return new ExecutorTaskInfo(spec.getTaskId(),
+                                    spec.getSourceAppName(),
+                                    spec.getInstanceId(),
+                                    EXECUTOR_ID,
+                                    "localhost",
+                                    spec.getExecutable(),
+                                    spec.getResources(),
+                                    spec.getVolumes(),
+                                    spec.getLoggingSpec(),
+                                    spec.getEnv(),
+                                    Map.of(),
+                                    new Date(),
+                                    new Date());
     }
 
     public static HTTPCheckModeSpec httpCheck(HTTPVerb verb) {
@@ -261,7 +261,7 @@ public class ExecutorTestingUtils {
     @SneakyThrows
     public static void startTestAppContainer(
             ApplicationInstanceSpec spec,
-            ExecutorApplicationInstanceInfo instanceData,
+            ExecutorInstanceInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT
@@ -285,7 +285,7 @@ public class ExecutorTestingUtils {
     @SneakyThrows
     public static void startTestTaskContainer(
             TaskInstanceSpec spec,
-            ExecutorTaskInstanceInfo instanceData,
+            ExecutorTaskInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT

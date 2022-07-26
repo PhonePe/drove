@@ -2,16 +2,16 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.common.actions.CommonExecutableFetchAction;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 
 import javax.inject.Inject;
 
 /**
  *
  */
-public class TaskExecutableFetchAction extends CommonExecutableFetchAction<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec> {
+public class TaskExecutableFetchAction extends CommonExecutableFetchAction<ExecutorTaskInfo, TaskState, TaskInstanceSpec> {
 
     @Inject
     public TaskExecutableFetchAction(DockerAuthConfig dockerAuthConfig) {
@@ -19,17 +19,17 @@ public class TaskExecutableFetchAction extends CommonExecutableFetchAction<Execu
     }
 
     @Override
-    protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.PROVISIONING_FAILED;
+    protected TaskState defaultErrorState() {
+        return TaskState.PROVISIONING_FAILED;
     }
 
     @Override
-    protected TaskInstanceState stoppedState() {
-        return TaskInstanceState.STOPPED;
+    protected TaskState stoppedState() {
+        return TaskState.STOPPED;
     }
 
     @Override
-    protected TaskInstanceState startState() {
-        return TaskInstanceState.STARTING;
+    protected TaskState startState() {
+        return TaskState.STARTING;
     }
 }

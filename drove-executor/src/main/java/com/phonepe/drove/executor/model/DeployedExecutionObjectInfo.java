@@ -3,6 +3,6 @@ package com.phonepe.drove.executor.model;
 /**
  *
  */
-public interface DeployedExecutorInstanceInfo {
+public interface DeployedExecutionObjectInfo {
     <T> T accept(final DeployedExecutorInstanceInfoVisitor<T> visitor);
 }

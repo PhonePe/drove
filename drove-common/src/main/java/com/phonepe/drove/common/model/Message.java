@@ -15,8 +15,8 @@ import lombok.Data;
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "START_INSTANCE", value = StartInstanceMessage.class),
         @JsonSubTypes.Type(name = "STOP_INSTANCE", value = StopInstanceMessage.class),
-        @JsonSubTypes.Type(name = "START_TASK_INSTANCE", value = StartTaskInstanceMessage.class),
-        @JsonSubTypes.Type(name = "STOP_TASK_INSTANCE", value = StopTaskInstanceMessage.class),
+        @JsonSubTypes.Type(name = "START_TASK", value = StartTaskMessage.class),
+        @JsonSubTypes.Type(name = "STOP_TASK", value = StopTaskMessage.class),
         @JsonSubTypes.Type(name = "BLACKLIST", value = BlacklistExecutorMessage.class),
         @JsonSubTypes.Type(name = "UNBLACKLIST", value = UnBlacklistExecutorMessage.class),
         @JsonSubTypes.Type(name = "INSTANCE_STATE_REPORT", value = InstanceStateReportMessage.class),

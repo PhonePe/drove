@@ -1,6 +1,6 @@
 package com.phonepe.drove.executor.checker;
 
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
@@ -27,7 +27,7 @@ public class HttpChecker implements Checker {
     private final Duration requestTimeout;
 
 
-    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, ExecutorApplicationInstanceInfo instance) {
+    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, ExecutorInstanceInfo instance) {
         var connectionTimeout = Duration.ofMillis(
                 Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
                                            io.dropwizard.util.Duration.seconds(1))

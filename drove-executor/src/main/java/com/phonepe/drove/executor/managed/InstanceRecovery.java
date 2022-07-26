@@ -8,11 +8,11 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -82,7 +82,7 @@ public class InstanceRecovery implements Managed {
                                             ApplicationInstanceSpec.class);
                 val data = mapper.readValue(container.getLabels()
                                                     .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
-                                            ExecutorApplicationInstanceInfo.class);
+                                            ExecutorInstanceInfo.class);
                 val status = applicationInstanceEngine.registerInstance(id,
                                                                         spec,
                                                                         StateData.create(InstanceState.UNKNOWN, data));
@@ -102,10 +102,10 @@ public class InstanceRecovery implements Managed {
                                                     TaskInstanceSpec.class);
                         val data = mapper.readValue(container.getLabels()
                                                             .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
-                                                    ExecutorTaskInstanceInfo.class);
+                                                    ExecutorTaskInfo.class);
                         val status = taskInstanceEngine.registerInstance(id,
                                                                                 spec,
-                                                                                StateData.create(TaskInstanceState.UNKNOWN, data));
+                                                                                StateData.create(TaskState.UNKNOWN, data));
                         log.info("Recovery status for task instance {}: {}", id, status);
                     }
                     catch (JsonProcessingException e) {

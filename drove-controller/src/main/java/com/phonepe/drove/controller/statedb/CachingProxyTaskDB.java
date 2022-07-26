@@ -2,8 +2,8 @@ package com.phonepe.drove.controller.statedb;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -15,7 +15,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STATES;
+import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
 
 /**
  *
@@ -25,7 +25,7 @@ import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STA
 public class CachingProxyTaskDB extends TaskDB {
     private final TaskDB root;
 
-    private final Map<String, Map<String, TaskInstanceInfo>> cache = new HashMap<>();
+    private final Map<String, Map<String, TaskInfo>> cache = new HashMap<>();
     private final StampedLock lock = new StampedLock();
 
     @Inject
@@ -38,9 +38,9 @@ public class CachingProxyTaskDB extends TaskDB {
     }
 
     @Override
-    public Map<String, List<TaskInstanceInfo>> tasks(
+    public Map<String, List<TaskInfo>> tasks(
             Collection<String> sourceAppNames,
-            Set<TaskInstanceState> validStates,
+            Set<TaskState> validStates,
             boolean skipStaleCheck) {
         if (sourceAppNames.isEmpty()) {
             return Map.of();
@@ -69,7 +69,7 @@ public class CachingProxyTaskDB extends TaskDB {
                     .flatMap(instances -> instances.values().stream())
                     .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
                     .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
-                    .collect(Collectors.groupingBy(TaskInstanceInfo::getSourceAppName,
+                    .collect(Collectors.groupingBy(TaskInfo::getSourceAppName,
                                                    Collectors.toUnmodifiableList()));
         }
         finally {
@@ -78,8 +78,8 @@ public class CachingProxyTaskDB extends TaskDB {
     }
 
     @Override
-    public Optional<TaskInstanceInfo> task(String sourceAppName, String taskId) {
-        return tasks(Set.of(sourceAppName), EnumSet.allOf(TaskInstanceState.class), true)
+    public Optional<TaskInfo> task(String sourceAppName, String taskId) {
+        return tasks(Set.of(sourceAppName), EnumSet.allOf(TaskState.class), true)
                 .getOrDefault(sourceAppName, List.of())
                 .stream()
                 .filter(instanceInfo -> instanceInfo.getTaskId().equals(taskId))
@@ -87,29 +87,29 @@ public class CachingProxyTaskDB extends TaskDB {
     }
 
     @Override
-    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
+    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInfo taskInfo) {
         val stamp = lock.writeLock();
         try {
             val existing = cache.getOrDefault(sourceAppName, Map.of()).get(taskId);
-            if(existing != null && existing.getUpdated().after(taskInstanceInfo.getUpdated())) {
+            if(existing != null && existing.getUpdated().after(taskInfo.getUpdated())) {
                 log.warn("Ignoring stale update for {}/{}", sourceAppName, taskId);
                 return false;
             }
-            return updateTaskInternal(sourceAppName, taskId, taskInstanceInfo);
+            return updateTaskInternal(sourceAppName, taskId, taskInfo);
         }
         finally {
             lock.unlock(stamp);
         }
     }
 
-    private boolean updateTaskInternal(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
-        val status = root.updateTaskImpl(sourceAppName, taskId, taskInstanceInfo);
+    private boolean updateTaskInternal(String sourceAppName, String taskId, TaskInfo taskInfo) {
+        val status = root.updateTaskImpl(sourceAppName, taskId, taskInfo);
         if (status) {
             cache.compute(sourceAppName, (aId, oldInstances) -> {
                 val instances = null != oldInstances
                                 ? oldInstances
-                                : new HashMap<String, TaskInstanceInfo>();
-                instances.put(taskId, taskInstanceInfo);
+                                : new HashMap<String, TaskInfo>();
+                instances.put(taskId, taskInfo);
                 return instances;
             });
         }
@@ -135,7 +135,7 @@ public class CachingProxyTaskDB extends TaskDB {
     }
 
     @Override
-    public Optional<TaskInstanceInfo> checkedCurrentState(String sourceAppName, String taskId) {
+    public Optional<TaskInfo> checkedCurrentState(String sourceAppName, String taskId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         var stamp = lock.readLock();
         try {
@@ -159,21 +159,21 @@ public class CachingProxyTaskDB extends TaskDB {
             val updateStatus = updateTaskInternal(
                     sourceAppName,
                     taskId,
-                    new TaskInstanceInfo(instance.getSourceAppName(),
-                                         instance.getTaskId(),
-                                         instance.getInstanceId(),
-                                         instance.getExecutorId(),
-                                         instance.getHostname(),
-                                         instance.getExecutable(),
-                                         instance.getResources(),
-                                         instance.getVolumes(),
-                                         instance.getLoggingSpec(),
-                                         instance.getEnv(),
-                                         TaskInstanceState.LOST,
-                                         instance.getMetadata(),
-                                         "Instance lost",
-                                         instance.getCreated(),
-                                         new Date()));
+                    new TaskInfo(instance.getSourceAppName(),
+                                 instance.getTaskId(),
+                                 instance.getInstanceId(),
+                                 instance.getExecutorId(),
+                                 instance.getHostname(),
+                                 instance.getExecutable(),
+                                 instance.getResources(),
+                                 instance.getVolumes(),
+                                 instance.getLoggingSpec(),
+                                 instance.getEnv(),
+                                 TaskState.LOST,
+                                 instance.getMetadata(),
+                                 "Instance lost",
+                                 instance.getCreated(),
+                                 new Date()));
             log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
         }
         finally {
@@ -183,11 +183,11 @@ public class CachingProxyTaskDB extends TaskDB {
     }
 
     private void reloadTasksForApps(Collection<String> sourceAppNames) {
-        val appsWithTasks = root.tasks(sourceAppNames, EnumSet.allOf(TaskInstanceState.class), true)
+        val appsWithTasks = root.tasks(sourceAppNames, EnumSet.allOf(TaskState.class), true)
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
-                        .collect(Collectors.toMap(TaskInstanceInfo::getTaskId, Function.identity()))));
+                        .collect(Collectors.toMap(TaskInfo::getTaskId, Function.identity()))));
         cache.putAll(appsWithTasks);
         //For apps that don't have any running nodes (in monitoring states etc), add empty maps
         val appsWithoutTasks = Sets.difference(Set.copyOf(sourceAppNames), cache.keySet());

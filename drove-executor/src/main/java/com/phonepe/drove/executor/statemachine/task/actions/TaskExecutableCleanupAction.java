@@ -2,9 +2,9 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.ExecutorOptions;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.common.actions.CommonExecutableCleanupAction;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -13,7 +13,7 @@ import javax.inject.Inject;
  *
  */
 @Slf4j
-public class TaskExecutableCleanupAction extends CommonExecutableCleanupAction<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec> {
+public class TaskExecutableCleanupAction extends CommonExecutableCleanupAction<ExecutorTaskInfo, TaskState, TaskInstanceSpec> {
 
     @Inject
     public TaskExecutableCleanupAction(ExecutorOptions options) {
@@ -21,13 +21,13 @@ public class TaskExecutableCleanupAction extends CommonExecutableCleanupAction<E
     }
 
     @Override
-    protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.STOPPED;
+    protected TaskState defaultErrorState() {
+        return TaskState.STOPPED;
     }
 
     @Override
-    protected TaskInstanceState stoppedState() {
-        return TaskInstanceState.STOPPED;
+    protected TaskState stoppedState() {
+        return TaskState.STOPPED;
     }
 
 }

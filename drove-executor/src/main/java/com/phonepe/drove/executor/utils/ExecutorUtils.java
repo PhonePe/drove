@@ -3,10 +3,10 @@ package com.phonepe.drove.executor.utils;
 import com.google.common.base.Strings;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
-import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -15,8 +15,8 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -33,7 +33,7 @@ import java.util.Date;
 @UtilityClass
 public class ExecutorUtils {
     public static Checker createChecker(
-            ExecutorApplicationInstanceInfo instanceInfo,
+            ExecutorInstanceInfo instanceInfo,
             CheckSpec checkSpec) {
         return checkSpec.getMode().accept(new CheckModeSpecVisitor<>() {
             @Override
@@ -48,7 +48,7 @@ public class ExecutorUtils {
         });
     }
 
-    public static InstanceInfo convert(final StateData<InstanceState, ExecutorApplicationInstanceInfo> state) {
+    public static InstanceInfo convert(final StateData<InstanceState, ExecutorInstanceInfo> state) {
         val data = state.getData();
         return new InstanceInfo(
                 data.getAppId(),
@@ -64,9 +64,9 @@ public class ExecutorUtils {
                 new Date());
     }
 
-    public static TaskInstanceInfo convertToTaskInfo(final StateData<TaskInstanceState, ExecutorTaskInstanceInfo> state) {
+    public static TaskInfo convertToTaskInfo(final StateData<TaskState, ExecutorTaskInfo> state) {
         val data = state.getData();
-        return new TaskInstanceInfo(
+        return new TaskInfo(
                 data.getSourceAppName(),
                 data.getTaskId(),
                 data.getInstanceId(),
@@ -103,16 +103,16 @@ public class ExecutorUtils {
         };
     }
 
-    public static String instanceId(final DeployedExecutorInstanceInfo instanceInfo) {
+    public static String instanceId(final DeployedExecutionObjectInfo instanceInfo) {
         return instanceInfo.accept(new DeployedExecutorInstanceInfoVisitor<>() {
             @Override
-            public String visit(ExecutorApplicationInstanceInfo applicationInstanceInfo) {
+            public String visit(ExecutorInstanceInfo applicationInstanceInfo) {
                 return applicationInstanceInfo.getInstanceId();
             }
 
             @Override
-            public String visit(ExecutorTaskInstanceInfo taskInstanceInfo) {
-                return taskInstanceInfo.getInstanceId();
+            public String visit(ExecutorTaskInfo taskInfo) {
+                return taskInfo.getInstanceId();
             }
         });
     }

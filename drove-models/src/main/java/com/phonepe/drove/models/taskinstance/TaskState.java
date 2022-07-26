@@ -8,7 +8,7 @@ import java.util.Set;
  *
  */
 @Getter
-public enum TaskInstanceState {
+public enum TaskState {
     PENDING(false, false),
     PROVISIONING(false, false),
     PROVISIONING_FAILED(false, true),
@@ -25,7 +25,7 @@ public enum TaskInstanceState {
     LOST(true, false),
     UNKNOWN(false, false);
 
-    public static final Set<TaskInstanceState> ACTIVE_STATES = Set.of(
+    public static final Set<TaskState> ACTIVE_STATES = Set.of(
             PENDING,
             PROVISIONING,
             STARTING,
@@ -35,7 +35,7 @@ public enum TaskInstanceState {
     private final boolean terminal;
     private final boolean error;
 
-    TaskInstanceState(boolean terminal, boolean error) {
+    TaskState(boolean terminal, boolean error) {
         this.terminal = terminal;
         this.error = error;
     }

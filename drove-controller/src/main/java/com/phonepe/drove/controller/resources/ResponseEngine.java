@@ -30,7 +30,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -121,7 +121,7 @@ public class ResponseEngine {
         return success(instanceInfoDB.oldInstances(appId, start, length));
     }
 
-    public ApiResponse<TaskInstanceInfo> taskDetails(final String sourceAppName, final String taskId) {
+    public ApiResponse<TaskInfo> taskDetails(final String sourceAppName, final String taskId) {
         return taskDB.task(sourceAppName, taskId)
                 .map(ApiResponse::success)
                 .orElseGet(() -> failure("No such instance"));

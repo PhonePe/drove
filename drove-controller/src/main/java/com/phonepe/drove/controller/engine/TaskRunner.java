@@ -11,8 +11,8 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Getter;
 import lombok.Setter;
@@ -57,7 +57,7 @@ public class TaskRunner implements Runnable {
     @Setter
     private Future<?> taskFuture;
 
-    private final AtomicReference<TaskInstanceState> state = new AtomicReference<>();
+    private final AtomicReference<TaskState> state = new AtomicReference<>();
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
 
@@ -127,8 +127,8 @@ public class TaskRunner implements Runnable {
 
     }
 
-    public Optional<TaskInstanceState> updateCurrentState() {
-        val currState = taskDB.checkedCurrentState(sourceAppName, taskId).map(TaskInstanceInfo::getState).orElse(null);
+    public Optional<TaskState> updateCurrentState() {
+        val currState = taskDB.checkedCurrentState(sourceAppName, taskId).map(TaskInfo::getState).orElse(null);
         val existingState = state.get();
         if (existingState != currState) {
             log.info("State for {}/{} changed to {}", sourceAppName, taskId, currState);
@@ -143,11 +143,11 @@ public class TaskRunner implements Runnable {
         }
         else {
             log.error("Unable to start job for {}/{}", sourceAppName, taskId);
-            updateCurrentState(TaskInstanceState.LOST);
+            updateCurrentState(TaskState.LOST);
         }
     }
 
-    private void updateCurrentState(TaskInstanceState currState) {
+    private void updateCurrentState(TaskState currState) {
         checkLock.lock();
         try {
             state.set(currState);

@@ -5,11 +5,11 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
-import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.executor.ExecutorActionFactory;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.InstanceActionBase;
+import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
@@ -41,11 +41,11 @@ import static com.phonepe.drove.common.CommonUtils.instanceId;
  */
 @Slf4j
 @SuppressWarnings("unused")
-public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S extends Enum<S>,
+public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S extends Enum<S>,
         T extends DeploymentUnitSpec, I extends DeployedInstanceInfo> implements Closeable {
     private final ExecutorIdManager executorIdManager;
     private final ExecutorService service;
-    private final InstanceActionFactory<E, S, T> actionFactory;
+    private final ExecutorActionFactory<E, S, T> actionFactory;
     private final ResourceManager resourceDB;
     private final Map<String, SMInfo<E, S, T>> stateMachines = new HashMap<>();
     private final StampedLock lock = new StampedLock();
@@ -56,7 +56,7 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
 
     protected InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
-            InstanceActionFactory<E, S, T> actionFactory,
+            ExecutorActionFactory<E, S, T> actionFactory,
             ResourceManager resourceDB, DockerClient client) {
         this.executorIdManager = executorIdManager;
         this.service = service;
@@ -166,11 +166,11 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
 
     protected abstract boolean isRunning(S state);
 
-    protected abstract StateMachine<E, Void, S, InstanceActionContext<T>, InstanceActionBase<E, S, T>> createStateMachine(
+    protected abstract StateMachine<E, Void, S, InstanceActionContext<T>, ExecutorActionBase<E, S, T>> createStateMachine(
             String executorId,
             T spec,
             StateData<S, E> currentState,
-            InstanceActionFactory<E, S, T> actionFactory,
+            ExecutorActionFactory<E, S, T> actionFactory,
             DockerClient client);
 
     protected abstract I convertStateToInstanceInfo(StateData<S, E> currentState);
@@ -247,9 +247,9 @@ public abstract class InstanceEngine<E extends DeployedExecutorInstanceInfo, S e
 
 
     @Value
-    private static class SMInfo<E extends DeployedExecutorInstanceInfo, S extends Enum<S>,
+    private static class SMInfo<E extends DeployedExecutionObjectInfo, S extends Enum<S>,
             T extends DeploymentUnitSpec> {
-        StateMachine<E, Void, S, InstanceActionContext<T>, InstanceActionBase<E, S, T>> stateMachine;
+        StateMachine<E, Void, S, InstanceActionContext<T>, ExecutorActionBase<E, S, T>> stateMachine;
         Future<S> stateMachineFuture;
     }
 

@@ -3,7 +3,7 @@ package com.phonepe.drove.common.model.controller;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -16,12 +16,12 @@ import lombok.Value;
 @ToString(callSuper = true)
 public class TaskStateReportMessage extends ControllerMessage {
     ExecutorResourceSnapshot resourceSnapshot;
-    TaskInstanceInfo instanceInfo;
+    TaskInfo instanceInfo;
 
     public TaskStateReportMessage(
             MessageHeader header,
             ExecutorResourceSnapshot resourceSnapshot,
-            TaskInstanceInfo instanceInfo) {
+            TaskInfo instanceInfo) {
         super(ControllerMessageType.TASK_STATE_REPORT, header);
         this.resourceSnapshot = resourceSnapshot;
         this.instanceInfo = instanceInfo;

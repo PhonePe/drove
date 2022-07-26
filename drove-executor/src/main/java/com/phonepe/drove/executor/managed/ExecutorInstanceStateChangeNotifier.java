@@ -10,7 +10,7 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -53,7 +53,7 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
             log.info("Sending message to controller failed with status: {}.", resp);
         }
     }
-    private void handleStateChange(final TaskInstanceInfo task) {
+    private void handleStateChange(final TaskInfo task) {
         log.debug("Received task state change notification: {}", task);
         val executorId = task.getExecutorId();
         val snapshot = ExecutorUtils.executorSnapshot(resourceDB.currentState(), executorId);

@@ -22,7 +22,7 @@ import java.util.Map;
 @Jacksonized
 @Builder
 @AllArgsConstructor
-public class TaskInstanceInfo implements DeployedInstanceInfo {
+public class TaskInfo implements DeployedInstanceInfo {
     String sourceAppName;
     String taskId;
     String instanceId;
@@ -33,7 +33,7 @@ public class TaskInstanceInfo implements DeployedInstanceInfo {
     List<MountedVolume> volumes;
     LoggingSpec loggingSpec;
     Map<String, String> env;
-    TaskInstanceState state;
+    TaskState state;
     Map<String, String> metadata;
     String errorMessage;
     Date created;

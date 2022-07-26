@@ -1,9 +1,7 @@
 package com.phonepe.drove.executor.model;
 
-import com.phonepe.drove.models.application.MountedVolume;
-import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
-import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import lombok.Value;
 
 import java.util.Date;
@@ -14,17 +12,13 @@ import java.util.Map;
  *
  */
 @Value
-public class ExecutorTaskInstanceInfo implements DeployedExecutorInstanceInfo {
-    String taskId;
-    String sourceAppName;
+public class ExecutorInstanceInfo implements DeployedExecutionObjectInfo {
+    String appId;
+    String appName;
     String instanceId;
     String executorId;
-    String hostname;
-    ExecutableCoordinates executable;
+    LocalInstanceInfo localInfo;
     List<ResourceAllocation> resources;
-    List<MountedVolume> volumes;
-    LoggingSpec loggingSpec;
-    Map<String, String> env;
     Map<String, String> metadata;
     Date created;
     Date updated;

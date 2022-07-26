@@ -205,7 +205,7 @@
                 { 'data' : 'created', 'render' : timeSince },
                 { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
                 { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'state', 'render' : renderTaskInstanceState },
+                { 'data' : 'state', 'render' : renderTaskState },
                 { 'data' : 'logStream',
                   'render' : function(data, type, row, meta) {
                     return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '">Details</a>';
@@ -215,7 +215,7 @@
             'order' : [[5, 'desc']],
             'ajax' : {
                'url' : '/apis/v1/cluster/executors/{{executorId}}',
-               'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data.taskInstances)
+               'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data.tasks)
             }
     });
 

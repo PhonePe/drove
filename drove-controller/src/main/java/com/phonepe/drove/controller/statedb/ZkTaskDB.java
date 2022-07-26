@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.statedb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -15,7 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
-import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STATES;
+import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
 
 /**
  *
@@ -36,9 +36,9 @@ public class ZkTaskDB extends TaskDB {
     }
 
     @Override
-    public Map<String, List<TaskInstanceInfo>> tasks(
+    public Map<String, List<TaskInfo>> tasks(
             Collection<String> sourceAppIds,
-            Set<TaskInstanceState> validStates,
+            Set<TaskState> validStates,
             boolean skipStaleCheck) {
         val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         return sourceAppIds.stream()
@@ -48,19 +48,19 @@ public class ZkTaskDB extends TaskDB {
                                                 instanceInfo -> validStates.contains(instanceInfo.getState())
                                                         && (skipStaleCheck || instanceInfo.getUpdated().after(
                                                         validUpdateDate))).stream())
-                .collect(Collectors.groupingBy(TaskInstanceInfo::getSourceAppName, Collectors.toUnmodifiableList()));
+                .collect(Collectors.groupingBy(TaskInfo::getSourceAppName, Collectors.toUnmodifiableList()));
     }
 
     @Override
-    public Optional<TaskInstanceInfo> task(String sourceAppName, String taskId) {
+    public Optional<TaskInfo> task(String sourceAppName, String taskId) {
         return Optional.ofNullable(readNodeData(curatorFramework,
                                                 instancePath(sourceAppName, taskId),
                                                 mapper,
-                                                TaskInstanceInfo.class));
+                                                TaskInfo.class));
     }
 
     @Override
-    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInstanceInfo instanceInfo) {
+    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInfo instanceInfo) {
         return setNodeData(curatorFramework,
                            instancePath(sourceAppName, taskId),
                            mapper,
@@ -73,7 +73,7 @@ public class ZkTaskDB extends TaskDB {
     }
 
     @Override
-    public Optional<TaskInstanceInfo> checkedCurrentState(String sourceAppName, String taskId) {
+    public Optional<TaskInfo> checkedCurrentState(String sourceAppName, String taskId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         val instance = task(sourceAppName, taskId).orElse(null);
         if(null == instance
@@ -85,38 +85,38 @@ public class ZkTaskDB extends TaskDB {
                  sourceAppName, instance.getTaskId(), instance.getState(), instance.getUpdated());
         val updateStatus = updateTaskImpl(sourceAppName,
                                           taskId,
-                                          new TaskInstanceInfo(instance.getSourceAppName(),
-                                        instance.getTaskId(),
-                                        instance.getInstanceId(),
-                                        instance.getExecutorId(),
-                                        instance.getHostname(),
-                                        instance.getExecutable(),
-                                        instance.getResources(),
-                                        instance.getVolumes(),
-                                        instance.getLoggingSpec(),
-                                        instance.getEnv(),
-                                        TaskInstanceState.LOST,
-                                        instance.getMetadata(),
-                                        "Instance lost",
-                                        instance.getCreated(),
-                                        new Date()));
+                                          new TaskInfo(instance.getSourceAppName(),
+                                                       instance.getTaskId(),
+                                                       instance.getInstanceId(),
+                                                       instance.getExecutorId(),
+                                                       instance.getHostname(),
+                                                       instance.getExecutable(),
+                                                       instance.getResources(),
+                                                       instance.getVolumes(),
+                                                       instance.getLoggingSpec(),
+                                                       instance.getEnv(),
+                                                       TaskState.LOST,
+                                                       instance.getMetadata(),
+                                                       "Instance lost",
+                                                       instance.getCreated(),
+                                                       new Date()));
         log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
         return task(sourceAppName, taskId);
     }
 
     @SneakyThrows
-    private List<TaskInstanceInfo> listTasks(
+    private List<TaskInfo> listTasks(
             String appId,
             int start,
             int size,
-            Predicate<TaskInstanceInfo> filter) {
+            Predicate<TaskInfo> filter) {
         val parentPath = instancePath(appId);
         return readChildrenNodes(curatorFramework,
                                  parentPath, start, size,
                                  instanceId -> readNodeData(curatorFramework,
                                                             instanceInfoPath(parentPath, instanceId),
                                                             mapper,
-                                                            TaskInstanceInfo.class,
+                                                            TaskInfo.class,
                                                             filter));
     }
 

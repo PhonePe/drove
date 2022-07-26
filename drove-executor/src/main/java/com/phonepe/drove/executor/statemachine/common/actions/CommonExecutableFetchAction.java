@@ -2,8 +2,8 @@ package com.phonepe.drove.executor.statemachine.common.actions;
 
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
-import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfo;
-import com.phonepe.drove.executor.statemachine.InstanceActionBase;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
+import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
@@ -16,7 +16,7 @@ import lombok.val;
  *
  */
 @Slf4j
-public abstract class CommonExecutableFetchAction<E extends DeployedExecutorInstanceInfo, S extends Enum<S>, T extends DeploymentUnitSpec> extends InstanceActionBase<E, S, T> {
+public abstract class CommonExecutableFetchAction<E extends DeployedExecutionObjectInfo, S extends Enum<S>, T extends DeploymentUnitSpec> extends ExecutorActionBase<E, S, T> {
 
         private final DockerAuthConfig dockerAuthConfig;
 

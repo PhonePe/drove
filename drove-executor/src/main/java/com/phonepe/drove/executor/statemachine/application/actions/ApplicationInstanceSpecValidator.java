@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -14,8 +14,8 @@ import com.phonepe.drove.statemachine.StateData;
 public class ApplicationInstanceSpecValidator extends ApplicationInstanceAction {
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorApplicationInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
+            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         return StateData.from(currentState, InstanceState.PROVISIONING);
     }
 

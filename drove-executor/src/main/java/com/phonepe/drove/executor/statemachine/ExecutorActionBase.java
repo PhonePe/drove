@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.statemachine;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
-import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import lombok.val;
  *
  */
 @Slf4j
-public abstract class InstanceActionBase<E extends DeployedExecutorInstanceInfo, S extends Enum<S>, T extends DeploymentUnitSpec> implements Action<E, S, InstanceActionContext<T>, Void> {
+public abstract class ExecutorActionBase<E extends DeployedExecutionObjectInfo, S extends Enum<S>, T extends DeploymentUnitSpec> implements Action<E, S, InstanceActionContext<T>, Void> {
 
     @Override
     public final StateData<S, E> execute(

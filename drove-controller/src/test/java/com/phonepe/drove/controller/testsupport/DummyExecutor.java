@@ -217,12 +217,12 @@ public class DummyExecutor implements Runnable, AutoCloseable {
             }
 
             @Override
-            public Void visit(StartTaskInstanceMessage startTaskInstanceMessage) {
+            public Void visit(StartTaskMessage startTaskMessage) {
                 return null;
             }
 
             @Override
-            public Void visit(StopTaskInstanceMessage stopTaskInstanceMessage) {
+            public Void visit(StopTaskMessage stopTaskMessage) {
                 return null;
             }
 

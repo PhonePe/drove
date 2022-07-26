@@ -5,7 +5,7 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
-import com.phonepe.drove.common.model.executor.StartTaskInstanceMessage;
+import com.phonepe.drove.common.model.executor.StartTaskMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
@@ -135,12 +135,12 @@ public class StartTaskJob implements Job<Boolean> {
             return false;
         }
 
-        val startMessage = new StartTaskInstanceMessage(MessageHeader.controllerRequest(),
-                                                        new ExecutorAddress(node.getExecutorId(),
+        val startMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
+                                                new ExecutorAddress(node.getExecutorId(),
                                                                             node.getHostname(),
                                                                             node.getPort(),
                                                                             node.getTransportType()),
-                                                        new TaskInstanceSpec(taskId,
+                                                new TaskInstanceSpec(taskId,
                                                                              sourceApp,
                                                                              instanceId,
                                                                              taskSpec.getExecutable(),

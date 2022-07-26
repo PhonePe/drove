@@ -38,7 +38,7 @@ class StateUpdaterTest {
         val spec = appSpec(1);
         val taskSpec = taskSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val taskInstance = generateTaskInstanceInfo(taskSpec, 0);
+        val taskInstance = generateTaskInfo(taskSpec, 0);
         val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance));
         val nodes = List.of(executor.getNodeData());
         val counter = new AtomicInteger();
@@ -69,7 +69,7 @@ class StateUpdaterTest {
         val spec = appSpec(1);
         val taskSpec = taskSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val taskInstance = generateTaskInstanceInfo(taskSpec, 0);
+        val taskInstance = generateTaskInfo(taskSpec, 0);
         val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance));
 
         doReturn(Optional.of(executor))

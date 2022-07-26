@@ -197,7 +197,7 @@
             { 'data' : 'usedCores' },
             { 'data' : 'usedMemory', 'render' : formatBytes },
             { 'data' : 'created', 'render' : timeSince },
-            { 'data' : 'state', 'render' : renderTaskInstanceState },
+            { 'data' : 'state', 'render' : renderTaskState },
             { 'data' : 'logStream',
                 'render' : function(data, type, row, meta) {
                     return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '">Details</a>';

@@ -2,10 +2,10 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.task.TaskInstanceAction;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.executor.statemachine.task.TaskAction;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.util.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +15,11 @@ import lombok.val;
  *
  */
 @Slf4j
-public class TaskInstanceDestroyAction extends TaskInstanceAction {
+public class TaskDestroyAction extends TaskAction {
     @Override
-    protected StateData<TaskInstanceState, ExecutorTaskInstanceInfo> executeImpl(
+    protected StateData<TaskState, ExecutorTaskInfo> executeImpl(
             InstanceActionContext<TaskInstanceSpec> context,
-            StateData<TaskInstanceState, ExecutorTaskInstanceInfo> currentState) {
+            StateData<TaskState, ExecutorTaskInfo> currentState) {
         val containerId = context.getDockerInstanceId();
         if(!Strings.isNullOrEmpty(containerId)) {
             try (val cmd = context.getClient().removeContainerCmd(containerId).withForce(true)) {
@@ -31,11 +31,11 @@ public class TaskInstanceDestroyAction extends TaskInstanceAction {
             }
             catch (Exception e) {
                 log.error("Error stopping container " + containerId, e);
-                return StateData.errorFrom(currentState, TaskInstanceState.DEPROVISIONING,
+                return StateData.errorFrom(currentState, TaskState.DEPROVISIONING,
                                            "Error removing instance: " + e.getMessage());
             }
         }
-        return StateData.from(currentState, TaskInstanceState.DEPROVISIONING);
+        return StateData.from(currentState, TaskState.DEPROVISIONING);
     }
 
     @Override
@@ -44,8 +44,8 @@ public class TaskInstanceDestroyAction extends TaskInstanceAction {
     }
 
     @Override
-    protected TaskInstanceState defaultErrorState() {
-        return TaskInstanceState.DEPROVISIONING;
+    protected TaskState defaultErrorState() {
+        return TaskState.DEPROVISIONING;
     }
 
     @Override

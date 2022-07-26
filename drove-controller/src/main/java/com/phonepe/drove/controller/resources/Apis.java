@@ -16,7 +16,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -181,14 +181,14 @@ public class Apis {
     @GET
     @Path("/tasks")
     @Timed
-    public ApiResponse<List<TaskInstanceInfo>> activeTasks() {
+    public ApiResponse<List<TaskInfo>> activeTasks() {
         return success(taskEngine.activeTasks());
     }
 
     @GET
     @Path("/tasks/{sourceAppName}/instances/{taskId}")
     @Timed
-    public ApiResponse<TaskInstanceInfo> taskInstance(
+    public ApiResponse<TaskInfo> taskInstance(
             @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
             @PathParam("taskId") @NotEmpty final String taskId) {
         return responseEngine.taskDetails(sourceAppName, taskId);
@@ -198,7 +198,7 @@ public class Apis {
     @Path("/tasks/search")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Timed
-    public Response searchTaskInstance(
+    public Response searchTask(
             @FormParam("taskSearchAppName") @Pattern(regexp = "[a-zA-Z\\d\\-_]*") @NotEmpty final String sourceAppName,
             @FormParam("taskSearchTaskID") @Pattern(regexp = "[a-zA-Z\\d\\-_]*") @NotEmpty final String taskId) {
         val redirectUri = responseEngine.taskDetails(sourceAppName, taskId)

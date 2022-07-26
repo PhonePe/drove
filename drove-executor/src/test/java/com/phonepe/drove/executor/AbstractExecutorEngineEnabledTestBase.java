@@ -92,7 +92,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
                 return new TaskInstanceEngine(
                         executorIdManager,
                         executorService,
-                        new InjectingTaskInstanceActionFactory(injector),
+                        new InjectingTaskActionFactory(injector),
                         resourceDB,
                         ExecutorTestingUtils.DOCKER_CLIENT);
             }

@@ -2,12 +2,12 @@ package com.phonepe.drove.executor.statemachine.task;
 
 import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
-import com.phonepe.drove.executor.InstanceActionFactory;
-import com.phonepe.drove.executor.model.ExecutorTaskInstanceInfo;
-import com.phonepe.drove.executor.statemachine.InstanceActionBase;
+import com.phonepe.drove.executor.ExecutorActionFactory;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
+import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.actions.*;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import com.phonepe.drove.statemachine.StateMachine;
 import com.phonepe.drove.statemachine.Transition;
@@ -15,21 +15,21 @@ import lombok.NonNull;
 
 import java.util.List;
 
-import static com.phonepe.drove.models.taskinstance.TaskInstanceState.*;
+import static com.phonepe.drove.models.taskinstance.TaskState.*;
 
 
 /**
  *
  */
-public class TaskInstanceStateMachine extends StateMachine<ExecutorTaskInstanceInfo, Void, TaskInstanceState,
-        InstanceActionContext<TaskInstanceSpec>, InstanceActionBase<ExecutorTaskInstanceInfo, TaskInstanceState,
-        TaskInstanceSpec>> {
-    private static final List<Transition<ExecutorTaskInstanceInfo, Void, TaskInstanceState,
-            InstanceActionContext<TaskInstanceSpec>, InstanceActionBase<ExecutorTaskInstanceInfo, TaskInstanceState,
-            TaskInstanceSpec>>> transitions
+public class TaskStateMachine extends StateMachine<ExecutorTaskInfo, Void, TaskState,
+        InstanceActionContext<TaskInstanceSpec>, ExecutorActionBase<ExecutorTaskInfo, TaskState,
+                TaskInstanceSpec>> {
+    private static final List<Transition<ExecutorTaskInfo, Void, TaskState,
+            InstanceActionContext<TaskInstanceSpec>, ExecutorActionBase<ExecutorTaskInfo, TaskState,
+                        TaskInstanceSpec>>> transitions
             = List.of(
             new Transition<>(PENDING,
-                             TaskInstanceSpecValidator.class,
+                             TaskSpecValidator.class,
                              PROVISIONING,
                              STOPPING),
             new Transition<>(PROVISIONING,
@@ -37,7 +37,7 @@ public class TaskInstanceStateMachine extends StateMachine<ExecutorTaskInstanceI
                              STARTING,
                              PROVISIONING_FAILED),
             new Transition<>(STARTING,
-                             TaskInstanceRunAction.class,
+                             TaskRunAction.class,
                              RUNNING,
                              RUN_FAILED),
             new Transition<>(RUNNING,
@@ -46,28 +46,28 @@ public class TaskInstanceStateMachine extends StateMachine<ExecutorTaskInstanceI
                              RUN_CANCELLED,
                              RUN_FAILED),
             new Transition<>(RUN_COMPLETED,
-                             TaskInstanceDestroyAction.class,
+                             TaskDestroyAction.class,
                              DEPROVISIONING),
             new Transition<>(RUN_FAILED,
-                             TaskInstanceDestroyAction.class,
+                             TaskDestroyAction.class,
                              DEPROVISIONING),
             new Transition<>(RUN_CANCELLED,
-                             TaskInstanceDestroyAction.class,
+                             TaskDestroyAction.class,
                              DEPROVISIONING),
             new Transition<>(DEPROVISIONING,
                              TaskExecutableCleanupAction.class,
                              STOPPED),
             new Transition<>(UNKNOWN,
-                             TaskInstanceRecoveryAction.class,
+                             TaskRecoveryAction.class,
                              RUNNING,
                              STOPPED)
                      );
 
-    public TaskInstanceStateMachine(
+    public TaskStateMachine(
             String executorId,
             TaskInstanceSpec instanceSpec,
-            @NonNull StateData<TaskInstanceState, ExecutorTaskInstanceInfo> initalState,
-            InstanceActionFactory<ExecutorTaskInstanceInfo, TaskInstanceState, TaskInstanceSpec> actionFactory,
+            @NonNull StateData<TaskState, ExecutorTaskInfo> initalState,
+            ExecutorActionFactory<ExecutorTaskInfo, TaskState, TaskInstanceSpec> actionFactory,
             DockerClient client) {
         super(initalState, new InstanceActionContext<>(executorId, instanceSpec, client), actionFactory, transitions);
     }

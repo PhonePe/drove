@@ -27,8 +27,8 @@ import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import com.phonepe.drove.models.task.TaskSpec;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -128,7 +128,7 @@ public class ControllerTestUtils {
     }
 
     public static ExecutorHostInfo executorHost(int port, List<InstanceInfo> appInstances,
-                                                List<TaskInstanceInfo> taskInstances) {
+                                                List<TaskInfo> taskInstances) {
         return new ExecutorHostInfo(
                 "Ex1",
                 new ExecutorNodeData(EXECUTOR_ID,
@@ -209,35 +209,35 @@ public class ControllerTestUtils {
                                 date);
     }
 
-    public static TaskInstanceInfo generateTaskInstanceInfo(final TaskSpec spec, int idx) {
-        return generateTaskInstanceInfo(spec, idx, TaskInstanceState.RUNNING);
+    public static TaskInfo generateTaskInfo(final TaskSpec spec, int idx) {
+        return generateTaskInfo(spec, idx, TaskState.RUNNING);
     }
 
-    public static TaskInstanceInfo generateTaskInstanceInfo(final TaskSpec spec, int idx, TaskInstanceState state) {
-        return generateTaskInstanceInfo(spec, idx, state, new Date(), null);
+    public static TaskInfo generateTaskInfo(final TaskSpec spec, int idx, TaskState state) {
+        return generateTaskInfo(spec, idx, state, new Date(), null);
     }
 
-    public static TaskInstanceInfo generateTaskInstanceInfo(
+    public static TaskInfo generateTaskInfo(
             final TaskSpec spec,
             int idx,
-            TaskInstanceState state,
+            TaskState state,
             Date date,
             String errorMessage) {
-        return new TaskInstanceInfo(spec.getSourceAppName(),
-                                spec.getTaskId(),
-                                String.format("TI-%05d", idx),
-                                EXECUTOR_ID,
-                                "localhost",
-                                spec.getExecutable(),
-                                List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
+        return new TaskInfo(spec.getSourceAppName(),
+                            spec.getTaskId(),
+                            String.format("TI-%05d", idx),
+                            EXECUTOR_ID,
+                            "localhost",
+                            spec.getExecutable(),
+                            List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
                                         new MemoryAllocation(Map.of(0, 512L))),
-                                spec.getVolumes(),
-                                spec.getLogging(),
-                                spec.getEnv(),
-                                state,
-                                Collections.emptyMap(),
-                                errorMessage,
-                                date,
-                                date);
+                            spec.getVolumes(),
+                            spec.getLogging(),
+                            spec.getEnv(),
+                            state,
+                            Collections.emptyMap(),
+                            errorMessage,
+                            date,
+                            date);
     }
 }

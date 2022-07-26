@@ -4,7 +4,7 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.logging.LogBus;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.JobType;
@@ -37,8 +37,8 @@ public class ApplicationInstanceRecoveryAction extends ApplicationInstanceAction
 
     @Override
     @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorApplicationInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorApplicationInstanceInfo> currentState) {
+    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
+            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val client = context.getClient();
         val instanceId = currentState.getData().getInstanceId();
         val container = client.listContainersCmd()

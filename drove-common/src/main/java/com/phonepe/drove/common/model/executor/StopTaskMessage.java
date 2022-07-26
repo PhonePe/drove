@@ -12,15 +12,15 @@ import lombok.Value;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class StopTaskInstanceMessage extends ExecutorMessage {
+public class StopTaskMessage extends ExecutorMessage {
 
     String instanceId;
 
-    public StopTaskInstanceMessage(
+    public StopTaskMessage(
             MessageHeader header,
             ExecutorAddress address,
             String instanceId) {
-        super(ExecutorMessageType.STOP_TASK_INSTANCE, header, address);
+        super(ExecutorMessageType.STOP_TASK, header, address);
         this.instanceId = instanceId;
     }
 

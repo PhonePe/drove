@@ -6,7 +6,7 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -42,7 +42,7 @@ public class StateUpdater {
         resourcesDB.update(children);
         children.forEach(node -> node.getInstances()
                 .forEach(this::updateInstanceInfo));
-        children.forEach(node -> node.getTaskInstances()
+        children.forEach(node -> node.getTasks()
                 .forEach(this::updateTask));
     }
 
@@ -60,7 +60,7 @@ public class StateUpdater {
         resourcesDB.update(snapshot);
         return updateInstanceInfo(instanceInfo);
     }
-    public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final TaskInstanceInfo instanceInfo) {
+    public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final TaskInfo instanceInfo) {
         resourcesDB.update(snapshot);
         return updateTask(instanceInfo);
     }
@@ -71,7 +71,7 @@ public class StateUpdater {
                                                   instanceInfo.getInstanceId(),
                                                   instanceInfo);
     }
-    private boolean updateTask(TaskInstanceInfo instanceInfo) {
+    private boolean updateTask(TaskInfo instanceInfo) {
         return taskDB.updateTask(instanceInfo.getSourceAppName(),
                                      instanceInfo.getTaskId(),
                                      instanceInfo);

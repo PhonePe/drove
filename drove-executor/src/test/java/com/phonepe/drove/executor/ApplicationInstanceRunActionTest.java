@@ -5,7 +5,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.logging.LogBus;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.actions.ApplicationExecutableFetchAction;
@@ -67,16 +67,16 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                                    new ResourceConfig())
                 .execute(ctx,
                          StateData.create(PROVISIONING,
-                                          new ExecutorApplicationInstanceInfo(instanceSpec.getAppId(),
-                                                                              instanceSpec.getAppName(),
-                                                                              instanceSpec.getInstanceId(),
-                                                                              executorId,
-                                                                              new LocalInstanceInfo(CommonUtils.hostname(),
+                                          new ExecutorInstanceInfo(instanceSpec.getAppId(),
+                                                                   instanceSpec.getAppName(),
+                                                                   instanceSpec.getInstanceId(),
+                                                                   executorId,
+                                                                   new LocalInstanceInfo(CommonUtils.hostname(),
                                                                                          Collections.emptyMap()),
-                                                                              instanceSpec.getResources(),
-                                                                              Collections.emptyMap(),
-                                                                              new Date(),
-                                                                              new Date()),
+                                                                   instanceSpec.getResources(),
+                                                                   Collections.emptyMap(),
+                                                                   new Date(),
+                                                                   new Date()),
                                           ""));
         assertEquals(InstanceState.UNREADY, newState.getState());
 

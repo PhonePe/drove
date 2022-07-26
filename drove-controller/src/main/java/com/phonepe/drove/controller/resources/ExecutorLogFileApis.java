@@ -12,7 +12,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.eclipse.jetty.http.HttpStatus;
@@ -195,7 +195,7 @@ public class ExecutorLogFileApis {
 
     private Optional<ExecutorNodeData> executorNodeForTask(String sourceAppName, String taskId) {
         return taskDB.task(sourceAppName, taskId)
-                .map(TaskInstanceInfo::getExecutorId)
+                .map(TaskInfo::getExecutorId)
                 .flatMap(clusterResourcesDB::currentSnapshot)
                 .map(ExecutorHostInfo::getNodeData);
     }

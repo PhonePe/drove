@@ -2,9 +2,9 @@ package com.phonepe.drove.executor.statemachine.application;
 
 import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.InstanceActionFactory;
-import com.phonepe.drove.executor.model.ExecutorApplicationInstanceInfo;
-import com.phonepe.drove.executor.statemachine.InstanceActionBase;
+import com.phonepe.drove.executor.ExecutorActionFactory;
+import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.actions.*;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -20,8 +20,8 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
 /**
  *
  */
-public class ApplicationInstanceStateMachine extends StateMachine<ExecutorApplicationInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>, InstanceActionBase<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec>> {
-    private static final List<Transition<ExecutorApplicationInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>, InstanceActionBase<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec>>> transitions
+public class ApplicationInstanceStateMachine extends StateMachine<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>, ExecutorActionBase<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec>> {
+    private static final List<Transition<ExecutorInstanceInfo, Void, InstanceState, InstanceActionContext<ApplicationInstanceSpec>, ExecutorActionBase<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec>>> transitions
             = List.of(
             new Transition<>(PENDING,
                              ApplicationInstanceSpecValidator.class,
@@ -74,8 +74,8 @@ public class ApplicationInstanceStateMachine extends StateMachine<ExecutorApplic
     public ApplicationInstanceStateMachine(
             String executorId,
             ApplicationInstanceSpec instanceSpec,
-            @NonNull StateData<InstanceState, ExecutorApplicationInstanceInfo> initalState,
-            InstanceActionFactory<ExecutorApplicationInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
+            @NonNull StateData<InstanceState, ExecutorInstanceInfo> initalState,
+            ExecutorActionFactory<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
             DockerClient client) {
         super(initalState, new InstanceActionContext<>(executorId, instanceSpec, client), actionFactory, transitions);
     }

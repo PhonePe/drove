@@ -2,7 +2,7 @@ package com.phonepe.drove.models.info.nodedata;
 
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -24,7 +24,7 @@ public class ExecutorNodeData extends NodeData {
 
     ExecutorResourceSnapshot state;
     List<InstanceInfo> instances;
-    List<TaskInstanceInfo> taskInstances;
+    List<TaskInfo> tasks;
     Set<String> tags;
     boolean blacklisted;
 
@@ -38,13 +38,13 @@ public class ExecutorNodeData extends NodeData {
             Date updated,
             ExecutorResourceSnapshot state,
             List<InstanceInfo> instances,
-            List<TaskInstanceInfo> taskInstances,
+            List<TaskInfo> tasks,
             Set<String> tags,
             boolean blacklisted) {
         super(NodeType.EXECUTOR, hostname, port, transportType, updated);
         this.state = state;
         this.instances = instances;
-        this.taskInstances = taskInstances;
+        this.tasks = tasks;
         this.tags = tags;
         this.blacklisted = blacklisted;
     }
@@ -58,7 +58,7 @@ public class ExecutorNodeData extends NodeData {
             final ExecutorNodeData nodeData,
             final ExecutorResourceSnapshot currentState,
             final List<InstanceInfo> instances,
-            final List<TaskInstanceInfo> taskInstances,
+            final List<TaskInfo> taskInstances,
             final Set<String> tags, boolean blacklisted) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),

@@ -5,7 +5,7 @@ import com.google.inject.Guice;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
-import com.phonepe.drove.executor.InjectingTaskInstanceActionFactory;
+import com.phonepe.drove.executor.InjectingTaskActionFactory;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -63,7 +63,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                ExecutorTestingUtils.DOCKER_CLIENT);
         val te = new TaskInstanceEngine(eim,
                                         Executors.newSingleThreadExecutor(),
-                                        new InjectingTaskInstanceActionFactory(Guice.createInjector()),
+                                        new InjectingTaskActionFactory(Guice.createInjector()),
                                         rdb,
                                         ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();

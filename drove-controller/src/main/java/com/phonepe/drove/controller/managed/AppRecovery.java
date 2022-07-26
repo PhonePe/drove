@@ -8,7 +8,7 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -91,7 +91,7 @@ public class AppRecovery implements Managed {
     private void recoverTasks(List<ApplicationInfo> allApps) {
         val appNames = allApps.stream().map(app -> app.getSpec().getName()).collect(Collectors.toSet());
         log.debug("Task recovery to be attempted for the following app names: {}", appNames);
-        val recoveryStates = EnumSet.allOf(TaskInstanceState.class)
+        val recoveryStates = EnumSet.allOf(TaskState.class)
                 .stream()
                 .filter(state -> !state.isTerminal())
                 .collect(Collectors.toSet());

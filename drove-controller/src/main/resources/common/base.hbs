@@ -138,7 +138,7 @@ $(document).ready(function() {
         }
     }
 
-    function renderTaskInstanceState(data, type, row, meta) {
+    function renderTaskState(data, type, row, meta) {
         switch(data) {
             case 'PENDING' : return '<span class="font-weight-bold text-primary">Pending</span>';
             case 'PROVISIONING' : return '<span class="font-weight-bold text-warning">Provisioning</span>';

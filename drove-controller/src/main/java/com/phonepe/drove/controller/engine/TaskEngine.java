@@ -11,8 +11,8 @@ import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.util.Strings;
@@ -95,7 +95,7 @@ public class TaskEngine {
         });
         this.checkSignal.connect(this::monitorRunners);
         this.taskDB.onStateChange().connect(newState -> {
-            if (newState.getState().equals(TaskInstanceState.RUNNING)) {
+            if (newState.getState().equals(TaskState.RUNNING)) {
                 handleZombieTask(newState.getSourceAppName(), newState.getTaskId());
             }
         });
@@ -146,7 +146,7 @@ public class TaskEngine {
         runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
     }
 
-    public List<TaskInstanceInfo> activeTasks() {
+    public List<TaskInfo> activeTasks() {
         return runners.values()
                 .stream()
                 .map(taskRunner -> taskDB.task(taskRunner.getSourceAppName(), taskRunner.getTaskId()).orElse(null))
@@ -163,7 +163,7 @@ public class TaskEngine {
         }
         runners.forEach((runTaskId, runner) -> {
             val currState = runner.updateCurrentState().orElse(null);
-            if (null != currState && currState.equals(TaskInstanceState.LOST)) {
+            if (null != currState && currState.equals(TaskState.LOST)) {
                 val sourceAppName = runner.getSourceAppName();
                 val taskId = runner.getTaskId();
                 log.info("Task {}/{} is lost. Runner will be stopped.", sourceAppName, taskId);

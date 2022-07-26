@@ -4,7 +4,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
-import com.phonepe.drove.common.model.executor.StopTaskInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopTaskMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -14,8 +14,8 @@ import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
@@ -92,7 +92,7 @@ public class StopTaskJob implements Job<Boolean> {
         return false;
     }
 
-    private boolean stopTask(final TaskInstanceInfo task, final ClusterOpSpec clusterOpSpec) {
+    private boolean stopTask(final TaskInfo task, final ClusterOpSpec clusterOpSpec) {
         val executorId = task.getExecutorId();
         val node = clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
@@ -101,18 +101,18 @@ public class StopTaskJob implements Job<Boolean> {
             log.warn("No node found in the cluster with ID {}.", executorId);
             return false;
         }
-        val stopMessage = new StopTaskInstanceMessage(MessageHeader.controllerRequest(),
-                                                      new ExecutorAddress(executorId,
+        val stopMessage = new StopTaskMessage(MessageHeader.controllerRequest(),
+                                              new ExecutorAddress(executorId,
                                                                       task.getHostname(),
                                                                       node.getPort(),
                                                                       node.getTransportType()),
-                                                      task.getInstanceId());
+                                              task.getInstanceId());
         val response = communicator.send(stopMessage);
         log.trace("Sent message to stop task: {}/{}. Message: {}", sourceAppName, taskId, stopMessage);
         if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
             log.warn("Task {} could not be stopped. Sending message failed: {}", task.getExecutorId(), executorId);
             return false;
         }
-        return ensureTaskState(taskDB, clusterOpSpec, sourceAppName, taskId, TaskInstanceState.STOPPED, retrySpecFactory);
+        return ensureTaskState(taskDB, clusterOpSpec, sourceAppName, taskId, TaskState.STOPPED, retrySpecFactory);
     }
 }

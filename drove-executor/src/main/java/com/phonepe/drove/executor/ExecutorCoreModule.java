@@ -83,7 +83,7 @@ public class ExecutorCoreModule extends AbstractModule {
         return new TaskInstanceEngine(
                 executorIdManager,
                 executorService,
-                new InjectingTaskInstanceActionFactory(injector),
+                new InjectingTaskActionFactory(injector),
                 resourceDB,
                 client);
     }

@@ -11,7 +11,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -94,16 +94,16 @@ public class StaleDataCleaner implements Managed {
         }
         val allApps = applicationStateDB.applications(0, Integer.MAX_VALUE);
         cleanupStaleApps(allApps);
-        cleanupStaleTaskInstances(allApps);
+        cleanupStaleTasks(allApps);
 
         log.info("Stale data check invocation at {} completed now", date);
     }
 
-    private void cleanupStaleTaskInstances(List<ApplicationInfo> allApps) {
+    private void cleanupStaleTasks(List<ApplicationInfo> allApps) {
         val appNames = allApps.stream().map(ai -> ai.getSpec().getName()).distinct().toList();
-        val taskTerminalState = EnumSet.allOf(TaskInstanceState.class)
+        val taskTerminalState = EnumSet.allOf(TaskState.class)
                 .stream()
-                .filter(TaskInstanceState::isTerminal)
+                .filter(TaskState::isTerminal)
                 .collect(Collectors.toSet());
         val maxLastTaskUpdated = new Date(new Date().getTime() - 2L * 24 * 60 * 60 * 1000); //2 days before now
 

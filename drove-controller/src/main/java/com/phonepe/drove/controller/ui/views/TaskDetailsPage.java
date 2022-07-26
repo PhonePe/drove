@@ -1,6 +1,6 @@
 package com.phonepe.drove.controller.ui.views;
 
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -15,12 +15,12 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 public class TaskDetailsPage extends TemplateView {
     String sourceAppName;
     String taskId;
-    TaskInstanceInfo instanceInfo;
+    TaskInfo instanceInfo;
 
     public TaskDetailsPage(
             String sourceAppName,
             String taskId,
-            TaskInstanceInfo instanceInfo) {
+            TaskInfo instanceInfo) {
         super("templates/taskdetails.hbs");
         this.sourceAppName = sourceAppName;
         this.taskId = taskId;

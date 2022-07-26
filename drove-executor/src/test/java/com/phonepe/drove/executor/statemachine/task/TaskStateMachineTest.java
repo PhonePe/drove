@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 /**
  *
  */
-class TaskInstanceStateMachineTest {
+class TaskStateMachineTest {
 
     @Test
     void test() {

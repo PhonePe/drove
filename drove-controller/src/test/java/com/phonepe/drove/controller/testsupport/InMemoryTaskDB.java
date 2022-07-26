@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.testsupport;
 
 import com.phonepe.drove.controller.statedb.TaskDB;
-import com.phonepe.drove.models.taskinstance.TaskInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STATES;
+import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
 
 /**
  *
@@ -19,12 +19,12 @@ import static com.phonepe.drove.models.taskinstance.TaskInstanceState.ACTIVE_STA
 @Singleton
 @Slf4j
 public class InMemoryTaskDB extends TaskDB {
-    private final Map<String, Map<String, TaskInstanceInfo>> instances = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, TaskInfo>> instances = new ConcurrentHashMap<>();
 
     @Override
-    public Map<String, List<TaskInstanceInfo>> tasks(
+    public Map<String, List<TaskInfo>> tasks(
             Collection<String> sourceAppIds,
-            Set<TaskInstanceState> validStates,
+            Set<TaskState> validStates,
             boolean skipStaleCheck) {
         val validUpdateDate = new Date(System.currentTimeMillis() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         return sourceAppIds.stream()
@@ -33,19 +33,19 @@ public class InMemoryTaskDB extends TaskDB {
                 .flatMap(instances -> instances.values().stream())
                 .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
                 .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
-                .collect(Collectors.groupingBy(TaskInstanceInfo::getSourceAppName, Collectors.toUnmodifiableList()));
+                .collect(Collectors.groupingBy(TaskInfo::getSourceAppName, Collectors.toUnmodifiableList()));
     }
 
     @Override
-    public Optional<TaskInstanceInfo> task(String sourceAppName, String taskId) {
+    public Optional<TaskInfo> task(String sourceAppName, String taskId) {
         return Optional.ofNullable(instances.getOrDefault(sourceAppName, Collections.emptyMap()).get(taskId));
     }
 
     @Override
-    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInstanceInfo taskInstanceInfo) {
+    protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInfo taskInfo) {
         instances.compute(sourceAppName, (aId, old) -> {
-            val ins = Objects.requireNonNullElse(old, new ConcurrentHashMap<String, TaskInstanceInfo>());
-            ins.put(taskId, taskInstanceInfo);
+            val ins = Objects.requireNonNullElse(old, new ConcurrentHashMap<String, TaskInfo>());
+            ins.put(taskId, taskInfo);
             return ins;
         });
         return true;
@@ -57,7 +57,7 @@ public class InMemoryTaskDB extends TaskDB {
     }
 
     @Override
-    public Optional<TaskInstanceInfo> checkedCurrentState(String sourceAppName, String taskId) {
+    public Optional<TaskInfo> checkedCurrentState(String sourceAppName, String taskId) {
         val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         val instance = task(sourceAppName, taskId).orElse(null);
         if(null == instance
@@ -69,21 +69,21 @@ public class InMemoryTaskDB extends TaskDB {
                  sourceAppName, instance.getTaskId(), instance.getState(), instance.getUpdated());
         val updateStatus = updateTaskImpl(sourceAppName,
                                           taskId,
-                                          new TaskInstanceInfo(instance.getSourceAppName(),
-                                                           instance.getTaskId(),
-                                                           instance.getInstanceId(),
-                                                           instance.getExecutorId(),
-                                                           instance.getHostname(),
-                                                           instance.getExecutable(),
-                                                           instance.getResources(),
-                                                           instance.getVolumes(),
-                                                           instance.getLoggingSpec(),
-                                                           instance.getEnv(),
-                                                           TaskInstanceState.LOST,
-                                                           instance.getMetadata(),
-                                                           "Instance lost",
-                                                           instance.getCreated(),
-                                                           new Date()));
+                                          new TaskInfo(instance.getSourceAppName(),
+                                                       instance.getTaskId(),
+                                                       instance.getInstanceId(),
+                                                       instance.getExecutorId(),
+                                                       instance.getHostname(),
+                                                       instance.getExecutable(),
+                                                       instance.getResources(),
+                                                       instance.getVolumes(),
+                                                       instance.getLoggingSpec(),
+                                                       instance.getEnv(),
+                                                       TaskState.LOST,
+                                                       instance.getMetadata(),
+                                                       "Instance lost",
+                                                       instance.getCreated(),
+                                                       new Date()));
         log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
         return task(sourceAppName, taskId);
     }

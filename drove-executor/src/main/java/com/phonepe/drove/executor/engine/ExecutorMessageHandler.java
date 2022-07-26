@@ -66,37 +66,37 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     }
 
     @Override
-    public MessageResponse visit(StartTaskInstanceMessage startTaskInstanceMessage) {
-        val instanceId = CommonUtils.instanceId(startTaskInstanceMessage.getSpec());
+    public MessageResponse visit(StartTaskMessage startTaskMessage) {
+        val instanceId = CommonUtils.instanceId(startTaskMessage.getSpec());
         if (engine.exists(instanceId)) {
-            return new MessageResponse(startTaskInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+            return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
             log.info("Starting task instance {}", instanceId);
-            return new MessageResponse(startTaskInstanceMessage.getHeader(),
-                                       taskInstanceEngine.startInstance(startTaskInstanceMessage.getSpec())
+            return new MessageResponse(startTaskMessage.getHeader(),
+                                       taskInstanceEngine.startInstance(startTaskMessage.getSpec())
                                        ? MessageDeliveryStatus.ACCEPTED
                                        : MessageDeliveryStatus.FAILED);
         }
         catch (Exception e) {
             log.error("Could not start task: ", e);
-            return new MessageResponse(startTaskInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+            return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
     }
 
     @Override
-    public MessageResponse visit(StopTaskInstanceMessage stopTaskInstanceMessage) {
-        val instanceId = stopTaskInstanceMessage.getInstanceId();
+    public MessageResponse visit(StopTaskMessage stopTaskMessage) {
+        val instanceId = stopTaskMessage.getInstanceId();
         try {
             log.info("Stopping task instance {}", instanceId);
-            return new MessageResponse(stopTaskInstanceMessage.getHeader(),
+            return new MessageResponse(stopTaskMessage.getHeader(),
                                        taskInstanceEngine.stopInstance(instanceId)
                                        ? MessageDeliveryStatus.ACCEPTED
                                        : MessageDeliveryStatus.FAILED);
         }
         catch (Exception e) {
             log.error("Could not stop task: ", e);
-            return new MessageResponse(stopTaskInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+            return new MessageResponse(stopTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
     }
 
