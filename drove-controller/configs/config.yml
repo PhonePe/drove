@@ -51,3 +51,6 @@ userAuth:
     - username: guest
       password: guest
       role: EXTERNAL_READ_ONLY
+
+instanceAuth:
+  secret: RandomSecret
