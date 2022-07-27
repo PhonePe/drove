@@ -170,7 +170,7 @@ public class TaskEngine {
                 runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
             }
         });
-        log.info("Task check triggered at {} is completed", triggerDate);
+        log.debug("Task check triggered at {} is completed", triggerDate);
     }
 
     private TaskRunner createRunner(String sourceAppName, String taskId) {
