@@ -3,8 +3,8 @@ package com.phonepe.drove.controller.managed;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -56,11 +56,11 @@ class AppRecoveryTest extends ControllerTestBase {
         when(tdb.tasks(any(), any(), anyBoolean())).thenReturn(Map.of());
         val ids = new HashSet<String>();
         when(ae.handleOperation(any(ApplicationOperation.class)))
-                .thenAnswer(new Answer<CommandValidator.ValidationResult>() {
+                .thenAnswer(new Answer<ValidationResult>() {
                     @Override
-                    public CommandValidator.ValidationResult answer(InvocationOnMock invocationOnMock) throws Throwable {
+                    public ValidationResult answer(InvocationOnMock invocationOnMock) throws Throwable {
                         ids.add(deployableObjectId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
-                        return CommandValidator.ValidationResult.success();
+                        return ValidationResult.success();
                     }
                 });
         lsc.dispatch(true);

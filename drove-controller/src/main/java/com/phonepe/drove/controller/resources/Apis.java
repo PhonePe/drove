@@ -4,8 +4,8 @@ import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -92,7 +92,7 @@ public class Apis {
                                               "Command validation failure");
         }
         val res = engine.handleOperation(operation);
-        if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
         return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
@@ -172,10 +172,10 @@ public class Apis {
                                               "Command validation failure");
         }
         val res = taskEngine.handleTaskOp(operation);
-        if (res) {
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
-        return ControllerUtils.badRequest(Map.of(), "Command validation failure");
+        return ControllerUtils.badRequest(Map.of(), "Command validation failure: " + res.getMessages());
     }
 
     @GET

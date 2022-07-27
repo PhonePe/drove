@@ -21,7 +21,6 @@ import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
-import lombok.Value;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
@@ -40,7 +39,7 @@ import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
  *
  */
 @Singleton
-public class CommandValidator {
+public class ApplicationCommandValidator {
     private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
             .put(INIT, Set.of())
@@ -55,36 +54,12 @@ public class CommandValidator {
             .put(FAILED, Set.of())
             .build();
 
-    public enum ValidationStatus {
-        SUCCESS,
-        FAILURE
-    }
-
-    @Value
-    public static class ValidationResult {
-        ValidationStatus status;
-        List<String> messages;
-
-        public static ValidationResult success() {
-            return new ValidationResult(ValidationStatus.SUCCESS, List.of("Success"));
-        }
-
-        public static ValidationResult failure(final String message) {
-            return failure(List.of(message));
-        }
-
-        public static ValidationResult failure(final List<String> messages) {
-            Objects.requireNonNull(messages, "Validation failure message cannot be empty");
-            return new ValidationResult(ValidationStatus.FAILURE, messages);
-        }
-    }
-
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationInstanceInfoDB instanceInfoStore;
 
     @Inject
-    public CommandValidator(
+    public ApplicationCommandValidator(
             ApplicationStateDB applicationStateDB,
             ClusterResourcesDB clusterResourcesDB,
             ApplicationInstanceInfoDB instanceInfoStore) {
@@ -143,7 +118,7 @@ public class CommandValidator {
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {
             if (engine.exists(appId)) {
-                return CommandValidator.ValidationResult.failure("App " + appId + " already exists");
+                return ValidationResult.failure("App " + appId + " already exists");
             }
             val errs = new ArrayList<String>();
             val spec = create.getSpec();

@@ -34,8 +34,8 @@ import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateExecutorNode;
-import static com.phonepe.drove.controller.engine.CommandValidator.ValidationResult.failure;
-import static com.phonepe.drove.controller.engine.CommandValidator.ValidationResult.success;
+import static com.phonepe.drove.controller.engine.ValidationResult.failure;
+import static com.phonepe.drove.controller.engine.ValidationResult.success;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;

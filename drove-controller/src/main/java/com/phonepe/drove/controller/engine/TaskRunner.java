@@ -63,8 +63,12 @@ public class TaskRunner implements Runnable {
 
     @Inject
     public TaskRunner(
-            String sourceAppName, String taskId, JobExecutor<Boolean> jobExecutor, TaskDB taskDB,
-            ClusterResourcesDB clusterResourcesDB, InstanceScheduler scheduler,
+            String sourceAppName,
+            String taskId,
+            JobExecutor<Boolean> jobExecutor,
+            TaskDB taskDB,
+            ClusterResourcesDB clusterResourcesDB,
+            InstanceScheduler scheduler,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
@@ -124,7 +128,7 @@ public class TaskRunner implements Runnable {
     }
 
     public void stop() {
-
+        //Nothing to do here
     }
 
     public Optional<TaskState> updateCurrentState() {

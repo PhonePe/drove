@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.CommandValidator;
+import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -59,9 +59,9 @@ class ApplicationMonitorTest {
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new ArrayList<String>();
         when(appEngine.handleOperation(any(ApplicationRecoverOperation.class)))
-                .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
+                .thenAnswer((Answer<ValidationResult>) invocationOnMock -> {
                     ids.add(invocationOnMock.getArgument(0, ApplicationRecoverOperation.class).getAppId());
-                    return CommandValidator.ValidationResult.success();
+                    return ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());
 
@@ -91,9 +91,9 @@ class ApplicationMonitorTest {
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new ArrayList<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))
-                .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
+                .thenAnswer((Answer<ValidationResult>) invocationOnMock -> {
                     ids.add(invocationOnMock.getArgument(0, String.class));
-                    return CommandValidator.ValidationResult.success();
+                    return ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());
 
@@ -123,9 +123,9 @@ class ApplicationMonitorTest {
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new HashSet<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))
-                .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
+                .thenAnswer((Answer<ValidationResult>) invocationOnMock -> {
                     ids.add(deployableObjectId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
-                    return CommandValidator.ValidationResult.success();
+                    return ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());
 
@@ -154,9 +154,9 @@ class ApplicationMonitorTest {
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new HashSet<String>();
         when(appEngine.handleOperation(any(ApplicationOperation.class)))
-                .thenAnswer((Answer<CommandValidator.ValidationResult>) invocationOnMock -> {
+                .thenAnswer((Answer<ValidationResult>) invocationOnMock -> {
                     ids.add(deployableObjectId(invocationOnMock.getArgument(0, ApplicationOperation.class)));
-                    return CommandValidator.ValidationResult.success();
+                    return ValidationResult.success();
                 });
         monitor.checkAllApps(new Date());
 

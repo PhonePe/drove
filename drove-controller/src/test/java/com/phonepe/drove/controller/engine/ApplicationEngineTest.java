@@ -53,7 +53,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import static com.phonepe.drove.controller.engine.CommandValidator.ValidationStatus.SUCCESS;
+import static com.phonepe.drove.controller.engine.ValidationStatus.SUCCESS;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;

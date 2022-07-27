@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -78,7 +78,7 @@ public class AppRecovery implements Managed {
                                 new ApplicationCreateOperation(applicationInfo.getSpec(),
                                                                applicationInfo.getInstances(),
                                                                ClusterOpSpec.DEFAULT));
-                        if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+                        if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                             log.error("Error sending command to state machine. Error: " + res.getMessages());
                         }
                     }

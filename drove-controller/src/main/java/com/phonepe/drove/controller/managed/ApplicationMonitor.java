@@ -3,7 +3,7 @@ package com.phonepe.drove.controller.managed;
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.CommandValidator;
+import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -103,7 +103,7 @@ public class ApplicationMonitor implements Managed {
 
     private void notifyOperation(final ApplicationOperation operation) {
         val res = engine.handleOperation(operation);
-        if(!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+        if(!res.getStatus().equals(ValidationStatus.SUCCESS)) {
             log.error("Error sending command to state machine. Error: " + res.getMessages());
         }
     }

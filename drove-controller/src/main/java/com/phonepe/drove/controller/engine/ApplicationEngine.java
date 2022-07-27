@@ -44,7 +44,7 @@ public class ApplicationEngine {
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
-    private final CommandValidator commandValidator;
+    private final ApplicationCommandValidator applicationCommandValidator;
     private final DroveEventBus droveEventBus;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
@@ -56,14 +56,14 @@ public class ApplicationEngine {
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            CommandValidator commandValidator,
+            ApplicationCommandValidator applicationCommandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("MonitorThreadPool") ExecutorService monitorExecutor) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
-        this.commandValidator = commandValidator;
+        this.applicationCommandValidator = applicationCommandValidator;
         this.droveEventBus = droveEventBus;
         this.retrySpecFactory = retrySpecFactory;
         this.monitorExecutor = monitorExecutor;
@@ -74,10 +74,10 @@ public class ApplicationEngine {
     }
 
     @MonitoredFunction
-    public CommandValidator.ValidationResult handleOperation(final ApplicationOperation operation) {
+    public ValidationResult handleOperation(final ApplicationOperation operation) {
         val appId = ControllerUtils.deployableObjectId(operation);
         val res = validateOp(operation);
-        if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             stateMachines.compute(appId, (id, monitor) -> {
                 if (null == monitor) {
                     log.info("App {} is unknown. Going to create it now.", appId);
@@ -150,9 +150,9 @@ public class ApplicationEngine {
         return stateMachines.containsKey(appId);
     }
 
-    private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {
+    private ValidationResult validateOp(final ApplicationOperation operation) {
         Objects.requireNonNull(operation, "Operation cannot be null");
-        return commandValidator.validate(this, operation);
+        return applicationCommandValidator.validate(this, operation);
     }
 
     private ApplicationOperation translateOp(final ApplicationOperation original) {
@@ -233,7 +233,7 @@ public class ApplicationEngine {
                                                              ClusterOpSpec.DEFAULT);
                     });
             val res = handleOperation(scalingOperation);
-            if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                 log.error("Error sending command to state machine. Error: " + res.getMessages());
             }
         }

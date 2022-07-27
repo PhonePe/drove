@@ -2,8 +2,8 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.CommandValidator;
 import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
@@ -61,7 +61,7 @@ class StaleDataCleanerTest {
                     val dId = invocationOnMock.getArgument(0, ApplicationDestroyOperation.class).getAppId();
                     testRun.set(dId.equals(appId));
                     appStateDB.deleteApplicationState(appId);
-                    return CommandValidator.ValidationResult.success();
+                    return ValidationResult.success();
                 });
         sdc.start();
         await().atMost(Duration.ofMinutes(1))

@@ -101,31 +101,39 @@ public class TaskEngine {
         });
     }
 
-    public boolean handleTaskOp(final TaskOperation operation) {
+    public ValidationResult handleTaskOp(final TaskOperation operation) {
         return operation.accept(new TaskOperationVisitor<>() {
             @Override
-            public Boolean visit(TaskCreateOperation create) {
+            public ValidationResult visit(TaskCreateOperation create) {
 
                 val taskSpec = create.getSpec();
                 val runTaskId = genRunTaskId(taskSpec.getSourceAppName(), taskSpec.getTaskId());
-                if (runners.containsKey(runTaskId) || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
-                        .isPresent()) {
-                    return false;
+                if (runners.containsKey(runTaskId)
+                        || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isPresent()) {
+                    return ValidationResult.failure("Task already exists for "
+                                                            + taskSpec.getSourceAppName() + "/" + taskSpec.getTaskId());
                 }
                 val jobId = runners.computeIfAbsent(runTaskId,
                                                     id -> createRunner(taskSpec.getSourceAppName(),
                                                                        taskSpec.getTaskId()))
                         .startTask(create);
-                return !Strings.isNullOrEmpty(jobId);
+                return !Strings.isNullOrEmpty(jobId)
+                        ? ValidationResult.success()
+                        : ValidationResult.failure("Could not schedule job to start the task.");
             }
 
             @Override
-            public Boolean visit(TaskKillOperation kill) {
-                val runner = runners.get(genRunTaskId(kill.getSourceAppName(), kill.getTaskId()));
+            public ValidationResult visit(TaskKillOperation kill) {
+                final var sourceAppName = kill.getSourceAppName();
+                final var taskId = kill.getTaskId();
+                val runner = runners.get(genRunTaskId(sourceAppName, taskId));
                 if (null == runner) {
-                    return false;
+                    return ValidationResult.failure("Either task does not exist or has already finished for "
+                                                            + sourceAppName + "/" + taskId);
                 }
-                return !Strings.isNullOrEmpty(runner.stopTask(kill));
+                return !Strings.isNullOrEmpty(runner.stopTask(kill))
+                       ? ValidationResult.success()
+                       : ValidationResult.failure("Could not schedule job to stop the task.");
             }
         });
     }

@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
@@ -31,7 +32,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testScheduling() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val spec = appSpec();
 
         //Load cluster nodes
@@ -50,7 +52,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testOnePerHostPlacementPolicy() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
         val spec = new ApplicationSpec(originalSpec.getName(),
                                        originalSpec.getVersion(),
@@ -81,7 +84,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testMaxNPerHostPlacementPolicy() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
         val spec = new ApplicationSpec(originalSpec.getName(),
                                        originalSpec.getVersion(),
@@ -112,7 +116,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testMatchTagPlacementPolicyNormal() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
         val spec = new ApplicationSpec(originalSpec.getName(),
                                        originalSpec.getVersion(),
@@ -144,7 +149,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testMatchTagPlacementPolicyNegate() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
         val spec = new ApplicationSpec(originalSpec.getName(),
                                        originalSpec.getVersion(),
@@ -176,7 +182,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testCompositePlacementPolicyAnd() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
         val spec = new ApplicationSpec(originalSpec.getName(),
                                        originalSpec.getVersion(),
@@ -211,7 +218,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testCompositePlacementPolicyOR() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
         val spec = new ApplicationSpec(originalSpec.getName(),
                                        originalSpec.getVersion(),
@@ -248,7 +256,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testMultiSessionAllocation() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val spec = appSpec();
 
         //Load cluster nodes
@@ -272,7 +281,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testBlacklistSkipping() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, rdb);
+        val taskDB = new InMemoryTaskDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val spec = appSpec();
 
         //Load cluster nodes
