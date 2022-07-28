@@ -5,12 +5,17 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
@@ -23,10 +28,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -84,7 +86,7 @@ public class TaskEngine {
                 taskRunner.stop();
                 runners.remove(runTaskId);
                 taskRunner.getTaskFuture().get();
-                log.info("Task {}/{} completed", taskRunner.getSourceAppName(), taskRunner.getSourceAppName());
+                log.info("Task {}/{} completed", taskRunner.getSourceAppName(), taskRunner.getTaskId());
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -107,6 +109,10 @@ public class TaskEngine {
             public ValidationResult visit(TaskCreateOperation create) {
 
                 val taskSpec = create.getSpec();
+                val preCheckResult = resourceCheck(taskSpec);
+                if (preCheckResult.getStatus().equals(ValidationStatus.FAILURE)) {
+                    return preCheckResult;
+                }
                 val runTaskId = genRunTaskId(taskSpec.getSourceAppName(), taskSpec.getTaskId());
                 if (runners.containsKey(runTaskId)
                         || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isPresent()) {
@@ -118,8 +124,8 @@ public class TaskEngine {
                                                                        taskSpec.getTaskId()))
                         .startTask(create);
                 return !Strings.isNullOrEmpty(jobId)
-                        ? ValidationResult.success()
-                        : ValidationResult.failure("Could not schedule job to start the task.");
+                       ? ValidationResult.success()
+                       : ValidationResult.failure("Could not schedule job to start the task.");
             }
 
             @Override
@@ -146,7 +152,7 @@ public class TaskEngine {
     public void handleZombieTask(String sourceAppName, String taskId) {
         val runTaskId = genRunTaskId(sourceAppName, taskId);
         if (runners.containsKey(runTaskId)) {
-            log.info("Task exists as expected for {}/{}", sourceAppName, taskId);
+            log.debug("Task exists as expected for {}/{}", sourceAppName, taskId);
             return;
         }
         log.info("Task {}/{} is zombie and needs to be killed", sourceAppName, taskId);
@@ -175,7 +181,7 @@ public class TaskEngine {
                 val sourceAppName = runner.getSourceAppName();
                 val taskId = runner.getTaskId();
                 log.info("Task {}/{} is lost. Runner will be stopped.", sourceAppName, taskId);
-                runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
+                //runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
             }
         });
         log.debug("Task check triggered at {} is completed", triggerDate);
@@ -202,4 +208,51 @@ public class TaskEngine {
         return sourceAppName + "-" + taskId;
     }
 
+    private ValidationResult resourceCheck(final TaskSpec taskSpec) {
+        val executors = clusterResourcesDB.currentSnapshot();
+        var freeCores = 0;
+        var freeMemory = 0L;
+        for (val exec : executors) {
+            freeCores += ControllerUtils.freeCores(exec);
+            freeMemory += ControllerUtils.freeMemory(exec);
+        }
+        val requiredCores = taskSpec.getResources()
+                .stream()
+                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<Integer>() {
+                    @Override
+                    public Integer visit(CPURequirement cpuRequirement) {
+                        return (int) cpuRequirement.getCount();
+                    }
+
+                    @Override
+                    public Integer visit(MemoryRequirement memoryRequirement) {
+                        return 0;
+                    }
+                }))
+                .sum();
+        val requiredMem = taskSpec.getResources()
+                .stream()
+                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<Long>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return 0L;
+                    }
+
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return memoryRequirement.getSizeInMB();
+                    }
+                }))
+                .sum();
+        val errors = new ArrayList<String>();
+        if (requiredCores > freeCores) {
+            errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " Available: " + freeCores);
+        }
+        if (requiredMem > freeMemory) {
+            errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " Available: " + freeMemory);
+        }
+        return errors.isEmpty()
+               ? ValidationResult.success()
+               : ValidationResult.failure(errors);
+    }
 }

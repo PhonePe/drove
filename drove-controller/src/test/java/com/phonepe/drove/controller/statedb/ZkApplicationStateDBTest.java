@@ -30,9 +30,9 @@ class ZkApplicationStateDBTest extends ControllerTestBase {
     void testSingle() {
         try(val cluster = new TestingCluster(1)) {
             cluster.start();
-            try (val curatror = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString()).setNameSpace("DTEST"))) {
-                curatror.start();
-                val db = new ZkApplicationStateDB(curatror, MAPPER);
+            try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString()).setNameSpace("DTEST"))) {
+                curator.start();
+                val db = new ZkApplicationStateDB(curator, MAPPER);
                 assertTrue(db.applications(0, Integer.MAX_VALUE).isEmpty());
                 val spec = appSpec();
                 val appId = ControllerUtils.deployableObjectId(spec);
@@ -74,10 +74,10 @@ class ZkApplicationStateDBTest extends ControllerTestBase {
     void testMulti() {
         try(val cluster = new TestingCluster(1)) {
             cluster.start();
-            try (val curatror = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
+            try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                      .setNameSpace("DTEST"))) {
-                curatror.start();
-                val db = new ZkApplicationStateDB(curatror, MAPPER);
+                curator.start();
+                val db = new ZkApplicationStateDB(curator, MAPPER);
                 IntStream.rangeClosed(1, 100)
                         .forEach(i -> {
                             val spec = appSpec(i);

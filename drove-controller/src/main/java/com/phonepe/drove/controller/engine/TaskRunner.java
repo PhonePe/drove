@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -29,6 +30,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
+import static com.phonepe.drove.models.taskinstance.TaskState.LOST;
 import static java.lang.Boolean.TRUE;
 
 /**
@@ -132,7 +135,22 @@ public class TaskRunner implements Runnable {
     }
 
     public Optional<TaskState> updateCurrentState() {
-        val currState = taskDB.checkedCurrentState(sourceAppName, taskId).map(TaskInfo::getState).orElse(null);
+        val validUpdateDate = new Date(new Date().getTime() - TaskDB.MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        val instance = taskDB.task(sourceAppName, taskId).orElse(null);
+        if(null == instance) {
+            return Optional.empty();
+        }
+        if(ACTIVE_STATES.contains(instance.getState())
+                && instance.getUpdated().before(validUpdateDate)) {
+            log.info("Stale instance detected: {}/{}", sourceAppName, taskId);
+            val updateStatus = taskDB.updateTask(sourceAppName, taskId, convertToLost(instance));
+            log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
+            if(updateStatus) {
+                updateCurrentState(LOST);
+            }
+            return Optional.of(LOST);
+        }
+        val currState = instance.getState();
         val existingState = state.get();
         if (existingState != currState) {
             log.info("State for {}/{} changed to {}", sourceAppName, taskId, currState);
@@ -177,5 +195,23 @@ public class TaskRunner implements Runnable {
             checkLock.unlock();
         }
         completed.dispatch(this);
+    }
+
+    private TaskInfo convertToLost(TaskInfo instance) {
+        return new TaskInfo(instance.getSourceAppName(),
+                            instance.getTaskId(),
+                            instance.getInstanceId(),
+                            instance.getExecutorId(),
+                            instance.getHostname(),
+                            instance.getExecutable(),
+                            instance.getResources(),
+                            instance.getVolumes(),
+                            instance.getLoggingSpec(),
+                            instance.getEnv(),
+                            TaskState.LOST,
+                            instance.getMetadata(),
+                            "Instance lost",
+                            instance.getCreated(),
+                            new Date());
     }
 }

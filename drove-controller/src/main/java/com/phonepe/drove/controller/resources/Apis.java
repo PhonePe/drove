@@ -175,7 +175,7 @@ public class Apis {
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
-        return ControllerUtils.badRequest(Map.of(), "Command validation failure: " + res.getMessages());
+        return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
     }
 
     @GET

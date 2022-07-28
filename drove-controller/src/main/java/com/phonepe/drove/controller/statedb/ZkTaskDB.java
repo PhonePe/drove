@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.statedb;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -15,7 +16,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
-import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
 
 /**
  *
@@ -36,6 +36,7 @@ public class ZkTaskDB extends TaskDB {
     }
 
     @Override
+    @MonitoredFunction
     public Map<String, List<TaskInfo>> tasks(
             Collection<String> sourceAppIds,
             Set<TaskState> validStates,
@@ -52,6 +53,7 @@ public class ZkTaskDB extends TaskDB {
     }
 
     @Override
+    @MonitoredFunction
     public Optional<TaskInfo> task(String sourceAppName, String taskId) {
         return Optional.ofNullable(readNodeData(curatorFramework,
                                                 instancePath(sourceAppName, taskId),
@@ -60,6 +62,7 @@ public class ZkTaskDB extends TaskDB {
     }
 
     @Override
+    @MonitoredFunction(method = "update")
     protected boolean updateTaskImpl(String sourceAppName, String taskId, TaskInfo instanceInfo) {
         return setNodeData(curatorFramework,
                            instancePath(sourceAppName, taskId),
@@ -68,40 +71,9 @@ public class ZkTaskDB extends TaskDB {
     }
 
     @Override
+    @MonitoredFunction
     public boolean deleteTask(String sourceAppName, String taskId) {
         return deleteNode(curatorFramework, instancePath(sourceAppName, taskId));
-    }
-
-    @Override
-    public Optional<TaskInfo> checkedCurrentState(String sourceAppName, String taskId) {
-        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
-        val instance = task(sourceAppName, taskId).orElse(null);
-        if(null == instance
-            || !ACTIVE_STATES.contains(instance.getState())
-            || instance.getUpdated().after(validUpdateDate)) {
-            return Optional.ofNullable(instance);
-        }
-        log.warn("Found stale task instance {}/{}. Current state: {} Last updated at: {}",
-                 sourceAppName, instance.getTaskId(), instance.getState(), instance.getUpdated());
-        val updateStatus = updateTaskImpl(sourceAppName,
-                                          taskId,
-                                          new TaskInfo(instance.getSourceAppName(),
-                                                       instance.getTaskId(),
-                                                       instance.getInstanceId(),
-                                                       instance.getExecutorId(),
-                                                       instance.getHostname(),
-                                                       instance.getExecutable(),
-                                                       instance.getResources(),
-                                                       instance.getVolumes(),
-                                                       instance.getLoggingSpec(),
-                                                       instance.getEnv(),
-                                                       TaskState.LOST,
-                                                       instance.getMetadata(),
-                                                       "Instance lost",
-                                                       instance.getCreated(),
-                                                       new Date()));
-        log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
-        return task(sourceAppName, taskId);
     }
 
     @SneakyThrows

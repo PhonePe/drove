@@ -47,5 +47,4 @@ public abstract class TaskDB {
 
     public abstract boolean deleteTask(String sourceAppName, String taskId);
 
-    public abstract Optional<TaskInfo> checkedCurrentState(final String sourceAppName, String taskId);
 }

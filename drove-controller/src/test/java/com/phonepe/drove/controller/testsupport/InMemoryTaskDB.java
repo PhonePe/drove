@@ -11,8 +11,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
-
 /**
  *
  */
@@ -56,35 +54,4 @@ public class InMemoryTaskDB extends TaskDB {
         return !instances.containsKey(sourceAppName) || instances.get(sourceAppName).remove(taskId) != null;
     }
 
-    @Override
-    public Optional<TaskInfo> checkedCurrentState(String sourceAppName, String taskId) {
-        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
-        val instance = task(sourceAppName, taskId).orElse(null);
-        if(null == instance
-                || !ACTIVE_STATES.contains(instance.getState())
-                || instance.getUpdated().after(validUpdateDate)) {
-            return Optional.ofNullable(instance);
-        }
-        log.warn("Found stale task instance {}/{}. Current state: {} Last updated at: {}",
-                 sourceAppName, instance.getTaskId(), instance.getState(), instance.getUpdated());
-        val updateStatus = updateTaskImpl(sourceAppName,
-                                          taskId,
-                                          new TaskInfo(instance.getSourceAppName(),
-                                                       instance.getTaskId(),
-                                                       instance.getInstanceId(),
-                                                       instance.getExecutorId(),
-                                                       instance.getHostname(),
-                                                       instance.getExecutable(),
-                                                       instance.getResources(),
-                                                       instance.getVolumes(),
-                                                       instance.getLoggingSpec(),
-                                                       instance.getEnv(),
-                                                       TaskState.LOST,
-                                                       instance.getMetadata(),
-                                                       "Instance lost",
-                                                       instance.getCreated(),
-                                                       new Date()));
-        log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
-        return task(sourceAppName, taskId);
-    }
 }

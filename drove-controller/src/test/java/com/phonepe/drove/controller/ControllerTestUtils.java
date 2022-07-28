@@ -46,7 +46,8 @@ public class ControllerTestUtils {
     public static final String EXECUTOR_ID = "Ex1";
     public static final RetrySpec NO_RETRY_SPEC = new CompositeRetrySpec(List.of(new MaxRetriesRetrySpec(1),
                                                                                  new RetryOnAllExceptionsSpec(),
-                                                                                 new MaxDurationRetrySpec(java.time.Duration.ofMillis(100))));
+                                                                                 new MaxDurationRetrySpec(java.time.Duration.ofMillis(
+                                                                                         100))));
 
     public static ApplicationSpec appSpec() {
         return appSpec(1);
@@ -55,6 +56,7 @@ public class ControllerTestUtils {
     public static ApplicationSpec appSpec(int version) {
         return appSpec("TEST_SPEC", version);
     }
+
     public static ApplicationSpec appSpec(final String name, final int version) {
         return new ApplicationSpec(name,
                                    String.format("%05d", version),
@@ -102,15 +104,19 @@ public class ControllerTestUtils {
     }
 
     public static TaskSpec taskSpec(final String name, final int version) {
+        return taskSpec(name, String.format("%s%05d", name, version));
+    }
+
+    public static TaskSpec taskSpec(final String name, String taskId) {
         return new TaskSpec(name,
-                                   String.format("%05d", version),
-                                   new DockerCoordinates(CommonTestUtils.TASK_IMAGE_NAME, Duration.seconds(100)),
-                                   List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
-                                   LocalLoggingSpec.DEFAULT,
-                                   List.of(new CPURequirement(1), new MemoryRequirement(512)),
-                                   new AnyPlacementPolicy(),
-                                   Collections.emptyMap(),
-                                   Collections.emptyMap());
+                            taskId,
+                            new DockerCoordinates(CommonTestUtils.TASK_IMAGE_NAME, Duration.seconds(100)),
+                            List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                            LocalLoggingSpec.DEFAULT,
+                            List.of(new CPURequirement(1), new MemoryRequirement(512)),
+                            new AnyPlacementPolicy(),
+                            Collections.emptyMap(),
+                            Collections.emptyMap());
     }
 
     public static AllocatedExecutorNode allocatedExecutorNode(int port) {
@@ -127,8 +133,9 @@ public class ControllerTestUtils {
         return executorHost(port, List.of(), List.of());
     }
 
-    public static ExecutorHostInfo executorHost(int port, List<InstanceInfo> appInstances,
-                                                List<TaskInfo> taskInstances) {
+    public static ExecutorHostInfo executorHost(
+            int port, List<InstanceInfo> appInstances,
+            List<TaskInfo> taskInstances) {
         return new ExecutorHostInfo(
                 "Ex1",
                 new ExecutorNodeData(EXECUTOR_ID,
@@ -150,9 +157,11 @@ public class ControllerTestUtils {
     public static ExecutorNodeData generateExecutorNode(int index) {
         return generateExecutorNode(index, Set.of());
     }
+
     public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags) {
         return generateExecutorNode(index, tags, false);
     }
+
     public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags, boolean blacklisted) {
         val executorId = executorId(index);
         return new ExecutorNodeData(String.format("host%05d", index),
@@ -163,7 +172,7 @@ public class ControllerTestUtils {
                                                                  new AvailableCPU(Map.of(0, Set.of(0, 1, 2, 3, 4)),
                                                                                   Map.of(0, Set.of())),
                                                                  new AvailableMemory(
-                                                                         Map.of(0, 5 * 512L ),
+                                                                         Map.of(0, 5 * 512L),
                                                                          Map.of(0, 0L))),
                                     List.of(),
                                     List.of(),
@@ -179,7 +188,11 @@ public class ControllerTestUtils {
         return generateInstanceInfo(appId, spec, idx, HEALTHY);
     }
 
-    public static InstanceInfo generateInstanceInfo(final String appId, final ApplicationSpec spec, int idx, InstanceState state) {
+    public static InstanceInfo generateInstanceInfo(
+            final String appId,
+            final ApplicationSpec spec,
+            int idx,
+            InstanceState state) {
         return generateInstanceInfo(appId, spec, idx, state, new Date(), null);
     }
 
@@ -225,12 +238,12 @@ public class ControllerTestUtils {
             String errorMessage) {
         return new TaskInfo(spec.getSourceAppName(),
                             spec.getTaskId(),
-                            String.format("TI-%05d", idx),
+                            String.format("TI-%s", idx),
                             EXECUTOR_ID,
                             "localhost",
                             spec.getExecutable(),
                             List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
-                                        new MemoryAllocation(Map.of(0, 512L))),
+                                    new MemoryAllocation(Map.of(0, 512L))),
                             spec.getVolumes(),
                             spec.getLogging(),
                             spec.getEnv(),
