@@ -2,9 +2,7 @@ package com.phonepe.drove.executor.engine;
 
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.Frame;
-import com.github.dockerjava.api.model.StreamType;
 import com.google.common.base.Strings;
-import com.phonepe.drove.executor.logging.LogBus;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
@@ -18,19 +16,9 @@ import java.util.Map;
 @Slf4j
 public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
     private final Map<String, String> mdc;
-    private final String appId;
-    private final String instanceId;
-    private final LogBus logBus;
 
-    public InstanceLogHandler(
-            Map<String, String> mdc,
-            final String appId,
-            final String instanceId,
-            final LogBus logBus) {
+    public InstanceLogHandler(Map<String, String> mdc) {
         this.mdc = mdc;
-        this.appId = appId;
-        this.instanceId = instanceId;
-        this.logBus = logBus;
     }
 
     @Override
@@ -42,12 +30,6 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
             return;
         }
 
-        logBus.publish(new LogBus.LogLine(appId,
-                                          instanceId,
-                                          object.getStreamType().equals(StreamType.STDERR)
-                                          ? LogBus.LogChannel.STDERR
-                                          : LogBus.LogChannel.STDOUT,
-                                          logLine));
         if(null != mdc) {
             MDC.setContextMap(mdc);
         }

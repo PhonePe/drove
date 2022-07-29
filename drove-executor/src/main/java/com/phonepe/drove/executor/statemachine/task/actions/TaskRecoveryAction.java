@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
-import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.TaskAction;
@@ -24,11 +23,9 @@ import java.util.Map;
  */
 @Slf4j
 public class TaskRecoveryAction extends TaskAction {
-    private final LogBus logBus;
 
     @Inject
-    public TaskRecoveryAction(LogBus logBus) {
-        this.logBus = logBus;
+    public TaskRecoveryAction() {
     }
 
     @Override
@@ -63,10 +60,8 @@ public class TaskRecoveryAction extends TaskAction {
                 .withFollowStream(true)
                 .withStdOut(true)
                 .withStdErr(true)
-                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
-                                             currentState.getData().getTaskId(),
-                                             instanceId,
-                                             logBus));
+                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                ));
 
         return StateData.from(currentState, TaskState.RUNNING);
     }

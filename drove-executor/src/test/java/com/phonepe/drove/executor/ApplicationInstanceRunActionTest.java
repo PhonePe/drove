@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -63,8 +62,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, ExecutorTestingUtils.DOCKER_CLIENT);
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
-                = new ApplicationInstanceRunAction(new LogBus(),
-                                                   new ResourceConfig())
+                = new ApplicationInstanceRunAction(new ResourceConfig())
                 .execute(ctx,
                          StateData.create(PROVISIONING,
                                           new ExecutorInstanceInfo(instanceSpec.getAppId(),

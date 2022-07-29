@@ -2,7 +2,6 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.ContainerHelperExtension;
-import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -25,7 +24,7 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
         val spec = testAppInstanceSpec();
         val action = new ApplicationInstanceStopAction();
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT);
-        val startAction = new ApplicationInstanceRunAction(new LogBus(), new ResourceConfig());
+        val startAction = new ApplicationInstanceRunAction(new ResourceConfig());
         val state = startAction.execute(context,
                                         StateData.create(InstanceState.PROVISIONING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(InstanceState.DEPROVISIONING,

@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
-import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -23,12 +22,9 @@ import java.util.Map;
  */
 @Slf4j
 public class ApplicationInstanceRecoveryAction extends ApplicationInstanceAction {
-    private final LogBus logBus;
 
     @Inject
-    public ApplicationInstanceRecoveryAction(LogBus logBus) {
-        this.logBus = logBus;
-    }
+    public ApplicationInstanceRecoveryAction() {}
 
     @Override
     public void stop() {
@@ -62,10 +58,8 @@ public class ApplicationInstanceRecoveryAction extends ApplicationInstanceAction
                 .withFollowStream(true)
                 .withStdOut(true)
                 .withStdErr(true)
-                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
-                                             currentState.getData().getAppId(),
-                                             instanceId,
-                                             logBus));
+                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                ));
 
         return StateData.from(currentState, InstanceState.UNREADY);
     }

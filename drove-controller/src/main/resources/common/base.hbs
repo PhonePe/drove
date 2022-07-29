@@ -168,8 +168,6 @@ $(document).ready(function() {
                     info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
                 }
             });
-
-            info['logStream'] = "/apis/v1/logs/" + info['appId'] + "/" + info['instanceId'];
         });
         return instances;
     }

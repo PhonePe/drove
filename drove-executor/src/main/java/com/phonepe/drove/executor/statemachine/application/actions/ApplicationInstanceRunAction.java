@@ -6,7 +6,6 @@ import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
-import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -40,12 +39,10 @@ import static com.phonepe.drove.common.CommonUtils.hostname;
 public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private final LogBus logBus;
     private final ResourceConfig schedulingConfig;
 
     @Inject
-    public ApplicationInstanceRunAction(LogBus logBus, ResourceConfig resourceConfig) {
-        this.logBus = logBus;
+    public ApplicationInstanceRunAction(ResourceConfig resourceConfig) {
         this.schedulingConfig = resourceConfig;
     }
 
@@ -107,10 +104,8 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
-                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
-                                                 instanceSpec.getAppId(),
-                                                 instanceSpec.getInstanceId(),
-                                                 logBus));
+                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                    ));
             return StateData.create(InstanceState.UNREADY, instanceInfoRef.get());
         }
         catch (Exception e) {

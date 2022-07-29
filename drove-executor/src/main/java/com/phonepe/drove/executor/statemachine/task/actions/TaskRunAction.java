@@ -5,7 +5,6 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
-import com.phonepe.drove.executor.logging.LogBus;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -35,12 +34,10 @@ import static com.phonepe.drove.common.CommonUtils.instanceId;
 public class TaskRunAction extends TaskAction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private final LogBus logBus;
     private final ResourceConfig schedulingConfig;
 
     @Inject
-    public TaskRunAction(LogBus logBus, ResourceConfig resourceConfig) {
-        this.logBus = logBus;
+    public TaskRunAction(ResourceConfig resourceConfig) {
         this.schedulingConfig = resourceConfig;
     }
 
@@ -85,10 +82,8 @@ public class TaskRunAction extends TaskAction {
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
-                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
-                                                 instanceSpec.getSourceAppName(),
-                                                 instanceId,
-                                                 logBus));
+                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                    ));
             return StateData.create(TaskState.RUNNING, instanceInfoRef.get());
         }
         catch (Exception e) {

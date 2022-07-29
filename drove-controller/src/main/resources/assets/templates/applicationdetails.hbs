@@ -153,7 +153,6 @@
         info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
         }
         });
-        info['logStream'] = "/apis/v1/logs/{{appId}}/" + info['instanceId'];
         });
         return res.data;
     }
