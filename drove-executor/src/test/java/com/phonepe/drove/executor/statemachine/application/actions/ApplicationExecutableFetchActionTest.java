@@ -40,7 +40,7 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
                     .orElse(null);
             log.info("Hello world image id: {}", imageId);
             if(!Strings.isNullOrEmpty(imageId)) {
-                ExecutorTestingUtils.DOCKER_CLIENT.removeImageCmd(imageId).exec();
+                ExecutorTestingUtils.DOCKER_CLIENT.removeImageCmd(imageId).withForce(true).exec();
             }
         }
     }
