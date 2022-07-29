@@ -24,16 +24,17 @@ class ContainerStatsObserverTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     @SneakyThrows
     void testStats() {
-        val statsObserver = new ContainerStatsObserver(METRIC_REGISTRY, engine, ExecutorTestingUtils.DOCKER_CLIENT, Duration.ofSeconds(1));
+        val statsObserver = new ContainerStatsObserver(METRIC_REGISTRY,
+                                                       applicationInstanceEngine, ExecutorTestingUtils.DOCKER_CLIENT, Duration.ofSeconds(1));
         statsObserver.start();
-        val instanceId = executeOnceContainerStarted(engine, info -> {
+        val instanceId = executeOnceContainerStarted(applicationInstanceEngine, taskInstanceEngine, info -> {
             log.info("Container is healthy, will look for gauge to be published");
             waitUntil(() -> gaugePresent(info.getInstanceId()));
             assertTrue(gaugePresent(info.getInstanceId()));
             return info.getInstanceId();
         });
         assertNotNull(instanceId);
-        waitUntil(() -> !engine.exists(instanceId));
+        waitUntil(() -> !applicationInstanceEngine.exists(instanceId));
         assertTrue(METRIC_REGISTRY.getGauges(MetricFilter.endsWith("nr_throttled"))
                            .keySet()
                            .stream()

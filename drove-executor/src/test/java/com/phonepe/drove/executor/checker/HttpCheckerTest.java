@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.checker;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -17,7 +18,7 @@ import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.checkSpec;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.createExecutorInfo;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.createExecutorAppInstanceInfo;
 import static org.junit.jupiter.api.Assertions.*;
 
 @WireMockTest
@@ -26,7 +27,7 @@ class HttpCheckerTest {
     @Test
     void testCheckGetSuccess(WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(ok()));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.GET);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -38,7 +39,7 @@ class HttpCheckerTest {
     @Test
     void testCheckGetFail(WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError().withBody("Server Kaput!!")));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.GET);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -51,7 +52,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPostSuccess(WireMockRuntimeInfo wm) {
         stubFor(post("/").willReturn(ok()));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.POST);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -63,7 +64,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPostSuccessWithBody(WireMockRuntimeInfo wm) {
         stubFor(post("/").withRequestBody(equalTo("Hello")).willReturn(ok()));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.POST, "Hello");
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -75,7 +76,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPostFail(WireMockRuntimeInfo wm) {
         stubFor(post("/").willReturn(serverError().withBody("Server Kaput!!")));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.POST);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -88,7 +89,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPutSuccess(WireMockRuntimeInfo wm) {
         stubFor(put("/").willReturn(ok()));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -100,7 +101,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPutSuccessWithBody(WireMockRuntimeInfo wm) {
         stubFor(put("/").withRequestBody(equalTo("Hello")).willReturn(ok()));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT, "Hello");
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -112,7 +113,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPutFail(WireMockRuntimeInfo wm) {
         stubFor(put("/").willReturn(serverError().withBody("Server Kaput!!")));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -125,7 +126,7 @@ class HttpCheckerTest {
     @Test
     void testCheckPutFailIOException(WireMockRuntimeInfo wm) {
         stubFor(put("/").willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -139,7 +140,7 @@ class HttpCheckerTest {
     @SneakyThrows
     void testCheckPutFailInterruptedException(WireMockRuntimeInfo wm) {
         stubFor(put("/").willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -156,7 +157,7 @@ class HttpCheckerTest {
 
     @Test
     void testMode(WireMockRuntimeInfo wm) {
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
         val checker = new HttpChecker(spec,
                                       (HTTPCheckModeSpec) spec.getMode(),
@@ -167,7 +168,7 @@ class HttpCheckerTest {
     @Test
     void testInvalidPort(WireMockRuntimeInfo wm) {
 
-        val info = createExecutorInfo(wm);
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val httpSpec = new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
                                              "wrongPort",
                                              "/",

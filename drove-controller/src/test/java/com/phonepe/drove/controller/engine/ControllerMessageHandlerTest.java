@@ -6,6 +6,7 @@ import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.controller.event.DroveEvent;
 import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.val;
@@ -15,7 +16,7 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -33,7 +34,7 @@ class ControllerMessageHandlerTest {
         val cmh = new ControllerMessageHandler(su, ev);
 
         val spec = appSpec();
-        val aid = appId(spec);
+        val aid = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(aid, spec, 1, InstanceState.HEALTHY, new Date(), "Test Error");
         val ctr = new AtomicInteger();
         doAnswer(invocationOnMock -> {
@@ -59,7 +60,7 @@ class ControllerMessageHandlerTest {
         val cmh = new ControllerMessageHandler(su, ev);
 
         val spec = appSpec();
-        val aid = appId(spec);
+        val aid = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(aid, spec, 1, InstanceState.HEALTHY, new Date(), "Test Error");
         val ctr = new AtomicInteger();
         doAnswer(invocationOnMock -> {

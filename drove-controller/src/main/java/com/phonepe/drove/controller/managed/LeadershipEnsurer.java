@@ -41,6 +41,7 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     private final AtomicBoolean started = new AtomicBoolean();
     private ControllerNodeData currentData;
 
+    @SuppressWarnings("java:S1075")
     @Inject
     public LeadershipEnsurer(
             CuratorFramework curatorFramework,

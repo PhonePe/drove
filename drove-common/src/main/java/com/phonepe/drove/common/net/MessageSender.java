@@ -7,6 +7,7 @@ import com.phonepe.drove.common.model.MessageResponse;
  *
  */
 @FunctionalInterface
+@SuppressWarnings("java:S119")
 public interface MessageSender<SendMessageType extends Enum<SendMessageType>, SendMessage extends Message<SendMessageType>> {
     MessageResponse send(final SendMessage message);
 }

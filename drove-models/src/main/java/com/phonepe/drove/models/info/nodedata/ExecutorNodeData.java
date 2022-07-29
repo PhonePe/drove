@@ -2,6 +2,7 @@ package com.phonepe.drove.models.info.nodedata;
 
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -23,22 +24,27 @@ public class ExecutorNodeData extends NodeData {
 
     ExecutorResourceSnapshot state;
     List<InstanceInfo> instances;
+    List<TaskInfo> tasks;
     Set<String> tags;
     boolean blacklisted;
 
     @Jacksonized
     @Builder
+    @SuppressWarnings("java:S107")
     public ExecutorNodeData(
             String hostname,
             int port,
             NodeTransportType transportType,
             Date updated,
             ExecutorResourceSnapshot state,
-            List<InstanceInfo> instances, Set<String> tags,
+            List<InstanceInfo> instances,
+            List<TaskInfo> tasks,
+            Set<String> tags,
             boolean blacklisted) {
         super(NodeType.EXECUTOR, hostname, port, transportType, updated);
         this.state = state;
         this.instances = instances;
+        this.tasks = tasks;
         this.tags = tags;
         this.blacklisted = blacklisted;
     }
@@ -52,6 +58,7 @@ public class ExecutorNodeData extends NodeData {
             final ExecutorNodeData nodeData,
             final ExecutorResourceSnapshot currentState,
             final List<InstanceInfo> instances,
+            final List<TaskInfo> taskInstances,
             final Set<String> tags, boolean blacklisted) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),
@@ -59,6 +66,7 @@ public class ExecutorNodeData extends NodeData {
                                     new Date(),
                                     currentState,
                                     instances,
+                                    taskInstances,
                                     null == tags ? Collections.emptySet() : tags,
                                     blacklisted);
     }

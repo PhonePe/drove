@@ -9,20 +9,21 @@ import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.common.model.InstanceSpec;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.models.application.MountedVolume;
-import com.phonepe.drove.models.application.PortSpec;
-import com.phonepe.drove.models.application.PortType;
-import com.phonepe.drove.models.application.PreShutdownSpec;
+import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -63,71 +64,98 @@ public class ExecutorTestingUtils {
                                                    .dockerHost(URI.create("unix:///var/run/docker.sock"))
                                                    .build());
 
-    public static InstanceSpec testSpec() {
-        return testSpec(CommonTestUtils.IMAGE_NAME);
+    public static ApplicationInstanceSpec testAppInstanceSpec() {
+        return testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME);
     }
 
-    public static InstanceSpec testSpec(final String imageName) {
-        return testSpec(imageName, 3);
+    public static ApplicationInstanceSpec testAppInstanceSpec(final String imageName) {
+        return testAppInstanceSpec(imageName, 3);
     }
 
-    public static InstanceSpec testSpec(final String imageName, int attempt) {
-        return new InstanceSpec("T001",
-                                "TEST_SPEC",
-                                UUID.randomUUID().toString(),
-                                new DockerCoordinates(imageName, Duration.seconds(100)),
-                                ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
-                                                 new MemoryAllocation(Collections.singletonMap(0, 512L))),
-                                Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
-                                List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
-                                new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                    "main",
-                                                                    "/",
-                                                                    HTTPVerb.GET,
-                                                                    Collections.singleton(200),
-                                                                    "",
-                                                                    Duration.seconds(1)),
-                                              Duration.seconds(1),
-                                              Duration.seconds(3),
-                                              attempt,
-                                              Duration.seconds(0)),
-                                new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                    "main",
-                                                                    "/",
-                                                                    HTTPVerb.GET,
-                                                                    Collections.singleton(200),
-                                                                    "",
-                                                                    Duration.seconds(1)),
-                                              Duration.seconds(1),
-                                              Duration.seconds(3),
-                                              attempt,
-                                              Duration.seconds(1)),
-                                LocalLoggingSpec.DEFAULT,
-                                Collections.emptyMap(),
-                                new PreShutdownSpec(List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                                  "main",
-                                                                                  "/",
-                                                                                  HTTPVerb.GET,
-                                                                                  Collections.singleton(200),
-                                                                                  "",
-                                                                                  Duration.seconds(1))),
-                                                    Duration.seconds(1)),
-                                "TestToken");
+    public static ApplicationInstanceSpec testAppInstanceSpec(final String imageName, int attempt) {
+        return new ApplicationInstanceSpec("T001",
+                                           "TEST_SPEC",
+                                           UUID.randomUUID().toString(),
+                                           new DockerCoordinates(imageName, Duration.seconds(100)),
+                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                       Set.of(2, 3))),
+                                                            new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                           Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
+                                           List.of(new MountedVolume("/tmp",
+                                                                     "/tmp",
+                                                                     MountedVolume.MountMode.READ_ONLY)),
+                                           new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                                                               "main",
+                                                                               "/",
+                                                                               HTTPVerb.GET,
+                                                                               Collections.singleton(200),
+                                                                               "",
+                                                                               Duration.seconds(1)),
+                                                         Duration.seconds(1),
+                                                         Duration.seconds(3),
+                                                         attempt,
+                                                         Duration.seconds(0)),
+                                           new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                                                               "main",
+                                                                               "/",
+                                                                               HTTPVerb.GET,
+                                                                               Collections.singleton(200),
+                                                                               "",
+                                                                               Duration.seconds(1)),
+                                                         Duration.seconds(1),
+                                                         Duration.seconds(3),
+                                                         attempt,
+                                                         Duration.seconds(1)),
+                                           LocalLoggingSpec.DEFAULT,
+                                           Collections.emptyMap(),
+                                           new PreShutdownSpec(List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                                                                             "main",
+                                                                                             "/",
+                                                                                             HTTPVerb.GET,
+                                                                                             Collections.singleton(200),
+                                                                                             "",
+                                                                                             Duration.seconds(1))),
+                                                               Duration.seconds(1)),
+                                           "TestToken");
+    }
+
+    public static TaskInstanceSpec testTaskInstanceSpec() {
+        return testTaskInstanceSpec(CommonTestUtils.TASK_IMAGE_NAME, Map.of("ITERATIONS", "3"));
+    }
+
+
+    public static TaskInstanceSpec testTaskInstanceSpec(Map<String, String> env) {
+        return testTaskInstanceSpec(CommonTestUtils.TASK_IMAGE_NAME, env);
+    }
+
+    public static TaskInstanceSpec testTaskInstanceSpec(final String imageName, Map<String, String> env) {
+        return new TaskInstanceSpec("T001",
+                                           "TEST_TASK_SPEC",
+                                           UUID.randomUUID().toString(),
+                                           new DockerCoordinates(imageName, Duration.seconds(100)),
+                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                       Set.of(2, 3))),
+                                                            new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                           List.of(new MountedVolume("/tmp",
+                                                                     "/tmp",
+                                                                     MountedVolume.MountMode.READ_ONLY)),
+                                           LocalLoggingSpec.DEFAULT,
+                                           env);
     }
 
     public static ExecutorAddress localAddress() {
         return new ExecutorAddress(UUID.randomUUID().toString(), "localhost", 3000, NodeTransportType.HTTP);
     }
 
-    public static ExecutorInstanceInfo createExecutorInfo(WireMockRuntimeInfo wm) {
-        return createExecutorInfo(testSpec(CommonTestUtils.IMAGE_NAME), wm);
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(WireMockRuntimeInfo wm) {
+        return createExecutorAppInstanceInfo(testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME), wm);
     }
 
-    public static ExecutorInstanceInfo createExecutorInfo(InstanceSpec spec, WireMockRuntimeInfo wm) {
-        return createExecutorInfo(spec, wm.getHttpPort());
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
+        return createExecutorAppInstanceInfo(spec, wm.getHttpPort());
     }
 
-    public static ExecutorInstanceInfo createExecutorInfo(InstanceSpec spec, int port) {
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, int port) {
         return new ExecutorInstanceInfo(spec.getAppId(),
                                         spec.getAppName(),
                                         spec.getInstanceId(),
@@ -143,6 +171,22 @@ public class ExecutorTestingUtils {
                                         spec.getEnv(),
                                         new Date(),
                                         new Date());
+    }
+
+    public static ExecutorTaskInfo createExecutorTaskInfo(TaskInstanceSpec spec) {
+        return new ExecutorTaskInfo(spec.getTaskId(),
+                                    spec.getSourceAppName(),
+                                    spec.getInstanceId(),
+                                    EXECUTOR_ID,
+                                    "localhost",
+                                    spec.getExecutable(),
+                                    spec.getResources(),
+                                    spec.getVolumes(),
+                                    spec.getLoggingSpec(),
+                                    spec.getEnv(),
+                                    Map.of(),
+                                    new Date(),
+                                    new Date());
     }
 
     public static HTTPCheckModeSpec httpCheck(HTTPVerb verb) {
@@ -176,18 +220,20 @@ public class ExecutorTestingUtils {
     }
 
     public static <R> R executeOnceContainerStarted(
-            final InstanceEngine engine,
+            final ApplicationInstanceEngine engine,
+            final TaskInstanceEngine taskInstanceEngine,
             final Function<InstanceInfo, R> check) {
-        val spec = ExecutorTestingUtils.testSpec();
+        val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val instanceId = spec.getInstanceId();
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val startResponse = engine.handleMessage(startInstanceMessage);
+        val messageHandler = new ExecutorMessageHandler(engine, taskInstanceEngine, null);
+        val startResponse = startInstanceMessage.accept(messageHandler);
         try {
             assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
-            assertEquals(MessageDeliveryStatus.FAILED, engine.handleMessage(startInstanceMessage).getStatus());
+            assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
             waitUntil(() -> engine.currentState(instanceId)
                     .map(InstanceInfo::getState)
                     .map(instanceState -> instanceState.equals(HEALTHY))
@@ -200,7 +246,7 @@ public class ExecutorTestingUtils {
             val stopInstanceMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
                                                               executorAddress,
                                                               instanceId);
-            assertEquals(MessageDeliveryStatus.ACCEPTED, engine.handleMessage(stopInstanceMessage).getStatus());
+            assertEquals(MessageDeliveryStatus.ACCEPTED, stopInstanceMessage.accept(messageHandler).getStatus());
             waitUntil(() -> engine.currentState(instanceId).isEmpty());
         }
     }
@@ -213,25 +259,50 @@ public class ExecutorTestingUtils {
     }
 
     @SneakyThrows
-    public static void startTestContainer(
-            InstanceSpec spec,
+    public static void startTestAppContainer(
+            ApplicationInstanceSpec spec,
             ExecutorInstanceInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
         val createContainerResponse = DOCKER_CLIENT
-                .createContainerCmd(CommonTestUtils.IMAGE_NAME)
-                .withName("RecoveryTest")
-                .withLabels(Map.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
-                                   spec.getInstanceId(),
-                                   DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
-                                   mapper.writeValueAsString(spec),
-                                   DockerLabels.DROVE_INSTANCE_DATA_LABEL,
-                                   mapper.writeValueAsString(instanceData)))
-                .withHostConfig(new HostConfig()
-                                        .withAutoRemove(true))
+                .createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)
+                .withName("AppRecoveryTest")
+                .withLabels(Map.of(
+                        DockerLabels.DROVE_JOB_TYPE_LABEL,
+                        JobType.SERVICE.name(),
+                        DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                        spec.getInstanceId(),
+                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                        mapper.writeValueAsString(spec),
+                        DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                        mapper.writeValueAsString(instanceData)))
+                .withHostConfig(new HostConfig().withAutoRemove(true))
                 .exec();
         containerId = createContainerResponse.getId();
-        DOCKER_CLIENT.startContainerCmd(containerId)
+        DOCKER_CLIENT.startContainerCmd(containerId).exec();
+    }
+
+    @SneakyThrows
+    public static void startTestTaskContainer(
+            TaskInstanceSpec spec,
+            ExecutorTaskInfo instanceData,
+            ObjectMapper mapper) {
+        String containerId;
+        val createContainerResponse = DOCKER_CLIENT
+                .createContainerCmd(CommonTestUtils.TASK_IMAGE_NAME)
+                .withName("TaskRecoveryTest")
+                .withLabels(Map.of(
+                        DockerLabels.DROVE_JOB_TYPE_LABEL,
+                        JobType.COMPUTATION.name(),
+                        DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                        spec.getTaskId(),
+                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                        mapper.writeValueAsString(spec),
+                        DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                        mapper.writeValueAsString(instanceData)))
+                .withHostConfig(new HostConfig().withAutoRemove(true))
                 .exec();
+        containerId = createContainerResponse.getId();
+        DOCKER_CLIENT.startContainerCmd(containerId).exec();
     }
 }

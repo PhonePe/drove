@@ -2,7 +2,9 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -32,9 +34,8 @@ import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateExecutorNode;
-import static com.phonepe.drove.controller.engine.CommandValidator.ValidationResult.failure;
-import static com.phonepe.drove.controller.engine.CommandValidator.ValidationResult.success;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.engine.ValidationResult.failure;
+import static com.phonepe.drove.controller.engine.ValidationResult.success;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -48,16 +49,17 @@ import static org.mockito.Mockito.*;
 class ApisTest {
 
     private static final ApplicationEngine applicationEngine = mock(ApplicationEngine.class);
+    private static final TaskEngine taskEngine = mock(TaskEngine.class);
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new Apis(applicationEngine, responseEngine, clusterStateDB))
+            .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB))
             .build();
 
     @AfterEach
     void teardown() {
-        reset(applicationEngine);
+        reset(taskEngine);
         reset(responseEngine);
         reset(clusterStateDB);
     }
@@ -180,7 +182,7 @@ class ApisTest {
     @Test
     void application() {
         val spec = appSpec();
-        val appSummary = new AppSummary(appId(spec),
+        val appSummary = new AppSummary(ControllerUtils.deployableObjectId(spec),
                                         spec.getName(),
                                         10,
                                         10,
@@ -220,10 +222,10 @@ class ApisTest {
     @Test
     void applicationInstances() {
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
         {
             val instances = IntStream.rangeClosed(1, 100)
-                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(appId(spec), spec, i))
+                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, i))
                     .toList();
             when(responseEngine.applicationInstances(appId, EnumSet.of(InstanceState.HEALTHY)))
                     .thenReturn(ApiResponse.success(instances));
@@ -239,7 +241,7 @@ class ApisTest {
         {
             reset(responseEngine);
             val instances = IntStream.rangeClosed(1, 100)
-                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(appId(spec), spec, i))
+                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, i))
                     .toList();
             when(responseEngine.applicationInstances(eq(appId), any())).thenReturn(ApiResponse.success(instances));
 
@@ -256,7 +258,7 @@ class ApisTest {
     void applicationInstance() {
         val spec = appSpec();
 
-        val instance = ControllerTestUtils.generateInstanceInfo(appId(spec), spec, 1);
+        val instance = ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 1);
         when(responseEngine.instanceDetails("TEST_APP_1", instance.getInstanceId()))
                 .thenReturn(ApiResponse.success(instance));
         {
@@ -272,10 +274,10 @@ class ApisTest {
     @Test
     void applicationOldInstances() {
         val spec = appSpec();
-        val appId = appId(spec);
+        val appId = ControllerUtils.deployableObjectId(spec);
 
         val instances = IntStream.rangeClosed(1, 100)
-                .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(appId(spec), spec, i))
+                .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, i))
                 .toList();
         when(responseEngine.applicationOldInstances(appId, 0, 1024))
                 .thenReturn(ApiResponse.success(instances));

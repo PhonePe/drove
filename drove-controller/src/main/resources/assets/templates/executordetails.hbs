@@ -49,6 +49,35 @@
             </div>
         </div>
     </section>
+    <section>
+        <div class="row">
+            <div class="col">
+                <div class="row">
+                    <div class="col"><h4>Tasks</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered" id="tasks">
+                            <thead>
+                            <tr>
+                                <th>Instance ID</th>
+                                <th>Source App</th>
+                                <th>Task ID</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>Current Age</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>State</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {{/partial}}
 
 {{#partial "page_js"}}
@@ -125,15 +154,7 @@
                 info['hostname'] = '';
                 info['ports'] = '';
             }
-            info.resources.forEach((r,i) => {
-                if(r.type === 'CPU') {
-                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
-                }
-                if(r.type === 'MEMORY') {
-                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
-                }
-            });
-
+            updateResourceUsage(instances);
             info['logStream'] = "/apis/v1/logs/" + info['appId'] + "/" + info['instanceId'];
         });
         return instances;
@@ -170,12 +191,40 @@
                'dataSrc' : executorDataTransformer
             }
     });
+    var ti = $('#tasks').DataTable({
+        'processing' : true,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'info' : false,
+        'columns' : [
+                { 'data' : 'instanceId' },
+                { 'data' : 'sourceAppName' },
+                { 'data' : 'taskId' },
+                { 'data' : 'usedCores' },
+                { 'data' : 'usedMemory', 'render' : formatBytes },
+                { 'data' : 'created', 'render' : timeSince },
+                { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+                { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+                { 'data' : 'state', 'render' : renderTaskState },
+                { 'data' : 'logStream',
+                  'render' : function(data, type, row, meta) {
+                    return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '">Details</a>';
+                  }
+                }
+            ],
+            'order' : [[5, 'desc']],
+            'ajax' : {
+               'url' : '/apis/v1/cluster/executors/{{executorId}}',
+               'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data.tasks)
+            }
+    });
 
     //loadExecutorSnapshot();
 
     setInterval(() => {
         //loadExecutorSnapshot();
         ii.ajax.reload(null, false);
+        ti.ajax.reload(null, false);
     }, 3000);
 
 {{/partial}}

@@ -78,6 +78,7 @@ public class App extends Application<AppConfig> {
         setupAuth(appConfig, environment, jersey);
     }
 
+    @SuppressWarnings("java:S3740")
     private void setupAuth(AppConfig appConfig, Environment environment, JerseyEnvironment jersey) {
         val basicAuthConfig = Objects.requireNonNullElse(appConfig.getUserAuth(), BasicAuthConfig.DEFAULT);
         val filters = new ArrayList<AuthFilter<?, ? extends DroveUser>>();

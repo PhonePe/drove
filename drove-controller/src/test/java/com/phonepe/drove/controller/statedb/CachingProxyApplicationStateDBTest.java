@@ -4,6 +4,7 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonUtils.sublist;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -43,7 +44,7 @@ class CachingProxyApplicationStateDBTest extends ControllerTestBase {
                            .mapToObj(i -> {
                                val spec = ControllerTestUtils.appSpec("TEST_SPEC_" + i, 1);
                                val now = new Date();
-                               return new ApplicationInfo(appId(spec), spec, rng.nextInt(10), now, now);
+                               return new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, rng.nextInt(10), now, now);
                            })
                            .peek(generatedInfo::add)
                            .allMatch(info -> db.updateApplicationState(info.getAppId(), info)));

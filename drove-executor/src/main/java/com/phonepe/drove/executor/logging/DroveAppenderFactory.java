@@ -26,6 +26,7 @@ import javax.validation.constraints.Min;
  *
  */
 @JsonTypeName("drove")
+@SuppressWarnings("java:S2326")
 public class DroveAppenderFactory<E extends DeferredProcessingAware> extends AbstractAppenderFactory<ILoggingEvent> {
     public static final String DEFAULT_LOG_FILE_NAME = "output.log";
 
@@ -70,6 +71,7 @@ public class DroveAppenderFactory<E extends DeferredProcessingAware> extends Abs
 
 
     @Override
+    @SuppressWarnings("java:S1075")
     public Appender<ILoggingEvent> build(
             LoggerContext loggerContext,
             String applicationName,

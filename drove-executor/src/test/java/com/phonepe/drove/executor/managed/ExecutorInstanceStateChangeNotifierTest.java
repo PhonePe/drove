@@ -4,6 +4,7 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
+import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import lombok.SneakyThrows;
@@ -34,10 +35,11 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                    null,
                                    null);
         val ctr = new AtomicInteger();
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
         val scn = new ExecutorInstanceStateChangeNotifier(
                 resourceDB,
-                new ExecutorCommunicator(engine,
-                                         message -> {
+                new ExecutorCommunicator(
+                        message -> {
                                              ctr.incrementAndGet();
                                              if (ctr.get() > 1) {
                                                  return new MessageResponse(message.getHeader(),
@@ -45,15 +47,16 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                              }
                                              return new MessageResponse(message.getHeader(),
                                                                         MessageDeliveryStatus.ACCEPTED);
-                                         }), engine);
+                                         },
+                                         messageHandler), applicationInstanceEngine, taskInstanceEngine);
         scn.start();
-        engine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(1, ctr.get());
-        engine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(2, ctr.get());
         scn.stop();
-        engine.onStateChange().dispatch(iin);
-        engine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
+        applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(2, ctr.get());
     }
 

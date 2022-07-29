@@ -24,8 +24,8 @@ import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.*;
-import com.phonepe.drove.controller.statemachine.AppAction;
-import com.phonepe.drove.controller.statemachine.AppActionContext;
+import com.phonepe.drove.controller.statemachine.applications.AppAction;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -83,6 +83,18 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    @Named("TaskThreadPool")
+    public ExecutorService taskThreadPool(final Environment environment) {
+        return environment.lifecycle().executorService("task-runner-%d")
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
+                .keepAliveTime(Duration.seconds(60))
+                .build();
+    }
+
+    @Provides
+    @Singleton
     @Named("JobLevelThreadFactory")
     public ThreadFactory jobLevelThreadFactory() {
         return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
@@ -101,8 +113,11 @@ public class ControllerCoreModule extends AbstractModule {
         bind(ApplicationStateDB.class).to(CachingProxyApplicationStateDB.class);
         bind(ApplicationStateDB.class).annotatedWith(Names.named("StoredApplicationStateDB"))
                 .to(ZkApplicationStateDB.class);
-        bind(InstanceInfoDB.class).to(CachingProxyInstanceInfoDB.class);
-        bind(InstanceInfoDB.class).annotatedWith(Names.named("StoredInstanceInfoDB")).to(ZkInstanceInfoDB.class);
+        bind(ApplicationInstanceInfoDB.class).to(CachingProxyApplicationInstanceInfoDB.class);
+        bind(ApplicationInstanceInfoDB.class).annotatedWith(Names.named("StoredInstanceInfoDB")).to(
+                ZkApplicationInstanceInfoDB.class);
+        bind(TaskDB.class).to(CachingProxyTaskDB.class);
+        bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(ZkTaskDB.class);
         bind(ClusterStateDB.class).to(CachingProxyClusterStateDB.class);
         bind(ClusterStateDB.class).annotatedWith(Names.named("StoredClusterStateDB")).to(ZkClusterStateDB.class);
 

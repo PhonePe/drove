@@ -4,11 +4,11 @@ import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
-import com.phonepe.drove.controller.statemachine.AppAction;
-import com.phonepe.drove.controller.statemachine.AppActionContext;
-import com.phonepe.drove.controller.statemachine.AppAsyncAction;
-import com.phonepe.drove.controller.statemachine.ApplicationStateMachine;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statemachine.applications.AppAction;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
+import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
+import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -43,8 +43,8 @@ public class ApplicationEngine {
     private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
-    private final InstanceInfoDB instanceInfoDB;
-    private final CommandValidator commandValidator;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
+    private final ApplicationCommandValidator applicationCommandValidator;
     private final DroveEventBus droveEventBus;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
@@ -55,15 +55,15 @@ public class ApplicationEngine {
     public ApplicationEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
-            InstanceInfoDB instanceInfoDB,
-            CommandValidator commandValidator,
+            ApplicationInstanceInfoDB instanceInfoDB,
+            ApplicationCommandValidator applicationCommandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("MonitorThreadPool") ExecutorService monitorExecutor) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
-        this.commandValidator = commandValidator;
+        this.applicationCommandValidator = applicationCommandValidator;
         this.droveEventBus = droveEventBus;
         this.retrySpecFactory = retrySpecFactory;
         this.monitorExecutor = monitorExecutor;
@@ -74,10 +74,10 @@ public class ApplicationEngine {
     }
 
     @MonitoredFunction
-    public CommandValidator.ValidationResult handleOperation(final ApplicationOperation operation) {
-        val appId = ControllerUtils.appId(operation);
+    public ValidationResult handleOperation(final ApplicationOperation operation) {
+        val appId = ControllerUtils.deployableObjectId(operation);
         val res = validateOp(operation);
-        if (res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             stateMachines.compute(appId, (id, monitor) -> {
                 if (null == monitor) {
                     log.info("App {} is unknown. Going to create it now.", appId);
@@ -150,10 +150,9 @@ public class ApplicationEngine {
         return stateMachines.containsKey(appId);
     }
 
-    private CommandValidator.ValidationResult validateOp(final ApplicationOperation operation) {
-        //TODO::Check operation
+    private ValidationResult validateOp(final ApplicationOperation operation) {
         Objects.requireNonNull(operation, "Operation cannot be null");
-        return commandValidator.validate(this, operation);
+        return applicationCommandValidator.validate(this, operation);
     }
 
     private ApplicationOperation translateOp(final ApplicationOperation original) {
@@ -184,7 +183,7 @@ public class ApplicationEngine {
             public ApplicationStateMachineExecutor visit(ApplicationCreateOperation create) {
                 val appSpec = create.getSpec();
                 val now = new Date();
-                val appId = ControllerUtils.appId(appSpec);
+                val appId = ControllerUtils.deployableObjectId(appSpec);
                 val appInfo = new ApplicationInfo(appId, appSpec, create.getInstances(), now, now);
                 val context = new AppActionContext(appId, appSpec);
                 val stateMachine = new ApplicationStateMachine(StateData.create(
@@ -234,7 +233,7 @@ public class ApplicationEngine {
                                                              ClusterOpSpec.DEFAULT);
                     });
             val res = handleOperation(scalingOperation);
-            if (!res.getStatus().equals(CommandValidator.ValidationStatus.SUCCESS)) {
+            if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                 log.error("Error sending command to state machine. Error: " + res.getMessages());
             }
         }

@@ -8,4 +8,6 @@ public interface ControllerMessageVisitor<T> {
     T visit(InstanceStateReportMessage instanceStateReport);
 
     T visit(ExecutorSnapshotMessage executorSnapshot);
+
+    T visit(TaskStateReportMessage taskStateReportMessage);
 }

@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 /**
  *
  */
+@SuppressWarnings("java:S119")
 public abstract class ThreadedCommunicator<
         SendMessageType extends Enum<SendMessageType>,
         ReceiveMessageType extends Enum<ReceiveMessageType>,

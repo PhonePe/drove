@@ -4,6 +4,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -29,6 +30,7 @@ public class ApplicationSuspendOperation extends ApplicationOperation {
     @Valid
     ClusterOpSpec opSpec;
 
+    @Builder
     public ApplicationSuspendOperation(String appId, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.SUSPEND);
         this.appId = appId;

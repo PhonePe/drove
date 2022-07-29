@@ -1,7 +1,8 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.auth.model.*;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.val;
@@ -14,7 +15,7 @@ import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateInstanceInfo;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,8 +30,8 @@ class AppSupportTest {
     @Test
     void testSuccess() {
         val spec = appSpec();
-        val appId = appId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val appId = ControllerUtils.deployableObjectId(spec);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));
@@ -66,8 +67,8 @@ class AppSupportTest {
     @Test
     void testSuccessSpecificState() {
         val spec = appSpec();
-        val appId = appId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val appId = ControllerUtils.deployableObjectId(spec);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));
@@ -91,8 +92,8 @@ class AppSupportTest {
     @Test
     void testFailNoInfo() {
         val spec = appSpec();
-        val appId = appId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val appId = ControllerUtils.deployableObjectId(spec);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));
@@ -123,8 +124,8 @@ class AppSupportTest {
     @Test
     void testNoAccess() {
         val spec = appSpec();
-        val appId = appId(spec);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val appId = ControllerUtils.deployableObjectId(spec);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
         when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
                 .thenReturn(Optional.of(callingInstance));

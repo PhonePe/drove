@@ -17,6 +17,7 @@ import java.util.Optional;
 @Singleton
 public class ZkClusterStateDB implements ClusterStateDB {
 
+    @SuppressWarnings("java:S1075")
     private static final String PATH = "/cluster/maintenance";
 
     private final CuratorFramework curatorFramework;

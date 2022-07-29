@@ -100,7 +100,7 @@
         res.files.forEach( (fileName, i) => {
             const info = {};
             info['fileName'] = '<a href="/applications/{{appId}}/instances/{{instanceId}}/stream?logFileName=' + encodeURIComponent(fileName) + '" target="_blank">' + fileName + '</a>';
-            info['downloadLink'] = '<a href="/apis/v1/logfiles/{{appId}}/{{instanceId}}/download/' + fileName + '">Download</a>';
+            info['downloadLink'] = '<a href="/apis/v1/logfiles/applications/{{appId}}/{{instanceId}}/download/' + fileName + '">Download</a>';
             ret.push(info);
         });
         return ret;
@@ -109,7 +109,7 @@
     var summary = $('#instanceLogs').DataTable({
         'processing' : true,
         'ajax': {
-            'url' : '/apis/v1/logfiles/{{appId}}/{{instanceId}}/list',
+            'url' : '/apis/v1/logfiles/applications/{{appId}}/{{instanceId}}/list',
             'dataSrc' : logListExploder
         },
         'paging': false,

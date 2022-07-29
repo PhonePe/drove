@@ -7,12 +7,12 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -32,7 +32,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     private final String appId;
     private final String instanceId;
     private final ClusterOpSpec clusterOpSpec;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
@@ -41,7 +41,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             String appId,
             String instanceId,
             ClusterOpSpec clusterOpSpec,
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
+            ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory) {
         this.appId = appId;
@@ -110,7 +110,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
                                                                        node.getTransportType()),
                                                    instanceId);
         val response = communicator.send(stopMessage);
-        log.trace("Sent message to start instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
+        log.trace("Sent message to stop instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
         if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
             log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
             return false;

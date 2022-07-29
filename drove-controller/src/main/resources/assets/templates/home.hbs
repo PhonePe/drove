@@ -23,25 +23,70 @@
     </section>
     <section>
         <div class="row">
-            <div class="col-md-6 col-sm-12">
-                <div class="row">
-                    <div class="col"><h4>Applications</h4></div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <table class="table table-bordered" id="applications" title="Applications">
-                            <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Expected Instances</th>
-                                <th>Healthy Instances</th>
-                                <th>CPU</th>
-                                <th>Memory</th>
-                                <th>State</th>
-                            </tr>
-                            </thead>
-                        </table>
+            <div class="col-md-6 col-sm-12" id="runnables">
+                <ul class="nav nav-tabs"  role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="applicationdetails-tab" data-toggle="tab" data-target="#applicationdetails" type="button" role="tab" aria-controls="applicationdetails" aria-selected="true">Applications</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="taskdetails-tab" data-toggle="tab" data-target="#taskdetails" type="button" role="tab" aria-controls="taskdetails" aria-selected="false">Tasks</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id=""runnablesContent>
+                    <div class="tab-pane fade show active" id="applicationdetails" role="tabpanel" aria-labelledby="applicationdetails-tab">
+                        <div class="row">
+                            <div class="col">
+                                <table class="table table-bordered" id="applications" title="Applications" style="width: 100%">
+                                    <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Expected Instances</th>
+                                        <th>Healthy Instances</th>
+                                        <th>CPU</th>
+                                        <th>Memory</th>
+                                        <th>State</th>
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="taskdetails" role="tabpanel" aria-labelledby="taskdetails-tab">
+
+                        <div class="row">
+                            <div class="col">
+                                <table class="table table-bordered" id="tasks" title="Tasks" style="width: 100%">
+                                    <thead>
+                                    <tr>
+                                        <th>Source App</th>
+                                        <th>Task ID</th>
+                                        <th>Cores</th>
+                                        <th>Memory</th>
+                                        <th>Running For</th>
+                                        <th>State</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="row" style="padding-top: 1rem;">
+                            <div class="col">
+                                <form method="post" action="/apis/v1/tasks/search">
+                                    <div class="form-group row">
+                                        <label for="taskSearchAppName" class="col-sm-3">Source App Name</label>
+                                        <input type="text" class="form-control col" id="taskSearchAppName" name="taskSearchAppName" pattern="[a-zA-Z\d\-_]*" required placeholder="Source app name for the task">
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="taskSearchTaskID" class="col-sm-3">Task ID</label>
+                                        <input type="text" class="form-control col" id="taskSearchTaskID" name="taskSearchTaskID" pattern="[a-zA-Z\d\-_]*" required placeholder="Task ID used to start the task">
+                                    </div>
+                                    <button type="submit" class="btn btn-success pull-right">Find</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -135,6 +180,36 @@
             { 'data' : 'state', render: renderAppState }
         ]
     });
+    var tasks = $('#tasks').DataTable({
+        'processing' : true,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'info' : false,
+        'columnDefs': [
+            {
+                'className': 'text-center',
+                'targets': '_all'
+            }
+        ],
+        'columns' : [
+            { 'data' : 'sourceAppName' },
+            { 'data' : 'taskId' },
+            { 'data' : 'usedCores' },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'created', 'render' : timeSince },
+            { 'data' : 'state', 'render' : renderTaskState },
+            { 'data' : 'logStream',
+                'render' : function(data, type, row, meta) {
+                    return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '">Details</a>';
+                }
+            }
+        ],
+        'order' : [[5, 'desc']],
+        'ajax' : {
+            'url' : '/apis/v1/tasks',
+            'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data)
+        }
+    });
     var executors = $('#executors').DataTable({
         'processing' : true,
         'ajax': '/apis/v1/cluster/executors',
@@ -180,6 +255,7 @@
     setInterval(() => {
         cluster.ajax.reload();
         applications.ajax.reload();
+        tasks.ajax.reload();
         executors.ajax.reload();
     }, 5000);
 {{/partial}}

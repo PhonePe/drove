@@ -5,7 +5,7 @@ import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -32,14 +32,14 @@ import java.util.concurrent.locks.ReentrantLock;
 @Path("/v1/logs")
 @PermitAll
 public class InstanceLogStream {
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
 
     @Inject
     public InstanceLogStream(
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
+            ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig clusterAuthenticationConfig) {
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;

@@ -12,7 +12,7 @@ import java.util.Map;
  *
  */
 @Value
-public class ExecutorInstanceInfo {
+public class ExecutorInstanceInfo implements DeployedExecutionObjectInfo {
     String appId;
     String appName;
     String instanceId;
@@ -22,4 +22,9 @@ public class ExecutorInstanceInfo {
     Map<String, String> metadata;
     Date created;
     Date updated;
+
+    @Override
+    public <T> T accept(DeployedExecutorInstanceInfoVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

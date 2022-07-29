@@ -21,10 +21,10 @@ class ZkClusterStateDBTest extends ControllerTestBase {
     void test() {
         try(val cluster = new TestingCluster(1)) {
             cluster.start();
-            try (val curatror = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
+            try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                      .setNameSpace("DTEST"))) {
-                curatror.start();
-                val db = new ZkClusterStateDB(curatror, MAPPER);
+                curator.start();
+                val db = new ZkClusterStateDB(curator, MAPPER);
                 assertFalse(db.currentState().isPresent());
                 assertTrue(db.setClusterState(ClusterState.NORMAL).isPresent());
                 assertEquals(ClusterState.NORMAL,

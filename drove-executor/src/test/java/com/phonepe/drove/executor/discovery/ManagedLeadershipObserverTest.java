@@ -148,6 +148,7 @@ class ManagedLeadershipObserverTest {
                                              null,
                                              null,
                                              null,
+                                             null,
                                              false)));
         val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
         obs.start();

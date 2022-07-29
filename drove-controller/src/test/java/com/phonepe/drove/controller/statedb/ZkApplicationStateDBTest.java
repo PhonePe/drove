@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.statedb;
 
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.ControllerTestBase;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -14,7 +15,7 @@ import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonUtils.buildCurator;
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
-import static com.phonepe.drove.controller.utils.ControllerUtils.appId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,12 +30,12 @@ class ZkApplicationStateDBTest extends ControllerTestBase {
     void testSingle() {
         try(val cluster = new TestingCluster(1)) {
             cluster.start();
-            try (val curatror = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString()).setNameSpace("DTEST"))) {
-                curatror.start();
-                val db = new ZkApplicationStateDB(curatror, MAPPER);
+            try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString()).setNameSpace("DTEST"))) {
+                curator.start();
+                val db = new ZkApplicationStateDB(curator, MAPPER);
                 assertTrue(db.applications(0, Integer.MAX_VALUE).isEmpty());
                 val spec = appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val appInfo = new ApplicationInfo(appId, spec, 1, new Date(), new Date());
                 assertTrue(db.updateApplicationState(appId, appInfo));
                 {
@@ -73,14 +74,14 @@ class ZkApplicationStateDBTest extends ControllerTestBase {
     void testMulti() {
         try(val cluster = new TestingCluster(1)) {
             cluster.start();
-            try (val curatror = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
+            try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
                                                      .setNameSpace("DTEST"))) {
-                curatror.start();
-                val db = new ZkApplicationStateDB(curatror, MAPPER);
+                curator.start();
+                val db = new ZkApplicationStateDB(curator, MAPPER);
                 IntStream.rangeClosed(1, 100)
                         .forEach(i -> {
                             val spec = appSpec(i);
-                            val appId = appId(spec);
+                            val appId = ControllerUtils.deployableObjectId(spec);
                             val appInfo = new ApplicationInfo(appId, spec, 1, new Date(), new Date());
                             db.updateApplicationState(appId, appInfo);
                         });
@@ -99,7 +100,7 @@ class ZkApplicationStateDBTest extends ControllerTestBase {
                 val db = new ZkApplicationStateDB(curator, MAPPER);
                 assertTrue(db.applications(0, Integer.MAX_VALUE).isEmpty());
                 val spec = appSpec();
-                val appId = appId(spec);
+                val appId = ControllerUtils.deployableObjectId(spec);
                 val appInfo = new ApplicationInfo(appId, spec, 1, new Date(), new Date());
                 assertTrue(db.updateApplicationState(appId, appInfo));
                 {

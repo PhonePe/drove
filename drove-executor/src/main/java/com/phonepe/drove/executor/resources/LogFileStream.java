@@ -32,6 +32,7 @@ import java.util.Map;
 @Path("/v1/logs/filestream")
 @RolesAllowed(DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE)
 @IgnoreInJacocoGeneratedReport
+@SuppressWarnings("java:S1075")
 public class LogFileStream {
 
     private static final String ERROR_FIELD = "error";

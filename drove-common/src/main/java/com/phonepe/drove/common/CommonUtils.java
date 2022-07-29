@@ -8,6 +8,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.Constants;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.common.ClusterState;
@@ -135,5 +139,19 @@ public class CommonUtils {
             log.error("Error getting hostname: " + e.getMessage(), e);
         }
         return null;
+    }
+
+    public static String instanceId(final DeploymentUnitSpec deploymentUnitSpec) {
+        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
+            @Override
+            public String visit(ApplicationInstanceSpec instanceSpec) {
+                return instanceSpec.getInstanceId();
+            }
+
+            @Override
+            public String visit(TaskInstanceSpec taskInstanceSpec) {
+                return taskInstanceSpec.getInstanceId();
+            }
+        });
     }
 }

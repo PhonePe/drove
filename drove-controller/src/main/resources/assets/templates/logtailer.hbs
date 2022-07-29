@@ -71,7 +71,7 @@
               'length': -1
             }, options);
 
-            var url = '/apis/v1/logfiles/{{appId}}/{{instanceId}}/read/{{logFileName}}'
+            var url = '/apis/v1/logfiles/{{logType}}/{{appId}}/{{instanceId}}/read/{{logFileName}}'
                 + '?offset=' + settings.offset
                 + '&length=' + ((settings.length && settings.length != 0) ? settings.length : -1);
             return $.getJSON(url);

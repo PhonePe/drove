@@ -15,7 +15,7 @@ import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.RandomInstanceIdGenerator;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.PortType;
@@ -50,7 +50,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
     @Test
     void testJobSuccess() {
         val instanceScheduler = mock(InstanceScheduler.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
@@ -60,7 +60,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StartInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(eq(appId), anyString()))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(new InstanceInfo(appId,
@@ -102,7 +102,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
     void testJobNoNode() {
         val appSpec = appSpec();
         val instanceScheduler = mock(InstanceScheduler.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         when(instanceScheduler.schedule(sessionId, appSpec))
@@ -126,7 +126,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
     void testJobUnhealthy() {
         val appSpec = appSpec();
         val instanceScheduler = mock(InstanceScheduler.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
@@ -136,7 +136,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StartInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         when(instanceInfoDB.instance(eq(appId), anyString()))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(new InstanceInfo(appId,
@@ -175,7 +175,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
     void testJobCommFailure() {
         val appSpec = appSpec();
         val instanceScheduler = mock(InstanceScheduler.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
@@ -185,7 +185,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StartInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.REJECTED));
-        val appId = ControllerUtils.appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobStartRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
@@ -205,7 +205,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
     void testJobTimeout() {
         val appSpec = appSpec();
         val instanceScheduler = mock(InstanceScheduler.class);
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
@@ -213,7 +213,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                 .thenReturn(Optional.of(allocatedExecutorNode));
         when(comm.send(any(StartInstanceMessage.class)))
                 .thenThrow(new RuntimeException("Test Exception"));
-        val appId = ControllerUtils.appId(appSpec);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
         when(instanceInfoDB.instance(eq(appId), anyString()))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(new InstanceInfo(appId,

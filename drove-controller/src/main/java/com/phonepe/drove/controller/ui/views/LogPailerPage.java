@@ -12,12 +12,14 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class LogPailerPage extends TemplateView {
+    String logType;
     String appId;
     String instanceId;
     String logFileName;
 
-    public LogPailerPage(String appId, String instanceId, String logFileName) {
+    public LogPailerPage(String logType, String appId, String instanceId, String logFileName) {
         super("templates/logtailer.hbs");
+        this.logType = logType;
         this.appId = appId;
         this.instanceId = instanceId;
         this.logFileName = logFileName;

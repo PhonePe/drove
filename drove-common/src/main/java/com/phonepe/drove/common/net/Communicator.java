@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 /**
  *
  */
+@SuppressWarnings("java:S119")
 public interface Communicator<
         SendMessageType extends Enum<SendMessageType>,
         ReceiveMessageType extends Enum<ReceiveMessageType>,

@@ -8,7 +8,12 @@ public interface ExecutorMessageVisitor<T> {
 
     T visit(StopInstanceMessage stopInstanceMessage);
 
+    T visit(StartTaskMessage startTaskMessage);
+
+    T visit(StopTaskMessage stopTaskMessage);
+
     T visit(BlacklistExecutorMessage blacklistExecutorMessage);
 
     T visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage);
+
 }

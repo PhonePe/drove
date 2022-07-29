@@ -1,12 +1,18 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
+import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import com.phonepe.drove.models.task.TaskSpec;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -32,21 +38,33 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                                                             InstanceState.UNHEALTHY,
                                                                                             InstanceState.DEPROVISIONING,
                                                                                             InstanceState.STOPPING);
-    private final InstanceInfoDB instanceInfoDB;
+    private static final Set<TaskState> RESOURCE_CONSUMING_TASK_STATES = EnumSet.of(TaskState.PENDING,
+                                                                                    TaskState.PROVISIONING,
+                                                                                    TaskState.STARTING,
+                                                                                    TaskState.RUNNING,
+                                                                                    TaskState.RUN_FAILED,
+                                                                                    TaskState.RUN_COMPLETED,
+                                                                                    TaskState.RUN_CANCELLED,
+                                                                                    TaskState.RUN_TIMEOUT,
+                                                                                    TaskState.DEPROVISIONING,
+                                                                                    TaskState.STOPPING);
+    private final ApplicationInstanceInfoDB instanceInfoDB;
+    private final TaskDB taskDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final Map<String, Map<String, Long>> schedulingSessionData = new ConcurrentHashMap<>();
 
     @Inject
     public DefaultInstanceScheduler(
-            InstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB) {
+            ApplicationInstanceInfoDB instanceInfoDB, TaskDB taskDB, ClusterResourcesDB clusterResourcesDB) {
         this.instanceInfoDB = instanceInfoDB;
+        this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
     }
 
     @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, ApplicationSpec applicationSpec) {
+            String schedulingSessionId, DeploymentSpec applicationSpec) {
         //Take a snapshot of all instances in this cluster at the onset of the session
         //This will get augmented every time a new node is allocated in this session
         schedulingSessionData.computeIfAbsent(schedulingSessionId,
@@ -88,15 +106,32 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         return true;
     }
 
-    private Map<String, Long> clusterSnapshot(ApplicationSpec applicationSpec) {
-        return instanceInfoDB.activeInstances(ControllerUtils.appId(applicationSpec), 0, Integer.MAX_VALUE)
-                .stream()
-                .filter(instanceInfo -> RESOURCE_CONSUMING_INSTANCE_STATES.contains(instanceInfo.getState()))
-                .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));
+    private Map<String, Long> clusterSnapshot(DeploymentSpec deploymentSpec) {
+        return deploymentSpec.accept(new DeploymentSpecVisitor<Map<String, Long>>() {
+            @Override
+            public Map<String, Long> visit(ApplicationSpec applicationSpec) {
+                return instanceInfoDB.instances(Set.of(ControllerUtils.deployableObjectId(applicationSpec)),
+                                                      RESOURCE_CONSUMING_INSTANCE_STATES,
+                                                false)
+                        .values()
+                        .stream()
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));
+            }
+
+            @Override
+            public Map<String, Long> visit(TaskSpec taskSpec) {
+                return taskDB.tasks(Set.of(taskSpec.getSourceAppName()), RESOURCE_CONSUMING_TASK_STATES, false)
+                        .values()
+                        .stream()
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.groupingBy(TaskInfo::getExecutorId, Collectors.counting()));
+            }
+        });
     }
 
     private boolean validateNode(
-            final ApplicationSpec spec,
+            final DeploymentSpec spec,
             Map<String, Long> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();

@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
-import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
-import com.phonepe.drove.common.model.executor.StartInstanceMessage;
-import com.phonepe.drove.common.model.executor.StopInstanceMessage;
-import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
+import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
+import com.phonepe.drove.common.model.executor.*;
 import lombok.Data;
 
 /**
@@ -17,9 +15,12 @@ import lombok.Data;
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "START_INSTANCE", value = StartInstanceMessage.class),
         @JsonSubTypes.Type(name = "STOP_INSTANCE", value = StopInstanceMessage.class),
+        @JsonSubTypes.Type(name = "START_TASK", value = StartTaskMessage.class),
+        @JsonSubTypes.Type(name = "STOP_TASK", value = StopTaskMessage.class),
         @JsonSubTypes.Type(name = "BLACKLIST", value = BlacklistExecutorMessage.class),
         @JsonSubTypes.Type(name = "UNBLACKLIST", value = UnBlacklistExecutorMessage.class),
         @JsonSubTypes.Type(name = "INSTANCE_STATE_REPORT", value = InstanceStateReportMessage.class),
+        @JsonSubTypes.Type(name = "TASK_STATE_REPORT", value = TaskStateReportMessage.class),
         @JsonSubTypes.Type(name = "EXECUTOR_SNAPSHOT", value = ExecutorSnapshotMessage.class),
 })
 @Data

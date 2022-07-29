@@ -3,7 +3,10 @@ package com.phonepe.drove.executor.utils;
 import com.google.common.base.Strings;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.HttpChecker;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
+import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -12,6 +15,8 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -59,6 +64,26 @@ public class ExecutorUtils {
                 new Date());
     }
 
+    public static TaskInfo convertToTaskInfo(final StateData<TaskState, ExecutorTaskInfo> state) {
+        val data = state.getData();
+        return new TaskInfo(
+                data.getSourceAppName(),
+                data.getTaskId(),
+                data.getInstanceId(),
+                data.getExecutorId(),
+                data.getHostname(),
+                data.getExecutable(),
+                data.getResources(),
+                data.getVolumes(),
+                data.getLoggingSpec(),
+                data.getEnv(),
+                state.getState(),
+                Collections.emptyMap(),
+                state.getError(),
+                data.getCreated(),
+                new Date());
+    }
+
     public static ExecutorResourceSnapshot executorSnapshot(ResourceInfo resourceState, String executorId) {
         return new ExecutorResourceSnapshot(executorId,
                                             resourceState.getCpu(),
@@ -67,25 +92,28 @@ public class ExecutorUtils {
 
     public static HttpRequest.Builder buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
         val requestBuilder = HttpRequest.newBuilder(uri);
-        switch (httpSpec.getVerb()) {
+        return switch (httpSpec.getVerb()) {
             case GET -> requestBuilder.GET();
-            case POST -> {
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-                }
-                else {
-                    requestBuilder.POST(HttpRequest.BodyPublishers.noBody());
-                }
+            case POST -> Strings.isNullOrEmpty(httpSpec.getPayload())
+                         ? requestBuilder.POST(HttpRequest.BodyPublishers.noBody())
+                         : requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+            case PUT -> Strings.isNullOrEmpty(httpSpec.getPayload())
+                        ? requestBuilder.PUT(HttpRequest.BodyPublishers.noBody())
+                        : requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+        };
+    }
+
+    public static String instanceId(final DeployedExecutionObjectInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedExecutorInstanceInfoVisitor<>() {
+            @Override
+            public String visit(ExecutorInstanceInfo applicationInstanceInfo) {
+                return applicationInstanceInfo.getInstanceId();
             }
-            case PUT -> {
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-                }
-                else {
-                    requestBuilder.PUT(HttpRequest.BodyPublishers.noBody());
-                }
+
+            @Override
+            public String visit(ExecutorTaskInfo taskInfo) {
+                return taskInfo.getInstanceId();
             }
-        }
-        return requestBuilder;
+        });
     }
 }

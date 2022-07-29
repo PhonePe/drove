@@ -11,7 +11,7 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.PortType;
@@ -44,7 +44,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobSuccess() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val instanceId = "TEST_INSTANCE";
@@ -55,7 +55,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
@@ -79,7 +79,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobNoInstance() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val instanceId = "TEST_INSTANCE";
@@ -90,7 +90,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenReturn(Optional.empty());
         val rf = mock(ControllerRetrySpecFactory.class);
@@ -113,7 +113,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobNoExecutor() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val instanceId = "TEST_INSTANCE";
@@ -124,7 +124,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
                                                MessageDeliveryStatus.ACCEPTED));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
@@ -148,7 +148,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
 
     @Test
     void testJobMsgThrow() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val sessionId = UUID.randomUUID().toString();
@@ -158,7 +158,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenReturn(Optional.of(executorHost(8080)));
         when(comm.send(any(StopInstanceMessage.class)))
                 .thenThrow(new IllegalArgumentException("Test error"));
-        val appId = ControllerUtils.appId(APP_SPEC);
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
@@ -181,7 +181,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
     }
     @Test
     void testJobMsgMsgNoAccepted() {
-        val instanceInfoDB = mock(InstanceInfoDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val resourcesDB = mock(ClusterResourcesDB.class);
         val sessionId = UUID.randomUUID().toString();
@@ -192,7 +192,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(comm.send(any(StopInstanceMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
                         -> new MessageResponse(invocationOnMock.<StopInstanceMessage>getArgument(0).getHeader(),
-                                               MessageDeliveryStatus.REJECTED));        val appId = ControllerUtils.appId(APP_SPEC);
+                                               MessageDeliveryStatus.REJECTED));        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));

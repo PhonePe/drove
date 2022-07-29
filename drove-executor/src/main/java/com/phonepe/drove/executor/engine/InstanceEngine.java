@@ -1,24 +1,25 @@
 package com.phonepe.drove.executor.engine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.model.InstanceSpec;
-import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.executor.ExecutorMessage;
-import com.phonepe.drove.executor.InstanceActionFactory;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.executor.ExecutorActionFactory;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
-import com.phonepe.drove.executor.statemachine.InstanceStateMachine;
+import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.statemachine.StateData;
+import com.phonepe.drove.statemachine.StateMachine;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingParallelSignal;
-import com.phonepe.drove.statemachine.StateData;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -33,40 +34,35 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 
 import static ch.qos.logback.classic.ClassicConstants.FINALIZE_SESSION_MARKER;
-import static com.phonepe.drove.models.instance.InstanceState.LOST;
-import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
+import static com.phonepe.drove.common.CommonUtils.instanceId;
 
 /**
  *
  */
 @Slf4j
-public class InstanceEngine implements Closeable {
+@SuppressWarnings("unused")
+public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S extends Enum<S>,
+        T extends DeploymentUnitSpec, I extends DeployedInstanceInfo> implements Closeable {
     private final ExecutorIdManager executorIdManager;
     private final ExecutorService service;
-    private final InstanceActionFactory actionFactory;
+    private final ExecutorActionFactory<E, S, T> actionFactory;
     private final ResourceManager resourceDB;
-    private final BlacklistingManager blacklistManager;
-    private final Map<String, SMInfo> stateMachines = new HashMap<>();
+    private final Map<String, SMInfo<E, S, T>> stateMachines = new HashMap<>();
     private final StampedLock lock = new StampedLock();
 
-    private final ConsumingParallelSignal<InstanceInfo> stateChanged = new ConsumingParallelSignal<>();
+    private final ConsumingParallelSignal<I> stateChanged = new ConsumingParallelSignal<>();
     private final DockerClient client;
 
 
-    public InstanceEngine(
+    protected InstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
-            InstanceActionFactory actionFactory,
-            ResourceManager resourceDB, BlacklistingManager blacklistManager, DockerClient client) {
+            ExecutorActionFactory<E, S, T> actionFactory,
+            ResourceManager resourceDB, DockerClient client) {
         this.executorIdManager = executorIdManager;
         this.service = service;
         this.actionFactory = actionFactory;
         this.resourceDB = resourceDB;
-        this.blacklistManager = blacklistManager;
         this.client = client;
-    }
-
-    public MessageResponse handleMessage(final ExecutorMessage message) {
-        return message.accept(new ExecutorMessageHandler(this));
     }
 
     public boolean exists(final String instanceId) {
@@ -79,7 +75,7 @@ public class InstanceEngine implements Closeable {
         }
     }
 
-    public Set<String> instanceIds(final Set<InstanceState> matchingStates) {
+    public Set<String> instanceIds(final Set<S> matchingStates) {
         val stamp = lock.readLock();
         try {
             return stateMachines.entrySet()
@@ -93,64 +89,91 @@ public class InstanceEngine implements Closeable {
         }
     }
 
-    public boolean startInstance(final InstanceSpec spec) {
+    public boolean startInstance(final T spec) {
         val currDate = new Date();
-        return registerInstance(spec.getInstanceId(),
+        return registerInstance(instanceId(spec),
                                 spec,
-                                StateData.create(InstanceState.PENDING,
-                                                 new ExecutorInstanceInfo(spec.getAppId(),
-                                                                          spec.getAppName(),
-                                                                          spec.getInstanceId(),
-                                                                          executorIdManager.executorId().orElse(null),
-                                                                          null,
-                                                                          spec.getResources(),
-                                                                          Collections.emptyMap(),
-                                                                          currDate,
-                                                                          currDate)));
+                                createInitialState(spec, currDate, executorIdManager));
     }
+
+    protected abstract StateData<S, E> createInitialState(
+            T spec,
+            Date currDate,
+            ExecutorIdManager executorIdManager);
 
     @MonitoredFunction
     public boolean registerInstance(
             final String instanceId,
-            final InstanceSpec spec,
-            final StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+            final T spec,
+            final StateData<S, E> currentState) {
         val stamp = lock.writeLock();
         try {
             if (!lockRequiredResources(spec)) {
+                log.error("Could not lock required resources. Instance has been leaked");
                 return false;
             }
-            val stateMachine = new InstanceStateMachine(executorIdManager.executorId().orElse(null),
-                                                        spec,
-                                                        currentState,
-                                                        actionFactory,
-                                                        client);
+            val stateMachine = createStateMachine(executorIdManager.executorId().orElse(null),
+                                                  spec,
+                                                  currentState,
+                                                  actionFactory,
+                                                  client);
             stateMachine.onStateChange().connect(this::handleStateChange);
             val f = service.submit(() -> {
-                MDC.put("instanceLogId", spec.getAppId() + ":" + spec.getInstanceId());
-                InstanceState state = null;
+                spec.accept(new DeploymentUnitSpecVisitor<Void>() {
+                    @Override
+                    public Void visit(ApplicationInstanceSpec applicationInstanceSpec) {
+                        MDC.put("instanceLogId", applicationInstanceSpec.getAppId() + ":" + applicationInstanceSpec.getInstanceId());
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(TaskInstanceSpec taskInstanceSpec) {
+                        MDC.put("instanceLogId", taskInstanceSpec.getSourceAppName() + ":" + taskInstanceSpec.getTaskId());
+                        return null;
+                    }
+                });
+                S state = null;
+                val lostState = lostState();
                 do {
                     try {
                         state = stateMachine.execute();
                     }
                     catch (Exception e) {
-                        state = LOST;
+                        state = lostState;
                         log.error("Error in state machine execution: {}", e.getMessage(), e);
                         handleStateChange(StateData.errorFrom(stateMachine.getCurrentState(),
-                                                              LOST,
+                                                              lostState,
                                                               "SM Execution error: " + e.getMessage()));
                     }
-                } while (!state.isTerminal());
+                } while (!isTerminal(state));
                 log.info(FINALIZE_SESSION_MARKER, "Completed");
                 MDC.remove("instanceLogId");
                 return state;
             });
-            stateMachines.put(instanceId, new SMInfo(stateMachine, f));
+            stateMachines.put(instanceId, new SMInfo<>(stateMachine, f));
             return true;
         }
         finally {
             lock.unlockWrite(stamp);
         }
     }
+
+    protected abstract S lostState();
+
+    protected abstract boolean isTerminal(S state);
+
+    protected abstract boolean isError(S state);
+
+    protected abstract boolean isRunning(S state);
+
+    protected abstract StateMachine<E, Void, S, InstanceActionContext<T>, ExecutorActionBase<E, S, T>> createStateMachine(
+            String executorId,
+            T spec,
+            StateData<S, E> currentState,
+            ExecutorActionFactory<E, S, T> actionFactory,
+            DockerClient client);
+
+    protected abstract I convertStateToInstanceInfo(StateData<S, E> currentState);
 
     @MonitoredFunction
     public boolean stopInstance(final String instanceId) {
@@ -162,10 +185,10 @@ public class InstanceEngine implements Closeable {
                 return false;
             }
             val currState = info.getStateMachine().getCurrentState().getState();
-            if (!RUNNING_STATES.contains(currState)) {
-                log.error("Cannot stop {} as it is not in active running state. Current state: {} Acceptable states: " +
-                                  "{}",
-                          instanceId, currState, RUNNING_STATES);
+            if (!isRunning(currState)) {
+                log.error("Cannot stop {} as it is not in active running state. Current state: {}",
+                          instanceId,
+                          currState);
                 return false;
             }
             info.getStateMachine().stop();
@@ -185,26 +208,26 @@ public class InstanceEngine implements Closeable {
         }
     }
 
-    public Optional<InstanceInfo> currentState(final String instanceId) {
+    public Optional<I> currentState(final String instanceId) {
         val stamp = lock.readLock();
         try {
             val smInfo = stateMachines.get(instanceId);
             if (null == smInfo) {
                 return Optional.empty();
             }
-            return Optional.of(ExecutorUtils.convert(smInfo.getStateMachine().getCurrentState()));
+            return Optional.of(convertStateToInstanceInfo(smInfo.getStateMachine().getCurrentState()));
         }
         finally {
             lock.unlockRead(stamp);
         }
     }
 
-    public List<InstanceInfo> currentState() {
+    public List<I> currentState() {
         val stamp = lock.readLock();
         try {
             return stateMachines.values()
                     .stream()
-                    .map(v -> ExecutorUtils.convert(v.getStateMachine().getCurrentState()))
+                    .map(v -> convertStateToInstanceInfo(v.getStateMachine().getCurrentState()))
                     .toList();
         }
         finally {
@@ -212,33 +235,26 @@ public class InstanceEngine implements Closeable {
         }
     }
 
-    @MonitoredFunction
-    public void blacklist() {
-        blacklistManager.blacklist();
-    }
-
-    @MonitoredFunction
-    public void unblacklist() {
-        blacklistManager.unblacklist();
-    }
 
     @Override
     public void close() throws IOException {
-        //TODO::STOP ALL SMs, get all states, then shutdown the pool
+        //Nothing to do here. Do not shut down SM as this might just be for maintenance
     }
 
-    public ConsumingParallelSignal<InstanceInfo> onStateChange() {
+    public ConsumingParallelSignal<I> onStateChange() {
         return stateChanged;
     }
 
+
     @Value
-    private static class SMInfo {
-        InstanceStateMachine stateMachine;
-        Future<InstanceState> stateMachineFuture;
+    private static class SMInfo<E extends DeployedExecutionObjectInfo, S extends Enum<S>,
+            T extends DeploymentUnitSpec> {
+        StateMachine<E, Void, S, InstanceActionContext<T>, ExecutorActionBase<E, S, T>> stateMachine;
+        Future<S> stateMachineFuture;
     }
 
 
-    private boolean lockRequiredResources(InstanceSpec spec) {
+    private boolean lockRequiredResources(DeploymentUnitSpec spec) {
         val resourceUsage = new HashMap<Integer, ResourceManager.NodeInfo>();
         spec.getResources()
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
@@ -265,7 +281,7 @@ public class InstanceEngine implements Closeable {
                         return null;
                     }
                 }));
-        return resourceDB.lockResources(new ResourceManager.ResourceUsage(spec.getInstanceId(),
+        return resourceDB.lockResources(new ResourceManager.ResourceUsage(instanceId(spec),
                                                                           ResourceManager.ResourceLockType.HARD,
                                                                           resourceUsage));
     }
@@ -277,22 +293,24 @@ public class InstanceEngine implements Closeable {
     }
 
     @MonitoredFunction
-    private void handleStateChange(StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+    private void handleStateChange(StateData<S, E> currentState) {
         val state = currentState.getState();
-        log.info("Current state: {}. Terminal: {} Error: {}", currentState, state.isTerminal(), state.isError());
-        if (state.isTerminal()) {
+        log.info("Current state: {}. Terminal: {} Error: {}", currentState, isTerminal(state), isError(state));
+        if (isTerminal(state)) {
             val data = currentState.getData();
             if (null != data) {
-                resourceDB.reclaimResources(currentState.getData().getInstanceId());
-                stateMachines.remove(data.getInstanceId());
-                log.info("State machine {} has been successfully terminated", data.getInstanceId());
+                val instanceId = ExecutorUtils.instanceId(data);
+                resourceDB.reclaimResources(instanceId);
+                stateMachines.remove(instanceId);
+                log.info("State machine {} has been successfully terminated", instanceId);
             }
             else {
                 log.warn("State data is not present");
             }
         }
-        val instanceInfo = ExecutorUtils.convert(currentState);
+        val instanceInfo = convertStateToInstanceInfo(currentState);
         stateChanged.dispatch(instanceInfo);
     }
+
 
 }

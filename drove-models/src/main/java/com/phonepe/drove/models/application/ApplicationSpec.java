@@ -6,6 +6,8 @@ import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
+import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import lombok.Value;
 
 import javax.validation.Valid;
@@ -19,7 +21,7 @@ import java.util.Map;
  *
  */
 @Value
-public class ApplicationSpec {
+public class ApplicationSpec implements DeploymentSpec {
     @NotEmpty(message = "- Application name is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
     String name;
@@ -69,4 +71,9 @@ public class ApplicationSpec {
 
     @Valid
     PreShutdownSpec preShutdown;
+
+    @Override
+    public <T> T accept(DeploymentSpecVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

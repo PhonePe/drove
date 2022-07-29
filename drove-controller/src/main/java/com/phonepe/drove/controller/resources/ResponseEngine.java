@@ -11,9 +11,10 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.InstanceInfoDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -29,6 +30,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -54,7 +56,8 @@ public class ResponseEngine {
 
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
-    private final InstanceInfoDB instanceInfoDB;
+    private final ApplicationInstanceInfoDB instanceInfoDB;
+    private final TaskDB taskDB;
     private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
@@ -63,12 +66,13 @@ public class ResponseEngine {
     public ResponseEngine(
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
-            InstanceInfoDB instanceInfoDB,
-            ClusterStateDB clusterStateDB, ClusterResourcesDB clusterResourcesDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
+            TaskDB taskDB, ClusterStateDB clusterStateDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
+        this.taskDB = taskDB;
         this.clusterStateDB = clusterStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
@@ -115,6 +119,12 @@ public class ResponseEngine {
 
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId, int start, int length) {
         return success(instanceInfoDB.oldInstances(appId, start, length));
+    }
+
+    public ApiResponse<TaskInfo> taskDetails(final String sourceAppName, final String taskId) {
+        return taskDB.task(sourceAppName, taskId)
+                .map(ApiResponse::success)
+                .orElseGet(() -> failure("No such instance"));
     }
 
     public ApiResponse<ClusterSummary> cluster() {

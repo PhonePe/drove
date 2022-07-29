@@ -19,13 +19,13 @@ import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
-import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
 import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -49,24 +49,42 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public InstanceEngine engine(
+    public ApplicationInstanceEngine engine(
             final Environment environment,
             final Injector injector,
             final ResourceManager resourceDB,
             final ExecutorIdManager executorIdManager,
-            final BlacklistingManager blacklistManager,
             final DockerClient client) {
         val executorService = environment.lifecycle()
                 .executorService("instance-engine")
                 .minThreads(128)
                 .maxThreads(128)
                 .build();
-        return new InstanceEngine(
+        return new ApplicationInstanceEngine(
                 executorIdManager,
                 executorService,
-                new InjectingInstanceActionFactory(injector),
+                new InjectingApplicationInstanceActionFactory(injector),
                 resourceDB,
-                blacklistManager,
+                client);
+    }
+    @Provides
+    @Singleton
+    public TaskInstanceEngine taskEngine(
+            final Environment environment,
+            final Injector injector,
+            final ResourceManager resourceDB,
+            final ExecutorIdManager executorIdManager,
+            final DockerClient client) {
+        val executorService = environment.lifecycle()
+                .executorService("instance-engine")
+                .minThreads(128)
+                .maxThreads(128)
+                .build();
+        return new TaskInstanceEngine(
+                executorIdManager,
+                executorService,
+                new InjectingTaskActionFactory(injector),
+                resourceDB,
                 client);
     }
 
@@ -91,8 +109,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public ResourceConfig resourceConfig(final AppConfig appConfig) {
-        val resourceConfig = appConfig.getResources();
-        return resourceConfig == null ? ResourceConfig.DEFAULT : resourceConfig;
+        return Objects.requireNonNullElse(appConfig.getResources(), ResourceConfig.DEFAULT);
     }
 
     @Provides
