@@ -1,0 +1,9 @@
+Package: drove-controller
+Version: VERSIONSTR
+Section: misc
+Priority: standard
+Architecture: all
+Depends: openjdk-17-jre
+Installed-Size: JARSIZE
+Maintainer: Santanu Sinha <santanu@phonepe.com>
+Description: Controller for Drove Container Orchestrator System

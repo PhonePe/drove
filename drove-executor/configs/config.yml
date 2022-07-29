@@ -1,0 +1,70 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 3000
+#    - type: https
+#      port: 3000
+#      bindHost: ssdev.test
+#      keyStorePath: /home/santanu/certs/keystore.jks
+#      keyStorePassword: "password"
+#      validateCerts: false
+#      validatePeers: false
+  adminConnectors:
+    - type: http
+      port: 3001
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: console
+        timeZone: IST
+  gzip:
+    syncFlush: true
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: DEBUG
+
+  appenders:
+    - type: console
+      threshold: TRACE
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceLogId}] %message%n"
+
+    - type: drove
+      logPath: "/home/santanu/drove/drove-executor"
+      archivedLogFileSuffix: "%d"
+      archivedFileCount: 3
+      threshold: INFO
+      timeZone: IST
+      logFormat: "%(%-5level) | %-23date | %-30logger{0} | %message%n"
+      archive: true
+
+options:
+  cacheImages: true
+
+zookeeper:
+  connectionString: localhost:2181
+
+resources:
+  osCores: [ 0, 1 ]
+  exposedMemPercentage: 60
+  disableNUMAPinning: true
+  tags:
+  - local
+
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: LocalControllerSecret
+  - nodeType: EXECUTOR
+    secret: LocalExecutorSecret
+
+#
+#metrics:
+#  frequency: 1 minute
+#  reportOnStop: true
+#  reporters:
+#    - type: console
+#      timeZone: IST
+#      output: stdout

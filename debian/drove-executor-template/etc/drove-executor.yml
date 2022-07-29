@@ -1,0 +1,35 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8080
+  adminConnectors:
+    - type: http
+      port: 8081
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: file
+        timeZone: IST
+        currentLogFilename: /var/log/drove/drove-executor/drove-executor.log
+        archivedLogFilenamePattern: /var/log/drove/drove-executor/drove-executor.log-%d
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: DEBUG
+
+  appenders:
+    - type: drove
+      logPath: "/var/log/drove/drove-executor"
+      archivedLogFileSuffix: "%d"
+      archivedFileCount: 3
+      threshold: TRACE
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] [%logger{0}] %message%n"
+
+zookeeper:
+  connectionString: localhost:2181
+
+resources:
+  osCores: []
+  exposedMemPercentage: 100

@@ -1,0 +1,64 @@
+header {
+  margin-bottom: 1rem;
+}
+
+section {
+  margin-bottom: 1rem;
+}
+
+a {
+  color: #4b7bc5;
+}
+
+.nowrap {
+  white-space:nowrap;
+}
+
+.code-display {
+    height: 75vh;
+    overflow-y: auto;
+    margin: 1rem;
+    background: #212529;
+    color: wheat;
+    padding: 1rem;
+    font-weight: bold;
+    font-family: courier;
+}
+
+.pailer-body {
+    padding: 0px;
+}
+
+.pailer-indicator {
+    background: red;
+    color: wheat;
+    font-weight: bolder;
+    position: absolute;
+    left: 5px;
+    top: 90px;
+    z-index: 999;
+}
+
+.pailer-data {
+    color: white;
+    font-family: monospace;
+    background: #212222;
+    white-space: pre-wrap !important;
+    padding: 1rem;
+}
+
+.pailer-syslog-option {
+    color: white;
+    background: darkgray;
+    left: 5px;
+    top: 5px;
+    display: block;
+}
+
+.pailer-data-container {
+    padding: 0px;
+}
+
+.tab-pane {
+    padding-top: 1rem;
+}

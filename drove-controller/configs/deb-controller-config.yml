@@ -1,0 +1,36 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: {{{dw.httpPort}}}
+  adminConnectors:
+    - type: http
+      port: {{{dw.httpAdminPort}}}
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: file
+        timeZone: IST
+        currentLogFilename: {{{path.logDirectory}}}/drove-controller.log
+        archivedLogFilenamePattern: {{{path.logDirectory}}}/drove-controller.log-%d
+
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: DEBUG
+
+  appenders:
+    - type: console
+      threshold: TRACE
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{appId}] %message%n"
+    - type: file
+      threshold: TRACE
+      timeZone: IST
+      currentLogFilename: {{{path.logDirectory}}}/drove-controller.log
+      archivedLogFilenamePattern: {{{path.logDirectory}}}/drove-controller.log-%d
+      archivedFileCount: 3
+      logFormat: "%(%-5level) [%date] [%logger{0}] %message%n"
+
+zookeeper:
+  connectionString: localhost:2181

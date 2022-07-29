@@ -1,8 +1,10 @@
 package com.phonepe.drove.models.application.requirements;
 
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  *
@@ -10,11 +12,13 @@ import lombok.Value;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
+@Builder
 public class CPURequirement extends ResourceRequirement {
-    int count;
+    long count;
 
-    public CPURequirement(int count) {
-        super(ResourceRequirementType.CPU);
+    public CPURequirement(long count) {
+        super(ResourceType.CPU);
         this.count = count;
     }
 

@@ -1,0 +1,15 @@
+<h1>{{roseyErrorCode}}</h1>
+
+<h4>{{message}}</h4>
+
+<h5>Code: <em>{{errorCode}}</em></h5>
+
+<table class="table-bordered">
+    <title>Context</title>
+    <tbody>
+    {{#each context}}
+        <td>{{@key}}</td>
+        <td>{{this}}</td>
+    {{/each}}
+    </tbody>
+</table>

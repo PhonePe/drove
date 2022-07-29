@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ExecutorApp" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.phonepe.drove.executor.App" />
+    <module name="drove-executor" />
+    <option name="PROGRAM_PARAMETERS" value="server drove-executor/configs/config.yml" />
+    <option name="VM_PARAMETERS" value="-Djdk.internal.httpclient.disableHostnameVerification " />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.phonepe.drove.common.net.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

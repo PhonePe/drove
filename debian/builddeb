@@ -1,0 +1,108 @@
+#!/bin/bash
+
+build_project() {
+
+    echo "Building maven project"
+
+    pushd .. 2>&1 > /dev/null
+    mvn clean package
+    STATUS=$?
+    popd 2>&1 > /dev/null
+
+    echo "Maven build completed. Status: ${STATUS}"
+
+    return ${STATUS}
+
+}
+
+build_controller() {
+    VERSIONSTR=$(echo -n "${1}-${2}")
+    echo  "Creating package dir for controller"
+    cp -rf drove-controller-template drove-controller
+    cp ../drove-controller/target/drove-controller-${VERSION}.jar drove-controller/usr/share/java/drove-controller.jar
+    pushd drove-controller 2>&1 > /dev/null
+    JARSIZE=$(du -k usr/share/java/drove-controller.jar| awk -F '\t' '{print $1}')
+    cat DEBIAN/control | sed 's/VERSIONSTR/'${VERSIONSTR}'/g' | sed 's/JARSIZE/'${JARSIZE}'/g' > DEBIAN/control.tmp
+    mv -f DEBIAN/control.tmp DEBIAN/control
+    md5sum $(find . -type f |  awk '!/^\.\/DEBIAN/ { printf "./%s\n", substr($0, 3) }') > DEBIAN/md5sums
+    popd 2>&1 > /dev/null
+    dpkg-deb -b drove-controller drove-controller-${VERSIONSTR}.deb
+    STATUS=$?
+    if [ ${STATUS} -eq 0 ]; then
+        rm -rf drove-controller
+        echo "Controller package built"
+    fi
+    return $STATUS 
+}
+
+build_executor() {
+    VERSIONSTR=$(echo -n "${1}-${2}")
+    echo  "Creating package dir for executor"
+    cp -rf drove-executor-template drove-executor
+    cp ../drove-executor/target/drove-executor-${VERSION}.jar drove-executor/usr/share/java/drove-executor.jar
+    pushd drove-executor 2>&1 > /dev/null
+    JARSIZE=$(du -k usr/share/java/drove-executor.jar| awk -F '\t' '{print $1}')
+    cat DEBIAN/control | sed 's/VERSIONSTR/'${VERSIONSTR}'/g' | sed 's/JARSIZE/'${JARSIZE}'/g' > DEBIAN/control.tmp
+    mv -f DEBIAN/control.tmp DEBIAN/control
+    md5sum $(find . -type f |  awk '!/^\.\/DEBIAN/ { printf "./%s\n", substr($0, 3) }') > DEBIAN/md5sums
+    popd 2>&1 > /dev/null
+    dpkg-deb -b drove-executor drove-executor-${VERSIONSTR}.deb
+    STATUS=$?
+    if [ ${STATUS} -eq 0 ]; then
+        rm -rf drove-executor
+        echo "Executor package built"
+    fi
+    return $STATUS 
+}
+
+export REBUILD=0
+export BUILDZIP=0
+
+while getopts 'bzh' opt; do
+  case "$opt" in
+    b)
+      echo "Full rebuild requested"
+      export REBUILD=1
+      ;;
+    z)
+      echo "Zip file to be created"
+      export BUILDZIP=1
+      ;;
+
+    ?|h)
+      echo "Usage: $(basename $0) [-b] [-z]"
+      exit 1
+      ;;
+  esac
+done
+shift "$(($OPTIND -1))"
+
+VERSION=$(cat ../pom.xml |grep version | grep -v xml | head -1 |tr -d ' '|sed 's/<version>//g'|sed 's/<\/version>//g')
+
+TIMESTAMP=$(date +%Y%m%d%H%M%S)
+
+echo "Building deb version ${VERSION}-${TIMESTAMP}"
+
+rm -rf *.deb drove-controller drove-executor
+
+if [ ${REBUILD} -eq 1 ]; then
+    build_project
+fi
+
+build_controller ${VERSION} ${TIMESTAMP}
+build_executor ${VERSION} ${TIMESTAMP}
+
+rm -rf packages 
+mkdir packages
+mv *.deb packages
+
+
+if [ ${BUILDZIP} -eq 1 ]; then
+    if [ -f packages.zip ]; then
+        rm -f packages.zip
+    fi
+    zip -r packages.zip packages
+fi
+
+
+

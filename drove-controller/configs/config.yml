@@ -1,0 +1,56 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 4000
+#    - type: https
+#      port: 4000
+#      bindHost: ssdev.test
+#      keyStorePath: /home/santanu/certs/keystore.jks
+#      keyStorePassword: "password"
+#      validateCerts: false
+#      validatePeers: false
+  adminConnectors:
+    - type: http
+      port: 4001
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: console
+        timeZone: IST
+  gzip:
+    syncFlush: true
+
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: DEBUG
+
+  appenders:
+    - type: console
+      threshold: TRACE
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{appId}] %message%n"
+
+zookeeper:
+  connectionString: localhost:2181
+
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: LocalControllerSecret
+  - nodeType: EXECUTOR
+    secret: LocalExecutorSecret
+
+#userAuth:
+#  enabled: true
+#  users:
+#    - username: admin
+#      password: admin
+#      role: EXTERNAL_READ_WRITE
+#    - username: guest
+#      password: guest
+#      role: EXTERNAL_READ_ONLY
+
+instanceAuth:
+  secret: RandomSecret

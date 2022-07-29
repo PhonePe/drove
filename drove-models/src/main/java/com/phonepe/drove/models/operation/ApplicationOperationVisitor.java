@@ -9,18 +9,17 @@ public interface ApplicationOperationVisitor<T> {
 
     T visit(ApplicationCreateOperation create);
 
-    T visit(ApplicationUpdateOperation update);
-
-    T visit(ApplicationInfoOperation info);
-
     T visit(ApplicationDestroyOperation destroy);
 
-    T visit(ApplicationDeployOperation deploy);
+    T visit(ApplicationStartInstancesOperation deploy);
+
+    T visit(ApplicationStopInstancesOperation stopInstances);
 
     T visit(ApplicationScaleOperation scale);
 
-    T visit(ApplicationRestartOperation restart);
+    T visit(ApplicationReplaceInstancesOperation replaceInstances);
 
     T visit(ApplicationSuspendOperation suspend);
 
+    T visit(ApplicationRecoverOperation recover);
 }

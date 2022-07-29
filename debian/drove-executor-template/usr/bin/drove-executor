@@ -1,0 +1,9 @@
+#!/bin/bash -e
+
+[ -r "/etc/default/drove-executor" ] && . "/etc/default/drove-executor"
+
+JAVA_OPTS=$(sed -e '/^[[:space:]]*\/\//d' -e 's|[[:space:]]*//.*| |' -e 's|^| |' /etc/drove-executor.jvm.conf | tr -d "\n")
+JAVA_CMD="java ${JAVA_OPTS} -jar /usr/share/java/drove-executor.jar server /etc/drove-executor.yml"
+
+logger -is "[`date -u +%Y-%m-%dT%T.%3NZ`] Starting drove-executor"
+exec ${JAVA_CMD} 2>&1 | tee -a /var/log/drove/drove-executor/init.log

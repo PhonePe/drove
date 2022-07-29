@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!--<link rel="icon" href="favicon.ico">-->
+
+    <title>D R O V E</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <!--    <link href="/open-iconic-master/font/css/open-iconic-bootstrap.css" rel="stylesheet">-->
+<!--    <link href="/css/datatables.min.css" rel="stylesheet">-->
+    <link href="/css/datatables.bootstrap4.min.css" rel="stylesheet">
+
+    {{#block "page_css_includes"}}
+
+    {{/block}}
+    <link href="/css/drove.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <!--<link href="album.css" rel="stylesheet">-->
+    <style>
+        {{#block "page_css"}}
+
+    {{/block}}
+
+    </style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary justify-content-right">
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <a class="navbar-brand cm-icon mb-0 h1" href="/" style="font-size: x-large;"><img
+                    src="/images/drove-logo-white.png" width="60" height="45" alt=""><span class="pl-2">d r o v e</span></a>
+            <ul class="navbar-nav mr-auto mt-2 mt-lg-0"></ul>
+        </div>
+
+    </nav>
+</header>
+<main role="main" class="container-fluid">
+    {{#if error}}
+        <section>
+            <div class="alert alert-danger" role="alert">
+                <b>Error:</b> {{error}}
+            </div>
+        </section>
+    {{/if}}
+    {{#block "content"}}
+
+    {{/block}}
+</main>
+<script src="/js/swal.js"></script>
+<script src="/js/jquery-3.3.1.min.js"></script>
+<script src="/js/popper.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/js/datatables.bootstrap4.min.js"></script>
+<script src="/js/cookies.js"></script>
+
+{{#block "page_js_includes"}}
+
+{{/block}}
+<script language="JavaScript">
+(function() {
+  'use strict';
+  $.fn.dataTable.ext.errMode = 'none';
+
+    $('#table').on( 'error.dt', function ( e, settings, techNote, message ) {
+        console.log( 'An error has been reported by DataTables: ', message );
+    } ) ;
+
+  window.addEventListener( "pageshow", function ( event ) {
+    var historyTraversal = event.persisted ||
+                           ( typeof window.performance != "undefined" &&
+                                window.performance.navigation.type === 2 );
+    if ( historyTraversal ) {
+      // Handle page restore.
+      window.location.reload();
+    }
+  });
+
+  window.addEventListener('load', function() {
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+
+$(document).ready(function() {
+{{#block "page_js"}}
+
+{{/block}}
+    function renderAppState(data, type, row, meta) {
+        switch(data) {
+            case 'INIT' : return '<span class="font-weight-bold text-primary">Initializing</span>';
+            case 'MONITORING' : return '<span class="font-weight-bold text-info">Monitoring</span>';
+            case 'RUNNING' : return '<span class="font-weight-bold text-success">Running</span>';
+            case 'OUTAGE_DETECTED' : return '<span class="font-weight-bold text-danger">Outage Detected</span>';
+            case 'SCALING_REQUESTED' : return '<span class="font-weight-bold text-warning">Scaling</span>';
+            case 'STOP_INSTANCES_REQUESTED' : return '<span class="font-weight-bold text-warning">Stopping instances</span>';
+            case 'REPLACE_INSTANCES_REQUESTED' : return '<span class="font-weight-bold text-warning">Restarting</span>';
+            case 'DESTROY_REQUESTED' : return '<span class="font-weight-bold text-danger">Destruction Underway</span>';
+            case 'DESTROYED' : return '<span class="font-weight-bold text-danger">Destroyed</span>';
+            case 'FAILED' : return '<span class="font-weight-bold text-secondary">Failed</span>';
+        }
+    }
+
+    function renderInstanceState(data, type, row, meta) {
+        switch(data) {
+            case 'PENDING' : return '<span class="font-weight-bold text-primary">Pending</span>';
+            case 'PROVISIONING' : return '<span class="font-weight-bold text-warning">Provisioning</span>';
+            case 'PROVISIONING_FAILED' : return '<span class="font-weight-bold text-danger">Provisioning Failed</span>';
+            case 'STARTING' : return '<span class="font-weight-bold text-warning">Starting</span>';
+            case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Start Failed</span>';
+            case 'UNREADY' : return '<span class="font-weight-bold text-warning">Unready</span>';
+            case 'READINESS_CHECK_FAILED' : return '<span class="font-weight-bold text-danger">Readiness Check Failed</span>';
+            case 'READY' : return '<span class="font-weight-bold text-warning">Ready</span>';
+            case 'HEALTHY' : return '<span class="font-weight-bold text-success">Healthy</span>';
+            case 'UNHEALTHY' : return '<span class="font-weight-bold text-danger">Unhealthy</span>';
+            case 'DEPROVISIONING' : return '<span class="font-weight-bold text-warning">Deprovisioning</span>';
+            case 'STOPPING' : return '<span class="font-weight-bold text-warning">Stopping</span>';
+            case 'STOPPED' : return '<span class="font-weight-bold text-secondary">Stopped</span>';
+            case 'LOST' : return '<span class="font-weight-bold text-secondary">Lost</span>';
+            case 'UNKNOWN' : return '<span class="font-weight-bold text-danger">UNKNOWN</span>';
+        }
+    }
+
+    function renderTaskState(data, type, row, meta) {
+        switch(data) {
+            case 'PENDING' : return '<span class="font-weight-bold text-primary">Pending</span>';
+            case 'PROVISIONING' : return '<span class="font-weight-bold text-warning">Provisioning</span>';
+            case 'PROVISIONING_FAILED' : return '<span class="font-weight-bold text-danger">Provisioning Failed</span>';
+            case 'STARTING' : return '<span class="font-weight-bold text-warning">Starting</span>';
+            case 'STARTING_FAILED' : return '<span class="font-weight-bold text-danger">Start Failed</span>';
+            case 'RUNNING' : return '<span class="font-weight-bold text-success">Running</span>';
+            case 'RUN_FAILED' : return '<span class="font-weight-bold text-danger">Run Failed</span>';
+            case 'RUN_TIMEOUT' : return '<span class="font-weight-bold text-success">Run Timed Out</span>';
+            case 'RUN_COMPLETED' : return '<span class="font-weight-bold text-danger">Run Completed</span>';
+            case 'RUN_CANCELLED' : return '<span class="font-weight-bold text-warning">Run Cancelled</span>';
+            case 'DEPROVISIONING' : return '<span class="font-weight-bold text-warning">Deprovisioning</span>';
+            case 'STOPPING' : return '<span class="font-weight-bold text-warning">Stopping</span>';
+            case 'STOPPED' : return '<span class="font-weight-bold text-secondary">Stopped</span>';
+            case 'LOST' : return '<span class="font-weight-bold text-secondary">Lost</span>';
+            case 'UNKNOWN' : return '<span class="font-weight-bold text-danger">UNKNOWN</span>';
+        }
+    }
+
+    function updateResourceUsage(instances) {
+        instances.forEach( (info, i) => {
+            info.resources.forEach((r,i) => {
+                if(r.type === 'CPU') {
+                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+                }
+                if(r.type === 'MEMORY') {
+                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+                }
+            });
+        });
+        return instances;
+    }
+
+    function timeSince(data, type, row, meta) {
+        if(type === "sort") return data;
+
+        var date = new Date(data);
+
+        var seconds = Math.floor((new Date() - date) / 1000);
+
+        var interval = Math.floor(seconds / 31536000);
+
+        if (interval > 1) {
+            return interval + " years";
+        }
+        interval = Math.floor(seconds / 2592000);
+        if (interval > 1) {
+            return interval + " months";
+        }
+        interval = Math.floor(seconds / 86400);
+        if (interval > 1) {
+            return interval + " days";
+        }
+        interval = Math.floor(seconds / 3600);
+        if (interval > 1) {
+            return interval + " hours";
+        }
+        interval = Math.floor(seconds / 60);
+        if (interval > 1) {
+            return interval + " minutes";
+        }
+        return Math.floor(seconds) + " seconds";
+    }
+
+    function lifetime(data, type, row, meta) {
+        if(type === "sort") return data;
+
+        var created = new Date(row['created']);
+        var updated = new Date(row['updated']);
+
+        var seconds = Math.floor((updated - created) / 1000);
+
+        var interval = Math.floor(seconds / 31536000);
+
+        if (interval > 1) {
+            return interval + " years";
+        }
+        interval = Math.floor(seconds / 2592000);
+        if (interval > 1) {
+            return interval + " months";
+        }
+        interval = Math.floor(seconds / 86400);
+        if (interval > 1) {
+            return interval + " days";
+        }
+        interval = Math.floor(seconds / 3600);
+        if (interval > 1) {
+            return interval + " hours";
+        }
+        interval = Math.floor(seconds / 60);
+        if (interval > 1) {
+            return interval + " minutes";
+        }
+        return Math.floor(seconds) + " seconds";
+    }
+
+    function formatBytes(data, type, row, meta) {
+        if(type === 'display') {
+            const decimals = 2;
+            const bytes = data * 1024 * 1024;
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+        return data;
+    }
+
+	$('.data-table').DataTable({
+		paging: false,
+		ordering: false,
+		info: false,
+		"dom":' <"search"f><"top"l>rt<"bottom"ip><"clear">'
+	});
+
+	$('.post-button').on('click', function(e) {
+	    e.preventDefault();
+	    var data = new Object();
+	    data[this.attr('data-field')] = this.attr('data-submit');
+	    $.post(this.href, data, function() {
+	        alert('Action complete');
+	        location.reload();
+	    });
+	});
+
+    $('form.confirmed-form').submit(function (e, params) {
+        var localParams = params || {};
+
+        if (!localParams.send) {
+            e.preventDefault();
+
+            var form = $(this);
+            Swal.fire({
+                    title: form.attr('data-cnf-title'),
+                    text: form.attr('data-cnf-text'),
+                    type: "warning",
+                    showCancelButton: true,
+                    focusConfirm: false,
+                    confirmButtonColor: "#6A9944",
+                    confirmButtonText: "Confirm",
+                    cancelButtonText: "Cancel",
+                    closeOnConfirm: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $(e.currentTarget).trigger(e.type, { 'send': true });
+                    }
+                });
+        }
+    });
+
+});
+
+
+</script>
+</body>
+</html>

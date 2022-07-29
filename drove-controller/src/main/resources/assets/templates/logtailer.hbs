@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!-- This is copied almost verbatim from https://github.com/apache/mesos/blob/master/src/webui/app/shared/pailer.html -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>D R O V E - Log Viewer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="/css/drove.css" rel="stylesheet">
+
+</head>
+<body style="overflow: hidden;" class="container-fluid pailer-body">
+<header style="margin-bottom: 0px;">
+    <nav class="navbar navbar-expand navbar-dark bg-primary justify-content-right">
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <a class="navbar-brand cm-icon mb-0 h4" href="/" style="font-size: x-large;"><img
+                    src="/images/drove-logo-white.png" width="60" height="45" alt=""><span class="pl-2">Logs for {{appId}}/{{instanceId}}</span></a>
+            <ul class="navbar-nav mr-auto mt-2 mt-lg-0"></ul>
+
+        </div>
+    </nav>
+</header>
+
+<div class="pailer-indicator" id="indicator"></div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col pailer-data-container" id="data-container">
+            <pre class="pailer-data" id="data"></pre>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+<script src="/js/underscore-1.4.3.min.js"></script>
+<script src="/js/jquery.pailer.js"></script>
+
+<script>
+      var $body = $('body');
+      var $data = $('#data');
+
+      function resize() {
+        var margin_left = parseInt($body.css('margin-left'));
+        var margin_top = parseInt($body.css('margin-top'));
+        var margin_bottom = parseInt($body.css('margin-bottom'));
+        $data
+          .width($('#data-container').width() - parseInt($data.css('padding-left')) - parseInt($data.css('padding-right')) - margin_left)
+          .height($(window).height() - Math.ceil($('header').height()) - parseInt($data.css('padding-top')) - margin_top - parseInt($data.css('padding-bottom')) - margin_bottom);
+      }
+
+      $(window).resize(resize);
+
+      $(document).ready(function() {
+        resize();
+
+        var storageKey = "{{appID}}-{{instanceId}}";
+
+        $data.pailer({
+          read: function(options) {
+            var settings = $.extend({
+              'offset': -1,
+              'length': -1
+            }, options);
+
+            var url = '/apis/v1/logfiles/{{logType}}/{{appId}}/{{instanceId}}/read/{{logFileName}}'
+                + '?offset=' + settings.offset
+                + '&length=' + ((settings.length && settings.length != 0) ? settings.length : -1);
+            return $.getJSON(url);
+          },
+          'indicator': $('#indicator')
+        });
+      });
+    </script>
+</body>
+</html>

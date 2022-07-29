@@ -9,9 +9,9 @@ import java.util.Date;
  */
 @Value
 public class ApplicationInfo {
-    AppId appId;
+    String appId;
     ApplicationSpec spec;
-    ApplicationState state;
+    long instances;
     Date created;
     Date updated;
 }

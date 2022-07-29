@@ -14,6 +14,7 @@ import javax.validation.constraints.NotNull;
 @Value
 public class ClusterOpSpec {
 
+    public static final ClusterOpSpec DEFAULT = new ClusterOpSpec(Duration.seconds(300), 1, FailureStrategy.STOP);
 
     @NotNull
     Duration timeout;
