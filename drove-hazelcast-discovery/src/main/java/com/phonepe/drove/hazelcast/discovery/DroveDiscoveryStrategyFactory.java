@@ -12,11 +12,8 @@ import java.util.Map;
 
 public class DroveDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
 
-    private static Collection<PropertyDefinition> properties;
-
-    public DroveDiscoveryStrategyFactory() {
-        properties = List.of(DroveDiscoveryConfiguration.PORT_NAME, DroveDiscoveryConfiguration.DROVE_ENDPOINT);
-    }
+    private static final List<PropertyDefinition> PROPERTIES = List.of(DroveDiscoveryConfiguration.PORT_NAME,
+                                                                             DroveDiscoveryConfiguration.DROVE_ENDPOINT);
 
     @Override
     public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {
@@ -31,6 +28,6 @@ public class DroveDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
 
     @Override
     public Collection<PropertyDefinition> getConfigurationProperties() {
-        return properties;
+        return PROPERTIES;
     }
 }

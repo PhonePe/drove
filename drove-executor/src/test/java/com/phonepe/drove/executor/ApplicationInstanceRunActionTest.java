@@ -20,13 +20,13 @@ import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.util.Duration;
 import lombok.val;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 
+import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
 import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ApplicationInstanceRunActionTest extends AbstractTestBase {
 
     @Test
-    @Disabled
     void testRun() {
         val appId = "T001";
         val instanceId = UUID.randomUUID().toString();
@@ -59,7 +58,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                                        null,
                                                        "TestToken");
         val executorId = CommonUtils.executorId(3000);
-        val ctx = new InstanceActionContext<>(executorId, instanceSpec, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT);
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new ApplicationInstanceRunAction(new ResourceConfig())
@@ -77,6 +76,6 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                                                    new Date()),
                                           ""));
         assertEquals(InstanceState.UNREADY, newState.getState());
-
+        DOCKER_CLIENT.stopContainerCmd(ctx.getDockerInstanceId()).exec();
     }
 }

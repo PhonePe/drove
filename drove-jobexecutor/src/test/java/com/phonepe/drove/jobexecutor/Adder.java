@@ -30,6 +30,7 @@ public final class Adder implements Job<Integer> {
 
     @SneakyThrows
     @Override
+    @SuppressWarnings("java:S2925")
     public Integer execute(
             JobContext<Integer> context,
             final JobResponseCombiner<Integer> responseCombiner) {

@@ -37,7 +37,7 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
 import static com.phonepe.drove.models.taskinstance.TaskState.RUNNING;
 import static com.phonepe.drove.models.taskinstance.TaskState.STOPPED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -116,9 +116,11 @@ class TaskEngineTest extends ControllerTestBase {
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
+        assertFalse(te.activeTasks().isEmpty());
         val task = te.activeTasks().get(0);
         te.handleTaskOp(new TaskKillOperation(task.getSourceAppName(), task.getTaskId(), ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> te.activeTasks().isEmpty());
+        assertTrue(te.activeTasks().isEmpty());
     }
 
     @Test
@@ -166,6 +168,7 @@ class TaskEngineTest extends ControllerTestBase {
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
+        assertFalse(te.activeTasks().isEmpty());
         val task = te.activeTasks().get(0);
         //This simulates task completion
         tdb.updateTask(task.getSourceAppName(),
@@ -186,6 +189,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     task.getCreated(),
                                     new Date()));
         CommonTestUtils.waitUntil(() -> te.activeTasks().isEmpty());
+        assertTrue(te.activeTasks().isEmpty());
     }
 
     @Test
@@ -234,6 +238,7 @@ class TaskEngineTest extends ControllerTestBase {
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
+        assertFalse(te.activeTasks().isEmpty());
         val task = te.activeTasks().get(0);
         //This simulates task completion
         tdb.updateTask(task.getSourceAppName(),
@@ -254,6 +259,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     task.getCreated(),
                                     oldDate));
         CommonTestUtils.waitUntil(() -> te.activeTasks().isEmpty());
+        assertTrue(te.activeTasks().isEmpty());
     }
 
     @Test
@@ -320,6 +326,10 @@ class TaskEngineTest extends ControllerTestBase {
                 .map(TaskInfo::getState)
                 .filter(STOPPED::equals)
                 .isPresent());
+        assertTrue(tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+                            .map(TaskInfo::getState)
+                            .filter(STOPPED::equals)
+                            .isPresent());
     }
 
     @Test
@@ -385,6 +395,7 @@ class TaskEngineTest extends ControllerTestBase {
         val task = te.activeTasks().get(0);
         te.handleTaskOp(new TaskKillOperation(task.getSourceAppName(), task.getTaskId(), ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> te.activeTasks().isEmpty());
+        assertTrue(te.activeTasks().isEmpty());
     }
 
     @Test
@@ -534,7 +545,7 @@ class TaskEngineTest extends ControllerTestBase {
         val tdb = new InMemoryTaskDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
-        cdb.update(List.of( new ExecutorNodeData("poorhost",
+        cdb.update(List.of( new ExecutorNodeData("poor-host",
                                                  8080,
                                                  NodeTransportType.HTTP,
                                                  new Date(),
@@ -548,10 +559,8 @@ class TaskEngineTest extends ControllerTestBase {
                                                  List.of(),
                                                  Set.of(),
                                                  false)));
-        val inst = new AtomicReference<TaskInstanceSpec>();
 
         val comm = mock(ControllerCommunicator.class);
-        val taskSpec = taskSpec();
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,

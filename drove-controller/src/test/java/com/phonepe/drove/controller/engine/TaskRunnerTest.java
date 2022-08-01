@@ -32,8 +32,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
-import static com.phonepe.drove.models.taskinstance.TaskState.RUNNING;
-import static com.phonepe.drove.models.taskinstance.TaskState.STOPPED;
+import static com.phonepe.drove.models.taskinstance.TaskState.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -120,6 +121,9 @@ class TaskRunnerTest extends ControllerTestBase {
                                                                                        new Date()));
         tr.updateCurrentState();
         CommonTestUtils.waitUntil(testDone::get);
+        assertEquals(STOPPED, tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+                .map(TaskInfo::getState)
+                .orElse(UNKNOWN));
         f.get();
     }
 
@@ -153,10 +157,12 @@ class TaskRunnerTest extends ControllerTestBase {
         val testDone = new AtomicBoolean();
         completedSignal.connect(runner -> testDone.set(true));
 
-        tr.startTask(new TaskCreateOperation(taskSpec, new ClusterOpSpec(Duration.seconds(1), 1, FailureStrategy.STOP)));
+        tr.startTask(new TaskCreateOperation(taskSpec,
+                                             new ClusterOpSpec(Duration.seconds(1), 1, FailureStrategy.STOP)));
         val f = Executors.newSingleThreadExecutor().submit(tr);
 
         CommonTestUtils.waitUntil(testDone::get);
+        assertTrue(tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isEmpty());
         f.get();
     }
 }

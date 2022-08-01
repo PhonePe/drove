@@ -24,9 +24,9 @@ public class DroveServiceDiscoveryManager {
 
     private final AtomicReference<List<ServiceNode>> serviceNodes = new AtomicReference<>(List.of());
 
-    private static ILogger log;
+    private final ILogger log;
 
-    private ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
     @Value
     public static class ServiceNode {
@@ -40,10 +40,10 @@ public class DroveServiceDiscoveryManager {
             final String droveEndpoint,
             final String authToken,
             final String portName,
-            final ILogger logger) throws Exception {
+            final ILogger logger) throws DroveException {
         this.log = logger;
-        val drovePoller = new DrovePoller(new DroveClientProvider(parseEndpointSpec(droveEndpoint, objectMapper)),
-                serviceNodes, authToken, portName);
+        val drovePoller = new DrovePoller(log, new DroveClientProvider(parseEndpointSpec(droveEndpoint, objectMapper)),
+                                          serviceNodes, authToken, portName);
         this.scheduledExecutorService.scheduleAtFixedRate(drovePoller, 0, 10, TimeUnit.SECONDS);
     }
 
@@ -52,12 +52,13 @@ public class DroveServiceDiscoveryManager {
         return serviceNodes.get();
     }
 
-    public void stop() throws Exception {
+    public void stop() {
         scheduledExecutorService.shutdown();
     }
 
     private static class DrovePoller implements Runnable {
 
+        private final ILogger log;
         private final DroveClientProvider clientProvider;
         private final AtomicReference<List<ServiceNode>> serviceNodes;
 
@@ -65,10 +66,12 @@ public class DroveServiceDiscoveryManager {
 
         private final String portName;
 
-        public DrovePoller(final DroveClientProvider clientProvider,
-                           AtomicReference<List<ServiceNode>> serviceNodes,
-                           final String token,
-                           final String portName) {
+        public DrovePoller(
+                ILogger log, final DroveClientProvider clientProvider,
+                AtomicReference<List<ServiceNode>> serviceNodes,
+                final String token,
+                final String portName) {
+            this.log = log;
             this.clientProvider = clientProvider;
             this.serviceNodes = serviceNodes;
             this.token = token;
