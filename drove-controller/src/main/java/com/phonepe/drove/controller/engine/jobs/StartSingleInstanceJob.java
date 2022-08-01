@@ -172,7 +172,6 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             }
         }
         return successful;
-        //TODO::IDENTIFY THE STATES AND DO NOT GIVE UP QUICKLY IF IT IS IN STARTING STATE ETC
     }
 
     private String generateAppInstanceToken(AllocatedExecutorNode node, String appId, String instanceId) {

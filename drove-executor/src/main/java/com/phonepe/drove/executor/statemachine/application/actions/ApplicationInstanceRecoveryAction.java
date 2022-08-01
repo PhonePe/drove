@@ -24,7 +24,9 @@ import java.util.Map;
 public class ApplicationInstanceRecoveryAction extends ApplicationInstanceAction {
 
     @Inject
-    public ApplicationInstanceRecoveryAction() {}
+    public ApplicationInstanceRecoveryAction() {
+        //Nothing to do here
+    }
 
     @Override
     public void stop() {

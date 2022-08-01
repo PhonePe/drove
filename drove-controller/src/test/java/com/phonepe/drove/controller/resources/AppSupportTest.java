@@ -15,10 +15,8 @@ import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateInstanceInfo;
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,7 +31,7 @@ class AppSupportTest {
         val appId = ControllerUtils.deployableObjectId(spec);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
-        when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
+        when(instanceInfoDB.instance(appId, callingInstance.getInstanceId()))
                 .thenReturn(Optional.of(callingInstance));
         val instances = IntStream.rangeClosed(1, 5)
                 .mapToObj(i -> generateInstanceInfo(appId, spec, i))
@@ -70,7 +68,7 @@ class AppSupportTest {
         val appId = ControllerUtils.deployableObjectId(spec);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
-        when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
+        when(instanceInfoDB.instance(appId, callingInstance.getInstanceId()))
                 .thenReturn(Optional.of(callingInstance));
         val instances = IntStream.rangeClosed(1, 5)
                 .mapToObj(i -> generateInstanceInfo(appId, spec, i, HEALTHY))
@@ -95,7 +93,7 @@ class AppSupportTest {
         val appId = ControllerUtils.deployableObjectId(spec);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
-        when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
+        when(instanceInfoDB.instance(appId, callingInstance.getInstanceId()))
                 .thenReturn(Optional.of(callingInstance));
         val instances = IntStream.rangeClosed(1, 5)
                 .mapToObj(i -> generateInstanceInfo(appId, spec, i))
@@ -127,7 +125,7 @@ class AppSupportTest {
         val appId = ControllerUtils.deployableObjectId(spec);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val callingInstance = generateInstanceInfo(appId, spec, 1);
-        when(instanceInfoDB.instance(eq(appId), eq(callingInstance.getInstanceId())))
+        when(instanceInfoDB.instance(appId, callingInstance.getInstanceId()))
                 .thenReturn(Optional.of(callingInstance));
         val instances = IntStream.rangeClosed(1, 5)
                 .mapToObj(i -> generateInstanceInfo(appId, spec, i))

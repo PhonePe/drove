@@ -32,12 +32,10 @@ public abstract class TaskDB {
         val status = updateTaskImpl(sourceAppName, taskId, taskInfo);
         if (status) {
             val oldState = null != oldTask ? oldTask.getState() : null;
-            if (null != taskInfo) {
-                if (oldState != taskInfo.getState()) {
-                    log.info("Task {}/{} changed state from: {} to: {}",
+            if (null != taskInfo && oldState != taskInfo.getState()) {
+                log.info("Task {}/{} changed state from: {} to: {}",
                              sourceAppName, taskId, oldState, taskInfo.getState());
-                    stateChanged.dispatch(taskInfo);
-                }
+                stateChanged.dispatch(taskInfo);
             }
         }
         return status;

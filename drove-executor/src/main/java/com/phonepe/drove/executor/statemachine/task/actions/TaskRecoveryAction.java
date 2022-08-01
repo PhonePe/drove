@@ -26,6 +26,7 @@ public class TaskRecoveryAction extends TaskAction {
 
     @Inject
     public TaskRecoveryAction() {
+        //Nothing to do here
     }
 
     @Override

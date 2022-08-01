@@ -12,7 +12,6 @@ import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -25,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  */
 @Slf4j
-@Disabled
 class ApplicationInstanceStateMachineTest extends AbstractTestBase {
     @Test
     void test() {

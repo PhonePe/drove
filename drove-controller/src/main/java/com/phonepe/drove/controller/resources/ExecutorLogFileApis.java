@@ -210,14 +210,15 @@ public class ExecutorLogFileApis {
         if (null == executorHostInfo) {
             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
         }
-        val url = String.format("%s://%s:%d/apis/v1/logs/filestream/%s/%s" + path,
+        val url = String.format("%s://%s:%d/apis/v1/logs/filestream/%s/%s/%s",
                                 executorHostInfo.getTransportType() == NodeTransportType.HTTP
                                 ? "http"
                                 : "https",
                                 executorHostInfo.getHostname(),
                                 executorHostInfo.getPort(),
                                 appId,
-                                instanceId);
+                                instanceId,
+                                path);
         val uriBuilder = UriBuilder.fromPath(url);
         Objects.<Map<String, Object>>requireNonNullElse(queryParams, Map.of())
                 .forEach(uriBuilder::queryParam);

@@ -43,6 +43,7 @@ import static com.phonepe.drove.common.CommonUtils.instanceId;
 @SuppressWarnings("unused")
 public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S extends Enum<S>,
         T extends DeploymentUnitSpec, I extends DeployedInstanceInfo> implements Closeable {
+    private static final String LOG_ID = "instanceLogId";
     private final ExecutorIdManager executorIdManager;
     private final ExecutorService service;
     private final ExecutorActionFactory<E, S, T> actionFactory;
@@ -122,13 +123,13 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                 spec.accept(new DeploymentUnitSpecVisitor<Void>() {
                     @Override
                     public Void visit(ApplicationInstanceSpec applicationInstanceSpec) {
-                        MDC.put("instanceLogId", applicationInstanceSpec.getAppId() + ":" + applicationInstanceSpec.getInstanceId());
+                        MDC.put(LOG_ID, applicationInstanceSpec.getAppId() + ":" + applicationInstanceSpec.getInstanceId());
                         return null;
                     }
 
                     @Override
                     public Void visit(TaskInstanceSpec taskInstanceSpec) {
-                        MDC.put("instanceLogId", taskInstanceSpec.getSourceAppName() + ":" + taskInstanceSpec.getTaskId());
+                        MDC.put(LOG_ID, taskInstanceSpec.getSourceAppName() + ":" + taskInstanceSpec.getTaskId());
                         return null;
                     }
                 });
@@ -147,7 +148,7 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                     }
                 } while (!isTerminal(state));
                 log.info(FINALIZE_SESSION_MARKER, "Completed");
-                MDC.remove("instanceLogId");
+                MDC.remove(LOG_ID);
                 return state;
             });
             stateMachines.put(instanceId, new SMInfo<>(stateMachine, f));

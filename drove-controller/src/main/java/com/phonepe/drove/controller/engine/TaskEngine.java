@@ -181,7 +181,6 @@ public class TaskEngine {
                 val sourceAppName = runner.getSourceAppName();
                 val taskId = runner.getTaskId();
                 log.info("Task {}/{} is lost. Runner will be stopped.", sourceAppName, taskId);
-                //runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
             }
         });
         log.debug("Task check triggered at {} is completed", triggerDate);

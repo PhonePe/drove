@@ -38,7 +38,6 @@ public class StaleDataCleaner implements Managed {
     private final TaskDB taskDB;
     private final LeadershipEnsurer leadershipEnsurer;
     private final ApplicationEngine applicationEngine;
-    private final TaskEngine taskEngine;
 
     private final ScheduledSignal refresher;
 
@@ -52,7 +51,7 @@ public class StaleDataCleaner implements Managed {
             TaskDB taskDB) {
         this(applicationStateDB, instanceInfoDB,
              taskDB,
-             leadershipEnsurer, applicationEngine, taskEngine, Duration.ofHours(6));
+             leadershipEnsurer, applicationEngine, Duration.ofHours(6));
     }
 
     @VisibleForTesting
@@ -62,14 +61,12 @@ public class StaleDataCleaner implements Managed {
             TaskDB taskDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
-            TaskEngine taskEngine,
             Duration interval) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.leadershipEnsurer = leadershipEnsurer;
         this.applicationEngine = applicationEngine;
-        this.taskEngine = taskEngine;
         refresher = new ScheduledSignal(interval);
     }
 
