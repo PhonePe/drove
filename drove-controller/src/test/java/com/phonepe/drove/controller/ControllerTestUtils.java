@@ -249,6 +249,7 @@ public class ControllerTestUtils {
                             spec.getEnv(),
                             state,
                             Collections.emptyMap(),
+                            null,
                             errorMessage,
                             date,
                             date);

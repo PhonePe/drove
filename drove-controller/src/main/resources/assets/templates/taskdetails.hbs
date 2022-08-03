@@ -22,6 +22,10 @@
                         <td>{{hostname}}</td>
                     </tr>
                     <tr>
+                        <th scope="row">Result</th>
+                        <td>{{#with taskResult}}{{status}} (Exit code: {{exitCode}}){{/with}}</td>
+                    </tr>
+                    <tr>
                         <th scope="row">Error Message</th>
                         <td>{{errorMessage}}</td>
                     </tr>

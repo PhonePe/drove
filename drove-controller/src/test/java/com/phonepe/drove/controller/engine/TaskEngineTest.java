@@ -25,6 +25,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         instSpec.getEnv(),
                                         RUNNING,
                                         Map.of(),
+                                        null,
                                         "",
                                         new Date(),
                                         new Date()));
@@ -96,6 +98,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         instSpec.getEnv(),
                                         STOPPED,
                                         Map.of(),
+                                        new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
                                         "",
                                         new Date(),
                                         new Date()));
@@ -148,6 +151,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         instSpec.getEnv(),
                                         RUNNING,
                                         Map.of(),
+                                        null,
                                         "",
                                         new Date(),
                                         new Date()));
@@ -185,6 +189,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     task.getEnv(),
                                     STOPPED,
                                     task.getMetadata(),
+                                    new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
                                     "",
                                     task.getCreated(),
                                     new Date()));
@@ -218,6 +223,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         instSpec.getEnv(),
                                         RUNNING,
                                         Map.of(),
+                                        null,
                                         "",
                                         new Date(),
                                         new Date()));
@@ -255,6 +261,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     task.getEnv(),
                                     RUNNING,
                                     task.getMetadata(),
+                                    null,
                                     "",
                                     task.getCreated(),
                                     oldDate));
@@ -288,6 +295,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         taskSpec.getEnv(),
                                         STOPPED,
                                         Map.of(),
+                                        new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
                                         "",
                                         new Date(),
                                         new Date()));
@@ -307,6 +315,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     taskSpec.getEnv(),
                                     RUNNING,
                                     Map.of(),
+                                    new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
                                     "",
                                     new Date(),
                                     new Date()));
@@ -357,6 +366,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         taskSpec.getEnv(),
                                         STOPPED,
                                         Map.of(),
+                                        null,
                                         "",
                                         new Date(),
                                         new Date()));
@@ -388,6 +398,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     taskSpec.getEnv(),
                                     RUNNING,
                                     Map.of(),
+                                    null,
                                     "",
                                     new Date(),
                                     new Date()));
@@ -421,6 +432,7 @@ class TaskEngineTest extends ControllerTestBase {
                                     taskSpec.getEnv(),
                                     STOPPED,
                                     Map.of(),
+                                    new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
                                     "",
                                     new Date(),
                                     new Date()));
@@ -519,6 +531,7 @@ class TaskEngineTest extends ControllerTestBase {
                                      taskSpec.getEnv(),
                                      RUNNING,
                                      Map.of(),
+                                     null,
                                      "",
                                      new Date(),
                                      new Date())));

@@ -42,10 +42,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                                                     TaskState.PROVISIONING,
                                                                                     TaskState.STARTING,
                                                                                     TaskState.RUNNING,
-                                                                                    TaskState.RUN_FAILED,
                                                                                     TaskState.RUN_COMPLETED,
-                                                                                    TaskState.RUN_CANCELLED,
-                                                                                    TaskState.RUN_TIMEOUT,
                                                                                     TaskState.DEPROVISIONING,
                                                                                     TaskState.STOPPING);
     private final ApplicationInstanceInfoDB instanceInfoDB;

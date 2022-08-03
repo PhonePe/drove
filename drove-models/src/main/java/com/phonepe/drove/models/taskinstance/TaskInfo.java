@@ -35,6 +35,7 @@ public class TaskInfo implements DeployedInstanceInfo {
     Map<String, String> env;
     TaskState state;
     Map<String, String> metadata;
+    TaskResult taskResult;
     String errorMessage;
     Date created;
     Date updated;

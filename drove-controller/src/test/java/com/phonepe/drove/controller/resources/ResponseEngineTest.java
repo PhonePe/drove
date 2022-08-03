@@ -12,7 +12,6 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -37,6 +36,8 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
+import static com.phonepe.drove.models.api.ApiErrorCode.FAILED;
+import static com.phonepe.drove.models.api.ApiErrorCode.SUCCESS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -70,7 +71,7 @@ class ResponseEngineTest {
                                     .toList());
 
         val res = re.applications(0, Integer.MAX_VALUE);
-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+        assertEquals(SUCCESS, res.getStatus());
         assertEquals("success", res.getMessage());
         assertEquals(100, res.getData().size());
     }
@@ -100,7 +101,7 @@ class ResponseEngineTest {
                 .thenReturn(Optional.of(applicationInfo));
 
         val res = re.application(appId);
-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+        assertEquals(SUCCESS, res.getStatus());
         assertEquals("success", res.getMessage());
         assertNotNull(res.getData());
     }
@@ -130,7 +131,7 @@ class ResponseEngineTest {
                 .thenReturn(Optional.of(applicationInfo));
 
         val res = re.applicationSpec(appId);
-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+        assertEquals(SUCCESS, res.getStatus());
         assertEquals("success", res.getMessage());
         assertNotNull(res.getData());
         assertEquals(spec, res.getData());
@@ -162,7 +163,7 @@ class ResponseEngineTest {
         when(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)).thenReturn(instances);
 
         val res = re.applicationInstances(appId, Set.of());
-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+        assertEquals(SUCCESS, res.getStatus());
         assertEquals("success", res.getMessage());
         assertEquals(100, res.getData().size());
         assertEquals(instances, res.getData());
@@ -195,13 +196,13 @@ class ResponseEngineTest {
 
         {
             val res = re.instanceDetails(appId, instanceId);
-            assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+            assertEquals(SUCCESS, res.getStatus());
             assertEquals("success", res.getMessage());
             assertEquals(instance, res.getData());
         }
         {
             val res = re.instanceDetails(appId, "blah");
-            assertEquals(ApiErrorCode.FAILED, res.getStatus());
+            assertEquals(FAILED, res.getStatus());
             assertEquals("No such instance", res.getMessage());
             assertNull(res.getData());
         }
@@ -232,10 +233,69 @@ class ResponseEngineTest {
         when(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)).thenReturn(instances);
 
         val res = re.applicationOldInstances(appId, 0, Integer.MAX_VALUE);
-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
+        assertEquals(SUCCESS, res.getStatus());
         assertEquals("success", res.getMessage());
         assertEquals(100, res.getData().size());
         assertEquals(instances, res.getData());
+    }
+
+    @Test
+    void testTaskDetails() {
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
+        val communicator = mock(ControllerCommunicator.class);
+
+        val re = new ResponseEngine(engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    taskDB, clusterStateDB,
+                                    clusterResourcesDB,
+                                    communicator);
+        when(taskDB.task(eq("WRONG_APP"), anyString())).thenReturn(Optional.empty());
+        val spec = taskSpec();
+        when(taskDB.task(spec.getSourceAppName(), spec.getTaskId()))
+                .thenReturn(Optional.of(ControllerTestUtils.generateTaskInfo(spec, 0)));
+        {
+            val res = re.taskDetails("WRONMG_APP", "T001");
+            assertEquals(FAILED, res.getStatus());
+        }
+        {
+            val res = re.taskDetails(spec.getSourceAppName(), spec.getTaskId());
+            assertEquals(SUCCESS, res.getStatus());
+        }
+    }
+
+    @Test
+    void testTaskDelete() {
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
+        val communicator = mock(ControllerCommunicator.class);
+
+        val re = new ResponseEngine(engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    taskDB, clusterStateDB,
+                                    clusterResourcesDB,
+                                    communicator);
+        when(taskDB.deleteTask(eq("WRONG_APP"), anyString())).thenReturn(false);
+        val spec = taskSpec();
+        when(taskDB.deleteTask(spec.getSourceAppName(), spec.getTaskId())).thenReturn(true);
+        {
+            val res = re.taskDelete("WRONMG_APP", "T001");
+            assertEquals(FAILED, res.getStatus());
+        }
+        {
+            val res = re.taskDelete(spec.getSourceAppName(), spec.getTaskId());
+            assertEquals(SUCCESS, res.getStatus());
+        }
     }
 
     @Test
@@ -276,7 +336,7 @@ class ResponseEngineTest {
             when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.MAINTENANCE,
                                                                                             new Date())));
             val r = re.cluster();
-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(SUCCESS, r.getStatus());
             val c = r.getData();
             assertNotNull(c);
             assertEquals(ClusterState.MAINTENANCE, c.getState());
@@ -294,7 +354,7 @@ class ResponseEngineTest {
         {
             when(clusterStateDB.currentState()).thenReturn(Optional.empty());
             val r = re.cluster();
-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(SUCCESS, r.getStatus());
             val c = r.getData();
             assertNotNull(c);
             assertEquals(ClusterState.NORMAL, c.getState());
@@ -332,7 +392,7 @@ class ResponseEngineTest {
                                     .mapToObj(ControllerTestUtils::executorHost)
                                     .toList());
         val r = re.nodes();
-        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertEquals(SUCCESS, r.getStatus());
         val c = r.getData();
         assertNotNull(c);
         val l = r.getData();
@@ -363,12 +423,12 @@ class ResponseEngineTest {
 
         {
             val r = re.executorDetails(executorId);
-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(SUCCESS, r.getStatus());
             assertEquals(instanceData.getNodeData(), r.getData());
         }
         {
             val r = re.executorDetails("invalid");
-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals(FAILED, r.getStatus());
             assertNull(r.getData());
             assertEquals("No executor found with id: invalid", r.getMessage());
         }
@@ -409,7 +469,7 @@ class ResponseEngineTest {
 
 
         val r = re.endpoints();
-        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertEquals(SUCCESS, r.getStatus());
         assertEquals(100, r.getData().size());
         r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
     }
@@ -460,17 +520,17 @@ class ResponseEngineTest {
         });
         {
             val r = func.apply(re, executor.getExecutorId());
-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(SUCCESS, r.getStatus());
         }
         {
             success.set(false);
             val r = func.apply(re, executor.getExecutorId());
-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals(FAILED, r.getStatus());
             assertEquals("Error sending remote message", r.getMessage());
         }
         {
             val r = func.apply(re, "invalid-exec");
-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals(FAILED, r.getStatus());
             assertEquals("No such executor", r.getMessage());
         }
     }
@@ -501,12 +561,12 @@ class ResponseEngineTest {
                         : Optional.empty());
         {
             val r = func.apply(re);
-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(SUCCESS, r.getStatus());
         }
         {
             success.set(false);
             val r = func.apply(re);
-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
+            assertEquals(FAILED, r.getStatus());
             assertEquals("Could not change cluster state", r.getMessage());
         }
     }

@@ -15,10 +15,7 @@ public enum TaskState {
     STARTING(false, false),
     START_FAILED(false, true),
     RUNNING(false, false),
-    RUN_FAILED(false, true),
-    RUN_TIMEOUT(false, true),
     RUN_COMPLETED(false, false),
-    RUN_CANCELLED(false, false),
     DEPROVISIONING(false, false),
     STOPPING(false, false),
     STOPPED(true, false),
@@ -30,6 +27,7 @@ public enum TaskState {
             PROVISIONING,
             STARTING,
             RUNNING,
+            RUN_COMPLETED,
             DEPROVISIONING,
             STOPPING);
     private final boolean terminal;

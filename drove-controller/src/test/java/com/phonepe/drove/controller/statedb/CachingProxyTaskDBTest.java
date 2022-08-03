@@ -5,6 +5,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
@@ -100,6 +101,7 @@ class CachingProxyTaskDBTest extends ControllerTestBase {
                 taskInfo.getEnv(),
                 taskInfo.getState(),
                 taskInfo.getMetadata(),
+                new TaskResult(TaskResult.Status.LOST, -1),
                 taskInfo.getErrorMessage(),
                 taskInfo.getCreated(),
                 new Date(taskInfo.getUpdated().getTime() - 100_000));

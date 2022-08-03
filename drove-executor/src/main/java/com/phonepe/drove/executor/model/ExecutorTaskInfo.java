@@ -4,6 +4,7 @@ import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import lombok.Value;
 
 import java.util.Date;
@@ -26,6 +27,7 @@ public class ExecutorTaskInfo implements DeployedExecutionObjectInfo {
     LoggingSpec loggingSpec;
     Map<String, String> env;
     Map<String, String> metadata;
+    TaskResult taskResult;
     Date created;
     Date updated;
 

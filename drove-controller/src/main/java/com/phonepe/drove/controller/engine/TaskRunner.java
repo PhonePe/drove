@@ -12,6 +12,7 @@ import com.phonepe.drove.jobexecutor.JobTopology;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Getter;
@@ -210,6 +211,7 @@ public class TaskRunner implements Runnable {
                             instance.getEnv(),
                             TaskState.LOST,
                             instance.getMetadata(),
+                            new TaskResult(TaskResult.Status.LOST, -1),
                             "Instance lost",
                             instance.getCreated(),
                             new Date());

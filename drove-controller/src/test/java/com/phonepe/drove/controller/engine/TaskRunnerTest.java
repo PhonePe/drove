@@ -18,6 +18,7 @@ import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
@@ -92,6 +93,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                                                                        taskSpec.getEnv(),
                                                                                        RUNNING,
                                                                                        Map.of(),
+                                                                                       null,
                                                                                        "",
                                                                                        new Date(),
                                                                                        new Date()));
@@ -116,6 +118,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                                                                        taskSpec.getEnv(),
                                                                                        STOPPED,
                                                                                        Map.of(),
+                                                                                       new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
                                                                                        "",
                                                                                        new Date(),
                                                                                        new Date()));

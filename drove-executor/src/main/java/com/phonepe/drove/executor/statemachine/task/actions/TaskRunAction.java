@@ -12,6 +12,7 @@ import com.phonepe.drove.executor.statemachine.task.TaskAction;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
 import static com.phonepe.drove.common.CommonUtils.instanceId;
+import static com.phonepe.drove.executor.utils.ExecutorUtils.injectResult;
 
 /**
  *
@@ -88,12 +90,13 @@ public class TaskRunAction extends TaskAction {
         }
         catch (Exception e) {
             log.error("Error creating container: ", e);
-            return StateData.errorFrom(currentState, TaskState.RUN_FAILED, e.getMessage());
+            return StateData.errorFrom(injectResult(currentState, new TaskResult(TaskResult.Status.FAILED, -1)),
+                                                    TaskState.RUN_COMPLETED, e.getMessage());
         }    }
 
     @Override
     protected TaskState defaultErrorState() {
-        return TaskState.RUN_FAILED;
+        return TaskState.RUN_COMPLETED;
     }
 
     private ExecutorTaskInfo instanceInfo(
@@ -114,6 +117,7 @@ public class TaskRunAction extends TaskAction {
                 data.getLoggingSpec(),
                 data.getEnv(),
                 data.getMetadata(),
+                data.getTaskResult(),
                 null == oldData
                 ? new Date()
                 : oldData.getCreated(),

@@ -194,6 +194,15 @@ public class Apis {
         return responseEngine.taskDetails(sourceAppName, taskId);
     }
 
+    @DELETE
+    @Path("/tasks/{sourceAppName}/instances/{taskId}")
+    @Timed
+    public ApiResponse<Map<String, Boolean>> deleteTaskInstance(
+            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
+            @PathParam("taskId") @NotEmpty final String taskId) {
+        return responseEngine.taskDelete(sourceAppName, taskId);
+    }
+
     @POST
     @Path("/tasks/search")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -206,8 +215,7 @@ public class Apis {
                                   .equals(ApiErrorCode.SUCCESS)
                         ? "/tasks/" + sourceAppName + "/" + taskId
                         : "/";
-        return Response.seeOther(URI.create(
-                        redirectUri))
+        return Response.seeOther(URI.create(redirectUri))
                 .build();
     }
 

@@ -6,9 +6,10 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.TaskAction;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
@@ -54,25 +55,29 @@ public class TaskMonitoringAction extends TaskAction {
             monitor();
             if (stopped.get()) {
                 dockerClient.killContainerCmd(containerId).exec();
-                return StateData.from(currentState, TaskState.RUN_CANCELLED);
+                return StateData.from(ExecutorUtils.injectResult(currentState,
+                                                                 new TaskResult(TaskResult.Status.CANCELLED, -1)),
+                                      TaskState.RUN_COMPLETED);
             }
-            val runResult = Objects.requireNonNullElse(result.get(), new TaskResult(-1, false));
-            if (runResult.isContainerLost()) {
-                return StateData.errorFrom(currentState,
-                                           TaskState.RUN_FAILED,
+            val runResult = Objects.requireNonNullElse(result.get(),
+                                                       new TaskResult(TaskResult.Status.FAILED, -1));
+            val exitCode = runResult.getExitCode();
+            if (exitCode == 0) {
+                return StateData.from(ExecutorUtils.injectResult(currentState, runResult), TaskState.RUN_COMPLETED);
+            }
+            if (runResult.getStatus().equals(TaskResult.Status.LOST)) {
+                return StateData.errorFrom(ExecutorUtils.injectResult(currentState, runResult),
+                                           TaskState.RUN_COMPLETED,
                                            "Task instance lost for container: " + containerId);
             }
-            val exitCode = runResult.getStatus();
-            if (exitCode == 0) {
-                return StateData.from(currentState, TaskState.RUN_COMPLETED);
-            }
-            return StateData.errorFrom(currentState,
-                                       TaskState.RUN_FAILED,
+            return StateData.errorFrom(ExecutorUtils.injectResult(currentState, runResult),
+                                       TaskState.RUN_COMPLETED,
                                        "Task instance exited with status: " + exitCode);
 
         }
         catch (Exception e) {
-            return StateData.errorFrom(currentState, TaskState.RUN_FAILED, e.getMessage());
+            return StateData.errorFrom(ExecutorUtils.injectResult(currentState, new TaskResult(TaskResult.Status.FAILED, -1)),
+                                       TaskState.RUN_COMPLETED, e.getMessage());
         }
         finally {
             stopJob();
@@ -82,7 +87,7 @@ public class TaskMonitoringAction extends TaskAction {
 
     @Override
     protected TaskState defaultErrorState() {
-        return TaskState.RUN_FAILED;
+        return TaskState.RUN_COMPLETED;
     }
 
     @Override
@@ -137,16 +142,20 @@ public class TaskMonitoringAction extends TaskAction {
                     .getState();
             if (currState != null && !Objects.requireNonNullElse(currState.getRunning(), true)) {
                 log.info("Task instance completed with status: {}", currState);
+                val exitCode = Objects.requireNonNullElse(currState.getExitCodeLong(),
+                                                             -1L);
                 val setStatus = result.compareAndSet(null,
-                                                     new TaskResult(Objects.requireNonNullElse(currState.getExitCodeLong(),
-                                                                                               -1L), false));
+                                                     new TaskResult(exitCode == 0L
+                                                                    ? TaskResult.Status.SUCCESSFUL
+                                                                    : TaskResult.Status.FAILED,
+                                                                    exitCode));
                 log.debug("Result set status: {}", setStatus);
                 stateChanged.signalAll();
             }
         }
         catch (NotFoundException e) {
             log.error("Container {} has gone away", containerId);
-            val setStatus = result.compareAndSet(null, new TaskResult(-1, true));
+            val setStatus = result.compareAndSet(null, new TaskResult(TaskResult.Status.LOST, -1));
             log.debug("Result set status: {}", setStatus);
             stateChanged.signalAll();
         }
@@ -160,12 +169,6 @@ public class TaskMonitoringAction extends TaskAction {
         finally {
             checkLock.unlock();
         }
-    }
-
-    @Value
-    private static class TaskResult {
-        long status;
-        boolean containerLost;
     }
 
 }

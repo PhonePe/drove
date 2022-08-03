@@ -127,6 +127,12 @@ public class ResponseEngine {
                 .orElseGet(() -> failure("No such instance"));
     }
 
+    public ApiResponse<Map<String, Boolean>> taskDelete(final String sourceAppName, final String taskId) {
+        return taskDB.deleteTask(sourceAppName, taskId)
+                ? ApiResponse.success(Map.of("deleted", true))
+                : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
+    }
+
     public ApiResponse<ClusterSummary> cluster() {
         var liveApps = 0;
         var allApps = 0;

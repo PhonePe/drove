@@ -16,7 +16,10 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
+import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.dropwizard.testing.junit5.ResourceExtension;
 import lombok.val;
@@ -32,8 +35,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
-import static com.phonepe.drove.controller.ControllerTestUtils.generateExecutorNode;
+import static com.phonepe.drove.controller.ControllerTestUtils.*;
 import static com.phonepe.drove.controller.engine.ValidationResult.failure;
 import static com.phonepe.drove.controller.engine.ValidationResult.success;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,7 +83,7 @@ class ApisTest {
                                     : failure("Test Failure"));
         { // Set maintenance mode .. so request will fail
             maintenance.set(true);
-            try (val r = EXT.target("/v1/operations")
+            try (val r = EXT.target("/v1/applications/operations")
                     .request()
                     .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
                                         MediaType.APPLICATION_JSON_TYPE))) {
@@ -91,7 +93,7 @@ class ApisTest {
         {  //Force a failure by sending null entity
             maintenance.set(false);
             success.set(false);
-            try (val r = EXT.target("/v1/operations")
+            try (val r = EXT.target("/v1/applications/operations")
                     .request()
                     .post(Entity.json(null))) {
                 assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
@@ -99,7 +101,7 @@ class ApisTest {
         }
 
         { //Force a failure empty data
-            try (val r = EXT.target("/v1/operations")
+            try (val r = EXT.target("/v1/applications/operations")
                     .request()
                     .post(Entity.json(Map.of()))) {
                 assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
@@ -115,7 +117,7 @@ class ApisTest {
         }
         {
             success.set(true);
-            val r = EXT.target("/v1/operations")
+            val r = EXT.target("/v1/applications/operations")
                     .request()
                     .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
                                         MediaType.APPLICATION_JSON_TYPE),
@@ -321,6 +323,116 @@ class ApisTest {
                     });
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(instances, r.getData());
+        }
+    }
+
+    @Test
+    void acceptTaskOperation() {
+
+        val maintenance = new AtomicBoolean();
+        when(clusterStateDB.currentState())
+                .thenAnswer(invocationOnMock
+                                    -> maintenance.get()
+                                       ? Optional.of(new ClusterStateData(ClusterState.MAINTENANCE, new Date()))
+                                       : Optional.empty());
+        val success = new AtomicBoolean();
+        when(taskEngine.handleTaskOp(any(TaskOperation.class)))
+                .thenAnswer(invocationOnMock ->
+                                    success.get()
+                                    ? success()
+                                    : failure("Test Failure"));
+        { // Set maintenance mode .. so request will fail
+            maintenance.set(true);
+            try (val r = EXT.target("/v1/tasks/operations")
+                    .request()
+                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", ClusterOpSpec.DEFAULT),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {  //Force a failure by sending null entity
+            maintenance.set(false);
+            success.set(false);
+            try (val r = EXT.target("/v1/tasks/operations")
+                    .request()
+                    .post(Entity.json(null))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+
+        { //Force a failure empty data
+            try (val r = EXT.target("/v1/tasks/operations")
+                    .request()
+                    .post(Entity.json(Map.of()))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        { //Force a app level failure
+            try (val r = EXT.target("/v1/tasks/operations")
+                    .request()
+                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", ClusterOpSpec.DEFAULT),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            success.set(true);
+            val r = EXT.target("/v1/tasks/operations")
+                    .request()
+                    .post(Entity.entity(new TaskKillOperation("TEST_APP_1", "T001", ClusterOpSpec.DEFAULT),
+                                        MediaType.APPLICATION_JSON_TYPE),
+                          new GenericType<ApiResponse<Map<String, String>>>() {
+                          });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+    }
+
+    @Test
+    void tasks() {
+        val spec = taskSpec();
+
+        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
+        when(taskEngine.activeTasks()).thenReturn(List.of(instance));
+        {
+            val r = EXT.target("/v1/tasks")
+                    .request()
+                    .get(new GenericType<ApiResponse<List<TaskInfo>>>() {});
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(List.of(instance), r.getData());
+        }
+    }
+
+    @Test
+    void taskInstance() {
+        val spec = taskSpec();
+
+        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
+        when(responseEngine.taskDetails(spec.getSourceAppName(), spec.getTaskId()))
+                .thenReturn(ApiResponse.success(instance));
+        {
+            val r = EXT.target("/v1/tasks/" + spec.getSourceAppName() + "/instances/" + spec.getTaskId())
+                    .request()
+                    .get(new GenericType<ApiResponse<TaskInfo>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(instance, r.getData());
+        }
+    }
+
+    @Test
+    void deleteTaskInstance() {
+        val spec = taskSpec();
+
+        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
+        when(responseEngine.taskDelete(spec.getSourceAppName(), spec.getTaskId()))
+                .thenReturn(ApiResponse.success(Map.of("deleted", true)));
+        {
+            val r = EXT.target("/v1/tasks/" + spec.getSourceAppName() + "/instances/" + spec.getTaskId())
+                    .request()
+                    .delete(new GenericType<ApiResponse<Map<String, Boolean>>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(Map.of("deleted", true), r.getData());
         }
     }
 

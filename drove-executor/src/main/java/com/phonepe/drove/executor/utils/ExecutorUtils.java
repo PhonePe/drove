@@ -16,6 +16,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.experimental.UtilityClass;
@@ -24,7 +25,6 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
-import java.util.Collections;
 import java.util.Date;
 
 /**
@@ -58,7 +58,7 @@ public class ExecutorUtils {
                 data.getLocalInfo(),
                 data.getResources(),
                 state.getState(),
-                Collections.emptyMap(),
+                data.getMetadata(),
                 state.getError(),
                 data.getCreated(),
                 new Date());
@@ -78,7 +78,8 @@ public class ExecutorUtils {
                 data.getLoggingSpec(),
                 data.getEnv(),
                 state.getState(),
-                Collections.emptyMap(),
+                data.getMetadata(),
+                data.getTaskResult(),
                 state.getError(),
                 data.getCreated(),
                 new Date());
@@ -115,5 +116,28 @@ public class ExecutorUtils {
                 return taskInfo.getInstanceId();
             }
         });
+    }
+
+    public static StateData<TaskState, ExecutorTaskInfo> injectResult(
+            final StateData<TaskState, ExecutorTaskInfo> currState,
+            final TaskResult result) {
+        val curr = currState.getData();
+        return StateData.create(currState.getState(),
+                                new ExecutorTaskInfo(
+                                        curr.getTaskId(),
+                                        curr.getSourceAppName(),
+                                        curr.getInstanceId(),
+                                        curr.getExecutorId(),
+                                        curr.getHostname(),
+                                        curr.getExecutable(),
+                                        curr.getResources(),
+                                        curr.getVolumes(),
+                                        curr.getLoggingSpec(),
+                                        curr.getEnv(),
+                                        curr.getMetadata(),
+                                        result,
+                                        curr.getCreated(),
+                                        curr.getUpdated()),
+                currState.getError());
     }
 }

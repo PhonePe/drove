@@ -185,6 +185,7 @@ public class ExecutorTestingUtils {
                                     spec.getLoggingSpec(),
                                     spec.getEnv(),
                                     Map.of(),
+                                    null,
                                     new Date(),
                                     new Date());
     }

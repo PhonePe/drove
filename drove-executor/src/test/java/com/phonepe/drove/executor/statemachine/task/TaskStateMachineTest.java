@@ -41,6 +41,7 @@ class TaskStateMachineTest {
                                                                                            instanceSpec.getLoggingSpec(),
                                                                                            instanceSpec.getEnv(),
                                                                                            Map.of(),
+                                                                                           null,
                                                                                            new Date(),
                                                                                            new Date())),
                                                      new InjectingTaskActionFactory(Guice.createInjector(
@@ -63,7 +64,7 @@ class TaskStateMachineTest {
         CommonTestUtils.waitUntil(() -> stateChanges.contains(TaskState.RUNNING));
         sm.stop();
         CommonTestUtils.waitUntil(() -> stateChanges.contains(STOPPED));
-        assertEquals(EnumSet.of(RUNNING, RUN_CANCELLED, STARTING, STOPPED, DEPROVISIONING), stateChanges);
+        assertEquals(EnumSet.of(RUNNING, RUN_COMPLETED, STARTING, STOPPED, DEPROVISIONING), stateChanges);
     }
 
 }

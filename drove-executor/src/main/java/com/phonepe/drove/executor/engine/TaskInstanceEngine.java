@@ -55,6 +55,7 @@ public class TaskInstanceEngine extends InstanceEngine<ExecutorTaskInfo, TaskSta
                                                      spec.getLoggingSpec(),
                                                      spec.getEnv(),
                                                      Map.of(),
+                                                     null,
                                                      currDate,
                                                      currDate));
     }
