@@ -1,0 +1,1284 @@
+From 5b5238c22528b61cb1665d627f20ff2b5c35afeb Mon Sep 17 00:00:00 2001
+From: Santanu Sinha <santanu.sinha@gmail.com>
+Date: Wed, 3 Aug 2022 12:22:37 +0530
+Subject: [PATCH] Introduced Task result and deprecated useless states
+
+---
+ .../drove/controller/engine/TaskRunner.java   |   2 +
+ .../DefaultInstanceScheduler.java             |   3 -
+ .../drove/controller/resources/Apis.java      |  12 +-
+ .../resources/ExecutorLogFileApis.java        |   2 +-
+ .../controller/resources/ResponseEngine.java  |   6 +
+ .../drove/controller/statedb/ZkTaskDB.java    |   3 +-
+ .../assets/templates/taskdetails.hbs          |   4 +
+ .../drove/controller/ControllerTestUtils.java |   1 +
+ .../controller/engine/TaskEngineTest.java     |  13 ++
+ .../controller/engine/TaskRunnerTest.java     |   3 +
+ .../drove/controller/resources/ApisTest.java  | 124 +++++++++++++++++-
+ .../resources/ResponseEngineTest.java         |  98 +++++++++++---
+ .../statedb/CachingProxyTaskDBTest.java       |   2 +
+ .../executor/engine/TaskInstanceEngine.java   |   1 +
+ .../executor/model/ExecutorTaskInfo.java      |   2 +
+ .../statemachine/task/TaskStateMachine.java   |  12 +-
+ .../task/actions/TaskMonitoringAction.java    |  49 +++----
+ .../task/actions/TaskRunAction.java           |   8 +-
+ .../drove/executor/utils/ExecutorUtils.java   |  30 ++++-
+ .../drove/executor/ExecutorTestingUtils.java  |   1 +
+ .../engine/TaskInstanceEngineTest.java        |  84 +++++++++++-
+ .../task/TaskStateMachineTest.java            |   3 +-
+ .../drove/models/taskinstance/TaskInfo.java   |   1 +
+ .../drove/models/taskinstance/TaskResult.java |  20 +++
+ .../drove/models/taskinstance/TaskState.java  |   4 +-
+ 25 files changed, 412 insertions(+), 76 deletions(-)
+ create mode 100644 drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskResult.java
+
+diff --git a/drove-controller/src/main/java/com/phonepe/drove/controller/engine/TaskRunner.java b/drove-controller/src/main/java/com/phonepe/drove/controller/engine/TaskRunner.java
+index 1f364e2..979bfc0 100644
+--- a/drove-controller/src/main/java/com/phonepe/drove/controller/engine/TaskRunner.java
++++ b/drove-controller/src/main/java/com/phonepe/drove/controller/engine/TaskRunner.java
+@@ -12,6 +12,7 @@ import com.phonepe.drove.jobexecutor.JobTopology;
+ import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
+ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import io.appform.signals.signals.ConsumingFireForgetSignal;
+ import lombok.Getter;
+@@ -210,6 +211,7 @@ public class TaskRunner implements Runnable {
+                             instance.getEnv(),
+                             TaskState.LOST,
+                             instance.getMetadata(),
++                            new TaskResult(TaskResult.Status.LOST, -1),
+                             "Instance lost",
+                             instance.getCreated(),
+                             new Date());
+diff --git a/drove-controller/src/main/java/com/phonepe/drove/controller/resourcemgmt/DefaultInstanceScheduler.java b/drove-controller/src/main/java/com/phonepe/drove/controller/resourcemgmt/DefaultInstanceScheduler.java
+index 03d9b71..72f2b4a 100644
+--- a/drove-controller/src/main/java/com/phonepe/drove/controller/resourcemgmt/DefaultInstanceScheduler.java
++++ b/drove-controller/src/main/java/com/phonepe/drove/controller/resourcemgmt/DefaultInstanceScheduler.java
+@@ -42,10 +42,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
+                                                                                     TaskState.PROVISIONING,
+                                                                                     TaskState.STARTING,
+                                                                                     TaskState.RUNNING,
+-                                                                                    TaskState.RUN_FAILED,
+                                                                                     TaskState.RUN_COMPLETED,
+-                                                                                    TaskState.RUN_CANCELLED,
+-                                                                                    TaskState.RUN_TIMEOUT,
+                                                                                     TaskState.DEPROVISIONING,
+                                                                                     TaskState.STOPPING);
+     private final ApplicationInstanceInfoDB instanceInfoDB;
+diff --git a/drove-controller/src/main/java/com/phonepe/drove/controller/resources/Apis.java b/drove-controller/src/main/java/com/phonepe/drove/controller/resources/Apis.java
+index c39842b..635ebfd 100644
+--- a/drove-controller/src/main/java/com/phonepe/drove/controller/resources/Apis.java
++++ b/drove-controller/src/main/java/com/phonepe/drove/controller/resources/Apis.java
+@@ -194,6 +194,15 @@ public class Apis {
+         return responseEngine.taskDetails(sourceAppName, taskId);
+     }
+ 
++    @DELETE
++    @Path("/tasks/{sourceAppName}/instances/{taskId}")
++    @Timed
++    public ApiResponse<Map<String, Boolean>> deleteTaskInstance(
++            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
++            @PathParam("taskId") @NotEmpty final String taskId) {
++        return responseEngine.taskDelete(sourceAppName, taskId);
++    }
++
+     @POST
+     @Path("/tasks/search")
+     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+@@ -206,8 +215,7 @@ public class Apis {
+                                   .equals(ApiErrorCode.SUCCESS)
+                         ? "/tasks/" + sourceAppName + "/" + taskId
+                         : "/";
+-        return Response.seeOther(URI.create(
+-                        redirectUri))
++        return Response.seeOther(URI.create(redirectUri))
+                 .build();
+     }
+ 
+diff --git a/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ExecutorLogFileApis.java b/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ExecutorLogFileApis.java
+index 8b55324..cd2974d 100644
+--- a/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ExecutorLogFileApis.java
++++ b/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ExecutorLogFileApis.java
+@@ -210,7 +210,7 @@ public class ExecutorLogFileApis {
+         if (null == executorHostInfo) {
+             throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
+         }
+-        val url = String.format("%s://%s:%d/apis/v1/logs/filestream/%s/%s/%s",
++        val url = String.format("%s://%s:%d/apis/v1/logs/filestream/%s/%s%s",
+                                 executorHostInfo.getTransportType() == NodeTransportType.HTTP
+                                 ? "http"
+                                 : "https",
+diff --git a/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ResponseEngine.java b/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ResponseEngine.java
+index 1d8b034..102e3ca 100644
+--- a/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ResponseEngine.java
++++ b/drove-controller/src/main/java/com/phonepe/drove/controller/resources/ResponseEngine.java
+@@ -127,6 +127,12 @@ public class ResponseEngine {
+                 .orElseGet(() -> failure("No such instance"));
+     }
+ 
++    public ApiResponse<Map<String, Boolean>> taskDelete(final String sourceAppName, final String taskId) {
++        return taskDB.deleteTask(sourceAppName, taskId)
++                ? ApiResponse.success(Map.of("deleted", true))
++                : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
++    }
++
+     public ApiResponse<ClusterSummary> cluster() {
+         var liveApps = 0;
+         var allApps = 0;
+diff --git a/drove-controller/src/main/java/com/phonepe/drove/controller/statedb/ZkTaskDB.java b/drove-controller/src/main/java/com/phonepe/drove/controller/statedb/ZkTaskDB.java
+index dea8e63..d6e3977 100644
+--- a/drove-controller/src/main/java/com/phonepe/drove/controller/statedb/ZkTaskDB.java
++++ b/drove-controller/src/main/java/com/phonepe/drove/controller/statedb/ZkTaskDB.java
+@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.statedb;
+ 
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import io.appform.functionmetrics.MonitoredFunction;
+ import lombok.SneakyThrows;
+@@ -76,7 +77,7 @@ public class ZkTaskDB extends TaskDB {
+         return deleteNode(curatorFramework, instancePath(sourceAppName, taskId));
+     }
+ 
+-    @SneakyThrows
++   @SneakyThrows
+     private List<TaskInfo> listTasks(
+             String appId,
+             int start,
+diff --git a/drove-controller/src/main/resources/assets/templates/taskdetails.hbs b/drove-controller/src/main/resources/assets/templates/taskdetails.hbs
+index f7f751a..6ed97a8 100644
+--- a/drove-controller/src/main/resources/assets/templates/taskdetails.hbs
++++ b/drove-controller/src/main/resources/assets/templates/taskdetails.hbs
+@@ -21,6 +21,10 @@
+                         <th scope="row">Host</th>
+                         <td>{{hostname}}</td>
+                     </tr>
++                    <tr>
++                        <th scope="row">Result</th>
++                        <td>{{#with taskResult}}{{status}} (Exit code: {{exitCode}}){{/with}}</td>
++                    </tr>
+                     <tr>
+                         <th scope="row">Error Message</th>
+                         <td>{{errorMessage}}</td>
+diff --git a/drove-controller/src/test/java/com/phonepe/drove/controller/ControllerTestUtils.java b/drove-controller/src/test/java/com/phonepe/drove/controller/ControllerTestUtils.java
+index e816ff5..86f28a0 100644
+--- a/drove-controller/src/test/java/com/phonepe/drove/controller/ControllerTestUtils.java
++++ b/drove-controller/src/test/java/com/phonepe/drove/controller/ControllerTestUtils.java
+@@ -249,6 +249,7 @@ public class ControllerTestUtils {
+                             spec.getEnv(),
+                             state,
+                             Collections.emptyMap(),
++                            null,
+                             errorMessage,
+                             date,
+                             date);
+diff --git a/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskEngineTest.java b/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskEngineTest.java
+index 0b65b01..a9e3a84 100644
+--- a/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskEngineTest.java
++++ b/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskEngineTest.java
+@@ -25,6 +25,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
+ import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
+ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import io.appform.signals.signals.ConsumingFireForgetSignal;
+ import lombok.val;
+ import org.junit.jupiter.api.Test;
+@@ -74,6 +75,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                         instSpec.getEnv(),
+                                         RUNNING,
+                                         Map.of(),
++                                        null,
+                                         "",
+                                         new Date(),
+                                         new Date()));
+@@ -96,6 +98,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                         instSpec.getEnv(),
+                                         STOPPED,
+                                         Map.of(),
++                                        new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                         "",
+                                         new Date(),
+                                         new Date()));
+@@ -148,6 +151,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                         instSpec.getEnv(),
+                                         RUNNING,
+                                         Map.of(),
++                                        null,
+                                         "",
+                                         new Date(),
+                                         new Date()));
+@@ -185,6 +189,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                     task.getEnv(),
+                                     STOPPED,
+                                     task.getMetadata(),
++                                    new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                     "",
+                                     task.getCreated(),
+                                     new Date()));
+@@ -218,6 +223,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                         instSpec.getEnv(),
+                                         RUNNING,
+                                         Map.of(),
++                                        null,
+                                         "",
+                                         new Date(),
+                                         new Date()));
+@@ -255,6 +261,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                     task.getEnv(),
+                                     RUNNING,
+                                     task.getMetadata(),
++                                    null,
+                                     "",
+                                     task.getCreated(),
+                                     oldDate));
+@@ -288,6 +295,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                         taskSpec.getEnv(),
+                                         STOPPED,
+                                         Map.of(),
++                                        new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                         "",
+                                         new Date(),
+                                         new Date()));
+@@ -307,6 +315,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                     taskSpec.getEnv(),
+                                     RUNNING,
+                                     Map.of(),
++                                    new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                     "",
+                                     new Date(),
+                                     new Date()));
+@@ -357,6 +366,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                         taskSpec.getEnv(),
+                                         STOPPED,
+                                         Map.of(),
++                                        null,
+                                         "",
+                                         new Date(),
+                                         new Date()));
+@@ -388,6 +398,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                     taskSpec.getEnv(),
+                                     RUNNING,
+                                     Map.of(),
++                                    null,
+                                     "",
+                                     new Date(),
+                                     new Date()));
+@@ -421,6 +432,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                     taskSpec.getEnv(),
+                                     STOPPED,
+                                     Map.of(),
++                                    new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                     "",
+                                     new Date(),
+                                     new Date()));
+@@ -519,6 +531,7 @@ class TaskEngineTest extends ControllerTestBase {
+                                      taskSpec.getEnv(),
+                                      RUNNING,
+                                      Map.of(),
++                                     null,
+                                      "",
+                                      new Date(),
+                                      new Date())));
+diff --git a/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskRunnerTest.java b/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskRunnerTest.java
+index cb4e2ed..fa16e25 100644
+--- a/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskRunnerTest.java
++++ b/drove-controller/src/test/java/com/phonepe/drove/controller/engine/TaskRunnerTest.java
+@@ -18,6 +18,7 @@ import com.phonepe.drove.models.operation.deploy.FailureStrategy;
+ import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
+ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import io.appform.signals.signals.ConsumingFireForgetSignal;
+ import io.dropwizard.util.Duration;
+ import lombok.SneakyThrows;
+@@ -92,6 +93,7 @@ class TaskRunnerTest extends ControllerTestBase {
+                                                                                        taskSpec.getEnv(),
+                                                                                        RUNNING,
+                                                                                        Map.of(),
++                                                                                       null,
+                                                                                        "",
+                                                                                        new Date(),
+                                                                                        new Date()));
+@@ -116,6 +118,7 @@ class TaskRunnerTest extends ControllerTestBase {
+                                                                                        taskSpec.getEnv(),
+                                                                                        STOPPED,
+                                                                                        Map.of(),
++                                                                                       new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                                                                        "",
+                                                                                        new Date(),
+                                                                                        new Date()));
+diff --git a/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ApisTest.java b/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ApisTest.java
+index 8f68336..9bf6c7c 100644
+--- a/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ApisTest.java
++++ b/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ApisTest.java
+@@ -16,7 +16,10 @@ import com.phonepe.drove.models.instance.InstanceInfo;
+ import com.phonepe.drove.models.instance.InstanceState;
+ import com.phonepe.drove.models.operation.ApplicationOperation;
+ import com.phonepe.drove.models.operation.ClusterOpSpec;
++import com.phonepe.drove.models.operation.TaskOperation;
+ import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
++import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
++import com.phonepe.drove.models.taskinstance.TaskInfo;
+ import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
+ import io.dropwizard.testing.junit5.ResourceExtension;
+ import lombok.val;
+@@ -32,8 +35,7 @@ import java.util.*;
+ import java.util.concurrent.atomic.AtomicBoolean;
+ import java.util.stream.IntStream;
+ 
+-import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
+-import static com.phonepe.drove.controller.ControllerTestUtils.generateExecutorNode;
++import static com.phonepe.drove.controller.ControllerTestUtils.*;
+ import static com.phonepe.drove.controller.engine.ValidationResult.failure;
+ import static com.phonepe.drove.controller.engine.ValidationResult.success;
+ import static org.junit.jupiter.api.Assertions.assertEquals;
+@@ -81,7 +83,7 @@ class ApisTest {
+                                     : failure("Test Failure"));
+         { // Set maintenance mode .. so request will fail
+             maintenance.set(true);
+-            try (val r = EXT.target("/v1/operations")
++            try (val r = EXT.target("/v1/applications/operations")
+                     .request()
+                     .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
+                                         MediaType.APPLICATION_JSON_TYPE))) {
+@@ -91,7 +93,7 @@ class ApisTest {
+         {  //Force a failure by sending null entity
+             maintenance.set(false);
+             success.set(false);
+-            try (val r = EXT.target("/v1/operations")
++            try (val r = EXT.target("/v1/applications/operations")
+                     .request()
+                     .post(Entity.json(null))) {
+                 assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+@@ -99,7 +101,7 @@ class ApisTest {
+         }
+ 
+         { //Force a failure empty data
+-            try (val r = EXT.target("/v1/operations")
++            try (val r = EXT.target("/v1/applications/operations")
+                     .request()
+                     .post(Entity.json(Map.of()))) {
+                 assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+@@ -115,7 +117,7 @@ class ApisTest {
+         }
+         {
+             success.set(true);
+-            val r = EXT.target("/v1/operations")
++            val r = EXT.target("/v1/applications/operations")
+                     .request()
+                     .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
+                                         MediaType.APPLICATION_JSON_TYPE),
+@@ -324,6 +326,116 @@ class ApisTest {
+         }
+     }
+ 
++    @Test
++    void acceptTaskOperation() {
++
++        val maintenance = new AtomicBoolean();
++        when(clusterStateDB.currentState())
++                .thenAnswer(invocationOnMock
++                                    -> maintenance.get()
++                                       ? Optional.of(new ClusterStateData(ClusterState.MAINTENANCE, new Date()))
++                                       : Optional.empty());
++        val success = new AtomicBoolean();
++        when(taskEngine.handleTaskOp(any(TaskOperation.class)))
++                .thenAnswer(invocationOnMock ->
++                                    success.get()
++                                    ? success()
++                                    : failure("Test Failure"));
++        { // Set maintenance mode .. so request will fail
++            maintenance.set(true);
++            try (val r = EXT.target("/v1/tasks/operations")
++                    .request()
++                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", ClusterOpSpec.DEFAULT),
++                                        MediaType.APPLICATION_JSON_TYPE))) {
++                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
++            }
++        }
++        {  //Force a failure by sending null entity
++            maintenance.set(false);
++            success.set(false);
++            try (val r = EXT.target("/v1/tasks/operations")
++                    .request()
++                    .post(Entity.json(null))) {
++                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
++            }
++        }
++
++        { //Force a failure empty data
++            try (val r = EXT.target("/v1/tasks/operations")
++                    .request()
++                    .post(Entity.json(Map.of()))) {
++                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
++            }
++        }
++        { //Force a app level failure
++            try (val r = EXT.target("/v1/tasks/operations")
++                    .request()
++                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", ClusterOpSpec.DEFAULT),
++                                        MediaType.APPLICATION_JSON_TYPE))) {
++                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
++            }
++        }
++        {
++            success.set(true);
++            val r = EXT.target("/v1/tasks/operations")
++                    .request()
++                    .post(Entity.entity(new TaskKillOperation("TEST_APP_1", "T001", ClusterOpSpec.DEFAULT),
++                                        MediaType.APPLICATION_JSON_TYPE),
++                          new GenericType<ApiResponse<Map<String, String>>>() {
++                          });
++            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++        }
++    }
++
++    @Test
++    void tasks() {
++        val spec = taskSpec();
++
++        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
++        when(taskEngine.activeTasks()).thenReturn(List.of(instance));
++        {
++            val r = EXT.target("/v1/tasks")
++                    .request()
++                    .get(new GenericType<ApiResponse<List<TaskInfo>>>() {});
++            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(List.of(instance), r.getData());
++        }
++    }
++
++    @Test
++    void taskInstance() {
++        val spec = taskSpec();
++
++        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
++        when(responseEngine.taskDetails(spec.getSourceAppName(), spec.getTaskId()))
++                .thenReturn(ApiResponse.success(instance));
++        {
++            val r = EXT.target("/v1/tasks/" + spec.getSourceAppName() + "/instances/" + spec.getTaskId())
++                    .request()
++                    .get(new GenericType<ApiResponse<TaskInfo>>() {
++                    });
++            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(instance, r.getData());
++        }
++    }
++
++    @Test
++    void deleteTaskInstance() {
++        val spec = taskSpec();
++
++        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
++        when(responseEngine.taskDelete(spec.getSourceAppName(), spec.getTaskId()))
++                .thenReturn(ApiResponse.success(Map.of("deleted", true)));
++        {
++            val r = EXT.target("/v1/tasks/" + spec.getSourceAppName() + "/instances/" + spec.getTaskId())
++                    .request()
++                    .delete(new GenericType<ApiResponse<Map<String, Boolean>>>() {
++                    });
++            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(Map.of("deleted", true), r.getData());
++        }
++    }
++
+     @Test
+     void clusterSummary() {
+         val clusterSummary = new ClusterSummary(ClusterState.NORMAL,
+diff --git a/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ResponseEngineTest.java b/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ResponseEngineTest.java
+index c07ffd6..8cbdcda 100644
+--- a/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ResponseEngineTest.java
++++ b/drove-controller/src/test/java/com/phonepe/drove/controller/resources/ResponseEngineTest.java
+@@ -12,7 +12,6 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+ import com.phonepe.drove.controller.statedb.ClusterStateDB;
+ import com.phonepe.drove.controller.statedb.TaskDB;
+ import com.phonepe.drove.controller.utils.ControllerUtils;
+-import com.phonepe.drove.models.api.ApiErrorCode;
+ import com.phonepe.drove.models.api.ApiResponse;
+ import com.phonepe.drove.models.application.ApplicationInfo;
+ import com.phonepe.drove.models.application.ApplicationState;
+@@ -37,6 +36,8 @@ import java.util.stream.IntStream;
+ import java.util.stream.LongStream;
+ 
+ import static com.phonepe.drove.controller.ControllerTestUtils.*;
++import static com.phonepe.drove.models.api.ApiErrorCode.FAILED;
++import static com.phonepe.drove.models.api.ApiErrorCode.SUCCESS;
+ import static org.junit.jupiter.api.Assertions.*;
+ import static org.mockito.Mockito.*;
+ 
+@@ -70,7 +71,7 @@ class ResponseEngineTest {
+                                     .toList());
+ 
+         val res = re.applications(0, Integer.MAX_VALUE);
+-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
++        assertEquals(SUCCESS, res.getStatus());
+         assertEquals("success", res.getMessage());
+         assertEquals(100, res.getData().size());
+     }
+@@ -100,7 +101,7 @@ class ResponseEngineTest {
+                 .thenReturn(Optional.of(applicationInfo));
+ 
+         val res = re.application(appId);
+-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
++        assertEquals(SUCCESS, res.getStatus());
+         assertEquals("success", res.getMessage());
+         assertNotNull(res.getData());
+     }
+@@ -130,7 +131,7 @@ class ResponseEngineTest {
+                 .thenReturn(Optional.of(applicationInfo));
+ 
+         val res = re.applicationSpec(appId);
+-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
++        assertEquals(SUCCESS, res.getStatus());
+         assertEquals("success", res.getMessage());
+         assertNotNull(res.getData());
+         assertEquals(spec, res.getData());
+@@ -162,7 +163,7 @@ class ResponseEngineTest {
+         when(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)).thenReturn(instances);
+ 
+         val res = re.applicationInstances(appId, Set.of());
+-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
++        assertEquals(SUCCESS, res.getStatus());
+         assertEquals("success", res.getMessage());
+         assertEquals(100, res.getData().size());
+         assertEquals(instances, res.getData());
+@@ -195,13 +196,13 @@ class ResponseEngineTest {
+ 
+         {
+             val res = re.instanceDetails(appId, instanceId);
+-            assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
++            assertEquals(SUCCESS, res.getStatus());
+             assertEquals("success", res.getMessage());
+             assertEquals(instance, res.getData());
+         }
+         {
+             val res = re.instanceDetails(appId, "blah");
+-            assertEquals(ApiErrorCode.FAILED, res.getStatus());
++            assertEquals(FAILED, res.getStatus());
+             assertEquals("No such instance", res.getMessage());
+             assertNull(res.getData());
+         }
+@@ -232,12 +233,71 @@ class ResponseEngineTest {
+         when(instanceInfoDB.oldInstances(appId, 0, Integer.MAX_VALUE)).thenReturn(instances);
+ 
+         val res = re.applicationOldInstances(appId, 0, Integer.MAX_VALUE);
+-        assertEquals(ApiErrorCode.SUCCESS, res.getStatus());
++        assertEquals(SUCCESS, res.getStatus());
+         assertEquals("success", res.getMessage());
+         assertEquals(100, res.getData().size());
+         assertEquals(instances, res.getData());
+     }
+ 
++    @Test
++    void testTaskDetails() {
++        val engine = mock(ApplicationEngine.class);
++        val applicationStateDB = mock(ApplicationStateDB.class);
++        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
++        val clusterStateDB = mock(ClusterStateDB.class);
++        val clusterResourcesDB = mock(ClusterResourcesDB.class);
++        val taskDB = mock(TaskDB.class);
++        val communicator = mock(ControllerCommunicator.class);
++
++        val re = new ResponseEngine(engine,
++                                    applicationStateDB,
++                                    instanceInfoDB,
++                                    taskDB, clusterStateDB,
++                                    clusterResourcesDB,
++                                    communicator);
++        when(taskDB.task(eq("WRONG_APP"), anyString())).thenReturn(Optional.empty());
++        val spec = taskSpec();
++        when(taskDB.task(spec.getSourceAppName(), spec.getTaskId()))
++                .thenReturn(Optional.of(ControllerTestUtils.generateTaskInfo(spec, 0)));
++        {
++            val res = re.taskDetails("WRONMG_APP", "T001");
++            assertEquals(FAILED, res.getStatus());
++        }
++        {
++            val res = re.taskDetails(spec.getSourceAppName(), spec.getTaskId());
++            assertEquals(SUCCESS, res.getStatus());
++        }
++    }
++
++    @Test
++    void testTaskDelete() {
++        val engine = mock(ApplicationEngine.class);
++        val applicationStateDB = mock(ApplicationStateDB.class);
++        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
++        val clusterStateDB = mock(ClusterStateDB.class);
++        val clusterResourcesDB = mock(ClusterResourcesDB.class);
++        val taskDB = mock(TaskDB.class);
++        val communicator = mock(ControllerCommunicator.class);
++
++        val re = new ResponseEngine(engine,
++                                    applicationStateDB,
++                                    instanceInfoDB,
++                                    taskDB, clusterStateDB,
++                                    clusterResourcesDB,
++                                    communicator);
++        when(taskDB.deleteTask(eq("WRONG_APP"), anyString())).thenReturn(false);
++        val spec = taskSpec();
++        when(taskDB.deleteTask(spec.getSourceAppName(), spec.getTaskId())).thenReturn(true);
++        {
++            val res = re.taskDelete("WRONMG_APP", "T001");
++            assertEquals(FAILED, res.getStatus());
++        }
++        {
++            val res = re.taskDelete(spec.getSourceAppName(), spec.getTaskId());
++            assertEquals(SUCCESS, res.getStatus());
++        }
++    }
++
+     @Test
+     void testCluster() {
+         val engine = mock(ApplicationEngine.class);
+@@ -276,7 +336,7 @@ class ResponseEngineTest {
+             when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.MAINTENANCE,
+                                                                                             new Date())));
+             val r = re.cluster();
+-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(SUCCESS, r.getStatus());
+             val c = r.getData();
+             assertNotNull(c);
+             assertEquals(ClusterState.MAINTENANCE, c.getState());
+@@ -294,7 +354,7 @@ class ResponseEngineTest {
+         {
+             when(clusterStateDB.currentState()).thenReturn(Optional.empty());
+             val r = re.cluster();
+-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(SUCCESS, r.getStatus());
+             val c = r.getData();
+             assertNotNull(c);
+             assertEquals(ClusterState.NORMAL, c.getState());
+@@ -332,7 +392,7 @@ class ResponseEngineTest {
+                                     .mapToObj(ControllerTestUtils::executorHost)
+                                     .toList());
+         val r = re.nodes();
+-        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++        assertEquals(SUCCESS, r.getStatus());
+         val c = r.getData();
+         assertNotNull(c);
+         val l = r.getData();
+@@ -363,12 +423,12 @@ class ResponseEngineTest {
+ 
+         {
+             val r = re.executorDetails(executorId);
+-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(SUCCESS, r.getStatus());
+             assertEquals(instanceData.getNodeData(), r.getData());
+         }
+         {
+             val r = re.executorDetails("invalid");
+-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
++            assertEquals(FAILED, r.getStatus());
+             assertNull(r.getData());
+             assertEquals("No executor found with id: invalid", r.getMessage());
+         }
+@@ -409,7 +469,7 @@ class ResponseEngineTest {
+ 
+ 
+         val r = re.endpoints();
+-        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++        assertEquals(SUCCESS, r.getStatus());
+         assertEquals(100, r.getData().size());
+         r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
+     }
+@@ -460,17 +520,17 @@ class ResponseEngineTest {
+         });
+         {
+             val r = func.apply(re, executor.getExecutorId());
+-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(SUCCESS, r.getStatus());
+         }
+         {
+             success.set(false);
+             val r = func.apply(re, executor.getExecutorId());
+-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
++            assertEquals(FAILED, r.getStatus());
+             assertEquals("Error sending remote message", r.getMessage());
+         }
+         {
+             val r = func.apply(re, "invalid-exec");
+-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
++            assertEquals(FAILED, r.getStatus());
+             assertEquals("No such executor", r.getMessage());
+         }
+     }
+@@ -501,12 +561,12 @@ class ResponseEngineTest {
+                         : Optional.empty());
+         {
+             val r = func.apply(re);
+-            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
++            assertEquals(SUCCESS, r.getStatus());
+         }
+         {
+             success.set(false);
+             val r = func.apply(re);
+-            assertEquals(ApiErrorCode.FAILED, r.getStatus());
++            assertEquals(FAILED, r.getStatus());
+             assertEquals("Could not change cluster state", r.getMessage());
+         }
+     }
+diff --git a/drove-controller/src/test/java/com/phonepe/drove/controller/statedb/CachingProxyTaskDBTest.java b/drove-controller/src/test/java/com/phonepe/drove/controller/statedb/CachingProxyTaskDBTest.java
+index 8d7d140..6546520 100644
+--- a/drove-controller/src/test/java/com/phonepe/drove/controller/statedb/CachingProxyTaskDBTest.java
++++ b/drove-controller/src/test/java/com/phonepe/drove/controller/statedb/CachingProxyTaskDBTest.java
+@@ -5,6 +5,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
+ import com.phonepe.drove.controller.managed.LeadershipEnsurer;
+ import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import io.appform.signals.signals.ConsumingSyncSignal;
+ import lombok.val;
+@@ -100,6 +101,7 @@ class CachingProxyTaskDBTest extends ControllerTestBase {
+                 taskInfo.getEnv(),
+                 taskInfo.getState(),
+                 taskInfo.getMetadata(),
++                new TaskResult(TaskResult.Status.LOST, -1),
+                 taskInfo.getErrorMessage(),
+                 taskInfo.getCreated(),
+                 new Date(taskInfo.getUpdated().getTime() - 100_000));
+diff --git a/drove-executor/src/main/java/com/phonepe/drove/executor/engine/TaskInstanceEngine.java b/drove-executor/src/main/java/com/phonepe/drove/executor/engine/TaskInstanceEngine.java
+index baa7d31..0182853 100644
+--- a/drove-executor/src/main/java/com/phonepe/drove/executor/engine/TaskInstanceEngine.java
++++ b/drove-executor/src/main/java/com/phonepe/drove/executor/engine/TaskInstanceEngine.java
+@@ -55,6 +55,7 @@ public class TaskInstanceEngine extends InstanceEngine<ExecutorTaskInfo, TaskSta
+                                                      spec.getLoggingSpec(),
+                                                      spec.getEnv(),
+                                                      Map.of(),
++                                                     null,
+                                                      currDate,
+                                                      currDate));
+     }
+diff --git a/drove-executor/src/main/java/com/phonepe/drove/executor/model/ExecutorTaskInfo.java b/drove-executor/src/main/java/com/phonepe/drove/executor/model/ExecutorTaskInfo.java
+index c73b3f5..eadfd17 100644
+--- a/drove-executor/src/main/java/com/phonepe/drove/executor/model/ExecutorTaskInfo.java
++++ b/drove-executor/src/main/java/com/phonepe/drove/executor/model/ExecutorTaskInfo.java
+@@ -4,6 +4,7 @@ import com.phonepe.drove.models.application.MountedVolume;
+ import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
+ import com.phonepe.drove.models.application.logging.LoggingSpec;
+ import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import lombok.Value;
+ 
+ import java.util.Date;
+@@ -26,6 +27,7 @@ public class ExecutorTaskInfo implements DeployedExecutionObjectInfo {
+     LoggingSpec loggingSpec;
+     Map<String, String> env;
+     Map<String, String> metadata;
++    TaskResult taskResult;
+     Date created;
+     Date updated;
+ 
+diff --git a/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachine.java b/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachine.java
+index 1bd5e71..350cac6 100644
+--- a/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachine.java
++++ b/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachine.java
+@@ -39,21 +39,13 @@ public class TaskStateMachine extends StateMachine<ExecutorTaskInfo, Void, TaskS
+             new Transition<>(STARTING,
+                              TaskRunAction.class,
+                              RUNNING,
+-                             RUN_FAILED),
++                             RUN_COMPLETED),
+             new Transition<>(RUNNING,
+                              TaskMonitoringAction.class,
+-                             RUN_COMPLETED,
+-                             RUN_CANCELLED,
+-                             RUN_FAILED),
++                             RUN_COMPLETED),
+             new Transition<>(RUN_COMPLETED,
+                              TaskDestroyAction.class,
+                              DEPROVISIONING),
+-            new Transition<>(RUN_FAILED,
+-                             TaskDestroyAction.class,
+-                             DEPROVISIONING),
+-            new Transition<>(RUN_CANCELLED,
+-                             TaskDestroyAction.class,
+-                             DEPROVISIONING),
+             new Transition<>(DEPROVISIONING,
+                              TaskExecutableCleanupAction.class,
+                              STOPPED),
+diff --git a/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskMonitoringAction.java b/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskMonitoringAction.java
+index 92c7194..c4107b9 100644
+--- a/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskMonitoringAction.java
++++ b/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskMonitoringAction.java
+@@ -6,9 +6,10 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
+ import com.phonepe.drove.executor.model.ExecutorTaskInfo;
+ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+ import com.phonepe.drove.executor.statemachine.task.TaskAction;
++import com.phonepe.drove.executor.utils.ExecutorUtils;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import com.phonepe.drove.statemachine.StateData;
+-import lombok.Value;
+ import lombok.extern.slf4j.Slf4j;
+ import lombok.val;
+ import org.slf4j.MDC;
+@@ -54,25 +55,29 @@ public class TaskMonitoringAction extends TaskAction {
+             monitor();
+             if (stopped.get()) {
+                 dockerClient.killContainerCmd(containerId).exec();
+-                return StateData.from(currentState, TaskState.RUN_CANCELLED);
++                return StateData.from(ExecutorUtils.injectResult(currentState,
++                                                                 new TaskResult(TaskResult.Status.CANCELLED, -1)),
++                                      TaskState.RUN_COMPLETED);
+             }
+-            val runResult = Objects.requireNonNullElse(result.get(), new TaskResult(-1, false));
+-            if (runResult.isContainerLost()) {
+-                return StateData.errorFrom(currentState,
+-                                           TaskState.RUN_FAILED,
+-                                           "Task instance lost for container: " + containerId);
+-            }
+-            val exitCode = runResult.getStatus();
++            val runResult = Objects.requireNonNullElse(result.get(),
++                                                       new TaskResult(TaskResult.Status.FAILED, -1));
++            val exitCode = runResult.getExitCode();
+             if (exitCode == 0) {
+-                return StateData.from(currentState, TaskState.RUN_COMPLETED);
++                return StateData.from(ExecutorUtils.injectResult(currentState, runResult), TaskState.RUN_COMPLETED);
++            }
++            if (runResult.getStatus().equals(TaskResult.Status.LOST)) {
++                return StateData.errorFrom(ExecutorUtils.injectResult(currentState, runResult),
++                                           TaskState.RUN_COMPLETED,
++                                           "Task instance lost for container: " + containerId);
+             }
+-            return StateData.errorFrom(currentState,
+-                                       TaskState.RUN_FAILED,
++            return StateData.errorFrom(ExecutorUtils.injectResult(currentState, runResult),
++                                       TaskState.RUN_COMPLETED,
+                                        "Task instance exited with status: " + exitCode);
+ 
+         }
+         catch (Exception e) {
+-            return StateData.errorFrom(currentState, TaskState.RUN_FAILED, e.getMessage());
++            return StateData.errorFrom(ExecutorUtils.injectResult(currentState, new TaskResult(TaskResult.Status.FAILED, -1)),
++                                       TaskState.RUN_COMPLETED, e.getMessage());
+         }
+         finally {
+             stopJob();
+@@ -82,7 +87,7 @@ public class TaskMonitoringAction extends TaskAction {
+ 
+     @Override
+     protected TaskState defaultErrorState() {
+-        return TaskState.RUN_FAILED;
++        return TaskState.RUN_COMPLETED;
+     }
+ 
+     @Override
+@@ -137,16 +142,20 @@ public class TaskMonitoringAction extends TaskAction {
+                     .getState();
+             if (currState != null && !Objects.requireNonNullElse(currState.getRunning(), true)) {
+                 log.info("Task instance completed with status: {}", currState);
++                val exitCode = Objects.requireNonNullElse(currState.getExitCodeLong(),
++                                                             -1L);
+                 val setStatus = result.compareAndSet(null,
+-                                                     new TaskResult(Objects.requireNonNullElse(currState.getExitCodeLong(),
+-                                                                                               -1L), false));
++                                                     new TaskResult(exitCode == 0L
++                                                                    ? TaskResult.Status.SUCCESSFUL
++                                                                    : TaskResult.Status.FAILED,
++                                                                    exitCode));
+                 log.debug("Result set status: {}", setStatus);
+                 stateChanged.signalAll();
+             }
+         }
+         catch (NotFoundException e) {
+             log.error("Container {} has gone away", containerId);
+-            val setStatus = result.compareAndSet(null, new TaskResult(-1, true));
++            val setStatus = result.compareAndSet(null, new TaskResult(TaskResult.Status.LOST, -1));
+             log.debug("Result set status: {}", setStatus);
+             stateChanged.signalAll();
+         }
+@@ -162,10 +171,4 @@ public class TaskMonitoringAction extends TaskAction {
+         }
+     }
+ 
+-    @Value
+-    private static class TaskResult {
+-        long status;
+-        boolean containerLost;
+-    }
+-
+ }
+diff --git a/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskRunAction.java b/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskRunAction.java
+index a32cb18..57b9e77 100644
+--- a/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskRunAction.java
++++ b/drove-executor/src/main/java/com/phonepe/drove/executor/statemachine/task/actions/TaskRunAction.java
+@@ -12,6 +12,7 @@ import com.phonepe.drove.executor.statemachine.task.TaskAction;
+ import com.phonepe.drove.executor.utils.DockerUtils;
+ import com.phonepe.drove.models.application.JobType;
+ import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import com.phonepe.drove.statemachine.StateData;
+ import io.appform.functionmetrics.MonitoredFunction;
+@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
+ 
+ import static com.phonepe.drove.common.CommonUtils.hostname;
+ import static com.phonepe.drove.common.CommonUtils.instanceId;
++import static com.phonepe.drove.executor.utils.ExecutorUtils.injectResult;
+ 
+ /**
+  *
+@@ -88,12 +90,13 @@ public class TaskRunAction extends TaskAction {
+         }
+         catch (Exception e) {
+             log.error("Error creating container: ", e);
+-            return StateData.errorFrom(currentState, TaskState.RUN_FAILED, e.getMessage());
++            return StateData.errorFrom(injectResult(currentState, new TaskResult(TaskResult.Status.FAILED, -1)),
++                                                    TaskState.RUN_COMPLETED, e.getMessage());
+         }    }
+ 
+     @Override
+     protected TaskState defaultErrorState() {
+-        return TaskState.RUN_FAILED;
++        return TaskState.RUN_COMPLETED;
+     }
+ 
+     private ExecutorTaskInfo instanceInfo(
+@@ -114,6 +117,7 @@ public class TaskRunAction extends TaskAction {
+                 data.getLoggingSpec(),
+                 data.getEnv(),
+                 data.getMetadata(),
++                data.getTaskResult(),
+                 null == oldData
+                 ? new Date()
+                 : oldData.getCreated(),
+diff --git a/drove-executor/src/main/java/com/phonepe/drove/executor/utils/ExecutorUtils.java b/drove-executor/src/main/java/com/phonepe/drove/executor/utils/ExecutorUtils.java
+index 9dc2e92..cb570de 100644
+--- a/drove-executor/src/main/java/com/phonepe/drove/executor/utils/ExecutorUtils.java
++++ b/drove-executor/src/main/java/com/phonepe/drove/executor/utils/ExecutorUtils.java
+@@ -16,6 +16,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+ import com.phonepe.drove.models.instance.InstanceInfo;
+ import com.phonepe.drove.models.instance.InstanceState;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import com.phonepe.drove.statemachine.StateData;
+ import lombok.experimental.UtilityClass;
+@@ -24,7 +25,6 @@ import org.apache.commons.lang3.NotImplementedException;
+ 
+ import java.net.URI;
+ import java.net.http.HttpRequest;
+-import java.util.Collections;
+ import java.util.Date;
+ 
+ /**
+@@ -58,7 +58,7 @@ public class ExecutorUtils {
+                 data.getLocalInfo(),
+                 data.getResources(),
+                 state.getState(),
+-                Collections.emptyMap(),
++                data.getMetadata(),
+                 state.getError(),
+                 data.getCreated(),
+                 new Date());
+@@ -78,7 +78,8 @@ public class ExecutorUtils {
+                 data.getLoggingSpec(),
+                 data.getEnv(),
+                 state.getState(),
+-                Collections.emptyMap(),
++                data.getMetadata(),
++                data.getTaskResult(),
+                 state.getError(),
+                 data.getCreated(),
+                 new Date());
+@@ -116,4 +117,27 @@ public class ExecutorUtils {
+             }
+         });
+     }
++
++    public static StateData<TaskState, ExecutorTaskInfo> injectResult(
++            final StateData<TaskState, ExecutorTaskInfo> currState,
++            final TaskResult result) {
++        val curr = currState.getData();
++        return StateData.create(currState.getState(),
++                                new ExecutorTaskInfo(
++                                        curr.getTaskId(),
++                                        curr.getSourceAppName(),
++                                        curr.getInstanceId(),
++                                        curr.getExecutorId(),
++                                        curr.getHostname(),
++                                        curr.getExecutable(),
++                                        curr.getResources(),
++                                        curr.getVolumes(),
++                                        curr.getLoggingSpec(),
++                                        curr.getEnv(),
++                                        curr.getMetadata(),
++                                        result,
++                                        curr.getCreated(),
++                                        curr.getUpdated()),
++                currState.getError());
++    }
+ }
+diff --git a/drove-executor/src/test/java/com/phonepe/drove/executor/ExecutorTestingUtils.java b/drove-executor/src/test/java/com/phonepe/drove/executor/ExecutorTestingUtils.java
+index 90e79e1..ce88e20 100644
+--- a/drove-executor/src/test/java/com/phonepe/drove/executor/ExecutorTestingUtils.java
++++ b/drove-executor/src/test/java/com/phonepe/drove/executor/ExecutorTestingUtils.java
+@@ -185,6 +185,7 @@ public class ExecutorTestingUtils {
+                                     spec.getLoggingSpec(),
+                                     spec.getEnv(),
+                                     Map.of(),
++                                    null,
+                                     new Date(),
+                                     new Date());
+     }
+diff --git a/drove-executor/src/test/java/com/phonepe/drove/executor/engine/TaskInstanceEngineTest.java b/drove-executor/src/test/java/com/phonepe/drove/executor/engine/TaskInstanceEngineTest.java
+index 4c9cf08..cfa8366 100644
+--- a/drove-executor/src/test/java/com/phonepe/drove/executor/engine/TaskInstanceEngineTest.java
++++ b/drove-executor/src/test/java/com/phonepe/drove/executor/engine/TaskInstanceEngineTest.java
+@@ -1,5 +1,6 @@
+ package com.phonepe.drove.executor.engine;
+ 
++import com.github.dockerjava.api.model.Container;
+ import com.google.common.collect.ImmutableList;
+ import com.google.common.collect.Sets;
+ import com.phonepe.drove.common.CommonTestUtils;
+@@ -18,15 +19,18 @@ import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+ import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+ import com.phonepe.drove.models.taskinstance.TaskInfo;
++import com.phonepe.drove.models.taskinstance.TaskResult;
+ import com.phonepe.drove.models.taskinstance.TaskState;
+ import lombok.val;
+ import org.junit.jupiter.api.Test;
+ 
+ import java.time.Duration;
+ import java.util.*;
++import java.util.concurrent.atomic.AtomicReference;
+ 
+ import static com.phonepe.drove.common.CommonTestUtils.delay;
+ import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
++import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
+ import static com.phonepe.drove.models.taskinstance.TaskState.*;
+ import static org.junit.jupiter.api.Assertions.*;
+ 
+@@ -39,9 +43,13 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
+         val spec = ExecutorTestingUtils.testTaskInstanceSpec();
+         val instanceId = CommonUtils.instanceId(spec);
+         val stateChanges = new HashSet<TaskState>();
++        val res = new AtomicReference<TaskResult>();
+         taskInstanceEngine.onStateChange().connect(state -> {
+             if (state.getInstanceId().equals(instanceId)) {
+                 stateChanges.add(state.getState());
++                if(state.getState().isTerminal()) {
++                    res.set(state.getTaskResult());
++                }
+             }
+         });
+         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
+@@ -79,6 +87,68 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
+                                                     STOPPING,
+                                                     STOPPED));
+         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
++        assertEquals(new TaskResult(TaskResult.Status.SUCCESSFUL, 0L), res.get());
++    }
++
++    @Test
++    void testContainerLoss() {
++        val spec = ExecutorTestingUtils.testTaskInstanceSpec( Map.of("ITERATIONS", "1000"));
++        val instanceId = CommonUtils.instanceId(spec);
++        val stateChanges = new HashSet<TaskState>();
++        val res = new AtomicReference<TaskResult>();
++        taskInstanceEngine.onStateChange().connect(state -> {
++            if (state.getInstanceId().equals(instanceId)) {
++                stateChanges.add(state.getState());
++                if(state.getState().isTerminal()) {
++                    res.set(state.getTaskResult());
++                }
++            }
++        });
++        val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
++        val startInstanceMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
++                                                        executorAddress,
++                                                        spec);
++        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
++                                                        taskInstanceEngine,
++                                                        blacklistingManager);
++        val startResponse = startInstanceMessage.accept(messageHandler);
++        assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
++        assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
++        waitUntil(() -> taskInstanceEngine.currentState(instanceId)
++                .map(TaskInfo::getState)
++                .map(instanceState -> instanceState.equals(RUNNING))
++                .orElse(false));
++        assertTrue(taskInstanceEngine.exists(instanceId));
++        assertFalse(taskInstanceEngine.exists("WrongId"));
++        val containerId = DOCKER_CLIENT.listContainersCmd()
++                .withLabelFilter(Map.of(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceId))
++                .exec()
++                .stream()
++                .findFirst()
++                .map(Container::getId)
++                .orElse(null);
++        assertNotNull(containerId);
++        DOCKER_CLIENT.stopContainerCmd(containerId).exec();
++        val info = taskInstanceEngine.currentState(instanceId).orElse(null);
++        assertNotNull(info);
++        assertEquals(RUNNING, info.getState());
++        val allInfo = taskInstanceEngine.currentState();
++        assertEquals(1, allInfo.size());
++        assertEquals(info.getTaskId(), allInfo.get(0).getTaskId());
++        waitUntil(() -> STOPPED.equals(taskInstanceEngine.currentState(instanceId)
++                                               .map(TaskInfo::getState)
++                                               .orElse(STOPPED)));
++        val statesDiff = Sets.difference(stateChanges,
++                                         EnumSet.of(PENDING,
++                                                    PROVISIONING,
++                                                    STARTING,
++                                                    RUNNING,
++                                                    RUN_COMPLETED,
++                                                    DEPROVISIONING,
++                                                    STOPPING,
++                                                    STOPPED));
++        assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
++        assertEquals(new TaskResult(TaskResult.Status.FAILED, 137L), res.get());
+     }
+ 
+     @Test
+@@ -86,9 +156,13 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
+         val spec = ExecutorTestingUtils.testTaskInstanceSpec(Map.of("ITERATIONS", "2", "EXIT_CODE", "-1"));
+         val instanceId = CommonUtils.instanceId(spec);
+         val stateChanges = new HashSet<TaskState>();
++        val res = new AtomicReference<TaskResult>();
+         taskInstanceEngine.onStateChange().connect(state -> {
+             if (state.getInstanceId().equals(instanceId)) {
+                 stateChanges.add(state.getState());
++                if(state.getState().isTerminal()) {
++                    res.set(state.getTaskResult());
++                }
+             }
+         });
+         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
+@@ -122,11 +196,12 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
+                                                     PROVISIONING,
+                                                     STARTING,
+                                                     RUNNING,
+-                                                    RUN_FAILED,
++                                                    RUN_COMPLETED,
+                                                     DEPROVISIONING,
+                                                     STOPPING,
+                                                     STOPPED));
+         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
++        assertEquals(new TaskResult(TaskResult.Status.FAILED, 255L), res.get());
+     }
+ 
+     @Test
+@@ -134,9 +209,13 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
+         val spec = ExecutorTestingUtils.testTaskInstanceSpec(Map.of("ITERATIONS", "200"));
+         val instanceId = spec.getInstanceId();
+         val stateChanges = new HashSet<TaskState>();
++        val res = new AtomicReference<TaskResult>();
+         taskInstanceEngine.onStateChange().connect(state -> {
+             if (state.getInstanceId().equals(instanceId)) {
+                 stateChanges.add(state.getState());
++                if(state.getState().isTerminal()) {
++                    res.set(state.getTaskResult());
++                }
+             }
+         });
+         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
+@@ -176,11 +255,12 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
+                                                     PROVISIONING,
+                                                     STARTING,
+                                                     RUNNING,
+-                                                    RUN_CANCELLED,
++                                                    RUN_COMPLETED,
+                                                     DEPROVISIONING,
+                                                     STOPPING,
+                                                     STOPPED));
+         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
++        assertEquals(new TaskResult(TaskResult.Status.CANCELLED, -1L), res.get());
+     }
+ 
+     @Test
+diff --git a/drove-executor/src/test/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachineTest.java b/drove-executor/src/test/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachineTest.java
+index 15300ab..068e58e 100644
+--- a/drove-executor/src/test/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachineTest.java
++++ b/drove-executor/src/test/java/com/phonepe/drove/executor/statemachine/task/TaskStateMachineTest.java
+@@ -41,6 +41,7 @@ class TaskStateMachineTest {
+                                                                                            instanceSpec.getLoggingSpec(),
+                                                                                            instanceSpec.getEnv(),
+                                                                                            Map.of(),
++                                                                                           null,
+                                                                                            new Date(),
+                                                                                            new Date())),
+                                                      new InjectingTaskActionFactory(Guice.createInjector(
+@@ -63,7 +64,7 @@ class TaskStateMachineTest {
+         CommonTestUtils.waitUntil(() -> stateChanges.contains(TaskState.RUNNING));
+         sm.stop();
+         CommonTestUtils.waitUntil(() -> stateChanges.contains(STOPPED));
+-        assertEquals(EnumSet.of(RUNNING, RUN_CANCELLED, STARTING, STOPPED, DEPROVISIONING), stateChanges);
++        assertEquals(EnumSet.of(RUNNING, RUN_COMPLETED, STARTING, STOPPED, DEPROVISIONING), stateChanges);
+     }
+ 
+ }
+\ No newline at end of file
+diff --git a/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskInfo.java b/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskInfo.java
+index 6deb743..e1a9b79 100644
+--- a/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskInfo.java
++++ b/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskInfo.java
+@@ -35,6 +35,7 @@ public class TaskInfo implements DeployedInstanceInfo {
+     Map<String, String> env;
+     TaskState state;
+     Map<String, String> metadata;
++    TaskResult taskResult;
+     String errorMessage;
+     Date created;
+     Date updated;
+diff --git a/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskResult.java b/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskResult.java
+new file mode 100644
+index 0000000..baea064
+--- /dev/null
++++ b/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskResult.java
+@@ -0,0 +1,20 @@
++package com.phonepe.drove.models.taskinstance;
++
++import lombok.Value;
++
++/**
++ *
++ */
++@Value
++public class TaskResult {
++    public enum Status {
++        SUCCESSFUL,
++        TIMED_OUT,
++        CANCELLED,
++        FAILED,
++        LOST
++    }
++
++    Status status;
++    long exitCode;
++}
+diff --git a/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskState.java b/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskState.java
+index bc0f1c8..149f6d8 100644
+--- a/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskState.java
++++ b/drove-models/src/main/java/com/phonepe/drove/models/taskinstance/TaskState.java
+@@ -15,10 +15,7 @@ public enum TaskState {
+     STARTING(false, false),
+     START_FAILED(false, true),
+     RUNNING(false, false),
+-    RUN_FAILED(false, true),
+-    RUN_TIMEOUT(false, true),
+     RUN_COMPLETED(false, false),
+-    RUN_CANCELLED(false, false),
+     DEPROVISIONING(false, false),
+     STOPPING(false, false),
+     STOPPED(true, false),
+@@ -30,6 +27,7 @@ public enum TaskState {
+             PROVISIONING,
+             STARTING,
+             RUNNING,
++            RUN_COMPLETED,
+             DEPROVISIONING,
+             STOPPING);
+     private final boolean terminal;
+-- 
+2.25.1
+
