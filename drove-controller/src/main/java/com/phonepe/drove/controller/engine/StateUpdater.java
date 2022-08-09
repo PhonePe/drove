@@ -7,6 +7,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import io.dropwizard.util.Strings;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -43,6 +44,10 @@ public class StateUpdater {
         children.forEach(node -> Objects.requireNonNullElse(node.getInstances(), List.<InstanceInfo>of())
                 .forEach(this::updateInstanceInfo));
         children.forEach(node -> Objects.requireNonNullElse(node.getTasks(), List.<TaskInfo>of())
+                .stream()
+                .filter(instanceInfo -> null != instanceInfo
+                        && !Strings.isNullOrEmpty(instanceInfo.getSourceAppName())
+                        && !Strings.isNullOrEmpty(instanceInfo.getTaskId()))
                 .forEach(this::updateTask));
     }
 
@@ -60,17 +65,18 @@ public class StateUpdater {
         resourcesDB.update(snapshot);
         return updateInstanceInfo(instanceInfo);
     }
+
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final TaskInfo instanceInfo) {
         resourcesDB.update(snapshot);
         return updateTask(instanceInfo);
     }
-
 
     private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
         return instanceInfoDB.updateInstanceState(instanceInfo.getAppId(),
                                                   instanceInfo.getInstanceId(),
                                                   instanceInfo);
     }
+
     private boolean updateTask(TaskInfo instanceInfo) {
         return taskDB.updateTask(instanceInfo.getSourceAppName(),
                                      instanceInfo.getTaskId(),
