@@ -22,7 +22,7 @@ public class TaskSpecValidator extends TaskAction {
 
     @Override
     protected TaskState defaultErrorState() {
-        return TaskState.STOPPING;
+        return TaskState.STOPPED;
     }
 
     @Override

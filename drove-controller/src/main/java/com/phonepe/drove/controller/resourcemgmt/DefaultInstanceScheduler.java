@@ -43,8 +43,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                                                     TaskState.STARTING,
                                                                                     TaskState.RUNNING,
                                                                                     TaskState.RUN_COMPLETED,
-                                                                                    TaskState.DEPROVISIONING,
-                                                                                    TaskState.STOPPING);
+                                                                                    TaskState.DEPROVISIONING);
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
     private final ClusterResourcesDB clusterResourcesDB;

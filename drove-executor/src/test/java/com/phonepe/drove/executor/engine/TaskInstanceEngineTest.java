@@ -84,7 +84,6 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                     RUNNING,
                                                     RUN_COMPLETED,
                                                     DEPROVISIONING,
-                                                    STOPPING,
                                                     STOPPED));
         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
         assertEquals(new TaskResult(TaskResult.Status.SUCCESSFUL, 0L), res.get());
@@ -145,7 +144,6 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                     RUNNING,
                                                     RUN_COMPLETED,
                                                     DEPROVISIONING,
-                                                    STOPPING,
                                                     STOPPED));
         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
         assertEquals(new TaskResult(TaskResult.Status.FAILED, 137L), res.get());
@@ -198,7 +196,6 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                     RUNNING,
                                                     RUN_COMPLETED,
                                                     DEPROVISIONING,
-                                                    STOPPING,
                                                     STOPPED));
         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
         assertEquals(new TaskResult(TaskResult.Status.FAILED, 255L), res.get());
@@ -257,7 +254,6 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                     RUNNING,
                                                     RUN_COMPLETED,
                                                     DEPROVISIONING,
-                                                    STOPPING,
                                                     STOPPED));
         assertTrue(statesDiff.isEmpty(), "Diff: " + statesDiff);
         assertEquals(new TaskResult(TaskResult.Status.CANCELLED, -1L), res.get());
