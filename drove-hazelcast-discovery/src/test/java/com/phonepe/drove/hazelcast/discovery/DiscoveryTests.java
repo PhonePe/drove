@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.hazelcast.config.*;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -14,6 +15,7 @@ import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -29,6 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DiscoveryTests {
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @BeforeEach
+    void leaderStub() {
+        stubFor(get(DroveClient.PING_API)
+                        .willReturn(ok()));
+    }
 
     @Test
     void testSingleMemberDiscovery() throws IOException, InterruptedException {
@@ -62,6 +70,7 @@ class DiscoveryTests {
         HazelcastInstance hazelcast2 = getHazelcastInstance(5702);
         System.out.println(hazelcast1.getCluster().getMembers().toString());
         System.out.println(hazelcast2.getCluster().getMembers().toString());
+        CommonTestUtils.waitUntil(() -> hazelcast2.getCluster().getMembers().size() > 1);
         assertTrue(hazelcast2.getCluster().getMembers().size() > 0);
         assertEquals(2, hazelcast2.getCluster().getMembers().size());
         hazelcast1.shutdown();
@@ -99,10 +108,11 @@ class DiscoveryTests {
     }
 
     private void createStubForSingleMemberDiscovery() throws JsonProcessingException {
-        InstanceInfo instanceInfo = InstanceInfo.builder()
+        val instanceInfo = InstanceInfo.builder()
                 .appId("1_0_0")
                 .appName("test_app")
                 .instanceId("instanceId")
+                .executorId("ex1")
                 .localInfo(LocalInstanceInfo.builder()
                                    .hostname("127.0.0.1")
                                    .ports(Map.of("hazelcast", InstancePort.builder()
@@ -110,7 +120,7 @@ class DiscoveryTests {
                                            .build()))
                                    .build())
                 .build();
-        ApiResponse<List<InstanceInfo>> response = ApiResponse.success(List.of(instanceInfo));
+        val response = ApiResponse.success(List.of(instanceInfo));
         stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse()
@@ -118,6 +128,7 @@ class DiscoveryTests {
                                             .withHeader("Content-Type", "application/json")
                                             .withBody(mapper.writeValueAsBytes(response))));
     }
+
 
     private void createStubForSingleMemberDiscoveryWrong() throws JsonProcessingException {
         stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
@@ -138,10 +149,11 @@ class DiscoveryTests {
                                             .withStatus(400)
                                             .withHeader("Content-Type", "application/json")
                                             .withBody(mapper.writeValueAsBytes("invalid state!!!"))));
-        InstanceInfo instanceInfo = InstanceInfo.builder()
+        val instanceInfo = InstanceInfo.builder()
                 .appId("1_0_0")
                 .appName("test_app")
                 .instanceId("instanceId")
+                .executorId("ex1")
                 .localInfo(LocalInstanceInfo.builder()
                                    .hostname("127.0.0.1")
                                    .ports(Map.of("hazelcast", InstancePort.builder()
@@ -149,7 +161,7 @@ class DiscoveryTests {
                                            .build()))
                                    .build())
                 .build();
-        ApiResponse<List<InstanceInfo>> response = ApiResponse.success(List.of(instanceInfo));
+        val response = ApiResponse.success(List.of(instanceInfo));
         stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .inScenario("scenario")
@@ -166,6 +178,7 @@ class DiscoveryTests {
                 .appId("1_0_0")
                 .appName("test_app")
                 .instanceId("instanceId1")
+                .executorId("ex1")
                 .localInfo(LocalInstanceInfo.builder()
                                    .hostname("127.0.0.1")
                                    .ports(Map.of("hazelcast", InstancePort.builder()
@@ -177,6 +190,7 @@ class DiscoveryTests {
                 .appId("1_0_0")
                 .appName("test_app")
                 .instanceId("instanceId2")
+                .executorId("ex1")
                 .localInfo(LocalInstanceInfo.builder()
                                    .hostname("127.0.0.1")
                                    .ports(Map.of("hazelcast", InstancePort.builder()

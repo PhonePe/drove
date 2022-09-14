@@ -1,0 +1,114 @@
+package com.phonepe.drove.client;
+
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+/**
+ *
+ */
+@Slf4j
+public class DroveClient implements Closeable {
+    public static final String PING_API = "/apis/v1/ping";
+
+    private final DroveClientConfig clientConfig;
+    private final List<RequestDecorator> decorators;
+
+    @Getter
+    private final HttpClient httpClient;
+    private final AtomicReference<String> leader = new AtomicReference<>();
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledFuture<?> schedF;
+
+    public DroveClient(
+            final DroveClientConfig clientConfig,
+            final List<RequestDecorator> decorators) {
+        this.clientConfig = clientConfig;
+        this.decorators = Objects.requireNonNullElse(decorators, List.of());
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Objects.requireNonNullElse(clientConfig.getConnectionTimeout(), Duration.ofSeconds(3)))
+                .build();
+        schedF = this.executorService.scheduleWithFixedDelay(this::ensureLeader,
+                                                    0,
+                                                    Objects.requireNonNullElse(clientConfig.getCheckInterval(),
+                                                                               Duration.ofSeconds(5)).toMillis(),
+                                                    TimeUnit.MILLISECONDS);
+    }
+
+    public Optional<String> leader() {
+        return Optional.ofNullable(leader.get());
+    }
+
+    private void ensureLeader() {
+        if (leader.get() == null) {
+            log.info("No leader set, trying to find leader");
+            findLeaderFromEndpoints();
+        }
+        else {
+            if (isLeader(leader.get())) {
+                log.debug("Drove controller {} is still the leader", leader.get());
+            }
+            else {
+                findLeaderFromEndpoints();
+            }
+        }
+    }
+
+    private void findLeaderFromEndpoints() {
+        val newLeader = clientConfig.getEndpoints()
+                .stream()
+                .filter(this::isLeader)
+                .findFirst()
+                .orElse(null);
+        if (null == newLeader) {
+            log.error("Could not find a leader controller");
+            return;
+        }
+        leader.set(newLeader);
+        log.info("Drove controller {} is the new leader", leader);
+    }
+
+    private boolean isLeader(final String endpoint) {
+        val uri = endpoint + PING_API;
+        val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
+        decorators.forEach(decorator -> decorator.decorateRequest(requestBuilder));
+        val request = requestBuilder.GET()
+                .timeout(Objects.requireNonNullElse(clientConfig.getOperationTimeout(), Duration.ofSeconds(1)))
+                .build();
+        try {
+            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return response.statusCode() == 200;
+        }
+        catch (IOException e) {
+            log.error("Error making http call to " + uri + ": " + e.getMessage(), e);
+        }
+        catch (InterruptedException e) {
+            log.error("HTTP Request interrupted");
+            Thread.currentThread().interrupt();
+        }
+        return false;
+    }
+
+    @Override
+    public void close() throws IOException {
+        schedF.cancel(true);
+        executorService.shutdown();
+        log.info("Drove client shut down");
+    }
+}
