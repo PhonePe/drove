@@ -1,21 +1,15 @@
 package com.phonepe.drove.client;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.common.FileSource;
-import com.github.tomakehurst.wiremock.extension.Parameters;
-import com.github.tomakehurst.wiremock.extension.ResponseTransformer;
-import com.github.tomakehurst.wiremock.http.Request;
-import com.github.tomakehurst.wiremock.http.Response;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.phonepe.drove.common.CommonTestUtils;
-import lombok.Builder;
 import lombok.val;
+import org.junit.AfterClass;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -28,32 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  */
 public class LeaderSwitchTest {
-
-    private static final class RequestCountResponder extends ResponseTransformer {
-
-        private final AtomicInteger callCounter = new AtomicInteger();
-
-        private final int threshold;
-        private final Response initialResponse;
-        private final Response defaultResponse;
-
-        @Builder
-        private RequestCountResponder(int threshold, Response initialResponse, Response defaultResponse) {
-            this.threshold = threshold;
-            this.initialResponse = initialResponse;
-            this.defaultResponse = defaultResponse;
-        }
-
-        @Override
-        public Response transform(Request request, Response response, FileSource files, Parameters parameters) {
-            return callCounter.incrementAndGet() > threshold ? defaultResponse : initialResponse;
-        }
-
-        @Override
-        public String getName() {
-            return "req_counter";
-        }
-    }
 
     @RegisterExtension
     static WireMockExtension controller1 = WireMockExtension.newInstance()
@@ -94,6 +62,12 @@ public class LeaderSwitchTest {
         assertEquals(controller1Url, dc.leader().orElse(null));
         CommonTestUtils.waitUntil(() -> controller2Url.equals(dc.leader().orElse(null)));
         assertEquals(controller2Url, dc.leader().orElse(null));
+    }
+
+    @AfterClass
+    public static void shutdown() {
+        controller1.shutdownServer();
+        controller2.shutdownServer();
     }
 
     private String stub(

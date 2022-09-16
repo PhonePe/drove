@@ -57,7 +57,7 @@ public class DroveClient implements Closeable {
 
     private void ensureLeader() {
         if (leader.get() == null) {
-            log.info("No leader set, trying to find leader");
+            log.warn("No leader set, trying to find leader");
             findLeaderFromEndpoints();
         }
         else {
@@ -65,12 +65,15 @@ public class DroveClient implements Closeable {
                 log.debug("Drove controller {} is still the leader", leader.get());
             }
             else {
+                log.warn("Current leader {} is invalid. Trying to find new leader", leader.get());
+                leader.set(null);
                 findLeaderFromEndpoints();
             }
         }
     }
 
     private void findLeaderFromEndpoints() {
+        log.debug("Endpoints to be tested: {}", clientConfig.getEndpoints());
         val newLeader = clientConfig.getEndpoints()
                 .stream()
                 .filter(this::isLeader)
@@ -85,6 +88,7 @@ public class DroveClient implements Closeable {
     }
 
     private boolean isLeader(final String endpoint) {
+        log.debug("Checking endpoint for leadership: {}", endpoint);
         val uri = endpoint + PING_API;
         val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
         decorators.forEach(decorator -> decorator.decorateRequest(requestBuilder));

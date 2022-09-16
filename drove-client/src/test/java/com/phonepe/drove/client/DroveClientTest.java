@@ -1,10 +1,12 @@
 package com.phonepe.drove.client;
 
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.phonepe.drove.common.CommonTestUtils;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -32,6 +34,7 @@ class DroveClientTest {
                                                             Duration.ofSeconds(1)),
                                       List.of())) {
             CommonTestUtils.waitUntil(() -> dc.leader().isPresent());
+            Thread.sleep(5_000);
             assertEquals(baseUrl, dc.leader().orElse(null));
         }
     }
@@ -54,9 +57,40 @@ class DroveClientTest {
 
     @Test
     @SneakyThrows
-    void failException(final WireMockRuntimeInfo wmRuntimeInfo) {
+    void failBadRequest(final WireMockRuntimeInfo wmRuntimeInfo) {
         stubFor(get(DroveClient.PING_API)
                         .willReturn(badRequest()));
+        try (val dc = new DroveClient(new DroveClientConfig(List.of(wmRuntimeInfo.getHttpBaseUrl()),
+                                                            Duration.ofSeconds(1),
+                                                            Duration.ofSeconds(1),
+                                                            Duration.ofSeconds(1)),
+                                      List.of())) {
+            CommonTestUtils.delay(Duration.ofSeconds(3));
+            assertNull(dc.leader().orElse(null));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void failIOException(final WireMockRuntimeInfo wmRuntimeInfo) {
+        stubFor(get(DroveClient.PING_API)
+                        .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+        try (val dc = new DroveClient(new DroveClientConfig(List.of(wmRuntimeInfo.getHttpBaseUrl()),
+                                                            Duration.ofSeconds(1),
+                                                            Duration.ofSeconds(1),
+                                                            Duration.ofSeconds(1)),
+                                      List.of())) {
+            CommonTestUtils.delay(Duration.ofSeconds(3));
+            assertNull(dc.leader().orElse(null));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    @Ignore
+    void failTimeout(final WireMockRuntimeInfo wmRuntimeInfo) {
+        stubFor(get(DroveClient.PING_API)
+                        .willReturn(aResponse().withFixedDelay(5_000)));
         try (val dc = new DroveClient(new DroveClientConfig(List.of(wmRuntimeInfo.getHttpBaseUrl()),
                                                             Duration.ofSeconds(1),
                                                             Duration.ofSeconds(1),
