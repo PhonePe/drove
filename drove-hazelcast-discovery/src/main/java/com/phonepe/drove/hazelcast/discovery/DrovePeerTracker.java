@@ -40,10 +40,9 @@ public class DrovePeerTracker implements Closeable {
     public DrovePeerTracker(
             final String endpoints,
             final String token,
-            String portName,
-            ILogger log,
-            final
-            ObjectMapper mapper) {
+            final String portName,
+            final ILogger log,
+            final ObjectMapper mapper) {
         this.token = token;
         this.portName = portName;
         this.log = log;
@@ -65,7 +64,7 @@ public class DrovePeerTracker implements Closeable {
 
     private List<String> parseEndpointSpec(final String droveEndpoint) {
         val endpoints = droveEndpoint.split(SPLIT_DELIMITER);
-        if (endpoints.length == 0) {
+        if ("".equals(droveEndpoint) || endpoints.length == 0) {
             log.info("No drove endpoint found for hazelcast discovery!!");
             return List.of();
         }
@@ -91,13 +90,12 @@ public class DrovePeerTracker implements Closeable {
                 log.severe("Could not find peers. Error: " + response.statusCode() + ": " + response.body());
                 return Optional.empty();
             }
-            val apiData = mapper.readValue(response.body(), new TypeReference<ApiResponse<List<InstanceInfo>>>() {
-            });
+            val apiData = mapper.readValue(response.body(), new TypeReference<ApiResponse<List<InstanceInfo>>>() {});
             if (!apiData.getStatus().equals(ApiErrorCode.SUCCESS)) {
                 log.severe("Could not read peer list. Api call unsuccessful with error: " + apiData.getMessage());
                 return Optional.empty();
             }
-            log.info("Data: " + apiData);
+            log.fine("Drove Response Data: " + apiData);
             return Optional.of(apiData.getData()
                                        .stream()
                                        .map(info -> {

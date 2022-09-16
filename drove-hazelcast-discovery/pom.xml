@@ -38,6 +38,12 @@
             <artifactId>drove-common</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.phonepe.drove</groupId>
+            <artifactId>drove-common</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
             <type>test-jar</type>
         </dependency>
         <dependency>

@@ -1,18 +1,12 @@
 package com.phonepe.drove.hazelcast.discovery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.hazelcast.config.*;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.models.api.ApiResponse;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.instance.InstancePort;
-import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,17 +14,14 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.List;
-import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.phonepe.drove.hazelcast.discovery.DiscoveryTestUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest(httpPort = 8878)
 class DiscoveryTests {
-
-    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeEach
     void leaderStub() {
@@ -107,104 +98,4 @@ class DiscoveryTests {
         return node;
     }
 
-    private void createStubForSingleMemberDiscovery() throws JsonProcessingException {
-        val instanceInfo = InstanceInfo.builder()
-                .appId("1_0_0")
-                .appName("test_app")
-                .instanceId("instanceId")
-                .executorId("ex1")
-                .localInfo(LocalInstanceInfo.builder()
-                                   .hostname("127.0.0.1")
-                                   .ports(Map.of("hazelcast", InstancePort.builder()
-                                           .hostPort(5701)
-                                           .build()))
-                                   .build())
-                .build();
-        val response = ApiResponse.success(List.of(instanceInfo));
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
-                        .withHeader("App-Instance-Authorization", equalTo("TestToken"))
-                        .willReturn(aResponse()
-                                            .withStatus(200)
-                                            .withHeader("Content-Type", "application/json")
-                                            .withBody(mapper.writeValueAsBytes(response))));
-    }
-
-
-    private void createStubForSingleMemberDiscoveryWrong() throws JsonProcessingException {
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
-                        .withHeader("App-Instance-Authorization", equalTo("WrongToken"))
-                        .willReturn(aResponse()
-                                            .withStatus(401)
-                                            .withHeader("Content-Type", "application/json")
-                                            .withBody(mapper.writeValueAsBytes(ApiResponse.failure("Authorization failure")))));
-    }
-
-    private void createStubForSingleMemberDiscoveryWithRetry() throws JsonProcessingException {
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
-                        .withHeader("App-Instance-Authorization", equalTo("TestToken"))
-                        .inScenario("scenario")
-                        .whenScenarioStateIs(Scenario.STARTED)
-                        .willSetStateTo("passed")
-                        .willReturn(aResponse()
-                                            .withStatus(400)
-                                            .withHeader("Content-Type", "application/json")
-                                            .withBody(mapper.writeValueAsBytes("invalid state!!!"))));
-        val instanceInfo = InstanceInfo.builder()
-                .appId("1_0_0")
-                .appName("test_app")
-                .instanceId("instanceId")
-                .executorId("ex1")
-                .localInfo(LocalInstanceInfo.builder()
-                                   .hostname("127.0.0.1")
-                                   .ports(Map.of("hazelcast", InstancePort.builder()
-                                           .hostPort(5701)
-                                           .build()))
-                                   .build())
-                .build();
-        val response = ApiResponse.success(List.of(instanceInfo));
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
-                        .withHeader("App-Instance-Authorization", equalTo("TestToken"))
-                        .inScenario("scenario")
-                        .whenScenarioStateIs("passed")
-                        .willSetStateTo(Scenario.STARTED)
-                        .willReturn(aResponse()
-                                            .withStatus(200)
-                                            .withHeader("Content-Type", "application/json")
-                                            .withBody(mapper.writeValueAsBytes(response))));
-    }
-
-    private void createStubForMultipleMembers() throws JsonProcessingException {
-        val instanceInfo = InstanceInfo.builder()
-                .appId("1_0_0")
-                .appName("test_app")
-                .instanceId("instanceId1")
-                .executorId("ex1")
-                .localInfo(LocalInstanceInfo.builder()
-                                   .hostname("127.0.0.1")
-                                   .ports(Map.of("hazelcast", InstancePort.builder()
-                                           .hostPort(5701)
-                                           .build()))
-                                   .build())
-                .build();
-        val instanceInfo1 = InstanceInfo.builder()
-                .appId("1_0_0")
-                .appName("test_app")
-                .instanceId("instanceId2")
-                .executorId("ex1")
-                .localInfo(LocalInstanceInfo.builder()
-                                   .hostname("127.0.0.1")
-                                   .ports(Map.of("hazelcast", InstancePort.builder()
-                                           .hostPort(5702)
-                                           .build()))
-                                   .build())
-                .build();
-
-        val response = ApiResponse.success(List.of(instanceInfo, instanceInfo1));
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
-                        .withHeader("App-Instance-Authorization", equalTo("TestToken"))
-                        .willReturn(aResponse()
-                                            .withStatus(200)
-                                            .withHeader("Content-Type", "application/json")
-                                            .withBody(mapper.writeValueAsBytes(response))));
-    }
 }
