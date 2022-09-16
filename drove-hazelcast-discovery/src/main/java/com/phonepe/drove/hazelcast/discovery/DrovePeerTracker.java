@@ -90,7 +90,8 @@ public class DrovePeerTracker implements Closeable {
                 log.severe("Could not find peers. Error: " + response.statusCode() + ": " + response.body());
                 return Optional.empty();
             }
-            val apiData = mapper.readValue(response.body(), new TypeReference<ApiResponse<List<InstanceInfo>>>() {});
+            val apiData = mapper.readValue(response.body(),
+                                           new TypeReference<ApiResponse<List<InstanceInfo>>>() {});
             if (!apiData.getStatus().equals(ApiErrorCode.SUCCESS)) {
                 log.severe("Could not read peer list. Api call unsuccessful with error: " + apiData.getMessage());
                 return Optional.empty();
@@ -98,7 +99,7 @@ public class DrovePeerTracker implements Closeable {
             log.fine("Drove Response Data: " + apiData);
             return Optional.of(apiData.getData()
                                        .stream()
-                                       .map(info -> {
+                                       .<DiscoveryNode>map(info -> {
                                            val hostname = info.getLocalInfo().getHostname();
                                            val portInfo = Objects.requireNonNullElse(info.getLocalInfo().getPorts(),
                                                                                      Map.<String, InstancePort>of())
@@ -113,9 +114,8 @@ public class DrovePeerTracker implements Closeable {
                                                        "instanceId", info.getInstanceId(),
                                                        "executorId", info.getExecutorId(),
                                                        "hostname", info.getLocalInfo().getHostname());
-                                               return (DiscoveryNode) new SimpleDiscoveryNode(new Address(hostname,
-                                                                                                          portInfo.getHostPort()),
-                                                                                              attributes);
+                                               return new SimpleDiscoveryNode(
+                                                       new Address(hostname, portInfo.getHostPort()), attributes);
                                            }
                                            catch (UnknownHostException e) {
                                                log.severe("Could not create node represenation. Error: " + e.getMessage(),

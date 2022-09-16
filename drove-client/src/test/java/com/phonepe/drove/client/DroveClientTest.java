@@ -6,7 +6,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.phonepe.drove.common.CommonTestUtils;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -34,7 +33,6 @@ class DroveClientTest {
                                                             Duration.ofSeconds(1)),
                                       List.of())) {
             CommonTestUtils.waitUntil(() -> dc.leader().isPresent());
-            Thread.sleep(5_000);
             assertEquals(baseUrl, dc.leader().orElse(null));
         }
     }
@@ -87,7 +85,6 @@ class DroveClientTest {
 
     @Test
     @SneakyThrows
-    @Ignore
     void failTimeout(final WireMockRuntimeInfo wmRuntimeInfo) {
         stubFor(get(DroveClient.PING_API)
                         .willReturn(aResponse().withFixedDelay(5_000)));
