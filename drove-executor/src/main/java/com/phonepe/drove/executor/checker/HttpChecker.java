@@ -34,6 +34,7 @@ public class HttpChecker implements Checker {
                         .toMilliseconds());
         httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NEVER)
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(connectionTimeout)
                 .build();
         this.httpSpec = httpSpec;
