@@ -112,6 +112,7 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         val httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(connectionTimeout)
+                .version(HttpClient.Version.HTTP_1_1)
                 .build();
         val port = instanceInfo.getLocalInfo()
                 .getPorts()
