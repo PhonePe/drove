@@ -4,7 +4,7 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.phonepe.drove.common.CommonTestUtils;
 import lombok.val;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -64,7 +64,7 @@ public class LeaderSwitchTest {
         assertEquals(controller2Url, dc.leader().orElse(null));
     }
 
-    @AfterClass
+    @AfterAll
     public static void shutdown() {
         controller1.shutdownServer();
         controller2.shutdownServer();
