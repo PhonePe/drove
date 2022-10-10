@@ -17,6 +17,7 @@ import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.*;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -146,4 +147,9 @@ public class ControllerCoreModule extends AbstractModule {
         return Objects.requireNonNullElse(appConfig.getInstanceAuth(), ApplicationAuthConfig.DEFAULT);
     }
 
+    @Provides
+    @Singleton
+    public ControllerOptions options(final AppConfig config) {
+        return Objects.requireNonNullElse(config.getOptions(), ControllerOptions.DEFAULT);
+    }
 }

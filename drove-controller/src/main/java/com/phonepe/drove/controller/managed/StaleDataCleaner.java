@@ -2,10 +2,10 @@ package com.phonepe.drove.controller.managed;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
-import com.phonepe.drove.controller.engine.TaskEngine;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -39,6 +39,8 @@ public class StaleDataCleaner implements Managed {
     private final LeadershipEnsurer leadershipEnsurer;
     private final ApplicationEngine applicationEngine;
 
+    private final ControllerOptions options;
+
     private final ScheduledSignal refresher;
 
     @Inject
@@ -47,11 +49,15 @@ public class StaleDataCleaner implements Managed {
             ApplicationInstanceInfoDB instanceInfoDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
-            TaskEngine taskEngine,
-            TaskDB taskDB) {
-        this(applicationStateDB, instanceInfoDB,
+            TaskDB taskDB, ControllerOptions options) {
+        this(applicationStateDB,
+             instanceInfoDB,
              taskDB,
-             leadershipEnsurer, applicationEngine, Duration.ofHours(6));
+             leadershipEnsurer,
+             applicationEngine,
+             options,
+             Duration.ofMillis(Objects.requireNonNullElse(options.getStaleCheckInterval(),
+                                                          ControllerOptions.DEFAULT_STALE_CHECK_INTERVAL).toMilliseconds()));
     }
 
     @VisibleForTesting
@@ -61,13 +67,15 @@ public class StaleDataCleaner implements Managed {
             TaskDB taskDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
+            ControllerOptions options,
             Duration interval) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.leadershipEnsurer = leadershipEnsurer;
         this.applicationEngine = applicationEngine;
-        refresher = new ScheduledSignal(interval);
+        this.options = options;
+        this.refresher = new ScheduledSignal(interval);
     }
 
     @Override
@@ -102,7 +110,8 @@ public class StaleDataCleaner implements Managed {
                 .stream()
                 .filter(TaskState::isTerminal)
                 .collect(Collectors.toSet());
-        val maxLastTaskUpdated = new Date(new Date().getTime() - 2L * 24 * 60 * 60 * 1000); //2 days before now
+        val maxLastTaskUpdated = new Date(System.currentTimeMillis() - Objects.requireNonNullElse(
+                options.getStaleTaskAge(), ControllerOptions.DEFAULT_STALE_TASK_AGE).toMilliseconds());
 
         taskDB.tasks(appNames, taskTerminalState, true)
                 .values()
@@ -119,10 +128,15 @@ public class StaleDataCleaner implements Managed {
     }
 
     private void cleanupStaleApps(List<ApplicationInfo> allApps) {
-        val maxLastUpdated = new Date(new Date().getTime() - 7L * 24 * 60 * 60 * 1000); //7 days before now
+        val slateAppLifetime = new Date(
+                System.currentTimeMillis() - Objects.requireNonNullElse(
+                        options.getStaleAppAge(), ControllerOptions.DEFAULT_STALE_APP_AGE).toMilliseconds());
+        val slateInstanceLifetime = new Date(
+                System.currentTimeMillis() - Objects.requireNonNullElse(
+                        options.getStaleInstanceAge(), ControllerOptions.DEFAULT_STALE_INSTANCE_AGE).toMilliseconds());
         val candidateAppIds = allApps
                 .stream()
-                .filter(applicationInfo -> applicationInfo.getUpdated().before(maxLastUpdated))
+                .filter(applicationInfo -> applicationInfo.getUpdated().before(slateAppLifetime))
                 .map(ApplicationInfo::getAppId)
                 .filter(appId -> applicationEngine.applicationState(appId)
                         .map(applicationState -> applicationState.equals(ApplicationState.MONITORING))
@@ -144,7 +158,7 @@ public class StaleDataCleaner implements Managed {
                 .stream()
                 .flatMap(entry -> entry.getValue()
                         .stream()
-                        .filter(instanceInfo -> instanceInfo.getUpdated().before(maxLastUpdated)))
+                        .filter(instanceInfo -> instanceInfo.getUpdated().before(slateInstanceLifetime)))
                 .forEach(instanceInfo -> {
                     val appId = instanceInfo.getAppId();
                     val instanceId = instanceInfo.getInstanceId();

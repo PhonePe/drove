@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
@@ -47,7 +48,7 @@ class StaleDataCleanerTest {
         val engine = mock(ApplicationEngine.class);
         val taskEngine = mock(TaskEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, Duration.ofSeconds(1));
+        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, ControllerOptions.DEFAULT, Duration.ofSeconds(1));
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -80,7 +81,7 @@ class StaleDataCleanerTest {
         val engine = mock(ApplicationEngine.class);
         val taskEngine = mock(TaskEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, Duration.ofSeconds(1));
+        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, ControllerOptions.DEFAULT, Duration.ofSeconds(1));
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
