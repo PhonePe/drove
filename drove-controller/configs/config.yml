@@ -20,6 +20,11 @@ server:
   gzip:
     syncFlush: true
 
+options:
+  staleCheckInterval: 1m
+  staleAppAge: 7d
+  staleInstanceAge: 1m
+  staleTaskAge: 1d
 
 logging:
   level: INFO
