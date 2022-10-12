@@ -1,5 +1,6 @@
 package com.phonepe.drove.client;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
@@ -15,6 +16,7 @@ import java.util.List;
 @Data
 @Jacksonized
 @Builder
+@AllArgsConstructor
 public class DroveClientConfig {
     @NotEmpty
     @Singular

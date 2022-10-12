@@ -173,7 +173,7 @@ public class Apis {
         }
         val res = taskEngine.handleTaskOp(operation);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
-            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
+            return ControllerUtils.ok(Map.of("taskId", ControllerUtils.deployableObjectId(operation)));
         }
         return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
     }

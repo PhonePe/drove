@@ -137,7 +137,7 @@ public class ExecutorUtils {
                                         curr.getMetadata(),
                                         result,
                                         curr.getCreated(),
-                                        curr.getUpdated()),
+                                        new Date()),
                 currState.getError());
     }
 }

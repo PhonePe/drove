@@ -105,6 +105,7 @@ public class TaskRunAction extends TaskAction {
             String hostName,
             ExecutorTaskInfo oldData) {
         val data = currentState.getData();
+        val currTime = new Date();
         return new ExecutorTaskInfo(
                 data.getTaskId(),
                 data.getSourceAppName(),
@@ -118,10 +119,8 @@ public class TaskRunAction extends TaskAction {
                 data.getEnv(),
                 data.getMetadata(),
                 data.getTaskResult(),
-                null == oldData
-                ? new Date()
-                : oldData.getCreated(),
-                new Date());
+                null == oldData ? currTime : oldData.getCreated(),
+                currTime);
     }
 
     @Override

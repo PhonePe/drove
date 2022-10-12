@@ -52,7 +52,7 @@ public class TaskMonitoringAction extends TaskAction {
                                                                                            mdc),
                                                                 0, 1, TimeUnit.SECONDS);
             checkLock.lock();
-            monitor();
+            monitor(currentState);
             if (stopped.get()) {
                 dockerClient.killContainerCmd(containerId).exec();
                 return StateData.from(ExecutorUtils.injectResult(currentState,
@@ -102,7 +102,10 @@ public class TaskMonitoringAction extends TaskAction {
         }
     }
 
-    private void monitor() {
+    private void monitor(StateData<TaskState, ExecutorTaskInfo> currentState) {
+        val sourceAppName = currentState.getData().getSourceAppName();
+        val taskId = currentState.getData().getTaskId();
+        log.info("Starting to monitor {}/{}", sourceAppName, taskId);
         while (!stopped.get() && result.get() == null) {
             try {
                 stateChanged.await();
@@ -111,6 +114,13 @@ public class TaskMonitoringAction extends TaskAction {
                 log.info("Task status check monitor thread interrupted.");
                 Thread.currentThread().interrupt();
                 return;
+            }
+            if(stopped.get()) {
+                log.warn("Monitor for {}/{} stopped as stop was called",
+                         sourceAppName, taskId);
+            }
+            else {
+                log.info("Exiting monitor as task result has been generated for {}/{}", sourceAppName, taskId);
             }
         }
     }
