@@ -1,9 +1,11 @@
 package com.phonepe.drove.models.application.executable;
 
 import io.dropwizard.util.Duration;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -14,6 +16,8 @@ import javax.validation.constraints.NotNull;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
+@Builder
 public class DockerCoordinates extends ExecutableCoordinates {
     @NotEmpty(message = "- Specify url for container")
     String url;

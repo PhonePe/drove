@@ -1,17 +1,11 @@
 package com.phonepe.drove.models.api;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  *
  */
 @Value
-@AllArgsConstructor
-@Jacksonized
-@Builder
 public class ApiResponse<T> {
     ApiErrorCode status;
     T data;

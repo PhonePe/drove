@@ -21,6 +21,7 @@ import java.util.Objects;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Builder
 public class ApplicationSuspendOperation extends ApplicationOperation {
     @NotNull
     @Valid

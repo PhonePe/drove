@@ -10,8 +10,6 @@
     <artifactId>drove-authentication</artifactId>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <java-jwt.version>3.19.2</java-jwt.version>
     </properties>
 

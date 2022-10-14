@@ -3,6 +3,7 @@ package com.phonepe.drove.models.operation.ops;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -17,6 +18,7 @@ import javax.validation.constraints.NotEmpty;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Builder
 public class ApplicationRecoverOperation extends ApplicationOperation {
     @NotEmpty
     String appId;

@@ -5,6 +5,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -22,6 +23,7 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Builder
 public class ApplicationCreateOperation extends ApplicationOperation {
     @NotNull
     @Valid

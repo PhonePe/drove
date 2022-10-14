@@ -15,6 +15,7 @@ import javax.validation.constraints.NotEmpty;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Builder
 public class RsyslogLoggingSpec extends LoggingSpec {
     @NotEmpty(message = "- Rsyslog server url should be passed here")
     String server;
@@ -23,8 +24,6 @@ public class RsyslogLoggingSpec extends LoggingSpec {
 
     String tagSuffix;
 
-
-    @Builder
     public RsyslogLoggingSpec(String server, String tagPrefix, String tagSuffix) {
         super(LoggingType.RSYSLOG);
         this.server = server;

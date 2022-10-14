@@ -17,6 +17,7 @@ import javax.validation.constraints.NotEmpty;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Builder
 public class LocalLoggingSpec extends LoggingSpec {
     public static final LoggingSpec DEFAULT = new LocalLoggingSpec("10m", 3, true);
 
@@ -28,7 +29,6 @@ public class LocalLoggingSpec extends LoggingSpec {
     int maxFiles;
     boolean compress;
 
-    @Builder
     public LocalLoggingSpec(String maxSize, int maxFiles, boolean compress) {
         super(LoggingType.LOCAL);
         this.maxSize = maxSize;
