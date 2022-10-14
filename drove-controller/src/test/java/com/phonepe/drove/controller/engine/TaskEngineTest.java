@@ -8,6 +8,7 @@ import com.phonepe.drove.common.model.executor.StartTaskMessage;
 import com.phonepe.drove.common.model.executor.StopTaskMessage;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -54,6 +55,9 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+
         val inst = new AtomicReference<TaskInstanceSpec>();
 
         val comm = mock(ControllerCommunicator.class);
@@ -115,7 +119,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
@@ -132,6 +137,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         when(comm.send(any(StartTaskMessage.class))).thenAnswer(invocationOnMock -> {
@@ -168,7 +175,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
@@ -203,6 +211,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val oldDate = new Date(new Date().getTime() - 100_000L);
@@ -240,7 +250,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
@@ -275,6 +286,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
 
@@ -329,7 +342,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         te.handleZombieTask(taskSpec.getSourceAppName(), taskSpec.getTaskId());
         CommonTestUtils.waitUntil(() -> tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
                 .map(TaskInfo::getState)
@@ -347,6 +361,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
@@ -382,7 +398,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
         tdb.updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
@@ -415,6 +432,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
@@ -446,7 +465,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals("Task already exists for TEST_TASK_SPEC/TEST_TASK_SPEC00001", r.getMessages().get(0));
@@ -459,6 +479,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
@@ -474,7 +496,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 jobSched,
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals("Could not schedule job to start the task.", r.getMessages().get(0));
@@ -486,6 +509,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
@@ -499,7 +524,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         val r = te.handleTaskOp(new TaskKillOperation(taskSpec.getSourceAppName(), taskSpec.getTaskId(), ClusterOpSpec.DEFAULT));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals("Either task does not exist or has already finished for TEST_TASK_SPEC/TEST_TASK_SPEC00001", r.getMessages().get(0));
@@ -511,6 +537,8 @@ class TaskEngineTest extends ControllerTestBase {
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
@@ -545,7 +573,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 jobSched,
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
 
         val r = te.handleTaskOp(new TaskKillOperation(taskSpec.getSourceAppName(), taskSpec.getTaskId(), ClusterOpSpec.DEFAULT));
@@ -572,6 +601,8 @@ class TaskEngineTest extends ControllerTestBase {
                                                  List.of(),
                                                  Set.of(),
                                                  false)));
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val executor = Executors.newCachedThreadPool();
@@ -584,7 +615,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
-                                new InMemoryClusterStateDB());
+                                new InMemoryClusterStateDB(),
+                                le);
         val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.taskSpec(), ClusterOpSpec.DEFAULT));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals(2, r.getMessages().size());

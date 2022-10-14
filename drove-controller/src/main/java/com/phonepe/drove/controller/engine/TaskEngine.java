@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -51,6 +52,7 @@ public class TaskEngine {
     private final ExecutorService executorService;
     private final JobExecutor<Boolean> jobExecutor;
     private final ClusterStateDB clusterStateDB;
+    private final LeadershipEnsurer leadershipEnsurer;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
 
@@ -69,7 +71,8 @@ public class TaskEngine {
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             @Named("TaskThreadPool") ExecutorService executorService,
             JobExecutor<Boolean> jobExecutor,
-            ClusterStateDB clusterStateDB) {
+            ClusterStateDB clusterStateDB,
+            LeadershipEnsurer leadershipEnsurer) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -80,6 +83,7 @@ public class TaskEngine {
         this.executorService = executorService;
         this.jobExecutor = jobExecutor;
         this.clusterStateDB = clusterStateDB;
+        this.leadershipEnsurer = leadershipEnsurer;
         this.completed.connect(taskRunner -> {
             val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
             try {
@@ -97,11 +101,16 @@ public class TaskEngine {
         });
         this.checkSignal.connect(this::monitorRunners);
         this.taskDB.onStateChange().connect(newState -> {
+            if(!leadershipEnsurer.isLeader()) {
+                log.debug("Zombie task check skipped as node is not leader");
+                return;
+            }
             if (newState.getState().equals(TaskState.RUNNING)) {
                 handleZombieTask(newState.getSourceAppName(), newState.getTaskId());
             }
         });
     }
+
 
     public ValidationResult handleTaskOp(final TaskOperation operation) {
         return operation.accept(new TaskOperationVisitor<>() {

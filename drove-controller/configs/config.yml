@@ -11,7 +11,7 @@ server:
 #      validatePeers: false
   adminConnectors:
     - type: http
-      port: 4001
+      port: 100001
   applicationContextPath: /
   requestLog:
     appenders:

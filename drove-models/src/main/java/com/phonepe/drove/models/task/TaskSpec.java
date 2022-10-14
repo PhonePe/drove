@@ -3,7 +3,7 @@ package com.phonepe.drove.models.task;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
-import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
+import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
@@ -43,7 +43,8 @@ public class TaskSpec implements DeploymentSpec {
     @Valid
     List<ResourceRequirement> resources;
 
-    AnyPlacementPolicy placementPolicy;
+    @Valid
+    PlacementPolicy placementPolicy;
 
     Map<String, String> tags;
 

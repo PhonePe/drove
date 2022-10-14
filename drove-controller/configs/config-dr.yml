@@ -1,9 +1,9 @@
 server:
   applicationConnectors:
     - type: http
-      port: 5000
+      port: 10010
 #    - type: https
-#      port: 5000
+#      port: 4000
 #      bindHost: ssdev.test
 #      keyStorePath: /home/santanu/certs/keystore.jks
 #      keyStorePassword: "password"
@@ -11,7 +11,7 @@ server:
 #      validatePeers: false
   adminConnectors:
     - type: http
-      port: 5001
+      port: 10011
   applicationContextPath: /
   requestLog:
     appenders:
@@ -20,6 +20,11 @@ server:
   gzip:
     syncFlush: true
 
+options:
+  staleCheckInterval: 1m
+  staleAppAge: 7d
+  staleInstanceAge: 1m
+  staleTaskAge: 1d
 
 logging:
   level: INFO
@@ -42,6 +47,28 @@ clusterAuth:
   - nodeType: EXECUTOR
     secret: LocalExecutorSecret
 
+# By default user auth is turned off
+# Uncomment the following to enable olympus
+#olympusIM:
+#   httpConfig:
+#     clientId: olympus
+#     usingZookeeper: false
+#     host: olympus-im.traefik.stg.phonepe.nb6
+#     port: 80
+#     serviceName: olympusIM
+#     environment: stage
+#     connections: 10
+#     idleTimeOutSeconds: 30
+#   authConfig:
+#     componentId: DROVE
+#     componentInstanceId: PHONEPE_DROVE_NB6
+#     clientId: PHONEPE_DROVE_NB6
+#     clientKey: 4ca1c0ad-2995-4c10-9e48-c41ab5427f30
+#   publicEndpoint: http://localhost:10000
+#   authEndpoint: https://olympus-im-stage.phonepe.com
+#   resourcePrefix: /apis
+
+# Uncomment the following to enable basic auth. At one point either basic or olympus will work
 #userAuth:
 #  enabled: true
 #  users:
@@ -51,3 +78,6 @@ clusterAuth:
 #    - username: guest
 #      password: guest
 #      role: EXTERNAL_READ_ONLY
+
+instanceAuth:
+  secret: RandomSecret
