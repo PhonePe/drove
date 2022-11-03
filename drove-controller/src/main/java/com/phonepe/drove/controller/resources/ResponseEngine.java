@@ -205,7 +205,9 @@ public class ResponseEngine {
         return success(apps.stream()
                                .map(app -> {
                                    val spec = app.getSpec().getExposureSpec();
-                                   return new ExposedAppInfo(app.getAppId(), spec.getVhost(),
+                                   return new ExposedAppInfo(app.getAppId(),
+                                                             spec.getVhost(),
+                                                             app.getSpec().getTags(),
                                                              instances.getOrDefault(app.getAppId(), List.of())
                                                                      .stream()
                                                                      .sorted(Comparator.comparing(

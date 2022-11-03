@@ -4,6 +4,7 @@ import com.phonepe.drove.models.application.PortType;
 import lombok.Value;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  *
@@ -18,5 +19,6 @@ public class ExposedAppInfo {
     }
     String appId;
     String vhost;
+    Map<String, String> tags;
     Collection<ExposedHost> hosts;
 }

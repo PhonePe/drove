@@ -88,3 +88,4 @@ buildNumber.properties
 .*.sw*
 out
 dep
+*.patch
