@@ -535,7 +535,7 @@ class ApisTest {
     @Test
     void endpoints() {
         val endpoints = IntStream.rangeClosed(1, 10)
-                .mapToObj(i -> new ExposedAppInfo("app_id_" + 1, "host-" + i, Set.of()))
+                .mapToObj(i -> new ExposedAppInfo("app_id_" + 1, "host-" + i, Map.of(), Set.of()))
                 .toList();
         when(responseEngine.endpoints()).thenReturn(ApiResponse.success(endpoints));
         val r = EXT.target("/v1/endpoints")
