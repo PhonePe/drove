@@ -62,3 +62,7 @@ a {
 .tab-pane {
     padding-top: 1rem;
 }
+
+div.dataTables_wrapper div.dataTables_filter {
+    text-align: inherit;
+}

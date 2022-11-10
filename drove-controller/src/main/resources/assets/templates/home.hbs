@@ -253,10 +253,10 @@
     });
 
     setInterval(() => {
-        cluster.ajax.reload();
-        applications.ajax.reload();
-        tasks.ajax.reload();
-        executors.ajax.reload();
+        cluster.ajax.reload(null, false);
+        applications.ajax.reload(null, false);
+        tasks.ajax.reload(null, false);
+        executors.ajax.reload(null, false);
     }, 5000);
 {{/partial}}
 {{> common/base}}

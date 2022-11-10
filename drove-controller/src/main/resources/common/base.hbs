@@ -103,6 +103,15 @@ $(document).ready(function() {
 {{#block "page_js"}}
 
 {{/block}}
+
+    $( ".dataTables_paginate" ).each(function( index ) {
+      $( this ).parent().addClass('col-md-7').removeClass('col-md-9')
+    });
+
+    $( ".dataTables_filter" ).each(function( index ) {
+      $( this ).parent().addClass('col-md-3').removeClass('col-md-1')
+    });
+
     function renderAppState(data, type, row, meta) {
         switch(data) {
             case 'INIT' : return '<span class="font-weight-bold text-primary">Initializing</span>';
