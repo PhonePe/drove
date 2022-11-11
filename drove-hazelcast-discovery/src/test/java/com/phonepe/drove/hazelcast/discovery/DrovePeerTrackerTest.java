@@ -1,18 +1,21 @@
 package com.phonepe.drove.hazelcast.discovery;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.hazelcast.logging.Slf4jFactory;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.common.CommonTestUtils;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.phonepe.drove.hazelcast.discovery.DiscoveryTestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,18 +25,33 @@ import static org.junit.jupiter.api.Assertions.*;
 @WireMockTest
 class DrovePeerTrackerTest {
     private static final String API_PATH = "/apis/v1/internal/instances";
+    @RegisterExtension
+    static WireMockExtension controller1 = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
 
+    @RegisterExtension
+    static WireMockExtension controller2 = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
 
     @BeforeEach
     void leaderStub() {
-        stubFor(get(DroveClient.PING_API).willReturn(ok()));
+        controller1.stubFor(get(DroveClient.PING_API).willReturn(ok()));
+        controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+    }
+
+    @AfterEach
+    void reset() {
+        controller1.resetAll();
+        controller2.resetAll();
     }
 
     @Test
     @SneakyThrows
-    void testFindPeers(WireMockRuntimeInfo wm) {
-        createStubForSingleMemberDiscovery();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+    void testFindPeers() {
+        createStubForSingleMemberDiscovery(controller1);
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -61,10 +79,10 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
-    void testFindPeersNoLeader(WireMockRuntimeInfo wm) {
+    void testFindPeersNoLeader() {
         stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
         createStubForSingleMemberDiscovery();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -77,9 +95,9 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
-    void testPeerCallBadStatus(WireMockRuntimeInfo wm) {
-        createStubForNoPeer();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+    void testPeerCallBadStatus() {
+        createStubForNoPeer(controller1);
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -91,9 +109,9 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
-    void testPeerCallIOError(WireMockRuntimeInfo wm) {
-        createStubIOErrorr();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+    void testPeerCallIOError() {
+        createStubIOErrorr(controller1);
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -105,9 +123,9 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
-    void testPeerCallFail(WireMockRuntimeInfo wm) {
-        createStubForFailed();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+    void testPeerCallFail() {
+        createStubForFailed(controller1);
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -119,9 +137,9 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
-    void testPeerCallWrongPortName(WireMockRuntimeInfo wm) {
-        createStubForNoSuchPort();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+    void testPeerCallWrongPortName() {
+        createStubForNoSuchPort(controller1);
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -133,9 +151,10 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
-    void testPeerCallWrongHost(WireMockRuntimeInfo wm) {
-        createStubForDNSFail();
-        try (val dpt = new DrovePeerTracker(wm.getHttpBaseUrl(),
+    void testPeerCallWrongHost() {
+        createStubForDNSFail(controller1);
+        controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+        try (val dpt = new DrovePeerTracker(endpoint(),
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
@@ -143,5 +162,9 @@ class DrovePeerTrackerTest {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
+    }
+
+    private static String endpoint() {
+        return controller1.baseUrl() + "," + controller2.baseUrl();
     }
 }

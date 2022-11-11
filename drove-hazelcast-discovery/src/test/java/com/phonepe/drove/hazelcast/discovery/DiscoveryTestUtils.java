@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -35,21 +36,21 @@ public class DiscoveryTestUtils {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 
-    public static void createStubForNoPeer() throws JsonProcessingException {
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+    public static void createStubForNoPeer(final WireMockExtension controller) throws JsonProcessingException {
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(badRequest()));
     }
 
-    public static void createStubIOErrorr() throws JsonProcessingException {
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+    public static void createStubIOErrorr(final WireMockExtension controller) throws JsonProcessingException {
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
     }
 
-    public static void createStubForFailed() throws JsonProcessingException {
+    public static void createStubForFailed(final WireMockExtension controller) throws JsonProcessingException {
         val response = ApiResponse.failure("Forced fail");
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse()
                                             .withStatus(200)
@@ -57,7 +58,7 @@ public class DiscoveryTestUtils {
                                             .withBody(MAPPER.writeValueAsBytes(response))));
     }
 
-    public static void createStubForNoSuchPort() throws JsonProcessingException {
+    public static void createStubForNoSuchPort(final WireMockExtension controller) throws JsonProcessingException {
         val instanceInfo = InstanceInfo.builder()
                 .appId("1_0_0")
                 .appName("test_app")
@@ -69,7 +70,7 @@ public class DiscoveryTestUtils {
                                    .build())
                 .build();
         val response = ApiResponse.success(List.of(instanceInfo));
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse()
                                             .withStatus(200)
@@ -77,7 +78,7 @@ public class DiscoveryTestUtils {
                                             .withBody(MAPPER.writeValueAsBytes(response))));
     }
 
-    public static void createStubForDNSFail() throws JsonProcessingException {
+    public static void createStubForDNSFail(final WireMockExtension controller) throws JsonProcessingException {
         val instanceInfo = InstanceInfo.builder()
                 .appId("1_0_0")
                 .appName("test_app")
@@ -91,7 +92,7 @@ public class DiscoveryTestUtils {
                                    .build())
                 .build();
         val response = ApiResponse.success(List.of(instanceInfo));
-        stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse()
                                             .withStatus(200)
@@ -114,6 +115,27 @@ public class DiscoveryTestUtils {
                 .build();
         val response = ApiResponse.success(List.of(instanceInfo));
         stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+                        .withHeader("App-Instance-Authorization", equalTo("TestToken"))
+                        .willReturn(aResponse()
+                                            .withStatus(200)
+                                            .withHeader("Content-Type", "application/json")
+                                            .withBody(MAPPER.writeValueAsBytes(response))));
+    }
+    public static void createStubForSingleMemberDiscovery(final WireMockExtension controller) throws JsonProcessingException {
+        val instanceInfo = InstanceInfo.builder()
+                .appId("1_0_0")
+                .appName("test_app")
+                .instanceId("instanceId")
+                .executorId("ex1")
+                .localInfo(LocalInstanceInfo.builder()
+                                   .hostname("127.0.0.1")
+                                   .ports(Map.of("hazelcast", InstancePort.builder()
+                                           .hostPort(5701)
+                                           .build()))
+                                   .build())
+                .build();
+        val response = ApiResponse.success(List.of(instanceInfo));
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse()
                                             .withStatus(200)

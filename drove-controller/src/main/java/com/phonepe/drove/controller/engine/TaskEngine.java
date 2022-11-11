@@ -101,7 +101,7 @@ public class TaskEngine {
         });
         this.checkSignal.connect(this::monitorRunners);
         this.taskDB.onStateChange().connect(newState -> {
-            if(!leadershipEnsurer.isLeader()) {
+            if (!leadershipEnsurer.isLeader()) {
                 log.debug("Zombie task check skipped as node is not leader");
                 return;
             }
@@ -125,8 +125,9 @@ public class TaskEngine {
                 val runTaskId = genRunTaskId(taskSpec.getSourceAppName(), taskSpec.getTaskId());
                 if (runners.containsKey(runTaskId)
                         || taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isPresent()) {
-                    return ValidationResult.failure("Task already exists for "
-                                                            + taskSpec.getSourceAppName() + "/" + taskSpec.getTaskId());
+                    return ValidationResult.failure(
+                            String.format("Task already exists for %s/%s with taskID: %s",
+                                          taskSpec.getSourceAppName(), taskSpec.getTaskId(), runTaskId));
                 }
                 val jobId = runners.computeIfAbsent(runTaskId,
                                                     id -> createRunner(taskSpec.getSourceAppName(),

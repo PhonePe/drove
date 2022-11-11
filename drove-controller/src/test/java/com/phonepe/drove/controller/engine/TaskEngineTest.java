@@ -469,7 +469,7 @@ class TaskEngineTest extends ControllerTestBase {
                                 le);
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
-        assertEquals("Task already exists for TEST_TASK_SPEC/TEST_TASK_SPEC00001", r.getMessages().get(0));
+        assertEquals("Task already exists for TEST_TASK_SPEC/TEST_TASK_SPEC00001 with taskID: TEST_TASK_SPEC-TEST_TASK_SPEC00001", r.getMessages().get(0));
     }
 
     @Test

@@ -44,11 +44,21 @@ public class DroveClient implements Closeable {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Objects.requireNonNullElse(clientConfig.getConnectionTimeout(), Duration.ofSeconds(3)))
                 .build();
-        schedF = this.executorService.scheduleWithFixedDelay(this::ensureLeader,
-                                                    0,
-                                                    Objects.requireNonNullElse(clientConfig.getCheckInterval(),
-                                                                               Duration.ofSeconds(5)).toMillis(),
-                                                    TimeUnit.MILLISECONDS);
+        val droveControllers = clientConfig.getEndpoints();
+        if (droveControllers.size() == 1) {
+            log.info("Only one drove controller provided. Leader determination will be turned off");
+            leader.set(droveControllers.get(0));
+            this.schedF = null;
+        }
+        else {
+            log.debug("Starting leader determination for drove controllers: {}", droveControllers);
+            this.schedF = this.executorService.scheduleWithFixedDelay(this::ensureLeader,
+                                                                 0,
+                                                                 Objects.requireNonNullElse(clientConfig.getCheckInterval(),
+                                                                                            Duration.ofSeconds(5))
+                                                                         .toMillis(),
+                                                                 TimeUnit.MILLISECONDS);
+        }
     }
 
     public Optional<String> leader() {
@@ -111,6 +121,10 @@ public class DroveClient implements Closeable {
 
     @Override
     public void close() throws IOException {
+        if(schedF == null) {
+            log.info("No leader determination running. Nothing needs to be done");
+            return;
+        }
         schedF.cancel(true);
         executorService.shutdown();
         log.info("Drove client shut down");
