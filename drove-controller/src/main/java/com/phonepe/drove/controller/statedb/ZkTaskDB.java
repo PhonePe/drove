@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.statedb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
-import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.SneakyThrows;
@@ -47,10 +47,40 @@ public class ZkTaskDB extends TaskDB {
                 .flatMap(appId -> listTasks(appId,
                                             0,
                                             Integer.MAX_VALUE,
-                                                instanceInfo -> validStates.contains(instanceInfo.getState())
-                                                        && (skipStaleCheck || instanceInfo.getUpdated().after(
-                                                        validUpdateDate))).stream())
+                                            instanceInfo -> validStates.contains(instanceInfo.getState())
+                                                    && (skipStaleCheck || instanceInfo.getUpdated().after(
+                                                    validUpdateDate))).stream())
                 .collect(Collectors.groupingBy(TaskInfo::getSourceAppName, Collectors.toUnmodifiableList()));
+    }
+
+    @Override
+    @MonitoredFunction
+    @SneakyThrows
+    public void cleanupTasks(Predicate<TaskInfo> filter) {
+        val appIds = ZkUtils.readChildrenNodes(curatorFramework,
+                                               TASK_STATE_PATH,
+                                               0,
+                                               Integer.MAX_VALUE,
+                                               path -> TASK_STATE_PATH + "/" + path);
+        log.info("The following task parent app paths have been identified: {}", appIds);
+        appIds.forEach(appPath -> {
+            try {
+                val children = ZkUtils.readChildrenNodes(curatorFramework,
+                                                         appPath,
+                                                         0,
+                                                         Integer.MAX_VALUE,
+                                                         path -> ZkUtils.readNodeData(curatorFramework,
+                                                                                      appPath + "/" + path,
+                                                                                      mapper,
+                                                                                      TaskInfo.class));
+                children.stream()
+                        .filter(filter)
+                        .forEach(node -> deleteTask(node.getSourceAppName(), node.getTaskId()));
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
@@ -77,7 +107,7 @@ public class ZkTaskDB extends TaskDB {
         return deleteNode(curatorFramework, instancePath(sourceAppName, taskId));
     }
 
-   @SneakyThrows
+    @SneakyThrows
     private List<TaskInfo> listTasks(
             String appId,
             int start,

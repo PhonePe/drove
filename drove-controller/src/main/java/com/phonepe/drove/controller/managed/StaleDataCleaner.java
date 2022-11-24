@@ -9,9 +9,9 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
-import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +57,8 @@ public class StaleDataCleaner implements Managed {
              applicationEngine,
              options,
              Duration.ofMillis(Objects.requireNonNullElse(options.getStaleCheckInterval(),
-                                                          ControllerOptions.DEFAULT_STALE_CHECK_INTERVAL).toMilliseconds()));
+                                                          ControllerOptions.DEFAULT_STALE_CHECK_INTERVAL)
+                                       .toMilliseconds()));
     }
 
     @VisibleForTesting
@@ -99,32 +100,15 @@ public class StaleDataCleaner implements Managed {
         }
         val allApps = applicationStateDB.applications(0, Integer.MAX_VALUE);
         cleanupStaleApps(allApps);
-        cleanupStaleTasks(allApps);
+        cleanupStaleTasks();
 
         log.info("Stale data check invocation at {} completed now", date);
     }
 
-    private void cleanupStaleTasks(List<ApplicationInfo> allApps) {
-        val appNames = allApps.stream().map(ai -> ai.getSpec().getName()).distinct().toList();
-        val taskTerminalState = EnumSet.allOf(TaskState.class)
-                .stream()
-                .filter(TaskState::isTerminal)
-                .collect(Collectors.toSet());
+    private void cleanupStaleTasks() {
         val maxLastTaskUpdated = new Date(System.currentTimeMillis() - Objects.requireNonNullElse(
                 options.getStaleTaskAge(), ControllerOptions.DEFAULT_STALE_TASK_AGE).toMilliseconds());
-
-        taskDB.tasks(appNames, taskTerminalState, true)
-                .values()
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(ti -> ti.getUpdated().before(maxLastTaskUpdated))
-                .forEach(ti -> {
-                    val sourceAppName = ti.getSourceAppName();
-                    val taskId = ti.getTaskId();
-                    if(taskDB.deleteTask(sourceAppName, taskId)) {
-                        log.info("Deleted stale task {}/{}", sourceAppName, taskId);
-                    }
-                });
+        taskDB.cleanupTasks(task -> task.getState().isTerminal() && task.getUpdated().before(maxLastTaskUpdated));
     }
 
     private void cleanupStaleApps(List<ApplicationInfo> allApps) {
@@ -153,20 +137,26 @@ public class StaleDataCleaner implements Managed {
                         .map(ApplicationInfo::getAppId)
                         .collect(Collectors.toUnmodifiableSet()),
                 Set.copyOf(candidateAppIds));
+        val maxInstances = options.getMaxStaleInstancesCount() > 0
+                           ? options.getMaxStaleInstancesCount()
+                           : ControllerOptions.DEFAULT_MAX_STALE_INSTANCES_COUNT;
         instanceInfoDB.oldInstances(otherApps)
-                .entrySet()
-                .stream()
-                .flatMap(entry -> entry.getValue()
-                        .stream()
-                        .filter(instanceInfo -> instanceInfo.getUpdated().before(slateInstanceLifetime)))
-                .forEach(instanceInfo -> {
-                    val appId = instanceInfo.getAppId();
-                    val instanceId = instanceInfo.getInstanceId();
-                    if (instanceInfoDB.deleteInstanceState(appId, instanceId)) {
-                        log.info("Deleted stale instance info: {}/{}", appId, instanceId);
-                    }
-                    else {
-                        log.warn("Could not delete stale instance info: {}/{}", appId, instanceId);
+                .forEach((appId, instances) -> {
+                    var count = 0;
+                    for (val instanceInfo : instances.stream()
+                            .sorted(Comparator.comparing(InstanceInfo::getUpdated).reversed())
+                            .collect(Collectors.toUnmodifiableList())) {
+                        count++;
+                        if (count <= maxInstances && instanceInfo.getUpdated().after(slateInstanceLifetime)) {
+                            continue;
+                        }
+                        val instanceId = instanceInfo.getInstanceId();
+                        if (instanceInfoDB.deleteInstanceState(appId, instanceId)) {
+                            log.info("Deleted stale instance info: {}/{}", appId, instanceId);
+                        }
+                        else {
+                            log.warn("Could not delete stale instance info: {}/{}", appId, instanceId);
+                        }
                     }
                 });
     }

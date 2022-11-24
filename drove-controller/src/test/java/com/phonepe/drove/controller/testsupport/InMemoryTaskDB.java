@@ -9,6 +9,7 @@ import lombok.val;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +33,16 @@ public class InMemoryTaskDB extends TaskDB {
                 .filter(instanceInfo -> validStates.contains(instanceInfo.getState()))
                 .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
                 .collect(Collectors.groupingBy(TaskInfo::getSourceAppName, Collectors.toUnmodifiableList()));
+    }
+
+    @Override
+    public void cleanupTasks(Predicate<TaskInfo> handler) {
+        instances.forEach((appName, tasks) -> tasks.forEach((taskId, task) -> {
+            if(handler.test(task)) {
+                log.debug("Removed task info {}/{} from root", appName, taskId);
+                instances.get(appName).remove(taskId);
+            }
+        }));
     }
 
     @Override

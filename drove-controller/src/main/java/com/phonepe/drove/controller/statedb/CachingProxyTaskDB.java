@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.statedb;
 
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -14,6 +15,7 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +73,28 @@ public class CachingProxyTaskDB extends TaskDB {
                     .filter(instanceInfo -> skipStaleCheck || instanceInfo.getUpdated().after(validUpdateDate))
                     .collect(Collectors.groupingBy(TaskInfo::getSourceAppName,
                                                    Collectors.toUnmodifiableList()));
+        }
+        finally {
+            lock.unlock(stamp);
+        }
+    }
+
+    @Override
+    @MonitoredFunction
+    public void cleanupTasks(Predicate<TaskInfo> handler) {
+        val stamp = lock.writeLock();
+        try {
+            val deleted = new ArrayList<Pair<String, String>>();
+            cache.forEach((appName, tasks) -> tasks.forEach((taskId, task) -> {
+                if(handler.test(task) && root.deleteTask(appName, taskId)) {
+                    log.debug("Removed task info {}/{} from root", appName, taskId);
+                    deleted.add(new Pair<>(appName, taskId));
+                }
+            }));
+            deleted.forEach(pair -> {
+                cache.get(pair.getFirst()).remove(pair.getSecond());
+                log.debug("Removed task info: {}/{}", pair.getFirst(), pair.getSecond());
+            });
         }
         finally {
             lock.unlock(stamp);

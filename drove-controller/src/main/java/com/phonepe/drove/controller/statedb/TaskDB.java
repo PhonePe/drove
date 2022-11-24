@@ -8,6 +8,7 @@ import lombok.val;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  *
@@ -24,6 +25,8 @@ public abstract class TaskDB {
 
     public abstract Map<String, List<TaskInfo>> tasks(
             Collection<String> sourceAppIds, Set<TaskState> validStates, boolean skipStaleCheck);
+
+    public abstract void cleanupTasks(Predicate<TaskInfo> handler);
 
     public abstract Optional<TaskInfo> task(String sourceAppName, String taskId);
 

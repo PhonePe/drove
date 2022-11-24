@@ -59,3 +59,10 @@ clusterAuth:
 
 instanceAuth:
   secret: RandomSecret
+
+options:
+  maxStaleInstancesCount: 3
+  staleCheckInterval: 1m
+  staleAppAge: 2d
+  staleInstanceAge: 1d
+  staleTaskAge: 1d
