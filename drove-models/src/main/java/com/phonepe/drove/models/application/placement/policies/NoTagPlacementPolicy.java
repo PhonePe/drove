@@ -9,8 +9,6 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import javax.validation.constraints.NotEmpty;
-
 /**
  *
  */
@@ -19,14 +17,9 @@ import javax.validation.constraints.NotEmpty;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class MatchTagPlacementPolicy extends PlacementPolicy {
-
-    @NotEmpty(message = "- Tag is mandatory")
-    String tag;
-
-    public MatchTagPlacementPolicy(String tag) {
-        super(PlacementPolicyType.MATCH_TAG);
-        this.tag = tag;
+public class NoTagPlacementPolicy extends PlacementPolicy {
+    public NoTagPlacementPolicy() {
+        super(PlacementPolicyType.NO_TAG);
     }
 
     @Override

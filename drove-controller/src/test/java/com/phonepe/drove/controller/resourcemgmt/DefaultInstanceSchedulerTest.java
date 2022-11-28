@@ -5,10 +5,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.models.application.ApplicationSpec;
-import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
-import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
-import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
-import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.*;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
@@ -127,7 +124,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getType(),
                                        originalSpec.getLogging(),
                                        originalSpec.getResources(),
-                                       new MatchTagPlacementPolicy("test", false),
+                                       new MatchTagPlacementPolicy("test"),
                                        originalSpec.getHealthcheck(),
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
@@ -146,7 +143,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     }
 
     @Test
-    void testMatchTagPlacementPolicyNegate() {
+    void testNoTagPlacementPolicy() {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
@@ -160,7 +157,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getType(),
                                        originalSpec.getLogging(),
                                        originalSpec.getResources(),
-                                       new MatchTagPlacementPolicy("test", true),
+                                       new NoTagPlacementPolicy(),
                                        originalSpec.getHealthcheck(),
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
@@ -194,7 +191,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getLogging(),
                                        originalSpec.getResources(),
                                        new CompositePlacementPolicy(
-                                               List.of(new MatchTagPlacementPolicy("test", false),
+                                               List.of(new MatchTagPlacementPolicy("test"),
                                                        new MaxNPerHostPlacementPolicy(2)),
                                                AND),
                                        originalSpec.getHealthcheck(),
@@ -230,8 +227,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getLogging(),
                                        originalSpec.getResources(),
                                        new CompositePlacementPolicy(
-                                               List.of(new MatchTagPlacementPolicy("test", false),
-                                                       new MatchTagPlacementPolicy("test2", false)),
+                                               List.of(new MatchTagPlacementPolicy("test"),
+                                                       new MatchTagPlacementPolicy("test2")),
                                                OR),
                                        originalSpec.getHealthcheck(),
                                        originalSpec.getReadiness(),

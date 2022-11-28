@@ -50,8 +50,8 @@ resources:
   osCores: [ 0, 1 ]
   exposedMemPercentage: 60
   disableNUMAPinning: true
-  tags:
-  - local
+#  tags:
+#  - local
 
 clusterAuth:
   secrets:

@@ -12,9 +12,12 @@ public interface PlacementPolicyVisitor<T> {
 
     T visit(MatchTagPlacementPolicy matchTag);
 
+    T visit(NoTagPlacementPolicy noTag);
+
     T visit(RuleBasedPlacementPolicy ruleBased);
 
     T visit(AnyPlacementPolicy anyPlacementPolicy);
 
     T visit(CompositePlacementPolicy compositePlacementPolicy);
+
 }

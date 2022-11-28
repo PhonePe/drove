@@ -1,9 +1,11 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -65,8 +67,21 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         //This will get augmented every time a new node is allocated in this session
         schedulingSessionData.computeIfAbsent(schedulingSessionId,
                                               id -> new HashMap<>(clusterSnapshot(applicationSpec)));
+        var placementPolicy = Objects.requireNonNullElse(applicationSpec.getPlacementPolicy(),
+                                                         new AnyPlacementPolicy());
+        if(hasTagPolicy(placementPolicy)) {
+            log.info("Placement policy seems to have tags already, skipping mutation");
+        }
+        else {
+            log.info("No tags specified in placement policy, will ensure deployments don't go to tagged executors");
+            placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
+                                                           CompositePlacementPolicy.CombinerType.AND);
+        }
+
+        val finalPlacementPolicy = placementPolicy;
         val selectedNode = clusterResourcesDB.selectNodes(applicationSpec.getResources(),
-                                                          allocatedNode -> validateNode(applicationSpec,
+                                                          allocatedNode -> validateNode(
+                                                                  finalPlacementPolicy,
                                                                                         schedulingSessionData.get(
                                                                                                 schedulingSessionId),
                                                                                         allocatedNode));
@@ -107,7 +122,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             @Override
             public Map<String, Long> visit(ApplicationSpec applicationSpec) {
                 return instanceInfoDB.instances(Set.of(ControllerUtils.deployableObjectId(applicationSpec)),
-                                                      RESOURCE_CONSUMING_INSTANCE_STATES,
+                                                RESOURCE_CONSUMING_INSTANCE_STATES,
                                                 false)
                         .values()
                         .stream()
@@ -127,11 +142,10 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     private boolean validateNode(
-            final DeploymentSpec spec,
+            final PlacementPolicy placementPolicy,
             Map<String, Long> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();
-        val placementPolicy = Objects.requireNonNullElse(spec.getPlacementPolicy(), new AnyPlacementPolicy());
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
@@ -150,7 +164,14 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                return matchTag.isNegate() != executorNode.getTags().contains(matchTag.getTag());
+                return Objects.requireNonNullElse(executorNode.getTags(), Set.of()).contains(matchTag.getTag());
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                //Return false if node has any tag other than hostname
+                return Sets.difference(Objects.requireNonNullElse(executorNode.getTags(), Set.of()),
+                                       Set.of(executorNode.getHostname())).isEmpty();
             }
 
             @Override
@@ -175,6 +196,47 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                 return combiner == CompositePlacementPolicy.CombinerType.AND
                        ? policiesStream.allMatch(placementPolicy -> placementPolicy.accept(this))
                        : policiesStream.anyMatch(placementPolicy -> placementPolicy.accept(this));
+            }
+        });
+    }
+
+    private boolean hasTagPolicy(final PlacementPolicy policy) {
+        return policy.accept(new PlacementPolicyVisitor<Boolean>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                return compositePlacementPolicy.getPolicies()
+                        .stream()
+                        .anyMatch(DefaultInstanceScheduler.this::hasTagPolicy);
             }
         });
     }
