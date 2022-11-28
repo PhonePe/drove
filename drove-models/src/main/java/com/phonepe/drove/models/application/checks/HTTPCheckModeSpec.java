@@ -2,9 +2,11 @@ package com.phonepe.drove.models.application.checks;
 
 import com.phonepe.drove.models.common.HTTPVerb;
 import io.dropwizard.util.Duration;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -16,6 +18,8 @@ import java.util.Set;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Jacksonized
+@Builder
 public class HTTPCheckModeSpec extends CheckModeSpec {
 
     public enum Protocol {

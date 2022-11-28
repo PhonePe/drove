@@ -34,7 +34,7 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();
-        final Checker checker = ExecutorUtils.createChecker(currentState.getData(), readinessCheckSpec);
+        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), readinessCheckSpec);
         val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if(initDelay > 0) {

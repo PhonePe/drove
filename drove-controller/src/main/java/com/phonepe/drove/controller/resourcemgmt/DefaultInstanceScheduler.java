@@ -82,9 +82,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         val selectedNode = clusterResourcesDB.selectNodes(applicationSpec.getResources(),
                                                           allocatedNode -> validateNode(
                                                                   finalPlacementPolicy,
-                                                                                        schedulingSessionData.get(
-                                                                                                schedulingSessionId),
-                                                                                        allocatedNode));
+                                                                  schedulingSessionData.get(
+                                                                          schedulingSessionId),
+                                                                  allocatedNode));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration

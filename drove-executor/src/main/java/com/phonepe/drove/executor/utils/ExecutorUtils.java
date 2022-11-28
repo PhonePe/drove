@@ -1,13 +1,16 @@
 package com.phonepe.drove.executor.utils;
 
 import com.google.common.base.Strings;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.checker.Checker;
+import com.phonepe.drove.executor.checker.CmdChecker;
 import com.phonepe.drove.executor.checker.HttpChecker;
 import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
@@ -21,7 +24,6 @@ import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -33,7 +35,7 @@ import java.util.Date;
 @UtilityClass
 public class ExecutorUtils {
     public static Checker createChecker(
-            ExecutorInstanceInfo instanceInfo,
+            InstanceActionContext<ApplicationInstanceSpec> context, ExecutorInstanceInfo instanceInfo,
             CheckSpec checkSpec) {
         return checkSpec.getMode().accept(new CheckModeSpecVisitor<>() {
             @Override
@@ -43,7 +45,7 @@ public class ExecutorUtils {
 
             @Override
             public Checker visit(CmdCheckModeSpec cmdCheck) {
-                throw new NotImplementedException("Command check is not yet implemented");
+                return new CmdChecker(cmdCheck, context);
             }
         });
     }

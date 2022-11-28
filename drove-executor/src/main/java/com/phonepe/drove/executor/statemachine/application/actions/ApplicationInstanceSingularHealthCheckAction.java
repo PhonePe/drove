@@ -35,7 +35,7 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
-        final Checker checker = ExecutorUtils.createChecker(currentState.getData(), healthcheck);
+        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck);
         val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if (initDelay > 0) {
