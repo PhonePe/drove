@@ -28,6 +28,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.util.Duration;
 import lombok.experimental.UtilityClass;
@@ -236,6 +237,16 @@ public class ControllerTestUtils {
             TaskState state,
             Date date,
             String errorMessage) {
+        return generateTaskInfo(spec, idx, state, date, errorMessage, true);
+    }
+
+    public static TaskInfo generateTaskInfo(
+            final TaskSpec spec,
+            int idx,
+            TaskState state,
+            Date date,
+            String errorMessage,
+            boolean hasResult) {
         return new TaskInfo(spec.getSourceAppName(),
                             spec.getTaskId(),
                             String.format("TI-%s", idx),
@@ -249,7 +260,7 @@ public class ControllerTestUtils {
                             spec.getEnv(),
                             state,
                             Collections.emptyMap(),
-                            null,
+                            hasResult ? new TaskResult(TaskResult.Status.SUCCESSFUL, 0) : null,
                             errorMessage,
                             date,
                             date);

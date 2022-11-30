@@ -124,10 +124,8 @@ public class EventUtils {
             metadata.put(TaskInstanceEventDataTag.ERROR, instanceInfo.getErrorMessage());
         }
         Optional.ofNullable(instanceInfo.getTaskResult())
-                        .ifPresent(result -> {
-                            metadata.put(TaskInstanceEventDataTag.RESULT_STATUS, result.getStatus());
-                            metadata.put(TaskInstanceEventDataTag.RESULT_EXIT_CODE, result.getExitCode());
-                        });
+                .ifPresent(result -> metadata.put(TaskInstanceEventDataTag.RESULT_STATUS, result.getStatus())
+                        .put(TaskInstanceEventDataTag.RESULT_EXIT_CODE, result.getExitCode()));
 
         return metadata.build();
     }
