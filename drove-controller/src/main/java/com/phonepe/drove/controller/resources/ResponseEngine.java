@@ -9,6 +9,10 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.event.DroveEventType;
+import com.phonepe.drove.controller.event.events.DroveClusterEvent;
+import com.phonepe.drove.controller.event.events.DroveExecutorEvent;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -16,6 +20,7 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -39,6 +44,7 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
 import static com.phonepe.drove.models.api.ApiResponse.failure;
 import static com.phonepe.drove.models.api.ApiResponse.success;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
@@ -61,14 +67,17 @@ public class ResponseEngine {
     private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
+    private final DroveEventBus eventBus;
 
     @Inject
     public ResponseEngine(
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB, ClusterStateDB clusterStateDB, ClusterResourcesDB clusterResourcesDB,
-            ControllerCommunicator communicator) {
+            TaskDB taskDB, ClusterStateDB clusterStateDB,
+            ClusterResourcesDB clusterResourcesDB,
+            ControllerCommunicator communicator,
+            DroveEventBus eventBus) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -76,6 +85,7 @@ public class ResponseEngine {
         this.clusterStateDB = clusterStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
+        this.eventBus = eventBus;
     }
 
 
@@ -129,8 +139,8 @@ public class ResponseEngine {
 
     public ApiResponse<Map<String, Boolean>> taskDelete(final String sourceAppName, final String taskId) {
         return taskDB.deleteTask(sourceAppName, taskId)
-                ? ApiResponse.success(Map.of("deleted", true))
-                : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
+               ? ApiResponse.success(Map.of("deleted", true))
+               : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
     }
 
     public ApiResponse<ClusterSummary> cluster() {
@@ -248,6 +258,8 @@ public class ResponseEngine {
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.markBlacklisted(executorId);
                 log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
+                eventBus.publish(new DroveExecutorEvent(
+                        DroveEventType.EXECUTOR_BLACKLISTED, executorMetadata(executor.getNodeData())));
                 engine.moveInstancesFromExecutor(executorId);
                 return success(null);
             }
@@ -271,6 +283,8 @@ public class ResponseEngine {
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.unmarkBlacklisted(executorId);
                 log.debug("Executor {} marked unblacklisted.", executorId);
+                eventBus.publish(new DroveExecutorEvent(
+                        DroveEventType.EXECUTOR_UN_BLACKLISTED, executorMetadata(executor.getNodeData())));
                 return success(null);
             }
             return failure("Error sending remote message");
@@ -280,13 +294,21 @@ public class ResponseEngine {
 
     public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
         return clusterStateDB.setClusterState(ClusterState.MAINTENANCE)
-                .map(ApiResponse::success)
+                .map(data -> {
+                    eventBus.publish(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
+                                                           EventUtils.controllerMetadata()));
+                    return ApiResponse.success(data);
+                })
                 .orElse(failure("Could not change cluster state"));
     }
 
     public ApiResponse<ClusterStateData> unsetClusterMaintenanceMode() {
         return clusterStateDB.setClusterState(ClusterState.NORMAL)
-                .map(ApiResponse::success)
+                .map(data -> {
+                    eventBus.publish(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_REMOVED,
+                                                           EventUtils.controllerMetadata()));
+                    return ApiResponse.success(data);
+                })
                 .orElse(failure("Could not change cluster state"));
     }
 

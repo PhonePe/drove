@@ -5,6 +5,7 @@ import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.StateUpdater;
+import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -22,8 +23,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -34,6 +34,8 @@ class ExecutorObserverTest extends ControllerTestBase {
     @SneakyThrows
     @SuppressWarnings("unchecked")
     void testObserver() {
+        val eventBus = mock(DroveEventBus.class);
+        doNothing().when(eventBus).publish(any());
         try (val cluster = new TestingCluster(1)) {
             cluster.start();
             try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
@@ -65,7 +67,7 @@ class ExecutorObserverTest extends ControllerTestBase {
                     return null;
                 }).when(updater).remove(anyCollection());
 
-                val obs = new ExecutorObserver(curator, MAPPER, updater);
+                val obs = new ExecutorObserver(curator, MAPPER, updater, eventBus);
                 obs.start();
                 waitForTest(testExecuted, 1);
                 assertFalse(ids.isEmpty());

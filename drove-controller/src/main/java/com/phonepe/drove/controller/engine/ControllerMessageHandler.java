@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.engine;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
@@ -8,12 +7,14 @@ import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.event.events.DroveInstanceFailedEvent;
-import com.phonepe.drove.controller.event.events.DroveTaskFailedEvent;
+import com.phonepe.drove.controller.event.events.DroveInstanceStateChangeEvent;
+import com.phonepe.drove.controller.event.events.DroveStateChangeEvent;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.List;
+
+import static com.phonepe.drove.controller.utils.EventUtils.instanceMetadata;
 
 /**
  * Handles received remote messages from executor and updates meta etc as necessary based on message type
@@ -34,12 +35,7 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
         val instanceInfo = instanceStateReport.getInstanceInfo();
         log.info("Received instance update from executor: {}", instanceInfo);
         val status = stateUpdater.updateSingle(instanceStateReport.getResourceSnapshot(), instanceInfo);
-        if (!Strings.isNullOrEmpty(instanceInfo.getErrorMessage())) {
-            droveEventBus.publish(new DroveInstanceFailedEvent(instanceInfo.getAppId(),
-                                                               instanceInfo.getInstanceId(),
-                                                               instanceInfo.getState(),
-                                                               instanceInfo.getErrorMessage()));
-        }
+        droveEventBus.publish(new DroveInstanceStateChangeEvent(instanceMetadata(instanceInfo)));
         return new MessageResponse(instanceStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
@@ -57,14 +53,11 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
         val instanceInfo = taskStateReportMessage.getInstanceInfo();
         log.info("Received task update from executor: {}", instanceInfo);
         val status = stateUpdater.updateSingle(taskStateReportMessage.getResourceSnapshot(), instanceInfo);
-        if (!Strings.isNullOrEmpty(instanceInfo.getErrorMessage())) {
-            droveEventBus.publish(new DroveTaskFailedEvent(instanceInfo.getSourceAppName(),
-                                                           instanceInfo.getTaskId(),
-                                                           instanceInfo.getState(),
-                                                           instanceInfo.getErrorMessage()));
-        }
+        droveEventBus.publish(new DroveStateChangeEvent(instanceMetadata(instanceInfo)));
         return new MessageResponse(taskStateReportMessage.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
-                                   : MessageDeliveryStatus.FAILED);    }
+                                   : MessageDeliveryStatus.FAILED);
+    }
+
 }

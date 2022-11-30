@@ -6,6 +6,7 @@ import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -55,13 +56,15 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator,
+                                    eventBus);
         val rng = new SecureRandom();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE))
                 .thenReturn(IntStream.range(0, 100)
@@ -85,13 +88,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -115,13 +119,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -147,13 +152,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -180,13 +186,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(appId, spec, 1, InstanceState.STARTING);
@@ -217,13 +224,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -248,13 +256,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         when(taskDB.task(eq("WRONG_APP"), anyString())).thenReturn(Optional.empty());
         val spec = taskSpec();
         when(taskDB.task(spec.getSourceAppName(), spec.getTaskId()))
@@ -278,13 +287,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         when(taskDB.deleteTask(eq("WRONG_APP"), anyString())).thenReturn(false);
         val spec = taskSpec();
         when(taskDB.deleteTask(spec.getSourceAppName(), spec.getTaskId())).thenReturn(true);
@@ -307,13 +317,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
 
         when(clusterResourcesDB.currentSnapshot())
                 .thenReturn(IntStream.rangeClosed(1, 10)
@@ -380,13 +391,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         when(clusterResourcesDB.currentSnapshot())
                 .thenReturn(IntStream.rangeClosed(1, 10)
                                     .mapToObj(ControllerTestUtils::executorHost)
@@ -408,13 +420,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
 
         val instanceData = executorHost(8080);
 
@@ -443,13 +456,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
 
         val apps = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> createApp(i, 10))
@@ -501,13 +515,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         val executor = executorHost(8080);
         when(clusterResourcesDB.currentSnapshot(executor.getExecutorId())).thenReturn(Optional.of(executor));
 
@@ -545,13 +560,14 @@ class ResponseEngineTest {
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
 
         val re = new ResponseEngine(engine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB, clusterStateDB,
                                     clusterResourcesDB,
-                                    communicator);
+                                    communicator, eventBus);
         val executor = executorHost(8080);
         val success = new AtomicBoolean(true);
         when(clusterStateDB.setClusterState(state))

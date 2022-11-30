@@ -3,8 +3,8 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppAction;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.utils.EventUtils.appMetadata;
+
 /**
  *
  */
@@ -49,7 +51,8 @@ public class ApplicationEngine {
     private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final ExecutorService monitorExecutor;
-    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted = new ConsumingFireForgetSignal<>();
+    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted =
+            new ConsumingFireForgetSignal<>();
 
     @Inject
     public ApplicationEngine(
@@ -128,8 +131,8 @@ public class ApplicationEngine {
                 .map(ApplicationInfo::getAppId)
                 .toList();
         instanceInfoDB.healthyInstances(appIds)
-                        .values()
-                                .stream()
+                .values()
+                .stream()
                 .flatMap(Collection::stream)
                 .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
                 .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
@@ -247,6 +250,6 @@ public class ApplicationEngine {
                 });
             }
         }
-        droveEventBus.publish(new DroveAppStateChangeEvent(appId, newState.getState()));
+        droveEventBus.publish(new DroveAppStateChangeEvent(appMetadata(appId, context.getApplicationSpec(), newState)));
     }
 }

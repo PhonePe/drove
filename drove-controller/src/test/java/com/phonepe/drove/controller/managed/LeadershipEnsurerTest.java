@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.managed;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeData;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
@@ -42,9 +43,10 @@ class LeadershipEnsurerTest {
                 val env = mock(Environment.class);
                 val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
                 when(env.lifecycle()).thenReturn(lifecycle);
+                val eventBus = mock(DroveEventBus.class);
 
-                val l1 = new LeadershipEnsurer(curator, nodeStore, env);
-                val l2 = new LeadershipEnsurer(curator, nodeStore, env);
+                val l1 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
+                val l2 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
                 val nodeData = new AtomicReference<ControllerNodeData>();
                 doAnswer(invocationOnMock -> {
                     val node = invocationOnMock.getArgument(0, ControllerNodeData.class);

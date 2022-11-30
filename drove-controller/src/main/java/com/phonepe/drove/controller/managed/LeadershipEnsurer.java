@@ -3,6 +3,10 @@ package com.phonepe.drove.controller.managed;
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
+import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.event.DroveEventType;
+import com.phonepe.drove.controller.event.events.DroveClusterEvent;
+import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ConsumingSyncSignal;
@@ -34,6 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Singleton
 public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     private final NodeDataStore nodeDataStore;
+    private final DroveEventBus eventBus;
     private final LeaderLatch leaderLatch;
     private final ScheduledSignal checkLeadership = new ScheduledSignal(Duration.ofSeconds(60));
     private final ConsumingSyncSignal<Boolean> leadershipStateChanged = new ConsumingSyncSignal<>();
@@ -46,8 +51,10 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     public LeadershipEnsurer(
             CuratorFramework curatorFramework,
             NodeDataStore nodeDataStore,
-            Environment environment) {
+            Environment environment,
+            DroveEventBus eventBus) {
         this.nodeDataStore = nodeDataStore;
+        this.eventBus = eventBus;
         val path = "/leadership";
         this.leaderLatch = new LeaderLatch(curatorFramework, path);
         this.leaderLatch.addListener(new LeaderLatchListener() {
@@ -67,6 +74,13 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
         });
         this.checkLeadership.connect(this::refresh);
         environment.lifecycle().addServerLifecycleListener(this);
+        leadershipStateChanged.connect(isLeader -> {
+            eventBus.publish(new DroveClusterEvent(
+                    isLeader
+                    ? DroveEventType.LEADERSHIP_ACQUIRED
+                    : DroveEventType.LEADERSHIP_LOST,
+                    EventUtils.controllerMetadata()));
+        });
     }
 
     @Override

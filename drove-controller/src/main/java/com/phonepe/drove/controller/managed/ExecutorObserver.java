@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.controller.engine.StateUpdater;
+import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.event.DroveEventType;
+import com.phonepe.drove.controller.event.events.DroveExecutorEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
@@ -21,6 +24,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
+
 /**
  *
  */
@@ -32,15 +37,21 @@ public class ExecutorObserver implements Managed {
     private final CuratorFramework curatorFramework;
     private final ObjectMapper mapper;
     private final StateUpdater updater;
+    private final DroveEventBus eventBus;
     private final Lock refreshLock = new ReentrantLock();
     private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(10));
     private final Set<String> knownExecutors = new HashSet<>();
 
     @Inject
-    public ExecutorObserver(CuratorFramework curatorFramework, ObjectMapper mapper, StateUpdater updater) {
+    public ExecutorObserver(
+            CuratorFramework curatorFramework,
+            ObjectMapper mapper,
+            StateUpdater updater,
+            DroveEventBus eventBus) {
         this.curatorFramework = curatorFramework;
         this.mapper = mapper;
         this.updater = updater;
+        this.eventBus = eventBus;
     }
 
     @Override
@@ -63,18 +74,26 @@ public class ExecutorObserver implements Managed {
                 val ids = currentExecutors.stream()
                         .map(n -> n.getState().getExecutorId())
                         .collect(Collectors.toUnmodifiableSet());
-                if(knownExecutors.equals(ids)) {
+                if (knownExecutors.equals(ids)) {
                     log.trace("No changes detected in cluster topology");
                 }
                 else {
                     val missingExecutors = Sets.difference(knownExecutors, ids);
-                    if(!missingExecutors.isEmpty()) {
+                    if (!missingExecutors.isEmpty()) {
                         log.info("Missing executors detected: {}", missingExecutors);
                         updater.remove(missingExecutors);
+                        missingExecutors.forEach(
+                                executorId -> eventBus.publish(
+                                        new DroveExecutorEvent(DroveEventType.EXECUTOR_REMOVED, executorMetadata(executorId))));
+
                     }
                     else {
                         val newExecutors = Sets.difference(ids, knownExecutors);
                         log.info("New executors detected: {}", newExecutors);
+                        currentExecutors.stream()
+                                .filter(executor -> newExecutors.contains(executor.getState().getExecutorId()))
+                                .forEach(executor -> eventBus.publish(
+                                        new DroveExecutorEvent(DroveEventType.EXECUTOR_ADDED, executorMetadata(executor))));
                     }
                     knownExecutors.clear();
                     knownExecutors.addAll(ids);

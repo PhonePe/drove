@@ -17,6 +17,7 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
+import com.phonepe.drove.controller.event.events.datatags.AppEventDataTag;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
@@ -259,8 +260,9 @@ class ApplicationEngineTest extends ControllerTestBase {
     private void setupStateRecorder(String appId, Set<ApplicationState> states) {
         droveEventBus.onNewEvent().connect(e -> {
             if (e instanceof DroveAppStateChangeEvent asc) {
-                if (asc.getAppId().equals(appId)) {
-                    states.add(asc.getState());
+                val metadata = asc.getMetadata();
+                if (metadata.get(AppEventDataTag.APP_ID).equals(appId)) {
+                    states.add((ApplicationState) metadata.get(AppEventDataTag.CURRENT_STATE));
                 }
             }
         });
