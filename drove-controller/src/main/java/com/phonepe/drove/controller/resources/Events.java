@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.event.DroveEvent;
 import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.managed.SseSinkTracker;
 import com.phonepe.drove.controller.utils.StreamingSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.jersey.media.sse.SseFeature;
@@ -26,14 +27,17 @@ import javax.ws.rs.sse.SseEventSink;
 public class Events {
 
     private static StreamingSupport streamingSupport = null;
+    private final SseSinkTracker sinkTracker;
 
     @Inject
-    public Events(DroveEventBus eventBus) {
+    public Events(DroveEventBus eventBus, SseSinkTracker sinkTracker) {
+        this.sinkTracker = sinkTracker;
         eventBus.onNewEvent().connect(this::handleNewEvent);
     }
 
     @GET
     public void generateEventStream(@Context SseEventSink eventSink, @Context Sse sse) {
+        sinkTracker.register(eventSink);
         instance(sse).getSseBroadcaster().register(eventSink);
     }
 
@@ -47,7 +51,7 @@ public class Events {
 
     private synchronized void handleNewEvent(DroveEvent event) {
         if (null == streamingSupport) {
-            log.warn("Broadcaster not initialised");
+            log.trace("Ignoring event");
             return;
         }
         streamingSupport.getSseBroadcaster().broadcast(

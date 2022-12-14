@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 build_project() {
 
@@ -15,10 +15,26 @@ build_project() {
 
 }
 
+quick_build_project() {
+
+    echo "Building maven project without tests"
+
+    pushd .. 2>&1 > /dev/null
+    mvn clean package -DskipTests
+    STATUS=$?
+    popd 2>&1 > /dev/null
+
+    echo "Maven build completed. Status: ${STATUS}"
+
+    return ${STATUS}
+
+}
+
 build_controller() {
     VERSIONSTR=$(echo -n "${1}-${2}")
     echo  "Creating package dir for controller"
     cp -rf drove-controller-template drove-controller
+    mkdir -p drove-controller/usr/share/java/
     cp ../drove-controller/target/drove-controller-${VERSION}.jar drove-controller/usr/share/java/drove-controller.jar
     pushd drove-controller 2>&1 > /dev/null
     JARSIZE=$(du -k usr/share/java/drove-controller.jar| awk -F '\t' '{print $1}')
@@ -39,6 +55,7 @@ build_executor() {
     VERSIONSTR=$(echo -n "${1}-${2}")
     echo  "Creating package dir for executor"
     cp -rf drove-executor-template drove-executor
+    mkdir -p drove-executor/usr/share/java/
     cp ../drove-executor/target/drove-executor-${VERSION}.jar drove-executor/usr/share/java/drove-executor.jar
     pushd drove-executor 2>&1 > /dev/null
     JARSIZE=$(du -k usr/share/java/drove-executor.jar| awk -F '\t' '{print $1}')
@@ -56,13 +73,18 @@ build_executor() {
 }
 
 export REBUILD=0
+export QUICK_REBUILD=0
 export BUILDZIP=0
 
-while getopts 'bzh' opt; do
+while getopts 'bqzh' opt; do
   case "$opt" in
     b)
       echo "Full rebuild requested"
       export REBUILD=1
+      ;;
+    q)
+      echo "Full rebuild requested"
+      export QUICK_REBUILD=1
       ;;
     z)
       echo "Zip file to be created"
@@ -70,7 +92,7 @@ while getopts 'bzh' opt; do
       ;;
 
     ?|h)
-      echo "Usage: $(basename $0) [-b] [-z]"
+      echo "Usage: $(basename $0) [-b|-q] [-z]"
       exit 1
       ;;
   esac
@@ -85,8 +107,12 @@ echo "Building deb version ${VERSION}-${TIMESTAMP}"
 
 rm -rf *.deb drove-controller drove-executor
 
-if [ ${REBUILD} -eq 1 ]; then
+if [ ${QUICK_REBUILD} -eq 1 ]; then
+    quick_build_project
+else
+  if [ ${REBUILD} -eq 1 ]; then
     build_project
+  fi
 fi
 
 build_controller ${VERSION} ${TIMESTAMP}
