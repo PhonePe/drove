@@ -3,8 +3,11 @@ package com.phonepe.drove.controller.resources;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.event.DroveEventType;
+import com.phonepe.drove.controller.event.events.DroveClusterEvent;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -529,6 +532,18 @@ class ApisTest {
         val r = EXT.target("/v1/cluster/maintenance/unset")
                 .request()
                 .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {});
+        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+    }
+
+    @Test
+    void events() {
+        when(responseEngine.events(anyLong(), anyInt()))
+                .thenReturn(ApiResponse.success(
+                        List.of(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
+                                                      EventUtils.controllerMetadata()))));
+        val r = EXT.target("/v1/cluster/events")
+                .request()
+                .get(new GenericType<ApiResponse<List<Object>>>() {});
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
     }
 

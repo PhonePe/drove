@@ -9,8 +9,10 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.event.DroveEvent;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.DroveEventType;
+import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.events.DroveClusterEvent;
 import com.phonepe.drove.controller.event.events.DroveExecutorEvent;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -66,9 +68,9 @@ public class ResponseEngine {
     private final TaskDB taskDB;
     private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final EventStore eventStore;
     private final ControllerCommunicator communicator;
     private final DroveEventBus eventBus;
-
     @Inject
     public ResponseEngine(
             ApplicationEngine engine,
@@ -76,7 +78,7 @@ public class ResponseEngine {
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB, ClusterStateDB clusterStateDB,
             ClusterResourcesDB clusterResourcesDB,
-            ControllerCommunicator communicator,
+            EventStore eventStore, ControllerCommunicator communicator,
             DroveEventBus eventBus) {
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
@@ -84,6 +86,7 @@ public class ResponseEngine {
         this.taskDB = taskDB;
         this.clusterStateDB = clusterStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.eventStore = eventStore;
         this.communicator = communicator;
         this.eventBus = eventBus;
     }
@@ -310,6 +313,10 @@ public class ResponseEngine {
                     return ApiResponse.success(data);
                 })
                 .orElse(failure("Could not change cluster state"));
+    }
+
+    public ApiResponse<List<DroveEvent>> events(long lastSyncTime, int size) {
+        return ApiResponse.success(eventStore.latest(lastSyncTime, size));
     }
 
     @IgnoreInJacocoGeneratedReport

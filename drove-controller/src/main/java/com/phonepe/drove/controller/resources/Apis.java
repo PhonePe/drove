@@ -6,6 +6,8 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
+import com.phonepe.drove.controller.event.DroveEvent;
+import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -213,8 +215,8 @@ public class Apis {
         val redirectUri = responseEngine.taskDetails(sourceAppName, taskId)
                                   .getStatus()
                                   .equals(ApiErrorCode.SUCCESS)
-                        ? "/tasks/" + sourceAppName + "/" + taskId
-                        : "/";
+                          ? "/tasks/" + sourceAppName + "/" + taskId
+                          : "/";
         return Response.seeOther(URI.create(redirectUri))
                 .build();
     }
@@ -271,6 +273,15 @@ public class Apis {
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<ClusterStateData> unsetClusterMaintenanceMode() {
         return responseEngine.unsetClusterMaintenanceMode();
+    }
+
+    @GET
+    @Path("/cluster/events")
+    @Timed
+    public ApiResponse<List<DroveEvent>> events(
+            @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime,
+            @QueryParam("size") @DefaultValue("10") @Min(0) @Max(EventStore.DEFAULT_CAPACITY) int size) {
+        return responseEngine.events(lastSyncTime, size);
     }
 
     @GET

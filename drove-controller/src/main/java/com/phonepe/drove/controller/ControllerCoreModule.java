@@ -19,6 +19,8 @@ import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.*;
+import com.phonepe.drove.controller.event.EventStore;
+import com.phonepe.drove.controller.event.InMemoryEventStore;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
@@ -121,17 +123,15 @@ public class ControllerCoreModule extends AbstractModule {
         bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(ZkTaskDB.class);
         bind(ClusterStateDB.class).to(CachingProxyClusterStateDB.class);
         bind(ClusterStateDB.class).annotatedWith(Names.named("StoredClusterStateDB")).to(ZkClusterStateDB.class);
-
+        bind(EventStore.class).to(InMemoryEventStore.class);
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
         bind(ApplicationInstanceTokenManager.class).to(JWTApplicationInstanceTokenManager.class);
-        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
-        })
+        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
                 AppAction>>() {
-        })
-                .to(InjectingAppActionFactory.class);
+        }).to(InjectingAppActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }
 
