@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.event;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import lombok.val;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,6 +25,7 @@ public class InMemoryEventStore implements EventStore {
     };
     private final StampedLock lock = new StampedLock();
 
+    @Inject
     public InMemoryEventStore(LeadershipEnsurer leadershipEnsurer) {
         leadershipEnsurer.onLeadershipStateChanged().connect(this::nuke);
     }
