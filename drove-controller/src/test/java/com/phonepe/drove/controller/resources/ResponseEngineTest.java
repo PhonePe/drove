@@ -9,7 +9,9 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.DroveEventType;
 import com.phonepe.drove.controller.event.EventStore;
+import com.phonepe.drove.controller.event.InMemoryEventStore;
 import com.phonepe.drove.controller.event.events.DroveClusterEvent;
+import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -24,6 +26,7 @@ import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -566,7 +569,9 @@ class ResponseEngineTest {
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
-        val eventStore = mock(EventStore.class);
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
+        val eventStore = new InMemoryEventStore(leadershipEnsurer);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
 
