@@ -58,10 +58,6 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 @Slf4j
 public class ResponseEngine {
 
-    private static final Set<ApplicationState> EXPOSED_STATES = EnumSet.of(ApplicationState.RUNNING,
-                                                                           ApplicationState.SCALING_REQUESTED,
-                                                                           ApplicationState.REPLACE_INSTANCES_REQUESTED);
-
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
@@ -204,7 +200,7 @@ public class ResponseEngine {
         val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
                 .filter(app -> engine.applicationState(app.getAppId())
-                        .filter(EXPOSED_STATES::contains)
+                        .filter(ApplicationState.ACTIVE_APP_STATES::contains)
                         .isPresent()) //Only running
                 .filter(app -> app.getSpec().getExposureSpec() != null && !app.getSpec()
                         .getExposedPorts()
