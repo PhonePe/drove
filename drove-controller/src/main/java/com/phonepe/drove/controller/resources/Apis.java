@@ -7,7 +7,6 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.event.DroveEvent;
-import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -280,7 +279,7 @@ public class Apis {
     @Timed
     public ApiResponse<List<DroveEvent>> events(
             @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime,
-            @QueryParam("size") @DefaultValue("10") @Min(0) @Max(EventStore.DEFAULT_CAPACITY) int size) {
+            @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(Integer.MAX_VALUE) int size) {
         return responseEngine.events(lastSyncTime, size);
     }
 
