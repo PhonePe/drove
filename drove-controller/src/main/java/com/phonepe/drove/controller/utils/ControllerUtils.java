@@ -28,6 +28,7 @@ import net.jodah.failsafe.Failsafe;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -357,6 +358,14 @@ public class ControllerUtils {
         return Response.ok(ApiResponse.success(data)).build();
     }
 
+    public static Response commandValidationFailure(String message) {
+        return commandValidationFailure(List.of(message));
+    }
+
+    public static Response commandValidationFailure(List<String> messages) {
+        return ControllerUtils.badRequest(Map.of("validationErrors", messages),
+                                   "Command validation failure");
+    }
     public static <T> Response badRequest(T data, String message) {
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ApiResponse.failure(data, message))

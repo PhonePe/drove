@@ -89,14 +89,13 @@ public class Apis {
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public Response acceptAppOperation(@NotNull @Valid final ApplicationOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ControllerUtils.badRequest(Map.of("validationErrors", List.of("Cluster is in maintenance mode")),
-                                              "Command validation failure");
+            return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
         }
         val res = engine.handleOperation(operation);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
-        return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
+        return ControllerUtils.commandValidationFailure(res.getMessages());
     }
 
     @POST
@@ -169,14 +168,13 @@ public class Apis {
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public Response acceptTaskOperation(@NotNull @Valid final TaskOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ControllerUtils.badRequest(Map.of("validationErrors", List.of("Cluster is in maintenance mode")),
-                                              "Command validation failure");
+            return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
         }
         val res = taskEngine.handleTaskOp(operation);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("taskId", ControllerUtils.deployableObjectId(operation)));
         }
-        return ControllerUtils.badRequest(Map.of("validationErrors", res.getMessages()), "Command validation failure");
+        return ControllerUtils.commandValidationFailure(res.getMessages());
     }
 
     @GET
@@ -277,6 +275,7 @@ public class Apis {
     @GET
     @Path("/cluster/events")
     @Timed
+    @SuppressWarnings("rawtypes")
     public ApiResponse<List<DroveEvent>> events(
             @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime,
             @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(Integer.MAX_VALUE) int size) {
