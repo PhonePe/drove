@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
+import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
@@ -58,6 +59,7 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 @Slf4j
 public class ResponseEngine {
 
+    private final LeadershipObserver leadershipObserver;
     private final ApplicationEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
@@ -69,13 +71,17 @@ public class ResponseEngine {
     private final DroveEventBus eventBus;
     @Inject
     public ResponseEngine(
+            LeadershipObserver leadershipObserver,
             ApplicationEngine engine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB, ClusterStateDB clusterStateDB,
+            TaskDB taskDB,
+            ClusterStateDB clusterStateDB,
             ClusterResourcesDB clusterResourcesDB,
-            EventStore eventStore, ControllerCommunicator communicator,
+            EventStore eventStore,
+            ControllerCommunicator communicator,
             DroveEventBus eventBus) {
+        this.leadershipObserver = leadershipObserver;
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -165,6 +171,9 @@ public class ResponseEngine {
         }
         return success(
                 new ClusterSummary(
+                        leadershipObserver.leader()
+                                .map(node -> node.getHostname() + ":" + node.getPort())
+                                .orElse("Leader election underway"),
                         clusterStateDB.currentState()
                                 .map(ClusterStateData::getState)
                                 .orElse(ClusterState.NORMAL),

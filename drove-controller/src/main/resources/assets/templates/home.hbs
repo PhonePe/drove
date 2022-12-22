@@ -5,6 +5,7 @@
                 <table class="table table-bordered" id="clusterSummary">
                     <thead>
                     <tr>
+                        <th class="text-center">Leader Controller</th>
                         <th class="text-center">Number of executors</th>
                         <th class="text-center">Number of Applications</th>
                         <th class="text-center">Number of Active Applications</th>
@@ -129,6 +130,7 @@
         'info' : false,
         'columnDefs': [ {'className': 'text-center', 'targets': '_all'} ],
         'columns' : [
+            { 'data' : 'leader' },
             { 'data' : 'numExecutors' },
             { 'data' : 'numApplications' },
             { 'data' : 'numActiveApplications' },

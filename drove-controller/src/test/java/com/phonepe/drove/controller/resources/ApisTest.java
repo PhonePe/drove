@@ -230,7 +230,9 @@ class ApisTest {
         val appId = ControllerUtils.deployableObjectId(spec);
         {
             val instances = IntStream.rangeClosed(1, 100)
-                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, i))
+                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec),
+                                                                            spec,
+                                                                            i))
                     .toList();
             when(responseEngine.applicationInstances(appId, EnumSet.of(InstanceState.HEALTHY)))
                     .thenReturn(ApiResponse.success(instances));
@@ -246,7 +248,9 @@ class ApisTest {
         {
             reset(responseEngine);
             val instances = IntStream.rangeClosed(1, 100)
-                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, i))
+                    .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec),
+                                                                            spec,
+                                                                            i))
                     .toList();
             when(responseEngine.applicationInstances(eq(appId), any())).thenReturn(ApiResponse.success(instances));
 
@@ -282,7 +286,9 @@ class ApisTest {
         val appId = ControllerUtils.deployableObjectId(spec);
 
         val instances = IntStream.rangeClosed(1, 100)
-                .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, i))
+                .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(ControllerUtils.deployableObjectId(spec),
+                                                                        spec,
+                                                                        i))
                 .toList();
         when(responseEngine.applicationOldInstances(appId, 0, 1024))
                 .thenReturn(ApiResponse.success(instances));
@@ -399,7 +405,8 @@ class ApisTest {
         {
             val r = EXT.target("/v1/tasks")
                     .request()
-                    .get(new GenericType<ApiResponse<List<TaskInfo>>>() {});
+                    .get(new GenericType<ApiResponse<List<TaskInfo>>>() {
+                    });
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(List.of(instance), r.getData());
         }
@@ -441,16 +448,18 @@ class ApisTest {
 
     @Test
     void clusterSummary() {
-        val clusterSummary = new ClusterSummary(ClusterState.NORMAL,
-                                                100,
-                                                10,
-                                                5,
-                                                50,
-                                                100,
-                                                1024,
-                                                512_000,
-                                                512_000,
-                                                1024_000);
+        val clusterSummary = new ClusterSummary(
+                "testhost",
+                ClusterState.NORMAL,
+                100,
+                10,
+                5,
+                50,
+                100,
+                1024,
+                512_000,
+                512_000,
+                1024_000);
         when(responseEngine.cluster()).thenReturn(ApiResponse.success(clusterSummary));
         val r = EXT.target("/v1/cluster")
                 .request()
@@ -503,7 +512,8 @@ class ApisTest {
         when(responseEngine.blacklistExecutor(executorId)).thenReturn(ApiResponse.success(null));
         val r = EXT.target("/v1/cluster/executors/" + executorId + "/blacklist")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {});
+                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
     }
 
@@ -513,7 +523,8 @@ class ApisTest {
         when(responseEngine.unblacklistExecutor(executorId)).thenReturn(ApiResponse.success(null));
         val r = EXT.target("/v1/cluster/executors/" + executorId + "/unblacklist")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {});
+                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
     }
 
@@ -522,7 +533,8 @@ class ApisTest {
         when(responseEngine.setClusterMaintenanceMode()).thenReturn(ApiResponse.success(null));
         val r = EXT.target("/v1/cluster/maintenance/set")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {});
+                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
     }
 
@@ -531,7 +543,8 @@ class ApisTest {
         when(responseEngine.unsetClusterMaintenanceMode()).thenReturn(ApiResponse.success(null));
         val r = EXT.target("/v1/cluster/maintenance/unset")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {});
+                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
     }
 
@@ -543,7 +556,8 @@ class ApisTest {
                                                       EventUtils.controllerMetadata()))));
         val r = EXT.target("/v1/cluster/events")
                 .request()
-                .get(new GenericType<ApiResponse<List<Object>>>() {});
+                .get(new GenericType<ApiResponse<List<Object>>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
     }
 
@@ -555,7 +569,8 @@ class ApisTest {
         when(responseEngine.endpoints()).thenReturn(ApiResponse.success(endpoints));
         val r = EXT.target("/v1/endpoints")
                 .request()
-                .get(new GenericType<ApiResponse<List<ExposedAppInfo>>>() {});
+                .get(new GenericType<ApiResponse<List<ExposedAppInfo>>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
         assertEquals(endpoints.size(), r.getData().size());
     }
@@ -564,7 +579,8 @@ class ApisTest {
     void ping() {
         val r = EXT.target("/v1/ping")
                 .request()
-                .get(new GenericType<ApiResponse<String>>() {});
+                .get(new GenericType<ApiResponse<String>>() {
+                });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
         assertEquals("pong", r.getData());
     }

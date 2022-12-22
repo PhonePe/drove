@@ -8,6 +8,7 @@ import lombok.Value;
  */
 @Value
 public class ClusterSummary {
+    String leader;
     ClusterState state;
     int numExecutors;
     int numApplications;
