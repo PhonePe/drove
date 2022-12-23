@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.event;
 
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import lombok.val;
 
@@ -16,18 +17,22 @@ import java.util.concurrent.locks.StampedLock;
 @Singleton
 @SuppressWarnings("rawtypes")
 public class InMemoryEventStore implements EventStore {
-    private final Map<Long, DroveEvent> events = new LinkedHashMap<>(DEFAULT_CAPACITY) {
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Long, DroveEvent> eldest) {
-            return size() > DEFAULT_CAPACITY;
-        }
-    };
+    private final Map<Long, DroveEvent> events;
     private final StampedLock lock = new StampedLock();
 
     @Inject
-    public InMemoryEventStore(LeadershipEnsurer leadershipEnsurer) {
+    public InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options) {
         leadershipEnsurer.onLeadershipStateChanged().connect(this::nuke);
+        val maxEventCount = options.getMaxEventsStorageCount() > 0
+                            ? options.getMaxEventsStorageCount()
+                            : ControllerOptions.DEFAULT_MAX_STALE_INSTANCES_COUNT;
+        events = new LinkedHashMap<>(maxEventCount) {
+
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Long, DroveEvent> eldest) {
+                return size() > maxEventCount;
+            }
+        };
     }
 
     @Override

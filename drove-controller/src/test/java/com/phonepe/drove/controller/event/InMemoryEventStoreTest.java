@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.event;
 
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.events.DroveClusterEvent;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.utils.EventUtils;
@@ -22,7 +23,7 @@ class InMemoryEventStoreTest {
     void test() {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
-        val es = new InMemoryEventStore(leadershipEnsurer);
+        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
         es.recordEvent(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
                                              EventUtils.controllerMetadata()));
 
@@ -35,7 +36,7 @@ class InMemoryEventStoreTest {
     void testEventStoreSizeLimit() {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
-        val es = new InMemoryEventStore(leadershipEnsurer);
+        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
         IntStream.rangeClosed(1, 200)
                 .forEach(i -> {
                     try {
@@ -56,7 +57,7 @@ class InMemoryEventStoreTest {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         val leaderChanged = new ConsumingSyncSignal<Boolean>();
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(leaderChanged);
-        val es = new InMemoryEventStore(leadershipEnsurer);
+        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
         es.recordEvent(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
                                              EventUtils.controllerMetadata()));
 

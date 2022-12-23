@@ -5,6 +5,7 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
@@ -582,7 +583,7 @@ class ResponseEngineTest {
         val taskDB = mock(TaskDB.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
-        val eventStore = new InMemoryEventStore(leadershipEnsurer);
+        val eventStore = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
 

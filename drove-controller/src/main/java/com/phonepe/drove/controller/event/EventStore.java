@@ -7,7 +7,6 @@ import java.util.List;
  */
 @SuppressWarnings("rawtypes")
 public interface EventStore {
-    int DEFAULT_CAPACITY = 100;
 
     void recordEvent(final DroveEvent event);
 

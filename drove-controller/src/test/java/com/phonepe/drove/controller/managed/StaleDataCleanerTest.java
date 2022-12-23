@@ -132,7 +132,8 @@ class StaleDataCleanerTest {
                                                 DEFAULT_STALE_APP_AGE,
                                                 110,
                                                 DEFAULT_STALE_INSTANCE_AGE,
-                                                DEFAULT_STALE_TASK_AGE);
+                                                DEFAULT_STALE_TASK_AGE,
+                                                DEFAULT_MAX_EVENTS_STORAGE_SIZE);
             testCleanupByInstanceCount(options, 110);
         }
 
