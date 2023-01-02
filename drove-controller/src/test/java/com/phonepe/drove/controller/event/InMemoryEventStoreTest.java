@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.event;
 
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.events.DroveClusterEvent;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
@@ -8,6 +9,7 @@ import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
@@ -39,12 +41,7 @@ class InMemoryEventStoreTest {
         val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
         IntStream.rangeClosed(1, 200)
                 .forEach(i -> {
-                    try {
-                        Thread.sleep(1); //Otherwise all time will be same
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    CommonTestUtils.delay(Duration.ofMillis(1)); //Otherwise all time will be same
                     es.recordEvent(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
                                                          EventUtils.controllerMetadata()));
                 });

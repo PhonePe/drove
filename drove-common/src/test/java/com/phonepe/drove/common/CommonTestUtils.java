@@ -27,7 +27,7 @@ public class CommonTestUtils {
         val wait = duration.toMillis();
         val end = new Date(new Date().getTime() + wait);
         await()
-                .pollDelay(Duration.ofSeconds(1))
+                .pollDelay(Duration.ofMillis(10))
                 .timeout(wait + 5_000, TimeUnit.SECONDS)
                 .until(() -> new Date().after(end));
     }

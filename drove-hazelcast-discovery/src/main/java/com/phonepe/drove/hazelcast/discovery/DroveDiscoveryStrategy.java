@@ -21,7 +21,6 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
     private static final String AUTH_TOKEN_ENV_VARIABLE_NAME = "DROVE_APP_INSTANCE_AUTH_TOKEN";
     private static final String PROPERTY_PREFIX = "discovery.drove";
 
-    private final ILogger logger;
     private final DrovePeerTracker peerTracker;
 
 
@@ -35,7 +34,6 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
         logger.fine("Auth token received as : " + authToken);
         Objects.requireNonNull(authToken, "DrovePeerApiCall authToken cannot be empty!!!");
         val portName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.PORT_NAME);
-        this.logger = logger;
         this.peerTracker = new DrovePeerTracker(droveEndpoint, authToken, portName, logger, createObjectMapper());
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
