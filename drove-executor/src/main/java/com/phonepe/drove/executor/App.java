@@ -17,7 +17,6 @@ import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.val;
-import org.glassfish.jersey.media.sse.SseFeature;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import ru.vyarus.dropwizard.guice.GuiceBundle;
 import ru.vyarus.dropwizard.guice.module.installer.feature.health.HealthCheckInstaller;
@@ -50,12 +49,10 @@ public class App extends Application<AppConfig> {
     }
 
     @Override
-    public void run(AppConfig appConfig, Environment environment) throws Exception {
+    public void run(AppConfig appConfig, Environment environment) {
         configureMapper(environment.getObjectMapper());
         ((AbstractServerFactory) appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         val jersey = environment.jersey();
-        jersey.register(SseFeature.class);
-        jersey.getResourceConfig().register(SseFeature.class);
         FunctionMetricsManager.initialize("com.phonepe.drove.executor", environment.metrics());
         jersey.register(new AuthDynamicFeature(
                         new DroveClusterAuthFilter.Builder()

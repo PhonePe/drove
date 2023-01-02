@@ -54,7 +54,7 @@ public class HandlebarsViewRenderer implements ViewRenderer {
     @VisibleForTesting
     static final LoadingCache<String, Template> compilationCache = CacheBuilder
             .newBuilder()
-            .build(new CacheLoader<String, Template>() {
+            .build(new CacheLoader<>() {
                 @Override
                 public Template load(String srcUrl) throws Exception {
                     return HANDLEBARS.compile(srcUrl.replaceAll(".hbs$", ""));

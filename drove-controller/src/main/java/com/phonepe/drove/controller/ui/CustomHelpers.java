@@ -25,24 +25,26 @@ import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisi
  *
  */
 @IgnoreInJacocoGeneratedReport
+@SuppressWarnings("unused")
 public class CustomHelpers {
 
     public CharSequence resourceRepr(final ResourceAllocation resource) {
 
-        return resource.accept(new ResourceAllocationVisitor<CharSequence>() {
+        return resource.accept(new ResourceAllocationVisitor<>() {
             @Override
             public CharSequence visit(CPUAllocation cpu) {
                 return Joiner.on("<br>")
                         .join(cpu.getCores()
                                       .entrySet()
                                       .stream()
-                                      .map(entry -> String.format("<b>NUMA Node: </b> <span class=\"badge badge-info\">%s</span> &nbsp; &nbsp;<b>Allocated Cores:</b> %s",
-                                                                  entry.getKey(),
-                                                                  Joiner.on("&nbsp;")
-                                                                          .join(entry.getValue()
-                                                                          .stream()
-                                                                          .map(value -> "<span class=\"badge badge-primary\">" + value + "</span>")
-                                                                          .toList())))
+                                      .map(entry -> String.format(
+                                              "<b>NUMA Node: </b> <span class=\"badge badge-info\">%s</span> &nbsp; &nbsp;<b>Allocated Cores:</b> %s",
+                                              entry.getKey(),
+                                              Joiner.on("&nbsp;")
+                                                      .join(entry.getValue()
+                                                                    .stream()
+                                                                    .map(value -> "<span class=\"badge badge-primary\">" + value + "</span>")
+                                                                    .toList())))
                                       .toList());
             }
 
@@ -52,9 +54,10 @@ public class CustomHelpers {
                         .join(memory.getMemoryInMB()
                                       .entrySet()
                                       .stream()
-                                      .map(e -> String.format("<b>NUMA Node:</b> <span class=\"badge badge-info\">%s</span>  &nbsp; &nbsp;<b>Allocated Memory:</b> %d MB",
-                                                              e.getKey(),
-                                                              e.getValue()))
+                                      .map(e -> String.format(
+                                              "<b>NUMA Node:</b> <span class=\"badge badge-info\">%s</span>  &nbsp; &nbsp;<b>Allocated Memory:</b> %d MB",
+                                              e.getKey(),
+                                              e.getValue()))
                                       .toList());
             }
         });

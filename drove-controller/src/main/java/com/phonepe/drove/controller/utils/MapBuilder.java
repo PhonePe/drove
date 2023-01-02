@@ -24,16 +24,6 @@ public class MapBuilder<K, V> {
         return this;
     }
 
-/*    public MapBuilder<K, V> put(K key, Supplier<V> valueSupplier) {
-        val value = valueSupplier.get();
-        if(null != value) {
-            metadata.put(key, value);
-        }
-        return this;
-    }*/
-
-
-
     public Map<K,V> build() {
         return Map.copyOf(metadata);
     }

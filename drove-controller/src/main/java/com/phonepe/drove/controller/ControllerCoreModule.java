@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  *
  */
+@SuppressWarnings("unused")
 public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton

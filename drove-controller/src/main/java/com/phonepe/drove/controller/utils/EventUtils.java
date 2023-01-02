@@ -11,6 +11,7 @@ import com.phonepe.drove.controller.event.events.datatags.ExecutorEventDataTag;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
@@ -44,14 +45,14 @@ public class EventUtils {
                 .put(AppEventDataTag.APP_NAME, spec.getName())
                 .put(AppEventDataTag.APP_VERSION, spec.getVersion())
                 .put(AppEventDataTag.EXECUTABLE,
-                     spec.getExecutable().accept(dockerCoordinates -> dockerCoordinates.getUrl()))
+                     spec.getExecutable().accept(DockerCoordinates::getUrl))
 
                 .put(AppEventDataTag.PLACEMENT_POLICY,
                      Optional.ofNullable(spec.getPlacementPolicy())
                              .map(PlacementPolicy::getType)
                              .orElse(PlacementPolicyType.ANY))
                 .put(AppEventDataTag.EXECUTABLE,
-                     spec.getExecutable().accept(dockerCoordinates -> dockerCoordinates.getUrl()))
+                     spec.getExecutable().accept(DockerCoordinates::getUrl))
                 .put(AppEventDataTag.CURRENT_INSTANCES,
                      Optional.ofNullable(newState.getData())
                              .map(ApplicationInfo::getInstances)
@@ -116,7 +117,7 @@ public class EventUtils {
                 .put(TaskInstanceEventDataTag.EXECUTOR_ID, instanceInfo.getExecutorId())
                 .put(TaskInstanceEventDataTag.EXECUTOR_HOST, instanceInfo.getHostname())
                 .put(TaskInstanceEventDataTag.EXECUTABLE,
-                     instanceInfo.getExecutable().accept(dockerCoordinates -> dockerCoordinates.getUrl()))
+                     instanceInfo.getExecutable().accept(DockerCoordinates::getUrl))
                 .put(TaskInstanceEventDataTag.CREATED, instanceInfo.getCreated().getTime())
                 .put(TaskInstanceEventDataTag.CURRENT_STATE, instanceInfo.getState());
 

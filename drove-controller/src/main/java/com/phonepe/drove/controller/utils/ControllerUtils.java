@@ -199,7 +199,7 @@ public class ControllerUtils {
                 return MATCH;
             }
             if(currState.isTerminal()) { //Useless to wait if it has died anyway
-                return MISNMATCH_NONRECOVERABLE;
+                return MISMATCH_NONRECOVERABLE;
             }
         }
         return MISMATCH;
@@ -217,7 +217,7 @@ public class ControllerUtils {
                 return MATCH;
             }
             if(currState.isTerminal()) { //Useless to wait if it has died anyway
-                return MISNMATCH_NONRECOVERABLE;
+                return MISMATCH_NONRECOVERABLE;
             }
         }
         return MISMATCH;

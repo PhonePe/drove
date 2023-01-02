@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @IgnoreInJacocoGeneratedReport
+@SuppressWarnings("unused")
 public abstract class HandlebarsHelperBundle<C extends Configuration> implements ConfiguredBundle<C> {
 
     protected abstract void configureHandlebars(C configuration);
