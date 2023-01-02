@@ -50,10 +50,6 @@
             <version>${guicey-server-pages.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-sse</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.github.jknack</groupId>
             <artifactId>handlebars</artifactId>
             <version>${handlebars.version}</version>
