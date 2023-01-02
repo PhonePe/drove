@@ -89,3 +89,4 @@ buildNumber.properties
 out
 dep
 *.patch
+*.rej
