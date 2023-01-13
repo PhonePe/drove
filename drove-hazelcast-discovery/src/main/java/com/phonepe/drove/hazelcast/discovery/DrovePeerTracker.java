@@ -8,6 +8,7 @@ import com.hazelcast.spi.discovery.DiscoveryNode;
 import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.client.DroveClientConfig;
+import com.phonepe.drove.client.DroveHttpTransport;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -16,11 +17,7 @@ import lombok.val;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URI;
 import java.net.UnknownHostException;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.*;
 
 /**
@@ -55,11 +52,72 @@ public class DrovePeerTracker implements Closeable {
                 DroveClientConfig.builder()
                         .endpoints(parsedEndpoints)
                         .build(),
-                List.of());
+                List.of(request -> request.headers()
+                        .putAll(Map.of("Content-Type", List.of("application/json"),
+                                       "Accept", List.of("application/json"),
+                                       "App-Instance-Authorization", List.of(token)))));
     }
 
     public List<DiscoveryNode> peers() {
         return findCurrentPeers().orElse(List.of());
+    }
+
+    @Override
+    public void close() throws IOException {
+        client.close();
+        log.info("Drove peer discovery shut down");
+    }
+
+    private class PeerResponseTransformer implements DroveHttpTransport.ResponseHandler<Optional<List<DiscoveryNode>>> {
+        @Override
+        public Optional<List<DiscoveryNode>> defaultValue() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<List<DiscoveryNode>> handle(DroveHttpTransport.Response response) throws Exception {
+            if (response.statusCode() != 200) {
+                log.severe("Could not find peers. Error: " + response.statusCode() + ": " + response.body());
+                return Optional.empty();
+            }
+            val apiData = mapper.readValue(response.body(),
+                                           new TypeReference<ApiResponse<List<InstanceInfo>>>() {
+                                           });
+            if (!apiData.getStatus().equals(ApiErrorCode.SUCCESS)) {
+                log.severe("Could not read peer list. Api call unsuccessful with error: " + apiData.getMessage());
+                return Optional.empty();
+            }
+            log.fine("Drove Response Data: " + apiData);
+            return Optional.of(apiData.getData()
+                                       .stream()
+                                       .<DiscoveryNode>map(this::translate)
+                                       .filter(Objects::nonNull)
+                                       .toList());
+        }
+
+        private SimpleDiscoveryNode translate(InstanceInfo info) {
+            val hostname = info.getLocalInfo().getHostname();
+            val portInfo =
+                    Objects.requireNonNullElse(info.getLocalInfo()
+                                                       .getPorts(),
+                                               Map.<String, InstancePort>of())
+                            .get(portName);
+            if (null == portInfo) {
+                log.severe("No port found with port name: " + portName + " on app instance " + info.getInstanceId());
+                return null;
+            }
+            try {
+                val attributes = Map.of("instanceId", info.getInstanceId(),
+                                        "executorId", info.getExecutorId(),
+                                    "hostname", info.getLocalInfo().getHostname());
+                return new SimpleDiscoveryNode(new Address(hostname, portInfo.getHostPort()), attributes);
+            }
+            catch (UnknownHostException e) {
+                log.severe("Could not create node represenation. Error: " + e.getMessage(), e);
+                return null;
+
+            }
+        }
     }
 
     private List<String> parseEndpointSpec(final String droveEndpoint) {
@@ -72,74 +130,7 @@ public class DrovePeerTracker implements Closeable {
     }
 
     private Optional<List<DiscoveryNode>> findCurrentPeers() {
-        val leader = client.leader().orElse(null);
-        if (null == leader) {
-            log.severe("No leader found for drove cluster.");
-            return Optional.empty();
-        }
-        val requestBuilder = HttpRequest.newBuilder(URI.create(leader + API_PATH));
-        val request = requestBuilder.GET()
-                .header("Content-Type", "application/json")
-                .header("App-Instance-Authorization", token)
-                .timeout(Duration.ofSeconds(3))
-                .build();
-        try {
-            val response = client.getHttpClient()
-                    .send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                log.severe("Could not find peers. Error: " + response.statusCode() + ": " + response.body());
-                return Optional.empty();
-            }
-            val apiData = mapper.readValue(response.body(),
-                                           new TypeReference<ApiResponse<List<InstanceInfo>>>() {});
-            if (!apiData.getStatus().equals(ApiErrorCode.SUCCESS)) {
-                log.severe("Could not read peer list. Api call unsuccessful with error: " + apiData.getMessage());
-                return Optional.empty();
-            }
-            log.fine("Drove Response Data: " + apiData);
-            return Optional.of(apiData.getData()
-                                       .stream()
-                                       .<DiscoveryNode>map(info -> {
-                                           val hostname = info.getLocalInfo().getHostname();
-                                           val portInfo = Objects.requireNonNullElse(info.getLocalInfo().getPorts(),
-                                                                                     Map.<String, InstancePort>of())
-                                                   .get(portName);
-                                           if (null == portInfo) {
-                                               log.severe("No port found with port name: " + portName + " on app " +
-                                                                  "instance " + info.getInstanceId());
-                                               return null;
-                                           }
-                                           try {
-                                               val attributes = Map.of(
-                                                       "instanceId", info.getInstanceId(),
-                                                       "executorId", info.getExecutorId(),
-                                                       "hostname", info.getLocalInfo().getHostname());
-                                               return new SimpleDiscoveryNode(
-                                                       new Address(hostname, portInfo.getHostPort()), attributes);
-                                           }
-                                           catch (UnknownHostException e) {
-                                               log.severe("Could not create node represenation. Error: " + e.getMessage(),
-                                                          e);
-                                               return null;
-
-                                           }
-                                       })
-                                       .filter(Objects::nonNull)
-                                       .toList());
-        }
-        catch (IOException e) {
-            log.severe("Could not find peers. Error: " + e.getMessage(), e);
-        }
-        catch (InterruptedException e) {
-            log.info("Api call to controller interrupted");
-            Thread.currentThread().interrupt();
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public void close() throws IOException {
-        client.close();
-        log.info("Drove peer discovery shut down");
+        val request = new DroveClient.Request(DroveHttpTransport.Method.GET, API_PATH);
+        return client.execute(request, new PeerResponseTransformer());
     }
 }
