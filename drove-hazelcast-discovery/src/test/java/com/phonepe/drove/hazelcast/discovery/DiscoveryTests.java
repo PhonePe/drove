@@ -2,13 +2,9 @@ package com.phonepe.drove.hazelcast.discovery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.hazelcast.config.*;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.common.CommonTestUtils;
-import lombok.SneakyThrows;
-import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,36 +62,6 @@ class DiscoveryTests {
         assertEquals(2, hazelcast2.getCluster().getMembers().size());
         hazelcast1.shutdown();
         hazelcast2.shutdown();
-    }
-
-    private HazelcastInstance getHazelcastInstance(int port) {
-        return getHazelcastInstance(port, "TestToken");
-    }
-
-    @SneakyThrows
-    private HazelcastInstance getHazelcastInstance(int port, String token) {
-        Config config = new Config();
-        config.setProperty("hazelcast.discovery.enabled", "true");
-        config.setProperty("hazelcast.discovery.public.ip.enabled", "true");
-        config.setProperty("hazelcast.socket.client.bind.any", "true");
-        config.setProperty("hazelcast.socket.bind.any", "false");
-        NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.getInterfaces().addInterface("127.0.0.1").setEnabled(true);
-        networkConfig.setPort(port);
-        JoinConfig joinConfig = networkConfig.getJoin();
-        joinConfig.getTcpIpConfig().setEnabled(false);
-        joinConfig.getMulticastConfig().setEnabled(false);
-        joinConfig.getAwsConfig().setEnabled(false);
-        DiscoveryConfig discoveryConfig = joinConfig.getDiscoveryConfig();
-        DiscoveryStrategyConfig discoveryStrategyConfig =
-                new DiscoveryStrategyConfig(new DroveDiscoveryStrategyFactory());
-        discoveryStrategyConfig.addProperty("drove-endpoint", "http://127.0.0.1:8878,http://127.0.0.1:8878");
-        discoveryStrategyConfig.addProperty("port-name", "hazelcast");
-        System.setProperty(DroveDiscoveryStrategy.TOKEN_PROPERTY, token);
-        discoveryConfig.addDiscoveryStrategyConfig(discoveryStrategyConfig);
-        val node = Hazelcast.newHazelcastInstance(config);
-        CommonTestUtils.waitUntil(() -> node.getCluster() != null);
-        return node;
     }
 
 }

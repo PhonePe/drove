@@ -10,6 +10,7 @@ import com.google.common.base.Strings;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.discovery.AbstractDiscoveryStrategy;
 import com.hazelcast.spi.discovery.DiscoveryNode;
+import com.phonepe.drove.client.DroveClientConfig;
 import lombok.SneakyThrows;
 import lombok.val;
 
@@ -17,7 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
-    public static final String TOKEN_PROPERTY="discovery.drove.token";
+    public static final String TOKEN_PROPERTY = "discovery.drove.token";
     private static final String AUTH_TOKEN_ENV_VARIABLE_NAME = "DROVE_APP_INSTANCE_AUTH_TOKEN";
     private static final String PROPERTY_PREFIX = "discovery.drove";
 
@@ -25,8 +26,9 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
 
 
     @SneakyThrows
-    public DroveDiscoveryStrategy(ILogger logger,
-                                  Map<String, Comparable> properties) {
+    public DroveDiscoveryStrategy(
+            ILogger logger,
+            Map<String, Comparable> properties) {
         super(logger, properties);
         logger.info("Starting DrovePeerApiCall Strategy");
         val droveEndpoint = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.DROVE_ENDPOINT);
@@ -34,7 +36,11 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
         logger.fine("Auth token received as : " + authToken);
         Objects.requireNonNull(authToken, "DrovePeerApiCall authToken cannot be empty!!!");
         val portName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.PORT_NAME);
-        this.peerTracker = new DrovePeerTracker(droveEndpoint, authToken, portName, logger, createObjectMapper());
+        val transportName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.TRANSPORT);
+        val transport = Strings.isNullOrEmpty(transportName)
+                        ? null
+                        : getClass().getClassLoader().loadClass(transportName).getConstructor(DroveClientConfig.class);
+        this.peerTracker = new DrovePeerTracker(droveEndpoint, authToken, portName, logger, createObjectMapper(), transport);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 this.peerTracker.close();

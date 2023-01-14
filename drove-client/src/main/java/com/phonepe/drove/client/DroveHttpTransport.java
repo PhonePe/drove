@@ -7,25 +7,11 @@ import java.util.Map;
 /**
  *
  */
-public interface DroveHttpTransport {
+public interface DroveHttpTransport extends AutoCloseable {
 
-    enum Method {
-        GET,
-        POST,
-        PUT,
-        DELETE
-    }
+    record TransportRequest(DroveClient.Method method, URI uri, Map<String, List<String>> headers, String body) { }
 
-    record Request(Method method, URI uri, Map<String, List<String>> headers, String body) { }
-
-    record Response(int statusCode, java.util.Map<String,java.util.List<String>> headers, String body) {}
-
-    interface ResponseHandler<T> {
-        T defaultValue();
-        T handle(final Response response) throws Exception;
-    }
-
-    default <T> T execute(final Request request, ResponseHandler<T> responseHandler) {
+    default <T> T execute(final TransportRequest request, DroveClient.ResponseHandler<T> responseHandler) {
         return switch (request.method) {
             case GET -> get(request.uri(), request.headers(), responseHandler);
             case POST -> post(request.uri(), request.headers(), request.body(), responseHandler);
@@ -37,22 +23,22 @@ public interface DroveHttpTransport {
     <T> T get(
             URI uri,
             Map<String, List<String>> headers,
-            ResponseHandler<T> responseHandler);
+            DroveClient.ResponseHandler<T> responseHandler);
 
     <T> T post(
             URI uri,
             Map<String, List<String>> headers,
             String body,
-            ResponseHandler<T> responseHandler);
+            DroveClient.ResponseHandler<T> responseHandler);
 
     <T> T put(
             URI uri,
             Map<String, List<String>> headers,
             String body,
-            ResponseHandler<T> responseHandler);
+            DroveClient.ResponseHandler<T> responseHandler);
 
     <T> T delete(
             URI uri,
             Map<String, List<String>> headers,
-            ResponseHandler<T> responseHandler);
+            DroveClient.ResponseHandler<T> responseHandler);
 }

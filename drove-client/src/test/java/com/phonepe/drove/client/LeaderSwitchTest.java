@@ -2,6 +2,7 @@ package com.phonepe.drove.client;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.phonepe.drove.client.transport.basic.DroveHttpNativeTransport;
 import com.phonepe.drove.common.CommonTestUtils;
 import lombok.val;
 import org.junit.jupiter.api.AfterAll;
@@ -53,11 +54,11 @@ public class LeaderSwitchTest {
 
         val controller1Url = controller1.baseUrl();
         val controller2Url = controller2.baseUrl();
-        val dc = new DroveClient(new DroveClientConfig(List.of(controller1Url, controller2Url),
+        val config = new DroveClientConfig(List.of(controller1Url, controller2Url),
                                                        Duration.ofMillis(100),
                                                        Duration.ofSeconds(1),
-                                                       Duration.ofSeconds(1)),
-                                 List.of());
+                                                       Duration.ofSeconds(1));
+        val dc = new DroveClient(config, List.of(), new DroveHttpNativeTransport(config));
         CommonTestUtils.waitUntil(() -> controller1Url.equals(dc.leader().orElse(null)));
         assertEquals(controller1Url, dc.leader().orElse(null));
         CommonTestUtils.waitUntil(() -> controller2Url.equals(dc.leader().orElse(null)));

@@ -13,7 +13,8 @@ import java.util.Map;
 public class DroveDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
 
     private static final List<PropertyDefinition> PROPERTIES = List.of(DroveDiscoveryConfiguration.PORT_NAME,
-                                                                             DroveDiscoveryConfiguration.DROVE_ENDPOINT);
+                                                                       DroveDiscoveryConfiguration.DROVE_ENDPOINT,
+                                                                       DroveDiscoveryConfiguration.TRANSPORT);
 
     @Override
     public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {

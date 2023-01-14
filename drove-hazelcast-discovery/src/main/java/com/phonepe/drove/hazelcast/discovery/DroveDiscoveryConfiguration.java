@@ -9,4 +9,5 @@ import lombok.experimental.UtilityClass;
 public class DroveDiscoveryConfiguration {
     public static final PropertyDefinition DROVE_ENDPOINT = new SimplePropertyDefinition("drove-endpoint", PropertyTypeConverter.STRING);
     public static final PropertyDefinition PORT_NAME = new SimplePropertyDefinition("port-name", PropertyTypeConverter.STRING);
+    public static final PropertyDefinition TRANSPORT = new SimplePropertyDefinition("transport", true, PropertyTypeConverter.STRING);
 }

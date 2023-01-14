@@ -1,6 +1,9 @@
-package com.phonepe.drove.client;
+package com.phonepe.drove.client.transport.basic;
 
 import com.google.common.base.Strings;
+import com.phonepe.drove.client.DroveClient;
+import com.phonepe.drove.client.DroveClientConfig;
+import com.phonepe.drove.client.DroveHttpTransport;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -34,10 +37,16 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
     }
 
     @Override
+    public void close() {
+        //Nothing needs to be done here
+        log.debug("HTTP Native Transport Shutdown");
+    }
+
+    @Override
     public <T> T get(
             final URI uri,
             Map<String, List<String>> headers,
-            final ResponseHandler<T> responseHandler) {
+            final DroveClient.ResponseHandler<T> responseHandler) {
         log.debug("Calling GET api: {}", uri);
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .GET()
@@ -53,7 +62,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
             final URI uri,
             Map<String, List<String>> headers,
             String body,
-            final ResponseHandler<T> responseHandler) {
+            final DroveClient.ResponseHandler<T> responseHandler) {
         log.debug("Calling POST api: {}", uri);
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .POST(requestBody(body))
@@ -69,7 +78,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
             final URI uri,
             Map<String, List<String>> headers,
             String body,
-            final ResponseHandler<T> responseHandler) {
+            final DroveClient.ResponseHandler<T> responseHandler) {
         log.debug("Calling PUT api: {}", uri);
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .PUT(requestBody(body))
@@ -81,7 +90,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
     }
 
     @Override
-    public <T> T delete(final URI uri, Map<String, List<String>> headers, final ResponseHandler<T> responseHandler) {
+    public <T> T delete(final URI uri, Map<String, List<String>> headers, final DroveClient.ResponseHandler<T> responseHandler) {
         log.debug("Calling PUT api: {}", uri);
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .DELETE()
@@ -110,15 +119,15 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
         return genHeaders.toArray(new String[genHeaders.size()]);
     }
 
-    private <T> T handleResponse(URI uri, ResponseHandler<T> responseHandler, HttpRequest request) {
+    private <T> T handleResponse(URI uri, DroveClient.ResponseHandler<T> responseHandler, HttpRequest request) {
         try {
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            return responseHandler.handle(new Response(response.statusCode(),
-                                                       response.headers().map(),
-                                                       response.body()));
+            return responseHandler.handle(new DroveClient.Response(response.statusCode(),
+                                                                   response.headers().map(),
+                                                                   response.body()));
         }
         catch (InterruptedException e) {
-            log.error("HTTP Request interrupted");
+            log.error("HTTP TransportRequest interrupted");
             Thread.currentThread().interrupt();
         }
         catch (Exception e) {

@@ -1,11 +1,11 @@
 package com.phonepe.drove.client;
 
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
@@ -20,13 +20,25 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 public class DroveClient implements Closeable {
-    public record Request(DroveHttpTransport.Method method, String api, Map<String, List<String>> headers,
+    public enum Method {
+        GET,
+        POST,
+        PUT,
+        DELETE
+    }
+
+    public interface ResponseHandler<T> {
+        T defaultValue();
+        T handle(final Response response) throws Exception;
+    }
+
+    public record Request(Method method, String api, Map<String, List<String>> headers,
                           String body) {
-        public Request(DroveHttpTransport.Method method, String api) {
+        public Request(Method method, String api) {
             this(method, api, new HashMap<>(), null);
         }
 
-        public Request(DroveHttpTransport.Method method, String api, String body) {
+        public Request(Method method, String api, String body) {
             this(method, api, new HashMap<>(), body);
         }
     }
@@ -43,14 +55,10 @@ public class DroveClient implements Closeable {
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final ScheduledFuture<?> schedF;
 
-    public DroveClient(final DroveClientConfig clientConfig, final List<RequestDecorator> decorators) {
-        this(clientConfig, new DroveHttpNativeTransport(clientConfig), decorators);
-    }
-
     public DroveClient(
             final DroveClientConfig clientConfig,
-            DroveHttpTransport transport,
-            final List<RequestDecorator> decorators) {
+            final List<RequestDecorator> decorators,
+            DroveHttpTransport transport) {
         this.clientConfig = clientConfig;
         this.transport = transport;
         this.decorators = Objects.requireNonNullElse(decorators, List.of());
@@ -78,7 +86,7 @@ public class DroveClient implements Closeable {
 
     public <T> T execute(
             final Request request,
-            final DroveHttpTransport.ResponseHandler<T> responseHandler) {
+            final ResponseHandler<T> responseHandler) {
         return leader()
                 .map(currentLeader -> {
                     decorators.forEach(requestDecorator -> requestDecorator.decorateRequest(request));
@@ -91,32 +99,34 @@ public class DroveClient implements Closeable {
                 });
     }
 
+    @SneakyThrows
     @Override
-    public void close() throws IOException {
+    public void close() {
         if (schedF == null) {
             log.info("No leader determination running. Nothing needs to be done");
             return;
         }
         schedF.cancel(true);
         executorService.shutdown();
+        transport.close();
         log.info("Drove client shut down");
     }
 
-    private static DroveHttpTransport.Request transformRequest(Request request, String endpoint) {
-        return new DroveHttpTransport.Request(request.method(),
-                                              URI.create(endpoint + request.api()),
-                                              request.headers(),
-                                              request.body());
+    private static DroveHttpTransport.TransportRequest transformRequest(Request request, String endpoint) {
+        return new DroveHttpTransport.TransportRequest(request.method(),
+                                                       URI.create(endpoint + request.api()),
+                                                       request.headers(),
+                                                       request.body());
     }
 
-    private static class PingCheckResponseHandler implements DroveHttpTransport.ResponseHandler<Boolean> {
+    private static class PingCheckResponseHandler implements ResponseHandler<Boolean> {
         @Override
         public Boolean defaultValue() {
             return false;
         }
 
         @Override
-        public Boolean handle(DroveHttpTransport.Response response) {
+        public Boolean handle(Response response) {
             return response.statusCode() == 200;
         }
     }
@@ -155,7 +165,7 @@ public class DroveClient implements Closeable {
 
     private boolean isLeader(final String endpoint) {
         log.debug("Checking endpoint for leadership: {}", endpoint);
-        val request = new Request(DroveHttpTransport.Method.GET, PING_API);
+        val request = new Request(Method.GET, PING_API);
         decorators.forEach(decorator -> decorator.decorateRequest(request));
         try {
             return transport.execute(transformRequest(request, endpoint), new PingCheckResponseHandler());
@@ -166,4 +176,5 @@ public class DroveClient implements Closeable {
         return false;
     }
 
+    public static final record Response(int statusCode, Map<String, List<String>> headers, String body) {}
 }

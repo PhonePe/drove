@@ -10,10 +10,15 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import com.hazelcast.config.*;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -222,4 +227,33 @@ public class DiscoveryTestUtils {
                                             .withBody(MAPPER.writeValueAsBytes(response))));
     }
 
+    public static HazelcastInstance getHazelcastInstance(int port) {
+        return getHazelcastInstance(port, "TestToken");
+    }
+
+    @SneakyThrows
+    public static HazelcastInstance getHazelcastInstance(int port, String token) {
+        Config config = new Config();
+        config.setProperty("hazelcast.discovery.enabled", "true");
+        config.setProperty("hazelcast.discovery.public.ip.enabled", "true");
+        config.setProperty("hazelcast.socket.client.bind.any", "true");
+        config.setProperty("hazelcast.socket.bind.any", "false");
+        NetworkConfig networkConfig = config.getNetworkConfig();
+        networkConfig.getInterfaces().addInterface("127.0.0.1").setEnabled(true);
+        networkConfig.setPort(port);
+        JoinConfig joinConfig = networkConfig.getJoin();
+        joinConfig.getTcpIpConfig().setEnabled(false);
+        joinConfig.getMulticastConfig().setEnabled(false);
+        joinConfig.getAwsConfig().setEnabled(false);
+        DiscoveryConfig discoveryConfig = joinConfig.getDiscoveryConfig();
+        DiscoveryStrategyConfig discoveryStrategyConfig =
+                new DiscoveryStrategyConfig(new DroveDiscoveryStrategyFactory());
+        discoveryStrategyConfig.addProperty("drove-endpoint", "http://127.0.0.1:8878,http://127.0.0.1:8878");
+        discoveryStrategyConfig.addProperty("port-name", "hazelcast");
+        System.setProperty(DroveDiscoveryStrategy.TOKEN_PROPERTY, token);
+        discoveryConfig.addDiscoveryStrategyConfig(discoveryStrategyConfig);
+        val node = Hazelcast.newHazelcastInstance(config);
+        CommonTestUtils.waitUntil(() -> node.getCluster() != null);
+        return node;
+    }
 }

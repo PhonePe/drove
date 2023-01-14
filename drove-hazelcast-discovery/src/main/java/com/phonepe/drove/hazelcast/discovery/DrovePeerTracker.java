@@ -9,14 +9,17 @@ import com.hazelcast.spi.discovery.SimpleDiscoveryNode;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.client.DroveClientConfig;
 import com.phonepe.drove.client.DroveHttpTransport;
+import com.phonepe.drove.client.transport.basic.DroveHttpNativeTransport;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
+import lombok.SneakyThrows;
 import lombok.val;
 
 import java.io.Closeable;
-import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.UnknownHostException;
 import java.util.*;
 
@@ -28,7 +31,6 @@ public class DrovePeerTracker implements Closeable {
     @SuppressWarnings("java:S1075")
     private static final String API_PATH = "/apis/v1/internal/instances";
 
-    private final String token;
     private final String portName;
     private final ILogger log;
     private final ObjectMapper mapper;
@@ -40,7 +42,17 @@ public class DrovePeerTracker implements Closeable {
             final String portName,
             final ILogger log,
             final ObjectMapper mapper) {
-        this.token = token;
+        this(endpoints, token, portName, log, mapper, null);
+    }
+
+    @SneakyThrows
+    public DrovePeerTracker(
+            final String endpoints,
+            final String token,
+            final String portName,
+            final ILogger log,
+            final ObjectMapper mapper,
+            final Constructor<?> transport) {
         this.portName = portName;
         this.log = log;
         this.mapper = mapper;
@@ -48,14 +60,29 @@ public class DrovePeerTracker implements Closeable {
         if (parsedEndpoints.isEmpty()) {
             throw new IllegalArgumentException("No endpoints specified");
         }
+        val clientConfig = DroveClientConfig.builder()
+                .endpoints(parsedEndpoints)
+                .build();
         this.client = new DroveClient(
-                DroveClientConfig.builder()
-                        .endpoints(parsedEndpoints)
-                        .build(),
+                clientConfig,
                 List.of(request -> request.headers()
                         .putAll(Map.of("Content-Type", List.of("application/json"),
                                        "Accept", List.of("application/json"),
-                                       "App-Instance-Authorization", List.of(token)))));
+                                       "App-Instance-Authorization", List.of(token)))),
+                createTransport(transport, clientConfig, log)
+        );
+    }
+
+    private static DroveHttpTransport createTransport(
+            Constructor<?> transport,
+            DroveClientConfig clientConfig,
+            ILogger log) throws InstantiationException, IllegalAccessException, InvocationTargetException {
+        if (transport != null) {
+            log.info("Creating transport of type: " + transport);
+            return (DroveHttpTransport) transport.newInstance(clientConfig);
+        }
+        log.warning("No transport is specified. Using native transport. This is not recommended for production.");
+        return new DroveHttpNativeTransport(clientConfig);
     }
 
     public List<DiscoveryNode> peers() {
@@ -63,19 +90,19 @@ public class DrovePeerTracker implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         client.close();
         log.info("Drove peer discovery shut down");
     }
 
-    private class PeerResponseTransformer implements DroveHttpTransport.ResponseHandler<Optional<List<DiscoveryNode>>> {
+    private class PeerResponseTransformer implements DroveClient.ResponseHandler<Optional<List<DiscoveryNode>>> {
         @Override
         public Optional<List<DiscoveryNode>> defaultValue() {
             return Optional.empty();
         }
 
         @Override
-        public Optional<List<DiscoveryNode>> handle(DroveHttpTransport.Response response) throws Exception {
+        public Optional<List<DiscoveryNode>> handle(DroveClient.Response response) throws Exception {
             if (response.statusCode() != 200) {
                 log.severe("Could not find peers. Error: " + response.statusCode() + ": " + response.body());
                 return Optional.empty();
@@ -113,7 +140,7 @@ public class DrovePeerTracker implements Closeable {
                 return new SimpleDiscoveryNode(new Address(hostname, portInfo.getHostPort()), attributes);
             }
             catch (UnknownHostException e) {
-                log.severe("Could not create node represenation. Error: " + e.getMessage(), e);
+                log.severe("Could not create node representation. Error: " + e.getMessage(), e);
                 return null;
 
             }
@@ -130,7 +157,7 @@ public class DrovePeerTracker implements Closeable {
     }
 
     private Optional<List<DiscoveryNode>> findCurrentPeers() {
-        val request = new DroveClient.Request(DroveHttpTransport.Method.GET, API_PATH);
+        val request = new DroveClient.Request(DroveClient.Method.GET, API_PATH);
         return client.execute(request, new PeerResponseTransformer());
     }
 }

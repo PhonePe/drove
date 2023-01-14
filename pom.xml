@@ -16,6 +16,7 @@
         <module>drove-executor</module>
         <module>drove-controller</module>
         <module>drove-client</module>
+        <module>drove-client-httpcomponent-transport</module>
         <module>drove-hazelcast-discovery</module>
     </modules>
 
