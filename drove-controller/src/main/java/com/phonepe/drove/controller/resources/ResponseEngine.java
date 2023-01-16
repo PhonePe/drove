@@ -129,7 +129,7 @@ public class ResponseEngine {
     public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
         return instanceInfoDB.instance(appId, instanceId)
                 .map(ApiResponse::success)
-                .orElseGet(() -> failure("No such instance"));
+                .orElseGet(() -> failure("No such application instance " + appId + "/" + instanceId));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(final String appId, int start, int length) {
@@ -139,7 +139,7 @@ public class ResponseEngine {
     public ApiResponse<TaskInfo> taskDetails(final String sourceAppName, final String taskId) {
         return taskDB.task(sourceAppName, taskId)
                 .map(ApiResponse::success)
-                .orElseGet(() -> failure("No such instance"));
+                .orElseGet(() -> failure("No such task instance " + sourceAppName + "/" + taskId));
     }
 
     public ApiResponse<Map<String, Boolean>> taskDelete(final String sourceAppName, final String taskId) {

@@ -241,7 +241,7 @@ class ResponseEngineTest {
         {
             val res = re.instanceDetails(appId, "blah");
             assertEquals(FAILED, res.getStatus());
-            assertEquals("No such instance", res.getMessage());
+            assertEquals("No such application instance " + appId + "/blah", res.getMessage());
             assertNull(res.getData());
         }
     }

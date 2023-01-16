@@ -27,19 +27,35 @@ public class DroveClient implements Closeable {
         DELETE
     }
 
-    public interface ResponseHandler<T> {
-        T defaultValue();
-        T handle(final Response response) throws Exception;
-    }
-
-    public record Request(Method method, String api, Map<String, List<String>> headers,
-                          String body) {
+    public record Request(
+            Method method,
+            String api,
+            Map<String, List<String>> headers,
+            String body) {
         public Request(Method method, String api) {
             this(method, api, new HashMap<>(), null);
         }
 
         public Request(Method method, String api, String body) {
             this(method, api, new HashMap<>(), body);
+        }
+    }
+
+    public interface ResponseHandler<T> {
+        T defaultValue();
+        T handle(final Response response) throws Exception;
+    }
+
+    public class BasicResponseHandler implements ResponseHandler<Response> {
+
+        @Override
+        public Response defaultValue() {
+            return null;
+        }
+
+        @Override
+        public Response handle(Response response) {
+            return response;
         }
     }
 
@@ -82,6 +98,10 @@ public class DroveClient implements Closeable {
 
     public Optional<String> leader() {
         return Optional.ofNullable(leader.get());
+    }
+
+    public Response execute(final Request request) {
+        return execute(request, new BasicResponseHandler());
     }
 
     public <T> T execute(
