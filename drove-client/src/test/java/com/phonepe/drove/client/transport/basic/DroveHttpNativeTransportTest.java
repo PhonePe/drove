@@ -113,14 +113,13 @@ class DroveHttpNativeTransportTest {
     void testPut(WireMockRuntimeInfo wm) {
         stubFor(put(DroveClient.PING_API)
                         .withHeader("TestHeader", equalTo("TestValue"))
-                        .withRequestBody(equalTo("TestBody"))
                         .willReturn(ok()));
         try(val t = create(clientConfig(wm))) {
             Assertions.assertTrue(
                     t.execute(new DroveHttpTransport.TransportRequest(DroveClient.Method.PUT,
                                                                       URI.create(wm.getHttpBaseUrl() + DroveClient.PING_API),
                                                                       Map.of("TestHeader", List.of("TestValue")),
-                                                                      "TestBody"),
+                                                                      null),
                               new DroveClient.ResponseHandler<Boolean>() {
                                   @Override
                                   public Boolean defaultValue() {
