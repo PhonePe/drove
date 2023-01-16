@@ -14,6 +14,7 @@ import com.phonepe.drove.client.DroveClientConfig;
 import lombok.SneakyThrows;
 import lombok.val;
 
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.Objects;
 
@@ -37,9 +38,7 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
         Objects.requireNonNull(authToken, "DrovePeerApiCall authToken cannot be empty!!!");
         val portName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.PORT_NAME);
         val transportName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.TRANSPORT);
-        val transport = Strings.isNullOrEmpty(transportName)
-                        ? null
-                        : getClass().getClassLoader().loadClass(transportName).getConstructor(DroveClientConfig.class);
+        val transport = transport(transportName);
         this.peerTracker = new DrovePeerTracker(droveEndpoint, authToken, portName, logger, createObjectMapper(), transport);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -72,5 +71,13 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         return objectMapper;
+    }
+
+
+    @SuppressWarnings("java:S2658")
+    private Constructor<?> transport(String transportName) throws NoSuchMethodException, ClassNotFoundException {
+        return Strings.isNullOrEmpty(transportName)
+               ? null
+               : getClass().getClassLoader().loadClass(transportName).getConstructor(DroveClientConfig.class);
     }
 }
