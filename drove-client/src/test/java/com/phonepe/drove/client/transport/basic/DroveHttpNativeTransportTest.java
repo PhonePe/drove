@@ -67,6 +67,31 @@ class DroveHttpNativeTransportTest {
 
     @Test
     @SneakyThrows
+    void testGetNoHeader(WireMockRuntimeInfo wm) {
+        stubFor(get(DroveClient.PING_API)
+                        .willReturn(ok()));
+        try(val t = create(clientConfig(wm))) {
+            Assertions.assertTrue(
+                    t.execute(new DroveHttpTransport.TransportRequest(DroveClient.Method.GET,
+                                                                      URI.create(wm.getHttpBaseUrl() + DroveClient.PING_API),
+                                                                      null,
+                                                                      null),
+                              new DroveClient.ResponseHandler<Boolean>() {
+                                  @Override
+                                  public Boolean defaultValue() {
+                                      return false;
+                                  }
+
+                                  @Override
+                                  public Boolean handle(DroveClient.Response response) {
+                                      return response.statusCode() == 200;
+                                  }
+                              }));
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void testPost(WireMockRuntimeInfo wm) {
         stubFor(post(DroveClient.PING_API)
                         .withHeader("TestHeader", equalTo("TestValue"))

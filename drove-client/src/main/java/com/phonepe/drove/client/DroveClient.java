@@ -46,7 +46,7 @@ public class DroveClient implements Closeable {
         T handle(final Response response) throws Exception;
     }
 
-    public class BasicResponseHandler implements ResponseHandler<Response> {
+    public static class BasicResponseHandler implements ResponseHandler<Response> {
 
         @Override
         public Response defaultValue() {

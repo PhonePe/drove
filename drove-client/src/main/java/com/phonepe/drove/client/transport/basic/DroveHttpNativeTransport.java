@@ -51,9 +51,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .GET()
                 .timeout(Objects.requireNonNullElse(clientConfig.getOperationTimeout(), Duration.ofSeconds(1)));
-        if(null != headers && !headers.isEmpty()) {
-            requestBuilder.headers(headers(headers));
-        }
+        addHeaders(headers, requestBuilder);
         return handleResponse(uri, responseHandler, requestBuilder.build());
     }
 
@@ -67,9 +65,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .POST(requestBody(body))
                 .timeout(Objects.requireNonNullElse(clientConfig.getOperationTimeout(), Duration.ofSeconds(1)));
-        if(null != headers && !headers.isEmpty()) {
-            requestBuilder.headers(headers(headers));
-        }
+        addHeaders(headers, requestBuilder);
         return handleResponse(uri, responseHandler, requestBuilder.build());
     }
 
@@ -83,9 +79,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .PUT(requestBody(body))
                 .timeout(Objects.requireNonNullElse(clientConfig.getOperationTimeout(), Duration.ofSeconds(1)));
-        if(null != headers && !headers.isEmpty()) {
-            requestBuilder.headers(headers(headers));
-        }
+        addHeaders(headers, requestBuilder);
         return handleResponse(uri, responseHandler, requestBuilder.build());
     }
 
@@ -95,9 +89,7 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
         val requestBuilder = HttpRequest.newBuilder(uri)
                 .DELETE()
                 .timeout(Objects.requireNonNullElse(clientConfig.getOperationTimeout(), Duration.ofSeconds(1)));
-        if(null != headers && !headers.isEmpty()) {
-            requestBuilder.headers(headers(headers));
-        }
+        addHeaders(headers, requestBuilder);
         return handleResponse(uri, responseHandler, requestBuilder.build());
     }
 
@@ -134,6 +126,12 @@ public class DroveHttpNativeTransport implements DroveHttpTransport {
             log.error("Error making http call to " + uri + ": " + e.getMessage(), e);
         }
         return responseHandler.defaultValue();
+    }
+
+    private static void addHeaders(Map<String, List<String>> headers, HttpRequest.Builder requestBuilder) {
+        if(null != headers && !headers.isEmpty()) {
+            requestBuilder.headers(headers(headers));
+        }
     }
 
 }

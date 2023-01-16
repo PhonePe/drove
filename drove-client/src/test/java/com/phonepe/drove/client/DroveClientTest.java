@@ -34,7 +34,7 @@ class DroveClientTest {
             .build();
 
     @AfterEach
-    void  reset() {
+    void reset() {
         controller1.resetAll();
         controller2.resetAll();
     }
@@ -50,6 +50,25 @@ class DroveClientTest {
                                       new DroveHttpNativeTransport(config))) {
             CommonTestUtils.waitUntil(() -> dc.leader().isPresent());
             assertEquals(controller1.baseUrl(), dc.leader().orElse(null));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void successSingleOpt() {
+        //In the following both bad request so if ping actually happens test will fail
+        //This also shows the pitfall for this optimisation, but should be acceptable for most use-cases
+        controller1.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+        controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+        val config = new DroveClientConfig(List.of(controller2.baseUrl()),
+                                           Duration.ofSeconds(1),
+                                           Duration.ofSeconds(1),
+                                           Duration.ofSeconds(1));;
+        try (val dc = new DroveClient(config,
+                                      List.of(),
+                                      new DroveHttpNativeTransport(config))) {
+            CommonTestUtils.waitUntil(() -> dc.leader().isPresent());
+            assertEquals(controller2.baseUrl(), dc.leader().orElse(null));
         }
     }
 
@@ -86,7 +105,7 @@ class DroveClientTest {
     @SneakyThrows
     void failIOException() {
         controller1.stubFor(get(DroveClient.PING_API)
-                        .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+                                    .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
         controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
         val config = droveConfig();
         try (val dc = new DroveClient(config,
@@ -101,7 +120,7 @@ class DroveClientTest {
     @SneakyThrows
     void failTimeout() {
         controller1.stubFor(get(DroveClient.PING_API)
-                        .willReturn(aResponse().withFixedDelay(5_000)));
+                                    .willReturn(aResponse().withFixedDelay(5_000)));
         controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
         val config = droveConfig();
         try (val dc = new DroveClient(config,
@@ -109,6 +128,41 @@ class DroveClientTest {
                                       new DroveHttpNativeTransport(config))) {
             CommonTestUtils.delay(Duration.ofSeconds(3));
             assertNull(dc.leader().orElse(null));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void execute() {
+        controller1.stubFor(get(DroveClient.PING_API).willReturn(ok()));
+        controller1.stubFor(get("/").willReturn(ok()));
+        controller1.stubFor(get("/fail").willReturn(serverError()));
+        controller1.stubFor(post("/").withRequestBody(equalTo("TestBody")).willReturn(ok()));
+        controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+        val config = droveConfig();
+        try (val dc = new DroveClient(config,
+                                      List.of(),
+                                      new DroveHttpNativeTransport(config))) {
+            CommonTestUtils.waitUntil(() -> dc.leader().isPresent());
+            assertEquals(200, dc.execute(new DroveClient.Request(DroveClient.Method.GET, "/")).statusCode());
+            assertEquals(200,
+                         dc.execute(new DroveClient.Request(DroveClient.Method.POST, "/", "TestBody")).statusCode());
+            assertEquals(500,
+                         dc.execute(new DroveClient.Request(DroveClient.Method.GET, "/fail", "TestBody")).statusCode());
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void executeNoLeader() {
+        controller1.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+        controller1.stubFor(get("/").willReturn(ok()));
+        controller2.stubFor(get(DroveClient.PING_API).willReturn(badRequest()));
+        val config = droveConfig();
+        try (val dc = new DroveClient(config,
+                                      List.of(),
+                                      new DroveHttpNativeTransport(config))) {
+            assertNull(dc.execute(new DroveClient.Request(DroveClient.Method.GET, "/")));
         }
     }
 
