@@ -17,8 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.common.CommonUtils.policy;
-import static com.phonepe.drove.common.CommonUtils.sublist;
+import static com.phonepe.drove.common.CommonUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -105,5 +104,10 @@ class CommonUtilsTest {
             assertFalse(CommonUtils.isInMaintenanceWindow(data));
         }
 
+    }
+
+    @Test
+    void testCreateHttpClient() {
+        assertNotNull(createHttpClient());
     }
 }

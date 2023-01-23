@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.engine;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
@@ -28,7 +29,7 @@ class RemoteExecutorMessageSenderTest extends ControllerTestBase {
 
     @Test
     void testSend(final WireMockRuntimeInfo wm) {
-        val ms = new RemoteExecutorMessageSender(ClusterAuthenticationConfig.DEFAULT, MAPPER);
+        val ms = new RemoteExecutorMessageSender(ClusterAuthenticationConfig.DEFAULT, MAPPER, CommonUtils.createHttpClient());
 
         assertTrue(true);
 

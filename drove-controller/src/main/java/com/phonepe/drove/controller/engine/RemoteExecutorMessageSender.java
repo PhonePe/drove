@@ -12,6 +12,7 @@ import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.RetryPolicy;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,8 +29,10 @@ public class RemoteExecutorMessageSender extends RemoteMessageSender<ExecutorMes
     @Inject
     public RemoteExecutorMessageSender(
             ClusterAuthenticationConfig clusterAuthenticationConfig,
-            ObjectMapper mapper) {
-        super(mapper, clusterAuthenticationConfig, NodeType.CONTROLLER);
+            ObjectMapper mapper,
+            CloseableHttpClient httpClient) {
+        super(mapper, clusterAuthenticationConfig, NodeType.CONTROLLER,
+              httpClient);
     }
 
     @Override

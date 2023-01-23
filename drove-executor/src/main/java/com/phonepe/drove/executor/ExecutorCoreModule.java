@@ -29,6 +29,7 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 import javax.inject.Singleton;
 import java.net.URI;
@@ -152,4 +153,11 @@ public class ExecutorCoreModule extends AbstractModule {
         return Objects.requireNonNullElse(config.getDockerAuth(), DockerAuthConfig.DEFAULT);
 
     }
+
+    @Provides
+    @Singleton
+    public CloseableHttpClient httpClient() {
+        return CommonUtils.createHttpClient();
+    }
+
 }

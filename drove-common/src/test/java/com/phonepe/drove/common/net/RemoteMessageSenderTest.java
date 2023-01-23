@@ -1,36 +1,29 @@
 package com.phonepe.drove.common.net;
 
-import com.codahale.metrics.SharedMetricRegistries;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.model.Message;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.retry.RetryOnAllExceptionsSpec;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
-import io.appform.functionmetrics.FunctionMetricsManager;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.val;
 import net.jodah.failsafe.RetryPolicy;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
 import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.okForJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.phonepe.drove.common.CommonUtils.configureMapper;
 import static com.phonepe.drove.common.model.MessageDeliveryStatus.ACCEPTED;
 import static com.phonepe.drove.common.model.MessageDeliveryStatus.FAILED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +53,7 @@ class RemoteMessageSenderTest extends AbstractTestBase {
     private static abstract class TestMessageSender extends RemoteMessageSender<TestMessageType, TestMessage> {
 
         private TestMessageSender() {
-            super(MAPPER, ClusterAuthenticationConfig.DEFAULT, NodeType.CONTROLLER);
+            super(MAPPER, ClusterAuthenticationConfig.DEFAULT, NodeType.CONTROLLER, CommonUtils.createHttpClient());
         }
 
         @Override

@@ -23,9 +23,14 @@ import net.jodah.failsafe.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -153,5 +158,22 @@ public class CommonUtils {
                 return taskInstanceSpec.getInstanceId();
             }
         });
+    }
+
+    public static CloseableHttpClient createHttpClient() {
+        val connectionTimeout = (int) Duration.ofSeconds(1).toMillis();
+        val connectionManager = new PoolingHttpClientConnectionManager();
+        connectionManager.setDefaultMaxPerRoute(100);
+        connectionManager.setMaxTotal(Integer.MAX_VALUE);
+        val rc = RequestConfig.custom()
+                .setConnectionRequestTimeout(connectionTimeout)
+                .setConnectionRequestTimeout((int) connectionTimeout)
+                .setSocketTimeout((int) connectionTimeout)
+                .build();
+        return HttpClientBuilder.create()
+                .disableRedirectHandling()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(rc)
+                .build();
     }
 }

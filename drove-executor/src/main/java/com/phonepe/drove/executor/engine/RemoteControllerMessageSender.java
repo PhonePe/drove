@@ -12,6 +12,7 @@ import com.phonepe.drove.executor.discovery.ManagedLeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.RetryPolicy;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,8 +29,11 @@ public class RemoteControllerMessageSender extends RemoteMessageSender<Controlle
 
     @Inject
     public RemoteControllerMessageSender(
-            ManagedLeadershipObserver observer, ObjectMapper mapper, ClusterAuthenticationConfig clusterAuthenticationConfig) {
-        super(mapper, clusterAuthenticationConfig, NodeType.EXECUTOR);
+            ManagedLeadershipObserver observer,
+            ObjectMapper mapper,
+            ClusterAuthenticationConfig clusterAuthenticationConfig,
+            CloseableHttpClient httpClient) {
+        super(mapper, clusterAuthenticationConfig, NodeType.EXECUTOR, httpClient);
         this.observer = observer;
     }
 

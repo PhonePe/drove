@@ -36,6 +36,7 @@ import com.phonepe.drove.statemachine.ActionFactory;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -102,6 +103,12 @@ public class ControllerCoreModule extends AbstractModule {
     @Named("JobLevelThreadFactory")
     public ThreadFactory jobLevelThreadFactory() {
         return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
+    }
+
+    @Provides
+    @Singleton
+    public CloseableHttpClient httpClient() {
+        return CommonUtils.createHttpClient();
     }
 
     @Provides

@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
@@ -45,7 +46,8 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
-                                                          ClusterAuthenticationConfig.DEFAULT);
+                                                          ClusterAuthenticationConfig.DEFAULT,
+                                                          CommonUtils.createHttpClient());
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -66,7 +68,8 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
-                                                          ClusterAuthenticationConfig.DEFAULT);
+                                                          ClusterAuthenticationConfig.DEFAULT,
+                                                          CommonUtils.createHttpClient());
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -88,7 +91,8 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
-                                                          ClusterAuthenticationConfig.DEFAULT);
+                                                          ClusterAuthenticationConfig.DEFAULT,
+                                                          CommonUtils.createHttpClient());
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -105,7 +109,8 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
-                                                          ClusterAuthenticationConfig.DEFAULT);
+                                                          ClusterAuthenticationConfig.DEFAULT,
+                                                          CommonUtils.createHttpClient());
 
         val header = MessageHeader.executorRequest();
         assertEquals(FAILED, msgSender.send(new ExecutorSnapshotMessage(header, null)).getStatus());
@@ -124,7 +129,8 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
 
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
-                                                          ClusterAuthenticationConfig.DEFAULT);
+                                                          ClusterAuthenticationConfig.DEFAULT,
+                                                          CommonUtils.createHttpClient());
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")

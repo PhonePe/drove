@@ -15,13 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 
 import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
@@ -38,32 +38,29 @@ public abstract class RemoteMessageSender<
         implements MessageSender<SendMessageType, SendMessage> {
 
     private final ObjectMapper mapper;
-    private final HttpClient httpClient;
+    private final CloseableHttpClient httpClient;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
 
     protected RemoteMessageSender(
             final ObjectMapper mapper,
             ClusterAuthenticationConfig clusterAuthenticationConfig,
-            NodeType nodeType) {
+            NodeType nodeType,
+            CloseableHttpClient httpClient) {
         this.mapper = mapper;
         this.secret = clusterAuthenticationConfig.getSecrets()
                 .stream()
                 .filter(s -> s.getNodeType().equals(nodeType))
                 .findAny()
                 .orElse(null);
-        var connectionTimeout = Duration.ofSeconds(1);
-        this.httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(connectionTimeout)
-                .build();
+        this.httpClient = httpClient;
         nodeId = CommonUtils.hostname();
     }
 
     @Override
     @MonitoredFunction
     public MessageResponse send(SendMessage message) {
-        final RetryPolicy<MessageResponse> retryPolicy = retryStrategy();
+        val retryPolicy = retryStrategy();
         return Failsafe.with(retryPolicy).onFailure(result -> {
             val failure = result.getFailure();
             if (null != failure) {
@@ -89,26 +86,23 @@ public abstract class RemoteMessageSender<
                                 : "https",
                                 host.getHostname(),
                                 host.getPort());
-        val requestBuilder = HttpRequest.newBuilder(URI.create(uri));
+        val request = new HttpPost(uri);
         try {
-
-            requestBuilder.header(CONTENT_TYPE, "application/json");
-            requestBuilder.header(NODE_ID_HEADER, nodeId);
+            request.setHeader(CONTENT_TYPE, "application/json");
+            request.setHeader(NODE_ID_HEADER, nodeId);
             if(null != secret) {
-                requestBuilder.header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
+                request.setHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
             }
-            requestBuilder.POST(HttpRequest.BodyPublishers.ofByteArray(mapper.writeValueAsBytes(message)));
+            request.setEntity(new StringEntity(mapper.writeValueAsString(message)));
         }
-        catch (JsonProcessingException e) {
+        catch (UnsupportedEncodingException | JsonProcessingException e) {
             log.error("Error building message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
         log.debug("Sending message to remote host: {}. Message: {}", uri, message);
-        val request = requestBuilder.timeout(Duration.ofSeconds(1)).build();
-        try {
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            val body = response.body();
-            if (response.statusCode() == 200) {
+        try(val response = httpClient.execute(request)) {
+            val body = EntityUtils.toString(response.getEntity());
+            if (response.getStatusLine().getStatusCode() == 200) {
                 return mapper.readValue(body, MessageResponse.class);
             }
             else {
@@ -118,9 +112,6 @@ public abstract class RemoteMessageSender<
         catch (IOException e) {
             log.error("Error sending message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
         log.info("Failed to send message to node: {}:{}", host.getHostname(), host.getPort());
         return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
