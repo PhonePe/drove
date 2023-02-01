@@ -51,7 +51,7 @@ class StateUpdaterTest {
 
         doAnswer(invocationOnMock -> {
             counter.incrementAndGet();
-            return null;
+            return true;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
 
         val su = new StateUpdater(cDB, taskDB, iiDB);
@@ -83,7 +83,7 @@ class StateUpdaterTest {
         }).when(cDB).remove(anyList());
         doAnswer(invocationOnMock -> {
             count.incrementAndGet();
-            return null;
+            return true;
         }).when(iiDB).deleteInstanceState(anyString(), anyString());
 
         val su = new StateUpdater(cDB, taskDB, iiDB);
@@ -110,7 +110,7 @@ class StateUpdaterTest {
         doAnswer(invocationOnMock -> {
             counter.incrementAndGet();
             assertEquals(instance.getInstanceId(), invocationOnMock.getArgument(1, String.class));
-            return null;
+            return true;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
 
         val su = new StateUpdater(cDB, taskDB, iiDB);

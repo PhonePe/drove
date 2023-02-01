@@ -7,14 +7,16 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
-import io.dropwizard.util.Strings;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -25,6 +27,8 @@ public class StateUpdater {
     private final ClusterResourcesDB resourcesDB;
     private final TaskDB taskDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
+
+    private final Lock lock = new ReentrantLock();
 
     @Inject
     public StateUpdater(
@@ -40,46 +44,111 @@ public class StateUpdater {
             log.warn("No children found from ZK.");
             return;
         }
-        resourcesDB.update(children);
-        children.forEach(node -> Objects.requireNonNullElse(node.getInstances(), List.<InstanceInfo>of())
-                .forEach(this::updateInstanceInfo));
-        children.forEach(node -> Objects.requireNonNullElse(node.getTasks(), List.<TaskInfo>of())
-                .stream()
-                .filter(instanceInfo -> null != instanceInfo
-                        && !Strings.isNullOrEmpty(instanceInfo.getSourceAppName())
-                        && !Strings.isNullOrEmpty(instanceInfo.getTaskId()))
-                .forEach(this::updateTask));
+        lock.lock();
+        try {
+            var hasAnyData = false;
+            var anyDataUpdated = false;
+            for (val node : children) {
+                val instances = node.getInstances();
+                if (instances != null && !instances.isEmpty()) {
+                    hasAnyData = true;
+                    for (val instanceInfo : instances) {
+                        if (updateInstanceInfo(instanceInfo)) {
+                            anyDataUpdated = true;
+                        }
+                    }
+                }
+                val tasks = node.getTasks();
+                if (tasks != null && !tasks.isEmpty()) {
+                    hasAnyData = true;
+                    for (val taskInfo : tasks) {
+                        if (updateTask(taskInfo)) {
+                            anyDataUpdated = true;
+                        }
+                    }
+                }
+            }
+            if (!hasAnyData || anyDataUpdated) {
+                resourcesDB.update(children);
+            }
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public void remove(Collection<String> executorIds) {
-        executorIds.stream()
-                .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
-                .filter(Objects::nonNull)
-                .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
-                .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
-
-        resourcesDB.remove(executorIds);
+        lock.lock();
+        try {
+            executorIds.stream()
+                    .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
+                    .filter(Objects::nonNull)
+                    .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
+                    .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(), instance.getInstanceId()));
+            resourcesDB.remove(executorIds);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final InstanceInfo instanceInfo) {
-        resourcesDB.update(snapshot);
-        return updateInstanceInfo(instanceInfo);
+        val locked = lock.tryLock();
+        var status = false;
+        if(locked) {
+            try {
+                status = updateInstanceInfo(instanceInfo);
+                if (status) {
+                    resourcesDB.update(snapshot);
+                }
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+        return locked && status;
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final TaskInfo instanceInfo) {
-        resourcesDB.update(snapshot);
-        return updateTask(instanceInfo);
+        val locked = lock.tryLock();
+        var status = false;
+        if(locked) {
+            try {
+                status = updateTask(instanceInfo);
+                if (status) {
+                    resourcesDB.update(snapshot);
+                }
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+        return locked && status;
     }
 
     private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
-        return instanceInfoDB.updateInstanceState(instanceInfo.getAppId(),
-                                                  instanceInfo.getInstanceId(),
-                                                  instanceInfo);
+        val appId = instanceInfo.getAppId();
+        val instanceId = instanceInfo.getInstanceId();
+        val existing = instanceInfoDB.instance(appId, instanceId).orElse(null);
+        val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
+        if (!isNewUpdate) {
+            log.info("Ignoring stale state update for instance {}/{}", appId, instanceId);
+            return false;
+        }
+        return instanceInfoDB.updateInstanceState(appId, instanceId, instanceInfo);
     }
 
     private boolean updateTask(TaskInfo instanceInfo) {
-        return taskDB.updateTask(instanceInfo.getSourceAppName(),
-                                     instanceInfo.getTaskId(),
-                                     instanceInfo);
+        val sourceAppName = instanceInfo.getSourceAppName();
+        val taskId = instanceInfo.getTaskId();
+        val existing = taskDB.task(sourceAppName, taskId).orElse(null);
+        val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
+        if (!isNewUpdate) {
+            log.info("Ignoring stale state update for task {}/{}", sourceAppName, taskId);
+            return false;
+        }
+        return taskDB.updateTask(sourceAppName,
+                                 taskId,
+                                 instanceInfo);
     }
 }

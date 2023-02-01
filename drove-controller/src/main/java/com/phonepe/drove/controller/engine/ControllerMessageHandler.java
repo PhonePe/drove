@@ -35,7 +35,14 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
         val instanceInfo = instanceStateReport.getInstanceInfo();
         log.info("Received instance update from executor: {}", instanceInfo);
         val status = stateUpdater.updateSingle(instanceStateReport.getResourceSnapshot(), instanceInfo);
-        droveEventBus.publish(new DroveInstanceStateChangeEvent(instanceMetadata(instanceInfo)));
+        if(status) {
+            droveEventBus.publish(new DroveInstanceStateChangeEvent(instanceMetadata(instanceInfo)));
+        }
+        else {
+            log.info("Application instance state report message from {} for {} has been ignored",
+                      instanceStateReport.getResourceSnapshot().getExecutorId(),
+                     instanceInfo.getInstanceId());
+        }
         return new MessageResponse(instanceStateReport.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
@@ -53,7 +60,14 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
         val instanceInfo = taskStateReportMessage.getInstanceInfo();
         log.info("Received task update from executor: {}", instanceInfo);
         val status = stateUpdater.updateSingle(taskStateReportMessage.getResourceSnapshot(), instanceInfo);
-        droveEventBus.publish(new DroveStateChangeEvent(instanceMetadata(instanceInfo)));
+        if(status) {
+            droveEventBus.publish(new DroveStateChangeEvent(instanceMetadata(instanceInfo)));
+        }
+        else {
+            log.info("Task state update from {} for task {} has been ignored",
+                     taskStateReportMessage.getResourceSnapshot().getExecutorId(),
+                     taskStateReportMessage.getInstanceInfo().getTaskId());
+        }
         return new MessageResponse(taskStateReportMessage.getHeader(),
                                    status
                                    ? MessageDeliveryStatus.ACCEPTED
