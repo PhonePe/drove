@@ -5,8 +5,6 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
 import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
-import com.phonepe.drove.controller.event.DroveEvent;
-import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -31,7 +29,6 @@ class ControllerMessageHandlerTest {
 
     @Test
     void testInstanceStateReportMessageSuccess() {
-        val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
         val cmh = new ControllerMessageHandler(su);
 
@@ -44,20 +41,14 @@ class ControllerMessageHandlerTest {
             return true;
         }).when(su).updateSingle(isNull(), any(InstanceInfo.class));
 
-        doAnswer(invocationOnMock -> {
-            ctr.incrementAndGet();
-            return null;
-        }).when(ev).publish(any(DroveEvent.class));
-
         val r = new InstanceStateReportMessage(MessageHeader.executorRequest(), null, instance)
                 .accept(cmh);
-        assertEquals(2, ctr.get());
+        assertEquals(1, ctr.get());
         assertEquals(MessageDeliveryStatus.ACCEPTED, r.getStatus());
     }
 
     @Test
     void testInstanceStateReportMessageFailure() {
-        val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
         val cmh = new ControllerMessageHandler(su);
 
@@ -70,20 +61,14 @@ class ControllerMessageHandlerTest {
             return false;
         }).when(su).updateSingle(isNull(), any(InstanceInfo.class));
 
-        doAnswer(invocationOnMock -> {
-            ctr.incrementAndGet();
-            return null;
-        }).when(ev).publish(any(DroveEvent.class));
-
         val r = new InstanceStateReportMessage(MessageHeader.executorRequest(), null, instance)
                 .accept(cmh);
-        assertEquals(2, ctr.get());
+        assertEquals(1, ctr.get());
         assertEquals(MessageDeliveryStatus.FAILED, r.getStatus());
     }
 
     @Test
     void testExecutorSnapshotMessage() {
-        val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
         val cmh = new ControllerMessageHandler(su);
         val ctr = new AtomicInteger();
@@ -100,7 +85,6 @@ class ControllerMessageHandlerTest {
 
     @Test
     void testTaskInstanceStateReportMessageRunning() {
-        val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
         val cmh = new ControllerMessageHandler(su);
 
@@ -113,20 +97,14 @@ class ControllerMessageHandlerTest {
             return true;
         }).when(su).updateSingle(isNull(), any(TaskInfo.class));
 
-        doAnswer(invocationOnMock -> {
-            ctr.incrementAndGet();
-            return null;
-        }).when(ev).publish(any(DroveEvent.class));
-
         val r = new TaskStateReportMessage(MessageHeader.executorRequest(), null, instance)
                 .accept(cmh);
-        assertEquals(2, ctr.get());
+        assertEquals(1, ctr.get());
         assertEquals(MessageDeliveryStatus.ACCEPTED, r.getStatus());
     }
 
     @Test
     void testTaskInstanceStateReportMessageSuccess() {
-        val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
         val cmh = new ControllerMessageHandler(su);
 
@@ -139,20 +117,14 @@ class ControllerMessageHandlerTest {
             return true;
         }).when(su).updateSingle(isNull(), any(TaskInfo.class));
 
-        doAnswer(invocationOnMock -> {
-            ctr.incrementAndGet();
-            return null;
-        }).when(ev).publish(any(DroveEvent.class));
-
         val r = new TaskStateReportMessage(MessageHeader.executorRequest(), null, instance)
                 .accept(cmh);
-        assertEquals(2, ctr.get());
+        assertEquals(1, ctr.get());
         assertEquals(MessageDeliveryStatus.ACCEPTED, r.getStatus());
     }
 
     @Test
     void testTaskInstanceStateReportMessageFailure() {
-        val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
         val cmh = new ControllerMessageHandler(su);
 
@@ -165,14 +137,9 @@ class ControllerMessageHandlerTest {
             return false;
         }).when(su).updateSingle(isNull(), any(TaskInfo.class));
 
-        doAnswer(invocationOnMock -> {
-            ctr.incrementAndGet();
-            return null;
-        }).when(ev).publish(any(DroveEvent.class));
-
         val r = new TaskStateReportMessage(MessageHeader.executorRequest(), null, instance)
                 .accept(cmh);
-        assertEquals(2, ctr.get());
+        assertEquals(1, ctr.get());
         assertEquals(MessageDeliveryStatus.FAILED, r.getStatus());
     }
 }
