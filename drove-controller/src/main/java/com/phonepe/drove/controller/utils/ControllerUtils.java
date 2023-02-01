@@ -12,6 +12,8 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.operation.*;
@@ -301,6 +303,9 @@ public class ControllerUtils {
     }
 
     public static long freeMemory(ExecutorHostInfo executor) {
+        if(executor.getNodeData().isBlacklisted()) {
+            return 0;
+        }
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
                     @Override
@@ -319,6 +324,9 @@ public class ControllerUtils {
     }
 
     public static int freeCores(ExecutorHostInfo executor) {
+        if(executor.getNodeData().isBlacklisted()) {
+            return 0;
+        }
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
                     @Override
@@ -370,5 +378,19 @@ public class ControllerUtils {
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ApiResponse.failure(data, message))
                 .build();
+    }
+
+    public static String deployableObjectId(DeployedInstanceInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<String>() {
+            @Override
+            public String visit(InstanceInfo applicationInstanceInfo) {
+                return applicationInstanceInfo.getInstanceId();
+            }
+
+            @Override
+            public String visit(TaskInfo taskInfo) {
+                return taskInfo.getTaskId();
+            }
+        });
     }
 }

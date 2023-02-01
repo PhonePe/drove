@@ -65,7 +65,7 @@ public class TaskEngine {
             TaskDB taskDB,
             ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler,
-            ControllerCommunicator communicator,
+             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,

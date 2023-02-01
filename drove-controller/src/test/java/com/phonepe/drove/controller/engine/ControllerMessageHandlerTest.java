@@ -33,7 +33,7 @@ class ControllerMessageHandlerTest {
     void testInstanceStateReportMessageSuccess() {
         val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
-        val cmh = new ControllerMessageHandler(su, ev);
+        val cmh = new ControllerMessageHandler(su);
 
         val spec = appSpec();
         val aid = ControllerUtils.deployableObjectId(spec);
@@ -59,7 +59,7 @@ class ControllerMessageHandlerTest {
     void testInstanceStateReportMessageFailure() {
         val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
-        val cmh = new ControllerMessageHandler(su, ev);
+        val cmh = new ControllerMessageHandler(su);
 
         val spec = appSpec();
         val aid = ControllerUtils.deployableObjectId(spec);
@@ -85,7 +85,7 @@ class ControllerMessageHandlerTest {
     void testExecutorSnapshotMessage() {
         val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
-        val cmh = new ControllerMessageHandler(su, ev);
+        val cmh = new ControllerMessageHandler(su);
         val ctr = new AtomicInteger();
         doAnswer(invocationOnMock -> {
             ctr.incrementAndGet();
@@ -102,7 +102,7 @@ class ControllerMessageHandlerTest {
     void testTaskInstanceStateReportMessageRunning() {
         val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
-        val cmh = new ControllerMessageHandler(su, ev);
+        val cmh = new ControllerMessageHandler(su);
 
         val spec = taskSpec();
         val aid = ControllerUtils.deployableObjectId(spec);
@@ -128,7 +128,7 @@ class ControllerMessageHandlerTest {
     void testTaskInstanceStateReportMessageSuccess() {
         val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
-        val cmh = new ControllerMessageHandler(su, ev);
+        val cmh = new ControllerMessageHandler(su);
 
         val spec = taskSpec();
         val aid = ControllerUtils.deployableObjectId(spec);
@@ -154,7 +154,7 @@ class ControllerMessageHandlerTest {
     void testTaskInstanceStateReportMessageFailure() {
         val ev = mock(DroveEventBus.class);
         val su = mock(StateUpdater.class);
-        val cmh = new ControllerMessageHandler(su, ev);
+        val cmh = new ControllerMessageHandler(su);
 
         val spec = taskSpec();
         val aid = ControllerUtils.deployableObjectId(spec);

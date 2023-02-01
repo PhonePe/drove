@@ -29,7 +29,7 @@ options:
 logging:
   level: INFO
   loggers:
-    com.phonepe.drove: WARN
+    com.phonepe.drove: DEBUG
     com.phonepe.drove.controller.managed.DroveEventLogger: INFO
 
   appenders:

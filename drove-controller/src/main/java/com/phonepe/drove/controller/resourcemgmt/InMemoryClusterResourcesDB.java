@@ -16,7 +16,6 @@ import lombok.val;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
-import java.util.function.Function;
 import java.util.function.LongBinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -74,15 +73,13 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
     public void update(List<ExecutorNodeData> nodeData) {
         val stamp = lock.writeLock();
         try {
-            nodes.putAll(nodeData.stream()
-                                 .map(this::convertState)
-                                 .collect(Collectors.toUnmodifiableMap(ExecutorHostInfo::getExecutorId,
-                                                                       Function.identity())));
+            nodeData.forEach(this::updateNodeDataUnsafe);
         }
         finally {
             lock.unlockWrite(stamp);
         }
     }
+
 
     @Override
     @SneakyThrows
@@ -90,7 +87,10 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
     public void update(final ExecutorResourceSnapshot snapshot) {
         val stamp = lock.writeLock();
         try {
-            nodes.computeIfPresent(snapshot.getExecutorId(), (executorId, node) -> convertState(node, snapshot));
+            val node = nodes.get(snapshot.getExecutorId());
+            if(null != node) {
+                updateNodeDataUnsafe(convertState(node, snapshot));
+            }
         }
         finally {
             lock.unlockWrite(stamp);
@@ -167,6 +167,27 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
         finally {
             lock.unlockWrite(stamp);
         }
+    }
+
+    private void updateNodeDataUnsafe(ExecutorNodeData rawNodeData) {
+        val node = convertState(rawNodeData);
+        updateNodeDataUnsafe(node);
+    }
+
+    private void updateNodeDataUnsafe(ExecutorHostInfo node) {
+        nodes.compute(node.getExecutorId(), (eId, existing) -> {
+            if (null != existing
+                    && existing.getNodeData().getUpdated().after(node.getNodeData().getUpdated())) {
+                log.warn(
+                        "Ignored stale update for executor {} as existing data is from {} while update is " +
+                                "from {}",
+                        node.getExecutorId(),
+                        existing.getNodeData().getUpdated().getTime(),
+                        node.getNodeData().getUpdated().getTime());
+                return existing;
+            }
+            return node;
+        });
     }
 
     private boolean isBlackListedInternal(String executorId) {
@@ -277,7 +298,8 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
                                                 .getCores()
                                                 .entrySet()
                                                 .stream()
-                                                .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
+                                                .filter(entry -> entry.getValue()
+                                                        .equals(ExecutorHostInfo.CoreState.FREE))
                                                 .map(Map.Entry::getKey)
                                                 .limit(requiredCPUs)
                                                 .collect(Collectors.toUnmodifiableSet())));

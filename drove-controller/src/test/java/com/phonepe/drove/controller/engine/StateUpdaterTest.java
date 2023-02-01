@@ -1,6 +1,8 @@
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -53,10 +55,11 @@ class StateUpdaterTest {
             counter.incrementAndGet();
             return true;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
-
-        val su = new StateUpdater(cDB, taskDB, iiDB);
+        val droveEventBus = mock(DroveEventBus.class);
+        val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
         su.updateClusterResources(nodes);
         su.updateClusterResources(List.of());
+        CommonTestUtils.waitUntil(() -> counter.get() == 2);
         assertEquals(2, counter.get());
     }
 
@@ -85,9 +88,11 @@ class StateUpdaterTest {
             count.incrementAndGet();
             return true;
         }).when(iiDB).deleteInstanceState(anyString(), anyString());
+        val droveEventBus = mock(DroveEventBus.class);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB);
+        val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
         su.remove(List.of(executor.getExecutorId()));
+        CommonTestUtils.waitUntil(() -> count.get() == 2);
         assertEquals(2, count.get());
     }
 
@@ -112,11 +117,13 @@ class StateUpdaterTest {
             assertEquals(instance.getInstanceId(), invocationOnMock.getArgument(1, String.class));
             return true;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
+        val droveEventBus = mock(DroveEventBus.class);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB);
+        val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
         su.updateSingle(new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                      new AvailableCPU(Map.of(), Map.of()),
                                                      new AvailableMemory(Map.of(), Map.of())), instance);
+        CommonTestUtils.waitUntil(() -> counter.get() == 2);
         assertEquals(2, counter.get());
     }
 }
