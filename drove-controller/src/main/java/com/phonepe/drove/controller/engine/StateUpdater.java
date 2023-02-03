@@ -210,7 +210,7 @@ public class StateUpdater {
                 try {
                     update = updates.take();
                     val updateStatus = update.accept(this);
-                    log.debug("Update status for {}: {}", update.getId(), updateStatus);
+                    log.trace("Update status for {}: {}", update.getId(), updateStatus);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -251,7 +251,7 @@ public class StateUpdater {
             val existing = instanceInfoDB.instance(appId, instanceId).orElse(null);
             val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
             if (!isNewUpdate) {
-                log.debug("Ignoring stale state update for instance {}/{}. Existing: {} Current: {}",
+                log.trace("Ignoring stale state update for instance {}/{}. Existing: {} Current: {}",
                           appId, instanceId, existing.getUpdated().getTime(), instanceInfo.getUpdated().getTime());
                 return false;
             }
@@ -268,7 +268,7 @@ public class StateUpdater {
             val existing = taskDB.task(sourceAppName, taskId).orElse(null);
             val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
             if (!isNewUpdate) {
-                log.debug("Ignoring stale state update for task {}/{}. Existing: {} Current: {}",
+                log.trace("Ignoring stale state update for task {}/{}. Existing: {} Current: {}",
                           sourceAppName, taskId, existing.getUpdated().getTime(), instanceInfo.getUpdated().getTime());
                 return false;
             }

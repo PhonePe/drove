@@ -71,6 +71,7 @@ public class CommonUtils {
                      .connectString(config.getConnectionString())
                      .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
                      .retryPolicy(new RetryForever(1000))
+                     .sessionTimeoutMs(30_000)
                      .build();
     }
 

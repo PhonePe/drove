@@ -44,6 +44,9 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     private final ConsumingSyncSignal<Boolean> leadershipStateChanged = new ConsumingSyncSignal<>();
     private final Lock stateLock = new ReentrantLock();
     private final AtomicBoolean started = new AtomicBoolean();
+    private final AtomicBoolean connected = new AtomicBoolean(true);
+    private final AtomicBoolean leader = new AtomicBoolean();
+
     private ControllerNodeData currentData;
 
     @SuppressWarnings("java:S1075")
@@ -56,42 +59,51 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
         this.nodeDataStore = nodeDataStore;
         this.eventBus = eventBus;
         val path = "/leadership";
+
         this.leaderLatch = new LeaderLatch(curatorFramework, path);
-        this.leaderLatch.addListener(new LeaderLatchListener() {
+        val leaderLatchListener = new LeaderLatchListener() {
             @Override
             public void isLeader() {
                 log.info("This node became leader. Updating state.");
                 refreshNodeState();
-                leadershipStateChanged.dispatch(true);
             }
 
             @Override
             public void notLeader() {
                 log.info("This node lost leadership. Updating state.");
                 refreshNodeState();
-                leadershipStateChanged.dispatch(false);
+            }
+        };
+        curatorFramework.getConnectionStateListenable().addListener((client, newState) -> {
+            log.info("Zk connection state changed to: {}", newState);
+            switch (newState) {
+                case CONNECTED, RECONNECTED -> {
+                    connected.set(true);
+                    log.info("Node is connected to Zk");
+                }
+                case SUSPENDED, LOST, READ_ONLY -> {
+                    connected.set(false);
+                    log.info("Node is disconnected from Zk");
+                }
             }
         });
+        this.leaderLatch.addListener(leaderLatchListener);
         this.checkLeadership.connect(this::refresh);
         environment.lifecycle().addServerLifecycleListener(this);
-        leadershipStateChanged.connect(isLeader -> {
-            eventBus.publish(new DroveClusterEvent(
-                    isLeader
-                    ? DroveEventType.LEADERSHIP_ACQUIRED
-                    : DroveEventType.LEADERSHIP_LOST,
-                    EventUtils.controllerMetadata()));
-        });
     }
 
     @Override
     public void start() throws Exception {
-        leaderLatch.start();
+        //Nothing to do here. Latch will be started once server starts listening
     }
 
     @Override
     public void stop() throws Exception {
         log.debug("Shutting down {}", this.getClass().getSimpleName());
-        leaderLatch.close();
+        if(started.get()) {
+            leaderLatch.close();
+        }
+        started.set(false);
         log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 
@@ -100,7 +112,7 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     }
 
     public boolean isLeader() {
-        return this.leaderLatch.hasLeadership();
+        return leader.get();
     }
 
     @Override
@@ -116,37 +128,68 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     }
 
     private void refresh(Date currDate) {
-        if (!started.get()) {
-            log.warn("Node not started yet. Skipping state update");
-        }
         refreshNodeState();
+        log.trace("ZK State update for controller at: {}", currDate);
     }
 
     private void refreshNodeState(int port, NodeTransportType transportType, String hostname) {
+        val currLeadershipState = connected.get() && this.leaderLatch.hasLeadership();
+        val oldState = leader.getAndSet(currLeadershipState);
+        stateLock.lock();
         try {
-            stateLock.lock();
-            currentData = new ControllerNodeData(hostname, port, transportType, new Date(), isLeader());
+            currentData = new ControllerNodeData(hostname, port, transportType, new Date(), currLeadershipState);
             nodeDataStore.updateNodeData(currentData);
-            started.set(true);
             log.info("Node created for this controller. Data: {}", currentData);
+            leaderLatch.start();
+            log.info("Node started participating in leader election");
+            started.set(true);
+        }
+        catch (Exception e) {
+            log.error("Error in state update: " + e.getMessage(), e);
         }
         finally {
             stateLock.unlock();
         }
+        handleLeadershipUpdate(currLeadershipState, oldState);
     }
 
     private void refreshNodeState() {
+        if (!started.get()) {
+            log.error("Ignoring ZK controller data update as server has not started completely");
+            return;
+        }
+        val currLeadershipState = connected.get() && this.leaderLatch.hasLeadership();
+        val oldState = leader.getAndSet(currLeadershipState);
+
+        stateLock.lock();
         try {
-            stateLock.lock();
-            if (null == currentData) {
-                log.error("Ignoring update as server has not started");
-                return;
-            }
-            currentData = ControllerNodeData.from(currentData, isLeader());
+            currentData = ControllerNodeData.from(currentData, currLeadershipState);
             nodeDataStore.updateNodeData(currentData);
+        }
+        catch (Exception e) {
+            log.error("Error in state update: " + e.getMessage(), e);
         }
         finally {
             stateLock.unlock();
+        }
+        log.trace("Curr state: {} Old State: {}", currLeadershipState, oldState);
+        handleLeadershipUpdate(currLeadershipState, oldState);
+    }
+
+    private void handleLeadershipUpdate(boolean currLeadershipState, boolean oldState) {
+        if(currLeadershipState != oldState) {
+            if(currLeadershipState) {
+                log.info("This node became leader");
+            }
+            else {
+                log.info("This node lost leadership");
+            }
+            eventBus.publish(new DroveClusterEvent(
+                    currLeadershipState
+                    ? DroveEventType.LEADERSHIP_ACQUIRED
+                    : DroveEventType.LEADERSHIP_LOST,
+                    EventUtils.controllerMetadata()));
+            leadershipStateChanged.dispatch(currLeadershipState);
         }
     }
 }

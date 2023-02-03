@@ -22,7 +22,6 @@ import static com.phonepe.drove.common.CommonUtils.buildCurator;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -46,7 +45,6 @@ class LeadershipEnsurerTest {
                 val eventBus = mock(DroveEventBus.class);
 
                 val l1 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
-                val l2 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
                 val nodeData = new AtomicReference<ControllerNodeData>();
                 doAnswer(invocationOnMock -> {
                     val node = invocationOnMock.getArgument(0, ControllerNodeData.class);
@@ -63,9 +61,9 @@ class LeadershipEnsurerTest {
                         .until(() -> null != nodeData.get());
                 assertTrue(nodeData.get().isLeader());
                 assertEquals(8080, nodeData.get().getPort());
-
+                assertTrue(l1.isLeader());
                 //Check failover
-                nodeData.set(null);
+                val l2 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
                 l2.start();
                 l2.serverStarted(server(9000));
                 l1.stop();
@@ -74,6 +72,7 @@ class LeadershipEnsurerTest {
                         .until(() -> null != nodeData.get());
                 assertTrue(nodeData.get().isLeader());
                 assertEquals(9000, nodeData.get().getPort());
+                assertTrue(l2.isLeader());
             }
         }
     }
