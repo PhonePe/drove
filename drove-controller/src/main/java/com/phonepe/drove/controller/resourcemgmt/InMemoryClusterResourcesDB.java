@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.LongBinaryOperator;
@@ -26,7 +28,25 @@ import java.util.stream.Collectors;
 @Singleton
 @Slf4j
 public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
+    private static final Duration MAX_REMOVED_NODE_RETENTION_WINDOW = Duration.ofDays(2);
+
     private final Map<String, ExecutorHostInfo> nodes = new HashMap<>();
+    private final Map<String, ExecutorHostInfo> removedNodes = new LinkedHashMap<>() {
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ExecutorHostInfo> eldest) {
+            val status = eldest.getValue()
+                    .getNodeData()
+                    .getUpdated()
+                    .after(Date.from(Instant.now().plus(MAX_REMOVED_NODE_RETENTION_WINDOW)));
+            if(status) {
+                log.warn("Removed executor data for {} will be permanently deleted",
+                         eldest.getValue().getExecutorId());
+            }
+            return status;
+        }
+    };
+
     private final Map<String, Boolean> blackListedNodes = new HashMap<>();
 
     private final StampedLock lock = new StampedLock();
@@ -37,6 +57,18 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
         val stamp = lock.readLock();
         try {
             return List.copyOf(nodes.values());
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
+
+    @Override
+    @MonitoredFunction
+    public List<ExecutorHostInfo> lastKnownSnapshots() {
+        val stamp = lock.readLock();
+        try {
+            return List.copyOf(removedNodes.values());
         }
         finally {
             lock.unlockRead(stamp);
@@ -56,11 +88,28 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
     }
 
     @Override
+    public Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId) {
+        val stamp = lock.readLock();
+        try {
+            return Optional.ofNullable(removedNodes.get(executorId));
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
+
+    @Override
     @MonitoredFunction
     public void remove(Collection<String> executorIds) {
         val stamp = lock.writeLock();
         try {
-            executorIds.forEach(nodes::remove);
+            executorIds.stream()
+                    .map(nodes::remove)
+                    .filter(Objects::nonNull)
+                    .forEach(removedExecutor -> {
+                        removedNodes.put(removedExecutor.getExecutorId(), removedExecutor);
+                        log.info("Executor {} is now out of the cluster", removedExecutor.getExecutorId());
+                    });
         }
         finally {
             lock.unlockWrite(stamp);
@@ -88,7 +137,7 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
         val stamp = lock.writeLock();
         try {
             val node = nodes.get(snapshot.getExecutorId());
-            if(null != node) {
+            if (null != node) {
                 updateNodeDataUnsafe(convertState(node, snapshot));
             }
         }
@@ -175,7 +224,7 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
     }
 
     private void updateNodeDataUnsafe(ExecutorHostInfo node) {
-        nodes.compute(node.getExecutorId(), (eId, existing) -> {
+        val updated = nodes.compute(node.getExecutorId(), (eId, existing) -> {
             if (null != existing
                     && existing.getNodeData().getUpdated().after(node.getNodeData().getUpdated())) {
                 log.warn(
@@ -188,6 +237,9 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
             }
             return node;
         });
+        if(null != removedNodes.remove(updated.getExecutorId())) {
+            log.info("Executor {} is back in the cluster", updated.getExecutorId());
+        }
     }
 
     private boolean isBlackListedInternal(String executorId) {

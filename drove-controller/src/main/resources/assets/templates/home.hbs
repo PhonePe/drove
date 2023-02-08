@@ -33,7 +33,7 @@
                         <button class="nav-link" id="taskdetails-tab" data-toggle="tab" data-target="#taskdetails" type="button" role="tab" aria-controls="taskdetails" aria-selected="false">Tasks</button>
                     </li>
                 </ul>
-                <div class="tab-content" id=""runnablesContent>
+                <div class="tab-content" id="">
                     <div class="tab-pane fade show active" id="applicationdetails" role="tabpanel" aria-labelledby="applicationdetails-tab">
                         <div class="row">
                             <div class="col">
@@ -107,6 +107,7 @@
                                 <th>Free Memory</th>
                                 <th>Used Memory</th>
                                 <th>Tags</th>
+                                <th>State</th>
                             </tr>
                             </thead>
                         </table>
@@ -228,7 +229,7 @@
             {
                 'data' : 'executorId' ,
                 'render' : function(data, type, row, meta) {
-                    return row.blacklisted
+                    return (row.state == 'REMOVED' || row.state == 'BLACKLISTED')
                         ? '<del><a href="/executors/' + data + '">' + data + '</a></del>'
                         : '<a href="/executors/' + data + '">' + data + '</a>';
                 }
@@ -250,7 +251,8 @@
                    }
                    return tagStr;
                 }
-            }
+            },
+            {  'data' : 'state', 'render' : renderExecutorState }
         ]
     });
 

@@ -10,6 +10,11 @@ import java.util.Set;
  */
 @Value
 public class ExecutorSummary {
+    public enum ExecutorState {
+        ACTIVE,
+        BLACKLISTED,
+        REMOVED
+    }
     String executorId;
     String hostname;
     int port;
@@ -19,5 +24,5 @@ public class ExecutorSummary {
     long freeMemory;
     long usedMemory;
     Set<String> tags;
-    boolean blacklisted;
+    ExecutorState state;
 }

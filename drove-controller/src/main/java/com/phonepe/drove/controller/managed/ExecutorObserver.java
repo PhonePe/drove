@@ -81,11 +81,10 @@ public class ExecutorObserver implements Managed {
                     val missingExecutors = Sets.difference(knownExecutors, ids);
                     if (!missingExecutors.isEmpty()) {
                         log.info("Missing executors detected: {}", missingExecutors);
-                        updater.remove(missingExecutors);
+                        updater.remove(Set.copyOf(missingExecutors));
                         missingExecutors.forEach(
                                 executorId -> eventBus.publish(
                                         new DroveExecutorEvent(DroveEventType.EXECUTOR_REMOVED, executorMetadata(executorId))));
-
                     }
                     else {
                         val newExecutors = Sets.difference(ids, knownExecutors);

@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import io.appform.functionmetrics.MonitoredFunction;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,7 +16,12 @@ import java.util.function.Predicate;
 public interface ClusterResourcesDB {
     List<ExecutorHostInfo> currentSnapshot();
 
+    @MonitoredFunction
+    List<ExecutorHostInfo> lastKnownSnapshots();
+
     Optional<ExecutorHostInfo> currentSnapshot(String executorId);
+
+    Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId);
 
     void remove(Collection<String> executorIds);
 

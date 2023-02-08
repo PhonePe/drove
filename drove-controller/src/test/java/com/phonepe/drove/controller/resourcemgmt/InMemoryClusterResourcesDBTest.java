@@ -45,6 +45,24 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         {
             db.remove(IntStream.rangeClosed(1, 100).mapToObj(ControllerTestUtils::executorId).toList());
             assertTrue(db.currentSnapshot().isEmpty());
+            IntStream.rangeClosed(1, 100)
+                    .forEach(i -> assertEquals(executorId(i),
+                                               db.lastKnownSnapshot(executorId(i))
+                                                       .map(ExecutorHostInfo::getExecutorId)
+                                                       .orElse(null)));
+        }
+        db.update(IntStream.rangeClosed(1, 100)
+                          .mapToObj(ControllerTestUtils::generateExecutorNode)
+                          .toList());
+        {
+            IntStream.rangeClosed(1, 100)
+                    .forEach(i -> {
+                        assertEquals(executorId(i),
+                                     db.currentSnapshot(executorId(i))
+                                             .map(ExecutorHostInfo::getExecutorId)
+                                             .orElse(null));
+                        assertNull(db.lastKnownSnapshot(ControllerTestUtils.executorId(i)).orElse(null));
+                    });
         }
     }
 

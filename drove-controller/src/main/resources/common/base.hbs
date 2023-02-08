@@ -167,6 +167,14 @@ $(document).ready(function() {
         }
     }
 
+    function renderExecutorState(data, type, row, meta) {
+        switch(data) {
+            case 'ACTIVE' : return '<span class="font-weight-bold text-success">Active</span>';
+            case 'BLACKLISTED' : return '<span class="font-weight-bold text-warning">Blacklisted</span>';
+            case 'REMOVED' : return '<span class="font-weight-bold text-danger">Removed</span>';
+        }
+    }
+
     function updateResourceUsage(instances) {
         instances.forEach( (info, i) => {
             info.resources.forEach((r,i) => {

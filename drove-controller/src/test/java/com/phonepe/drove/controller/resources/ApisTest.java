@@ -481,7 +481,7 @@ class ApisTest {
                                                    512,
                                                    1024,
                                                    Set.of(),
-                                                   false))
+                                                   ExecutorSummary.ExecutorState.ACTIVE))
                 .toList();
         when(responseEngine.nodes()).thenReturn(ApiResponse.success(executors));
         val r = EXT.target("/v1/cluster/executors")

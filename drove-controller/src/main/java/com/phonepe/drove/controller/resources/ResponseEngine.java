@@ -189,12 +189,18 @@ public class ResponseEngine {
     }
 
     public ApiResponse<List<ExecutorSummary>> nodes() {
-        return success(
-                clusterResourcesDB.currentSnapshot()
-                        .stream()
-                        .map(hostInfo -> toExecutorSummary(hostInfo).orElse(null))
-                        .filter(Objects::nonNull)
-                        .toList());
+        val executors = new ArrayList<ExecutorSummary>();
+        clusterResourcesDB.currentSnapshot()
+                .stream()
+                .map(hostInfo -> toExecutorSummary(hostInfo, false).orElse(null))
+                .filter(Objects::nonNull)
+                .forEach(executors::add);
+        clusterResourcesDB.lastKnownSnapshots()
+                .stream()
+                .map(hostInfo -> toExecutorSummary(hostInfo, true).orElse(null))
+                .filter(Objects::nonNull)
+                .forEach(executors::add);
+        return success(executors);
     }
 
     public ApiResponse<ExecutorNodeData> executorDetails(String executorId) {
@@ -396,9 +402,9 @@ public class ResponseEngine {
                 .sum();
     }
 
-    private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo) {
+    private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo, boolean removed) {
         return hostInfo.getNodeData()
-                .accept(new NodeDataVisitor<Optional<ExecutorSummary>>() {
+                .accept(new NodeDataVisitor<>() {
                     @Override
                     public Optional<ExecutorSummary> visit(ControllerNodeData controllerData) {
                         return Optional.empty();
@@ -406,6 +412,10 @@ public class ResponseEngine {
 
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
+                        val executorState = removed ? ExecutorSummary.ExecutorState.REMOVED
+                                            : (executorData.isBlacklisted()
+                                               ? ExecutorSummary.ExecutorState.BLACKLISTED
+                                               : ExecutorSummary.ExecutorState.ACTIVE);
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                                                hostInfo.getNodeData().getHostname(),
                                                                hostInfo.getNodeData().getPort(),
@@ -439,7 +449,7 @@ public class ResponseEngine {
                                                                        .mapToLong(v -> v)
                                                                        .sum(),
                                                                executorData.getTags(),
-                                                               executorData.isBlacklisted()));
+                                                               executorState));
                     }
                 });
     }
