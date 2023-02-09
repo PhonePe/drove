@@ -187,7 +187,6 @@ public class CommonUtils {
                                                        .setTimeToLive(TimeValue.ofHours(1))
                                                        .build());
         val rc = RequestConfig.custom()
-                .setConnectTimeout(Timeout.of(connectionTimeout))
                 .setConnectionRequestTimeout(Timeout.of(connectionTimeout))
                 .setResponseTimeout(Timeout.of(connectionTimeout))
                 .build();
