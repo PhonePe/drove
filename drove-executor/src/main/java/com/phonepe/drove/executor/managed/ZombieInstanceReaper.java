@@ -3,9 +3,16 @@ package com.phonepe.drove.executor.managed;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
+import com.phonepe.drove.executor.engine.InstanceEngine;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
+import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -30,24 +37,31 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
 @Order(80)
 public class ZombieInstanceReaper implements Managed {
 
-    private static final Set<InstanceState> EXPECTED_DOCKER_RUNNING_STATES = Set.of(PROVISIONING,
-                                                                                    STARTING,
-                                                                                    UNREADY,
-                                                                                    READY,
-                                                                                    HEALTHY,
-                                                                                    UNHEALTHY,
-                                                                                    STOPPING);
+    private static final Set<InstanceState> EXPECTED_APP_DOCKER_RUNNING_STATES = Set.of(PROVISIONING,
+                                                                                        STARTING,
+                                                                                        UNREADY,
+                                                                                        READY,
+                                                                                        HEALTHY,
+                                                                                        UNHEALTHY,
+                                                                                        STOPPING);
+    private static final Set<TaskState> EXPECTED_TASK_DOCKER_RUNNING_STATES = Set.of(TaskState.PROVISIONING,
+                                                                                     TaskState.STARTING,
+                                                                                     TaskState.RUNNING,
+                                                                                     TaskState.RUN_COMPLETED,
+                                                                                     TaskState.DEPROVISIONING);
 
     private final ScheduledSignal zombieCheckSignal = new ScheduledSignal(Duration.ofSeconds(30));
     private final DockerClient client;
-    private final ApplicationInstanceEngine instanceEngine;
+    private final ApplicationInstanceEngine applicationInstanceEngine;
+    private final TaskInstanceEngine taskInstanceEngine;
 
     @Inject
     public ZombieInstanceReaper(
             DockerClient client,
-            ApplicationInstanceEngine instanceEngine) {
+            ApplicationInstanceEngine applicationInstanceEngine, TaskInstanceEngine taskInstanceEngine) {
         this.client = client;
-        this.instanceEngine = instanceEngine;
+        this.applicationInstanceEngine = applicationInstanceEngine;
+        this.taskInstanceEngine = taskInstanceEngine;
     }
 
     @Override
@@ -69,52 +83,68 @@ public class ZombieInstanceReaper implements Managed {
                                          DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
                                          DockerLabels.DROVE_INSTANCE_DATA_LABEL))
                 .exec();
-        cleanupMissingDockers(containers);
-        cleanupZombieContainers(containers);
+        pruneInstanceIds(containers, applicationInstanceEngine, EXPECTED_APP_DOCKER_RUNNING_STATES, JobType.SERVICE);
+        pruneInstanceIds(containers, taskInstanceEngine, EXPECTED_TASK_DOCKER_RUNNING_STATES, JobType.COMPUTATION);
+        pruneZombieContainers(containers, applicationInstanceEngine, EXPECTED_APP_DOCKER_RUNNING_STATES, JobType.SERVICE);
+        pruneZombieContainers(containers, taskInstanceEngine, EXPECTED_TASK_DOCKER_RUNNING_STATES, JobType.COMPUTATION);
     }
 
-    void cleanupMissingDockers(List<Container> containers) {
-        val instanceIds = instanceEngine.instanceIds(RUNNING_STATES);
+    private <E extends DeployedExecutionObjectInfo, S extends Enum<S>,
+            T extends DeploymentUnitSpec, I extends DeployedInstanceInfo> void pruneInstanceIds(
+            List<Container> containers, InstanceEngine<E, S, T, I> engine,
+            Set<S> states,
+            JobType type) {
+        val instanceIds = engine.instanceIds(states);
         //Only states where we expect this to be running
         val foundContainers = containers.stream()
+                .filter(container -> type.equals(JobType.valueOf(
+                        container.getLabels().get(DockerLabels.DROVE_JOB_TYPE_LABEL))))
                 .map(container -> container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL))
                 .collect(Collectors.toUnmodifiableSet());
         val notFound = Sets.difference(instanceIds, foundContainers);
         if (!notFound.isEmpty()) {
-            log.warn("Did not find running containers for instances: {}", instanceIds);
-            notFound.forEach(instanceEngine::stopInstance);
-            log.info("Stale instance data cleaned up");
+            log.warn("Did not find running {} containers for instances: {}", instanceIds, type);
+            notFound.forEach(engine::stopInstance);
+            log.info("Stale {} instance data cleaned up", type);
         }
         else {
-            log.debug("No stale instance ids found");
+            log.debug("No stale {} instance ids found", type);
         }
     }
 
-    private void cleanupZombieContainers(List<Container> containers) {
-        val instanceIds = instanceEngine.instanceIds(EXPECTED_DOCKER_RUNNING_STATES);
+    private <E extends DeployedExecutionObjectInfo, S extends Enum<S>,
+            T extends DeploymentUnitSpec, I extends DeployedInstanceInfo>
+    void pruneZombieContainers(
+            List<Container> containers, InstanceEngine<E, S, T, I> engine, Set<S> states, JobType type) {
+        val instanceIds = engine.instanceIds(states);
         val foundContainers = containers.stream()
+                .filter(container -> type.equals(JobType.valueOf(
+                        container.getLabels().get(DockerLabels.DROVE_JOB_TYPE_LABEL))))
                 .map(container -> container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL))
                 .collect(Collectors.toUnmodifiableSet());
         val onlyInDocker = Sets.difference(foundContainers, instanceIds);
-        if(!onlyInDocker.isEmpty()) {
-            log.info("Containers not supposed to be on drove but still running: {}", onlyInDocker);
+        if (!onlyInDocker.isEmpty()) {
+            log.info("Containers of type {} not supposed to be on drove but still running: {}", onlyInDocker, type);
             containers.stream()
-                    .filter(container -> onlyInDocker.contains(container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL)))
+                    .filter(container -> onlyInDocker.contains(container.getLabels()
+                                                                       .get(DockerLabels.DROVE_INSTANCE_ID_LABEL)))
                     .forEach(container -> {
                         val droveInstanceId = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
-                        log.info("Killing zombie container: {} {}", droveInstanceId, container.getId());
+                        log.info("Killing zombie container of type {}: {} {}", type, droveInstanceId, container.getId());
                         try {
                             client.killContainerCmd(container.getId()).exec();
                         }
                         catch (Exception e) {
-                            log.error("Error killing container " + droveInstanceId + " (" + container.getId() + ") : " + e.getMessage(), e);
+                            log.error("Error killing container " + droveInstanceId + " (" + container.getId() + ") : "
+                                              + e.getMessage(),
+                                      e);
                         }
                         log.info("Killed zombie container: {} {}", droveInstanceId, container.getId());
                     });
-            log.info("All zombie containers killed");
+            log.info("All zombie containers of type {} killed", type);
         }
         else {
-            log.debug("No zombie containers found");
+            log.debug("No zombie containers of type {} found", type);
         }
     }
 
