@@ -2,29 +2,30 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.google.common.base.Strings;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,8 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
     @Override
     @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+            InstanceActionContext<ApplicationInstanceSpec> context,
+            StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         if (Strings.isNullOrEmpty(context.getDockerInstanceId())) {
             log.warn("No docker id found for instance {}. Nothing to be done for stop.",
                      context.getInstanceSpec().getInstanceId());
@@ -96,7 +98,9 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         sleepBeforeKill(preShutdown);
     }
 
-    private void executeHook(StateData<InstanceState, ExecutorInstanceInfo> currentState, CheckModeSpec preShutdownHook) {
+    private void executeHook(
+            StateData<InstanceState, ExecutorInstanceInfo> currentState,
+            CheckModeSpec preShutdownHook) {
         val httpSpec = CheckMode.HTTP == preShutdownHook.getType()
                        ? (HTTPCheckModeSpec) preShutdownHook
                        : null;
@@ -105,15 +109,6 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
             return;
         }
         val instanceInfo = currentState.getData();
-        val connectionTimeout = Duration.ofMillis(
-                Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
-                                           io.dropwizard.util.Duration.seconds(1))
-                        .toMilliseconds());
-        val httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .connectTimeout(connectionTimeout)
-                .version(HttpClient.Version.HTTP_1_1)
-                .build();
         val port = instanceInfo.getLocalInfo()
                 .getPorts()
                 .get(httpSpec.getPortName());
@@ -133,7 +128,7 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
                 .withMaxDuration(Duration.ofSeconds(30))
                 .handle(Exception.class)
                 .handleResultIf(r -> !r);
-        try {
+        try (val httpClient = CommonUtils.createInternalHttpClient(httpSpec, Duration.ofSeconds(1))) {
             Failsafe.with(List.of(retryPolicy))
                     .onFailure(e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()))
                     .get(() -> makeHTTPCall(httpClient, httpSpec, uri));
@@ -141,24 +136,31 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         catch (TimeoutExceededException e) {
             log.error("Timeout calling shutdown hook.");
         }
+        catch (IOException e) {
+            log.error("Error creating http client: " + e.getMessage());
+        }
     }
 
     private boolean makeHTTPCall(
-            final HttpClient httpClient,
+            final CloseableHttpClient httpClient,
             final HTTPCheckModeSpec httpSpec,
             final URI uri) {
-        val requestBuilder = ExecutorUtils.buildRequestFromSpec(httpSpec, uri);
+        val request = ExecutorUtils.buildRequestFromSpec(httpSpec, uri);
 
-        val request = requestBuilder.timeout(REQUEST_TIMEOUT)
-                .build();
         try {
             log.info("Calling pre-shutdown hook: {}", uri);
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (httpSpec.getSuccessCodes().contains(response.statusCode())) {
-                return true;
-            }
-            val responseBody = response.body();
-            log.error("Pre-shutdown hook failed. Status code: {} response: {}", response.statusCode(), responseBody);
+            return httpClient.execute(request, response -> {
+                val statusCode = response.getCode();
+                val responseBody = null != response.getEntity()
+                                   ? EntityUtils.toString(response.getEntity())
+                                   : "";
+                if (httpSpec.getSuccessCodes().contains(statusCode)) {
+                    return true;
+                }
+                log.error("Pre-shutdown hook failed. Status code: {} response: {}", statusCode, responseBody);
+                return false;
+            });
+
         }
         catch (ConnectException e) {
             log.error("Unable to connect to instance");
@@ -166,17 +168,13 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         catch (IOException e) {
             log.error("Pre-shutdown hook failed. Error Message: " + e.getMessage(), e);
         }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("Pre-shutdown hook failed. Interrupted");
-        }
         return false;
     }
 
     private void sleepBeforeKill(PreShutdownSpec preShutdown) {
         val sleepMillis = Objects.requireNonNullElse(preShutdown.getWaitBeforeKill(),
                                                      io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
-        if(sleepMillis == 0) {
+        if (sleepMillis == 0) {
             log.warn("No sleep specified. This is not a good practise");
             return;
         }

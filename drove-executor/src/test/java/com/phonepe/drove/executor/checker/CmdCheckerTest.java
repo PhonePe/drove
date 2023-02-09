@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.checker;
 
 import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.HostConfig;
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -9,7 +10,6 @@ import com.phonepe.drove.executor.utils.ImagePullProgressHandler;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
-import io.dropwizard.util.Strings;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -28,11 +28,12 @@ class CmdCheckerTest extends AbstractTestBase {
         runTest(containerId -> {
             val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT)
                     .setDockerInstanceId(containerId);
-            val cc = new CmdChecker(new CmdCheckModeSpec("/bin/echo XX"), ctx);
-            val result = cc.call();
-            assertEquals(CheckResult.Status.HEALTHY, result.getStatus());
-            assertTrue(Strings.isNullOrEmpty(result.getMessage()));
-            assertEquals(CheckMode.CMD, cc.mode());
+            try (val cc = new CmdChecker(new CmdCheckModeSpec("/bin/echo XX"), ctx)) {
+                val result = cc.call();
+                assertEquals(CheckResult.Status.HEALTHY, result.getStatus());
+                assertTrue(Strings.isNullOrEmpty(result.getMessage()));
+                assertEquals(CheckMode.CMD, cc.mode());
+            }
         });
     }
 
@@ -41,20 +42,23 @@ class CmdCheckerTest extends AbstractTestBase {
         runTest(containerId -> {
             val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT)
                     .setDockerInstanceId(containerId);
-            val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx);
-            val result = cc.call();
-            assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
-            assertFalse(Strings.isNullOrEmpty(result.getMessage()));        });
+            try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
+                val result = cc.call();
+                assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
+                assertFalse(Strings.isNullOrEmpty(result.getMessage()));
+            }
+        });
     }
 
     @Test
     @SneakyThrows
     void testNoContainer() {
         val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT);
-        val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx);
-        val result = cc.call();
-        assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
-        assertFalse(Strings.isNullOrEmpty(result.getMessage()));
+        try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
+            val result = cc.call();
+            assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
+            assertFalse(Strings.isNullOrEmpty(result.getMessage()));
+        }
     }
 
     @Test
@@ -62,8 +66,7 @@ class CmdCheckerTest extends AbstractTestBase {
     void testError() {
         val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT)
                 .setDockerInstanceId("WrongId");
-        val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx);
-        try {
+        try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
             assertEquals(CheckResult.Status.UNHEALTHY, cc.call().getStatus());
         }
         catch (NotFoundException e) {
@@ -79,7 +82,9 @@ class CmdCheckerTest extends AbstractTestBase {
 
     @SneakyThrows
     void runTest(TestConsumer<String> test) {
-        DOCKER_CLIENT.pullImageCmd(TASK_IMAGE_NAME).exec(new ImagePullProgressHandler(TASK_IMAGE_NAME)).awaitCompletion();
+        DOCKER_CLIENT.pullImageCmd(TASK_IMAGE_NAME)
+                .exec(new ImagePullProgressHandler(TASK_IMAGE_NAME))
+                .awaitCompletion();
         val containerId = DOCKER_CLIENT.createContainerCmd(TASK_IMAGE_NAME)
                 .withHostConfig(new HostConfig().withAutoRemove(true))
                 .withAttachStderr(true)

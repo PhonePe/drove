@@ -1,7 +1,6 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
@@ -31,11 +30,9 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
 
     @Override
     @MonitoredFunction(method = "execute")
-    @SuppressWarnings("deprecation")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
-        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck);
         val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if (initDelay > 0) {
@@ -52,7 +49,7 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                 .withMaxAttempts(healthcheck.getAttempts())
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
-        try {
+        try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck)) {
             val result = Failsafe.with(List.of(retryPolicy))
                     .onComplete(e -> {
                         val failure = e.getFailure();

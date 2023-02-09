@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.checker;
 
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
@@ -8,35 +9,30 @@ import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 
 /**
  * Calls the provided http endpoint on the container
  */
 @Slf4j
 public class HttpChecker implements Checker {
-    private final HttpClient httpClient;
+    private final CloseableHttpClient httpClient;
     private final HTTPCheckModeSpec httpSpec;
     private final URI uri;
-    private final Duration requestTimeout;
 
 
     public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, ExecutorInstanceInfo instance) {
-        var connectionTimeout = Duration.ofMillis(
-                Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
-                                           io.dropwizard.util.Duration.seconds(1))
+        val requestTimeOut = Duration.ofMillis(
+                Objects.requireNonNullElse(checkSpec.getTimeout(), io.dropwizard.util.Duration.seconds(1))
                         .toMilliseconds());
-        httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(connectionTimeout)
-                .build();
+        this.httpClient = CommonUtils.createInternalHttpClient(httpSpec, requestTimeOut);
         this.httpSpec = httpSpec;
         val portSpec = instance.getLocalInfo().getPorts().get(httpSpec.getPortName());
         Objects.requireNonNull(portSpec, "Invalid port spec. No port of name '" + httpSpec.getPortName() + "' exists");
@@ -44,34 +40,33 @@ public class HttpChecker implements Checker {
                                        httpSpec.getProtocol().name().toLowerCase(),
                                        portSpec.getHostPort(),
                                        httpSpec.getPath()));
-        this.requestTimeout = Duration.ofMillis(
-                Objects.requireNonNullElse(checkSpec.getTimeout(), io.dropwizard.util.Duration.seconds(1))
-                        .toMilliseconds());
         log.debug("URI for healthcheck: {}", uri);
     }
 
     @Override
     public CheckResult call() {
-        val requestBuilder = ExecutorUtils.buildRequestFromSpec(httpSpec, uri);
+        val request = ExecutorUtils.buildRequestFromSpec(httpSpec, uri);
 
-        val request = requestBuilder.timeout(requestTimeout)
-                .build();
         try {
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (httpSpec.getSuccessCodes().contains(response.statusCode())) {
-                return CheckResult.healthy();
-            }
-            val responseBody = response.body();
-            log.error("HTTP check unhealthy. Status code: {} response: {}", response.statusCode(), responseBody);
-            return CheckResult.unhealthy(String.format("Response from %S: [%d] %s",
-                                                       uri,
-                                                       response.statusCode(),
-                                                       responseBody));
+            return httpClient.execute(request, response -> {
+                val statusCode = response.getCode();
+                val responseBody = null != response.getEntity()
+                                   ? EntityUtils.toString(response.getEntity())
+                                   : "";
+                if (httpSpec.getSuccessCodes().contains(statusCode)) {
+                    return CheckResult.healthy();
+                }
+                log.error("HTTP check unhealthy. Status code: {} response: {}", statusCode, responseBody);
+                return CheckResult.unhealthy(String.format("Response from %S: [%d] %s",
+                                                           uri,
+                                                           statusCode,
+                                                           responseBody));                });
+
         }
         catch (IOException e) {
             return CheckResult.unhealthy("Healthcheck error from " + uri + ": " + e.getMessage());
         }
-        catch (InterruptedException e) {
+        catch (CancellationException e) {
             Thread.currentThread().interrupt();
         }
         return CheckResult.unhealthy("Healthcheck interrupted");
@@ -80,5 +75,11 @@ public class HttpChecker implements Checker {
     @Override
     public CheckMode mode() {
         return CheckMode.HTTP;
+    }
+
+    @Override
+    public void close() throws Exception {
+        httpClient.close();
+        log.info("Shut down http checker");
     }
 }

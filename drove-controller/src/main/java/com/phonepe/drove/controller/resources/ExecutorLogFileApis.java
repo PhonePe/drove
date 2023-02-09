@@ -13,10 +13,12 @@ import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
 import javax.annotation.security.PermitAll;
@@ -227,13 +229,15 @@ public class ExecutorLogFileApis {
         }
         val so = new StreamingOutput() {
             @Override
+            @SneakyThrows
             public void write(OutputStream output) throws IOException, WebApplicationException {
-                try(val r = httpClient.execute(request)) {
-                    val statusCode = r.getStatusLine().getStatusCode();
+                try(val r = httpClient.executeOpen(null, request, null)) {
+                    val statusCode = r.getCode();
                     if (statusCode != HttpStatus.OK_200) {
                         throw new WebApplicationException(Response.serverError()
                                                                   .entity(Map.of("error",
-                                                                                 "Executor call returned: " + statusCode))
+                                                                                 "Executor call returned: " + statusCode
+                                                                                 + " body: " + EntityUtils.toString(r.getEntity())))
                                                                   .build());
                     }
                     r.getEntity().getContent().transferTo(output);

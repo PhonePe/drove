@@ -44,8 +44,7 @@ public class ApplicationInstanceHealthcheckAction extends ApplicationInstanceAct
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheckSpec = context.getInstanceSpec().getHealthcheck();
-        val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheckSpec);
-        try {
+        try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheckSpec)) {
             val currentContext = MDC.getCopyOfContextMap();
             val mdc = null != currentContext
                       ? currentContext

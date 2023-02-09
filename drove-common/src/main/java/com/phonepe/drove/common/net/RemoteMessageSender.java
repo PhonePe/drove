@@ -15,13 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Optional;
 
 import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
@@ -95,21 +95,21 @@ public abstract class RemoteMessageSender<
             }
             request.setEntity(new StringEntity(mapper.writeValueAsString(message)));
         }
-        catch (UnsupportedEncodingException | JsonProcessingException e) {
+        catch (JsonProcessingException e) {
             log.error("Error building message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
         log.debug("Sending message to remote host: {}. Message: {}", uri, message);
         try(val response = httpClient.execute(request)) {
             val body = EntityUtils.toString(response.getEntity());
-            if (response.getStatusLine().getStatusCode() == 200) {
+            if (response.getCode() == 200) {
                 return mapper.readValue(body, MessageResponse.class);
             }
             else {
                 log.info("Received non-200 response: {}", body);
             }
         }
-        catch (IOException e) {
+        catch (IOException | ParseException e) {
             log.error("Error sending message: ", e);
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }

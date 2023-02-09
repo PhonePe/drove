@@ -35,6 +35,7 @@
         <curator.version>5.4.0</curator.version>
         <metrics-core.version>4.2.13</metrics-core.version>
         <logback.version>1.2.11</logback.version>
+        <httpclient.version>5.2.1</httpclient.version>
         <failsafe.version>2.4.4</failsafe.version>
         <aspectj.version>1.9.9.1</aspectj.version>
         <junit.version>5.8.2</junit.version>

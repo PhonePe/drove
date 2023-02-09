@@ -22,11 +22,16 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.net.URI;
-import java.net.http.HttpRequest;
 import java.util.Date;
 
 /**
@@ -93,16 +98,24 @@ public class ExecutorUtils {
                                             resourceState.getMemory());
     }
 
-    public static HttpRequest.Builder buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
-        val requestBuilder = HttpRequest.newBuilder(uri);
+    @SneakyThrows
+    public static HttpUriRequest buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
         return switch (httpSpec.getVerb()) {
-            case GET -> requestBuilder.GET();
-            case POST -> Strings.isNullOrEmpty(httpSpec.getPayload())
-                         ? requestBuilder.POST(HttpRequest.BodyPublishers.noBody())
-                         : requestBuilder.POST(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
-            case PUT -> Strings.isNullOrEmpty(httpSpec.getPayload())
-                        ? requestBuilder.PUT(HttpRequest.BodyPublishers.noBody())
-                        : requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(httpSpec.getPayload()));
+            case GET -> new HttpGet(uri);
+            case POST -> {
+                val req = new HttpPost(uri);
+                if(!Strings.isNullOrEmpty(httpSpec.getPayload())) {
+                    req.setEntity(new StringEntity(httpSpec.getPayload()));
+                }
+                yield req;
+            }
+            case PUT -> {
+                val req = new HttpPut(uri);
+                if(!Strings.isNullOrEmpty(httpSpec.getPayload())) {
+                    req.setEntity(new StringEntity(httpSpec.getPayload()));
+                }
+                yield req;
+            }
         };
     }
 

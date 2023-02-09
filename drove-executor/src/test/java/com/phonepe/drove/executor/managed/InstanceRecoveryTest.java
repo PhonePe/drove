@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.managed;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.github.dockerjava.api.model.HostConfig;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
@@ -7,12 +8,18 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
+import com.phonepe.drove.executor.discovery.ClusterClient;
+import com.phonepe.drove.models.internal.KnownInstancesData;
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -23,9 +30,18 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     @Test
     @SneakyThrows
     void testNoContainers() {
+        val clusterClient = mock(ClusterClient.class);
+        when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val env = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(env.lifecycle()).thenReturn(lifecycle);
+
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
-                                      AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+                                      AbstractTestBase.MAPPER,
+                                      ExecutorTestingUtils.DOCKER_CLIENT,
+                                      clusterClient,
+                                      env);
         ir.start();
         assertEquals(0, applicationInstanceEngine.currentState().size());
         assertEquals(0, taskInstanceEngine.currentState().size());
@@ -38,10 +54,20 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         val appSpec = ExecutorTestingUtils.testAppInstanceSpec();
         val appInstanceData = ExecutorTestingUtils.createExecutorAppInstanceInfo(appSpec, 8080);
         ExecutorTestingUtils.startTestAppContainer(appSpec, appInstanceData, MAPPER);
+        val clusterClient = mock(ClusterClient.class);
+        when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val env = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(env.lifecycle()).thenReturn(lifecycle);
+
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
-                                      AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+                                      AbstractTestBase.MAPPER,
+                                      ExecutorTestingUtils.DOCKER_CLIENT,
+                                      clusterClient,
+                                      env);
         ir.start();
+        ir.serverStarted(null);
         assertEquals(1, applicationInstanceEngine.currentState().size());
         assertEquals(0, taskInstanceEngine.currentState().size());
         ir.stop();
@@ -53,10 +79,20 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         val taskSpec = ExecutorTestingUtils.testTaskInstanceSpec();
         val taskInstanceData = ExecutorTestingUtils.createExecutorTaskInfo(taskSpec);
         ExecutorTestingUtils.startTestTaskContainer(taskSpec, taskInstanceData, MAPPER);
+        val clusterClient = mock(ClusterClient.class);
+        when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val env = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(env.lifecycle()).thenReturn(lifecycle);
+
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
-                                      AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+                                      AbstractTestBase.MAPPER,
+                                      ExecutorTestingUtils.DOCKER_CLIENT,
+                                      clusterClient,
+                                      env);
         ir.start();
+        ir.serverStarted(null);
         assertEquals(0, applicationInstanceEngine.currentState().size());
         assertEquals(1, taskInstanceEngine.currentState().size());
         ir.stop();
@@ -73,10 +109,20 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
                     .getId();
             ExecutorTestingUtils.DOCKER_CLIENT.startContainerCmd(containerId)
                     .exec();
+            val clusterClient = mock(ClusterClient.class);
+            when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+            val env = mock(Environment.class);
+            val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+            when(env.lifecycle()).thenReturn(lifecycle);
+
             val ir = new InstanceRecovery(applicationInstanceEngine,
                                           taskInstanceEngine,
-                                          AbstractTestBase.MAPPER, ExecutorTestingUtils.DOCKER_CLIENT);
+                                          AbstractTestBase.MAPPER,
+                                          ExecutorTestingUtils.DOCKER_CLIENT,
+                                          clusterClient,
+                                          env);
             ir.start();
+            ir.serverStarted(null);
             assertEquals(0, applicationInstanceEngine.currentState().size());
             ir.stop();
         }

@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.utils;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.*;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
@@ -20,7 +21,6 @@ import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
-import io.dropwizard.util.Strings;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.UtilityClass;

@@ -9,7 +9,6 @@ import java.util.concurrent.Callable;
  *
  */
 
-public interface Checker extends Callable<CheckResult> {
+public interface Checker extends Callable<CheckResult>, AutoCloseable {
     CheckMode mode();
-
 }

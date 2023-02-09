@@ -2,13 +2,13 @@ package com.phonepe.drove.executor.checker;
 
 import com.github.dockerjava.api.async.ResultCallbackTemplate;
 import com.github.dockerjava.api.model.Frame;
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
-import io.dropwizard.util.Strings;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -63,6 +63,11 @@ public class CmdChecker implements Checker {
                     }
                     return CheckResult.healthy();
                 });
+    }
+
+    @Override
+    public void close() throws Exception {
+        log.info("Shut down command checker");
     }
 
     private static final class CmdExecResultCallback extends ResultCallbackTemplate<CmdExecResultCallback, Frame> {

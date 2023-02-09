@@ -111,7 +111,7 @@ public class ZombieInstanceReaper implements Managed {
                         }
                         log.info("Killed zombie container: {} {}", droveInstanceId, container.getId());
                     });
-            log.info("Add zombie containers killed");
+            log.info("All zombie containers killed");
         }
         else {
             log.debug("No zombie containers found");

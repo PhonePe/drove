@@ -10,8 +10,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.model.ControllerMessageType;
@@ -29,7 +29,7 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Singleton;
 import java.net.URI;

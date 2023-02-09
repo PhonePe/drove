@@ -14,6 +14,7 @@ import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import lombok.experimental.UtilityClass;
@@ -23,12 +24,25 @@ import net.jodah.failsafe.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.URIScheme;
+import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
@@ -162,18 +176,68 @@ public class CommonUtils {
     }
 
     public static CloseableHttpClient createHttpClient() {
-        val connectionTimeout = (int) Duration.ofSeconds(1).toMillis();
+        val connectionTimeout = Duration.ofSeconds(1);
         val connectionManager = new PoolingHttpClientConnectionManager();
         connectionManager.setDefaultMaxPerRoute(100);
         connectionManager.setMaxTotal(Integer.MAX_VALUE);
+        connectionManager.setDefaultConnectionConfig(ConnectionConfig.custom()
+                                                       .setConnectTimeout(Timeout.of(connectionTimeout))
+                                                       .setSocketTimeout(Timeout.of(connectionTimeout))
+                                                       .setValidateAfterInactivity(TimeValue.ofSeconds(10))
+                                                       .setTimeToLive(TimeValue.ofHours(1))
+                                                       .build());
         val rc = RequestConfig.custom()
-                .setConnectionRequestTimeout(connectionTimeout)
-                .setConnectionRequestTimeout((int) connectionTimeout)
-                .setSocketTimeout((int) connectionTimeout)
+                .setConnectTimeout(Timeout.of(connectionTimeout))
+                .setConnectionRequestTimeout(Timeout.of(connectionTimeout))
+                .setResponseTimeout(Timeout.of(connectionTimeout))
                 .build();
-        return HttpClientBuilder.create()
+        return HttpClients.custom()
                 .disableRedirectHandling()
                 .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(rc)
+                .build();
+    }
+
+    public static CloseableHttpClient createInternalHttpClient(HTTPCheckModeSpec httpSpec, Duration requestTimeOut) {
+        val connectionTimeout = Duration.ofMillis(
+                Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
+                                           io.dropwizard.util.Duration.seconds(1))
+                        .toMilliseconds());
+        val socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
+                .register(URIScheme.HTTPS.id, SSLConnectionSocketFactory.getSocketFactory())
+                .build();
+        val connManager = new PoolingHttpClientConnectionManager(
+                socketFactoryRegistry, PoolConcurrencyPolicy.STRICT, PoolReusePolicy.LIFO, TimeValue.ofMinutes(5));
+        connManager.setDefaultConnectionConfig(ConnectionConfig.custom()
+                                                       .setConnectTimeout(Timeout.of(connectionTimeout))
+                                                       .setSocketTimeout(Timeout.of(connectionTimeout))
+                                                       .setValidateAfterInactivity(TimeValue.ofSeconds(10))
+                                                       .setTimeToLive(TimeValue.ofHours(1))
+                                                       .build());
+        val rc = RequestConfig.custom()
+                .setResponseTimeout(Timeout.of(requestTimeOut))
+                .build();
+        return HttpClients.custom()
+                .setRedirectStrategy(new RedirectStrategy() {
+
+                    @Override
+                    public boolean isRedirected(
+                            org.apache.hc.core5.http.HttpRequest request,
+                            org.apache.hc.core5.http.HttpResponse response,
+                            org.apache.hc.core5.http.protocol.HttpContext context) throws HttpException {
+                        return false;
+                    }
+
+                    @Override
+                    public URI getLocationURI(
+                            org.apache.hc.core5.http.HttpRequest request,
+                            org.apache.hc.core5.http.HttpResponse response,
+                            org.apache.hc.core5.http.protocol.HttpContext context) throws HttpException {
+                        return null;
+                    }
+                })
+                .setConnectionManager(connManager)
                 .setDefaultRequestConfig(rc)
                 .build();
     }

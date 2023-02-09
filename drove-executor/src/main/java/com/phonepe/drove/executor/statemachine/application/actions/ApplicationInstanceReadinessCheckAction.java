@@ -1,15 +1,14 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -34,7 +33,6 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();
-        final Checker checker = ExecutorUtils.createChecker(context, currentState.getData(), readinessCheckSpec);
         val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
         if(initDelay > 0) {
@@ -50,7 +48,7 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
                 .withMaxAttempts(readinessCheckSpec.getAttempts())
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
-        try {
+        try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), readinessCheckSpec)) {
             val result = Failsafe.with(List.of(retryPolicy))
                     .onComplete(e -> {
                         val failure = e.getFailure();

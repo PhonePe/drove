@@ -12,7 +12,7 @@ import com.phonepe.drove.executor.discovery.ManagedLeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.RetryPolicy;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

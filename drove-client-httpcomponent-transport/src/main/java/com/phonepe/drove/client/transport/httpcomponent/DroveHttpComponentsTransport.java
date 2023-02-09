@@ -77,7 +77,11 @@ public class DroveHttpComponentsTransport implements DroveHttpTransport {
     }
 
     @Override
-    public <T> T post(URI uri, Map<String, List<String>> headers, String body, DroveClient.ResponseHandler<T> responseHandler) {
+    public <T> T post(
+            URI uri,
+            Map<String, List<String>> headers,
+            String body,
+            DroveClient.ResponseHandler<T> responseHandler) {
         log.debug("Making POST call to {}", uri);
         val request = new HttpPost(uri);
         request.setEntity(new StringEntity(body));
@@ -85,7 +89,11 @@ public class DroveHttpComponentsTransport implements DroveHttpTransport {
     }
 
     @Override
-    public <T> T put(URI uri, Map<String, List<String>> headers, String body, DroveClient.ResponseHandler<T> responseHandler) {
+    public <T> T put(
+            URI uri,
+            Map<String, List<String>> headers,
+            String body,
+            DroveClient.ResponseHandler<T> responseHandler) {
         log.debug("Making PUT call to {}", uri);
         val request = new HttpPut(uri);
         request.setEntity(new StringEntity(body));
@@ -134,7 +142,10 @@ public class DroveHttpComponentsTransport implements DroveHttpTransport {
                 .build();
     }
 
-    private <T> T executeRequest(Map<String, List<String>> headers, DroveClient.ResponseHandler<T> responseHandler, HttpUriRequestBase request) {
+    private <T> T executeRequest(
+            Map<String, List<String>> headers,
+            DroveClient.ResponseHandler<T> responseHandler,
+            HttpUriRequestBase request) {
         if (null != headers && !headers.isEmpty()) {
             headers.forEach((name, values) -> values.forEach(value -> request.setHeader(name, value)));
         }
@@ -147,9 +158,10 @@ public class DroveHttpComponentsTransport implements DroveHttpTransport {
                             .collect(Collectors.groupingBy(Header::getName,
                                                            Collectors.mapping(Header::getValue,
                                                                               Collectors.toUnmodifiableList())));
-                    return responseHandler.handle(new DroveClient.Response(response.getCode(),
-                                                                           headers,
-                                                                           EntityUtils.toString(response.getEntity())));
+                    val body = null != response.getEntity()
+                               ? EntityUtils.toString(response.getEntity())
+                               : "";
+                    return responseHandler.handle(new DroveClient.Response(response.getCode(), headers, body));
                 }
             });
         }
