@@ -158,10 +158,9 @@ public class DroveHttpComponentsTransport implements DroveHttpTransport {
                             .collect(Collectors.groupingBy(Header::getName,
                                                            Collectors.mapping(Header::getValue,
                                                                               Collectors.toUnmodifiableList())));
-                    val body = null != response.getEntity()
-                               ? EntityUtils.toString(response.getEntity())
-                               : "";
-                    return responseHandler.handle(new DroveClient.Response(response.getCode(), headers, body));
+                    return responseHandler.handle(new DroveClient.Response(response.getCode(),
+                                                                           headers,
+                                                                           EntityUtils.toString(response.getEntity())));
                 }
             });
         }

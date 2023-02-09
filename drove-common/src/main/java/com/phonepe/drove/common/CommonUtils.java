@@ -33,9 +33,11 @@ import org.apache.hc.client5.http.protocol.RedirectStrategy;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
-import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.URIScheme;
 import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
 import org.apache.hc.core5.util.TimeValue;
@@ -197,7 +199,6 @@ public class CommonUtils {
                 .build();
     }
 
-    @IgnoreInJacocoGeneratedReport
     public static CloseableHttpClient createInternalHttpClient(HTTPCheckModeSpec httpSpec, Duration requestTimeOut) {
         val connectionTimeout = Duration.ofMillis(
                 Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
@@ -222,18 +223,14 @@ public class CommonUtils {
                 .setRedirectStrategy(new RedirectStrategy() {
 
                     @Override
-                    public boolean isRedirected(
-                            org.apache.hc.core5.http.HttpRequest request,
-                            org.apache.hc.core5.http.HttpResponse response,
-                            org.apache.hc.core5.http.protocol.HttpContext context) throws HttpException {
+                    @IgnoreInJacocoGeneratedReport
+                    public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context) {
                         return false;
                     }
 
                     @Override
-                    public URI getLocationURI(
-                            org.apache.hc.core5.http.HttpRequest request,
-                            org.apache.hc.core5.http.HttpResponse response,
-                            org.apache.hc.core5.http.protocol.HttpContext context) throws HttpException {
+                    @IgnoreInJacocoGeneratedReport
+                    public URI getLocationURI(HttpRequest request, HttpResponse response, HttpContext context) {
                         return null;
                     }
                 })

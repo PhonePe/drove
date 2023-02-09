@@ -2,6 +2,7 @@ package com.phonepe.drove.hazelcast.discovery;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.hazelcast.cluster.Address;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.discovery.DiscoveryNode;
@@ -103,7 +104,7 @@ public class DrovePeerTracker implements Closeable {
 
         @Override
         public Optional<List<DiscoveryNode>> handle(DroveClient.Response response) throws Exception {
-            if (response.statusCode() != 200) {
+            if (response.statusCode() != 200 || Strings.isNullOrEmpty(response.body())) {
                 log.severe("Could not find peers. Error: " + response.statusCode() + ": " + response.body());
                 return Optional.empty();
             }
