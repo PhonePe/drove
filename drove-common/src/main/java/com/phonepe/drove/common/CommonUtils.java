@@ -197,6 +197,7 @@ public class CommonUtils {
                 .build();
     }
 
+    @IgnoreInJacocoGeneratedReport
     public static CloseableHttpClient createInternalHttpClient(HTTPCheckModeSpec httpSpec, Duration requestTimeOut) {
         val connectionTimeout = Duration.ofMillis(
                 Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
