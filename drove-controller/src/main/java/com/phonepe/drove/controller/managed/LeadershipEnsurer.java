@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.managed;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.controller.event.DroveEventBus;
@@ -17,7 +16,8 @@ import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.leader.*;
+import org.apache.curator.framework.recipes.leader.LeaderSelector;
+import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.eclipse.jetty.server.Server;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
@@ -152,7 +152,6 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     }
 
     @Override
-    @VisibleForTesting
     public void serverStarted(Server server) {
         val cf = server.getConnectors()[0].getConnectionFactory("ssl");
 

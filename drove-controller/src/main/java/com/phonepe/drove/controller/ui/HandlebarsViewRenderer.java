@@ -19,7 +19,6 @@ import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.cache.GuavaTemplateCache;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
 import com.github.jknack.handlebars.io.TemplateSource;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -51,7 +50,6 @@ public class HandlebarsViewRenderer implements ViewRenderer {
     /**
      * Handlebars.java does not cache reads of Template content from resources.
      */
-    @VisibleForTesting
     static final LoadingCache<String, Template> compilationCache = CacheBuilder
             .newBuilder()
             .build(new CacheLoader<>() {

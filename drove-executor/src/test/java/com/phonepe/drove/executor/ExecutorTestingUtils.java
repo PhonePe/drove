@@ -2,6 +2,7 @@ package com.phonepe.drove.executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -260,50 +261,69 @@ public class ExecutorTestingUtils {
     }
 
     @SneakyThrows
-    public static void startTestAppContainer(
+    public static String startTestAppContainer(
             ApplicationInstanceSpec spec,
             ExecutorInstanceInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
-        val createContainerResponse = DOCKER_CLIENT
-                .createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)
-                .withName("AppRecoveryTest")
-                .withLabels(Map.of(
-                        DockerLabels.DROVE_JOB_TYPE_LABEL,
-                        JobType.SERVICE.name(),
-                        DockerLabels.DROVE_INSTANCE_ID_LABEL,
-                        spec.getInstanceId(),
-                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
-                        mapper.writeValueAsString(spec),
-                        DockerLabels.DROVE_INSTANCE_DATA_LABEL,
-                        mapper.writeValueAsString(instanceData)))
-                .withHostConfig(new HostConfig().withAutoRemove(true))
-                .exec();
-        containerId = createContainerResponse.getId();
-        DOCKER_CLIENT.startContainerCmd(containerId).exec();
+        try(val create = DOCKER_CLIENT.createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)) {
+            val createContainerResponse = create
+                    .withName("AppRecoveryTest")
+                    .withLabels(Map.of(
+                            DockerLabels.DROVE_JOB_TYPE_LABEL,
+                            JobType.SERVICE.name(),
+                            DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                            spec.getInstanceId(),
+                            DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                            mapper.writeValueAsString(spec),
+                            DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                            mapper.writeValueAsString(instanceData)))
+                    .withHostConfig(new HostConfig().withAutoRemove(true))
+                    .exec();
+            containerId = createContainerResponse.getId();
+            try(val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
+                start.exec();
+                return containerId;
+            }
+        }
     }
 
     @SneakyThrows
-    public static void startTestTaskContainer(
+    public static String startTestTaskContainer(
             TaskInstanceSpec spec,
             ExecutorTaskInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
-        val createContainerResponse = DOCKER_CLIENT
-                .createContainerCmd(CommonTestUtils.TASK_IMAGE_NAME)
-                .withName("TaskRecoveryTest")
-                .withLabels(Map.of(
-                        DockerLabels.DROVE_JOB_TYPE_LABEL,
-                        JobType.COMPUTATION.name(),
-                        DockerLabels.DROVE_INSTANCE_ID_LABEL,
-                        spec.getTaskId(),
-                        DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
-                        mapper.writeValueAsString(spec),
-                        DockerLabels.DROVE_INSTANCE_DATA_LABEL,
-                        mapper.writeValueAsString(instanceData)))
-                .withHostConfig(new HostConfig().withAutoRemove(true))
-                .exec();
-        containerId = createContainerResponse.getId();
-        DOCKER_CLIENT.startContainerCmd(containerId).exec();
+        try(val create = DOCKER_CLIENT
+                .createContainerCmd(CommonTestUtils.TASK_IMAGE_NAME)) {
+            val createContainerResponse = create
+                    .withName("TaskRecoveryTest")
+                    .withLabels(Map.of(
+                            DockerLabels.DROVE_JOB_TYPE_LABEL,
+                            JobType.COMPUTATION.name(),
+                            DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                            spec.getTaskId(),
+                            DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                            mapper.writeValueAsString(spec),
+                            DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                            mapper.writeValueAsString(instanceData)))
+                    .withHostConfig(new HostConfig().withAutoRemove(true))
+                    .exec();
+            containerId = createContainerResponse.getId();
+            try(val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
+                start.exec();
+                return containerId;
+            }
+        }
+    }
+
+    public static boolean containerExists(String containerId) {
+        try(val inspect = DOCKER_CLIENT.inspectContainerCmd(containerId)) {
+            val res = inspect.exec();
+            return res != null && Objects.requireNonNullElse(res.getState().getRunning(), false);
+        }
+        catch (NotFoundException e) {
+            return false;
+        }
     }
 }

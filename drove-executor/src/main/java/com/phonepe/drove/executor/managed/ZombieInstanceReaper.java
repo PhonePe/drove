@@ -2,7 +2,9 @@ package com.phonepe.drove.executor.managed;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
@@ -50,18 +52,30 @@ public class ZombieInstanceReaper implements Managed {
                                                                                      TaskState.RUN_COMPLETED,
                                                                                      TaskState.DEPROVISIONING);
 
-    private final ScheduledSignal zombieCheckSignal = new ScheduledSignal(Duration.ofSeconds(30));
+    private final ScheduledSignal zombieCheckSignal;
     private final DockerClient client;
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
 
     @Inject
+    @IgnoreInJacocoGeneratedReport
     public ZombieInstanceReaper(
             DockerClient client,
-            ApplicationInstanceEngine applicationInstanceEngine, TaskInstanceEngine taskInstanceEngine) {
+            ApplicationInstanceEngine applicationInstanceEngine,
+            TaskInstanceEngine taskInstanceEngine) {
+        this(client, applicationInstanceEngine, taskInstanceEngine, Duration.ofSeconds(30));
+    }
+
+    @VisibleForTesting
+    ZombieInstanceReaper(
+            DockerClient client,
+            ApplicationInstanceEngine applicationInstanceEngine,
+            TaskInstanceEngine taskInstanceEngine,
+            Duration checkDuration) {
         this.client = client;
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
+        this.zombieCheckSignal = new ScheduledSignal(checkDuration);
     }
 
     @Override
@@ -101,7 +115,7 @@ public class ZombieInstanceReaper implements Managed {
                         container.getLabels().get(DockerLabels.DROVE_JOB_TYPE_LABEL))))
                 .map(container -> container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL))
                 .collect(Collectors.toUnmodifiableSet());
-        val notFound = Sets.difference(instanceIds, foundContainers);
+        val notFound = Set.copyOf(Sets.difference(instanceIds, foundContainers));
         if (!notFound.isEmpty()) {
             log.warn("Did not find running {} containers for instances: {}", instanceIds, type);
             notFound.forEach(engine::stopInstance);
@@ -124,7 +138,7 @@ public class ZombieInstanceReaper implements Managed {
                 .collect(Collectors.toUnmodifiableSet());
         val onlyInDocker = Sets.difference(foundContainers, instanceIds);
         if (!onlyInDocker.isEmpty()) {
-            log.info("Containers of type {} not supposed to be on drove but still running: {}", onlyInDocker, type);
+            log.info("Containers of type {} not supposed to be on drove but still running: {}", type, onlyInDocker);
             containers.stream()
                     .filter(container -> onlyInDocker.contains(container.getLabels()
                                                                        .get(DockerLabels.DROVE_INSTANCE_ID_LABEL)))
