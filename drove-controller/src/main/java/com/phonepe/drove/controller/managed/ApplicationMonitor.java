@@ -44,17 +44,20 @@ public class ApplicationMonitor implements Managed {
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private ClusterStateDB clusterStateDB;
     private final ApplicationEngine engine;
+    private final LeadershipEnsurer leadershipEnsurer;
 
     @Inject
     public ApplicationMonitor(
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             ClusterStateDB clusterStateDB,
-            ApplicationEngine engine) {
+            ApplicationEngine engine,
+            LeadershipEnsurer leadershipEnsurer) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterStateDB = clusterStateDB;
         this.engine = engine;
+        this.leadershipEnsurer = leadershipEnsurer;
     }
 
     @Override
@@ -72,6 +75,10 @@ public class ApplicationMonitor implements Managed {
 
     @VisibleForTesting
     public void checkAllApps(final Date checkTime) {
+        if(!leadershipEnsurer.isLeader()) {
+            log.info("Skipping app check as I'm not the leader");
+            return;
+        }
         if(CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             log.warn("Application check skipped as cluster is in maintenance window");
             return;

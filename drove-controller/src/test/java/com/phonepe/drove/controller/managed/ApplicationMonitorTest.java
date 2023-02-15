@@ -19,6 +19,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -26,8 +27,7 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -43,8 +43,10 @@ class ApplicationMonitorTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
 
-        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine);
+        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine, leadershipEnsurer);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
@@ -75,8 +77,10 @@ class ApplicationMonitorTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
 
-        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine);
+        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine, leadershipEnsurer);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
@@ -107,8 +111,10 @@ class ApplicationMonitorTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
 
-        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine);
+        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine, leadershipEnsurer);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
@@ -141,8 +147,10 @@ class ApplicationMonitorTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val appEngine = mock(ApplicationEngine.class);
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
 
-        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine);
+        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine, leadershipEnsurer);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
@@ -161,7 +169,27 @@ class ApplicationMonitorTest {
         monitor.checkAllApps(new Date());
 
         assertTrue(ids.isEmpty()); //No scale even if instance count mismatch
+    }
 
+    @Test
+    @SneakyThrows
+    void testNonLeader() {
+        val stateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val appEngine = mock(ApplicationEngine.class);
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(false);
+
+        val checked = new AtomicBoolean();
+        when(stateDB.applications(anyInt(), anyInt())).thenAnswer(invocationOnMock -> {
+            checked.set(true);
+            return List.of();
+        });
+
+        val monitor = new ApplicationMonitor(stateDB, instanceInfoDB, clusterStateDB, appEngine, leadershipEnsurer);
+        monitor.start();
+        assertFalse(checked.get());
 
     }
 }

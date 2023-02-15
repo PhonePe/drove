@@ -179,6 +179,10 @@ public class TaskEngine {
     }
 
     private void monitorRunners(Date triggerDate) {
+        if (!leadershipEnsurer.isLeader()) {
+            log.info("Task check skipped as I'm not the leader");
+            return;
+        }
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             log.warn("Task check skipped as cluster is in maintenance window");
             return;
