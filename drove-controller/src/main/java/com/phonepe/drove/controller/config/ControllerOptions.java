@@ -23,7 +23,8 @@ public class ControllerOptions {
                                                                           DEFAULT_MAX_STALE_INSTANCES_COUNT,
                                                                           DEFAULT_STALE_INSTANCE_AGE,
                                                                           DEFAULT_STALE_TASK_AGE,
-                                                                          DEFAULT_MAX_EVENTS_STORAGE_SIZE);
+                                                                          DEFAULT_MAX_EVENTS_STORAGE_SIZE,
+                                                                          false);
 
     Duration staleCheckInterval;
     Duration staleAppAge;
@@ -36,4 +37,6 @@ public class ControllerOptions {
     @Min(0)
     @Max(1024)
     int maxEventsStorageCount;
+
+    Boolean dieOnZkDisconnect;
 }

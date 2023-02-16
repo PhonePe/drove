@@ -72,7 +72,7 @@ public abstract class AppAsyncAction extends OperationDrivenAppAction {
     }
 
     protected boolean cancelCurrentJobs(final AppActionContext context) {
-        if(Strings.isNullOrEmpty(context.getAppId())) {
+        if(Strings.isNullOrEmpty(context.getJobId())) {
             return false;
         }
         jobExecutor.cancel(context.getJobId());

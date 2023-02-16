@@ -15,7 +15,6 @@ import org.slf4j.MDC;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -117,8 +116,8 @@ public class ApplicationStateMachineExecutor {
             val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
                 val status = Failsafe.with(List.of(retryPolicy))
-                        .onFailure(e -> log.error("Completion wait for " + appId + " completed with error:",
-                                                  e.getFailure()))
+                        .onFailure(e -> log.trace("Completion wait for {} completed with error: {}",
+                                                  appId, e.getFailure()))
                         .get(() -> currentState.isDone());
                 if(status) {
                     log.info("State machine for app {} has shut down with final state {}", appId, currentState.get());
@@ -131,8 +130,15 @@ public class ApplicationStateMachineExecutor {
                 log.warn("State machine for {} has been interrupted", appId);
                 Thread.currentThread().interrupt();
             }
-            catch (TimeoutExceededException | ExecutionException e) {
+            catch (TimeoutExceededException e) {
                 log.error("Wait for SM for " + appId + " to stop has exceeded 60 secs. There might be thread leak.", e);
+            }
+            catch (Exception e) {
+                if(e.getCause() instanceof InterruptedException) {
+                    log.info("State machine for {} has been stopped by interruption", appId);
+                    return;
+                }
+                log.error("State machine for " + appId + " shut down with exception: " + e.getMessage(), e);
             }
         }
     }

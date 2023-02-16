@@ -84,22 +84,22 @@ public class CommonUtils {
     @IgnoreInJacocoGeneratedReport
     public static CuratorFramework buildCurator(ZkConfig config) {
         return CuratorFrameworkFactory.builder()
-                     .connectString(config.getConnectionString())
-                     .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
-                     .retryPolicy(new RetryForever(1000))
-                     .sessionTimeoutMs(30_000)
-                     .build();
+                .connectString(config.getConnectionString())
+                .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
+                .retryPolicy(new RetryForever(1000))
+                .sessionTimeoutMs(30_000)
+                .build();
     }
 
     public static <T> List<T> sublist(final List<T> list, int start, int size) {
-        if(list == null || list.isEmpty()) {
+        if (list == null || list.isEmpty()) {
             return Collections.emptyList();
         }
         val listSize = list.size();
-        if(listSize  < start + 1) {
+        if (listSize < start + 1) {
             return Collections.emptyList();
         }
-        val end  = Math.min(listSize, start + size);
+        val end = Math.min(listSize, start + size);
         return list.subList(start, end);
     }
 
@@ -137,15 +137,16 @@ public class CommonUtils {
                 return null;
             }
         });
-        if(null != resultChecker) {
+        if (null != resultChecker) {
             policy.handleResultIf(resultChecker);
         }
         return policy;
     }
 
     public static boolean isInMaintenanceWindow(final ClusterStateData clusterState) {
-        if(null != clusterState) {
-            val checktimeSkipWindowEnd = new Date(clusterState.getUpdated().getTime() + 2 * Constants.EXECUTOR_REFRESH_INTERVAL.toMillis());
+        if (null != clusterState) {
+            val checktimeSkipWindowEnd = new Date(clusterState.getUpdated().getTime()
+                                                          + 2 * Constants.EXECUTOR_REFRESH_INTERVAL.toMillis());
             return clusterState.getState().equals(ClusterState.MAINTENANCE)
                     || new Date().before(checktimeSkipWindowEnd);
         }
@@ -183,11 +184,11 @@ public class CommonUtils {
         connectionManager.setDefaultMaxPerRoute(100);
         connectionManager.setMaxTotal(Integer.MAX_VALUE);
         connectionManager.setDefaultConnectionConfig(ConnectionConfig.custom()
-                                                       .setConnectTimeout(Timeout.of(connectionTimeout))
-                                                       .setSocketTimeout(Timeout.of(connectionTimeout))
-                                                       .setValidateAfterInactivity(TimeValue.ofSeconds(10))
-                                                       .setTimeToLive(TimeValue.ofHours(1))
-                                                       .build());
+                                                             .setConnectTimeout(Timeout.of(connectionTimeout))
+                                                             .setSocketTimeout(Timeout.of(connectionTimeout))
+                                                             .setValidateAfterInactivity(TimeValue.ofSeconds(10))
+                                                             .setTimeToLive(TimeValue.ofHours(1))
+                                                             .build());
         val rc = RequestConfig.custom()
                 .setConnectionRequestTimeout(Timeout.of(connectionTimeout))
                 .setResponseTimeout(Timeout.of(connectionTimeout))
