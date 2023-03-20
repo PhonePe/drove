@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.event;
 
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
+import com.phonepe.drove.models.events.DroveEvent;
 import lombok.val;
 
 import javax.inject.Inject;

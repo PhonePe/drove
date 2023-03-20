@@ -1,6 +1,5 @@
-package com.phonepe.drove.controller.event;
+package com.phonepe.drove.models.events;
 
-import com.phonepe.drove.controller.utils.MapBuilder;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;

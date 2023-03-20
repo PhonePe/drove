@@ -18,6 +18,7 @@
         <module>drove-client</module>
         <module>drove-client-httpcomponent-transport</module>
         <module>drove-hazelcast-discovery</module>
+        <module>drove-events-client</module>
     </modules>
 
     <properties>

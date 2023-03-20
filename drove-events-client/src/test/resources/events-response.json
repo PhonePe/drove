@@ -1,0 +1,503 @@
+{
+  "status": "SUCCESS",
+  "data": [
+    {
+      "metadata": {
+        "HOSTNAME": "ssdev"
+      },
+      "type": "MAINTENANCE_MODE_REMOVED",
+      "id": "4a266e88-7731-4ff9-a4d1-6dbc752751cf",
+      "time": 1679294033668
+    },
+    {
+      "metadata": {
+        "HOSTNAME": "ssdev"
+      },
+      "type": "MAINTENANCE_MODE_SET",
+      "id": "92efa1bb-24d0-472e-92f6-c70519e9bed6",
+      "time": 1679294027327
+    },
+    {
+      "metadata": {
+        "EXECUTOR_HOST": "ssdev",
+        "RESULT_STATUS": "SUCCESSFUL",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "CREATED": 1679293962911,
+        "TASK_ID": "TEST-1-EIR-2023-03-20-12-02-42-782-TEST_TASK",
+        "RESULT_EXIT_CODE": 0,
+        "EXECUTABLE": "docker.io/santanusinha/test-task:0.3",
+        "INSTANCE_ID": "TI-0319f6b5-f6e9-4949-8375-26f032032b04",
+        "CURRENT_STATE": "STOPPED",
+        "APP_NAME": "local-epoch"
+      },
+      "type": "TASK_STATE_CHANGE",
+      "id": "d0370929-6530-48f8-a452-f63243baa5e3",
+      "time": 1679293976949
+    },
+    {
+      "metadata": {
+        "EXECUTOR_HOST": "ssdev",
+        "RESULT_STATUS": "SUCCESSFUL",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "CREATED": 1679293962911,
+        "TASK_ID": "TEST-1-EIR-2023-03-20-12-02-42-782-TEST_TASK",
+        "RESULT_EXIT_CODE": 0,
+        "EXECUTABLE": "docker.io/santanusinha/test-task:0.3",
+        "INSTANCE_ID": "TI-0319f6b5-f6e9-4949-8375-26f032032b04",
+        "CURRENT_STATE": "DEPROVISIONING",
+        "APP_NAME": "local-epoch"
+      },
+      "type": "TASK_STATE_CHANGE",
+      "id": "c49f9833-d9c1-48e2-b2fc-33ed51654cb4",
+      "time": 1679293976944
+    },
+    {
+      "metadata": {
+        "EXECUTOR_HOST": "ssdev",
+        "RESULT_STATUS": "SUCCESSFUL",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "CREATED": 1679293962911,
+        "TASK_ID": "TEST-1-EIR-2023-03-20-12-02-42-782-TEST_TASK",
+        "RESULT_EXIT_CODE": 0,
+        "EXECUTABLE": "docker.io/santanusinha/test-task:0.3",
+        "INSTANCE_ID": "TI-0319f6b5-f6e9-4949-8375-26f032032b04",
+        "CURRENT_STATE": "RUN_COMPLETED",
+        "APP_NAME": "local-epoch"
+      },
+      "type": "TASK_STATE_CHANGE",
+      "id": "4f67f073-eb94-49d2-b857-7722ab69d89b",
+      "time": 1679293976933
+    },
+    {
+      "metadata": {
+        "CREATED": 1679293962911,
+        "EXECUTOR_HOST": "ssdev",
+        "INSTANCE_ID": "TI-0319f6b5-f6e9-4949-8375-26f032032b04",
+        "TASK_ID": "TEST-1-EIR-2023-03-20-12-02-42-782-TEST_TASK",
+        "CURRENT_STATE": "RUNNING",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "local-epoch",
+        "EXECUTABLE": "docker.io/santanusinha/test-task:0.3"
+      },
+      "type": "TASK_STATE_CHANGE",
+      "id": "c502bf24-75ab-4d4d-bd8e-337af311629c",
+      "time": 1679293966609
+    },
+    {
+      "metadata": {
+        "APP_NAME": "local-epoch",
+        "EXECUTABLE": "docker.io/santanusinha/test-task:0.3",
+        "INSTANCE_ID": "TI-0319f6b5-f6e9-4949-8375-26f032032b04",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "TASK_ID": "TEST-1-EIR-2023-03-20-12-02-42-782-TEST_TASK",
+        "CURRENT_STATE": "STARTING",
+        "CREATED": 1679293962911
+      },
+      "type": "TASK_STATE_CHANGE",
+      "id": "5917ac5c-1748-43ef-b152-29c90a857b3a",
+      "time": 1679293966248
+    },
+    {
+      "metadata": {
+        "APP_NAME": "local-epoch",
+        "EXECUTABLE": "docker.io/santanusinha/test-task:0.3",
+        "INSTANCE_ID": "TI-0319f6b5-f6e9-4949-8375-26f032032b04",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "TASK_ID": "TEST-1-EIR-2023-03-20-12-02-42-782-TEST_TASK",
+        "CURRENT_STATE": "PROVISIONING",
+        "CREATED": 1679293962911
+      },
+      "type": "TASK_STATE_CHANGE",
+      "id": "f3142a72-7ec1-483d-a379-773a142b4788",
+      "time": 1679293962958
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "MONITORING"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "620cd898-3fa8-4b20-97d6-38955d783878",
+      "time": 1679293863180
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "STOPPED",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293803968,
+        "PORTS": "main:36715:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "96b92ea9-9b6a-4302-82d6-fcc85e24f2b5",
+      "time": 1679293861522
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "DEPROVISIONING",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293803968,
+        "PORTS": "main:36715:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "a5ef7f16-6f7b-4253-b64d-eadbe3c521b1",
+      "time": 1679293861515
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "STOPPING",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293803968,
+        "PORTS": "main:36715:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "1bbf45fd-3ba5-4133-8b34-226666aad7cd",
+      "time": 1679293848182
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "SCALING_REQUESTED"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "1998d682-dc93-4623-9866-63f3027a3ad4",
+      "time": 1679293848166
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "RUNNING"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "904198ac-33d3-4f41-b388-aca779cddea3",
+      "time": 1679293825005
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "STOPPED",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293763169,
+        "PORTS": "main:42803:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "518b95b7-368d-497f-9244-ff7316e1cafc",
+      "time": 1679293823342
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "DEPROVISIONING",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293763169,
+        "PORTS": "main:42803:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "94797807-8dbf-4a81-8c22-bdd86322a1ba",
+      "time": 1679293823332
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "STOPPING",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293763169,
+        "PORTS": "main:42803:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "16cc265d-b0dc-4f5a-8dd5-80700f908d08",
+      "time": 1679293810009
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "HEALTHY",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293803968,
+        "PORTS": "main:36715:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "f0f55853-5ab6-4d11-817e-77ed34c6daa4",
+      "time": 1679293807899
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "READY",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293803968,
+        "PORTS": "main:36715:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "2e4b7a38-9a6d-4387-b8fe-86160dc94952",
+      "time": 1679293807881
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "UNREADY",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293803968,
+        "PORTS": "main:36715:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "37c34d83-9b9f-4379-ad8f-be702d81dc04",
+      "time": 1679293807867
+    },
+    {
+      "metadata": {
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_ID": "TEST_APP-3",
+        "CURRENT_STATE": "STARTING",
+        "CREATED": 1679293803968,
+        "APP_NAME": "TEST_APP",
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "f8dbf0c4-5802-4f75-b15f-b4662e6b1abe",
+      "time": 1679293807540
+    },
+    {
+      "metadata": {
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_ID": "TEST_APP-3",
+        "CURRENT_STATE": "PROVISIONING",
+        "CREATED": 1679293803968,
+        "APP_NAME": "TEST_APP",
+        "INSTANCE_ID": "AI-ecb2a0d7-65a5-41db-a760-92783f01dc3c"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "be892ffa-746d-4c26-89d1-5f46b4704917",
+      "time": 1679293803981
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "REPLACE_INSTANCES_REQUESTED"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "edccc114-416a-4d65-be45-42fa0400f9be",
+      "time": 1679293803955
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "RUNNING"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "9f6bb0af-b0db-414f-86ee-5b16e320dc38",
+      "time": 1679293772228
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "HEALTHY",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293763169,
+        "PORTS": "main:42803:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "221f9eaf-3e73-4900-b004-87df1ce882c5",
+      "time": 1679293770226
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "READY",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293763169,
+        "PORTS": "main:42803:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "f9237409-b0c5-4ce4-93db-2c8dc24f5e3e",
+      "time": 1679293770209
+    },
+    {
+      "metadata": {
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56",
+        "EXECUTOR_HOST": "ssdev",
+        "CURRENT_STATE": "UNREADY",
+        "APP_ID": "TEST_APP-3",
+        "CREATED": 1679293763169,
+        "PORTS": "main:42803:http",
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_NAME": "TEST_APP"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "1df17a5f-4ebf-4593-9b4d-b874ab7a7074",
+      "time": 1679293767174
+    },
+    {
+      "metadata": {
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_ID": "TEST_APP-3",
+        "CURRENT_STATE": "STARTING",
+        "CREATED": 1679293763169,
+        "APP_NAME": "TEST_APP",
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "08052004-86c4-4105-90f0-e8f78334883e",
+      "time": 1679293766696
+    },
+    {
+      "metadata": {
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e",
+        "APP_ID": "TEST_APP-3",
+        "CURRENT_STATE": "PROVISIONING",
+        "CREATED": 1679293763169,
+        "APP_NAME": "TEST_APP",
+        "INSTANCE_ID": "AI-cce41463-9886-4927-972b-c2c657ea2d56"
+      },
+      "type": "INSTANCE_STATE_CHANGE",
+      "id": "4e262614-2630-4850-8811-3d5eed7135ba",
+      "time": 1679293763273
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "SCALING_REQUESTED"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "cf9dbf20-4a5e-4acf-a78d-e43e246285b0",
+      "time": 1679293762946
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-4",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test-1.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "4",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "MONITORING"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "28e02629-1f9d-4576-b8b5-1cceb45b78f5",
+      "time": 1679293753693
+    },
+    {
+      "metadata": {
+        "BLACKLISTED": false,
+        "HOSTNAME": "ssdev",
+        "PORT": 3000,
+        "EXECUTOR_ID": "879f4f8c-9068-38b2-8f5c-b927aac1850e"
+      },
+      "type": "EXECUTOR_ADDED",
+      "id": "f0c4b902-abfa-4fdc-9437-4b7824c299e9",
+      "time": 1679293652081
+    },
+    {
+      "metadata": {
+        "APP_ID": "TEST_APP-3",
+        "CPU_COUNT": 1,
+        "EXECUTABLE": "docker.io/santanusinha/perf-test-server:0.3",
+        "VHOST": "test.appform.io",
+        "PORTS": "main:8000:http",
+        "PLACEMENT_POLICY": "ANY",
+        "MEMORY": 512,
+        "CURRENT_INSTANCES": 0,
+        "APP_VERSION": "3",
+        "APP_NAME": "TEST_APP",
+        "CURRENT_STATE": "MONITORING"
+      },
+      "type": "APP_STATE_CHANGE",
+      "id": "c0f04fb3-8667-47a3-a219-a84599c3c083",
+      "time": 1679293643013
+    }
+  ],
+  "message": "success"
+}

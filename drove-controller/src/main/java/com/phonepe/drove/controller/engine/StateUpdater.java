@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.event.events.DroveInstanceStateChangeEvent;
-import com.phonepe.drove.controller.event.events.DroveStateChangeEvent;
+import com.phonepe.drove.models.events.events.DroveInstanceStateChangeEvent;
+import com.phonepe.drove.models.events.events.DroveTaskStateChangeEvent;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -274,7 +274,7 @@ public class StateUpdater {
             }
             val accepted = taskDB.updateTask(sourceAppName, taskId, instanceInfo);
             if (accepted && (null == existing || !existing.getState().equals(instanceInfo.getState()))) {
-                droveEventBus.publish(new DroveStateChangeEvent(instanceMetadata(instanceInfo)));
+                droveEventBus.publish(new DroveTaskStateChangeEvent(instanceMetadata(instanceInfo)));
             }
             return accepted;
         }

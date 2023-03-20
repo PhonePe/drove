@@ -2,7 +2,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.event.events.DroveAppStateChangeEvent;
+import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppAction;

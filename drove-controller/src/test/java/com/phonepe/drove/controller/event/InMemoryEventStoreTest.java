@@ -2,7 +2,8 @@ package com.phonepe.drove.controller.event;
 
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.controller.event.events.DroveClusterEvent;
+import com.phonepe.drove.models.events.DroveEventType;
+import com.phonepe.drove.models.events.events.DroveClusterEvent;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.utils.EventUtils;
 import io.appform.signals.signals.ConsumingSyncSignal;

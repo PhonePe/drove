@@ -1,5 +1,7 @@
 package com.phonepe.drove.controller.event;
 
+import com.phonepe.drove.models.events.DroveEvent;
+
 import java.util.List;
 
 /**

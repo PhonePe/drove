@@ -6,7 +6,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
-import com.phonepe.drove.controller.event.DroveEvent;
+import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;

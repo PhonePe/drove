@@ -1,4 +1,4 @@
-package com.phonepe.drove.controller.event;
+package com.phonepe.drove.models.events;
 
 /**
  *
