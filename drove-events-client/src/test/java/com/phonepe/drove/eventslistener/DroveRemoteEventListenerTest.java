@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -220,5 +221,47 @@ class DroveRemoteEventListenerTest {
                 .atMost(Duration.ofMinutes(1))
                 .until(called::get);
         listener.close();
+    }
+
+    @Test
+    void testBuild() {
+        {
+            try (val r = DroveRemoteEventListener.builder().build()) {
+                fail("Should have failed with npe");
+            }
+            catch (Exception e) {
+                if (e instanceof NullPointerException n) {
+                    assertEquals("Please provide drove client", n.getMessage());
+                }
+                else {
+                    fail("Should have failed with npe");
+                }
+            }
+        }
+        val dc = mock(DroveClient.class);
+        {
+            try (val r = DroveRemoteEventListener.builder().droveClient(dc).build()) {
+                fail("Should have failed with npe");
+            }
+            catch (Exception e) {
+                if (e instanceof NullPointerException n) {
+                    assertEquals("Please provide object mapper", n.getMessage());
+                }
+                else {
+                    fail("Should have failed with npe");
+                }
+            }
+        }
+        {
+            try (val r = DroveRemoteEventListener.builder()
+                    .droveClient(dc)
+                    .mapper(new ObjectMapper())
+                    .build()) {
+                //Nothing to do here
+            }
+            catch (Exception e) {
+                    fail("Should not have failed with: " + e.getMessage());
+            }
+        }
     }
 }

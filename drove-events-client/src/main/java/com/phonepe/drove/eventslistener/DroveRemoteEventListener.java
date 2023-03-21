@@ -2,7 +2,6 @@ package com.phonepe.drove.eventslistener;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
@@ -35,22 +34,17 @@ public class DroveRemoteEventListener implements AutoCloseable {
     private final ConsumingFireForgetSignal<List<DroveEvent>> eventReceived = new ConsumingFireForgetSignal<>();
     private final ScheduledSignal checkForEventSignal;
 
-    public DroveRemoteEventListener(DroveClient droveClient, ObjectMapper mapper) {
-        this(droveClient, mapper, new DroveEventPollingOffsetInMemoryStore(), Duration.ofSeconds(10));
-    }
 
     @Builder
     public DroveRemoteEventListener(
-            DroveClient droveClient,
-            ObjectMapper mapper,
-            DroveEventPollingOffsetStore offsetStore,
+            final DroveClient droveClient,
+            final ObjectMapper mapper,
+            final DroveEventPollingOffsetStore offsetStore,
             final Duration pollInterval) {
-        this.droveClient = droveClient;
-        this.mapper = mapper;
-        this.offsetStore = offsetStore;
-        checkForEventSignal = new ScheduledSignal(pollInterval);
-        mapper.registerModule(new SimpleModule()
-                                      .addDeserializer(DroveEvent.class, new DroveEventDeserializer(mapper)));
+        this.droveClient = Objects.requireNonNull(droveClient, "Please provide drove client");
+        this.mapper = Objects.requireNonNull(mapper, "Please provide object mapper");
+        this.offsetStore = Objects.requireNonNullElse(offsetStore, new DroveEventPollingOffsetInMemoryStore());
+        this.checkForEventSignal = new ScheduledSignal(Objects.requireNonNullElse(pollInterval, Duration.ofSeconds(10)));
     }
 
     public ConsumingFireForgetSignal<List<DroveEvent>> onEventReceived() {
