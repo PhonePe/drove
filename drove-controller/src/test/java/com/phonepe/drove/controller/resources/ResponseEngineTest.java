@@ -9,10 +9,8 @@ import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
-import com.phonepe.drove.models.events.events.DroveClusterEvent;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -26,6 +24,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -587,7 +586,7 @@ class ResponseEngineTest {
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
 
-        val event = new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET, EventUtils.controllerMetadata());
+        val event = new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata());
         eventStore.recordEvent(event);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,

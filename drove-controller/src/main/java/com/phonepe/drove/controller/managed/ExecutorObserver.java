@@ -5,8 +5,8 @@ import com.google.common.collect.Sets;
 import com.phonepe.drove.common.zookeeper.ZkUtils;
 import com.phonepe.drove.controller.engine.StateUpdater;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.models.events.DroveEventType;
-import com.phonepe.drove.models.events.events.DroveExecutorEvent;
+import com.phonepe.drove.models.events.events.DroveExecutorAddedEvent;
+import com.phonepe.drove.models.events.events.DroveExecutorRemovedEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
@@ -84,7 +84,7 @@ public class ExecutorObserver implements Managed {
                         updater.remove(Set.copyOf(missingExecutors));
                         missingExecutors.forEach(
                                 executorId -> eventBus.publish(
-                                        new DroveExecutorEvent(DroveEventType.EXECUTOR_REMOVED, executorMetadata(executorId))));
+                                        new DroveExecutorRemovedEvent(executorMetadata(executorId))));
                     }
                     else {
                         val newExecutors = Sets.difference(ids, knownExecutors);
@@ -92,7 +92,7 @@ public class ExecutorObserver implements Managed {
                         currentExecutors.stream()
                                 .filter(executor -> newExecutors.contains(executor.getState().getExecutorId()))
                                 .forEach(executor -> eventBus.publish(
-                                        new DroveExecutorEvent(DroveEventType.EXECUTOR_ADDED, executorMetadata(executor))));
+                                        new DroveExecutorAddedEvent(executorMetadata(executor))));
                     }
                     knownExecutors.clear();
                     knownExecutors.addAll(ids);

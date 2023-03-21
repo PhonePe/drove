@@ -10,12 +10,8 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
-import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.controller.event.EventStore;
-import com.phonepe.drove.models.events.events.DroveClusterEvent;
-import com.phonepe.drove.models.events.events.DroveExecutorEvent;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -33,6 +29,11 @@ import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+import com.phonepe.drove.models.events.DroveEvent;
+import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeRemovedEvent;
+import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
+import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
+import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
@@ -272,8 +273,7 @@ public class ResponseEngine {
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.markBlacklisted(executorId);
                 log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
-                eventBus.publish(new DroveExecutorEvent(
-                        DroveEventType.EXECUTOR_BLACKLISTED, executorMetadata(executor.getNodeData())));
+                eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
                 engine.moveInstancesFromExecutor(executorId);
                 return success(null);
             }
@@ -297,8 +297,7 @@ public class ResponseEngine {
             if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                 clusterResourcesDB.unmarkBlacklisted(executorId);
                 log.debug("Executor {} marked unblacklisted.", executorId);
-                eventBus.publish(new DroveExecutorEvent(
-                        DroveEventType.EXECUTOR_UN_BLACKLISTED, executorMetadata(executor.getNodeData())));
+                eventBus.publish(new DroveExecutorUnblacklistedEvent(executorMetadata(executor.getNodeData())));
                 return success(null);
             }
             return failure("Error sending remote message");
@@ -309,8 +308,7 @@ public class ResponseEngine {
     public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
         return clusterStateDB.setClusterState(ClusterState.MAINTENANCE)
                 .map(data -> {
-                    eventBus.publish(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
-                                                           EventUtils.controllerMetadata()));
+                    eventBus.publish(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()));
                     return ApiResponse.success(data);
                 })
                 .orElse(failure("Could not change cluster state"));
@@ -319,8 +317,7 @@ public class ResponseEngine {
     public ApiResponse<ClusterStateData> unsetClusterMaintenanceMode() {
         return clusterStateDB.setClusterState(ClusterState.NORMAL)
                 .map(data -> {
-                    eventBus.publish(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_REMOVED,
-                                                           EventUtils.controllerMetadata()));
+                    eventBus.publish(new DroveClusterMaintenanceModeRemovedEvent(EventUtils.controllerMetadata()));
                     return ApiResponse.success(data);
                 })
                 .orElse(failure("Could not change cluster state"));

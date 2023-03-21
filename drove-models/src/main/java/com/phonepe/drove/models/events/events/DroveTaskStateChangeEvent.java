@@ -26,4 +26,9 @@ public class DroveTaskStateChangeEvent extends DroveEvent<TaskInstanceEventDataT
             @JsonProperty("metadata") Map<TaskInstanceEventDataTag, Object> metadata) {
         super(DroveEventType.TASK_STATE_CHANGE, metadata);
     }
+
+    @Override
+    public <T> T accept(DroveEventVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

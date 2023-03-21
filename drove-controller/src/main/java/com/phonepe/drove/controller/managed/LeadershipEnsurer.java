@@ -4,9 +4,9 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.models.events.DroveEventType;
-import com.phonepe.drove.models.events.events.DroveClusterEvent;
 import com.phonepe.drove.controller.utils.EventUtils;
+import com.phonepe.drove.models.events.events.DroveClusterLeadershipAcquiredEvent;
+import com.phonepe.drove.models.events.events.DroveClusterLeadershipLostEvent;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ConsumingSyncSignal;
@@ -103,11 +103,11 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
                 else {
                     log.info("This node lost leadership");
                 }
-                eventBus.publish(new DroveClusterEvent(
+                val metadata = EventUtils.controllerMetadata();
+                eventBus.publish(
                         currLeadershipState
-                        ? DroveEventType.LEADERSHIP_ACQUIRED
-                        : DroveEventType.LEADERSHIP_LOST,
-                        EventUtils.controllerMetadata()));
+                        ? new DroveClusterLeadershipAcquiredEvent(metadata)
+                        : new DroveClusterLeadershipLostEvent(metadata));
                 leadershipStateChanged.dispatch(currLeadershipState);
             }
         }

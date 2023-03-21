@@ -2,10 +2,9 @@ package com.phonepe.drove.controller.event;
 
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.models.events.DroveEventType;
-import com.phonepe.drove.models.events.events.DroveClusterEvent;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.utils.EventUtils;
+import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -27,8 +26,7 @@ class InMemoryEventStoreTest {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
         val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
-        es.recordEvent(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
-                                             EventUtils.controllerMetadata()));
+        es.recordEvent(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()));
 
         val res = es.latest(0, 10);
         assertFalse(res.isEmpty());
@@ -43,8 +41,7 @@ class InMemoryEventStoreTest {
         IntStream.rangeClosed(1, 200)
                 .forEach(i -> {
                     CommonTestUtils.delay(Duration.ofMillis(1)); //Otherwise all time will be same
-                    es.recordEvent(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
-                                                         EventUtils.controllerMetadata()));
+                    es.recordEvent(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()));
                 });
         val res = es.latest(0, 200);
         assertEquals(100, res.size());
@@ -56,8 +53,7 @@ class InMemoryEventStoreTest {
         val leaderChanged = new ConsumingSyncSignal<Boolean>();
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(leaderChanged);
         val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
-        es.recordEvent(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
-                                             EventUtils.controllerMetadata()));
+        es.recordEvent(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()));
 
         {
             val res = es.latest(0, 10);

@@ -28,8 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -66,7 +65,10 @@ class DroveRemoteEventListenerTest {
                                                     Duration.ofSeconds(1));
         val ctr = new AtomicLong();
         listener.onEventReceived().connect(events -> {
-            events.forEach(event -> log.info("Event type: {}", event.getType()));
+            events.forEach(event -> {
+                log.info("Event type: {}", event.getType());
+                assertNotNull(event.getType());
+            });
             ctr.addAndGet(events.size());
         });
 
@@ -260,7 +262,7 @@ class DroveRemoteEventListenerTest {
                 //Nothing to do here
             }
             catch (Exception e) {
-                    fail("Should not have failed with: " + e.getMessage());
+                fail("Should not have failed with: " + e.getMessage());
             }
         }
     }

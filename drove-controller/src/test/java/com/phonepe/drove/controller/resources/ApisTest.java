@@ -3,8 +3,6 @@ package com.phonepe.drove.controller.resources;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
-import com.phonepe.drove.models.events.DroveEventType;
-import com.phonepe.drove.models.events.events.DroveClusterEvent;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
@@ -13,6 +11,7 @@ import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -552,8 +551,7 @@ class ApisTest {
     void events() {
         when(responseEngine.events(anyLong(), anyInt()))
                 .thenReturn(ApiResponse.success(
-                        List.of(new DroveClusterEvent(DroveEventType.MAINTENANCE_MODE_SET,
-                                                      EventUtils.controllerMetadata()))));
+                        List.of(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()))));
         val r = EXT.target("/v1/cluster/events")
                 .request()
                 .get(new GenericType<ApiResponse<List<Object>>>() {
