@@ -16,7 +16,7 @@ import java.util.UUID;
  */
 @Data
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "APP_STATE_CHANGE", value = DroveAppStateChangeEvent.class),
         @JsonSubTypes.Type(name = "INSTANCE_STATE_CHANGE", value = DroveInstanceStateChangeEvent.class),

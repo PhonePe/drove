@@ -3,7 +3,9 @@ package com.phonepe.drove.controller.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.auth.model.*;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import io.dropwizard.auth.Auth;
@@ -17,6 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.models.instance.InstanceState.*;
 
@@ -29,10 +32,12 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
 @Timed
 public class AppSupport {
 
+    private final ApplicationStateDB appDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
 
     @Inject
-    public AppSupport(ApplicationInstanceInfoDB instanceInfoDB) {
+    public AppSupport(ApplicationStateDB appDB, ApplicationInstanceInfoDB instanceInfoDB) {
+        this.appDB = appDB;
         this.instanceInfoDB = instanceInfoDB;
     }
 
@@ -54,7 +59,16 @@ public class AppSupport {
         val states = null == requiredStates || requiredStates.isEmpty()
                      ? RUNNING_STATES
                      : requiredStates;
-        return ApiResponse.success(instanceInfoDB.instances(Set.of(info.getAppId()), states)
+        val relevantAppIds = appDB.application(info.getAppId())
+                .map(appInfo -> appInfo.getSpec().getName())
+                .map(appName -> appDB.applications(0, Integer.MAX_VALUE)
+                        .stream()
+                        .filter(appInfo -> appInfo.getSpec().getName().equals(appName))
+                        .map(ApplicationInfo::getAppId)
+                        .collect(Collectors.toUnmodifiableSet()))
+                .orElse(Set.of());
+
+        return ApiResponse.success(instanceInfoDB.instances(relevantAppIds, states)
                                            .values()
                                            .stream()
                                            .flatMap(Collection::stream)
