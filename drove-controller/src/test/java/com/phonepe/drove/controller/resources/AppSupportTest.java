@@ -54,7 +54,8 @@ class AppSupportTest {
                                                  new DroveApplicationInstanceInfo(appId,
                                                                                   callingInstance.getInstanceId(),
                                                                                   callingInstance.getExecutorId())),
-                    Set.of());
+                    Set.of(),
+                    false);
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(instances, r.getData());
         }
@@ -64,7 +65,8 @@ class AppSupportTest {
                                                  new DroveApplicationInstanceInfo(appId,
                                                                                   callingInstance.getInstanceId(),
                                                                                   callingInstance.getExecutorId())),
-                    null);
+                    null,
+                    false);
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(instances, r.getData());
         }
@@ -93,7 +95,8 @@ class AppSupportTest {
                                              new DroveApplicationInstanceInfo(appId,
                                                                               callingInstance.getInstanceId(),
                                                                               callingInstance.getExecutorId())),
-                Set.of(HEALTHY));
+                Set.of(HEALTHY),
+                false);
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
         assertEquals(instances, r.getData());
     }
@@ -118,7 +121,8 @@ class AppSupportTest {
         val as = new AppSupport(appDB, instanceInfoDB);
         {
             val r = as.siblingInstances(new DroveClusterNode("test-node", NodeType.EXECUTOR),
-                                        Set.of());
+                                        Set.of(),
+                                        false);
             assertEquals(ApiErrorCode.FAILED, r.getStatus());
             assertEquals("This api is applicable for calls by app instances from inside the cluster only",
                          r.getMessage());
@@ -126,7 +130,8 @@ class AppSupportTest {
         {
             val r = as.siblingInstances(
                     new DroveExternalUser("test-user", DroveUserRole.EXTERNAL_READ_ONLY, null),
-                    Set.of());
+                    Set.of(),
+                    false);
             assertEquals(ApiErrorCode.FAILED, r.getStatus());
             assertEquals("This api is applicable for calls by app instances from inside the cluster only",
                          r.getMessage());
@@ -157,7 +162,8 @@ class AppSupportTest {
                                                  new DroveApplicationInstanceInfo("wrong-app",
                                                                                   callingInstance.getInstanceId(),
                                                                                   callingInstance.getExecutorId())),
-                    Set.of());
+                    Set.of(),
+                    false);
             assertEquals(ApiErrorCode.FAILED, r.getStatus());
             assertEquals("Please send valid token for you app instance. " +
                                  "The token value is available in the DROVE_APP_INSTANCE_AUTH_TOKEN environment " +
@@ -170,7 +176,8 @@ class AppSupportTest {
                                                  new DroveApplicationInstanceInfo(appId,
                                                                                   "wrong-instance",
                                                                                   callingInstance.getExecutorId())),
-                    Set.of());
+                    Set.of(),
+                    false);
             assertEquals(ApiErrorCode.FAILED, r.getStatus());
             assertEquals("Please send valid token for you app instance. " +
                                  "The token value is available in the DROVE_APP_INSTANCE_AUTH_TOKEN environment " +
@@ -183,7 +190,8 @@ class AppSupportTest {
                                                  new DroveApplicationInstanceInfo(appId,
                                                                                   callingInstance.getInstanceId(),
                                                                                   "wrong-executor")),
-                    Set.of());
+                    Set.of(),
+                    false);
             assertEquals(ApiErrorCode.FAILED, r.getStatus());
             assertEquals("Please send valid token for you app instance. " +
                                  "The token value is available in the DROVE_APP_INSTANCE_AUTH_TOKEN environment " +
@@ -247,9 +255,21 @@ class AppSupportTest {
                                                  new DroveApplicationInstanceInfo(callingInstance.getAppId(),
                                                                                   callingInstance.getInstanceId(),
                                                                                   callingInstance.getExecutorId())),
-                    Set.of());
+                    Set.of(),
+                    true);
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(50, r.getData().size());
+        }
+        {
+            val r = as.siblingInstances(
+                    new DroveApplicationInstance("test",
+                                                 new DroveApplicationInstanceInfo(callingInstance.getAppId(),
+                                                                                  callingInstance.getInstanceId(),
+                                                                                  callingInstance.getExecutorId())),
+                    Set.of(),
+                    false);
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(5, r.getData().size());
         }
     }
 }

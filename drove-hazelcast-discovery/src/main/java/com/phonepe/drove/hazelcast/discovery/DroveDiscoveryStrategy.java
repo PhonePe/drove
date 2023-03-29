@@ -38,8 +38,15 @@ public class DroveDiscoveryStrategy extends AbstractDiscoveryStrategy {
         Objects.requireNonNull(authToken, "DrovePeerApiCall authToken cannot be empty!!!");
         val portName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.PORT_NAME);
         val transportName = this.<String>getOrNull(PROPERTY_PREFIX, DroveDiscoveryConfiguration.TRANSPORT);
+        val useAppNameForClustering = this.<Boolean>getOrDefault(PROPERTY_PREFIX, DroveDiscoveryConfiguration.CLUSTER_BY_APP_NAME, false);
         val transport = transport(transportName);
-        this.peerTracker = new DrovePeerTracker(droveEndpoint, authToken, portName, logger, createObjectMapper(), transport);
+        this.peerTracker = new DrovePeerTracker(droveEndpoint,
+                                                authToken,
+                                                portName,
+                                                logger,
+                                                createObjectMapper(),
+                                                useAppNameForClustering,
+                                                transport);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 this.peerTracker.close();

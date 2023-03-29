@@ -14,7 +14,8 @@ public class DroveDiscoveryStrategyFactory implements DiscoveryStrategyFactory {
 
     private static final List<PropertyDefinition> PROPERTIES = List.of(DroveDiscoveryConfiguration.PORT_NAME,
                                                                        DroveDiscoveryConfiguration.DROVE_ENDPOINT,
-                                                                       DroveDiscoveryConfiguration.TRANSPORT);
+                                                                       DroveDiscoveryConfiguration.TRANSPORT,
+                                                                       DroveDiscoveryConfiguration.CLUSTER_BY_APP_NAME);
 
     @Override
     public Class<? extends DiscoveryStrategy> getDiscoveryStrategyType() {

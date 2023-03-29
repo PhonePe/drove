@@ -45,7 +45,8 @@ public class AppSupport {
     @Path("/instances")
     public ApiResponse<List<InstanceInfo>> siblingInstances(
             @Auth final DroveUser droveUser,
-            @QueryParam("state") final Set<InstanceState> requiredStates) {
+            @QueryParam("state") final Set<InstanceState> requiredStates,
+            @QueryParam("forApp") boolean forApp) {
         val info = extractInstanceInfo(droveUser);
         if (info == null) {
             return ApiResponse.failure(
@@ -59,14 +60,16 @@ public class AppSupport {
         val states = null == requiredStates || requiredStates.isEmpty()
                      ? RUNNING_STATES
                      : requiredStates;
-        val relevantAppIds = appDB.application(info.getAppId())
-                .map(appInfo -> appInfo.getSpec().getName())
-                .map(appName -> appDB.applications(0, Integer.MAX_VALUE)
-                        .stream()
-                        .filter(appInfo -> appInfo.getSpec().getName().equals(appName))
-                        .map(ApplicationInfo::getAppId)
-                        .collect(Collectors.toUnmodifiableSet()))
-                .orElse(Set.of());
+        val relevantAppIds = forApp
+                             ? appDB.application(info.getAppId())
+                                     .map(appInfo -> appInfo.getSpec().getName())
+                                     .map(appName -> appDB.applications(0, Integer.MAX_VALUE)
+                                             .stream()
+                                             .filter(appInfo -> appInfo.getSpec().getName().equals(appName))
+                                             .map(ApplicationInfo::getAppId)
+                                             .collect(Collectors.toUnmodifiableSet()))
+                                     .orElse(Set.of())
+                             : Set.of(info.getAppId());
 
         return ApiResponse.success(instanceInfoDB.instances(relevantAppIds, states)
                                            .values()

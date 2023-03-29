@@ -35,16 +35,9 @@ public class DrovePeerTracker implements Closeable {
     private final String portName;
     private final ILogger log;
     private final ObjectMapper mapper;
+    private final boolean useAppNameForClustering;
     private final DroveClient client;
 
-    public DrovePeerTracker(
-            final String endpoints,
-            final String token,
-            final String portName,
-            final ILogger log,
-            final ObjectMapper mapper) {
-        this(endpoints, token, portName, log, mapper, null);
-    }
 
     @SneakyThrows
     public DrovePeerTracker(
@@ -53,10 +46,12 @@ public class DrovePeerTracker implements Closeable {
             final String portName,
             final ILogger log,
             final ObjectMapper mapper,
+            final boolean useAppNameForClustering,
             final Constructor<?> transport) {
         this.portName = portName;
         this.log = log;
         this.mapper = mapper;
+        this.useAppNameForClustering = useAppNameForClustering;
         val parsedEndpoints = parseEndpointSpec(endpoints);
         if (parsedEndpoints.isEmpty()) {
             throw new IllegalArgumentException("No endpoints specified");
@@ -158,7 +153,8 @@ public class DrovePeerTracker implements Closeable {
     }
 
     private Optional<List<DiscoveryNode>> findCurrentPeers() {
-        val request = new DroveClient.Request(DroveClient.Method.GET, API_PATH);
+        val path = API_PATH + (useAppNameForClustering? "forApp=true" : "");
+        val request = new DroveClient.Request(DroveClient.Method.GET, path);
         return client.execute(request, new PeerResponseTransformer());
     }
 }

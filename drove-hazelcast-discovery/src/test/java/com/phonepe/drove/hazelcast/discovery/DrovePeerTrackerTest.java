@@ -55,7 +55,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.waitUntil(() -> !dpt.peers().isEmpty());
             assertEquals(1, dpt.peers().size());
         }
@@ -68,7 +70,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             fail("Should have failed");
         }
         catch (IllegalArgumentException e) {
@@ -86,7 +90,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
@@ -101,7 +107,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
@@ -115,7 +123,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
@@ -129,7 +139,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
@@ -143,7 +155,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
@@ -158,7 +172,9 @@ class DrovePeerTrackerTest {
                                             "TestToken",
                                             "hazelcast",
                                             new Slf4jFactory().getLogger("test"),
-                                            MAPPER)) {
+                                            MAPPER,
+                                            false,
+                                            null)) {
             CommonTestUtils.delay(Duration.ofSeconds(2));
             assertTrue(dpt.peers().isEmpty());
         }
