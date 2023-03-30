@@ -5,15 +5,15 @@
                 <table class="table table-bordered" id="executorSummary">
                     <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Hostname</th>
-                        <th>Port</th>
-                        <th>Used CPU Cores</th>
-                        <th>Free CPU Cores</th>
-                        <th>Used Memory</th>
-                        <th>Free Memory</th>
-                        <th>Tags</th>
-                        <th>Status</th>
+                        <th class="text-wrap">ID</th>
+                        <th class="text-wrap">Hostname</th>
+                        <th class="text-wrap">Port</th>
+                        <th class="text-wrap">Used CPU Cores</th>
+                        <th class="text-wrap">Free CPU Cores</th>
+                        <th class="text-wrap">Used Memory</th>
+                        <th class="text-wrap">Free Memory</th>
+                        <th class="text-wrap">Tags</th>
+                        <th class="text-wrap">Status</th>
                     </tr>
                     </thead>
                 </table>
@@ -31,16 +31,16 @@
                         <table class="table table-bordered" id="instances">
                             <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>App Id</th>
-                                <th>Port</th>
-                                <th>Cores</th>
-                                <th>Memory</th>
-                                <th>Current Age</th>
-                                <th>Created</th>
-                                <th>Last Updated</th>
-                                <th>State</th>
-                                <th></th>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">App Id</th>
+                                <th class="text-wrap">Port</th>
+                                <th class="text-wrap">Cores</th>
+                                <th class="text-wrap">Memory</th>
+                                <th class="text-wrap">Current Age</th>
+                                <th class="text-wrap">Created</th>
+                                <th class="text-wrap">Last Updated</th>
+                                <th class="text-wrap">State</th>
+                                <th class="text-wrap"></th>
                             </tr>
                             </thead>
                         </table>
@@ -87,7 +87,7 @@
         'searching' : false,
         'ordering' : false,
         'info' : false,
-        'columnDefs': [ {'className': 'nowrap', 'targets': '_all'} ],
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
 
         'columns' : [
             { 'data' : 'executorId' },
@@ -106,7 +106,7 @@
                     }
                     data.sort();
                     for(var i = 0; i < data.length; i++) {
-                        tagStr += '<span class="badge badge-secondary">' + data[i] + '</span> ';
+                        tagStr += '<span class="badge badge-secondary text-wrap">' + data[i] + '</span> ';
                     }
                     return tagStr;
                 }
@@ -164,6 +164,7 @@
         'paging': true,
         'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
                 { 'data' : 'instanceId' },
                 { 'data' : 'appId',
@@ -195,6 +196,7 @@
         'paging': true,
         'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
                 { 'data' : 'instanceId' },
                 { 'data' : 'sourceAppName' },

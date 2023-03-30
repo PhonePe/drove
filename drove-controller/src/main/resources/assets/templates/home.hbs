@@ -5,17 +5,17 @@
                 <table class="table table-bordered" id="clusterSummary">
                     <thead>
                     <tr>
-                        <th class="text-center">Leader Controller</th>
-                        <th class="text-center">Number of executors</th>
-                        <th class="text-center">Number of Applications</th>
-                        <th class="text-center">Number of Active Applications</th>
-                        <th class="text-center">Free Cores</th>
-                        <th class="text-center">Used Cores</th>
-                        <th class="text-center">Total Cores</th>
-                        <th class="text-center">Free Memory</th>
-                        <th class="text-center">Used Memory</th>
-                        <th class="text-center">Total Memory</th>
-                        <th class="text-central">State</th>
+                        <th class="text-center text-wrap">Leader Controller</th>
+                        <th class="text-center text-wrap">Number of executors</th>
+                        <th class="text-center text-wrap">Number of Applications</th>
+                        <th class="text-center text-wrap">Number of Active Applications</th>
+                        <th class="text-center text-wrap">Free Cores</th>
+                        <th class="text-center text-wrap">Used Cores</th>
+                        <th class="text-center text-wrap">Total Cores</th>
+                        <th class="text-center text-wrap">Free Memory</th>
+                        <th class="text-center text-wrap">Used Memory</th>
+                        <th class="text-center text-wrap">Total Memory</th>
+                        <th class="text-center text-wrap">State</th>
                     </tr>
                     </thead>
                 </table>
@@ -24,7 +24,7 @@
     </section>
     <section>
         <div class="row">
-            <div class="col-md-6 col-sm-12" id="runnables">
+            <div class="col-md-12 col-lg-6" id="runnables">
                 <ul class="nav nav-tabs"  role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="applicationdetails-tab" data-toggle="tab" data-target="#applicationdetails" type="button" role="tab" aria-controls="applicationdetails" aria-selected="true">Applications</button>
@@ -37,16 +37,16 @@
                     <div class="tab-pane fade show active" id="applicationdetails" role="tabpanel" aria-labelledby="applicationdetails-tab">
                         <div class="row">
                             <div class="col">
-                                <table class="table table-bordered" id="applications" title="Applications" style="width: 100%">
+                                <table class="table table-bordered table-responsive" id="applications" title="Applications" style="width: 100%">
                                     <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Name</th>
-                                        <th>Expected Instances</th>
-                                        <th>Healthy Instances</th>
-                                        <th>CPU</th>
-                                        <th>Memory</th>
-                                        <th>State</th>
+                                        <th class="text-wrap">ID</th>
+                                        <th class="text-wrap">Name</th>
+                                        <th class="text-wrap">Expected Instances</th>
+                                        <th class="text-wrap">Healthy Instances</th>
+                                        <th class="text-wrap">CPU</th>
+                                        <th class="text-wrap">Memory</th>
+                                        <th class="text-wrap">State</th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -57,16 +57,16 @@
 
                         <div class="row">
                             <div class="col">
-                                <table class="table table-bordered" id="tasks" title="Tasks" style="width: 100%">
+                                <table class="table table-bordered table-responsive" id="tasks" title="Tasks" style="width: 100%">
                                     <thead>
                                     <tr>
-                                        <th>Source App</th>
-                                        <th>Task ID</th>
-                                        <th>Cores</th>
-                                        <th>Memory</th>
-                                        <th>Running For</th>
-                                        <th>State</th>
-                                        <th></th>
+                                        <th class="text-wrap">Source App</th>
+                                        <th class="text-wrap">Task ID</th>
+                                        <th class="text-wrap">Cores</th>
+                                        <th class="text-wrap">Memory</th>
+                                        <th class="text-wrap">Running For</th>
+                                        <th class="text-wrap">State</th>
+                                        <th class="text-wrap"></th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -91,23 +91,23 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-sm-12">
+            <div class="col-md-12 col-lg-6">
                 <div class="row">
                     <div class="col"><h4>Executors</h4></div>
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered"  id="executors">
+                        <table class="table table-bordered table-responsive"  id="executors">
                             <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Host</th>
-                                <th>Free Cores</th>
-                                <th>Used Cores</th>
-                                <th>Free Memory</th>
-                                <th>Used Memory</th>
-                                <th>Tags</th>
-                                <th>State</th>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">Host</th>
+                                <th class="text-wrap">Free Cores</th>
+                                <th class="text-wrap">Used Cores</th>
+                                <th class="text-wrap">Free Memory</th>
+                                <th class="text-wrap">Used Memory</th>
+                                <th class="text-wrap">Tags</th>
+                                <th class="text-wrap">State</th>
                             </tr>
                             </thead>
                         </table>
@@ -120,7 +120,7 @@
 
 {{#partial "page_js"}}
     var cluster = $('#clusterSummary').DataTable({
-        'processing' : true,
+    'processing' : true,
         'ajax': {
             'url' : '/apis/v1/cluster',
             'dataSrc': function(res) { return res.data ? [ res.data ] : []; }
@@ -129,7 +129,7 @@
         'searching' : false,
         'ordering' : false,
         'info' : false,
-        'columnDefs': [ {'className': 'text-center', 'targets': '_all'} ],
+        'columnDefs': [ {'className': 'text-center text-wrap', 'targets': '_all'} ],
         'columns' : [
             { 'data' : 'leader' },
             { 'data' : 'numExecutors' },
@@ -164,7 +164,7 @@
         'info' : false,
         'columnDefs': [
             {
-                'className': 'text-center',
+                'className': 'text-center text-wrap',
                 'targets': '_all'
             }
         ],
@@ -190,7 +190,7 @@
         'info' : false,
         'columnDefs': [
             {
-                'className': 'text-center',
+                'className': 'text-center text-wrap',
                 'targets': '_all'
             }
         ],
@@ -223,6 +223,10 @@
             {
                 'className': 'text-center',
                 'targets': [2,3,4,5]
+            },
+            {
+                'className': 'text-wrap',
+                'targets': '_all'
             }
         ],
         'columns' : [
@@ -247,7 +251,7 @@
                    }
                    data.sort();
                    for(var i = 0; i < data.length; i++) {
-                       tagStr += '<span class="badge badge-secondary">' + data[i] + '</span> ';
+                       tagStr += '<span class="badge badge-secondary text-wrap">' + data[i] + '</span> ';
                    }
                    return tagStr;
                 }

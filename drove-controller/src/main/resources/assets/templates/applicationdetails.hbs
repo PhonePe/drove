@@ -5,14 +5,14 @@
                 <table class="table table-bordered" id="appsummary">
                     <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Expected Instances</th>
-                        <th>Healthy Instances</th>
-                        <th>CPU</th>
-                        <th>Memory</th>
-                        <th>State</th>
-                        <th></th>
+                        <th class="text-wrap">ID</th>
+                        <th class="text-wrap">Name</th>
+                        <th class="text-wrap">Expected Instances</th>
+                        <th class="text-wrap">Healthy Instances</th>
+                        <th class="text-wrap">CPU</th>
+                        <th class="text-wrap">Memory</th>
+                        <th class="text-wrap">State</th>
+                        <th class="text-wrap"></th>
                     </tr>
                     </thead>
                 </table>
@@ -30,15 +30,15 @@
                         <table class="table table-bordered"  id="instances" style="width: 100%">
                             <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>ExecutorId</th>
-                                <th>Host</th>
-                                <th>Ports</th>
-                                <th>Cores</th>
-                                <th>Memory</th>
-                                <th>Current Age</th>
-                                <th>State</th>
-                                <th></th>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">ExecutorId</th>
+                                <th class="text-wrap">Host</th>
+                                <th class="text-wrap">Ports</th>
+                                <th class="text-wrap">Cores</th>
+                                <th class="text-wrap">Memory</th>
+                                <th class="text-wrap">Current Age</th>
+                                <th class="text-wrap">State</th>
+                                <th class="text-wrap"></th>
                             </tr>
                             </thead>
                         </table>
@@ -58,18 +58,18 @@
                         <table class="table table-bordered"  id="oldinstances">
                             <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>ExecutorId</th>
-                                <th>Host</th>
-                                <th>Ports</th>
-                                <th>Cores</th>
-                                <th>Memory</th>
-                                <th>State</th>
-                                <th>Lifetime</th>
-                                <th>Created</th>
-                                <th>Last Updated</th>
-                                <th>Error Message</th>
-                                <th></th>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">ExecutorId</th>
+                                <th class="text-wrap">Host</th>
+                                <th class="text-wrap">Ports</th>
+                                <th class="text-wrap">Cores</th>
+                                <th class="text-wrap">Memory</th>
+                                <th class="text-wrap">State</th>
+                                <th class="text-wrap">Lifetime</th>
+                                <th class="text-wrap">Created</th>
+                                <th class="text-wrap">Last Updated</th>
+                                <th class="text-wrap">Error Message</th>
+                                <th class="text-wrap"></th>
                             </tr>
                             </thead>
                         </table>
@@ -115,11 +115,14 @@
         'searching' : false,
         'ordering' : false,
         'info' : false,
-        'columnDefs': [ {
-            'targets': 7,
-            'data': null,
-            'defaultContent': '<button type="button" class="btn btn-small btn-primary" data-toggle="modal" data-target="#appSpec">Spec</button>'
-        } ],
+        'columnDefs': [
+            {
+                'targets': 7,
+                'data': null,
+                'defaultContent': '<button type="button" class="btn btn-small btn-primary" data-toggle="modal" data-target="#appSpec">Spec</button>'
+            },
+            {'className': 'text-wrap', 'targets': '_all'}
+        ],
         'columns' : [
             { 'data' : 'id' },
             { 'data' : 'name' },
@@ -135,24 +138,24 @@
         return [];
         }
         res.data.forEach( (info, i) => {
-        if(info.localInfo) {
-            info['hostname'] = info.localInfo.hostname;
-            info['ports'] = Object.keys(info.localInfo.ports)
-                .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
-                .join(",");
-        }
-        else {
-        info['hostname'] = '';
-        info['ports'] = '';
-        }
-        info.resources.forEach((r,i) => {
-        if(r.type === 'CPU') {
-        info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
-        }
-        if(r.type === 'MEMORY') {
-        info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
-        }
-        });
+            if(info.localInfo) {
+                info['hostname'] = info.localInfo.hostname;
+                info['ports'] = Object.keys(info.localInfo.ports)
+                    .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
+                    .join(",");
+            }
+            else {
+                info['hostname'] = '';
+                info['ports'] = '';
+            }
+            info.resources.forEach((r,i) => {
+                if(r.type === 'CPU') {
+                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+                }
+                if(r.type === 'MEMORY') {
+                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+                }
+            });
         });
         return res.data;
     }
@@ -173,6 +176,7 @@
         'paging': true,
         'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
         'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
             { 'data' : 'instanceId' },
             { 'data' : 'executorId', 'render' : executorLink },
@@ -201,6 +205,7 @@
         'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
         'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
             { 'data' : 'instanceId' },
             { 'data' : 'executorId', 'render' : executorLink },
