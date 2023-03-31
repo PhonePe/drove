@@ -127,6 +127,10 @@ public class DiscoveryTestUtils {
                                             .withBody(MAPPER.writeValueAsBytes(response))));
     }
     public static void createStubForSingleMemberDiscovery(final WireMockExtension controller) throws JsonProcessingException {
+        createStubForSingleMemberDiscovery(controller, false);
+    }
+
+    public static void createStubForSingleMemberDiscovery(final WireMockExtension controller, boolean forApp) throws JsonProcessingException {
         val instanceInfo = InstanceInfo.builder()
                 .appId("1_0_0")
                 .appName("test_app")
@@ -140,7 +144,7 @@ public class DiscoveryTestUtils {
                                    .build())
                 .build();
         val response = ApiResponse.success(List.of(instanceInfo));
-        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances"))
+        controller.stubFor(get(urlEqualTo("/apis/v1/internal/instances" + (forApp ? "?forApp=true" : "")))
                         .withHeader("App-Instance-Authorization", equalTo("TestToken"))
                         .willReturn(aResponse()
                                             .withStatus(200)

@@ -65,6 +65,22 @@ class DrovePeerTrackerTest {
 
     @Test
     @SneakyThrows
+    void testFindPeersForApp() {
+        createStubForSingleMemberDiscovery(controller1, true);
+        try (val dpt = new DrovePeerTracker(endpoint(),
+                                            "TestToken",
+                                            "hazelcast",
+                                            new Slf4jFactory().getLogger("test"),
+                                            MAPPER,
+                                            true,
+                                            null)) {
+            CommonTestUtils.waitUntil(() -> !dpt.peers().isEmpty());
+            assertEquals(1, dpt.peers().size());
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void testInvalidEndpoint() {
         try (val dpt = new DrovePeerTracker("",
                                             "TestToken",

@@ -153,7 +153,7 @@ public class DrovePeerTracker implements Closeable {
     }
 
     private Optional<List<DiscoveryNode>> findCurrentPeers() {
-        val path = API_PATH + (useAppNameForClustering? "forApp=true" : "");
+        val path = API_PATH + (useAppNameForClustering? "?forApp=true" : "");
         val request = new DroveClient.Request(DroveClient.Method.GET, path);
         return client.execute(request, new PeerResponseTransformer());
     }
