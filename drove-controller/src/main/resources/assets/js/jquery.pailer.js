@@ -146,14 +146,14 @@
       .fail(function(response, _msg, _code) {
         if ([401, 403].indexOf(response.status) > -1) {
           // Unauthorized user.
-          this_.indicate('YOU ARE UNAUTHORIZED TO ACCESS THIS CONTENT');
+          this_.indicate('YOU ARE UNAUTHORIZED TO ACCESS THIS CONTENT. PLEASE RELOAD PAGE TO LOGIN AGAIN');
         } else {
           this_.indicate('(FAILED TO INITIALIZE ... RETRYING)');
-          setTimeout(function() {
-            this_.indicate('');
-            this_.initialize();
-          }, 1000);
         }
+        setTimeout(function() {
+                    this_.indicate('');
+                    this_.initialize();
+                  }, 1000);
       });
   };
 
