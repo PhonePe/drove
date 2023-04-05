@@ -53,7 +53,8 @@ public class App extends Application<AppConfig> {
                                           "com.phonepe.drove.controller.healthcheck",
                                           "com.phonepe.drove.controller.managed",
                                           "com.phonepe.drove.controller.helpers",
-                                          "com.phonepe.drove.controller.errorhandlers")
+                                          "com.phonepe.drove.controller.errorhandlers",
+                                          "com.phonepe.olympus.im.client.exceptions")
                         .modules(new ControllerCoreModule())
                         .installers(HealthCheckInstaller.class)
                         .bundles(ServerPagesBundle.builder()
