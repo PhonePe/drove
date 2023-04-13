@@ -112,7 +112,7 @@ public class Apis {
     @Path("/applications")
     @Timed
     public ApiResponse<Map<String, AppSummary>> applications(
-            @QueryParam("from") @DefaultValue("0") @Min(0) @Max(1024) final int from,
+            @QueryParam("from") @DefaultValue("0") @Min(0) @Max(Integer.MAX_VALUE) final int from,
             @QueryParam("size") @DefaultValue("2147483647") @Min(0) @Max(Integer.MAX_VALUE) final int size) {
         return responseEngine.applications(from, size);
     }
@@ -156,8 +156,8 @@ public class Apis {
     @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(
             @PathParam("id") @NotEmpty final String appId,
-            @QueryParam("start") @Min(0) @Max(1024) @DefaultValue("0") int start,
-            @QueryParam("size") @Min(0) @Max(1024) @DefaultValue("1024") int size) {
+            @QueryParam("start") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("0") int start,
+            @QueryParam("size") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("2147483647") int size) {
 
         return responseEngine.applicationOldInstances(appId, start, size);
     }
