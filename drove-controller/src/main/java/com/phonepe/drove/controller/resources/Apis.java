@@ -113,7 +113,7 @@ public class Apis {
     @Timed
     public ApiResponse<Map<String, AppSummary>> applications(
             @QueryParam("from") @DefaultValue("0") @Min(0) @Max(1024) final int from,
-            @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(1024) final int size) {
+            @QueryParam("size") @DefaultValue("2147483647") @Min(0) @Max(Integer.MAX_VALUE) final int size) {
         return responseEngine.applications(from, size);
     }
 
