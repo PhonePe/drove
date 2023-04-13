@@ -49,6 +49,9 @@ import static com.phonepe.drove.models.api.ApiResponse.success;
 @Timed
 public class Apis {
 
+    public static final int MAX_ELEMENTS = Integer.MAX_VALUE - 1;
+    public static final String MAX_ELEMENTS_TEXT = "2147483646";
+
     private final ApplicationEngine engine;
     private final TaskEngine taskEngine;
 
@@ -112,8 +115,8 @@ public class Apis {
     @Path("/applications")
     @Timed
     public ApiResponse<Map<String, AppSummary>> applications(
-            @QueryParam("from") @DefaultValue("0") @Min(0) @Max(Integer.MAX_VALUE) final int from,
-            @QueryParam("size") @DefaultValue("2147483647") @Min(0) @Max(Integer.MAX_VALUE) final int size) {
+            @QueryParam("from") @DefaultValue("0") @Min(0) @Max(MAX_ELEMENTS) final int from,
+            @QueryParam("size") @DefaultValue(MAX_ELEMENTS_TEXT) @Min(0) @Max(MAX_ELEMENTS) final int size) {
         return responseEngine.applications(from, size);
     }
 
@@ -156,8 +159,8 @@ public class Apis {
     @Timed
     public ApiResponse<List<InstanceInfo>> applicationOldInstances(
             @PathParam("id") @NotEmpty final String appId,
-            @QueryParam("start") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("0") int start,
-            @QueryParam("size") @Min(0) @Max(Integer.MAX_VALUE) @DefaultValue("2147483647") int size) {
+            @QueryParam("start") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue("0") int start,
+            @QueryParam("size") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue(MAX_ELEMENTS_TEXT) int size) {
 
         return responseEngine.applicationOldInstances(appId, start, size);
     }

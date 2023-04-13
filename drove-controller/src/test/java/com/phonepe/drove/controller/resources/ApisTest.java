@@ -154,6 +154,7 @@ class ApisTest {
 
     @Test
     void applications() {
+        when(responseEngine.applications(0, Apis.MAX_ELEMENTS)).thenReturn(ApiResponse.success(null));
         when(responseEngine.applications(0, 1024)).thenReturn(ApiResponse.success(null));
         //assertEquals(ApiErrorCode.SUCCESS, apis.applications(1, 1024).getStatus());
         {
@@ -289,7 +290,7 @@ class ApisTest {
                                                                         spec,
                                                                         i))
                 .toList();
-        when(responseEngine.applicationOldInstances(appId, 0, 1024))
+        when(responseEngine.applicationOldInstances(appId, 0, Apis.MAX_ELEMENTS))
                 .thenReturn(ApiResponse.success(instances));
         {
             try (val r = EXT.target("/v1/applications/" + appId + "/instances/old")
