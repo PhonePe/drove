@@ -61,7 +61,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT);
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
-                = new ApplicationInstanceRunAction(new ResourceConfig())
+                = new ApplicationInstanceRunAction(new ResourceConfig(), ExecutorOptions.DEFAULT)
                 .execute(ctx,
                          StateData.create(PROVISIONING,
                                           new ExecutorInstanceInfo(instanceSpec.getAppId(),

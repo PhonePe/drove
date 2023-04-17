@@ -42,6 +42,7 @@ logging:
 
 options:
   cacheImages: true
+  maxOpenFiles: 10_000
 
 zookeeper:
   connectionString: localhost:2181
@@ -68,3 +69,5 @@ clusterAuth:
 #    - type: console
 #      timeZone: IST
 #      output: stdout
+
+

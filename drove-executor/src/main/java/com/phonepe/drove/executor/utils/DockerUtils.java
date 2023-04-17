@@ -9,6 +9,7 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -104,18 +105,22 @@ public class DockerUtils {
             final DockerClient client,
             final String id,
             final DeploymentUnitSpec deploymentUnitSpec,
-            final DockerCreateParmAugmenter augmenter) {
+            final DockerCreateParmAugmenter augmenter,
+            ExecutorOptions executorOptions) {
         val image = deploymentUnitSpec.getExecutable().accept(DockerCoordinates::getUrl);
 
         try (val containerCmd = client.createContainerCmd(image)) {
             containerCmd
                     .withName(id);
+            val maxOpenFiles = executorOptions.getMaxOpenFiles() == 0 ? ExecutorOptions.DEFAULT_MAX_OPEN_FILES
+                                                                      : executorOptions.getMaxOpenFiles();
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any
 //                    stats
                     .withAutoRemove(autoRemove(deploymentUnitSpec))
-                    .withLogConfig(logConfig(deploymentUnitSpec));
+                    .withLogConfig(logConfig(deploymentUnitSpec))
+                    .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
             deploymentUnitSpec.getResources()
                     .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {

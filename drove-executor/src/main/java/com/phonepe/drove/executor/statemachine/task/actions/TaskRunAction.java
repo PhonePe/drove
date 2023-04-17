@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
@@ -37,10 +38,12 @@ public class TaskRunAction extends TaskAction {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ResourceConfig schedulingConfig;
+    private final ExecutorOptions executorOptions;
 
     @Inject
-    public TaskRunAction(ResourceConfig resourceConfig) {
+    public TaskRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions) {
         this.schedulingConfig = resourceConfig;
+        this.executorOptions = executorOptions;
     }
 
     @Override
@@ -74,7 +77,8 @@ public class TaskRunAction extends TaskAction {
                         env.add("DROVE_TASK_ID=" + instanceSpec.getTaskId());
                         env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());
                         env.add("DROVE_SOURCE_APP_NAME=" + instanceSpec.getSourceAppName());
-                    });
+                    },
+                    executorOptions);
 
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)
