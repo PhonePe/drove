@@ -126,4 +126,14 @@ public class App extends Application<AppConfig> {
     public static void main(String[] args) throws Exception {
         new App().run(args);
     }
+
+    private static List<ComponentAuthConfig> getComponentAuthConfigList(OlympusIMClientConfig olympusIMConfig) {
+        HashSet<ComponentAuthConfig> componentAuthConfigs = new HashSet<>(olympusIMConfig.getAuthConfig()
+                                                                                  .getAdditionalComponentAuthConfigs());
+        componentAuthConfigs.add(new ComponentAuthConfig(olympusIMConfig.getAuthConfig()
+                                                                 .getComponentId(), olympusIMConfig.getAuthConfig()
+                                                                 .getComponentInstanceId()));
+        return componentAuthConfigs.stream()
+                .collect(Collectors.toList());
+    }
 }
