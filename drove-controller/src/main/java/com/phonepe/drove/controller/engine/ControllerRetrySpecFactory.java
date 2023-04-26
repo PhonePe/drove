@@ -12,6 +12,7 @@ public interface ControllerRetrySpecFactory {
     default RetrySpec jobStartRetrySpec() {
         return new CompositeRetrySpec(
                 List.of(new RetryOnAllExceptionsSpec(),
+                        new MaxRetriesRetrySpec(-1),
                         new MaxDurationRetrySpec(Duration.ofMinutes(3)),
                         new IntervalRetrySpec(Duration.ofSeconds(30))));
     }
@@ -20,7 +21,7 @@ public interface ControllerRetrySpecFactory {
         return new CompositeRetrySpec(
                 List.of(
                 new IntervalRetrySpec(Duration.ofSeconds(3)),
-                new MaxRetriesRetrySpec(50),
+                new MaxRetriesRetrySpec(-1),
                 new MaxDurationRetrySpec(Duration.ofMillis(timeoutMillis)),
                 new RetryOnAllExceptionsSpec()));
     }
@@ -29,7 +30,7 @@ public interface ControllerRetrySpecFactory {
         return new CompositeRetrySpec(
                 List.of(
                 new IntervalRetrySpec(Duration.ofSeconds(3)),
-                new MaxRetriesRetrySpec(50),
+                new MaxRetriesRetrySpec(-1),
                 new MaxDurationRetrySpec(Duration.ofSeconds(60)),
                 new RetryOnAllExceptionsSpec()));
     }
