@@ -80,6 +80,6 @@ public class HttpChecker implements Checker {
     @Override
     public void close() throws Exception {
         httpClient.close();
-        log.info("Shut down http checker");
+        log.debug("Shut down http checker");
     }
 }
