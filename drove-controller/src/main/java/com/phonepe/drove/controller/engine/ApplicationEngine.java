@@ -166,9 +166,7 @@ public class ApplicationEngine {
                 log.info("Translating deploy op to scaling op for {}", appId);
                 val existing = instanceInfoDB.instanceCount(appId, InstanceState.HEALTHY);
                 return new ApplicationScaleOperation(
-                        appId,
-                        existing + deploy.getInstances(),
-                        Objects.requireNonNullElse(deploy.getOpSpec(), ClusterOpSpec.DEFAULT));
+                        appId, existing + deploy.getInstances(), deploy.getOpSpec());
             }
 
             @Override
@@ -176,10 +174,7 @@ public class ApplicationEngine {
                 val appId = suspend.getAppId();
 
                 log.info("Translating suspend op to scaling op for {}", appId);
-                return new ApplicationScaleOperation(
-                        appId,
-                        0,
-                        Objects.requireNonNullElse(suspend.getOpSpec(), ClusterOpSpec.DEFAULT));
+                return new ApplicationScaleOperation(appId, 0, suspend.getOpSpec());
             }
         });
     }
