@@ -44,7 +44,8 @@ class ApplicationInstanceStateMachineTest extends AbstractTestBase {
                                                                                                new Date())),
                                                      new InjectingApplicationInstanceActionFactory(Guice.createInjector(
                                                              Stage.DEVELOPMENT)),
-                                                     ExecutorTestingUtils.DOCKER_CLIENT);
+                                                     ExecutorTestingUtils.DOCKER_CLIENT,
+                                                     false);
         val stateChanges = new HashSet<>();
         sm.onStateChange().connect(sd -> stateChanges.add(sd.getState()));
         Executors.newSingleThreadExecutor()

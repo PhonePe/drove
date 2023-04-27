@@ -19,7 +19,7 @@ class ApplicationApplicationInstanceSpecValidatorTest extends AbstractTestBase {
     void test() {
         val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val action = new ApplicationInstanceSpecValidator();
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
 
         assertEquals(InstanceState.PROVISIONING,
                      action.execute(ctx,

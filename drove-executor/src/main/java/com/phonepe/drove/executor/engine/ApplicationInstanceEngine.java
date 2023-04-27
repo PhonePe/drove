@@ -20,8 +20,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 
-import static com.phonepe.drove.models.instance.InstanceState.LOST;
-import static com.phonepe.drove.models.instance.InstanceState.RUNNING_STATES;
+import static com.phonepe.drove.models.instance.InstanceState.*;
 
 /**
  *
@@ -86,7 +85,8 @@ public class ApplicationInstanceEngine extends InstanceEngine<ExecutorInstanceIn
                                                    spec,
                                                    currentState,
                                                    actionFactory,
-                                                   client);
+                                                   client,
+                                                   currentState.getState().equals(UNKNOWN));
     }
 
     @Override

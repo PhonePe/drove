@@ -76,7 +76,8 @@ public class ApplicationInstanceStateMachine extends StateMachine<ExecutorInstan
             ApplicationInstanceSpec instanceSpec,
             @NonNull StateData<InstanceState, ExecutorInstanceInfo> initalState,
             ExecutorActionFactory<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
-            DockerClient client) {
-        super(initalState, new InstanceActionContext<>(executorId, instanceSpec, client), actionFactory, transitions);
+            DockerClient client,
+            boolean recovered) {
+        super(initalState, new InstanceActionContext<>(executorId, instanceSpec, client, recovered), actionFactory, transitions);
     }
 }

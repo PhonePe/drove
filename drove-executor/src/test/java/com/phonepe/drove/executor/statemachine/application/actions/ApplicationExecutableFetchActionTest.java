@@ -23,7 +23,8 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
     @Test
     void testFetchSuccess() {
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, ExecutorTestingUtils.DOCKER_CLIENT,
+                                              false);
         val action = new ApplicationExecutableFetchAction(null);
         val response = action.execute(ctx,
                                       StateData.create(PENDING, ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
@@ -49,8 +50,8 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
     void testFetchWrongImage() {
         val spec = ExecutorTestingUtils.testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid");
         val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID,
-                                            spec,
-                                            ExecutorTestingUtils.DOCKER_CLIENT);
+                                              spec,
+                                              ExecutorTestingUtils.DOCKER_CLIENT, false);
         val action = new ApplicationExecutableFetchAction(null);
         val response = action.execute(ctx,
                                       StateData.create(PENDING, ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
@@ -61,8 +62,8 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
     void testFetchInterrupt() {
         val spec = ExecutorTestingUtils.testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid");
         val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID,
-                                            spec,
-                                            ExecutorTestingUtils.DOCKER_CLIENT);
+                                              spec,
+                                              ExecutorTestingUtils.DOCKER_CLIENT, false);
         val action = new ApplicationExecutableFetchAction(null);
         Thread.currentThread().interrupt();
         val response = action.execute(ctx,

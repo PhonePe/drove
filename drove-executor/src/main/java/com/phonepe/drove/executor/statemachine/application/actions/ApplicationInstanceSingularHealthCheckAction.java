@@ -33,11 +33,16 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val healthcheck = context.getInstanceSpec().getHealthcheck();
-        val initDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
+        var initialDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
-        if (initDelay > 0) {
+        if(context.isRecovered()) {
+            log.info("This state machine is in recovery flow. Health check initial delay will be ignored");
+            initialDelay = 0;
+        }
+        if (initialDelay > 0) {
+            log.info("Waiting {} ms before running initial health check", initialDelay);
             try {
-                Thread.sleep(healthcheck.getInitialDelay().toMilliseconds());
+                Thread.sleep(initialDelay);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -54,11 +59,11 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                     .onComplete(e -> {
                         val failure = e.getFailure();
                         if (failure != null) {
-                            log.error("Readiness checks completed with error: {}", failure.getMessage());
+                            log.error("Initial health checks completed with error: {}", failure.getMessage());
                         }
                         else {
                             val checkResult = e.getResult();
-                            log.info("Readiness check result: {}", checkResult);
+                            log.info("Initial health check result: {}", checkResult);
                         }
                     })
                     .get(() -> {

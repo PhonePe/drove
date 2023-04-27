@@ -31,7 +31,7 @@ class ApplicationInstanceRecoveryActionTest extends AbstractTestBase {
         val instanceId = spec.getInstanceId();
         ExecutorTestingUtils.startTestAppContainer(spec, instanceData, AbstractTestBase.MAPPER);
         val ir = new ApplicationInstanceRecoveryAction();
-        val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT, false);
         val r = ir.execute(ctx, StateData.create(InstanceState.UNKNOWN, instanceData));
         assertEquals(InstanceState.UNREADY, r.getState());
         ir.stop();
@@ -42,7 +42,7 @@ class ApplicationInstanceRecoveryActionTest extends AbstractTestBase {
     void testRecoverNone() {
         val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val ir = new ApplicationInstanceRecoveryAction();
-        val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT);
+        val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT, false);
         val r = ir.execute(ctx,
                            StateData.create(InstanceState.UNKNOWN,
                                             ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));

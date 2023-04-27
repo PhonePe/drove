@@ -44,7 +44,7 @@ class ApplicationInstanceReadinessCheckActionTest {
                         .willSetStateTo("healthyState"));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -57,7 +57,7 @@ class ApplicationInstanceReadinessCheckActionTest {
         stubFor(get("/").willReturn(serverError()));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceReadinessCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -71,7 +71,7 @@ class ApplicationInstanceReadinessCheckActionTest {
         stubFor(get("/").willReturn(serverError()));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceReadinessCheckAction();
 
         val f = Executors.newSingleThreadExecutor()
@@ -87,7 +87,7 @@ class ApplicationInstanceReadinessCheckActionTest {
     void testInterrupt(final WireMockRuntimeInfo wm) {
         stubFor(get("/").willReturn(serverError()));
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceReadinessCheckAction();
 
         val f = Executors.newSingleThreadExecutor()

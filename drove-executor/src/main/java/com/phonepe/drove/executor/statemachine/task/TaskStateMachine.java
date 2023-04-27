@@ -64,6 +64,6 @@ public class TaskStateMachine extends StateMachine<ExecutorTaskInfo, Void, TaskS
             @NonNull StateData<TaskState, ExecutorTaskInfo> initalState,
             ExecutorActionFactory<ExecutorTaskInfo, TaskState, TaskInstanceSpec> actionFactory,
             DockerClient client) {
-        super(initalState, new InstanceActionContext<>(executorId, instanceSpec, client), actionFactory, transitions);
+        super(initalState, new InstanceActionContext<>(executorId, instanceSpec, client, false), actionFactory, transitions);
     }
 }

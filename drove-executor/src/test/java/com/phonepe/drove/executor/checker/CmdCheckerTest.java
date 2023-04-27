@@ -26,7 +26,7 @@ class CmdCheckerTest extends AbstractTestBase {
     @Test
     void testCmdSuccess() {
         runTest(containerId -> {
-            val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT)
+            val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false)
                     .setDockerInstanceId(containerId);
             try (val cc = new CmdChecker(new CmdCheckModeSpec("/bin/echo XX"), ctx)) {
                 val result = cc.call();
@@ -40,7 +40,7 @@ class CmdCheckerTest extends AbstractTestBase {
     @Test
     void testCmdFail() {
         runTest(containerId -> {
-            val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT)
+            val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false)
                     .setDockerInstanceId(containerId);
             try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
                 val result = cc.call();
@@ -53,7 +53,7 @@ class CmdCheckerTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testNoContainer() {
-        val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT);
+        val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false);
         try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
             val result = cc.call();
             assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
@@ -64,7 +64,7 @@ class CmdCheckerTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testError() {
-        val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT)
+        val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false)
                 .setDockerInstanceId("WrongId");
         try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
             assertEquals(CheckResult.Status.UNHEALTHY, cc.call().getStatus());

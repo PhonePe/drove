@@ -33,14 +33,20 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
             InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val readinessCheckSpec = context.getInstanceSpec().getReadiness();
-        val initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
+        var initDelay = Objects.requireNonNullElse(readinessCheckSpec.getInitialDelay(),
                                                    io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
-        if(initDelay > 0) {
-            try {
-                Thread.sleep(readinessCheckSpec.getInitialDelay().toMilliseconds());
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        if (context.isRecovered()) {
+            log.info("This state machine is in recovery context. Readiness check initial delay will be ignored.");
+        }
+        else {
+            if (initDelay > 0) {
+                log.info("Waiting {} ms before running readiness checks", initDelay);
+                try {
+                    Thread.sleep(readinessCheckSpec.getInitialDelay().toMilliseconds());
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
         val retryPolicy = new RetryPolicy<CheckResult>()

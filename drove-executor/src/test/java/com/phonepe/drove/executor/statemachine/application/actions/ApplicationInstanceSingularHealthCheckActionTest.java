@@ -30,7 +30,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         stubFor(get("/").willReturn(ok()));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -51,7 +51,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
                         .whenScenarioStateIs("healthyState")
                         .willReturn(ok()));
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -64,7 +64,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         stubFor(get("/").willReturn(serverError()));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -77,7 +77,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         stubFor(get("/").willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val response = action.execute(ctx,
                                       StateData.create(InstanceState.HEALTHY,
@@ -91,7 +91,7 @@ class ApplicationInstanceSingularHealthCheckActionTest extends AbstractTestBase 
         stubFor(get("/").willReturn(serverError()));
 
         val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
-        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null);
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID, spec, null, false);
         val action = new ApplicationInstanceSingularHealthCheckAction();
         val f = Executors.newSingleThreadExecutor()
                 .submit(() -> action.execute(ctx,

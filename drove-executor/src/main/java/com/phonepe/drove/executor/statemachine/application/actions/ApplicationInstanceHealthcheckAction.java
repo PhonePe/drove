@@ -3,13 +3,13 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
-import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
@@ -49,13 +49,14 @@ public class ApplicationInstanceHealthcheckAction extends ApplicationInstanceAct
             val mdc = null != currentContext
                       ? currentContext
                       : Collections.<String, String>emptyMap();
+            log.info("Starting regular health-checks on containers");
             checkerJob = executorService.scheduleWithFixedDelay(new HealthChecker(checker,
                                                                                   checkLock,
                                                                                   stateChanged,
                                                                                   healthcheckSpec.getAttempts(),
                                                                                   currentResult,
                                                                                   mdc),
-                                                                healthcheckSpec.getInitialDelay().toMilliseconds(),
+                                                                0,
                                                                 healthcheckSpec.getInterval().toMilliseconds(),
                                                                 TimeUnit.MILLISECONDS);
             checkLock.lock();

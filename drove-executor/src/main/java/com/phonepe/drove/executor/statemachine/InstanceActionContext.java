@@ -17,16 +17,19 @@ public class InstanceActionContext<T extends DeploymentUnitSpec> extends ActionC
     private final String executorId;
     private final T instanceSpec;
     private final DockerClient client;
+    private final boolean recovered;
     private String dockerImageId;
     private String dockerInstanceId;
-
+    
     public InstanceActionContext(
             String executorId,
             T instanceSpec,
-            DockerClient client) {
+            DockerClient client,
+            boolean recovered) {
         super();
         this.executorId = executorId;
         this.instanceSpec = instanceSpec;
         this.client = client;
+        this.recovered = recovered;
     }
 }
