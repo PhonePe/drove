@@ -66,7 +66,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(), r -> !r);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()), r -> !r);
         val instanceInfo = instanceInfoDB.instance(appId, instanceId).orElse(null);
         if (null == instanceInfo) {
             log.warn("No instance found for {}/{}", appId, instanceId);

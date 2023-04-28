@@ -83,7 +83,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobStartRetrySpec(),
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
                                                       instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {

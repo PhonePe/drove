@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.retry.*;
+import lombok.val;
 
 import java.time.Duration;
 import java.util.List;
@@ -9,12 +10,14 @@ import java.util.List;
  *
  */
 public interface ControllerRetrySpecFactory {
-    default RetrySpec jobStartRetrySpec() {
+    default RetrySpec jobRetrySpec(long timeoutMillis) {
+        val numRetries = 3;
+        val timePerRetry = timeoutMillis + 100;
         return new CompositeRetrySpec(
                 List.of(new RetryOnAllExceptionsSpec(),
-                        new MaxRetriesRetrySpec(-1),
-                        new MaxDurationRetrySpec(Duration.ofMinutes(3)),
-                        new IntervalRetrySpec(Duration.ofSeconds(30))));
+                        new MaxRetriesRetrySpec(numRetries),
+                        new MaxDurationRetrySpec(Duration.ofMillis(numRetries * timePerRetry + 100)),
+                        new IntervalRetrySpec(Duration.ofMillis(timePerRetry))));
     }
 
     default RetrySpec instanceStateCheckRetrySpec(long timeoutMillis) {

@@ -31,8 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -60,7 +59,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobStartRetrySpec()).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -94,7 +93,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenReturn(Optional.empty());
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobStartRetrySpec()).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -129,7 +128,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobStartRetrySpec()).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -163,7 +162,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobStartRetrySpec()).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -197,7 +196,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobStartRetrySpec()).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
