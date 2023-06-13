@@ -23,6 +23,8 @@ import java.util.concurrent.CancellationException;
  */
 @Slf4j
 public class HttpChecker implements Checker {
+    private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = 8192;
+
     private final CloseableHttpClient httpClient;
     private final HTTPCheckModeSpec httpSpec;
     private final URI uri;
@@ -51,7 +53,7 @@ public class HttpChecker implements Checker {
             return httpClient.execute(request, response -> {
                 val statusCode = response.getCode();
                 val responseBody = null != response.getEntity()
-                                   ? EntityUtils.toString(response.getEntity())
+                                   ? EntityUtils.toString(response.getEntity(), MAX_READABLE_OUTPUT_SIZE_BYTES)
                                    : "";
                 if (httpSpec.getSuccessCodes().contains(statusCode)) {
                     return CheckResult.healthy();
