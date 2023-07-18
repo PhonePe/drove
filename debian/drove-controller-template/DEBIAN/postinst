@@ -1,5 +1,11 @@
 #!/bin/sh
 
+chown root:root /etc/init/drove-controller.conf
+chown root:root /etc/init.d/drove-controller
+chown root:root /usr/share/java/drove-controller.jar
+chown root:root /usr/lib/systemd/system/drove-controller.service
+chown root:root /usr/bin/drove-controller
+
 # SystemD
 if which systemctl >/dev/null; then
     echo "Registering SystemD service: drove-controller"

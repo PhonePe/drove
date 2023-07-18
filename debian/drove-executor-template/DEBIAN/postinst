@@ -1,5 +1,11 @@
 #!/bin/sh
 
+chown root:root /etc/init/drove-executor.conf
+chown root:root /etc/init.d/drove-executor
+chown root:root /usr/share/java/drove-executor.jar
+chown root:root /usr/lib/systemd/system/drove-executor.service
+chown root:root /usr/bin/drove-executor
+
 # SystemD
 if which systemctl >/dev/null; then
     echo "Registering SystemD service: drove-executor"
