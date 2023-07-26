@@ -52,6 +52,14 @@ public class ClusterClient {
     }
 
     public KnownInstancesData lastKnownInstances() {
+        return readSnapshot("last");
+    }
+
+    public KnownInstancesData currentKnownInstances() {
+        return readSnapshot("current");
+    }
+
+    private KnownInstancesData readSnapshot(String from) {
         val executorId = executorIdManager.executorId().orElse(null);
         if (null == executorId) {
             log.info("Executor Id not yet available. Cannot fetch last state data from controller.");
@@ -63,7 +71,7 @@ public class ClusterClient {
             return KnownInstancesData.EMPTY;
         }
         try {
-            val uri = String.format("%s://%s:%d/apis//v1/internal/cluster/executors/" + executorId + "/instances",
+            val uri = String.format("%s://%s:%d/apis/v1/internal/cluster/executors/" + executorId + "/instances/" + from,
                                     leader.getTransportType() == NodeTransportType.HTTP
                                     ? "http"
                                     : "https",

@@ -6,6 +6,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
@@ -57,13 +58,15 @@ public class ZombieInstanceReaper implements Managed {
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
 
+    private final ClusterClient clusterClient;
+
     @Inject
     @IgnoreInJacocoGeneratedReport
     public ZombieInstanceReaper(
             DockerClient client,
             ApplicationInstanceEngine applicationInstanceEngine,
-            TaskInstanceEngine taskInstanceEngine) {
-        this(client, applicationInstanceEngine, taskInstanceEngine, Duration.ofSeconds(30));
+            TaskInstanceEngine taskInstanceEngine, ClusterClient clusterClient) {
+        this(client, applicationInstanceEngine, taskInstanceEngine, Duration.ofMinutes(1), clusterClient);
     }
 
     @VisibleForTesting
@@ -71,11 +74,12 @@ public class ZombieInstanceReaper implements Managed {
             DockerClient client,
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine,
-            Duration checkDuration) {
+            Duration checkDuration, ClusterClient clusterClient) {
         this.client = client;
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
         this.zombieCheckSignal = new ScheduledSignal(checkDuration);
+        this.clusterClient = clusterClient;
     }
 
     @Override
@@ -97,18 +101,40 @@ public class ZombieInstanceReaper implements Managed {
                                          DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
                                          DockerLabels.DROVE_INSTANCE_DATA_LABEL))
                 .exec();
-        pruneInstanceIds(containers, applicationInstanceEngine, EXPECTED_APP_DOCKER_RUNNING_STATES, JobType.SERVICE);
-        pruneInstanceIds(containers, taskInstanceEngine, EXPECTED_TASK_DOCKER_RUNNING_STATES, JobType.COMPUTATION);
-        pruneZombieContainers(containers, applicationInstanceEngine, EXPECTED_APP_DOCKER_RUNNING_STATES, JobType.SERVICE);
-        pruneZombieContainers(containers, taskInstanceEngine, EXPECTED_TASK_DOCKER_RUNNING_STATES, JobType.COMPUTATION);
+        val knownInstances = clusterClient.currentKnownInstances();
+        val appInstances = applicationInstanceEngine.instanceIds(EXPECTED_APP_DOCKER_RUNNING_STATES);
+        val taskInstanceIds = taskInstanceEngine.instanceIds(EXPECTED_TASK_DOCKER_RUNNING_STATES);
+
+        // Kill all app instances that do not have a parent app
+        pruneHeadlessInstances(applicationInstanceEngine,
+                               JobType.SERVICE,
+                               knownInstances.getStaleAppInstanceIds(),
+                               appInstances);
+
+        //Remove all instance ids that are marked as stale by containers
+        pruneInstanceIds(containers,
+                         applicationInstanceEngine,
+                         appInstances,
+                         JobType.SERVICE);
+        pruneInstanceIds(containers,
+                         taskInstanceEngine,
+                         taskInstanceIds,
+                         JobType.COMPUTATION);
+        pruneZombieContainers(containers,
+                              applicationInstanceEngine,
+                              EXPECTED_APP_DOCKER_RUNNING_STATES,
+                              JobType.SERVICE);
+        pruneZombieContainers(containers,
+                              taskInstanceEngine,
+                              EXPECTED_TASK_DOCKER_RUNNING_STATES,
+                              JobType.COMPUTATION);
     }
 
     private <E extends DeployedExecutionObjectInfo, S extends Enum<S>,
             T extends DeploymentUnitSpec, I extends DeployedInstanceInfo> void pruneInstanceIds(
             List<Container> containers, InstanceEngine<E, S, T, I> engine,
-            Set<S> states,
+            Set<String> instanceIds,
             JobType type) {
-        val instanceIds = engine.instanceIds(states);
         //Only states where we expect this to be running
         val foundContainers = containers.stream()
                 .filter(container -> type.equals(JobType.valueOf(
@@ -123,6 +149,25 @@ public class ZombieInstanceReaper implements Managed {
         }
         else {
             log.debug("No stale {} instance ids found", type);
+        }
+
+    }
+
+    private static <E extends DeployedExecutionObjectInfo, S extends Enum<S>,
+            T extends DeploymentUnitSpec,
+            I extends DeployedInstanceInfo> void pruneHeadlessInstances(
+            InstanceEngine<E, S, T, I> engine,
+            JobType type,
+            Set<String> staleInstances,
+            Set<String> instanceIds) {
+        val toBeKilledState = Set.copyOf(Sets.intersection(staleInstances, instanceIds));
+        if (!toBeKilledState.isEmpty()) {
+            log.warn("Instances {} are marked as stale on controller. Will be killed", toBeKilledState);
+            toBeKilledState.forEach(engine::stopInstance);
+            log.info("{} controller stale {} containers have been killed", toBeKilledState.size(), type);
+        }
+        else {
+            log.debug("No instances of type {} have been marked as stale by controller", type);
         }
     }
 
@@ -144,7 +189,10 @@ public class ZombieInstanceReaper implements Managed {
                                                                        .get(DockerLabels.DROVE_INSTANCE_ID_LABEL)))
                     .forEach(container -> {
                         val droveInstanceId = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
-                        log.info("Killing zombie container of type {}: {} {}", type, droveInstanceId, container.getId());
+                        log.info("Killing zombie container of type {}: {} {}",
+                                 type,
+                                 droveInstanceId,
+                                 container.getId());
                         try {
                             client.killContainerCmd(container.getId()).exec();
                         }
@@ -161,6 +209,5 @@ public class ZombieInstanceReaper implements Managed {
             log.debug("No zombie containers of type {} found", type);
         }
     }
-
 
 }

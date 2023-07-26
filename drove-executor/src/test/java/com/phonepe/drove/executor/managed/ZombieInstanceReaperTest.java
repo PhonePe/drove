@@ -1,11 +1,14 @@
 package com.phonepe.drove.executor.managed;
 
+import com.google.common.collect.Sets;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
+import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
+import com.phonepe.drove.models.internal.KnownInstancesData;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
@@ -38,8 +42,10 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val ae = mock(ApplicationInstanceEngine.class);
         when(ae.instanceIds(any())).thenReturn(ids);
         when(ae.stopInstance(anyString())).thenAnswer(invocationOnMock -> ids.remove(invocationOnMock.getArgument(0, String.class)));
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         val te = mock(TaskInstanceEngine.class);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1));
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
         zr.start();
         CommonTestUtils.waitUntil(ids::isEmpty);
         assertTrue(ids.isEmpty());
@@ -55,7 +61,9 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val te = mock(TaskInstanceEngine.class);
         when(te.instanceIds(any())).thenReturn(ids);
         when(te.stopInstance(anyString())).thenAnswer(invocationOnMock -> ids.remove(invocationOnMock.getArgument(0, String.class)));
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1));
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
         zr.start();
         CommonTestUtils.waitUntil(ids::isEmpty);
         assertTrue(ids.isEmpty());
@@ -70,9 +78,11 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val cId = ExecutorTestingUtils.startTestAppContainer(appSpec, appInstanceData, MAPPER);
         val ae = mock(ApplicationInstanceEngine.class);
         val te = mock(TaskInstanceEngine.class);
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         when(te.instanceIds(any())).thenReturn(Set.of());
         when(te.stopInstance(anyString())).thenReturn(false);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1));
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(cId));
         assertFalse(containerExists(cId));
@@ -87,9 +97,11 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val cId = ExecutorTestingUtils.startTestTaskContainer(taskSpec, taskInstanceData, MAPPER);
         val ae = mock(ApplicationInstanceEngine.class);
         val te = mock(TaskInstanceEngine.class);
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         when(te.instanceIds(any())).thenReturn(Set.of());
         when(te.stopInstance(anyString())).thenReturn(false);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1));
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(cId));
         assertFalse(containerExists(cId));
@@ -113,8 +125,9 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         when(ae.instanceIds(any())).thenReturn(Set.of(appInstanceData.getInstanceId()));
 
         val te = mock(TaskInstanceEngine.class);
-
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1));
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(cId));
         assertFalse(containerExists(cId));
@@ -139,8 +152,10 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
 
         val te = mock(TaskInstanceEngine.class);
         when(te.instanceIds(any())).thenReturn(Set.of(taskInstanceData.getTaskId()));
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
 
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1));
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(appContainer));
         assertTrue(containerExists(cId));
@@ -149,4 +164,31 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         DOCKER_CLIENT.killContainerCmd(cId).exec();
     }
 
+    @Test
+    @SneakyThrows
+    void testKillAppLessInstance() {
+        val ids = new LinkedHashSet<String>();
+        IntStream.rangeClosed(0,100).forEach(i -> ids.add("AI" + i));
+        val killedIds = ids.stream().limit(10).collect(Collectors.toSet()); //Kill 10
+        val ae = mock(ApplicationInstanceEngine.class);
+        when(ae.instanceIds(any())).thenReturn(ids);
+        when(ae.stopInstance(anyString())).thenAnswer(invocationOnMock -> {
+            val id = invocationOnMock.getArgument(0, String.class);
+            if(killedIds.contains(id)) {
+                ids.remove(id);
+            }
+            return true;
+        });
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(new KnownInstancesData(Set.copyOf(Sets.difference(ids, killedIds)),
+                                                                           killedIds,
+                                                                           Set.of(),
+                                                                           Set.of()));
+        val te = mock(TaskInstanceEngine.class);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        zr.start();
+        CommonTestUtils.waitUntil(() -> Sets.intersection(ids, killedIds).isEmpty());
+        assertTrue(Sets.intersection(ids, killedIds).isEmpty());
+        zr.stop();
+    }
 }

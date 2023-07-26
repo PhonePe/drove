@@ -18,6 +18,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  *
@@ -37,10 +39,33 @@ public class InternalApis {
         this.taskDB = taskDB;
     }
 
+    /**
+     * @deprecated Please use one of the other apis
+     * @param executorId Executor if for which snapshot is needed
+     * @return Snapshot
+     */
     @GET
     @Path("/executors/{executorId}/instances")
+    @Deprecated
     public ApiResponse<KnownInstancesData> validInstances(@PathParam("executorId") final String executorId) {
-        return resourcesDB.lastKnownSnapshot(executorId)
+        return knownInstances(executorId, () -> resourcesDB.lastKnownSnapshot(executorId));
+    }
+
+    @GET
+    @Path("/executors/{executorId}/instances/last")
+    public ApiResponse<KnownInstancesData> lastKnownInstances(@PathParam("executorId") final String executorId) {
+        return knownInstances(executorId, () -> resourcesDB.lastKnownSnapshot(executorId));
+    }
+
+    @GET
+    @Path("/executors/{executorId}/instances/current")
+    public ApiResponse<KnownInstancesData> currentKnownInstances(@PathParam("executorId") final String executorId) {
+        return knownInstances(executorId, () -> resourcesDB.currentSnapshot(executorId));
+    }
+
+    private ApiResponse<KnownInstancesData> knownInstances(String executorId,
+                                                           Supplier<Optional<ExecutorHostInfo>> hostInfoGenerator) {
+        return hostInfoGenerator.get()
                 .map(ExecutorHostInfo::getNodeData)
                 .map(executorNodeData -> {
                     val appInstances = new HashSet<String>();
