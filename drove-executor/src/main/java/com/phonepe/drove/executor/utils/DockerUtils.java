@@ -22,6 +22,7 @@ import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
+import io.dropwizard.util.DataSize;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
@@ -106,7 +107,7 @@ public class DockerUtils {
             final String id,
             final DeploymentUnitSpec deploymentUnitSpec,
             final DockerCreateParmAugmenter augmenter,
-            ExecutorOptions executorOptions) {
+            final ExecutorOptions executorOptions) {
         val image = deploymentUnitSpec.getExecutable().accept(DockerCoordinates::getUrl);
 
         try (val containerCmd = client.createContainerCmd(image)) {
@@ -119,7 +120,8 @@ public class DockerUtils {
 //                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any
 //                    stats
                     .withAutoRemove(autoRemove(deploymentUnitSpec))
-                    .withLogConfig(logConfig(deploymentUnitSpec))
+                    .withLogConfig(logConfig(deploymentUnitSpec,
+                                             Objects.requireNonNullElse(executorOptions.getLogBufferSize(), ExecutorOptions.DEFAULT_LOG_BUFFER_SIZE)))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
             deploymentUnitSpec.getResources()
@@ -211,13 +213,15 @@ public class DockerUtils {
         });
     }
 
-    private static LogConfig logConfig(final DeploymentUnitSpec deploymentUnitSpec) {
+    private static LogConfig logConfig(final DeploymentUnitSpec deploymentUnitSpec,
+                                       final DataSize logBufferSize) {
         val spec = deploymentUnitSpec.getLoggingSpec() == null
                    ? LocalLoggingSpec.DEFAULT
                    : deploymentUnitSpec.getLoggingSpec();
+        val maXBufferMB = Math.max(logBufferSize.toMegabytes(), 1L);
         val configBuilder = ImmutableMap.<String, String>builder()
                 .put("mode", "non-blocking")
-                .put("max-buffer-size", "10m");
+                .put("max-buffer-size",  maXBufferMB + "m");
         return spec.accept(new LoggingSpecVisitor<>() {
             @Override
             public LogConfig visit(LocalLoggingSpec local) {

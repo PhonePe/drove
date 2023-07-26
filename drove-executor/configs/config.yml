@@ -43,6 +43,7 @@ logging:
 options:
   cacheImages: true
   maxOpenFiles: 10_000
+  logBufferSize: 5m
 
 zookeeper:
   connectionString: localhost:2181

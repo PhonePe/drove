@@ -144,7 +144,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public ExecutorOptions executorOptions(final AppConfig config) {
-        return Objects.requireNonNullElse(config.getOptions(), new ExecutorOptions());
+        return Objects.requireNonNullElse(config.getOptions(), ExecutorOptions.DEFAULT);
     }
 
     @Provides
