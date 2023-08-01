@@ -121,7 +121,9 @@ public class DockerUtils {
 //                    stats
                     .withAutoRemove(autoRemove(deploymentUnitSpec))
                     .withLogConfig(logConfig(deploymentUnitSpec,
-                                             Objects.requireNonNullElse(executorOptions.getLogBufferSize(), ExecutorOptions.DEFAULT_LOG_BUFFER_SIZE)))
+                                             Objects.requireNonNullElse(executorOptions.getLogBufferSize(), ExecutorOptions.DEFAULT_LOG_BUFFER_SIZE),
+                                             Objects.requireNonNullElse(executorOptions.getCacheFileSize(), ExecutorOptions.DEFAULT_LOG_CACHE_SIZE),
+                                             Math.max(executorOptions.getCacheFileCount(), 3)))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
             deploymentUnitSpec.getResources()
@@ -214,18 +216,24 @@ public class DockerUtils {
     }
 
     private static LogConfig logConfig(final DeploymentUnitSpec deploymentUnitSpec,
-                                       final DataSize logBufferSize) {
+                                       final DataSize logBufferSize,
+                                       final DataSize cacheFileSize,
+                                       final int cacheFileCount) {
         val spec = deploymentUnitSpec.getLoggingSpec() == null
                    ? LocalLoggingSpec.DEFAULT
                    : deploymentUnitSpec.getLoggingSpec();
-        val maXBufferMB = Math.max(logBufferSize.toMegabytes(), 1L);
+        val maxBufferMB = Math.max(logBufferSize.toMegabytes(), 1L);
         val configBuilder = ImmutableMap.<String, String>builder()
+                .put("cache-disabled", "false")
+                .put("cache-max-size", cacheFileSize.toString())
+                .put("cache-max-file", Objects.toString(cacheFileCount))
+                .put("cache-compress", "true")
                 .put("mode", "non-blocking")
-                .put("max-buffer-size",  maXBufferMB + "m");
+                .put("max-buffer-size",  maxBufferMB + "m");
         return spec.accept(new LoggingSpecVisitor<>() {
             @Override
             public LogConfig visit(LocalLoggingSpec local) {
-                configBuilder.put("max-size", local.getMaxSize());
+                configBuilder.put("max-size", local.getMaxSize().toString());
                 configBuilder.put("max-file", Integer.toString(local.getMaxFiles()));
                 configBuilder.put("compress", Boolean.toString(local.isCompress()));
                 return new LogConfig(LogConfig.LoggingType.LOCAL, configBuilder.build());
