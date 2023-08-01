@@ -1,8 +1,6 @@
 package com.phonepe.drove.controller.engine;
 
-import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppAction;
@@ -12,12 +10,16 @@ import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMa
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.ops.*;
+import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationStartInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
 import com.phonepe.drove.statemachine.ActionFactory;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -28,10 +30,12 @@ import lombok.val;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.EventUtils.appMetadata;
 
@@ -122,31 +126,6 @@ public class ApplicationEngine {
     public Optional<ApplicationState> applicationState(final String appId) {
         return Optional.ofNullable(stateMachines.get(appId))
                 .map(executor -> executor.getStateMachine().getCurrentState().getState());
-    }
-
-    @MonitoredFunction
-    public void moveInstancesFromExecutor(final String executorId) {
-        val appIds = stateDB.applications(0, Integer.MAX_VALUE)
-                .stream()
-                .map(ApplicationInfo::getAppId)
-                .toList();
-        instanceInfoDB.healthyInstances(appIds)
-                .values()
-                .stream()
-                .flatMap(Collection::stream)
-                .filter(instanceInfo -> instanceInfo.getExecutorId().equals(executorId))
-                .map(instanceInfo -> new Pair<>(instanceInfo.getAppId(), instanceInfo.getInstanceId()))
-                .collect(Collectors.groupingBy(Pair::getFirst,
-                                               Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())))
-                .forEach((appId, instances) -> {
-                    val res = handleOperation(new ApplicationReplaceInstancesOperation(appId,
-                                                                                       instances,
-                                                                                       ClusterOpSpec.DEFAULT));
-                    log.info("Instances to be replaced for {}: {}. command acceptance status: {}",
-                             appId,
-                             instances,
-                             res);
-                });
     }
 
     boolean exists(final String appId) {

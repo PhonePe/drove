@@ -130,16 +130,34 @@ public class ControllerTestUtils {
                                          Collections.emptySet());
     }
 
-    public static ExecutorHostInfo executorHost(int port) {
+    public static ExecutorHostInfo executorHost(final int port) {
         return executorHost(port, List.of(), List.of());
     }
 
     public static ExecutorHostInfo executorHost(
-            int port, List<InstanceInfo> appInstances,
-            List<TaskInfo> taskInstances) {
+            final int port,
+            final List<InstanceInfo> appInstances,
+            final List<TaskInfo> taskInstances) {
+        return executorHost(1, port, appInstances, taskInstances);
+    }
+
+    public static ExecutorHostInfo executorHost(
+            final int index,
+            final int port,
+            final List<InstanceInfo> appInstances,
+            final List<TaskInfo> taskInstances) {
+        return executorHost(index, port, appInstances, taskInstances, false);
+    }
+
+    public static ExecutorHostInfo executorHost(
+            final int index,
+            final int port,
+            final List<InstanceInfo> appInstances,
+            final List<TaskInfo> taskInstances,
+            boolean blacklisted) {
         return new ExecutorHostInfo(
-                "Ex1",
-                new ExecutorNodeData(EXECUTOR_ID,
+                "Ex" + index,
+                new ExecutorNodeData("Ex" + index,
                                      port,
                                      NodeTransportType.HTTP,
                                      new Date(),
@@ -151,9 +169,10 @@ public class ControllerTestUtils {
                                                                           Map.of(0, 128 * (2L ^ 20)))),
                                      appInstances,
                                      taskInstances, Set.of(),
-                                     false),
+                                     blacklisted),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
+
 
     public static ExecutorNodeData generateExecutorNode(int index) {
         return generateExecutorNode(index, Set.of());

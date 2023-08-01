@@ -252,11 +252,29 @@ public class Apis {
     }
 
     @POST
+    @Path("/cluster/executors/blacklist")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public ApiResponse<Map<String, Set<String>>> blacklistExecutors(
+            @QueryParam("id") @NotEmpty final Set<String> executorIds) {
+        return responseEngine.blacklistExecutors(executorIds);
+    }
+
+    @POST
     @Path("/cluster/executors/{id}/unblacklist")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public ApiResponse<Void> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.unblacklistExecutor(executorId);
+    }
+
+    @POST
+    @Path("/cluster/executors/unblacklist")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(
+            @QueryParam("id") @NotEmpty final Set<String> executorIds) {
+        return responseEngine.unblacklistExecutors(executorIds);
     }
 
     @POST

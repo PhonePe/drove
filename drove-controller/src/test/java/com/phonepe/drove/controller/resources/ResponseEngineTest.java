@@ -11,8 +11,10 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
+import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -35,9 +37,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.security.SecureRandom;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -69,6 +69,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
 
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
@@ -78,7 +79,8 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus,
+                                    blacklistingAppMovementManager);
         val rng = new SecureRandom();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE))
                 .thenReturn(IntStream.range(0, 100)
@@ -105,6 +107,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -113,7 +116,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -140,6 +143,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -148,7 +152,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -177,6 +181,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -185,7 +190,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -215,6 +220,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -223,7 +229,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(appId, spec, 1, InstanceState.STARTING);
@@ -257,6 +263,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -265,7 +272,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -293,6 +300,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -301,7 +309,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         when(taskDB.task(eq("WRONG_APP"), anyString())).thenReturn(Optional.empty());
         val spec = taskSpec();
         when(taskDB.task(spec.getSourceAppName(), spec.getTaskId()))
@@ -328,6 +336,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -336,7 +345,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         when(taskDB.deleteTask(eq("WRONG_APP"), anyString())).thenReturn(false);
         val spec = taskSpec();
         when(taskDB.deleteTask(spec.getSourceAppName(), spec.getTaskId())).thenReturn(true);
@@ -362,6 +371,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -370,7 +380,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         when(leadershipObserver.leader()).thenReturn(Optional.of(new ControllerNodeData("test-controller",
                                                                                         8080,
                                                                                         HTTP,
@@ -444,6 +454,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -452,7 +463,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         when(clusterResourcesDB.currentSnapshot())
                 .thenReturn(IntStream.rangeClosed(1, 10)
                                     .mapToObj(ControllerTestUtils::executorHost)
@@ -477,6 +488,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -485,7 +497,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
 
         val instanceData = executorHost(8080);
 
@@ -517,6 +529,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -525,7 +538,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
 
         val apps = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> createApp(i, 10))
@@ -556,8 +569,18 @@ class ResponseEngineTest {
     }
 
     @Test
+    void testBlacklistExecutors() {
+        testBlacklistingMultiFunctionality(ResponseEngine::blacklistExecutors);
+    }
+
+    @Test
     void testUnblacklistExecutor() {
         testBlacklistingFunctionality(ResponseEngine::unblacklistExecutor);
+    }
+
+    @Test
+    void testUnblacklistExecutors() {
+        testBlacklistingMultiFunctionality(ResponseEngine::unblacklistExecutors);
     }
 
     @Test
@@ -585,6 +608,7 @@ class ResponseEngineTest {
         val eventStore = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
 
         val event = new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata());
         eventStore.recordEvent(event);
@@ -596,13 +620,65 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
 
         val r = re.events(0, 10);
         assertEquals(SUCCESS, r.getStatus());
         assertEquals(1, r.getData().size());
 
         assertEquals(event, r.getData().get(0));
+    }
+
+    private void testBlacklistingMultiFunctionality(
+            final BiFunction<ResponseEngine, Set<String>, ApiResponse<Map<String, Set<String>>>> func) {
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
+        val eventStore = mock(EventStore.class);
+        val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
+        val re = new ResponseEngine(leadershipObserver,
+                                    engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    taskDB, clusterStateDB,
+                                    clusterResourcesDB,
+                                    eventStore,
+                                    communicator,
+                                    eventBus, blacklistingAppMovementManager);
+        val executors = IntStream.rangeClosed(1, 10)
+                .mapToObj(i -> executorHost(i, 8080, List.of(), List.of()))
+                .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, Function.identity()));
+        when(clusterResourcesDB.currentSnapshot()).thenReturn(List.copyOf(executors.values()));
+        when(clusterResourcesDB.currentSnapshot(anyString()))
+                .thenAnswer(invocationOnMock -> {
+                    val eId = invocationOnMock.getArgument(0, String.class);
+                    return Optional.ofNullable(executors.get(eId));
+                });
+        val success = new AtomicBoolean(true);
+        when(communicator.send(any(ExecutorMessage.class))).thenAnswer((Answer<MessageResponse>) invocationOnMock -> {
+            val header = invocationOnMock.getArgument(0, ExecutorMessage.class).getHeader();
+            return success.get()
+                   ? new MessageResponse(header, MessageDeliveryStatus.ACCEPTED)
+                   : new MessageResponse(header, MessageDeliveryStatus.FAILED);
+        });
+        val executorIds = executors.keySet();
+        {
+            val r = func.apply(re, executorIds);
+            assertEquals(SUCCESS, r.getStatus());
+            assertEquals(executorIds, r.getData().get("successful"));
+        }
+        {
+            success.set(false);
+            val r = func.apply(re, executorIds);
+            assertEquals(SUCCESS, r.getStatus());
+            assertEquals(executorIds, r.getData().get("failed"));
+        }
     }
 
     private void testBlacklistingFunctionality(final BiFunction<ResponseEngine, String, ApiResponse<Void>> func) {
@@ -616,6 +692,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -624,7 +701,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         val executor = executorHost(8080);
         when(clusterResourcesDB.currentSnapshot(executor.getExecutorId())).thenReturn(Optional.of(executor));
 
@@ -665,6 +742,7 @@ class ResponseEngineTest {
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
         val re = new ResponseEngine(leadershipObserver,
                                     engine,
                                     applicationStateDB,
@@ -673,7 +751,7 @@ class ResponseEngineTest {
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
-                                    eventBus);
+                                    eventBus, blacklistingAppMovementManager);
         val executor = executorHost(8080);
         val success = new AtomicBoolean(true);
         when(clusterStateDB.setClusterState(state))

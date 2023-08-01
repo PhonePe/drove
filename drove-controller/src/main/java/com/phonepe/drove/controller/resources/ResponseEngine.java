@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resources;
 
+import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
@@ -12,6 +13,7 @@ import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
+import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -70,6 +72,8 @@ public class ResponseEngine {
     private final EventStore eventStore;
     private final ControllerCommunicator communicator;
     private final DroveEventBus eventBus;
+    private final BlacklistingAppMovementManager blacklistingAppMovementManager;
+
     @Inject
     public ResponseEngine(
             LeadershipObserver leadershipObserver,
@@ -81,7 +85,7 @@ public class ResponseEngine {
             ClusterResourcesDB clusterResourcesDB,
             EventStore eventStore,
             ControllerCommunicator communicator,
-            DroveEventBus eventBus) {
+            DroveEventBus eventBus, BlacklistingAppMovementManager blacklistingAppMovementManager) {
         this.leadershipObserver = leadershipObserver;
         this.engine = engine;
         this.applicationStateDB = applicationStateDB;
@@ -92,6 +96,7 @@ public class ResponseEngine {
         this.eventStore = eventStore;
         this.communicator = communicator;
         this.eventBus = eventBus;
+        this.blacklistingAppMovementManager = blacklistingAppMovementManager;
     }
 
 
@@ -274,12 +279,42 @@ public class ResponseEngine {
                 clusterResourcesDB.markBlacklisted(executorId);
                 log.info("Executor {} has been marked as blacklisted. Moving running instances", executorId);
                 eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
-                engine.moveInstancesFromExecutor(executorId);
+                blacklistingAppMovementManager.moveApps(Set.of(executorId));
                 return success(null);
             }
             return failure("Error sending remote message");
         }
         return failure("No such executor");
+    }
+
+    public ApiResponse<Map<String, Set<String>>> blacklistExecutors(final Set<String> executorIds) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ApiResponse.failure("Cluster is in maintenance mode");
+        }
+        val successfullyBlacklisted = executorIds.stream()
+                .filter(executorId -> {
+                    val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+                    if (null != executor) {
+                        val msgResponse = communicator.send(
+                                new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                             new ExecutorAddress(executor.getExecutorId(),
+                                                                                 executor.getNodeData().getHostname(),
+                                                                                 executor.getNodeData().getPort(),
+                                                                                 executor.getNodeData()
+                                                                                         .getTransportType())));
+                        if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                            clusterResourcesDB.markBlacklisted(executorId);
+                            log.info("Executor {} has been marked as blacklisted. Moving running instances",
+                                     executorId);
+                            eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .collect(Collectors.toUnmodifiableSet());
+        return success(Map.of("successful", successfullyBlacklisted,
+                              "failed", Sets.difference(executorIds, successfullyBlacklisted)));
     }
 
     public ApiResponse<Void> unblacklistExecutor(final String executorId) {
@@ -303,6 +338,36 @@ public class ResponseEngine {
             return failure("Error sending remote message");
         }
         return failure("No such executor");
+    }
+
+    public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(final Set<String> executorIds) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ApiResponse.failure("Cluster is in maintenance mode");
+        }
+        val successfullyUnblacklisted = executorIds.stream()
+                .filter(executorId -> {
+                    val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+                    if (null != executor) {
+                        val msgResponse = communicator.send(
+                                new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
+                                                               new ExecutorAddress(executor.getExecutorId(),
+                                                                                   executor.getNodeData().getHostname(),
+                                                                                   executor.getNodeData().getPort(),
+                                                                                   executor.getNodeData()
+                                                                                           .getTransportType())));
+                        if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+                            clusterResourcesDB.unmarkBlacklisted(executorId);
+                            log.debug("Executor {} marked unblacklisted.", executorId);
+                            eventBus.publish(new DroveExecutorUnblacklistedEvent(executorMetadata(executor.getNodeData())));
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .collect(Collectors.toUnmodifiableSet());
+        return success(Map.of("successful", successfullyUnblacklisted,
+                              "failed", Sets.difference(executorIds, successfullyUnblacklisted)));
+
     }
 
     public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
@@ -410,9 +475,9 @@ public class ResponseEngine {
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
                         val executorState = removed ? ExecutorSummary.ExecutorState.REMOVED
-                                            : (executorData.isBlacklisted()
-                                               ? ExecutorSummary.ExecutorState.BLACKLISTED
-                                               : ExecutorSummary.ExecutorState.ACTIVE);
+                                                    : (executorData.isBlacklisted()
+                                                       ? ExecutorSummary.ExecutorState.BLACKLISTED
+                                                       : ExecutorSummary.ExecutorState.ACTIVE);
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                                                hostInfo.getNodeData().getHostname(),
                                                                hostInfo.getNodeData().getPort(),
