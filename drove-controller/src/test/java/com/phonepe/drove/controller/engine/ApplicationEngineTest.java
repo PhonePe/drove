@@ -148,6 +148,12 @@ class ApplicationEngineTest extends ControllerTestBase {
                 return ApplicationAuthConfig.DEFAULT;
             }
 
+            @Provides
+            @Singleton
+            public ClusterOpSpec clusterOpSpec() {
+                return ControllerTestUtils.DEFAULT_CLUSTER_OP;
+            }
+
         });
         injector.injectMembers(this);
         executor.start();
