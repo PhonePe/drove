@@ -55,6 +55,7 @@ public class ApplicationEngine {
     private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final ExecutorService monitorExecutor;
+    private final ClusterOpSpec defaultClusterOpSpec;
     private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted =
             new ConsumingFireForgetSignal<>();
 
@@ -66,7 +67,8 @@ public class ApplicationEngine {
             ApplicationCommandValidator applicationCommandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
-            @Named("MonitorThreadPool") ExecutorService monitorExecutor) {
+            @Named("MonitorThreadPool") ExecutorService monitorExecutor,
+            ClusterOpSpec defaultClusterOpSpec) {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -74,6 +76,7 @@ public class ApplicationEngine {
         this.droveEventBus = droveEventBus;
         this.retrySpecFactory = retrySpecFactory;
         this.monitorExecutor = monitorExecutor;
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
         this.stateMachineCompleted.connect(stoppedExecutor -> {
             stoppedExecutor.stop();
             log.info("State machine executor is done for {}", stoppedExecutor.getAppId());
@@ -153,7 +156,8 @@ public class ApplicationEngine {
                 val appId = suspend.getAppId();
 
                 log.info("Translating suspend op to scaling op for {}", appId);
-                return new ApplicationScaleOperation(appId, 0, suspend.getOpSpec());
+                return new ApplicationScaleOperation(
+                        appId, 0, Objects.requireNonNullElse(suspend.getOpSpec(), defaultClusterOpSpec));
             }
         });
     }
@@ -211,8 +215,9 @@ public class ApplicationEngine {
                                  expectedInstances);
                         return new ApplicationScaleOperation(context.getAppId(),
                                                              expectedInstances,
-                                                             ClusterOpSpec.DEFAULT);
+                                                             defaultClusterOpSpec);
                     });
+            log.debug("Scaling operation: {}", scalingOperation);
             val res = handleOperation(scalingOperation);
             if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                 log.error("Error sending command to state machine. Error: " + res.getMessages());

@@ -14,6 +14,7 @@ import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.val;
@@ -59,7 +60,7 @@ class StaleDataCleanerTest {
                                        le,
                                        engine,
                                        ControllerOptions.DEFAULT,
-                                       Duration.ofSeconds(1));
+                                       Duration.ofSeconds(1), ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -97,7 +98,7 @@ class StaleDataCleanerTest {
                                        le,
                                        engine,
                                        ControllerOptions.DEFAULT,
-                                       Duration.ofSeconds(1));
+                                       Duration.ofSeconds(1), ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
@@ -134,6 +135,8 @@ class StaleDataCleanerTest {
                                                 DEFAULT_STALE_INSTANCE_AGE,
                                                 DEFAULT_STALE_TASK_AGE,
                                                 DEFAULT_MAX_EVENTS_STORAGE_SIZE,
+                                                ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
+                                                ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
                                                 false);
             testCleanupByInstanceCount(options, 110);
         }
@@ -149,7 +152,8 @@ class StaleDataCleanerTest {
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, DEFAULT, Duration.ofSeconds(1));
+        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, DEFAULT, Duration.ofSeconds(1),
+                                       ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val oldDate = Date.from(LocalDate.now().minusDays(32).atStartOfDay(ZoneId.systemDefault()).toInstant());
         val appName = "TEST_TASK";
@@ -188,7 +192,8 @@ class StaleDataCleanerTest {
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, options, Duration.ofSeconds(1));
+        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, options, Duration.ofSeconds(1),
+                                       ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);

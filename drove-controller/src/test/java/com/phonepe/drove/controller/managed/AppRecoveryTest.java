@@ -46,7 +46,7 @@ class AppRecoveryTest extends ControllerTestBase {
         val lsc = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(lsc);
 
-        val ar = new AppRecovery(le, ae, te, asdb, tdb);
+        val ar = new AppRecovery(le, ae, te, asdb, tdb, ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
@@ -79,7 +79,7 @@ class AppRecoveryTest extends ControllerTestBase {
         val lsc = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(lsc);
 
-        val ar = new AppRecovery(le, ae, te, asdb, tdb);
+        val ar = new AppRecovery(le, ae, te, asdb, tdb, ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)

@@ -13,8 +13,8 @@ import javax.validation.constraints.NotNull;
  */
 @Value
 public class ClusterOpSpec {
-
-    public static final ClusterOpSpec DEFAULT = new ClusterOpSpec(Duration.seconds(300), 1, FailureStrategy.STOP);
+    public static final Duration DEFAULT_CLUSTER_OP_TIMEOUT = Duration.seconds(300);
+    public static final int DEFAULT_CLUSTER_OP_PARALLELISM = 1;
 
     @NotNull
     Duration timeout;

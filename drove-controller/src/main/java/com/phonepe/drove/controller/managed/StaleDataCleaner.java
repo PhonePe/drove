@@ -42,6 +42,7 @@ public class StaleDataCleaner implements Managed {
     private final ControllerOptions options;
 
     private final ScheduledSignal refresher;
+    private final ClusterOpSpec defaultClusterOpSpec;
 
     @Inject
     public StaleDataCleaner(
@@ -49,7 +50,9 @@ public class StaleDataCleaner implements Managed {
             ApplicationInstanceInfoDB instanceInfoDB,
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
-            TaskDB taskDB, ControllerOptions options) {
+            TaskDB taskDB,
+            ControllerOptions options,
+            ClusterOpSpec defaultClusterOpSpec) {
         this(applicationStateDB,
              instanceInfoDB,
              taskDB,
@@ -58,7 +61,7 @@ public class StaleDataCleaner implements Managed {
              options,
              Duration.ofMillis(Objects.requireNonNullElse(options.getStaleCheckInterval(),
                                                           ControllerOptions.DEFAULT_STALE_CHECK_INTERVAL)
-                                       .toMilliseconds()));
+                                       .toMilliseconds()), defaultClusterOpSpec);
     }
 
     @VisibleForTesting
@@ -69,7 +72,8 @@ public class StaleDataCleaner implements Managed {
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
             ControllerOptions options,
-            Duration interval) {
+            Duration interval,
+            ClusterOpSpec defaultClusterOpSpec) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
@@ -77,6 +81,7 @@ public class StaleDataCleaner implements Managed {
         this.applicationEngine = applicationEngine;
         this.options = options;
         this.refresher = new ScheduledSignal(interval);
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
     }
 
     @Override
@@ -127,7 +132,8 @@ public class StaleDataCleaner implements Managed {
                         .orElse(false))
                 .toList();
         candidateAppIds.forEach(appId -> {
-            val res = applicationEngine.handleOperation(new ApplicationDestroyOperation(appId, ClusterOpSpec.DEFAULT));
+            val res = applicationEngine.handleOperation(
+                    new ApplicationDestroyOperation(appId, defaultClusterOpSpec));
             log.info("Stale app destroy command response for {} : {}", appId, res);
         });
 

@@ -53,6 +53,7 @@ public class TaskEngine {
     private final JobExecutor<Boolean> jobExecutor;
     private final ClusterStateDB clusterStateDB;
     private final LeadershipEnsurer leadershipEnsurer;
+    private final ClusterOpSpec defaultClusterOpSpec;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
 
@@ -65,14 +66,15 @@ public class TaskEngine {
             TaskDB taskDB,
             ClusterResourcesDB clusterResourcesDB,
             InstanceScheduler scheduler,
-             ControllerCommunicator communicator,
+            ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             @Named("TaskThreadPool") ExecutorService executorService,
             JobExecutor<Boolean> jobExecutor,
             ClusterStateDB clusterStateDB,
-            LeadershipEnsurer leadershipEnsurer) {
+            LeadershipEnsurer leadershipEnsurer,
+            ClusterOpSpec defaultClusterOpSpec) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -84,6 +86,7 @@ public class TaskEngine {
         this.jobExecutor = jobExecutor;
         this.clusterStateDB = clusterStateDB;
         this.leadershipEnsurer = leadershipEnsurer;
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
         this.completed.connect(taskRunner -> {
             val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
             try {
@@ -167,7 +170,7 @@ public class TaskEngine {
         }
         log.info("Task {}/{} is zombie and needs to be killed", sourceAppName, taskId);
         val runner = runners.computeIfAbsent(runTaskId, id -> createRunner(sourceAppName, taskId));
-        runner.stopTask(new TaskKillOperation(sourceAppName, taskId, ClusterOpSpec.DEFAULT));
+        runner.stopTask(new TaskKillOperation(sourceAppName, taskId, defaultClusterOpSpec));
     }
 
     public List<TaskInfo> activeTasks() {

@@ -32,16 +32,21 @@ public class AppRecovery implements Managed {
     private final TaskEngine taskEngine;
     private final ApplicationStateDB applicationStateDB;
     private final TaskDB taskDB;
+    private final ClusterOpSpec defaultClusterOpSpec;
 
     @Inject
     public AppRecovery(
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
-            TaskEngine taskEngine, ApplicationStateDB applicationStateDB, TaskDB taskDB) {
+            TaskEngine taskEngine,
+            ApplicationStateDB applicationStateDB,
+            TaskDB taskDB,
+            ClusterOpSpec defaultClusterOpSpec) {
         this.applicationEngine = applicationEngine;
         this.taskEngine = taskEngine;
         this.applicationStateDB = applicationStateDB;
         this.taskDB = taskDB;
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChange);
     }
 
@@ -77,7 +82,7 @@ public class AppRecovery implements Managed {
                         val res = applicationEngine.handleOperation(
                                 new ApplicationCreateOperation(applicationInfo.getSpec(),
                                                                applicationInfo.getInstances(),
-                                                               ClusterOpSpec.DEFAULT));
+                                                               defaultClusterOpSpec));
                         if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                             log.error("Error sending command to state machine. Error: " + res.getMessages());
                         }

@@ -97,12 +97,12 @@ class TaskRunnerTest extends ControllerTestBase {
                                                                                        "",
                                                                                        new Date(),
                                                                                        new Date()));
-        tr.startTask(new TaskCreateOperation(taskSpec, ClusterOpSpec.DEFAULT));
+        tr.startTask(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         val f = Executors.newSingleThreadExecutor().submit(tr);
 
         CommonTestUtils.waitUntil(() -> inst.get() != null);
         //Start message has been sent, now kill the task
-        tr.stopTask(new TaskKillOperation(taskSpec.getSourceAppName(), taskSpec.getTaskId(), ClusterOpSpec.DEFAULT));
+        tr.stopTask(new TaskKillOperation(taskSpec.getSourceAppName(), taskSpec.getTaskId(), ControllerTestUtils.DEFAULT_CLUSTER_OP));
 
         CommonTestUtils.waitUntil(stopCalled::get);
         //Stop has been called, so set state accordingly

@@ -23,7 +23,6 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -84,7 +83,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         when(rf.jobRetrySpec(anyLong())).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(APP_SPEC,
-                                             ClusterOpSpec.DEFAULT,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,
@@ -111,7 +110,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         when(rf.jobRetrySpec(anyLong())).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
-                                             ClusterOpSpec.DEFAULT,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,
@@ -160,7 +159,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         when(rf.jobRetrySpec(anyLong())).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
-                                             ClusterOpSpec.DEFAULT,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,
@@ -190,7 +189,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         when(rf.jobRetrySpec(anyLong())).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
-                                             ClusterOpSpec.DEFAULT,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,
@@ -237,7 +236,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         when(rf.jobRetrySpec(anyLong())).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
-                                             ClusterOpSpec.DEFAULT,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                              instanceScheduler,
                                              instanceInfoDB,
                                              comm,

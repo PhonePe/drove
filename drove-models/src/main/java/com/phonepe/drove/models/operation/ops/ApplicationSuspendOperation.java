@@ -12,7 +12,6 @@ import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.Objects;
 
 /**
  *
@@ -35,7 +34,7 @@ public class ApplicationSuspendOperation extends ApplicationOperation {
     public ApplicationSuspendOperation(String appId, ClusterOpSpec opSpec) {
         super(ApplicationOperationType.SUSPEND);
         this.appId = appId;
-        this.opSpec = Objects.requireNonNullElse(opSpec, ClusterOpSpec.DEFAULT);
+        this.opSpec = opSpec;
     }
 
     @Override

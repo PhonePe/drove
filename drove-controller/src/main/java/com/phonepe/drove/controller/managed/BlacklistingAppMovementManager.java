@@ -55,15 +55,21 @@ public class BlacklistingAppMovementManager implements Managed {
     private final RetryPolicy<ValidationStatus> opSubmissionPolicy;
 
     private final RetryPolicy<Boolean> noInstanceEnsurerPolicy;
+    private final ClusterOpSpec defaultClusterOpSpec;
     private final Future<?> future;
 
     @Inject
     public BlacklistingAppMovementManager(
             LeadershipEnsurer leadershipEnsurer,
             ApplicationEngine applicationEngine,
-            ClusterResourcesDB clusterResourcesDB) {
-        this(leadershipEnsurer, applicationEngine, clusterResourcesDB,
-             DEFAULT_COMMAND_POLICY, DEFAULT_COMPLETION_POLICY);
+            ClusterResourcesDB clusterResourcesDB,
+            ClusterOpSpec defaultClusterOpSpec) {
+        this(leadershipEnsurer,
+             applicationEngine,
+             clusterResourcesDB,
+             DEFAULT_COMMAND_POLICY,
+             DEFAULT_COMPLETION_POLICY,
+             defaultClusterOpSpec);
     }
 
     @VisibleForTesting
@@ -72,11 +78,13 @@ public class BlacklistingAppMovementManager implements Managed {
             ApplicationEngine applicationEngine,
             ClusterResourcesDB clusterResourcesDB,
             RetryPolicy<ValidationStatus> opSubmissionPolicy,
-            RetryPolicy<Boolean> noInstanceEnsurerPolicy) {
+            RetryPolicy<Boolean> noInstanceEnsurerPolicy,
+            ClusterOpSpec defaultClusterOpSpec) {
         this.applicationEngine = applicationEngine;
         this.clusterResourcesDB = clusterResourcesDB;
         this.opSubmissionPolicy = opSubmissionPolicy;
         this.noInstanceEnsurerPolicy = noInstanceEnsurerPolicy;
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
         this.future = executorService.submit(this::processQueuedElement);
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChanged);
     }
@@ -134,7 +142,7 @@ public class BlacklistingAppMovementManager implements Managed {
                             val res = applicationEngine.handleOperation(
                                     new ApplicationReplaceInstancesOperation(appId,
                                                                              instances,
-                                                                             ClusterOpSpec.DEFAULT));
+                                                                             defaultClusterOpSpec));
                             log.info("Instances to be replaced for {}: {}. command acceptance status: {}",
                                      appId,
                                      instances,

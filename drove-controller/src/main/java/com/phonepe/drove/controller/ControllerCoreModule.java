@@ -32,6 +32,8 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.ActionFactory;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
@@ -135,7 +137,8 @@ public class ControllerCoreModule extends AbstractModule {
         bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
         bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class);
         bind(ApplicationInstanceTokenManager.class).to(JWTApplicationInstanceTokenManager.class);
-        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {})
+        bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
+        })
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
                 AppAction>>() {
@@ -159,5 +162,15 @@ public class ControllerCoreModule extends AbstractModule {
     @Singleton
     public ControllerOptions options(final AppConfig config) {
         return Objects.requireNonNullElse(config.getOptions(), ControllerOptions.DEFAULT);
+    }
+
+    @Provides
+    @Singleton
+    public ClusterOpSpec defaultClusterOpSpec(final ControllerOptions controllerOptions) {
+        return new ClusterOpSpec(Objects.requireNonNullElse(controllerOptions.getClusterOpTimeout(),
+                                                            ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT),
+                                 Math.max(controllerOptions.getClusterOpParallelism(),
+                                          ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM),
+                                 FailureStrategy.STOP);
     }
 }

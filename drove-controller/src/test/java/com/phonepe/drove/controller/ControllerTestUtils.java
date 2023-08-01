@@ -26,6 +26,8 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
@@ -49,6 +51,9 @@ public class ControllerTestUtils {
                                                                                  new RetryOnAllExceptionsSpec(),
                                                                                  new MaxDurationRetrySpec(java.time.Duration.ofMillis(
                                                                                          100))));
+    public static final ClusterOpSpec DEFAULT_CLUSTER_OP = new ClusterOpSpec(ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
+                                                                             ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
+                                                                             FailureStrategy.STOP);
 
     public static ApplicationSpec appSpec() {
         return appSpec(1);

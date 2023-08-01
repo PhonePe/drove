@@ -225,15 +225,15 @@ public class DockerUtils {
         val maxBufferMB = Math.max(logBufferSize.toMegabytes(), 1L);
         val configBuilder = ImmutableMap.<String, String>builder()
                 .put("cache-disabled", "false")
-                .put("cache-max-size", cacheFileSize.toString())
-                .put("cache-max-file", Objects.toString(cacheFileCount))
+                .put("cache-max-size", cacheFileSize.toMegabytes() + "m")
+                .put("cache-max-file", Integer.toString(cacheFileCount))
                 .put("cache-compress", "true")
                 .put("mode", "non-blocking")
                 .put("max-buffer-size",  maxBufferMB + "m");
         return spec.accept(new LoggingSpecVisitor<>() {
             @Override
             public LogConfig visit(LocalLoggingSpec local) {
-                configBuilder.put("max-size", local.getMaxSize().toString());
+                configBuilder.put("max-size", local.getMaxSize());
                 configBuilder.put("max-file", Integer.toString(local.getMaxFiles()));
                 configBuilder.put("compress", Boolean.toString(local.isCompress()));
                 return new LogConfig(LogConfig.LoggingType.LOCAL, configBuilder.build());

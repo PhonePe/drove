@@ -19,7 +19,6 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -63,7 +62,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
-                                            ClusterOpSpec.DEFAULT,
+                                            DEFAULT_CLUSTER_OP,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -97,7 +96,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
-                                            ClusterOpSpec.DEFAULT,
+                                            DEFAULT_CLUSTER_OP,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -132,7 +131,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
-                                            ClusterOpSpec.DEFAULT,
+                                            DEFAULT_CLUSTER_OP,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -166,7 +165,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
-                                            ClusterOpSpec.DEFAULT,
+                                            DEFAULT_CLUSTER_OP,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -200,7 +199,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
-                                            ClusterOpSpec.DEFAULT,
+                                            DEFAULT_CLUSTER_OP,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,

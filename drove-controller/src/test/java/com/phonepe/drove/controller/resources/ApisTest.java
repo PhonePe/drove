@@ -17,7 +17,6 @@ import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
@@ -87,7 +86,7 @@ class ApisTest {
             maintenance.set(true);
             try (val r = EXT.target("/v1/applications/operations")
                     .request()
-                    .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
+                    .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", DEFAULT_CLUSTER_OP),
                                         MediaType.APPLICATION_JSON_TYPE))) {
                 assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
@@ -112,7 +111,7 @@ class ApisTest {
         { //Force a app level failure
             try (val r = EXT.target("/v1/operations")
                     .request()
-                    .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
+                    .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", DEFAULT_CLUSTER_OP),
                                         MediaType.APPLICATION_JSON_TYPE))) {
                 assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
@@ -121,7 +120,7 @@ class ApisTest {
             success.set(true);
             val r = EXT.target("/v1/applications/operations")
                     .request()
-                    .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", ClusterOpSpec.DEFAULT),
+                    .post(Entity.entity(new ApplicationDestroyOperation("TEST_APP_1", DEFAULT_CLUSTER_OP),
                                         MediaType.APPLICATION_JSON_TYPE),
                           new GenericType<ApiResponse<Map<String, String>>>() {
                           });
@@ -354,7 +353,7 @@ class ApisTest {
             maintenance.set(true);
             try (val r = EXT.target("/v1/tasks/operations")
                     .request()
-                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", ClusterOpSpec.DEFAULT),
+                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", DEFAULT_CLUSTER_OP),
                                         MediaType.APPLICATION_JSON_TYPE))) {
                 assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
@@ -379,7 +378,7 @@ class ApisTest {
         { //Force a app level failure
             try (val r = EXT.target("/v1/tasks/operations")
                     .request()
-                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", ClusterOpSpec.DEFAULT),
+                    .post(Entity.entity(new TaskKillOperation("TEST_APP1", "T001", DEFAULT_CLUSTER_OP),
                                         MediaType.APPLICATION_JSON_TYPE))) {
                 assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
@@ -388,7 +387,7 @@ class ApisTest {
             success.set(true);
             val r = EXT.target("/v1/tasks/operations")
                     .request()
-                    .post(Entity.entity(new TaskKillOperation("TEST_APP_1", "T001", ClusterOpSpec.DEFAULT),
+                    .post(Entity.entity(new TaskKillOperation("TEST_APP_1", "T001", DEFAULT_CLUSTER_OP),
                                         MediaType.APPLICATION_JSON_TYPE),
                           new GenericType<ApiResponse<Map<String, String>>>() {
                           });
