@@ -3,7 +3,7 @@ Version: VERSIONSTR
 Section: misc
 Priority: standard
 Architecture: all
-Depends: openjdk-17-jre
+Depends: openjdk-17-jre-headless
 Installed-Size: JARSIZE
 Maintainer: Santanu Sinha <santanu@phonepe.com>
 Description: Controller for Drove Container Orchestrator System
