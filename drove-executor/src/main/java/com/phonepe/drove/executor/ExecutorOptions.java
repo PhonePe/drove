@@ -20,7 +20,7 @@ public class ExecutorOptions {
     public static final long DEFAULT_MAX_OPEN_FILES = 470_000;
     public static final DataSize DEFAULT_LOG_BUFFER_SIZE = DataSize.megabytes(10);
     public static final DataSize DEFAULT_LOG_CACHE_SIZE = DataSize.megabytes(20);
-    public static final int DEFAULT_LOG_CACHE_COUNT = 5;
+    public static final int DEFAULT_LOG_CACHE_COUNT = 3;
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(true,
                                                                       DEFAULT_MAX_OPEN_FILES,
                                                                       DEFAULT_LOG_BUFFER_SIZE,
@@ -37,6 +37,6 @@ public class ExecutorOptions {
     @DataSizeRange(min = 10, max = 100 * 1024, unit = DataSizeUnit.MEGABYTES)
     private DataSize cacheFileSize;
 
-    @Range(min = 3, max = 1024)
+    @Range(max = 1024)
     private int cacheFileCount;
 }

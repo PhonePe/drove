@@ -113,17 +113,22 @@ public class DockerUtils {
         try (val containerCmd = client.createContainerCmd(image)) {
             containerCmd
                     .withName(id);
-            val maxOpenFiles = executorOptions.getMaxOpenFiles() == 0 ? ExecutorOptions.DEFAULT_MAX_OPEN_FILES
-                                                                      : executorOptions.getMaxOpenFiles();
+            val maxOpenFiles = executorOptions.getMaxOpenFiles() <= 0
+                               ? ExecutorOptions.DEFAULT_MAX_OPEN_FILES
+                               : executorOptions.getMaxOpenFiles();
+            val cachedFileCount = executorOptions.getCacheFileCount() <= 0
+                                  ? ExecutorOptions.DEFAULT_LOG_CACHE_COUNT
+                                  : executorOptions.getCacheFileCount();
+            val logBufferSize = Objects.requireNonNullElse(executorOptions.getLogBufferSize(),
+                                                           ExecutorOptions.DEFAULT_LOG_BUFFER_SIZE);
+            val cacheFileSize = Objects.requireNonNullElse(executorOptions.getCacheFileSize(),
+                                                           ExecutorOptions.DEFAULT_LOG_CACHE_SIZE);
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
-//                    .withOomKillDisable(true) //There is a bug in docker. Enabling this leads to us not getting any
-//                    stats
+//                    .withOomKillDisable(true)
+// There is a bug in docker. Enabling this leads to us not getting any stats
                     .withAutoRemove(autoRemove(deploymentUnitSpec))
-                    .withLogConfig(logConfig(deploymentUnitSpec,
-                                             Objects.requireNonNullElse(executorOptions.getLogBufferSize(), ExecutorOptions.DEFAULT_LOG_BUFFER_SIZE),
-                                             Objects.requireNonNullElse(executorOptions.getCacheFileSize(), ExecutorOptions.DEFAULT_LOG_CACHE_SIZE),
-                                             Math.max(executorOptions.getCacheFileCount(), 3)))
+                    .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
             deploymentUnitSpec.getResources()
@@ -215,10 +220,11 @@ public class DockerUtils {
         });
     }
 
-    private static LogConfig logConfig(final DeploymentUnitSpec deploymentUnitSpec,
-                                       final DataSize logBufferSize,
-                                       final DataSize cacheFileSize,
-                                       final int cacheFileCount) {
+    private static LogConfig logConfig(
+            final DeploymentUnitSpec deploymentUnitSpec,
+            final DataSize logBufferSize,
+            final DataSize cacheFileSize,
+            final int cacheFileCount) {
         val spec = deploymentUnitSpec.getLoggingSpec() == null
                    ? LocalLoggingSpec.DEFAULT
                    : deploymentUnitSpec.getLoggingSpec();
