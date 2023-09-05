@@ -1,46 +1,74 @@
 package com.phonepe.drove.controller.event;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
+import com.phonepe.drove.models.api.DroveEventsList;
+import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.events.DroveEvent;
+import io.appform.signals.signals.ScheduledSignal;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.locks.StampedLock;
+import java.util.stream.Collectors;
 
 /**
  *
  */
 @Singleton
+@Slf4j
 @SuppressWarnings("rawtypes")
 public class InMemoryEventStore implements EventStore {
-    private final Map<Long, DroveEvent> events;
+    private final TreeMap<Long, List<DroveEvent>> events;
     private final StampedLock lock = new StampedLock();
+    private final ScheduledSignal cleaner;
 
     @Inject
+    @IgnoreInJacocoGeneratedReport
     public InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options) {
-        leadershipEnsurer.onLeadershipStateChanged().connect(this::nuke);
-        val maxEventCount = options.getMaxEventsStorageCount() > 0
-                            ? options.getMaxEventsStorageCount()
-                            : ControllerOptions.DEFAULT_MAX_STALE_INSTANCES_COUNT;
-        events = new LinkedHashMap<>(maxEventCount) {
+        this(leadershipEnsurer, options, Duration.ofMinutes(1));
+    }
 
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, DroveEvent> eldest) {
-                return size() > maxEventCount;
+    @VisibleForTesting
+    InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options, Duration checkDuration) {
+        leadershipEnsurer.onLeadershipStateChanged().connect(this::nuke);
+        val maxEventStorageDurationMs = Objects.requireNonNullElse(options.getMaxEventsStorageDuration(),
+                                                                   ControllerOptions.DEFAULT_MAX_EVENT_STORAGE_DURATION)
+                .toMilliseconds();
+
+        this.events = new TreeMap<>();
+        this.cleaner = new ScheduledSignal(checkDuration);
+        this.cleaner.connect(time -> {
+            val stamp = lock.writeLock();
+            try {
+                val oldestAcceptableTime = System.currentTimeMillis() - maxEventStorageDurationMs;
+                val olderEntries = events.headMap(oldestAcceptableTime);
+                if (!olderEntries.isEmpty()) {
+                    val size = olderEntries.size();
+                    olderEntries.clear();
+                    log.info("Cleaned {} event slots older than {}", size, new Date(oldestAcceptableTime));
+                }
+                else {
+                    log.debug("No entries to clear");
+                }
             }
-        };
+            finally {
+                lock.unlock(stamp);
+            }
+        });
     }
 
     @Override
     public void recordEvent(DroveEvent event) {
         val stamp = lock.writeLock();
         try {
-            events.put(event.getTime().getTime(), event);
+            events.computeIfAbsent(event.getTime().getTime(), i -> new ArrayList<>()).add(event);
         }
         finally {
             lock.unlock(stamp);
@@ -48,16 +76,38 @@ public class InMemoryEventStore implements EventStore {
     }
 
     @Override
-    public List<DroveEvent> latest(long lastSyncTime, int size) {
+    public DroveEventsList latest(long lastSyncTime, int size) {
         val stamp = lock.readLock();
         try {
-            return events.entrySet()
-                    .stream()
-                    .filter(e -> e.getKey() > lastSyncTime)
-                    .sorted(Map.Entry.<Long, DroveEvent>comparingByKey().reversed())
-                    .map(Map.Entry::getValue)
-                    .limit(size)
-                    .toList();
+            return new DroveEventsList(events.tailMap(lastSyncTime)
+                                               .entrySet()
+                                               .stream()
+                                               .filter(e -> e.getKey() > lastSyncTime)
+                                               .sorted(Map.Entry.<Long, List<DroveEvent>>comparingByKey().reversed())
+                                               .map(Map.Entry::getValue)
+                                               .flatMap(Collection::stream)
+                                               .limit(size)
+                                               .toList(),
+                                       events.isEmpty() ? lastSyncTime : events.lastKey());
+        }
+        finally {
+            lock.unlock(stamp);
+        }
+    }
+
+    @Override
+    public DroveEventsSummary summarize(long lastSyncTime) {
+        val stamp = lock.readLock();
+        try {
+            return new DroveEventsSummary(events.tailMap(lastSyncTime)
+                                                  .entrySet()
+                                                  .stream()
+                                                  .filter(e -> e.getKey() > lastSyncTime)
+                                                  .map(Map.Entry::getValue)
+                                                  .flatMap(Collection::stream)
+                                                  .collect(Collectors.groupingBy(DroveEvent::getType,
+                                                                                 Collectors.counting())),
+                                          events.isEmpty() ? lastSyncTime : events.lastKey());
         }
         finally {
             lock.unlock(stamp);

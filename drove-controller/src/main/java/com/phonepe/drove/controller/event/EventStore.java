@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.event;
 
+import com.phonepe.drove.models.api.DroveEventsList;
+import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.events.DroveEvent;
-
-import java.util.List;
 
 /**
  *
@@ -12,5 +12,7 @@ public interface EventStore {
 
     void recordEvent(final DroveEvent event);
 
-    List<DroveEvent> latest(long lastSyncTime, int size);
+    DroveEventsList latest(long lastSyncTime, int size);
+
+    DroveEventsSummary summarize(long lastSyncTime);
 }

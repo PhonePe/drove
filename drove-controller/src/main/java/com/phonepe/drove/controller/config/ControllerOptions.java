@@ -28,6 +28,7 @@ public class ControllerOptions {
     public static final Duration DEFAULT_STALE_INSTANCE_AGE = Duration.days(7);
     public static final Duration DEFAULT_STALE_TASK_AGE = Duration.days(2);
     public static final int DEFAULT_MAX_EVENTS_STORAGE_SIZE = 100;
+    public static final Duration DEFAULT_MAX_EVENT_STORAGE_DURATION = Duration.minutes(60);
 
     public static final ControllerOptions DEFAULT = new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
                                                                           DEFAULT_STALE_APP_AGE,
@@ -35,6 +36,7 @@ public class ControllerOptions {
                                                                           DEFAULT_STALE_INSTANCE_AGE,
                                                                           DEFAULT_STALE_TASK_AGE,
                                                                           DEFAULT_MAX_EVENTS_STORAGE_SIZE,
+                                                                          DEFAULT_MAX_EVENT_STORAGE_DURATION,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
                                                                           true);
@@ -45,8 +47,13 @@ public class ControllerOptions {
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
     Duration staleAppAge;
 
+    /**
+     * This parameter is now deprecated.
+     * @deprecated Please use maxEventsStorageDuration instead
+     */
     @Min(0)
     @Max(4096)
+    @Deprecated
     int maxStaleInstancesCount;
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
@@ -64,6 +71,8 @@ public class ControllerOptions {
 
     @Range(max = 32)
     int clusterOpParallelism;
+
+    Duration maxEventsStorageDuration;
 
     Boolean dieOnZkDisconnect;
 }

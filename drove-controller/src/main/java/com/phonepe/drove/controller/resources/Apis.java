@@ -293,14 +293,38 @@ public class Apis {
         return responseEngine.unsetClusterMaintenanceMode();
     }
 
+    /**
+     * @deprecated use the /latest api instead
+     * @param lastSyncTime Last time sync happened
+     * @param size number of events
+     * @return List of events
+     */
     @GET
     @Path("/cluster/events")
     @Timed
     @SuppressWarnings("rawtypes")
+    @Deprecated
     public ApiResponse<List<DroveEvent>> events(
             @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime,
             @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(Integer.MAX_VALUE) int size) {
         return responseEngine.events(lastSyncTime, size);
+    }
+
+    @GET
+    @Path("/cluster/events/latest")
+    @Timed
+    public ApiResponse<DroveEventsList> eventsList(
+            @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime,
+            @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(Integer.MAX_VALUE) int size) {
+        return responseEngine.eventList(lastSyncTime, size);
+    }
+
+    @GET
+    @Path("/cluster/events/summary")
+    @Timed
+    public ApiResponse<DroveEventsSummary> eventsList(
+            @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime) {
+        return responseEngine.summarize(lastSyncTime);
     }
 
     @GET

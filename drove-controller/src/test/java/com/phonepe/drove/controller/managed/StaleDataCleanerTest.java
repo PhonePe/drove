@@ -135,6 +135,7 @@ class StaleDataCleanerTest {
                                                 DEFAULT_STALE_INSTANCE_AGE,
                                                 DEFAULT_STALE_TASK_AGE,
                                                 DEFAULT_MAX_EVENTS_STORAGE_SIZE,
+                                                DEFAULT_MAX_EVENT_STORAGE_DURATION,
                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
                                                 false);

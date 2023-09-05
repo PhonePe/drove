@@ -388,8 +388,17 @@ public class ResponseEngine {
                 .orElse(failure("Could not change cluster state"));
     }
 
+    @SuppressWarnings("rawtypes")
     public ApiResponse<List<DroveEvent>> events(long lastSyncTime, int size) {
+        return ApiResponse.success(eventStore.latest(lastSyncTime, size).getEvents());
+    }
+
+    public ApiResponse<DroveEventsList> eventList(long lastSyncTime, int size) {
         return ApiResponse.success(eventStore.latest(lastSyncTime, size));
+    }
+
+    public ApiResponse<DroveEventsSummary> summarize(long lastSyncTime) {
+        return ApiResponse.success(eventStore.summarize(lastSyncTime));
     }
 
     @IgnoreInJacocoGeneratedReport
