@@ -34,7 +34,7 @@ public class ResourceConfig {
     private BurstUpConfiguration burstUpConfiguration = new BurstUpConfiguration();
 
     @ValidationMethod(message = "Burst up can't be enabled without numa pinning disabled")
-    boolean isBurstAbleImplementedWithDisablePinning() {
+    boolean isBurstAbleEnabledWithDisablePinning() {
         return !burstUpConfiguration.isBurstUpEnabled() || disableNUMAPinning;
     }
 }
