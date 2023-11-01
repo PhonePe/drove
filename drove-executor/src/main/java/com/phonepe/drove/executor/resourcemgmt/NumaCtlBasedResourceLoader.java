@@ -10,6 +10,8 @@ import java.io.StringReader;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  *
@@ -56,27 +58,10 @@ public class NumaCtlBasedResourceLoader {
             throw new IllegalStateException("Mismatch between memory nodes and cores");
         }
         log.info("NUMA Optimisation: {}",
-                 resourceConfig.isDisableNUMAPinning()
-                 ? "Off"
-                 : "On");
-        val resources =
                 resourceConfig.isDisableNUMAPinning()
-                ? Map.of(0,
-                         new ResourceManager.NodeInfo(
-                                 cores.values()
-                                         .stream()
-                                         .flatMap(Collection::stream)
-                                         .collect(Collectors.toUnmodifiableSet()),
-                                 mem.values()
-                                         .stream()
-                                         .mapToLong(i -> i)
-                                         .sum())
-                        )
-                : cores.entrySet()
-                        .stream()
-                        .map(e -> new Pair<>(e.getKey(),
-                                             new ResourceManager.NodeInfo(e.getValue(), mem.get(e.getKey()))))
-                        .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+                        ? "Off"
+                        : "On");
+        val resources = fetchResourceMap(cores, mem);
         if (!resources.isEmpty()) {
             log.info("Found resources:");
             resources.forEach((id, info) -> log.info(
@@ -87,11 +72,44 @@ public class NumaCtlBasedResourceLoader {
                             .toList()
                             + " Memory (MB): " + info.getMemoryInMB()));
 
-        }
-        else {
+        } else {
             log.error("No usable resources found");
         }
         return resources;
+    }
+
+    private Map<Integer, ResourceManager.NodeInfo> fetchResourceMap(
+            Map<Integer, Set<Integer>> cores,
+            Map<Integer, Long> mem
+    ) {
+        if (resourceConfig.isDisableNUMAPinning()) {
+            var coreStream = cores.values()
+                    .stream()
+                    .flatMap(Collection::stream);
+            var memory = mem.values()
+                    .stream()
+                    .mapToLong(i -> i)
+                    .sum();
+            if (resourceConfig.getBurstUpConfiguration().isBurstUpEnabled()) {
+                coreStream = IntStream.rangeClosed(
+                                0,
+                                ((int) coreStream.count() - 1) *
+                                        resourceConfig.getBurstUpConfiguration().getCpuBurstUpMultiplier())
+                        .boxed();
+                memory = memory * resourceConfig.getBurstUpConfiguration().getMemoryBurstUpMultiplier();
+            }
+                    return Map.of(0,
+                            new ResourceManager.NodeInfo(
+                                    coreStream
+                                            .collect(Collectors.toUnmodifiableSet()),
+                                    memory
+                                    ));
+        }
+        return cores.entrySet()
+                .stream()
+                .map(e -> new Pair<>(e.getKey(),
+                        new ResourceManager.NodeInfo(e.getValue(), mem.get(e.getKey()))))
+                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
     }
 
     private int nodeNum(final String cpuLine) {
