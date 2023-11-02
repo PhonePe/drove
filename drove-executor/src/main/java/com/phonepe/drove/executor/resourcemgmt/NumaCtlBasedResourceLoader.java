@@ -93,8 +93,9 @@ public class NumaCtlBasedResourceLoader {
             if (resourceConfig.getBurstUpConfiguration().isBurstUpEnabled()) {
                 coreStream = IntStream.rangeClosed(
                                 0,
-                                ((int) coreStream.count() - 1) *
-                                        resourceConfig.getBurstUpConfiguration().getCpuBurstUpMultiplier())
+                        ((int) coreStream.count() *
+                                        resourceConfig.getBurstUpConfiguration().getCpuBurstUpMultiplier()) - 1
+                        )
                         .boxed();
                 memory = memory * resourceConfig.getBurstUpConfiguration().getMemoryBurstUpMultiplier();
             }
