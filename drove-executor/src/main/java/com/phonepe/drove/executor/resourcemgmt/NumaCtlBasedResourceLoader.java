@@ -92,6 +92,9 @@ public class NumaCtlBasedResourceLoader {
                     .mapToLong(i -> i)
                     .sum();
             if (resourceConfig.getBurstUpConfiguration().isBurstUpEnabled()) {
+                log.info("BurstAble resource enabled, with CPU Burst: {} and Memory Burst: {}",
+                        resourceConfig.getBurstUpConfiguration().getCpuBurstUpMultiplier(),
+                        resourceConfig.getBurstUpConfiguration().getMemoryBurstUpMultiplier());
                 coreStream = IntStream.rangeClosed(
                                 0,
                         ((int) coreStream.count() *
