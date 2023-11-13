@@ -86,6 +86,7 @@ public class NumaCtlBasedResourceLoader {
             var coreStream = cores.values()
                     .stream()
                     .flatMap(Collection::stream);
+
             var memory = mem.values()
                     .stream()
                     .mapToLong(i -> i)

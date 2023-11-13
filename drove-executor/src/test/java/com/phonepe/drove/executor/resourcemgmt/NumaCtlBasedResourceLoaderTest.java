@@ -86,6 +86,63 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
 
     @SneakyThrows
     @Test
+    void testCoresAndMemoryReservedForBurstUpConfigurationWithoutReservation() {
+        val resourceConfig = new ResourceConfig();
+        resourceConfig
+                .setBurstUpConfiguration(
+                        new BurstUpConfiguration(
+                                true,
+                                10,
+                                10
+                        )
+                )
+                .setTags(Set.of("BURSTABLE_EXECUTOR"))
+                .setDisableNUMAPinning(true);
+        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
+
+        val info = rl.parseCommandOutput(
+                readLinesFromFile("/numactl-resource-loader-test/dualnode.txt"));
+        assertFalse(info.isEmpty());
+        assertEquals(1, info.size());
+        assertEquals(200, info.get(0).getAvailableCores().size());
+        assertTrue(
+                Sets.difference(IntStream.rangeClosed(0, 20*10-1).boxed().collect(Collectors.toSet()),
+                info.get(0).getAvailableCores()).isEmpty()
+        );
+        assertEquals((192214+193509)*10, info.get(0).getMemoryInMB());
+    }
+
+    @SneakyThrows
+    @Test
+    void testCoresAndMemoryReservedForBurstUpConfigurationWithReservation() {
+        val resourceConfig = resourceConfig();
+        resourceConfig
+                .setBurstUpConfiguration(
+                        new BurstUpConfiguration(
+                                true,
+                                10,
+                                10
+                        )
+                )
+                .setTags(Set.of("BURSTABLE_EXECUTOR"))
+                .setDisableNUMAPinning(true);
+        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
+
+        val info = rl.parseCommandOutput(
+                readLinesFromFile("/numactl-resource-loader-test/dualnode.txt"));
+        assertFalse(info.isEmpty());
+        assertEquals(1, info.size());
+        assertEquals(180, info.get(0).getAvailableCores().size());
+        assertTrue(
+                Sets.difference(
+                        IntStream.rangeClosed(0, 18*10-1).boxed().collect(Collectors.toSet()),
+                        info.get(0).getAvailableCores()).isEmpty()
+        );
+        assertEquals(Math.floor((192214+193509)*.9)*10, info.get(0).getMemoryInMB());
+    }
+
+    @SneakyThrows
+    @Test
     void testMemMismatch() {
         val resourceConfig = new ResourceConfig()
                 .setOsCores(IntStream.rangeClosed(0, 19).boxed().collect(Collectors.toUnmodifiableSet()))
