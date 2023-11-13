@@ -1,16 +1,12 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
-import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import io.dropwizard.validation.ValidationMethod;
 import lombok.Data;
-import lombok.val;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
