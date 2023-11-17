@@ -104,10 +104,8 @@ public class CachingProxyTaskDB extends TaskDB {
     @Override
     @MonitoredFunction
     public Optional<TaskInfo> task(String sourceAppName, String taskId) {
-        return tasks(Set.of(sourceAppName), EnumSet.allOf(TaskState.class), true)
-                .getOrDefault(sourceAppName, List.of())
+        return tasks(Map.of(sourceAppName, Set.of(taskId)), TaskState.ALL)
                 .stream()
-                .filter(instanceInfo -> instanceInfo.getTaskId().equals(taskId))
                 .findAny();
     }
 
@@ -158,7 +156,7 @@ public class CachingProxyTaskDB extends TaskDB {
     }
 
     private void reloadTasksForApps(Collection<String> sourceAppNames) {
-        val appsWithTasks = root.tasks(sourceAppNames, EnumSet.allOf(TaskState.class), true)
+        val appsWithTasks = root.tasks(sourceAppNames, TaskState.ALL, true)
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()

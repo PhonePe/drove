@@ -26,7 +26,17 @@ public abstract class TaskDB {
     public abstract Map<String, List<TaskInfo>> tasks(
             Collection<String> sourceAppIds, Set<TaskState> validStates, boolean skipStaleCheck);
 
+    public List<TaskInfo> tasks(Map<String, Set<String>> tasks, Set<TaskState> states) {
+        return tasks(tasks.keySet(), states, true)
+                .values()
+                .stream()
+                .flatMap(List::stream)
+                .filter(task -> tasks.getOrDefault(task.getSourceAppName(), Set.of()).contains(task.getTaskId()))
+                .toList();
+    }
+
     public abstract void cleanupTasks(Predicate<TaskInfo> handler);
+
 
     public abstract Optional<TaskInfo> task(String sourceAppName, String taskId);
 

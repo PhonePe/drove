@@ -2,6 +2,7 @@ package com.phonepe.drove.models.taskinstance;
 
 import lombok.Getter;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 /**
@@ -27,6 +28,9 @@ public enum TaskState {
             RUNNING,
             RUN_COMPLETED,
             DEPROVISIONING);
+
+    public static final Set<TaskState> ALL = EnumSet.allOf(TaskState.class);
+
     private final boolean terminal;
     private final boolean error;
 

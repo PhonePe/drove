@@ -29,11 +29,15 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -174,11 +178,13 @@ public class TaskEngine {
     }
 
     public List<TaskInfo> activeTasks() {
-        return runners.values()
-                .stream()
-                .map(taskRunner -> taskDB.task(taskRunner.getSourceAppName(), taskRunner.getTaskId()).orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+        return taskDB.tasks(
+                runners.values()
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                TaskRunner::getSourceAppName,
+                                Collectors.mapping(TaskRunner::getTaskId, Collectors.toUnmodifiableSet()))),
+                TaskState.ACTIVE_STATES);
     }
 
     private void monitorRunners(Date triggerDate) {

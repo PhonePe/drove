@@ -34,7 +34,7 @@ class CachingProxyTaskDBTest extends ControllerTestBase {
         val sourceAppIds = new HashSet<String>();
         val genData = IntStream.rangeClosed(1, 10)
                 .mapToObj(i -> "TS_" + i)
-                .peek(appName -> sourceAppIds.add(appName))
+                .peek(sourceAppIds::add)
                 .flatMap(appName -> IntStream.rangeClosed(1, 100).mapToObj(j -> {
                     val ts = ControllerTestUtils.taskSpec(appName, "TID-" + j);
                     return ControllerTestUtils.generateTaskInfo(ts, j);
