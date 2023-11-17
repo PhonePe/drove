@@ -484,7 +484,7 @@ public class ResponseEngine {
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
                         val executorState = removed ? ExecutorSummary.ExecutorState.REMOVED
-                                                    : (executorData.isBlacklisted()
+                                                    : (clusterResourcesDB.isBlacklisted(hostInfo.getExecutorId())
                                                        ? ExecutorSummary.ExecutorState.BLACKLISTED
                                                        : ExecutorSummary.ExecutorState.ACTIVE);
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),

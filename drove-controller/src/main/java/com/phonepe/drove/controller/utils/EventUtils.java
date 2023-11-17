@@ -143,7 +143,6 @@ public class EventUtils {
                 .put(ExecutorEventDataTag.EXECUTOR_ID, nodeData.getState().getExecutorId())
                 .put(ExecutorEventDataTag.HOSTNAME, nodeData.getHostname())
                 .put(ExecutorEventDataTag.PORT, nodeData.getPort())
-                .put(ExecutorEventDataTag.BLACKLISTED, nodeData.isBlacklisted())
                 .build();
     }
 

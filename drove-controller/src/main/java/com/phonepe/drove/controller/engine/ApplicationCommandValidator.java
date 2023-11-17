@@ -21,6 +21,7 @@ import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
@@ -39,6 +40,7 @@ import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
  *
  */
 @Singleton
+@Slf4j
 public class ApplicationCommandValidator {
     private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
@@ -199,6 +201,10 @@ public class ApplicationCommandValidator {
             var freeCores = 0;
             var freeMemory = 0L;
             for (val exec : executors) {
+                if(clusterResourcesDB.isBlacklisted(exec.getExecutorId())) {
+                    log.debug("Ignoring blacklisted executor {} in resource calculations", exec.getExecutorId());
+                    continue;
+                }
                 freeCores += ControllerUtils.freeCores(exec);
                 freeMemory += ControllerUtils.freeMemory(exec);
             }
@@ -206,8 +212,7 @@ public class ApplicationCommandValidator {
             if (null == spec) {
                 return ValidationResult.failure("No spec found for app " + appId);
             }
-            val requiredCores = requiredInstances
-                    * spec.getResources()
+            val requiredCores = requiredInstances * spec.getResources()
                     .stream()
                     .mapToInt(r -> r.accept(new ResourceRequirementVisitor<Integer>() {
                         @Override
@@ -221,8 +226,7 @@ public class ApplicationCommandValidator {
                         }
                     }))
                     .sum();
-            val requiredMem = requiredInstances
-                    * spec.getResources()
+            val requiredMem = requiredInstances * spec.getResources()
                     .stream()
                     .mapToLong(r -> r.accept(new ResourceRequirementVisitor<Long>() {
                         @Override

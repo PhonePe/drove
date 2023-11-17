@@ -39,7 +39,7 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
                     .getNodeData()
                     .getUpdated()
                     .after(Date.from(Instant.now().plus(MAX_REMOVED_NODE_RETENTION_WINDOW)));
-            if(status) {
+            if (status) {
                 log.warn("Removed executor data for {} will be permanently deleted",
                          eldest.getValue().getExecutorId());
             }
@@ -237,7 +237,7 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
             }
             return node;
         });
-        if(null != removedNodes.remove(updated.getExecutorId())) {
+        if (null != removedNodes.remove(updated.getExecutorId())) {
             log.info("Executor {} is back in the cluster", updated.getExecutorId());
         }
     }

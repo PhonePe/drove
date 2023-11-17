@@ -303,9 +303,6 @@ public class ControllerUtils {
     }
 
     public static long freeMemory(ExecutorHostInfo executor) {
-        if(executor.getNodeData().isBlacklisted()) {
-            return 0;
-        }
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
                     @Override
@@ -324,9 +321,6 @@ public class ControllerUtils {
     }
 
     public static int freeCores(ExecutorHostInfo executor) {
-        if(executor.getNodeData().isBlacklisted()) {
-            return 0;
-        }
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
                     @Override
