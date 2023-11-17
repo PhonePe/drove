@@ -22,8 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -80,6 +79,7 @@ class BlacklistingAppMovementManagerTest {
         when(clusterResourcesDB.currentSnapshot()).thenAnswer(invocationMock -> called.get()
                                                                                 ? List.of(noInstanceEx)
                                                                                 : List.of(executor));
+        when(clusterResourcesDB.isBlacklisted(executor.getExecutorId())).thenReturn(true);
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
