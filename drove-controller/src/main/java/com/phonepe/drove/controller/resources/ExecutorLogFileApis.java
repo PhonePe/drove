@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.resources;
 import com.codahale.metrics.annotation.Metered;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.auth.model.ClusterCommHeaders;
+import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -21,7 +22,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
-import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -41,7 +42,10 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
  *
  */
 @Path("/v1/logfiles")
-@PermitAll
+@RolesAllowed({
+        DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE,
+        DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE,
+})
 @Slf4j
 public class ExecutorLogFileApis {
     private final ApplicationInstanceInfoDB instanceInfoDB;
@@ -114,6 +118,7 @@ public class ExecutorLogFileApis {
                                    HttpHeaders.CONTENT_DISPOSITION,
                                    "attachment; filename=" + fileName));
     }
+
     @GET
     @Path("/tasks/{sourceAppName}/{taskId}/list")
     public Response listTaskLogFiles(

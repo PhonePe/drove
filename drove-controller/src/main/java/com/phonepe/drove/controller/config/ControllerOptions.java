@@ -39,7 +39,8 @@ public class ControllerOptions {
                                                                           DEFAULT_MAX_EVENT_STORAGE_DURATION,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
-                                                                          true);
+                                                                          true,
+                                                                          false);
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
     Duration staleCheckInterval;
@@ -75,4 +76,6 @@ public class ControllerOptions {
     Duration maxEventsStorageDuration;
 
     Boolean dieOnZkDisconnect;
+
+    Boolean disableReadAuth;
 }

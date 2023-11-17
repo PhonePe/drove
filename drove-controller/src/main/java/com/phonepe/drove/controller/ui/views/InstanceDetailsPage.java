@@ -16,14 +16,16 @@ public class InstanceDetailsPage extends TemplateView {
     String appId;
     String instanceId;
     InstanceInfo instanceInfo;
+    boolean hasReadAccess;
 
     public InstanceDetailsPage(
             String appId,
             String instanceId,
-            InstanceInfo instanceInfo) {
+            InstanceInfo instanceInfo, boolean hasReadAccess) {
         super("templates/instancedetails.hbs");
         this.appId = appId;
         this.instanceId = instanceId;
         this.instanceInfo = instanceInfo;
+        this.hasReadAccess = hasReadAccess;
     }
 }

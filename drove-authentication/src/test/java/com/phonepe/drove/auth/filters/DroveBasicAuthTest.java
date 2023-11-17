@@ -42,7 +42,7 @@ class DroveBasicAuthTest extends AbstractAuthTestBase {
                                             List.of(new DroveExternalUserInfo("test-user",
                                                                               "test-password",
                                                                               DroveUserRole.EXTERNAL_READ_WRITE)), "")))
-                            .setAuthorizer(new DroveAuthorizer())
+                            .setAuthorizer(new DroveAuthorizer(false))
                             .setPrefix("Basic")
                             .buildAuthFilter()))
                     .addProvider(RolesAllowedDynamicFeature.class)

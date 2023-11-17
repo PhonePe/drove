@@ -42,15 +42,17 @@ clusterAuth:
   - nodeType: EXECUTOR
     secret: LocalExecutorSecret
 
-#userAuth:
-#  enabled: true
-#  users:
-#    - username: admin
-#      password: admin
-#      role: EXTERNAL_READ_WRITE
-#    - username: guest
-#      password: guest
-#      role: EXTERNAL_READ_ONLY
+userAuth:
+ enabled: true
+ users:
+   - username: admin
+     password: admin
+     role: EXTERNAL_READ_WRITE
+   - username: guest
+     password: guest
+     role: EXTERNAL_READ_ONLY
+   - username: noread
+     password: noread
 
 instanceAuth:
   secret: RandomSecret
@@ -62,3 +64,5 @@ options:
   staleInstanceAge: 1d
   staleTaskAge: 1d
   clusterOpParallelism: 4
+  # Turn the following flag off or remove it to enable read access check
+  disableReadAuth: true

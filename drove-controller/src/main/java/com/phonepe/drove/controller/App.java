@@ -74,7 +74,6 @@ public class App extends Application<AppConfig> {
         ((AbstractServerFactory) appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         val jersey = environment.jersey();
         jersey.register(SseFeature.class);
-        jersey.getResourceConfig().register(SseFeature.class);
         FunctionMetricsManager.initialize("com.phonepe.drove.controller", environment.metrics());
 
         setupAuth(appConfig, environment, jersey);
@@ -82,6 +81,8 @@ public class App extends Application<AppConfig> {
 
     @SuppressWarnings("java:S3740")
     private void setupAuth(AppConfig appConfig, Environment environment, JerseyEnvironment jersey) {
+        val options = Objects.requireNonNullElse(appConfig.getOptions(), ControllerOptions.DEFAULT);
+        val disableReadAuth = Objects.requireNonNullElse(options.getDisableReadAuth(), false);
         val basicAuthConfig = Objects.requireNonNullElse(appConfig.getUserAuth(), BasicAuthConfig.DEFAULT);
         val filters = new ArrayList<AuthFilter<?, ? extends DroveUser>>();
         val clusterAuthConfig = Objects.requireNonNullElse(appConfig.getClusterAuth(),
@@ -90,12 +91,12 @@ public class App extends Application<AppConfig> {
                                                                ApplicationAuthConfig.DEFAULT);
         filters.add(new DroveClusterAuthFilter.Builder()
                             .setAuthenticator(new DroveClusterSecretAuthenticator(clusterAuthConfig))
-                            .setAuthorizer(new DroveAuthorizer())
+                            .setAuthorizer(new DroveAuthorizer(disableReadAuth))
                             .buildAuthFilter());
         filters.add(new DroveApplicationInstanceAuthFilter.Builder()
                             .setAuthenticator(new DroveApplicationInstanceAuthenticator(
                                     new JWTApplicationInstanceTokenManager(applicationAuthConfig)))
-                            .setAuthorizer(new DroveAuthorizer())
+                            .setAuthorizer(new DroveAuthorizer(disableReadAuth))
                             .buildAuthFilter());
         if (basicAuthConfig.isEnabled()) {
             val cacheConfig = Strings.isNullOrEmpty(basicAuthConfig.getCachingPolicy())
@@ -107,7 +108,7 @@ public class App extends Application<AppConfig> {
                                                                                      basicAuthConfig),
                                                                              CaffeineSpec.parse(cacheConfig)))
                                 .setAuthorizer(new CachingAuthorizer<>(environment.metrics(),
-                                                                       new DroveAuthorizer(),
+                                                                       new DroveAuthorizer(disableReadAuth),
                                                                        CaffeineSpec.parse(cacheConfig)))
                                 .setPrefix("Basic")
                                 .buildAuthFilter());
@@ -115,7 +116,7 @@ public class App extends Application<AppConfig> {
         else {
             filters.add(new DummyAuthFilter.Builder()
                                 .setAuthenticator(new DummyAuthFilter.DummyAuthenticator())
-                                .setAuthorizer(new DroveAuthorizer())
+                                .setAuthorizer(new DroveAuthorizer(disableReadAuth))
                                 .buildAuthFilter());
         }
         jersey.register(new AuthDynamicFeature(new ChainedAuthFilter(filters)));

@@ -57,7 +57,7 @@ public class App extends Application<AppConfig> {
         jersey.register(new AuthDynamicFeature(
                         new DroveClusterAuthFilter.Builder()
                                 .setAuthenticator(new DroveClusterSecretAuthenticator(Objects.requireNonNullElse(appConfig.getClusterAuth(), ClusterAuthenticationConfig.DEFAULT)))
-                                .setAuthorizer(new DroveAuthorizer())
+                                .setAuthorizer(new DroveAuthorizer(false))
                                 .setUnauthorizedHandler(new DroveUnauthorizedHandler())
                                 .buildAuthFilter()
                 ));

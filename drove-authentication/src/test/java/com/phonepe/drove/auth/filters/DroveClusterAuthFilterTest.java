@@ -33,7 +33,7 @@ class DroveClusterAuthFilterTest extends AbstractAuthTestBase {
             .addResource(new TestResource())
             .addProvider(new AuthDynamicFeature(new DroveClusterAuthFilter.Builder()
                                                         .setAuthenticator(new DroveClusterSecretAuthenticator(ClusterAuthenticationConfig.DEFAULT))
-                                                        .setAuthorizer(new DroveAuthorizer())
+                                                        .setAuthorizer(new DroveAuthorizer(false))
                                                         .setUnauthorizedHandler(new DroveUnauthorizedHandler())
                                                         .buildAuthFilter()))
             .addProvider(RolesAllowedDynamicFeature.class)

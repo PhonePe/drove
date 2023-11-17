@@ -29,7 +29,7 @@ class DummyAuthFilterTest extends AbstractAuthTestBase {
             .addProvider(new AuthDynamicFeature(
                     new DummyAuthFilter.Builder()
                             .setAuthenticator(new DummyAuthFilter.DummyAuthenticator())
-                            .setAuthorizer(new DroveAuthorizer())
+                            .setAuthorizer(new DroveAuthorizer(false))
                             .buildAuthFilter()))
             .addProvider(RolesAllowedDynamicFeature.class)
             .addProvider(new AuthValueFactoryProvider.Binder<>(DroveUser.class))

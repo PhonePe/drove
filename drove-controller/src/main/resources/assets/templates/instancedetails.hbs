@@ -75,15 +75,19 @@
                 {{/with}}
             </div>
             <div class="col-sm-12 col-md-6">
-                <table class="table table-bordered" id="instanceLogs">
-                    <thead>
+                {{#if hasReadAccess}}
+                    <table class="table table-bordered" id="instanceLogs">
+                        <thead>
                         <tr>
                             <th>Logs</th>
                             <th></th>
                         </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                {{else}}
+                    <span class="text-danger">You do not have access to log files on this cluster</span>
+                {{/if}}
             </div>
         </div>
     </section>

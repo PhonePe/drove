@@ -1,10 +1,14 @@
 package com.phonepe.drove.controller.resources;
 
 import com.google.common.base.Strings;
+import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.auth.model.DroveUserRole;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.ui.views.*;
+import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.vyarus.guicey.gsp.views.template.Template;
@@ -15,6 +19,9 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  *
@@ -26,17 +33,24 @@ import java.net.URI;
 @PermitAll
 public class UI {
 
+    private static final Set<DroveUserRole> READ_ALLOWED_ROLES = EnumSet.of(DroveUserRole.EXTERNAL_READ_WRITE,
+                                                                            DroveUserRole.EXTERNAL_READ_ONLY);
     private final ApplicationStateDB stateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
 
+    private final ControllerOptions controllerOptions;
+
     @Inject
     public UI(
             ApplicationStateDB stateDB,
-            ApplicationInstanceInfoDB instanceInfoDB, TaskDB taskDB) {
+            ApplicationInstanceInfoDB instanceInfoDB,
+            TaskDB taskDB,
+            ControllerOptions controllerOptions) {
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.controllerOptions = controllerOptions;
     }
 
     @GET
@@ -57,12 +71,16 @@ public class UI {
     @GET
     @Path("/applications/{id}/instances/{instanceId}")
     public InstanceDetailsPage instanceDetailsPage(
+            @Auth DroveUser user,
             @PathParam("id") final String appId,
             @PathParam("instanceId") final String instanceId) {
         if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new InstanceDetailsPage(appId, instanceId, instanceInfoDB.instance(appId, instanceId).orElse(null));
+        return new InstanceDetailsPage(appId,
+                                       instanceId,
+                                       instanceInfoDB.instance(appId, instanceId).orElse(null),
+                                       hasReadAccess(user));
     }
 
     @GET
@@ -109,5 +127,11 @@ public class UI {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
         return new ExecutorDetailsPageView(executorId);
+    }
+
+
+    private boolean hasReadAccess(DroveUser user) {
+        return Objects.requireNonNullElse(controllerOptions.getDisableReadAuth(), false)
+                || READ_ALLOWED_ROLES.contains(user.getRole());
     }
 }
