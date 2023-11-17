@@ -50,7 +50,9 @@ class InMemoryEventStoreTest {
                                                                                  DEFAULT_STALE_INSTANCE_AGE,
                                                                                  DEFAULT_STALE_TASK_AGE,
                                                                                  DEFAULT_MAX_EVENTS_STORAGE_SIZE,
-                                                                                 io.dropwizard.util.Duration.seconds(2),
+                                                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
+                                                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
+                                                                                 false,
                                                                                  false),
                                         Duration.ofSeconds(1));
         IntStream.rangeClosed(1, 200)
