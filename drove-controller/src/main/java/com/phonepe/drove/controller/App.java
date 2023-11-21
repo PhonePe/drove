@@ -2,6 +2,7 @@ package com.phonepe.drove.controller;
 
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import com.google.common.base.Strings;
+import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.config.BasicAuthConfig;
@@ -40,6 +41,8 @@ import static com.phonepe.drove.common.CommonUtils.configureMapper;
  *
  */
 public class App extends Application<AppConfig> {
+    private GuiceBundle guiceBundle;
+
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
         super.initialize(bootstrap);
@@ -47,25 +50,26 @@ public class App extends Application<AppConfig> {
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
                                                new EnvironmentVariableSubstitutor(true)));
 
+        guiceBundle = GuiceBundle.builder()
+                .enableAutoConfig("com.phonepe.drove.controller.resources",
+                                  "com.phonepe.drove.controller.healthcheck",
+                                  "com.phonepe.drove.controller.managed",
+                                  "com.phonepe.drove.controller.helpers",
+                                  "com.phonepe.drove.controller.errorhandlers",
+                                  "com.phonepe.olympus.im.client.exceptions")
+                .modules(new ControllerCoreModule())
+                .installers(HealthCheckInstaller.class)
+                .bundles(ServerPagesBundle.builder()
+                                 .addViewRenderers(new HandlebarsViewRenderer())
+                                 .build())
+                .bundles(ServerPagesBundle.app("ui", "/assets/", "/")
+                                 .mapViews("/ui")
+                                 .requireRenderers("handlebars")
+                                 .build())
+                .printDiagnosticInfo()
+                .build(Stage.PRODUCTION);
         bootstrap.addBundle(
-                GuiceBundle.builder()
-                        .enableAutoConfig("com.phonepe.drove.controller.resources",
-                                          "com.phonepe.drove.controller.healthcheck",
-                                          "com.phonepe.drove.controller.managed",
-                                          "com.phonepe.drove.controller.helpers",
-                                          "com.phonepe.drove.controller.errorhandlers",
-                                          "com.phonepe.olympus.im.client.exceptions")
-                        .modules(new ControllerCoreModule())
-                        .installers(HealthCheckInstaller.class)
-                        .bundles(ServerPagesBundle.builder()
-                                         .addViewRenderers(new HandlebarsViewRenderer())
-                                         .build())
-                        .bundles(ServerPagesBundle.app("ui", "/assets/", "/")
-                                         .mapViews("/ui")
-                                         .requireRenderers("handlebars")
-                                         .build())
-                        .printDiagnosticInfo()
-                        .build(Stage.PRODUCTION));
+                guiceBundle);
     }
 
     @Override
@@ -76,11 +80,11 @@ public class App extends Application<AppConfig> {
         jersey.register(SseFeature.class);
         FunctionMetricsManager.initialize("com.phonepe.drove.controller", environment.metrics());
 
-        setupAuth(appConfig, environment, jersey);
+        setupAuth(appConfig, environment, jersey, guiceBundle.getInjector());
     }
 
     @SuppressWarnings("java:S3740")
-    private void setupAuth(AppConfig appConfig, Environment environment, JerseyEnvironment jersey) {
+    private void setupAuth(AppConfig appConfig, Environment environment, JerseyEnvironment jersey, Injector injector) {
         val options = Objects.requireNonNullElse(appConfig.getOptions(), ControllerOptions.DEFAULT);
         val disableReadAuth = Objects.requireNonNullElse(options.getDisableReadAuth(), false);
         val basicAuthConfig = Objects.requireNonNullElse(appConfig.getUserAuth(), BasicAuthConfig.DEFAULT);
@@ -91,12 +95,12 @@ public class App extends Application<AppConfig> {
                                                                ApplicationAuthConfig.DEFAULT);
         filters.add(new DroveClusterAuthFilter.Builder()
                             .setAuthenticator(new DroveClusterSecretAuthenticator(clusterAuthConfig))
-                            .setAuthorizer(new DroveAuthorizer(disableReadAuth))
+                            .setAuthorizer(new DroveProxyAuthorizer<>(new DroveAuthorizer(), disableReadAuth))
                             .buildAuthFilter());
         filters.add(new DroveApplicationInstanceAuthFilter.Builder()
                             .setAuthenticator(new DroveApplicationInstanceAuthenticator(
                                     new JWTApplicationInstanceTokenManager(applicationAuthConfig)))
-                            .setAuthorizer(new DroveAuthorizer(disableReadAuth))
+                            .setAuthorizer(new DroveProxyAuthorizer<>(new DroveAuthorizer(), disableReadAuth))
                             .buildAuthFilter());
         if (basicAuthConfig.isEnabled()) {
             val cacheConfig = Strings.isNullOrEmpty(basicAuthConfig.getCachingPolicy())
@@ -108,7 +112,7 @@ public class App extends Application<AppConfig> {
                                                                                      basicAuthConfig),
                                                                              CaffeineSpec.parse(cacheConfig)))
                                 .setAuthorizer(new CachingAuthorizer<>(environment.metrics(),
-                                                                       new DroveAuthorizer(disableReadAuth),
+                                                                       new DroveProxyAuthorizer<>(new DroveAuthorizer(), disableReadAuth),
                                                                        CaffeineSpec.parse(cacheConfig)))
                                 .setPrefix("Basic")
                                 .buildAuthFilter());
@@ -116,7 +120,7 @@ public class App extends Application<AppConfig> {
         else {
             filters.add(new DummyAuthFilter.Builder()
                                 .setAuthenticator(new DummyAuthFilter.DummyAuthenticator())
-                                .setAuthorizer(new DroveAuthorizer(disableReadAuth))
+                                .setAuthorizer(new DroveProxyAuthorizer<>(new DroveAuthorizer(), disableReadAuth))
                                 .buildAuthFilter());
         }
         jersey.register(new AuthDynamicFeature(new ChainedAuthFilter(filters)));

@@ -16,7 +16,7 @@ class DroveAuthorizerTest {
 
     @Test
     void test() {
-        val da = new DroveAuthorizer(false);
+        val da = new DroveProxyAuthorizer<>(new DroveAuthorizer(), false);
         assertFalse(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
                      DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE));
         assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
@@ -25,7 +25,7 @@ class DroveAuthorizerTest {
 
     @Test
     void testDisableReadAuth() {
-        val da = new DroveAuthorizer(true);
+        val da = new DroveProxyAuthorizer<>(new DroveAuthorizer(), true);
         assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
                      DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE));
         assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),

@@ -35,7 +35,7 @@ class DroveApplicationInstanceAuthFilterTest extends AbstractAuthTestBase {
             .addProvider(new AuthDynamicFeature(new DroveApplicationInstanceAuthFilter.Builder()
                                                         .setAuthenticator(new DroveApplicationInstanceAuthenticator(
                                                                 TOKEN_MANAGER))
-                                                        .setAuthorizer(new DroveAuthorizer(false))
+                                                        .setAuthorizer(new DroveAuthorizer())
                                                         .setUnauthorizedHandler(new DroveUnauthorizedHandler())
                                                         .buildAuthFilter()))
             .addProvider(RolesAllowedDynamicFeature.class)

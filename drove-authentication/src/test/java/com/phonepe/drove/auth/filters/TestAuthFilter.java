@@ -23,7 +23,7 @@ class TestAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
 
     private final DummyAuthFilter upstream = new DummyAuthFilter.Builder()
             .setAuthenticator(new DummyAuthFilter.DummyAuthenticator())
-            .setAuthorizer(new DroveAuthorizer(false))
+            .setAuthorizer(new DroveAuthorizer())
             .buildAuthFilter();
 
     @Override
