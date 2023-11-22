@@ -54,8 +54,12 @@ resources:
   osCores: [ 0, 1 ]
   exposedMemPercentage: 60
   disableNUMAPinning: true
-#  tags:
-#  - local
+  overProvisioningConfiguration:
+    overProvisioningUpEnabled: true
+    memoryOverProvisioningMultiplier: 10
+    cpuOverProvisioningMultiplier: 10
+  tags:
+  - OVER_PROVISIONED_EXECUTOR
 
 clusterAuth:
   secrets:
