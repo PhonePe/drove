@@ -2,7 +2,7 @@ package com.phonepe.drove.executor.managed;
 
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.resourcemgmt.NumaCtlBasedResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloader.NumaCtlBasedResourceLoader;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;

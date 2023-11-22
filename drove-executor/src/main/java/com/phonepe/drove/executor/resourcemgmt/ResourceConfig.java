@@ -27,10 +27,10 @@ public class ResourceConfig {
 
     private Set<String> tags = Collections.emptySet();
 
-    private BurstUpConfiguration burstUpConfiguration = new BurstUpConfiguration();
+    private OverProvisioningConfiguration overProvisioningConfiguration = new OverProvisioningConfiguration();
 
-    @ValidationMethod(message = "For burst up to be enabled, numa pinning needs to be disabled")
-    boolean isBurstAbleEnabledWithDisablePinning() {
-        return !burstUpConfiguration.isBurstUpEnabled() || disableNUMAPinning;
+    @ValidationMethod(message = "For over provisioning to be enabled, numa pinning needs to be disabled")
+    boolean isOverProvisioningEnabledWithDisablePinning() {
+        return !overProvisioningConfiguration.isOverProvisioningUpEnabled() || disableNUMAPinning;
     }
 }

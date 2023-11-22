@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.resourcemgmt;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.executor.resourcemgmt.resourceloader.NumaCtlBasedResourceLoader;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.common.CommonTestUtils.set;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.resourceConfig;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -23,7 +25,6 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
     @Test
     void testBasicParsing() {
         val rl = new NumaCtlBasedResourceLoader(resourceConfig());
-
         val info = rl.parseCommandOutput(
                 readLinesFromFile("/numactl-resource-loader-test/dualnode.txt"));
         assertFalse(info.isEmpty());
@@ -89,14 +90,14 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
     void testCoresAndMemoryReservedForBurstUpConfigurationWithoutReservation() {
         val resourceConfig = new ResourceConfig();
         resourceConfig
-                .setBurstUpConfiguration(
-                        new BurstUpConfiguration(
+                .setOverProvisioningConfiguration(
+                        new OverProvisioningConfiguration(
                                 true,
                                 10,
                                 10
                         )
                 )
-                .setTags(Set.of("BURSTABLE_EXECUTOR"))
+                .setTags(Set.of("OVER_PROVISIONED_EXECUTOR"))
                 .setDisableNUMAPinning(true);
         val rl = new NumaCtlBasedResourceLoader(resourceConfig);
 
@@ -117,14 +118,14 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
     void testCoresAndMemoryReservedForBurstUpConfigurationWithReservation() {
         val resourceConfig = resourceConfig();
         resourceConfig
-                .setBurstUpConfiguration(
-                        new BurstUpConfiguration(
+                .setOverProvisioningConfiguration(
+                        new OverProvisioningConfiguration(
                                 true,
                                 10,
                                 10
                         )
                 )
-                .setTags(Set.of("BURSTABLE_EXECUTOR"))
+                .setTags(Set.of("OVER_PROVISIONED_EXECUTOR"))
                 .setDisableNUMAPinning(true);
         val rl = new NumaCtlBasedResourceLoader(resourceConfig);
 

@@ -10,6 +10,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
@@ -26,6 +27,10 @@ import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.executor.resourcemgmt.resourceloader.NumaActivationResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloader.NumaCtlBasedResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloader.OverProvisioningResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloader.ResourceLoader;
 import io.dropwizard.setup.Environment;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -45,6 +50,11 @@ public class ExecutorCoreModule extends AbstractModule {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
         bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>(){})
                 .to(RemoteControllerMessageSender.class);
+        bind(ResourceLoader.class).annotatedWith(Names.named("NumaCtlBasedResourceLoader"))
+                .to(NumaCtlBasedResourceLoader.class);
+        bind(ResourceLoader.class).annotatedWith(Names.named("NumaActivationResourceLoader"))
+                .to(NumaActivationResourceLoader.class);
+        bind(ResourceLoader.class).to(OverProvisioningResourceLoader.class);
     }
 
 

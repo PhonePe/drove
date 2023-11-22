@@ -9,11 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ResourceConfigTest {
     @Test
-    void validationFailsIfNumaPinningIsDisabledWithBurstUpConfigurationEnabled() {
+    void validationFailsIfNumaPinningIsDisabledWithOverProvisioningConfigurationEnabled() {
         assertFalse(new ResourceConfig()
                 .setDisableNUMAPinning(false)
-                .setBurstUpConfiguration(new BurstUpConfiguration(true, 10, 10))
-                .isBurstAbleEnabledWithDisablePinning());
+                .setOverProvisioningConfiguration(new OverProvisioningConfiguration(true, 10, 10))
+                .isOverProvisioningEnabledWithDisablePinning());
     }
 
     @Test
@@ -23,14 +23,14 @@ class ResourceConfigTest {
         assertEquals(100, resourceConfig.getExposedMemPercentage());
         assertFalse(resourceConfig.isDisableNUMAPinning());
         assertEquals(Collections.emptySet(), resourceConfig.getTags());
-        assertFalse(resourceConfig.getBurstUpConfiguration().isBurstUpEnabled());
+        assertFalse(resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled());
     }
 
     @Test
-    void validationSucceedsIfNumaPinningIsDisabledWithBurstUpConfigurationEnabled() {
+    void validationSucceedsIfNumaPinningIsDisabledWithOverProvisioningConfigurationEnabled() {
         assertTrue(new ResourceConfig()
                 .setDisableNUMAPinning(true)
-                .setBurstUpConfiguration(new BurstUpConfiguration(true, 10, 10))
-                .isBurstAbleEnabledWithDisablePinning());
+                .setOverProvisioningConfiguration(new OverProvisioningConfiguration(true, 10, 10))
+                .isOverProvisioningEnabledWithDisablePinning());
     }
 }
