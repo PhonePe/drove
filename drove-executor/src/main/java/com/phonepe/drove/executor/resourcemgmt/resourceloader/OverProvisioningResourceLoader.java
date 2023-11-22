@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -31,23 +32,19 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
         val resources = root.loadSystemResources();
         log.info("Disable numa pinning is : {}", resourceConfig.isDisableNUMAPinning() ? "Off" : "On");
         if (resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled()) {
-            if (!resourceConfig.isDisableNUMAPinning()) {
-                throw new IllegalStateException("Numa pinning has to be disabled for over provisioning");
-            }
-            if (resources.size() != 1) {
-                throw new IllegalStateException("Over provisioning can be enabled only if 1 node is allocated");
-            }
-            val nodeInfo = resources.entrySet().iterator().next().getValue();
             return Map.of(0,
-                    new ResourceManager.NodeInfo(
-                            IntStream.rangeClosed(0,
-                                            nodeInfo.getAvailableCores().size() *
-                                                    resourceConfig
-                                                            .getOverProvisioningConfiguration()
-                                                            .getCpuOverProvisioningMultiplier() - 1)
-                                    .boxed().collect(Collectors.toSet())
-                            , nodeInfo.getMemoryInMB() *
-                            resourceConfig.getOverProvisioningConfiguration().getMemoryOverProvisioningMultiplier()));
+                    new ResourceManager.NodeInfo(IntStream.rangeClosed(0, resources.values().stream()
+                                    .map(ResourceManager.NodeInfo::getAvailableCores)
+                                    .mapToInt(Set::size)
+                                    .sum()
+                                    * resourceConfig
+                                    .getOverProvisioningConfiguration()
+                                    .getCpuOverProvisioningMultiplier() - 1)
+                            .boxed().collect(Collectors.toSet()),
+                            resources.values().stream()
+                                    .mapToLong(ResourceManager.NodeInfo::getMemoryInMB)
+                                    .sum()
+                                    * resourceConfig.getOverProvisioningConfiguration().getMemoryOverProvisioningMultiplier()));
         }
         return resources;
     }
