@@ -55,16 +55,13 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
         if (!Sets.difference(cores.keySet(), mem.keySet()).isEmpty()) {
             throw new IllegalStateException("Mismatch between memory nodes and cores");
         }
-        val resources = cores.entrySet().stream().map(e -> new Pair<>(e.getKey(), new ResourceManager.NodeInfo(e.getValue(), mem.get(e.getKey())))).collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
-
-        if (!resources.isEmpty()) {
-            log.info("Found resources:");
-            resources.forEach((id, info) -> log.info("    Node " + id + ": Cores: " + info.getAvailableCores().stream().sorted().toList() + " Memory (MB): " + info.getMemoryInMB()));
-
-        } else {
-            log.error("No usable resources found");
-        }
-        return resources;
+        return cores.entrySet().stream()
+                .map(e -> new Pair<>(
+                        e.getKey(),
+                        new ResourceManager.NodeInfo(
+                                e.getValue(),
+                                mem.get(e.getKey()))))
+                .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
     }
 
     private Map<Integer, Set<Integer>> fetchNodeToCPUMap(List<String> lines) {

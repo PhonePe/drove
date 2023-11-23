@@ -17,12 +17,12 @@ import java.util.stream.IntStream;
 @Singleton
 public class OverProvisioningResourceLoader implements ResourceLoader {
 
-    private final ResourceConfig resourceConfig;
     private final ResourceLoader root;
+    private final ResourceConfig resourceConfig;
 
     @Inject
-    public OverProvisioningResourceLoader(ResourceConfig resourceConfig,
-                                          @Named("NumaActivationResourceLoader") ResourceLoader root) {
+    public OverProvisioningResourceLoader(@Named("NumaActivationResourceLoader") ResourceLoader root,
+                                          ResourceConfig resourceConfig) {
         this.resourceConfig = resourceConfig;
         this.root = root;
     }
@@ -38,17 +38,17 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
             return Map.of(0,
                     new ResourceManager.NodeInfo(
                             IntStream.rangeClosed(0, resources.values().stream()
-                                    .map(ResourceManager.NodeInfo::getAvailableCores)
-                                    .mapToInt(Set::size)
-                                    .sum()
-                                    * resourceConfig
-                                    .getOverProvisioningConfiguration()
-                                    .getCpuOverProvisioningMultiplier() - 1)
-                            .boxed().collect(Collectors.toSet()),
+                                            .map(ResourceManager.NodeInfo::getAvailableCores)
+                                            .mapToInt(Set::size)
+                                            .sum() * resourceConfig
+                                            .getOverProvisioningConfiguration()
+                                            .getCpuOverProvisioningMultiplier() - 1)
+                                    .boxed().collect(Collectors.toSet()),
                             resources.values().stream()
                                     .mapToLong(ResourceManager.NodeInfo::getMemoryInMB)
-                                    .sum()
-                                    * resourceConfig.getOverProvisioningConfiguration().getMemoryOverProvisioningMultiplier()));
+                                    .sum() * resourceConfig
+                                    .getOverProvisioningConfiguration()
+                                    .getMemoryOverProvisioningMultiplier()));
         }
         return resources;
     }

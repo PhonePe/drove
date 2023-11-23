@@ -1,12 +1,14 @@
-package com.phonepe.drove.executor.resourcemgmt;
+package com.phonepe.drove.executor.resourcemgmt.resourceloader;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.AbstractTestBase;
-import com.phonepe.drove.executor.resourcemgmt.resourceloader.NumaCtlBasedResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,7 +21,20 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  *
  */
+@Slf4j
 class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
+
+    private static NumaCtlBasedResourceLoader getNewNumaRL(
+            ResourceConfig resourceConfig,
+            List<String> numaResponseLines
+    ) {
+        return new NumaCtlBasedResourceLoader(resourceConfig) {
+            @Override
+            protected List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
+                return numaResponseLines;
+            }
+        };
+    }
 
     @SneakyThrows
     @Test
@@ -41,7 +56,6 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
         val info = rl.loadSystemResources();
         assertTrue(info.isEmpty());
     }
-
 
     @SneakyThrows
     @Test
@@ -94,73 +108,18 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
         }
     }
 
-    private static NumaCtlBasedResourceLoader getNewNumaRL(
-            ResourceConfig resourceConfig,
-            List<String> numaResponseLines
-    ) {
-        return new NumaCtlBasedResourceLoader(resourceConfig) {
-            @Override
-            protected List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
-                return numaResponseLines;
-            }
-        };
+    @Test
+    @SneakyThrows
+    void testNumaCtlCommandLoader() {
+        val nc = new File("/usr/bin/numactl");
+        if (nc.exists() && !nc.isDirectory() && nc.canExecute()) {
+            val rl = new NumaCtlBasedResourceLoader(resourceConfig());
+            val info = rl.loadSystemResources();
+            assertFalse(info.isEmpty());
+            assertFalse(info.get(0).getAvailableCores().isEmpty());
+            assertNotEquals(0, info.get(0).getMemoryInMB());
+        } else {
+            log.warn("Numactl does not exist on this machine and hence test is skipped");
+        }
     }
-
-
-//    @SneakyThrows
-//    @Test
-//    void testCoresAndMemoryReservedForBurstUpConfigurationWithoutReservation() {
-//        val resourceConfig = new ResourceConfig();
-//        resourceConfig
-//                .setOverProvisioningConfiguration(
-//                        new OverProvisioningConfiguration(
-//                                true,
-//                                10,
-//                                10
-//                        )
-//                )
-//                .setTags(Set.of("OVER_PROVISIONED_EXECUTOR"))
-//                .setDisableNUMAPinning(true);
-//        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
-//
-//        val info = rl.parseCommandOutput(
-//                readLinesFromFile("/numactl-resource-loader-test/dualnode.txt"));
-//        assertFalse(info.isEmpty());
-//        assertEquals(1, info.size());
-//        assertEquals(200, info.get(0).getAvailableCores().size());
-//        assertTrue(
-//                Sets.difference(IntStream.rangeClosed(0, 20 * 10 - 1).boxed().collect(Collectors.toSet()),
-//                        info.get(0).getAvailableCores()).isEmpty()
-//        );
-//        assertEquals((192214 + 193509) * 10, info.get(0).getMemoryInMB());
-//    }
-//
-//    @SneakyThrows
-//    @Test
-//    void testCoresAndMemoryReservedForBurstUpConfigurationWithReservation() {
-//        val resourceConfig = resourceConfig();
-//        resourceConfig
-//                .setOverProvisioningConfiguration(
-//                        new OverProvisioningConfiguration(
-//                                true,
-//                                10,
-//                                10
-//                        )
-//                )
-//                .setTags(Set.of("OVER_PROVISIONED_EXECUTOR"))
-//                .setDisableNUMAPinning(true);
-//        val rl = new NumaCtlBasedResourceLoader(resourceConfig);
-//
-//        val info = rl.parseCommandOutput(
-//                readLinesFromFile("/numactl-resource-loader-test/dualnode.txt"));
-//        assertFalse(info.isEmpty());
-//        assertEquals(1, info.size());
-//        assertEquals(180, info.get(0).getAvailableCores().size());
-//        assertTrue(
-//                Sets.difference(
-//                        IntStream.rangeClosed(0, 18 * 10 - 1).boxed().collect(Collectors.toSet()),
-//                        info.get(0).getAvailableCores()).isEmpty()
-//        );
-//        assertEquals(Math.floor((192214 + 193509) * .9) * 10, info.get(0).getMemoryInMB());
-//    }
 }

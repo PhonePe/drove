@@ -8,6 +8,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.val;
 
 
 @Slf4j
@@ -27,7 +28,15 @@ public class ResourcePopulator implements Managed {
 
     @Override
     public void start() throws Exception {
-        resourceDB.populateResources(resourceLoader.loadSystemResources());
+        val resources = resourceLoader.loadSystemResources();
+        if (!resources.isEmpty()) {
+            log.info("Found resources:");
+            resources.forEach((id, info) -> log.info("    Node " + id + ": Cores: " + info.getAvailableCores().stream().sorted().toList() + " Memory (MB): " + info.getMemoryInMB()));
+
+        } else {
+            log.error("No usable resources found");
+        }
+        resourceDB.populateResources(resources);
     }
 
 
