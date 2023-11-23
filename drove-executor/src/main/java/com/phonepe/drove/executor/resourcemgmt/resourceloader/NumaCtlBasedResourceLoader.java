@@ -35,7 +35,7 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
         return parseCommandOutput(fetchSystemResourceUsingNumaCTL());
     }
 
-    private List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
+    protected List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
         val process = new ProcessBuilder("numactl", "-H").start();
         var lines = Collections.<String>emptyList();
         try (val input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {

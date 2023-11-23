@@ -30,10 +30,14 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
     @Override
     public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() throws Exception {
         val resources = root.loadSystemResources();
-        log.info("Disable numa pinning is : {}", resourceConfig.isDisableNUMAPinning() ? "Off" : "On");
+        log.info("Over Provisioning is : {}", resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled() ? "Off" : "On");
         if (resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled()) {
+            log.info("Over Provisioning CPU by : {} and Memory by : {}",
+                    resourceConfig.getOverProvisioningConfiguration().getCpuOverProvisioningMultiplier(),
+                    resourceConfig.getOverProvisioningConfiguration().getMemoryOverProvisioningMultiplier());
             return Map.of(0,
-                    new ResourceManager.NodeInfo(IntStream.rangeClosed(0, resources.values().stream()
+                    new ResourceManager.NodeInfo(
+                            IntStream.rangeClosed(0, resources.values().stream()
                                     .map(ResourceManager.NodeInfo::getAvailableCores)
                                     .mapToInt(Set::size)
                                     .sum()
