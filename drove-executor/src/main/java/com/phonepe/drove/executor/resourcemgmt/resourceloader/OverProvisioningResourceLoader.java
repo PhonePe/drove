@@ -30,7 +30,7 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
     @Override
     public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() throws Exception {
         val resources = root.loadSystemResources();
-        log.info("Over Provisioning is : {}", resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled() ? "Off" : "On");
+        log.info("Over Provisioning is : {}", resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled() ? "On" : "Off");
         if (resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled()) {
             log.info("Over Provisioning CPU by : {} and Memory by : {}",
                     resourceConfig.getOverProvisioningConfiguration().getCpuOverProvisioningMultiplier(),

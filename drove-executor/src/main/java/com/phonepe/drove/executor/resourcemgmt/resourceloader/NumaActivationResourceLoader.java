@@ -29,7 +29,7 @@ public class NumaActivationResourceLoader implements ResourceLoader {
     @Override
     public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() throws Exception {
         val resources = root.loadSystemResources();
-        log.info("Disable numa pinning is : {}", resourceConfig.isDisableNUMAPinning() ? "Off" : "On");
+        log.info("Numa pinning is : {}", resourceConfig.isDisableNUMAPinning() ? "Off" : "On");
         if (resourceConfig.isDisableNUMAPinning()) {
             val availableCores = resources.values().stream()
                     .map(ResourceManager.NodeInfo::getAvailableCores)
