@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.managed;
 
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.resourcemgmt.resourceloader.ResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;

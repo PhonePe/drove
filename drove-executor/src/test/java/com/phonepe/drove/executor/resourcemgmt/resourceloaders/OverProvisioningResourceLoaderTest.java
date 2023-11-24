@@ -1,7 +1,7 @@
-package com.phonepe.drove.executor.resourcemgmt.resourceloader;
+package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.resourcemgmt.OverProvisioningConfiguration;
+import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -35,12 +35,16 @@ class OverProvisioningResourceLoaderTest {
         val resourceMap = Map.of(0, new ResourceManager.NodeInfo(Set.of(1, 2, 3, 4), 1000));
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
-        resourceConfig.setOverProvisioningConfiguration(
-                new OverProvisioningConfiguration(true,2,2)
+        resourceConfig.setOverProvisioning(
+                new OverProvisioning(true,2,2)
         );
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        assertEquals(Map.of(0, new ResourceManager.NodeInfo(IntStream.rangeClosed(0,7).boxed().collect(Collectors.toSet()), 2000)), processedResource);
+        assertEquals(Map.of(0,
+                new ResourceManager.NodeInfo(
+                IntStream.rangeClosed(0,7).boxed()
+                        .collect(Collectors.toSet()), 2000)),
+                processedResource);
     }
 
     @Test
@@ -49,11 +53,13 @@ class OverProvisioningResourceLoaderTest {
         val baseLoader = Mockito.mock(ResourceLoader.class);
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(Collections.emptyMap());
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
-        resourceConfig.setOverProvisioningConfiguration(
-                new OverProvisioningConfiguration(true,2,2)
+        resourceConfig.setOverProvisioning(
+                new OverProvisioning(true,2,2)
         );
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        assertEquals(Map.of(0, new ResourceManager.NodeInfo(Collections.emptySet(), 0)), processedResource);
+        assertEquals(Map.of(0,
+                new ResourceManager.NodeInfo(Collections.emptySet(), 0)),
+                processedResource);
     }
 }

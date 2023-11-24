@@ -27,10 +27,10 @@ public class ResourceConfig {
 
     private Set<String> tags = Collections.emptySet();
 
-    private OverProvisioningConfiguration overProvisioningConfiguration = new OverProvisioningConfiguration();
+    private OverProvisioning overProvisioning = new OverProvisioning();
 
     @ValidationMethod(message = "For over provisioning to be enabled, numa pinning needs to be disabled")
     boolean isOverProvisioningEnabledWithDisablePinning() {
-        return !overProvisioningConfiguration.isOverProvisioningUpEnabled() || disableNUMAPinning;
+        return !overProvisioning.isOverProvisioningUpEnabled() || disableNUMAPinning;
     }
 }

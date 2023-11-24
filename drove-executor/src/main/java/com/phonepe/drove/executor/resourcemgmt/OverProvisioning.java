@@ -10,7 +10,7 @@ import javax.validation.constraints.Min;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OverProvisioningConfiguration {
+public class OverProvisioning {
 
     public static final int DEFAULT_MULTIPLIER = 1;
     private static final int MIN_OVER_PROVISIONING_MULTIPLIER = 1;

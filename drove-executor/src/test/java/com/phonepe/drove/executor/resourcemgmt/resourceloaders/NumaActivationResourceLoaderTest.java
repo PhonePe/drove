@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor.resourcemgmt.resourceloader;
+package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
@@ -37,7 +37,9 @@ class NumaActivationResourceLoaderTest extends AbstractTestBase {
         resourceConfig.setDisableNUMAPinning(true);
         val rl = new NumaActivationResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        assertEquals(Map.of(0, new ResourceManager.NodeInfo(Set.of(1, 2, 3, 4, 5, 6, 7, 8), 2000)), processedResource);
+        assertEquals(Map.of(0,
+                new ResourceManager.NodeInfo(Set.of(1, 2, 3, 4, 5, 6, 7, 8), 2000)),
+                processedResource);
     }
 
     @Test
@@ -49,7 +51,9 @@ class NumaActivationResourceLoaderTest extends AbstractTestBase {
         resourceConfig.setDisableNUMAPinning(true);
         val rl = new NumaActivationResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        assertEquals(Map.of(0, new ResourceManager.NodeInfo(Collections.emptySet(), 0)), processedResource);
+        assertEquals(Map.of(0,
+                new ResourceManager.NodeInfo(Collections.emptySet(), 0)),
+                processedResource);
     }
 
 }

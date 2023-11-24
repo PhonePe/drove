@@ -1,9 +1,10 @@
-package com.phonepe.drove.executor.resourcemgmt.resourceloader;
+package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -31,7 +32,8 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
 
 
     @Override
-    public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() throws Exception {
+    @SneakyThrows
+    public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() {
         return parseCommandOutput(fetchSystemResourceUsingNumaCTL());
     }
 

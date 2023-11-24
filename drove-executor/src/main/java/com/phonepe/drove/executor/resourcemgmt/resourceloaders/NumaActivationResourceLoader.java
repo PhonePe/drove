@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor.resourcemgmt.resourceloader;
+package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.phonepe.drove.executor.ExecutorCoreModule;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -28,7 +28,7 @@ public class NumaActivationResourceLoader implements ResourceLoader {
     }
 
     @Override
-    public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() throws Exception {
+    public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() {
         val resources = root.loadSystemResources();
         log.info("Numa pinning is : {}", resourceConfig.isDisableNUMAPinning() ? "Off" : "On");
         if (resourceConfig.isDisableNUMAPinning()) {

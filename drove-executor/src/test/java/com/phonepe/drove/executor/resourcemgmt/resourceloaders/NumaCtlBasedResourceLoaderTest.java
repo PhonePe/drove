@@ -1,4 +1,4 @@
-package com.phonepe.drove.executor.resourcemgmt.resourceloader;
+package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.AbstractTestBase;

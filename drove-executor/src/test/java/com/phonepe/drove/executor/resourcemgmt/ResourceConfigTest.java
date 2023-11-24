@@ -12,7 +12,7 @@ class ResourceConfigTest {
     void validationFailsIfNumaPinningIsDisabledWithOverProvisioningConfigurationEnabled() {
         assertFalse(new ResourceConfig()
                 .setDisableNUMAPinning(false)
-                .setOverProvisioningConfiguration(new OverProvisioningConfiguration(true, 10, 10))
+                .setOverProvisioning(new OverProvisioning(true, 10, 10))
                 .isOverProvisioningEnabledWithDisablePinning());
     }
 
@@ -23,14 +23,14 @@ class ResourceConfigTest {
         assertEquals(100, resourceConfig.getExposedMemPercentage());
         assertFalse(resourceConfig.isDisableNUMAPinning());
         assertEquals(Collections.emptySet(), resourceConfig.getTags());
-        assertFalse(resourceConfig.getOverProvisioningConfiguration().isOverProvisioningUpEnabled());
+        assertFalse(resourceConfig.getOverProvisioning().isOverProvisioningUpEnabled());
     }
 
     @Test
     void validationSucceedsIfNumaPinningIsDisabledWithOverProvisioningConfigurationEnabled() {
         assertTrue(new ResourceConfig()
                 .setDisableNUMAPinning(true)
-                .setOverProvisioningConfiguration(new OverProvisioningConfiguration(true, 10, 10))
+                .setOverProvisioning(new OverProvisioning(true, 10, 10))
                 .isOverProvisioningEnabledWithDisablePinning());
     }
 }
