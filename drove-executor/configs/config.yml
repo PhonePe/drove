@@ -54,7 +54,7 @@ resources:
   osCores: [ 0, 1 ]
   exposedMemPercentage: 60
   disableNUMAPinning: true
-#  overProvisioningConfiguration:
+#  overProvisioning:
 #    overProvisioningUpEnabled: true
 #    memoryOverProvisioningMultiplier: 10
 #    cpuOverProvisioningMultiplier: 10
