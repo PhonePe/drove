@@ -31,8 +31,11 @@ public class ResourcePopulator implements Managed {
         val resources = resourceLoader.loadSystemResources();
         if (!resources.isEmpty()) {
             log.info("Found resources:");
-            resources.forEach((id, info) -> log.info("    Node " + id + ": Cores: " + info.getAvailableCores().stream().sorted().toList() + " Memory (MB): " + info.getMemoryInMB()));
-
+            resources.forEach((id, info) ->
+                    log.info("    Node {} : Cores: {} Memory (MB): {} ",
+                            id,
+                            info.getAvailableCores().stream().sorted().toList(),
+                            info.getMemoryInMB()));
         } else {
             log.error("No usable resources found");
         }

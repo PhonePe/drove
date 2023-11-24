@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.resourcemgmt.resourceloader;
 
+import com.phonepe.drove.executor.ExecutorCoreModule;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
     private final ResourceConfig resourceConfig;
 
     @Inject
-    public OverProvisioningResourceLoader(@Named("NumaActivationResourceLoader") ResourceLoader root,
+    public OverProvisioningResourceLoader(@Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_ACTIVATION_RESOURCE_LOADER) ResourceLoader root,
                                           ResourceConfig resourceConfig) {
         this.resourceConfig = resourceConfig;
         this.root = root;

@@ -50,9 +50,9 @@ public class ExecutorCoreModule extends AbstractModule {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
         bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>(){})
                 .to(RemoteControllerMessageSender.class);
-        bind(ResourceLoader.class).annotatedWith(Names.named("NumaCtlBasedResourceLoader"))
+        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER))
                 .to(NumaCtlBasedResourceLoader.class);
-        bind(ResourceLoader.class).annotatedWith(Names.named("NumaActivationResourceLoader"))
+        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_ACTIVATION_RESOURCE_LOADER))
                 .to(NumaActivationResourceLoader.class);
         bind(ResourceLoader.class).to(OverProvisioningResourceLoader.class);
     }
@@ -168,6 +168,12 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     public CloseableHttpClient httpClient() {
         return CommonUtils.createHttpClient();
+    }
+
+    public static final class ResourceLoaderIdentifiers {
+        public static final String NUMA_CTL_BASED_RESOURCE_LOADER = "NumaCtlBasedResourceLoader";
+        public static final String NUMA_ACTIVATION_RESOURCE_LOADER = "NumaActivationResourceLoader";
+
     }
 
 }
