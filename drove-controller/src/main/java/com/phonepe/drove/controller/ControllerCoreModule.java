@@ -35,6 +35,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.ActionFactory;
+import com.phonepe.olympus.im.client.CookieHandler;
 import com.phonepe.olympus.im.client.OlympusIMClient;
 import com.phonepe.olympus.im.client.config.OlympusIMClientConfig;
 import com.phonepe.olympus.im.client.http.OlympusIMApiClient;
@@ -184,6 +185,16 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    public CookieHandler cookieHandler(AppConfig appConfig) {
+        val olympusConfig = appConfig.getOlympusIM();
+        if (null != olympusConfig) {
+            return new CookieHandler(appConfig.getOlympusIM());
+        }
+        return null;
+    }
+
+    @Provides
+    @Singleton
     public OlympusIMClientConfig olympusIMApiClient(AppConfig appConfig) {
         val olympusConfig = appConfig.getOlympusIM();
         if (null != olympusConfig) {
@@ -209,8 +220,9 @@ public class ControllerCoreModule extends AbstractModule {
     public OlympusIMClient olympusIMClient(
             @Nullable OlympusIMClientConfig olympusConfig,
             Environment environment,
-            @Nullable OlympusIMApiClient olympusIMApiClient) {
-        if(null == olympusConfig || null == olympusIMApiClient) {
+            @Nullable OlympusIMApiClient olympusIMApiClient,
+            @Nullable CookieHandler cookieHandler) {
+        if(null == olympusConfig || null == olympusIMApiClient || null == cookieHandler) {
             return null;
         }
         val feignClient = new OlympusIMFeignClient(olympusConfig,
@@ -218,6 +230,7 @@ public class ControllerCoreModule extends AbstractModule {
         return new OlympusIMClient(olympusConfig,
                                    environment,
                                    olympusIMApiClient,
-                                   feignClient);
+                                   feignClient,
+                                   cookieHandler);
     }
 }
