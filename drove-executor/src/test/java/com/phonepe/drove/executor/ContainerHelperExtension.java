@@ -1,6 +1,7 @@
 package com.phonepe.drove.executor;
 
 import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.exception.NotModifiedException;
 import com.github.dockerjava.api.model.Container;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.utils.ImagePullProgressHandler;
@@ -51,8 +52,13 @@ public class ContainerHelperExtension implements BeforeAllCallback, BeforeEachCa
             return;
         }
         alreadyRunning.forEach(cid -> {
-            DOCKER_CLIENT.stopContainerCmd(cid).exec();
-            log.info("Stopped container: {}", cid);
+            try {
+                DOCKER_CLIENT.stopContainerCmd(cid).exec();
+                log.info("Stopped container: {}", cid);
+            }
+            catch (NotModifiedException e) {
+                log.info("Container {} has already been stopped.", cid);
+            }
         });
         waitUntil(() -> DOCKER_CLIENT.listContainersCmd()
                 .withLabelFilter(List.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
