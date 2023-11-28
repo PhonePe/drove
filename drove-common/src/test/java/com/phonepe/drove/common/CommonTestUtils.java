@@ -1,5 +1,6 @@
 package com.phonepe.drove.common;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.experimental.UtilityClass;
@@ -20,8 +21,16 @@ import static org.awaitility.Awaitility.await;
  */
 @UtilityClass
 public class CommonTestUtils {
-    public static final String APP_IMAGE_NAME = "docker.io/santanusinha/perf-test-server:0.3";
-    public static final String TASK_IMAGE_NAME = "docker.io/santanusinha/test-task:0.3";
+    public static final String APP_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server:0.3";
+    public static final String TASK_IMAGE_NAME = dockerRepoPrefix() + "/test-task:0.3";
+
+    private static String dockerRepoPrefix() {
+        val prefix = System.getProperty("DOCKER_REPO_PREFIX");
+        if(Strings.isNullOrEmpty(prefix)) {
+            return "docker.io/santanusinha";
+        }
+        return prefix;
+    }
 
     public void delay(final Duration duration) {
         val wait = duration.toMillis();
