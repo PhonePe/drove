@@ -63,6 +63,12 @@
             <groupId>com.github.jknack</groupId>
             <artifactId>handlebars-guava-cache</artifactId>
             <version>${handlebars.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
