@@ -16,14 +16,14 @@ public class OverProvisioning {
     private static final int MIN_OVER_PROVISIONING_MULTIPLIER = 1;
     private static final int MAX_OVER_PROVISIONING_MULTIPLIER = 20;
 
-    private boolean overProvisioningUpEnabled;
+    private boolean enabled;
 
     @Min(MIN_OVER_PROVISIONING_MULTIPLIER)
     @Max(MAX_OVER_PROVISIONING_MULTIPLIER)
-    private int cpuOverProvisioningMultiplier = DEFAULT_MULTIPLIER;
+    private int cpuMultiplier = DEFAULT_MULTIPLIER;
 
     @Min(MIN_OVER_PROVISIONING_MULTIPLIER)
     @Max(MAX_OVER_PROVISIONING_MULTIPLIER)
-    private int memoryOverProvisioningMultiplier = DEFAULT_MULTIPLIER;
+    private int memoryMultiplier = DEFAULT_MULTIPLIER;
 
 }

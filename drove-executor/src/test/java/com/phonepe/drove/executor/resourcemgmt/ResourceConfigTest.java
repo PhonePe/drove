@@ -23,7 +23,7 @@ class ResourceConfigTest {
         assertEquals(100, resourceConfig.getExposedMemPercentage());
         assertFalse(resourceConfig.isDisableNUMAPinning());
         assertEquals(Collections.emptySet(), resourceConfig.getTags());
-        assertFalse(resourceConfig.getOverProvisioning().isOverProvisioningUpEnabled());
+        assertFalse(resourceConfig.getOverProvisioning().isEnabled());
     }
 
     @Test

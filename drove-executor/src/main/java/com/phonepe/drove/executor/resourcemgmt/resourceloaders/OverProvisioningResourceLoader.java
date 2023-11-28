@@ -31,11 +31,11 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
     @Override
     public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() {
         val resources = root.loadSystemResources();
-        log.info("Over Provisioning is : {}", resourceConfig.getOverProvisioning().isOverProvisioningUpEnabled() ? "On" : "Off");
-        if (resourceConfig.getOverProvisioning().isOverProvisioningUpEnabled()) {
+        log.info("Over Provisioning is : {}", resourceConfig.getOverProvisioning().isEnabled() ? "On" : "Off");
+        if (resourceConfig.getOverProvisioning().isEnabled()) {
             log.info("Over Provisioning CPU by : {} and Memory by : {}",
-                    resourceConfig.getOverProvisioning().getCpuOverProvisioningMultiplier(),
-                    resourceConfig.getOverProvisioning().getMemoryOverProvisioningMultiplier());
+                    resourceConfig.getOverProvisioning().getCpuMultiplier(),
+                    resourceConfig.getOverProvisioning().getMemoryMultiplier());
             return Map.of(0,
                     new ResourceManager.NodeInfo(
                             IntStream.rangeClosed(0, resources.values().stream()
@@ -43,13 +43,13 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
                                             .mapToInt(Set::size)
                                             .sum() * resourceConfig
                                             .getOverProvisioning()
-                                            .getCpuOverProvisioningMultiplier() - 1)
+                                            .getCpuMultiplier() - 1)
                                     .boxed().collect(Collectors.toSet()),
                             resources.values().stream()
                                     .mapToLong(ResourceManager.NodeInfo::getMemoryInMB)
                                     .sum() * resourceConfig
                                     .getOverProvisioning()
-                                    .getMemoryOverProvisioningMultiplier()));
+                                    .getMemoryMultiplier()));
         }
         return resources;
     }

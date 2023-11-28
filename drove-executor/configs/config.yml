@@ -55,9 +55,9 @@ resources:
   exposedMemPercentage: 60
   disableNUMAPinning: true
 #  overProvisioning:
-#    overProvisioningUpEnabled: true
-#    memoryOverProvisioningMultiplier: 10
-#    cpuOverProvisioningMultiplier: 10
+#    enabled: true
+#    memoryMultiplier: 10
+#    cpuMultiplier: 10
 #  tags:
 #  - OVER_PROVISIONED_EXECUTOR
 

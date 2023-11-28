@@ -31,6 +31,6 @@ public class ResourceConfig {
 
     @ValidationMethod(message = "For over provisioning to be enabled, numa pinning needs to be disabled")
     boolean isOverProvisioningEnabledWithDisablePinning() {
-        return !overProvisioning.isOverProvisioningUpEnabled() || disableNUMAPinning;
+        return !overProvisioning.isEnabled() || disableNUMAPinning;
     }
 }
