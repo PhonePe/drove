@@ -53,10 +53,14 @@ public class InMemoryClusterResourcesDB implements ClusterResourcesDB {
 
     @Override
     @MonitoredFunction
-    public List<ExecutorHostInfo> currentSnapshot() {
+    public List<ExecutorHostInfo> currentSnapshot(boolean skipOffDutyNodes) {
         val stamp = lock.readLock();
         try {
-            return List.copyOf(nodes.values());
+            return nodes.values()
+                    .stream()
+                    .filter(node -> !skipOffDutyNodes //If off duty nodes are needed, return everything
+                            || !isBlackListedInternal(node.getExecutorId())) //Else remove blacklisted
+                    .toList();
         }
         finally {
             lock.unlockRead(stamp);

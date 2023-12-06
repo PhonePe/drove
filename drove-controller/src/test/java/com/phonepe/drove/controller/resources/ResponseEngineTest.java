@@ -386,7 +386,7 @@ class ResponseEngineTest {
                                                                                         HTTP,
                                                                                         new Date(),
                                                                                         true)));
-        when(clusterResourcesDB.currentSnapshot())
+        when(clusterResourcesDB.currentSnapshot(true))
                 .thenReturn(IntStream.rangeClosed(1, 10)
                                     .mapToObj(ControllerTestUtils::executorHost)
                                     .toList());
@@ -464,7 +464,7 @@ class ResponseEngineTest {
                                     eventStore,
                                     communicator,
                                     eventBus, blacklistingAppMovementManager);
-        when(clusterResourcesDB.currentSnapshot())
+        when(clusterResourcesDB.currentSnapshot(false))
                 .thenReturn(IntStream.rangeClosed(1, 10)
                                     .mapToObj(ControllerTestUtils::executorHost)
                                     .toList());
@@ -654,7 +654,7 @@ class ResponseEngineTest {
         val executors = IntStream.rangeClosed(1, 10)
                 .mapToObj(i -> executorHost(i, 8080, List.of(), List.of()))
                 .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, Function.identity()));
-        when(clusterResourcesDB.currentSnapshot()).thenReturn(List.copyOf(executors.values()));
+        when(clusterResourcesDB.currentSnapshot(false)).thenReturn(List.copyOf(executors.values()));
         when(clusterResourcesDB.currentSnapshot(anyString()))
                 .thenAnswer(invocationOnMock -> {
                     val eId = invocationOnMock.getArgument(0, String.class);

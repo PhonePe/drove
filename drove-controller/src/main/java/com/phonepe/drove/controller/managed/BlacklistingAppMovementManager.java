@@ -94,10 +94,11 @@ public class BlacklistingAppMovementManager implements Managed {
             log.debug("Doing nothing as I'm not the leader");
         }
         log.info("Node became leader, checking if any instances need to be moved from blacklisted nodes");
-        val eligibleExecutors = clusterResourcesDB.currentSnapshot()
+        val eligibleExecutors = clusterResourcesDB.currentSnapshot(true)
                 .stream()
-                .filter(info -> clusterResourcesDB.isBlacklisted(info.getExecutorId()))
-                .filter(info -> info.getNodeData().getInstances().stream()
+                .filter(info -> info.getNodeData()
+                        .getInstances()
+                        .stream()
                         .anyMatch(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY)))
                 .map(info -> {
                     val executorId = info.getExecutorId();
@@ -180,7 +181,8 @@ public class BlacklistingAppMovementManager implements Managed {
 
     @NotNull
     private Map<String, Set<String>> healthyInstances(final Set<String> executorIds) {
-        return clusterResourcesDB.currentSnapshot()
+        //healthy instances might temporarily reside on blacklisted nodes while app movement underway
+        return clusterResourcesDB.currentSnapshot(false)
                 .stream()
                 .filter(snapshot -> executorIds.contains(snapshot.getExecutorId()))
                 .flatMap(snapshot -> snapshot.getNodeData().getInstances()

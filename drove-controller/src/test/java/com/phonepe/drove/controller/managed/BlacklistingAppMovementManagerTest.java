@@ -76,9 +76,11 @@ class BlacklistingAppMovementManagerTest {
 
         val applicationEngine = mock(ApplicationEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        when(clusterResourcesDB.currentSnapshot()).thenAnswer(invocationMock -> called.get()
-                                                                                ? List.of(noInstanceEx)
-                                                                                : List.of(executor));
+        when(clusterResourcesDB.currentSnapshot(anyBoolean()))
+                .thenAnswer(invocationMock -> called.get()
+                                              ? List.of(noInstanceEx)
+                                              : List.of(executor));
+
         when(clusterResourcesDB.isBlacklisted(executor.getExecutorId())).thenReturn(true);
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
 

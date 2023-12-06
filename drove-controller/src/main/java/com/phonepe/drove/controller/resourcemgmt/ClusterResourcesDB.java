@@ -14,7 +14,7 @@ import java.util.function.Predicate;
  *
  */
 public interface ClusterResourcesDB {
-    List<ExecutorHostInfo> currentSnapshot();
+    List<ExecutorHostInfo> currentSnapshot(boolean skipOffDutyNodes);
 
     @MonitoredFunction
     List<ExecutorHostInfo> lastKnownSnapshots();

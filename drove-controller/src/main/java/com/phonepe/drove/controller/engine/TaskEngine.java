@@ -231,7 +231,7 @@ public class TaskEngine {
     }
 
     private ValidationResult resourceCheck(final TaskSpec taskSpec) {
-        val executors = clusterResourcesDB.currentSnapshot();
+        val executors = clusterResourcesDB.currentSnapshot(true);
         var freeCores = 0;
         var freeMemory = 0L;
         for (val exec : executors) {

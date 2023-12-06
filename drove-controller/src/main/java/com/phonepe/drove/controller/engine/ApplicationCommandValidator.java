@@ -197,14 +197,10 @@ public class ApplicationCommandValidator {
 
 
         private ValidationResult ensureResources(long requiredInstances) {
-            val executors = clusterResourcesDB.currentSnapshot();
+            val executors = clusterResourcesDB.currentSnapshot(true);
             var freeCores = 0;
             var freeMemory = 0L;
             for (val exec : executors) {
-                if(clusterResourcesDB.isBlacklisted(exec.getExecutorId())) {
-                    log.debug("Ignoring blacklisted executor {} in resource calculations", exec.getExecutorId());
-                    continue;
-                }
                 freeCores += ControllerUtils.freeCores(exec);
                 freeMemory += ControllerUtils.freeMemory(exec);
             }

@@ -32,7 +32,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                           .mapToObj(ControllerTestUtils::generateExecutorNode)
                           .toList());
         {
-            val snap = db.currentSnapshot();
+            val snap = db.currentSnapshot(false);
             assertEquals(100, snap.size());
         }
         {
@@ -44,7 +44,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         }
         {
             db.remove(IntStream.rangeClosed(1, 100).mapToObj(ControllerTestUtils::executorId).toList());
-            assertTrue(db.currentSnapshot().isEmpty());
+            assertTrue(db.currentSnapshot(false).isEmpty());
             IntStream.rangeClosed(1, 100)
                     .forEach(i -> assertEquals(executorId(i),
                                                db.lastKnownSnapshot(executorId(i))
@@ -69,14 +69,14 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
     @Test
     void testResources() {
         val db = new InMemoryClusterResourcesDB();
-        assertTrue(db.currentSnapshot().isEmpty());
+        assertTrue(db.currentSnapshot(false).isEmpty());
         db.update(new ExecutorResourceSnapshot("INVALID_EXECUTOR",
                                                new AvailableCPU(Map.of(0, Set.of(2, 3, 4)),
                                                                 Map.of(1, Set.of(0, 1))),
                                                new AvailableMemory(
                                                        Map.of(0, 3 * 128 * (2L ^ 20)),
                                                        Map.of(0, 128 * (2L ^ 20)))));
-        assertTrue(db.currentSnapshot().isEmpty());
+        assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
         val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)), node -> true)

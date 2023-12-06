@@ -168,7 +168,7 @@ public class ResponseEngine {
         var usedCores = 0;
         var freeMemory = 0L;
         var usedMemory = 0L;
-        val executors = clusterResourcesDB.currentSnapshot();
+        val executors = clusterResourcesDB.currentSnapshot(true);
         for (val executor : executors) {
             usedCores += ControllerUtils.usedCores(executor);
             freeCores += ControllerUtils.freeCores(executor);
@@ -196,7 +196,7 @@ public class ResponseEngine {
 
     public ApiResponse<List<ExecutorSummary>> nodes() {
         val executors = new ArrayList<ExecutorSummary>();
-        clusterResourcesDB.currentSnapshot()
+        clusterResourcesDB.currentSnapshot(false) //Show everything
                 .stream()
                 .map(hostInfo -> toExecutorSummary(hostInfo, false).orElse(null))
                 .filter(Objects::nonNull)
