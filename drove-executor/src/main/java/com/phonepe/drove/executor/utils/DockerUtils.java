@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.utils;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
@@ -130,6 +131,20 @@ public class DockerUtils {
                     .withAutoRemove(autoRemove(deploymentUnitSpec))
                     .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
+
+            // This makes all available GPUs available to the containers running on the executor
+            // This won't break anything if there are no GPUs at all and the config is tuned on; not recommended to enable this on non GPU machines
+            // No discovery of GPUs, managing/rationing of GPU devices
+            // So this needs to be used in conjunction with tagging to ensure that only applications which require GPU end up on executors with GPU enabled
+            if(resourceConfig.isEnableNvidiaGpu()){
+                // This strange request is equivalent to 'docker create --gpus all'
+                final DeviceRequest nvidiaGpuDeviceRequest = new DeviceRequest()
+                        .withDriver("nvidia")
+                        .withCount(-1)
+                        .withCapabilities(ImmutableList.of(ImmutableList.of("gpu")))
+                        .withDeviceIds(Collections.emptyList());
+                hostConfig.withDeviceRequests(ImmutableList.of(nvidiaGpuDeviceRequest));
+            }
 
             deploymentUnitSpec.getResources()
                     .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {

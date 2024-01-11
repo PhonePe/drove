@@ -25,6 +25,13 @@ public class ResourceConfig {
 
     private boolean disableNUMAPinning;
 
+    /**
+     * This setting makes all available Nvidia GPUs on the current executor machine available for any container running on this executor.
+     * GPU resources are not discovered on the executor, managed and rationed between containers.
+     * Needs to be used in conjunction with tagging to ensure only the applications which require a GPU end up on the executor with GPUs.
+     */
+    private boolean enableNvidiaGpu = false;
+
     private Set<String> tags = Collections.emptySet();
 
     private OverProvisioning overProvisioning = new OverProvisioning();
