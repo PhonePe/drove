@@ -2,13 +2,16 @@ package com.phonepe.drove.executor;
 
 import io.dropwizard.util.DataSize;
 import io.dropwizard.util.DataSizeUnit;
+import io.dropwizard.util.Duration;
 import io.dropwizard.validation.DataSizeRange;
+import io.dropwizard.validation.DurationRange;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.Min;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -21,11 +24,14 @@ public class ExecutorOptions {
     public static final DataSize DEFAULT_LOG_BUFFER_SIZE = DataSize.megabytes(10);
     public static final DataSize DEFAULT_LOG_CACHE_SIZE = DataSize.megabytes(20);
     public static final int DEFAULT_LOG_CACHE_COUNT = 3;
+    public static final Duration DEFAULT_CONTAINER_COMMAND_TIMEOUT = Duration.seconds(30);
+
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(true,
                                                                       DEFAULT_MAX_OPEN_FILES,
                                                                       DEFAULT_LOG_BUFFER_SIZE,
                                                                       DEFAULT_LOG_CACHE_SIZE,
-                                                                      DEFAULT_LOG_CACHE_COUNT);
+                                                                      DEFAULT_LOG_CACHE_COUNT,
+                                                                      DEFAULT_CONTAINER_COMMAND_TIMEOUT);
 
     private boolean cacheImages;
     @Min(0)
@@ -39,4 +45,7 @@ public class ExecutorOptions {
 
     @Range(max = 1024)
     private int cacheFileCount;
+
+    @DurationRange(min = 5, max = 300, unit = TimeUnit.SECONDS)
+    private Duration containerCommandTimeout;
 }

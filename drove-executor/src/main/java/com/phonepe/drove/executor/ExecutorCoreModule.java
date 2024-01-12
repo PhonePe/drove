@@ -32,6 +32,7 @@ import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaCtlBasedResou
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningResourceLoader;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -39,6 +40,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import javax.inject.Singleton;
 import java.net.URI;
 import java.util.Objects;
+import java.util.concurrent.SynchronousQueue;
 
 /**
  *
@@ -48,7 +50,8 @@ public class ExecutorCoreModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(NodeDataStore.class).to(ZkNodeDataStore.class);
-        bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>(){})
+        bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>() {
+        })
                 .to(RemoteControllerMessageSender.class);
         bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER))
                 .to(NumaCtlBasedResourceLoader.class);
@@ -60,16 +63,19 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public ApplicationInstanceEngine engine(
+    public ApplicationInstanceEngine appEngine(
             final Environment environment,
             final Injector injector,
             final ResourceManager resourceDB,
             final ExecutorIdManager executorIdManager,
             final DockerClient client) {
         val executorService = environment.lifecycle()
-                .executorService("instance-engine")
-                .minThreads(128)
-                .maxThreads(128)
+                .executorService("app-engine")
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
+                .keepAliveTime(Duration.seconds(60))
+
                 .build();
         return new ApplicationInstanceEngine(
                 executorIdManager,
@@ -78,6 +84,7 @@ public class ExecutorCoreModule extends AbstractModule {
                 resourceDB,
                 client);
     }
+
     @Provides
     @Singleton
     public TaskInstanceEngine taskEngine(
@@ -87,9 +94,11 @@ public class ExecutorCoreModule extends AbstractModule {
             final ExecutorIdManager executorIdManager,
             final DockerClient client) {
         val executorService = environment.lifecycle()
-                .executorService("instance-engine")
-                .minThreads(128)
-                .maxThreads(128)
+                .executorService("task-engine")
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
+                .keepAliveTime(Duration.seconds(60))
                 .build();
         return new TaskInstanceEngine(
                 executorIdManager,
@@ -131,12 +140,19 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public DockerClient dockerClient() {
-        return DockerClientImpl.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder()
-                                                    .build(),
-                                            new ZerodepDockerHttpClient.Builder()
-                                                    .dockerHost(URI.create("unix:///var/run/docker.sock"))
-                                                    .build());
+    public DockerClient dockerClient(final ExecutorOptions executorOptions) {
+        val timeout = java.time.Duration.ofMillis(
+                Objects.requireNonNullElse(executorOptions.getContainerCommandTimeout(),
+                                           ExecutorOptions.DEFAULT_CONTAINER_COMMAND_TIMEOUT)
+                        .toMilliseconds());
+        return DockerClientImpl.getInstance(
+                DefaultDockerClientConfig.createDefaultConfigBuilder()
+                        .build(),
+                new ZerodepDockerHttpClient.Builder()
+                        .dockerHost(URI.create("unix:///var/run/docker.sock"))
+                        .responseTimeout(timeout)
+                        .connectionTimeout(java.time.Duration.ofSeconds(1))
+                        .build());
     }
 
     @Provides
