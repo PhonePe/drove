@@ -8,6 +8,8 @@ import io.dropwizard.validation.DurationRange;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.With;
+import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.Min;
@@ -26,14 +28,20 @@ public class ExecutorOptions {
     public static final int DEFAULT_LOG_CACHE_COUNT = 3;
     public static final Duration DEFAULT_CONTAINER_COMMAND_TIMEOUT = Duration.seconds(30);
 
-    public static final ExecutorOptions DEFAULT = new ExecutorOptions(true,
+    public static final ExecutorOptions DEFAULT = new ExecutorOptions(null,
+                                                                      true,
                                                                       DEFAULT_MAX_OPEN_FILES,
                                                                       DEFAULT_LOG_BUFFER_SIZE,
                                                                       DEFAULT_LOG_CACHE_SIZE,
                                                                       DEFAULT_LOG_CACHE_COUNT,
                                                                       DEFAULT_CONTAINER_COMMAND_TIMEOUT);
 
+    @Length(max = 255)
+    @With
+    private String hostname;
+
     private boolean cacheImages;
+
     @Min(0)
     long maxOpenFiles;
 

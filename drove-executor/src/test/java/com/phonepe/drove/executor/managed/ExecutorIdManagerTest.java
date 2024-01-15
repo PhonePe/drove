@@ -1,6 +1,9 @@
 package com.phonepe.drove.executor.managed;
 
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
 import lombok.SneakyThrows;
@@ -9,6 +12,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,16 +33,48 @@ class ExecutorIdManagerTest {
         when(env.lifecycle()).thenReturn(lifecycle);
         doNothing().when(lifecycle).addServerLifecycleListener(any());
 
-        val eim = new ExecutorIdManager(env);
+        val eim = new ExecutorIdManager(env, ExecutorOptions.DEFAULT);
         eim.start();
         val server = mock(Server.class);
-        val connector = mock(ServerConnector.class);
-        when(connector.getLocalPort()).thenReturn(8080);
-        when(server.getConnectors()).thenReturn(new Connector[]{connector});
-        assertTrue(eim.executorId().isEmpty());
-        eim.serverStarted(server);
-        assertEquals(CommonUtils.executorId(8080), eim.executorId().orElse(null));
-        eim.stop();
+        try(val connector = mock(ServerConnector.class)) {
+            when(connector.getLocalPort()).thenReturn(8080);
+            when(server.getConnectors()).thenReturn(new Connector[]{connector});
+            assertTrue(eim.executorId().isEmpty());
+            eim.serverStarted(server);
+            assertEquals(CommonUtils.executorId(8080, CommonUtils.hostname()),
+                         eim.executorId().orElse(null));
+            eim.stop();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testManagerDefaultHost() {
+        val env = mock(Environment.class);
+        val lifecycle = mock(LifecycleEnvironment.class);
+        when(env.lifecycle()).thenReturn(lifecycle);
+        doNothing().when(lifecycle).addServerLifecycleListener(any());
+
+        val eim = new ExecutorIdManager(env, ExecutorOptions.DEFAULT.withHostname("test-host"));
+        eim.start();
+        val server = mock(Server.class);
+        try(val connector = mock(ServerConnector.class)) {
+            when(connector.getLocalPort()).thenReturn(8080);
+            when(server.getConnectors()).thenReturn(new Connector[]{connector});
+            assertTrue(eim.executorId().isEmpty());
+            val callbackDone = new AtomicBoolean(false);
+            eim.onHostInfoGenerated().connect(hostInfo -> {
+                callbackDone.set(true);
+                assertEquals(8080, hostInfo.getPort());
+                assertEquals("test-host", hostInfo.getHostname());
+                assertEquals(NodeTransportType.HTTP, hostInfo.getTransportType());
+                assertEquals(CommonUtils.executorId(8080, "test-host"), hostInfo.getExecutorId());
+            });
+            eim.serverStarted(server);
+            CommonTestUtils.waitUntil(callbackDone::get);
+            assertTrue(callbackDone.get());
+            eim.stop();
+        }
     }
 
 }

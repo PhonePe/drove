@@ -16,11 +16,8 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
-import io.dropwizard.lifecycle.ServerLifecycleListener;
-import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.eclipse.jetty.server.Server;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
@@ -39,8 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Singleton
 @Order(40)
-public class NodeDataUpdater implements Managed, ServerLifecycleListener {
-    private final ExecutorIdManager executorIdManager;
+public class NodeDataUpdater implements Managed {
     private final NodeDataStore nodeDataStore;
     private final ResourceManager resourceDB;
     private final ApplicationInstanceEngine applicationInstanceEngine;
@@ -58,11 +54,10 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
             ExecutorIdManager executorIdManager,
             NodeDataStore nodeDataStore,
             ResourceManager resourceDB,
-            Environment environment,
             ApplicationInstanceEngine applicationInstanceEngine,
-            TaskInstanceEngine taskInstanceEngine, ResourceConfig resourceConfig,
+            TaskInstanceEngine taskInstanceEngine,
+            ResourceConfig resourceConfig,
             BlacklistingManager blacklistingManager) {
-        this.executorIdManager = executorIdManager;
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
         this.applicationInstanceEngine = applicationInstanceEngine;
@@ -71,7 +66,8 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         this.blacklistingManager = blacklistingManager;
         this.refreshSignal.connect(this::refresh);
         this.applicationInstanceEngine.onStateChange().connect(info -> refresh(new Date()));
-        environment.lifecycle().addServerLifecycleListener(this);
+        executorIdManager.onHostInfoGenerated()
+                .connect(this::hostInfoAvailable);
     }
 
     @Override
@@ -85,16 +81,12 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         refreshSignal.close();
     }
 
-    @Override
-    public void serverStarted(Server server) {
-        val port = getLocalPort(server);
-        val hostname = CommonUtils.hostname();
-        val cf = server.getConnectors()[0].getConnectionFactory("ssl");
-        refreshNodeState(port,
-                         null == cf
-                         ? NodeTransportType.HTTP
-                         : NodeTransportType.HTTPS,
-                         hostname);
+
+    public void hostInfoAvailable(ExecutorIdManager.ExecutorHostInfo hostInfo) {
+        refreshNodeState(hostInfo.getPort(),
+                         hostInfo.getTransportType(),
+                         hostInfo.getHostname(),
+                         hostInfo.getExecutorId());
         started.set(true);
         log.info("Server started. Will start publishing node data");
     }
@@ -106,11 +98,10 @@ public class NodeDataUpdater implements Managed, ServerLifecycleListener {
         refreshNodeState();
     }
 
-    private void refreshNodeState(int port, NodeTransportType transportType, String hostname) {
+    private void refreshNodeState(int port, NodeTransportType transportType, String hostname, String executorId) {
         val resourceState = resourceDB.currentState();
         try {
             stateLock.lock();
-            val executorId = executorIdManager.executorId().orElseGet(() -> CommonUtils.executorId(port));
             currentData = new ExecutorNodeData(
                     hostname,
                     port,

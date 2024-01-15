@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
@@ -77,8 +79,10 @@ public class CommonUtils {
 
 
     @IgnoreInJacocoGeneratedReport
-    public static String executorId(int port) {
-        return UUID.nameUUIDFromBytes((hostname() + ":" + port).getBytes()).toString();
+    public static String executorId(int port, String seededHostname) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(seededHostname),
+                                    "Cannot generate executor ID as hostname is empty");
+        return UUID.nameUUIDFromBytes((seededHostname + ":" + port).getBytes()).toString();
     }
 
     @IgnoreInJacocoGeneratedReport

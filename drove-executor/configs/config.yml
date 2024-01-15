@@ -41,6 +41,7 @@ logging:
       archive: true
 
 options:
+  #hostname: test-machine.phonepe.com
   cacheImages: true
   maxOpenFiles: 10_000
   logBufferSize: 5m
