@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.utils;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
