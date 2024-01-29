@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -39,6 +40,19 @@ class JobExecutorTest {
         waitUntil(done::get);
         assertTrue(done.get());
         assertFalse(failed.get());
+    }
+
+    @Test
+    void testEmpty() {
+        val responseCombiner = new IntResponseCombiner();
+        val done = new AtomicBoolean();
+        exec.onComplete().connect(res -> done.set(true));
+        val topology = JobTopology.<Integer>builder()
+                .addParallel(32, List.of())
+                .build();
+        exec.schedule(topology, responseCombiner, r -> {});
+        waitUntil(done::get);
+        assertTrue(done.get());
     }
 
     @Test

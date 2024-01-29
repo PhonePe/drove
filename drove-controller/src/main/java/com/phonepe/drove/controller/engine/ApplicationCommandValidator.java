@@ -182,6 +182,17 @@ public class ApplicationCommandValidator {
 
         @Override
         public ValidationResult visit(ApplicationReplaceInstancesOperation replaceInstances) {
+            val instancesToBeReplaced = replaceInstances.getInstanceIds();
+            if(instancesToBeReplaced != null && !instancesToBeReplaced.isEmpty()) {
+                val unknownInstances = instancesToBeReplaced.stream()
+                        .filter(instanceId -> instancesDB.instance(appId, instanceId)
+                                .filter(instance -> instance.getState().equals(HEALTHY))
+                                .isEmpty())
+                        .toList();
+                if(!unknownInstances.isEmpty()) {
+                    return ValidationResult.failure("There are no replaceable healthy instances with ids: " + unknownInstances);
+                }
+            }
             return ValidationResult.success();
         }
 

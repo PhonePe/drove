@@ -89,6 +89,10 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                 .filter(instanceInfo -> (restartOp.getInstanceIds() == null || restartOp.getInstanceIds().isEmpty())
                         || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
                 .toList();
+        if(instances.isEmpty()) {
+            log.info("Nothing done to replace instances for {}. No relevant instances found.", appId);
+            return Optional.empty();
+        }
         val clusterOpSpec = restartOp.getOpSpec();
         val appSpec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
         if (null == appSpec) {

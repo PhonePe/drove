@@ -16,8 +16,6 @@ import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
-import com.phonepe.drove.models.events.events.datatags.AppEventDataTag;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
@@ -32,6 +30,8 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
+import com.phonepe.drove.models.events.events.datatags.AppEventDataTag;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -53,7 +53,9 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.engine.ValidationStatus.FAILURE;
 import static com.phonepe.drove.controller.engine.ValidationStatus.SUCCESS;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static org.awaitility.Awaitility.await;
@@ -252,6 +254,14 @@ class ApplicationEngineTest extends ControllerTestBase {
         createApp(spec, appId);
         sendCommand(appId, new ApplicationStartInstancesOperation(appId, 1, TEST_STRATEGY), RUNNING);
         sendCommand(appId, new ApplicationReplaceInstancesOperation(appId, Set.of(), TEST_STRATEGY), RUNNING);
+        sendCommand(appId,
+                    new ApplicationReplaceInstancesOperation(appId,
+                                                             instanceInfoDB.healthyInstances(appId)
+                                                                     .stream()
+                                                                     .map(InstanceInfo::getInstanceId)
+                                                                     .collect(Collectors.toUnmodifiableSet()),
+                                                             TEST_STRATEGY),
+                    RUNNING);
         sendCommand(appId, new ApplicationSuspendOperation(appId, TEST_STRATEGY), MONITORING);
         destroyApp(appId);
         log.info("States: {}", states);
@@ -261,6 +271,25 @@ class ApplicationEngineTest extends ControllerTestBase {
                                 REPLACE_INSTANCES_REQUESTED,
                                 DESTROY_REQUESTED,
                                 DESTROYED), states);
+    }
+
+    @Test
+    void testRestartWithWrongInstanceIds() {
+        val spec = ControllerTestUtils.appSpec();
+        val appId = ControllerUtils.deployableObjectId(spec);
+
+
+        val states = new LinkedHashSet<ApplicationState>();
+        setupStateRecorder(appId, states);
+        createApp(spec, appId);
+        sendCommand(appId, new ApplicationStartInstancesOperation(appId, 1, TEST_STRATEGY), RUNNING);
+        val res = engine.handleOperation(new ApplicationReplaceInstancesOperation(appId, Set.of("a123"), TEST_STRATEGY));
+        assertEquals(FAILURE, res.getStatus(), Joiner.on(",").join(res.getMessages()));
+        assertEquals("There are no replaceable healthy instances with ids: [a123]", res.getMessages().get(0));
+//        sendCommand(appId, new ApplicationReplaceInstancesOperation(appId, Set.of("a123"), TEST_STRATEGY), RUNNING);
+        log.info("SUSPENDING APP");
+        sendCommand(appId, new ApplicationSuspendOperation(appId, TEST_STRATEGY), MONITORING);
+        destroyApp(appId);
     }
 
     private void setupStateRecorder(String appId, Set<ApplicationState> states) {
