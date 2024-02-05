@@ -99,6 +99,18 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    @Named("BlacklistingAppMover")
+    public ExecutorService blacklistingAppMovement(final Environment environment) {
+        return environment.lifecycle().executorService("blacklisting-instance-mover-%d")
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
+                .keepAliveTime(Duration.seconds(60))
+                .build();
+    }
+
+    @Provides
+    @Singleton
     @Named("TaskThreadPool")
     public ExecutorService taskThreadPool(final Environment environment) {
         return environment.lifecycle().executorService("task-runner-%d")

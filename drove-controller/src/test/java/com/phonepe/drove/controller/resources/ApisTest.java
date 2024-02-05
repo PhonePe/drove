@@ -40,6 +40,7 @@ import static com.phonepe.drove.controller.ControllerTestUtils.*;
 import static com.phonepe.drove.controller.engine.ValidationResult.failure;
 import static com.phonepe.drove.controller.engine.ValidationResult.success;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -508,23 +509,57 @@ class ApisTest {
     @Test
     void blacklistExecutor() {
         val executorId = ControllerTestUtils.executorId(1);
-        when(responseEngine.blacklistExecutor(executorId)).thenReturn(ApiResponse.success(null));
+        val executorIds = Set.of(executorId);
+        when(responseEngine.blacklistExecutors(executorIds))
+                .thenReturn(ApiResponse.success(Map.of("successful", executorIds)));
         val r = EXT.target("/v1/cluster/executors/" + executorId + "/blacklist")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
                 });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertTrue(r.getData().get("successful").contains(executorId));
+    }
+
+    @Test
+    void blacklistExecutors() {
+        val executorId = ControllerTestUtils.executorId(1);
+        val executorIds = Set.of(executorId);
+        when(responseEngine.blacklistExecutors(executorIds))
+                .thenReturn(ApiResponse.success(Map.of("successful", executorIds)));
+        val r = EXT.target("/v1/cluster/executors/blacklist")
+                .queryParam("id", executorId)
+                .request()
+                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
+                });
+        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertTrue(r.getData().get("successful").contains(executorId));
     }
 
     @Test
     void unblacklistExecutor() {
         val executorId = ControllerTestUtils.executorId(1);
-        when(responseEngine.unblacklistExecutor(executorId)).thenReturn(ApiResponse.success(null));
+        when(responseEngine.unblacklistExecutors(Set.of(executorId)))
+                .thenReturn(ApiResponse.success(Map.of("successful", Set.of(executorId))));
         val r = EXT.target("/v1/cluster/executors/" + executorId + "/unblacklist")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
                 });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertTrue(r.getData().get("successful").contains(executorId));
+    }
+
+    @Test
+    void unblacklistExecutors() {
+        val executorId = ControllerTestUtils.executorId(1);
+        when(responseEngine.unblacklistExecutors(Set.of(executorId)))
+                .thenReturn(ApiResponse.success(Map.of("successful", Set.of(executorId))));
+        val r = EXT.target("/v1/cluster/executors/unblacklist")
+                .queryParam("id", executorId)
+                .request()
+                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
+                });
+        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertTrue(r.getData().get("successful").contains(executorId));
     }
 
     @Test

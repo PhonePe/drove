@@ -15,9 +15,11 @@ import net.jodah.failsafe.RetryPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,7 +58,11 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le, applicationEngine, clusterResourcesDB, DEFAULT_CLUSTER_OP);
+        val bmm = new BlacklistingAppMovementManager(le,
+                                                     applicationEngine,
+                                                     clusterResourcesDB,
+                                                     DEFAULT_CLUSTER_OP,
+                                                     Executors.newSingleThreadExecutor());
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -93,7 +99,19 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le, applicationEngine, clusterResourcesDB, DEFAULT_CLUSTER_OP);
+        val bmm = new BlacklistingAppMovementManager(le,
+                                                     applicationEngine,
+                                                     clusterResourcesDB,
+                                                     BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
+                                                     new RetryPolicy<Boolean>()
+                                                             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
+                                                             .handleResult(false)
+                                                             .withMaxAttempts(-1)
+                                                             .withMaxDuration(Duration.ofSeconds(60))
+                                                             .withDelay(1, 5, ChronoUnit.SECONDS),
+                                                     DEFAULT_CLUSTER_OP,
+                                                     Executors.newSingleThreadExecutor(),
+                                                     100);
         bmm.start();
 
 //        bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -134,7 +152,9 @@ class BlacklistingAppMovementManagerTest {
                                                              .withMaxAttempts(5)
                                                              .withDelay(Duration.ofMillis(100))
                                                              .withMaxDuration(Duration.ofSeconds(1)),
-                                                     DEFAULT_CLUSTER_OP);
+                                                     DEFAULT_CLUSTER_OP,
+                                                     Executors.newSingleThreadExecutor(),
+                                                     100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -149,7 +169,6 @@ class BlacklistingAppMovementManagerTest {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
         val executor = executorHost(8080, List.of(instance), List.of());
-        val noInstanceEx = executorHost(8080);
         val called = new AtomicInteger();
 
         val applicationEngine = mock(ApplicationEngine.class);
@@ -177,7 +196,9 @@ class BlacklistingAppMovementManagerTest {
                                                              .withMaxAttempts(2)
                                                              .withDelay(Duration.ofMillis(100))
                                                              .withMaxDuration(Duration.ofSeconds(1)),
-                                                     DEFAULT_CLUSTER_OP);
+                                                     DEFAULT_CLUSTER_OP,
+                                                     Executors.newSingleThreadExecutor(),
+                                                     100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -221,12 +242,14 @@ class BlacklistingAppMovementManagerTest {
                                                              .withMaxAttempts(10)
                                                              .withDelay(Duration.ofMillis(100)),
                                                      BlacklistingAppMovementManager.DEFAULT_COMPLETION_POLICY,
-                                                     DEFAULT_CLUSTER_OP);
+                                                     DEFAULT_CLUSTER_OP,
+                                                     Executors.newSingleThreadExecutor(),
+                                                     100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
 
-        CommonTestUtils.waitUntil(() -> called.get());
+        CommonTestUtils.waitUntil(called::get);
         bmm.stop();
     }
 }
