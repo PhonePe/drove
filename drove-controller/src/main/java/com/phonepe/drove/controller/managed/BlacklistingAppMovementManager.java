@@ -128,6 +128,7 @@ public class BlacklistingAppMovementManager implements Managed {
                 log.info("Node became leader, checking if any instances need to be moved from blacklisted nodes");
                 val eligibleExecutors = clusterResourcesDB.currentSnapshot(false)
                         .stream()
+                        .filter(info -> clusterResourcesDB.isBlacklisted(info.getExecutorId()))
                         .filter(info -> info.getNodeData()
                                 .getInstances()
                                 .stream()
