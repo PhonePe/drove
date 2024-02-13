@@ -68,7 +68,7 @@ public class BlacklistingAppMovementManager implements Managed {
 
     private final RetryPolicy<Boolean> noInstanceEnsurerPolicy;
     private final ClusterOpSpec defaultClusterOpSpec;
-    private final long initalWaitTime;
+    private final long initialWaitTime;
     private final Future<?> future;
 
     private final Timer checkAfterExecutorRefreshTimer = new Timer();
@@ -104,14 +104,14 @@ public class BlacklistingAppMovementManager implements Managed {
             RetryPolicy<Boolean> noInstanceEnsurerPolicy,
             ClusterOpSpec defaultClusterOpSpec,
             ExecutorService appMovementExecutor,
-            long initalWaitTime) {
+            long initialWaitTime) {
         this.appMovementExecutor = appMovementExecutor;
         this.applicationEngine = applicationEngine;
         this.clusterResourcesDB = clusterResourcesDB;
         this.opSubmissionPolicy = opSubmissionPolicy;
         this.noInstanceEnsurerPolicy = noInstanceEnsurerPolicy;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
-        this.initalWaitTime = initalWaitTime;
+        this.initialWaitTime = initialWaitTime;
         this.future = queuePollingExecutor.submit(this::processQueuedElement);
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChanged);
     }
@@ -152,8 +152,8 @@ public class BlacklistingAppMovementManager implements Managed {
             }
         };
         //Give some time for all nodes to have sent updates
-        log.info("Will check for blacklisting status after {} ms", initalWaitTime);
-        checkAfterExecutorRefreshTimer.schedule(task, initalWaitTime);
+        log.info("Will check for blacklisting status after {} ms", initialWaitTime);
+        checkAfterExecutorRefreshTimer.schedule(task, initialWaitTime);
     }
 
     @SneakyThrows
@@ -178,36 +178,34 @@ public class BlacklistingAppMovementManager implements Managed {
 
 
     private void processQueuedElement() {
-        try {
-            while (true) {
-                lock.lock();
-                try {
-                    while (true) {
-                        condition.await();
-                        if (processing.isEmpty()) {
-                            log.debug("Spurious wakeup. No new executor to be scheduled for app movement");
-                        }
-                        else {
-                            break;
-                        }
+        while (true) {
+            lock.lock();
+            try {
+                while (true) {
+                    condition.await();
+                    if (processing.isEmpty()) {
+                        log.debug("Spurious wakeup. No new executor to be scheduled for app movement");
                     }
-                    log.info("Moving app instances from executors: {}", processing);
-                    moveAppsFromExecutors(processing);
-                    processing.clear();
-                    log.info("Apps moved");
+                    else {
+                        break;
+                    }
                 }
-                catch (InterruptedException e) {
-                    log.info("Blacklist manager interrupted");
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                finally {
-                    lock.unlock();
-                }
+                log.info("Moving app instances from executors: {}", processing);
+                moveAppsFromExecutors(processing);
+                processing.clear();
+                log.info("Apps moved");
             }
-        }
-        catch (Exception e) {
-            log.error("Error in blacklist polling thread: " + e.getMessage(), e);
+            catch (InterruptedException e) {
+                log.info("Blacklist manager interrupted");
+                Thread.currentThread().interrupt();
+                return;
+            }
+            catch (Exception e) {
+                log.error("Error in blacklist polling thread: " + e.getMessage(), e);
+            }
+            finally {
+                lock.unlock();
+            }
         }
     }
 
