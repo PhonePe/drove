@@ -57,7 +57,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             ApplicationInstanceInfoDB instanceInfoDB,
             ControllerCommunicator communicator,
             String schedulingSessionId,
-            ControllerRetrySpecFactory retrySpecFactory, InstanceIdGenerator instanceIdGenerator,
+            ControllerRetrySpecFactory retrySpecFactory,
+            InstanceIdGenerator instanceIdGenerator,
             ApplicationInstanceTokenManager tokenManager) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
@@ -83,7 +84,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
                                                       instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {

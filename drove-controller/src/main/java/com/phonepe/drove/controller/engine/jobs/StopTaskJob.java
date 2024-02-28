@@ -65,7 +65,7 @@ public class StopTaskJob implements Job<Boolean> {
 
     @Override
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()), r -> !r);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(), r -> !r);
         val task = taskDB.task(sourceAppName, taskId).orElse(null);
         if(null == task) {
             log.warn("No task found for {}/{}", sourceAppName, taskId);

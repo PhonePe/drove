@@ -29,6 +29,9 @@ public class ControllerOptions {
     public static final Duration DEFAULT_STALE_TASK_AGE = Duration.days(2);
     public static final int DEFAULT_MAX_EVENTS_STORAGE_SIZE = 100;
     public static final Duration DEFAULT_MAX_EVENT_STORAGE_DURATION = Duration.minutes(60);
+    public static final int DEFAULT_JOB_RETRY_COUNT = 3;
+    public static final Duration DEFAULT_JOB_RETRY_INTERVAL = Duration.seconds(1);
+    public static final Duration DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL = Duration.seconds(3);
 
     public static final ControllerOptions DEFAULT = new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
                                                                           DEFAULT_STALE_APP_AGE,
@@ -39,6 +42,9 @@ public class ControllerOptions {
                                                                           DEFAULT_MAX_EVENT_STORAGE_DURATION,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
+                                                                          DEFAULT_JOB_RETRY_COUNT,
+                                                                          DEFAULT_JOB_RETRY_INTERVAL,
+                                                                          DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
                                                                           true,
                                                                           false);
 
@@ -67,13 +73,22 @@ public class ControllerOptions {
     @Max(2^20)
     int maxEventsStorageCount;
 
-    @DurationRange(min = 10, max = 300, unit = TimeUnit.SECONDS)
+    Duration maxEventsStorageDuration;
+    @DurationRange(min = 10, max = 1_800, unit = TimeUnit.SECONDS)
     Duration clusterOpTimeout;
 
     @Range(max = 32)
     int clusterOpParallelism;
 
-    Duration maxEventsStorageDuration;
+    @Range(min = 0, max = 32)
+    Integer jobRetryCount;
+
+    @DurationRange(min = 1, max = 1_800, unit = TimeUnit.SECONDS)
+    Duration jobRetryInterval;
+
+    @DurationRange(min = 5, max = 1_800, unit = TimeUnit.SECONDS)
+    Duration instanceStateCheckRetryInterval;
+
 
     Boolean dieOnZkDisconnect;
 

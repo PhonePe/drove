@@ -138,6 +138,9 @@ class StaleDataCleanerTest {
                                                 DEFAULT_MAX_EVENT_STORAGE_DURATION,
                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
+                                                DEFAULT_JOB_RETRY_COUNT,
+                                                DEFAULT_JOB_RETRY_INTERVAL,
+                                                DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
                                                 false,
                                                 false);
             testCleanupByInstanceCount(options, 110);

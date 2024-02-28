@@ -52,6 +52,10 @@ class InMemoryEventStoreTest {
                                                                                  DEFAULT_MAX_EVENTS_STORAGE_SIZE,
                                                                                  ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                                                  ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
+                                                                                 DEFAULT_JOB_RETRY_COUNT,
+                                                                                 DEFAULT_JOB_RETRY_INTERVAL,
+                                                                                 DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
+
                                                                                  false,
                                                                                  false),
                                         Duration.ofSeconds(1));

@@ -131,7 +131,7 @@ public class CommonUtils {
 
             @Override
             public Void visit(MaxRetriesRetrySpec maxRetries) {
-                policy.withMaxAttempts(maxRetries.getMaxRetries());
+                policy.withMaxRetries(maxRetries.getMaxRetries());
                 return null;
             }
 

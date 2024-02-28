@@ -77,7 +77,7 @@ public class StartTaskJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val sourceApp = taskSpec.getSourceAppName();
         val taskId = taskSpec.getTaskId();
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
                                                                     instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val instanceId = instanceIdGenerator.generate(this.taskSpec);
 

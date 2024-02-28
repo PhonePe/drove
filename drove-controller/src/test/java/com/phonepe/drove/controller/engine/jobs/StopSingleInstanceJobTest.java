@@ -58,7 +58,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -92,7 +92,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         when(instanceInfoDB.instance(appId, instanceId))
                 .thenReturn(Optional.empty());
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -127,7 +127,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -161,7 +161,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
@@ -195,7 +195,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
                 .thenAnswer((Answer<Optional<InstanceInfo>>) invocationOnMock
                         -> Optional.of(instanceInfo(allocatedExecutorNode, appId, invocationOnMock)));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec(anyLong())).thenReturn(NO_RETRY_SPEC);
+        when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
