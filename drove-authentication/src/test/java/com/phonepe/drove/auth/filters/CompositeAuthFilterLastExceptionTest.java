@@ -31,7 +31,7 @@ class CompositeAuthFilterLastExceptionTest extends AbstractAuthTestBase {
             .addResource(new TestResource())
             .addProvider(new AuthDynamicFeature(new CompositeAuthFilter<>(List.of(
                     new TestAuthFilter(),
-                    new TestAuthFilter()), true, Set.of())))
+                    new TestAuthFilter()), true, Set.of("GET"))))
             .addProvider(RolesAllowedDynamicFeature.class)
             .addProvider(new AuthValueFactoryProvider.Binder<>(DroveUser.class))
             .build();
