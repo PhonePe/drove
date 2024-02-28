@@ -38,6 +38,7 @@ class ControllerRetrySpecFactoryTest {
                                             2,
                                             Duration.milliseconds(100),
                                             DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
+                                            DEFAULT_AUDITED_METHODS,
                                             false,
                                             false);
         val retrySpec = new DefaultControllerRetrySpecFactory(options).jobRetrySpec();

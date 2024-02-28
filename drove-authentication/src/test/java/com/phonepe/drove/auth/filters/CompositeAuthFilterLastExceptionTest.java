@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.ws.rs.client.ClientBuilder;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -30,7 +31,7 @@ class CompositeAuthFilterLastExceptionTest extends AbstractAuthTestBase {
             .addResource(new TestResource())
             .addProvider(new AuthDynamicFeature(new CompositeAuthFilter<>(List.of(
                     new TestAuthFilter(),
-                    new TestAuthFilter()), true)))
+                    new TestAuthFilter()), true, Set.of())))
             .addProvider(RolesAllowedDynamicFeature.class)
             .addProvider(new AuthValueFactoryProvider.Binder<>(DroveUser.class))
             .build();

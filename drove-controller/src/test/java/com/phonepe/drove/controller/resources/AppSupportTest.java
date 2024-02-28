@@ -202,6 +202,7 @@ class AppSupportTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void testSuccessMulti() {
         val appIds = new ArrayList<String>();
         val specs = new ArrayList<ApplicationInfo>();

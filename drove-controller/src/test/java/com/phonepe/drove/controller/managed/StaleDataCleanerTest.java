@@ -141,6 +141,7 @@ class StaleDataCleanerTest {
                                                 DEFAULT_JOB_RETRY_COUNT,
                                                 DEFAULT_JOB_RETRY_INTERVAL,
                                                 DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
+                                                DEFAULT_AUDITED_METHODS,
                                                 false,
                                                 false);
             testCleanupByInstanceCount(options, 110);

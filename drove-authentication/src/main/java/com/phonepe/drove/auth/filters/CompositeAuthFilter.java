@@ -1,6 +1,8 @@
 package com.phonepe.drove.auth.filters;
 
 import io.dropwizard.auth.AuthFilter;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
@@ -10,19 +12,24 @@ import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
  */
 @Priority(Priorities.AUTHENTICATION)
+@Slf4j
 public class CompositeAuthFilter <C, P extends Principal> extends AuthFilter<C, P> {
+
     @SuppressWarnings("rawtypes")
     private final List<AuthFilter> handlers;
     private final boolean throwLastException;
+    private final Set<String> auditedMethods;
 
-    public CompositeAuthFilter(@SuppressWarnings("rawtypes") List<AuthFilter> handlers, boolean throwLastException) {
+    public CompositeAuthFilter(@SuppressWarnings("rawtypes") List<AuthFilter> handlers, boolean throwLastException, Set<String> auditedMethods) {
         this.handlers = handlers;
         this.throwLastException = throwLastException;
+        this.auditedMethods = auditedMethods;
     }
 
     @Override
@@ -33,7 +40,16 @@ public class CompositeAuthFilter <C, P extends Principal> extends AuthFilter<C, 
             final SecurityContext securityContext = containerRequestContext.getSecurityContext();
             try {
                 authFilter.filter(containerRequestContext);
-                if (securityContext != containerRequestContext.getSecurityContext()) {
+                val updated = containerRequestContext.getSecurityContext();
+                if (securityContext != updated) {
+                    val method = containerRequestContext.getMethod();
+                    if (auditedMethods.contains(method)) {
+                        log.info("ACCESS_AUDIT: Api [{}] {}{} called by {}",
+                                 method,
+                                 containerRequestContext.getUriInfo().getBaseUri().getPath(),
+                                 containerRequestContext.getUriInfo().getPath(true),
+                                 updated.getUserPrincipal().getName());
+                    }
                     return;
                 }
             } catch (WebApplicationException e) {

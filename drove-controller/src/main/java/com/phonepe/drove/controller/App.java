@@ -123,7 +123,13 @@ public class App extends Application<AppConfig> {
                                 .setAuthorizer(new DroveProxyAuthorizer<>(new DroveAuthorizer(), disableReadAuth))
                                 .buildAuthFilter());
         }
-        jersey.register(new AuthDynamicFeature(new ChainedAuthFilter(filters)));
+        val controllerOptions = Objects.requireNonNullElse(appConfig.getOptions(), ControllerOptions.DEFAULT);
+        jersey.register(new AuthDynamicFeature(
+                new CompositeAuthFilter<>(
+                        List.copyOf(filters),
+                        true,
+                        Objects.requireNonNullElse(controllerOptions.getAuditedHttpMethods(),
+                                                   ControllerOptions.DEFAULT_AUDITED_METHODS))));
         jersey.register(new AuthValueFactoryProvider.Binder<>(DroveUser.class));
         jersey.register(RolesAllowedDynamicFeature.class);
     }
@@ -138,7 +144,6 @@ public class App extends Application<AppConfig> {
         componentAuthConfigs.add(new ComponentAuthConfig(olympusIMConfig.getAuthConfig()
                                                                  .getComponentId(), olympusIMConfig.getAuthConfig()
                                                                  .getComponentInstanceId()));
-        return componentAuthConfigs.stream()
-                .collect(Collectors.toList());
+        return new ArrayList<>(componentAuthConfigs);
     }
 }
