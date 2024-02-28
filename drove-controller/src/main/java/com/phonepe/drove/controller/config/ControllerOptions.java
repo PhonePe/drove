@@ -29,7 +29,7 @@ public class ControllerOptions {
     public static final Duration DEFAULT_STALE_TASK_AGE = Duration.days(2);
     public static final int DEFAULT_MAX_EVENTS_STORAGE_SIZE = 100;
     public static final Duration DEFAULT_MAX_EVENT_STORAGE_DURATION = Duration.minutes(60);
-    public static final int DEFAULT_JOB_RETRY_COUNT = 3;
+    public static final int DEFAULT_JOB_RETRY_COUNT = 2;
     public static final Duration DEFAULT_JOB_RETRY_INTERVAL = Duration.seconds(1);
     public static final Duration DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL = Duration.seconds(3);
 
