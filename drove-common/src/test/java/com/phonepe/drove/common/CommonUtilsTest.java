@@ -58,7 +58,7 @@ class CommonUtilsTest {
         }
         {
             val p = policy(new MaxRetriesRetrySpec(5), null);
-            assertEquals(5, p.getMaxAttempts());
+            assertEquals(6, p.getMaxAttempts());
         }
         {
             val p = policy(new RetryOnAllExceptionsSpec(), null);
@@ -82,7 +82,7 @@ class CommonUtilsTest {
                     List.of(new IntervalRetrySpec(Duration.ofSeconds(1)),
                             new MaxRetriesRetrySpec(5))), null);
             assertEquals(Duration.ofSeconds(1), p.getDelay());
-            assertEquals(5, p.getMaxAttempts());
+            assertEquals(6, p.getMaxAttempts());
         }
         {
             val p = CommonUtils.<Integer>policy(new MaxRetriesRetrySpec(5), x -> x < 5);
