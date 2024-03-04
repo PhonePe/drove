@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
@@ -18,6 +19,7 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -74,8 +76,10 @@ public class Apis {
     @Path("/operations")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public Response acceptOperation(@NotNull @Valid final ApplicationOperation operation) {
-        return acceptAppOperation(operation);
+    public Response acceptOperation(
+            @Auth final DroveUser user,
+            @NotNull @Valid final ApplicationOperation operation) {
+        return acceptAppOperation(user, operation);
     }
 
     @POST
@@ -90,11 +94,15 @@ public class Apis {
     @Path("/applications/operations")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public Response acceptAppOperation(@NotNull @Valid final ApplicationOperation operation) {
+    public Response acceptAppOperation(
+            @Auth final DroveUser user,
+            @NotNull@Valid final ApplicationOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
         }
         val res = engine.handleOperation(operation);
+        log.info("ACCESS_AUDIT: Application Operation {} received from user: {}. Validation result: {}",
+                 operation, user.getName(), res);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
         }
@@ -169,11 +177,15 @@ public class Apis {
     @Path("/tasks/operations")
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
-    public Response acceptTaskOperation(@NotNull @Valid final TaskOperation operation) {
+    public Response acceptTaskOperation(
+            @Auth final DroveUser user,
+            @NotNull @Valid final TaskOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
         }
         val res = taskEngine.handleTaskOp(operation);
+        log.info("ACCESS_AUDIT: Task Operation {} received from user: {}. Validation result: {}",
+                 operation, user.getName(), res);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
             return ControllerUtils.ok(Map.of("taskId", ControllerUtils.deployableObjectId(operation)));
         }
