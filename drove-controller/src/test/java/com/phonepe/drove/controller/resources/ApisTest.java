@@ -1,5 +1,8 @@
 package com.phonepe.drove.controller.resources;
 
+import com.phonepe.drove.auth.core.DroveAuthorizer;
+import com.phonepe.drove.auth.filters.DummyAuthFilter;
+import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
@@ -21,10 +24,14 @@ import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import io.dropwizard.auth.AuthDynamicFeature;
+import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.dropwizard.testing.junit5.ResourceExtension;
 import lombok.val;
 import org.eclipse.jetty.http.HttpStatus;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
+import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,6 +66,14 @@ class ApisTest {
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
             .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB))
+            .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
+            .addProvider(new AuthDynamicFeature(
+                    new DummyAuthFilter.Builder()
+                            .setAuthenticator(new DummyAuthFilter.DummyAuthenticator())
+                            .setAuthorizer(new DroveAuthorizer())
+                            .buildAuthFilter()))
+            .addProvider(RolesAllowedDynamicFeature.class)
+            .addProvider(new AuthValueFactoryProvider.Binder<>(DroveUser.class))
             .build();
 
     @AfterEach
