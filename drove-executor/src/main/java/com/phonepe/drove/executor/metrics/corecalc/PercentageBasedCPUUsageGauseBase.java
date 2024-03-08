@@ -38,8 +38,7 @@ public abstract class PercentageBasedCPUUsageGauseBase implements Gauge<Double>,
             val cpuDelta = totalUsage - prev.getTotalUsage();
             val systemDelta = systemUsage - prev.getSystemUsage();
             if (cpuDelta > 0 || systemDelta > 0) {
-                val onlineCPUs = Objects.requireNonNullElse(
-                        cpuStats.getOnlineCpus(), 0L);
+                val onlineCPUs = Objects.requireNonNullElse(cpuStats.getOnlineCpus(), 0L);
                 val overallCPUUsagePercentage = ((double) cpuDelta * 100 * onlineCPUs)/ systemDelta;
                 consumeOverallPercentage(overallCPUUsagePercentage);
             }
