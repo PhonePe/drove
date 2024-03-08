@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.managed;
 import com.codahale.metrics.MetricRegistry;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.model.BlkioStatEntry;
 import com.github.dockerjava.api.model.MemoryStatsConfig;
 import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
@@ -12,6 +13,9 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.metrics.AverageCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.LongGauge;
+import com.phonepe.drove.executor.metrics.MemoryUsageGauge;
+import com.phonepe.drove.executor.metrics.MemoryUsagePercentageGauge;
+import com.phonepe.drove.executor.metrics.OverallCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.PerCoreCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.TimeDiffGauge;
 import com.phonepe.drove.models.application.requirements.ResourceType;
@@ -29,7 +33,13 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.ToLongFunction;
 
@@ -131,13 +141,16 @@ public class ContainerStatsObserver implements Managed {
                                           : 0L))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_per_core"),
                                                      new PerCoreCpuUsageGauge(allocatedCpus(instanceInfo))))
+                    .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_overall"),
+                                                     new OverallCpuUsageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_absolute_per_ms"),
-                                                     new AverageCpuUsageGauge()));
+                                                     new AverageCpuUsageGauge()))
+                    .connect(metricRegistry.register(metricName(instanceInfo, "memory_usage"),
+                                                     new MemoryUsageGauge()))
+                    .connect(metricRegistry.register(metricName(instanceInfo, "memory_usage_percentage"),
+                                                     new MemoryUsagePercentageGauge()));
 
             data.getMemoryStatsReceived()
-                    .connect(gauge("memory_usage",
-                                   instanceInfo,
-                                   mem -> Objects.requireNonNullElse(mem.getData().getUsage(), 0L)))
                     .connect(gauge("memory_usage_max",
                                    instanceInfo,
                                    mem -> Objects.requireNonNullElse(mem.getData().getMaxUsage(), 0L)))
@@ -200,6 +213,21 @@ public class ContainerStatsObserver implements Managed {
                                            .stream()
                                            .filter(Objects::nonNull)
                                            .mapToLong(n -> Objects.requireNonNullElse(n.getRxDropped(), 0L))
+                                           .sum()));
+            data.getIoStatsReceived()
+                    .connect(gauge("block_io_read_bytes",
+                                   instanceInfo,
+                                   ioData -> ioData.getData()
+                                           .stream()
+                                           .filter(entry -> entry.getOp().equals("read"))
+                                           .mapToLong(entry -> entry.getMajor() + entry.getMinor())
+                                           .sum()))
+                    .connect(gauge("block_io_write_bytes",
+                                   instanceInfo,
+                                   ioData -> ioData.getData()
+                                           .stream()
+                                           .filter(entry -> entry.getOp().equals("write"))
+                                           .mapToLong(entry -> entry.getMajor() + entry.getMinor())
                                            .sum()));
             return data;
         });
@@ -302,6 +330,7 @@ public class ContainerStatsObserver implements Managed {
         ConsumingSyncSignal<Statistics> dataReceived = new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<MemoryStatsConfig>> memoryStatsReceived = new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<Collection<StatisticNetworksConfig>>> networkStatsReceived = new ConsumingSyncSignal<>();
+        ConsumingSyncSignal<SignalData<Collection<BlkioStatEntry>>> ioStatsReceived = new ConsumingSyncSignal<>();
 
         public InstanceData(InstanceInfo instanceInfo, String dockerId) {
             this.instanceInfo = instanceInfo;
@@ -326,6 +355,15 @@ public class ContainerStatsObserver implements Managed {
                                                                        .stream()
                                                                        .filter(Objects::nonNull)
                                                                        .toList()));
+            }
+            if(null != data.getBlkioStats()) {
+                val ioData = Objects.requireNonNullElse(data.getBlkioStats().getIoServiceBytesRecursive(), List.<BlkioStatEntry>of());
+                if(!ioData.isEmpty()) {
+                ioStatsReceived.dispatch(new SignalData<>(instanceInfo,
+                                                          ioData.stream()
+                                                                  .filter(Objects::nonNull)
+                                                                  .toList()));
+                }
             }
         }
     }

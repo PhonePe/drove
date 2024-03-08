@@ -5,16 +5,14 @@ import com.phonepe.drove.executor.metrics.corecalc.PercentageBasedCPUUsageGauseB
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Calculates CPU usage per code by overallPercentage/#cores
+ * Calculates according to <a href="https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerExport">...</a>
  */
 @Slf4j
-public class PerCoreCpuUsageGauge extends PercentageBasedCPUUsageGauseBase {
-    private final int numAllocatedCpus;
+public class OverallCpuUsageGauge extends PercentageBasedCPUUsageGauseBase {
     private final AtomicDouble currPercentage = new AtomicDouble();
 
-    public PerCoreCpuUsageGauge(int numAllocatedCpus) {
+    public OverallCpuUsageGauge() {
         super();
-        this.numAllocatedCpus = numAllocatedCpus;
     }
 
     @Override
@@ -24,6 +22,6 @@ public class PerCoreCpuUsageGauge extends PercentageBasedCPUUsageGauseBase {
 
     @Override
     protected final void consumeOverallPercentage(double overallPercentage) {
-        currPercentage.set(overallPercentage / numAllocatedCpus);
+        currPercentage.set(overallPercentage);
     }
 }
