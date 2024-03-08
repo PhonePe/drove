@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class PercentageBasedCPUUsageGauseBase implements Gauge<Double>, SignalConsumer<Statistics> {
+public abstract class PercentageBasedCPUUsageGaugeBase implements Gauge<Double>, SignalConsumer<Statistics> {
 
     private final AtomicReference<CPUUsage> currUsage = new AtomicReference<>(null);
 
@@ -38,7 +38,11 @@ public abstract class PercentageBasedCPUUsageGauseBase implements Gauge<Double>,
             val cpuDelta = totalUsage - prev.getTotalUsage();
             val systemDelta = systemUsage - prev.getSystemUsage();
             if (cpuDelta > 0 || systemDelta > 0) {
-                val onlineCPUs = Objects.requireNonNullElse(cpuStats.getOnlineCpus(), 0L);
+                //Setting default value to 1 so that we get some numbers
+                //Online cpu is null for both stats and prestats for podman
+                // There the calculation is much simpler
+                //Ref: https://github.com/containers/podman/blob/642a8f13a5f390a02c8ec05ec1b8557a0a1af2e9/libpod/stats_linux.go#L96
+                val onlineCPUs = Objects.requireNonNullElse(cpuStats.getOnlineCpus(), 1L);
                 val overallCPUUsagePercentage = ((double) cpuDelta * 100 * onlineCPUs)/ systemDelta;
                 consumeOverallPercentage(overallCPUUsagePercentage);
             }
