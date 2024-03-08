@@ -3,7 +3,7 @@ Version: VERSIONSTR
 Section: misc
 Priority: standard
 Architecture: all
-Depends: openjdk-17-jre-headless,numactl,docker.io
+Depends: openjdk-17-jre-headless,numactl,docker.io|podman-docker
 Installed-Size: JARSIZE
 Maintainer: Santanu Sinha <santanu@phonepe.com>
 Description: Executor for Drove Container Orchestrator System
