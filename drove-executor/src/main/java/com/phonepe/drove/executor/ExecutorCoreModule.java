@@ -6,6 +6,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
+import com.google.common.base.Strings;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
@@ -33,6 +34,7 @@ import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningR
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -45,6 +47,7 @@ import java.util.concurrent.SynchronousQueue;
 /**
  *
  */
+@Slf4j
 public class ExecutorCoreModule extends AbstractModule {
 
     @Override
@@ -145,11 +148,15 @@ public class ExecutorCoreModule extends AbstractModule {
                 Objects.requireNonNullElse(executorOptions.getContainerCommandTimeout(),
                                            ExecutorOptions.DEFAULT_CONTAINER_COMMAND_TIMEOUT)
                         .toMilliseconds());
+        val dockerSocketPath = Strings.isNullOrEmpty(executorOptions.getDockerSocketPath())
+                         ? ExecutorOptions.DEFAULT_DOCKER_SOCKET_PATH
+                         : executorOptions.getDockerSocketPath();
+        log.info("Using docker path: {}", dockerSocketPath);
         return DockerClientImpl.getInstance(
                 DefaultDockerClientConfig.createDefaultConfigBuilder()
                         .build(),
                 new ZerodepDockerHttpClient.Builder()
-                        .dockerHost(URI.create("unix:///var/run/docker.sock"))
+                        .dockerHost(URI.create("unix://" + dockerSocketPath))
                         .responseTimeout(timeout)
                         .connectionTimeout(java.time.Duration.ofSeconds(1))
                         .build());

@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ExecutorAppPodman" type="Application" factoryName="Application">
+    <envs>
+      <env name="DOCKER_HOST" value="unix:///run/user/1000/podman/podman.sock" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="com.phonepe.drove.executor.App" />
+    <module name="drove-executor" />
+    <option name="PROGRAM_PARAMETERS" value="server drove-executor/configs/config.yml" />
+    <option name="VM_PARAMETERS" value="-Djdk.internal.httpclient.disableHostnameVerification " />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.phonepe.drove.common.net.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

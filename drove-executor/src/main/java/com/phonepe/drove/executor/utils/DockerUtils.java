@@ -254,7 +254,7 @@ public class DockerUtils {
                 configBuilder.put("max-size", local.getMaxSize());
                 configBuilder.put("max-file", Integer.toString(local.getMaxFiles()));
                 configBuilder.put("compress", Boolean.toString(local.isCompress()));
-                return new LogConfig(LogConfig.LoggingType.LOCAL, configBuilder.build());
+                return new LogConfig(LogConfig.LoggingType.JSON_FILE, configBuilder.build());
             }
 
             @Override
