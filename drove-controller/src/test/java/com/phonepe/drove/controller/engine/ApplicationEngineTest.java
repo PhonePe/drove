@@ -15,6 +15,7 @@ import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -154,6 +155,12 @@ class ApplicationEngineTest extends ControllerTestBase {
             @Singleton
             public ClusterOpSpec clusterOpSpec() {
                 return ControllerTestUtils.DEFAULT_CLUSTER_OP;
+            }
+
+            @Provides
+            @Singleton
+            public ControllerOptions controllerOptions() {
+                return ControllerOptions.DEFAULT;
             }
 
         });

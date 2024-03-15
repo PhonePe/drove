@@ -16,6 +16,10 @@ public class ClusterOpSpec {
     public static final Duration DEFAULT_CLUSTER_OP_TIMEOUT = Duration.seconds(300);
     public static final int DEFAULT_CLUSTER_OP_PARALLELISM = 1;
 
+    public static final ClusterOpSpec DEFAULT = new ClusterOpSpec(DEFAULT_CLUSTER_OP_TIMEOUT,
+                                                                  DEFAULT_CLUSTER_OP_PARALLELISM,
+                                                                  FailureStrategy.STOP);
+
     @NotNull
     Duration timeout;
 

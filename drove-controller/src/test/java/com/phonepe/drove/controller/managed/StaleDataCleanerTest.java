@@ -14,7 +14,6 @@ import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.val;
@@ -28,7 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
-import static com.phonepe.drove.controller.config.ControllerOptions.*;
+import static com.phonepe.drove.controller.config.ControllerOptions.DEFAULT;
+import static com.phonepe.drove.controller.config.ControllerOptions.DEFAULT_MAX_STALE_INSTANCES_COUNT;
 import static com.phonepe.drove.models.application.ApplicationState.MONITORING;
 import static com.phonepe.drove.models.application.ApplicationState.RUNNING;
 import static org.awaitility.Awaitility.await;
@@ -125,28 +125,11 @@ class StaleDataCleanerTest {
     @Test
     void testStaleInstanceCleanupByCount() {
         {
-            val options = ControllerOptions.DEFAULT;
-            testCleanupByInstanceCount(options, DEFAULT_MAX_STALE_INSTANCES_COUNT);
+            testCleanupByInstanceCount(ControllerOptions.DEFAULT, DEFAULT_MAX_STALE_INSTANCES_COUNT);
         }
         {
-            val options = new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
-                                                DEFAULT_STALE_APP_AGE,
-                                                110,
-                                                DEFAULT_STALE_INSTANCE_AGE,
-                                                DEFAULT_STALE_TASK_AGE,
-                                                DEFAULT_MAX_EVENTS_STORAGE_SIZE,
-                                                DEFAULT_MAX_EVENT_STORAGE_DURATION,
-                                                ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
-                                                ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
-                                                DEFAULT_JOB_RETRY_COUNT,
-                                                DEFAULT_JOB_RETRY_INTERVAL,
-                                                DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
-                                                DEFAULT_AUDITED_METHODS,
-                                                false,
-                                                false);
-            testCleanupByInstanceCount(options, 110);
+            testCleanupByInstanceCount(DEFAULT.withMaxStaleInstancesCount(110), 110);
         }
-
     }
 
     @Test

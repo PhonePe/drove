@@ -3,9 +3,10 @@ package com.phonepe.drove.controller.engine;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -21,6 +22,7 @@ import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ops.*;
 import io.appform.functionmetrics.MonitoredFunction;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +43,7 @@ import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
  */
 @Singleton
 @Slf4j
+@RequiredArgsConstructor(onConstructor_ = {@Inject})
 public class ApplicationCommandValidator {
     private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
@@ -59,16 +62,7 @@ public class ApplicationCommandValidator {
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationInstanceInfoDB instanceInfoStore;
-
-    @Inject
-    public ApplicationCommandValidator(
-            ApplicationStateDB applicationStateDB,
-            ClusterResourcesDB clusterResourcesDB,
-            ApplicationInstanceInfoDB instanceInfoStore) {
-        this.applicationStateDB = applicationStateDB;
-        this.clusterResourcesDB = clusterResourcesDB;
-        this.instanceInfoStore = instanceInfoStore;
-    }
+    private final ControllerOptions controllerOptions;
 
     @MonitoredFunction
     public ValidationResult validate(final ApplicationEngine engine, final ApplicationOperation operation) {
@@ -89,33 +83,25 @@ public class ApplicationCommandValidator {
                 }
                 else {
                     return ValidationResult.failure(
-                            "Only " + allowedOpTypes + " allowed for app " + appId + " as it is in " + currState + " state");
+                            "Only " + allowedOpTypes.stream().sorted(Comparator.comparing(Enum::name)).toList()
+                                    + " allowed for app " + appId + " as it is in " + currState + " state");
                 }
             }
         }
         return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB,
-                                                        instanceInfoStore, engine));
+                                                        instanceInfoStore, controllerOptions, engine));
     }
 
+    @RequiredArgsConstructor
     private static final class OpValidationVisitor implements ApplicationOperationVisitor<ValidationResult> {
 
         private final String appId;
         private final ApplicationStateDB applicationStateDB;
         private final ClusterResourcesDB clusterResourcesDB;
         private final ApplicationInstanceInfoDB instancesDB;
+        private final ControllerOptions controllerOptions;
 
         private final ApplicationEngine engine;
-        private OpValidationVisitor(
-                String appId,
-                ApplicationStateDB applicationStateDB,
-                ClusterResourcesDB clusterResourcesDB,
-                ApplicationInstanceInfoDB instancesDB, ApplicationEngine engine) {
-            this.appId = appId;
-            this.applicationStateDB = applicationStateDB;
-            this.clusterResourcesDB = clusterResourcesDB;
-            this.instancesDB = instancesDB;
-            this.engine = engine;
-        }
 
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {
@@ -129,19 +115,32 @@ public class ApplicationCommandValidator {
                     .collect(Collectors.toMap(PortSpec::getName, Function.identity()));
             validateCheckSpec(spec.getHealthcheck(), ports).ifPresent(errs::add);
             validateCheckSpec(spec.getReadiness(), ports).ifPresent(errs::add);
-            val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType, Collectors.counting()));
-            if(!reqs.containsKey(ResourceType.CPU)) {
+            val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType,
+                                                                                  Collectors.counting()));
+            if (!reqs.containsKey(ResourceType.CPU)) {
                 errs.add("Cpu requirements are mandatory");
             }
-            else if(!reqs.containsKey(ResourceType.MEMORY)) {
+            if (!reqs.containsKey(ResourceType.MEMORY)) {
                 errs.add("Memory requirements are mandatory");
             }
-            if(null != spec.getExposureSpec() && !ports.containsKey(spec.getExposureSpec().getPortName())) {
-                errs.add("Exposed port name " + spec.getExposureSpec().getPortName() + " is undefined");
+            if (null != spec.getExposureSpec() && !ports.containsKey(spec.getExposureSpec().getPortName())) {
+                errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
+                                 + " is undefined. Defined port names: " + ports.keySet());
+            }
+            val whitelistedDirs = Objects.requireNonNullElse(
+                    controllerOptions.getAllowedMountDirs(),
+                    List.<String>of());
+            if (null != spec.getVolumes() && !whitelistedDirs.isEmpty()) {
+                spec.getVolumes()
+                        .stream()
+                        .filter(volume -> whitelistedDirs.stream()
+                                .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
+                        .forEach(volume -> errs.add("Volume mount requested on non whitelisted host directory: "
+                                                            + volume.getPathOnHost()));
             }
             return errs.isEmpty()
-                ? ValidationResult.success()
-                : ValidationResult.failure(errs);
+                   ? ValidationResult.success()
+                   : ValidationResult.failure(errs);
         }
 
         @Override
@@ -183,13 +182,13 @@ public class ApplicationCommandValidator {
         @Override
         public ValidationResult visit(ApplicationReplaceInstancesOperation replaceInstances) {
             val instancesToBeReplaced = replaceInstances.getInstanceIds();
-            if(instancesToBeReplaced != null && !instancesToBeReplaced.isEmpty()) {
+            if (instancesToBeReplaced != null && !instancesToBeReplaced.isEmpty()) {
                 val unknownInstances = instancesToBeReplaced.stream()
                         .filter(instanceId -> instancesDB.instance(appId, instanceId)
                                 .filter(instance -> instance.getState().equals(HEALTHY))
                                 .isEmpty())
                         .toList();
-                if(!unknownInstances.isEmpty()) {
+                if (!unknownInstances.isEmpty()) {
                     return ValidationResult.failure("There are no replaceable healthy instances with ids: " + unknownInstances);
                 }
             }
@@ -219,9 +218,10 @@ public class ApplicationCommandValidator {
             if (null == spec) {
                 return ValidationResult.failure("No spec found for app " + appId);
             }
+            val errs = new ArrayList<String>(2);
             val requiredCores = requiredInstances * spec.getResources()
                     .stream()
-                    .mapToInt(r -> r.accept(new ResourceRequirementVisitor<Integer>() {
+                    .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
                         @Override
                         public Integer visit(CPURequirement cpuRequirement) {
                             return (int) cpuRequirement.getCount();
@@ -235,7 +235,7 @@ public class ApplicationCommandValidator {
                     .sum();
             val requiredMem = requiredInstances * spec.getResources()
                     .stream()
-                    .mapToLong(r -> r.accept(new ResourceRequirementVisitor<Long>() {
+                    .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
                         @Override
                         public Long visit(CPURequirement cpuRequirement) {
                             return 0L;
@@ -248,22 +248,28 @@ public class ApplicationCommandValidator {
                     }))
                     .sum();
             if (requiredCores > freeCores) {
-                return ValidationResult.failure("Cluster does not have enough CPU. Required: " + requiredCores + " Available: " + freeCores);
+                errs.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
+                                                        "Available: " + freeCores);
             }
             if (requiredMem > freeMemory) {
-                return ValidationResult.failure("Cluster does not have enough Memory. Required: " + requiredMem + " Available: " + freeMemory);
+                errs.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
+                                                        "Available: " + freeMemory);
+            }
+            if(!errs.isEmpty()) {
+                return ValidationResult.failure(errs);
             }
             return ValidationResult.success();
         }
 
         private static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
             return spec.getMode()
-                    .accept(new CheckModeSpecVisitor<Optional<String>>() {
+                    .accept(new CheckModeSpecVisitor<>() {
                         @Override
                         public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
                             return ports.containsKey(httpCheck.getPortName())
                                    ? Optional.empty()
-                                   : Optional.of("Invalid port name for health check: " + httpCheck.getPortName());
+                                   : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
+                                                         + ". Available ports: " + ports.keySet());
                         }
 
                         @Override

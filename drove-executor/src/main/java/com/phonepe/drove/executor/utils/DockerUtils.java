@@ -125,8 +125,6 @@ public class DockerUtils {
                                                            ExecutorOptions.DEFAULT_LOG_CACHE_SIZE);
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
-//                    .withOomKillDisable(true)
-// There is a bug in docker. Enabling this leads to us not getting any stats
                     .withAutoRemove(autoRemove(deploymentUnitSpec))
                     .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));

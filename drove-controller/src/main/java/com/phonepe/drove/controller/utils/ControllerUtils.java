@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.utils;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -47,7 +48,9 @@ public class ControllerUtils {
         return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
             @Override
             public String visit(ApplicationSpec applicationSpec) {
-                return applicationSpec.getName() + "-" + applicationSpec.getVersion();
+                return Strings.isNullOrEmpty(applicationSpec.getName()) || Strings.isNullOrEmpty(applicationSpec.getVersion())
+                        ? null
+                        : applicationSpec.getName() + "-" + applicationSpec.getVersion();
             }
 
             @Override

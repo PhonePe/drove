@@ -1,8 +1,6 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.phonepe.drove.controller.config.ControllerOptions.*;
+import static com.phonepe.drove.controller.config.ControllerOptions.DEFAULT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -26,21 +24,9 @@ class ControllerRetrySpecFactoryTest {
     @SneakyThrows
     void testJobRetrySpec() {
         val value = new AtomicBoolean(false);
-        val options = new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
-                                            DEFAULT_STALE_APP_AGE,
-                                            110,
-                                            DEFAULT_STALE_INSTANCE_AGE,
-                                            DEFAULT_STALE_TASK_AGE,
-                                            DEFAULT_MAX_EVENTS_STORAGE_SIZE,
-                                            DEFAULT_MAX_EVENT_STORAGE_DURATION,
-                                            ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
-                                            ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
-                                            2,
-                                            Duration.milliseconds(100),
-                                            DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
-                                            DEFAULT_AUDITED_METHODS,
-                                            false,
-                                            false);
+        val options = DEFAULT
+                .withJobRetryCount(2)
+                .withJobRetryInterval(Duration.milliseconds(100));
         val retrySpec = new DefaultControllerRetrySpecFactory(options).jobRetrySpec();
         val policy = CommonUtils.<Boolean>policy(retrySpec, x -> !x);
         log.info("Start");

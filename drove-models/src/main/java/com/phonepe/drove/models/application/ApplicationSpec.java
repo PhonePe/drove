@@ -9,6 +9,7 @@ import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import lombok.Value;
+import lombok.With;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
@@ -21,6 +22,7 @@ import java.util.Map;
  *
  */
 @Value
+@With
 public class ApplicationSpec implements DeploymentSpec {
     @NotEmpty(message = "- Application name is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")

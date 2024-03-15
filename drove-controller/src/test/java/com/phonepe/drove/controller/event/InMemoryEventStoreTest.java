@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.controller.config.ControllerOptions.*;
+import static com.phonepe.drove.controller.config.ControllerOptions.DEFAULT;
 import static com.phonepe.drove.models.events.DroveEventType.MAINTENANCE_MODE_SET;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -44,21 +44,11 @@ class InMemoryEventStoreTest {
     void testEventStoreSizeLimit() {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
-        val es = new InMemoryEventStore(leadershipEnsurer, new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
-                                                                                 DEFAULT_STALE_APP_AGE,
-                                                                                 DEFAULT_MAX_STALE_INSTANCES_COUNT,
-                                                                                 DEFAULT_STALE_INSTANCE_AGE,
-                                                                                 DEFAULT_STALE_TASK_AGE,
-                                                                                 DEFAULT_MAX_EVENTS_STORAGE_SIZE,
-                                                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
-                                                                                 ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
-                                                                                 DEFAULT_JOB_RETRY_COUNT,
-                                                                                 DEFAULT_JOB_RETRY_INTERVAL,
-                                                                                 DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
-                                                                                 DEFAULT_AUDITED_METHODS,
-                                                                                 false,
-                                                                                 false),
-                                        Duration.ofSeconds(1));
+        val es = new InMemoryEventStore(
+                leadershipEnsurer,
+                DEFAULT.withMaxEventsStorageDuration(io.dropwizard.util.Duration.seconds(2)),
+                Duration.ofSeconds(1));
+
         IntStream.rangeClosed(1, 200)
                 .forEach(i -> {
                     CommonTestUtils.delay(Duration.ofMillis(1)); //Otherwise all time will be same

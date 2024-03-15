@@ -7,11 +7,13 @@ import io.dropwizard.validation.MinDuration;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Jacksonized
 @Builder
 @AllArgsConstructor
+@With
 public class ControllerOptions {
     public static final Duration DEFAULT_STALE_CHECK_INTERVAL = Duration.hours(1);
     public static final Duration DEFAULT_STALE_APP_AGE = Duration.days(7);
@@ -34,6 +37,7 @@ public class ControllerOptions {
     public static final Duration DEFAULT_JOB_RETRY_INTERVAL = Duration.seconds(1);
     public static final Duration DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL = Duration.seconds(3);
     public static final Set<String> DEFAULT_AUDITED_METHODS = Set.of("POST", "PUT");
+    public static final List<String> DEFAULT_ALLOWED_MOUNT_DIRS = List.of();
 
     public static final ControllerOptions DEFAULT = new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
                                                                           DEFAULT_STALE_APP_AGE,
@@ -48,6 +52,7 @@ public class ControllerOptions {
                                                                           DEFAULT_JOB_RETRY_INTERVAL,
                                                                           DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
                                                                           DEFAULT_AUDITED_METHODS,
+                                                                          DEFAULT_ALLOWED_MOUNT_DIRS,
                                                                           true,
                                                                           false);
 
@@ -93,6 +98,8 @@ public class ControllerOptions {
     Duration instanceStateCheckRetryInterval;
 
     Set<String> auditedHttpMethods;
+
+    List<String> allowedMountDirs;
 
     Boolean dieOnZkDisconnect;
 
