@@ -2,12 +2,14 @@ package com.phonepe.drove.controller.utils;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
@@ -30,10 +32,7 @@ import lombok.val;
 import net.jodah.failsafe.Failsafe;
 
 import javax.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 
@@ -389,5 +388,21 @@ public class ControllerUtils {
                 return taskInfo.getTaskId();
             }
         });
+    }
+
+    public static List<String> ensureWhitelistedVolumes(
+            Collection<MountedVolume> volumes, ControllerOptions controllerOptions) {
+        val whitelistedDirs = Objects.requireNonNullElse(
+                controllerOptions.getAllowedMountDirs(),
+                List.<String>of());
+        if (null != volumes && !whitelistedDirs.isEmpty()) {
+            return volumes.stream()
+                    .filter(volume -> whitelistedDirs.stream()
+                            .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
+                    .map(volume -> "Volume mount requested on non whitelisted host directory: "
+                                                        + volume.getPathOnHost())
+                    .toList();
+        }
+        return List.of();
     }
 }

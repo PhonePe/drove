@@ -8,9 +8,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.application.ApplicationInfo;
-import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
@@ -127,17 +125,7 @@ public class ApplicationCommandValidator {
                 errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
                                  + " is undefined. Defined port names: " + ports.keySet());
             }
-            val whitelistedDirs = Objects.requireNonNullElse(
-                    controllerOptions.getAllowedMountDirs(),
-                    List.<String>of());
-            if (null != spec.getVolumes() && !whitelistedDirs.isEmpty()) {
-                spec.getVolumes()
-                        .stream()
-                        .filter(volume -> whitelistedDirs.stream()
-                                .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
-                        .forEach(volume -> errs.add("Volume mount requested on non whitelisted host directory: "
-                                                            + volume.getPathOnHost()));
-            }
+            errs.addAll(ControllerUtils.ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
             return errs.isEmpty()
                    ? ValidationResult.success()
                    : ValidationResult.failure(errs);

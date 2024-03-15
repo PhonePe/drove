@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
@@ -58,6 +59,7 @@ public class TaskEngine {
     private final ClusterStateDB clusterStateDB;
     private final LeadershipEnsurer leadershipEnsurer;
     private final ClusterOpSpec defaultClusterOpSpec;
+    private final ControllerOptions controllerOptions;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
 
@@ -78,7 +80,8 @@ public class TaskEngine {
             JobExecutor<Boolean> jobExecutor,
             ClusterStateDB clusterStateDB,
             LeadershipEnsurer leadershipEnsurer,
-            ClusterOpSpec defaultClusterOpSpec) {
+            ClusterOpSpec defaultClusterOpSpec,
+            ControllerOptions controllerOptions) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -91,6 +94,7 @@ public class TaskEngine {
         this.clusterStateDB = clusterStateDB;
         this.leadershipEnsurer = leadershipEnsurer;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
+        this.controllerOptions = controllerOptions;
         this.completed.connect(taskRunner -> {
             val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
             try {
@@ -118,16 +122,17 @@ public class TaskEngine {
         });
     }
 
-
     public ValidationResult handleTaskOp(final TaskOperation operation) {
         return operation.accept(new TaskOperationVisitor<>() {
             @Override
             public ValidationResult visit(TaskCreateOperation create) {
 
                 val taskSpec = create.getSpec();
-                val preCheckResult = resourceCheck(taskSpec);
-                if (preCheckResult.getStatus().equals(ValidationStatus.FAILURE)) {
-                    return preCheckResult;
+                val errors = new ArrayList<String>();
+                errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));
+                errors.addAll(resourceCheck(taskSpec));
+                if (!errors.isEmpty()) {
+                    return ValidationResult.failure(errors);
                 }
                 val runTaskId = genRunTaskId(taskSpec.getSourceAppName(), taskSpec.getTaskId());
                 if (runners.containsKey(runTaskId)
@@ -230,7 +235,7 @@ public class TaskEngine {
         return sourceAppName + "-" + taskId;
     }
 
-    private ValidationResult resourceCheck(final TaskSpec taskSpec) {
+    private List<String> resourceCheck(final TaskSpec taskSpec) {
         val executors = clusterResourcesDB.currentSnapshot(true);
         var freeCores = 0;
         var freeMemory = 0L;
@@ -273,8 +278,6 @@ public class TaskEngine {
         if (requiredMem > freeMemory) {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " Available: " + freeMemory);
         }
-        return errors.isEmpty()
-               ? ValidationResult.success()
-               : ValidationResult.failure(errors);
+        return errors;
     }
 }
