@@ -25,6 +25,7 @@ class DroveExternalAuthenticatorTest {
                                                                                        "test-user",
                                                                                        "test-password",
                                                                                        DroveUserRole.EXTERNAL_READ_WRITE)),
+                                                                               BasicAuthConfig.AuthEncoding.PLAIN,
                                                                                null));
         assertEquals("test-user", authenticator.authenticate(new BasicCredentials("test-user", "test-password"))
                 .map(u -> ((DroveExternalUser) u).getName())

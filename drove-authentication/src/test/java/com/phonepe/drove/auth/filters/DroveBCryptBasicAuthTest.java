@@ -1,5 +1,6 @@
 package com.phonepe.drove.auth.filters;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.phonepe.drove.auth.config.BasicAuthConfig;
 import com.phonepe.drove.auth.core.DroveAuthorizer;
 import com.phonepe.drove.auth.core.DroveExternalAuthenticator;
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  */
 @ExtendWith(DropwizardExtensionsSupport.class)
-class DroveBasicAuthTest extends AbstractAuthTestBase {
+class DroveBCryptBasicAuthTest extends AbstractAuthTestBase {
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
@@ -40,9 +41,9 @@ class DroveBasicAuthTest extends AbstractAuthTestBase {
                                     new BasicAuthConfig(
                                             true,
                                             List.of(new DroveExternalUserInfo("test-user",
-                                                                              "test-password",
+                                                                              BCrypt.withDefaults().hashToString(10, "test-password".toCharArray()),
                                                                               DroveUserRole.EXTERNAL_READ_WRITE)),
-                                            BasicAuthConfig.AuthEncoding.PLAIN,
+                                            BasicAuthConfig.AuthEncoding.CRYPT,
                                             "")))
                             .setAuthorizer(new DroveAuthorizer())
                             .setPrefix("Basic")

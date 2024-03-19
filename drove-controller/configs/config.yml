@@ -42,17 +42,22 @@ clusterAuth:
   - nodeType: EXECUTOR
     secret: LocalExecutorSecret
 
-# userAuth:
-#  enabled: true
-#  users:
-#    - username: admin
-#      password: admin
-#      role: EXTERNAL_READ_WRITE
-#    - username: guest
-#      password: guest
-#      role: EXTERNAL_READ_ONLY
-#    - username: noread
-#      password: noread
+#userAuth:
+# enabled: true
+# encoding: CRYPT
+# users:
+#   - username: admin
+##      password: admin
+#     password: "$2a$12$7ADQPo.ahYCksfRggvn6cut/BpwjahoNkvwPARIjCSbIvPdyTbEEK"
+#     role: EXTERNAL_READ_WRITE
+#   - username: guest
+#     password: "$2a$12$YHtK/Rc52bjEmVOF7Tz6jeKZ62kFZP98jJF0Ml9Cuwv4lW8w9ZbNm"
+##      password: guest
+#     role: EXTERNAL_READ_ONLY
+#   - username: noread
+#     password: "$2a$12$HO2EbvWNs.WOd9Csv3xtOuPGN.cEl/Co16oeL6oyk5stgKExXS6SO"
+##      password: noread
+
 
 instanceAuth:
   secret: RandomSecret
