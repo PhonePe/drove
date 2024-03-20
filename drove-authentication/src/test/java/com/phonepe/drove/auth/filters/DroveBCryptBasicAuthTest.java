@@ -69,20 +69,6 @@ class DroveBCryptBasicAuthTest extends AbstractAuthTestBase {
     }
 
     @Test
-    void testFailureNoAuth() {
-        val client = ClientBuilder.newBuilder()
-                .register(HttpAuthenticationFeature.basicBuilder()
-                                  .nonPreemptive()
-                                  .credentials("test-user", "wrong-password")
-                                  .build())
-                .register(new JacksonFeature(MAPPER))
-                .build();
-        try (val r = client.target(EXT.target("/").getUri()).request().get()) {
-            assertEquals(HttpStatus.UNAUTHORIZED_401, r.getStatus());
-        }
-    }
-
-    @Test
     void testFailureWrongCred() {
         val client = ClientBuilder.newBuilder()
                 .register(HttpAuthenticationFeature.basicBuilder()
