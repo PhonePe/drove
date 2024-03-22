@@ -5,7 +5,7 @@
     <groupId>com.phonepe.drove</groupId>
     <artifactId>drove</artifactId>
     <packaging>pom</packaging>
-    <version>1.16-SNAPSHOT</version>
+    <version>1.26</version>
 
     <modules>
         <module>drove-statemachine</module>
@@ -25,11 +25,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <lombok.version>1.18.24</lombok.version>
-        <dropwizard.version>2.1.4</dropwizard.version>
-        <slf4j-api.version>1.8.32</slf4j-api.version>
+        <dropwizard.version>2.1.10</dropwizard.version>
+        <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.2</junit.version>
         <signals.version>1.4</signals.version>
-        <function-metrics.version>1.0.13</function-metrics.version>
+        <function-metrics.version>1.0.16</function-metrics.version>
         <awaitility.version>4.2.0</awaitility.version>
         <guice.version>5.1.0</guice.version>
         <dw-guicey.version>5.6.1</dw-guicey.version>
@@ -41,7 +41,21 @@
         <aspectj.version>1.9.9.1</aspectj.version>
         <junit.version>5.8.2</junit.version>
         <mockito.version>4.4.0</mockito.version>
-        <wiremock.version>2.33.2</wiremock.version>
+        <wiremock.version>3.3.1</wiremock.version>
+        <maven.deploy.skip>false</maven.deploy.skip>
+        <commons-validator.version>1.4.1</commons-validator.version>
+        <sonar.exclusions>
+            **/*.hbs,
+            **/*.js,
+            **/*.css,
+            **/model/**,
+            **/models/**,
+            **/*Log*Stream**,
+            **com/phonepe/drove/controller/**,
+            **com/phonepe/drove/controller/ui/views/**,
+            **com/phonepe/drove/executor/**,
+        </sonar.exclusions>
+        <guava.version>32.1.3-jre</guava.version>
     </properties>
 
     <dependencyManagement>
@@ -59,6 +73,21 @@
                 <version>${junit.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-validator</groupId>
+                <artifactId>commons-validator</artifactId>
+                <version>${commons-validator.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

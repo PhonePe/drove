@@ -13,6 +13,7 @@ import com.phonepe.drove.auth.filters.DroveApplicationInstanceAuthFilter;
 import com.phonepe.drove.auth.filters.DroveClusterAuthFilter;
 import com.phonepe.drove.auth.filters.DummyAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.ui.HandlebarsViewRenderer;
 import io.appform.functionmetrics.FunctionMetricsManager;
 import io.dropwizard.Application;
@@ -24,15 +25,14 @@ import io.dropwizard.jersey.setup.JerseyEnvironment;
 import io.dropwizard.server.AbstractServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import io.dropwizard.util.Strings;
 import lombok.val;
-import org.glassfish.jersey.media.sse.SseFeature;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import ru.vyarus.dropwizard.guice.GuiceBundle;
 import ru.vyarus.dropwizard.guice.module.installer.feature.health.HealthCheckInstaller;
 import ru.vyarus.guicey.gsp.ServerPagesBundle;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static com.phonepe.drove.common.CommonUtils.configureMapper;
@@ -77,7 +77,6 @@ public class App extends Application<AppConfig> {
         configureMapper(environment.getObjectMapper());
         ((AbstractServerFactory) appConfig.getServerFactory()).setJerseyRootPath("/apis/*");
         val jersey = environment.jersey();
-        jersey.register(SseFeature.class);
         FunctionMetricsManager.initialize("com.phonepe.drove.controller", environment.metrics());
 
         setupAuth(appConfig, environment, jersey, guiceBundle.getInjector());
@@ -138,12 +137,4 @@ public class App extends Application<AppConfig> {
         new App().run(args);
     }
 
-    private static List<ComponentAuthConfig> getComponentAuthConfigList(OlympusIMClientConfig olympusIMConfig) {
-        HashSet<ComponentAuthConfig> componentAuthConfigs = new HashSet<>(olympusIMConfig.getAuthConfig()
-                                                                                  .getAdditionalComponentAuthConfigs());
-        componentAuthConfigs.add(new ComponentAuthConfig(olympusIMConfig.getAuthConfig()
-                                                                 .getComponentId(), olympusIMConfig.getAuthConfig()
-                                                                 .getComponentInstanceId()));
-        return new ArrayList<>(componentAuthConfigs);
-    }
 }

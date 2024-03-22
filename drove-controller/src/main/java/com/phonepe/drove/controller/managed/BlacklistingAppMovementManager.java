@@ -16,7 +16,6 @@ import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.RetryPolicy;
-import org.jetbrains.annotations.NotNull;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
@@ -288,7 +287,6 @@ public class BlacklistingAppMovementManager implements Managed {
         }
     }
 
-    @NotNull
     private Map<String, Set<String>> healthyInstances(final Set<String> executorIds) {
         //healthy instances might temporarily reside on blacklisted nodes while app movement underway
         return clusterResourcesDB.currentSnapshot(false)

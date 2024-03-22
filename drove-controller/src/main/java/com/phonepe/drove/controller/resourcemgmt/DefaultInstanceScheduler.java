@@ -240,45 +240,4 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             }
         });
     }
-
-    private boolean hasTagPolicy(final PlacementPolicy policy) {
-        return policy.accept(new PlacementPolicyVisitor<Boolean>() {
-            @Override
-            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(NoTagPlacementPolicy noTag) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
-                return compositePlacementPolicy.getPolicies()
-                        .stream()
-                        .anyMatch(DefaultInstanceScheduler.this::hasTagPolicy);
-            }
-        });
-    }
 }

@@ -1,19 +1,19 @@
 package com.phonepe.drove.controller.resources;
 
 import com.google.common.base.Strings;
-import com.phonepe.drove.auth.model.*;
+import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.auth.model.DroveUserRole;
+import com.phonepe.drove.auth.model.DroveUserVisitorAdaptor;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.ui.views.*;
-import com.phonepe.olympus.im.client.OlympusIMClient;
 import io.dropwizard.auth.Auth;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.vyarus.guicey.gsp.views.template.Template;
 
-import javax.annotation.Nullable;
 import javax.annotation.security.PermitAll;
 import javax.inject.Inject;
 import javax.ws.rs.*;
@@ -42,20 +42,17 @@ public class UI {
 
     private final ControllerOptions controllerOptions;
 
-    private final OlympusIMClient olympusIMClient;
 
     @Inject
     public UI(
             ApplicationStateDB stateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
-            ControllerOptions controllerOptions,
-            @Nullable OlympusIMClient olympusIMClient) {
+            ControllerOptions controllerOptions) {
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.controllerOptions = controllerOptions;
-        this.olympusIMClient = olympusIMClient;
     }
 
     @GET
@@ -137,16 +134,6 @@ public class UI {
 
     private boolean hasReadAccess(DroveUser user) {
         return Objects.requireNonNullElse(controllerOptions.getDisableReadAuth(), false)
-                || (null != olympusIMClient
-                && user.accept(new DroveUserVisitorAdaptor<>(READ_ALLOWED_ROLES.contains(user.getRole())) {
-            @Override
-            public Boolean visit(DroveOlympusUser olympusUser) {
-                //For olympus user, the check has to be done using the olympus client
-                return READ_ALLOWED_ROLES
-                        .stream()
-                        .anyMatch(permission -> olympusIMClient.verifyPermission(olympusUser.getUserAuthDetails(),
-                                                                                 permission.getValue()));
-            }
-        }));
+                || user.accept(new DroveUserVisitorAdaptor<>(READ_ALLOWED_ROLES.contains(user.getRole())) {});
     }
 }

@@ -107,13 +107,13 @@ class ZkUtilsTest extends AbstractTestBase {
 
     private List<TestData> readChildren(CuratorFramework curator, String parentPath) throws Exception {
         return readChildrenNodes(curator,
-                                         parentPath,
-                                         0,
-                                         Integer.MAX_VALUE,
-                                         childPath -> readNodeData(curator,
-                                                                           "/parent/" + childPath,
-                                                                           MAPPER,
-                                                                           TestData.class));
+                                 parentPath,
+                                 0,
+                                 Integer.MAX_VALUE,
+                                 childPath -> readNodeData(curator,
+                                                           "/parent/" + childPath,
+                                                           MAPPER,
+                                                           TestData.class));
     }
 
     private CuratorFramework buildTestCurator(TestingCluster cluster) {

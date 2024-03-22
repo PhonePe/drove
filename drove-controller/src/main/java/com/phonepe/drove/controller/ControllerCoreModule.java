@@ -35,23 +35,14 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.ActionFactory;
-import com.phonepe.olympus.im.client.CookieHandler;
-import com.phonepe.olympus.im.client.OlympusIMClient;
-import com.phonepe.olympus.im.client.config.OlympusIMClientConfig;
-import com.phonepe.olympus.im.client.http.OlympusIMApiClient;
-import com.phonepe.olympus.im.client.http.OlympusIMFeignClient;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
-import lombok.SneakyThrows;
-import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
@@ -193,56 +184,5 @@ public class ControllerCoreModule extends AbstractModule {
                                  Math.max(controllerOptions.getClusterOpParallelism(),
                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM),
                                  FailureStrategy.STOP);
-    }
-
-    @Provides
-    @Singleton
-    public CookieHandler cookieHandler(AppConfig appConfig) {
-        val olympusConfig = appConfig.getOlympusIM();
-        if (null != olympusConfig) {
-            return new CookieHandler(appConfig.getOlympusIM());
-        }
-        return null;
-    }
-
-    @Provides
-    @Singleton
-    public OlympusIMClientConfig olympusIMApiClient(AppConfig appConfig) {
-        val olympusConfig = appConfig.getOlympusIM();
-        if (null != olympusConfig) {
-            olympusConfig.setResourcePrefix("/apis");
-            olympusConfig.setDirectFailurePrefixes(Set.of("/apis"));
-        }
-        return olympusConfig;
-    }
-
-    @Provides
-    @Singleton
-    @SneakyThrows
-    public OlympusIMApiClient olympusIMApiClient(
-            @Nullable OlympusIMClientConfig olympusConfig,
-            Environment environment) {
-        return null != olympusConfig
-               ? new OlympusIMApiClient(olympusConfig, null, environment)
-               : null;
-    }
-
-    @Provides
-    @Singleton
-    public OlympusIMClient olympusIMClient(
-            @Nullable OlympusIMClientConfig olympusConfig,
-            Environment environment,
-            @Nullable OlympusIMApiClient olympusIMApiClient,
-            @Nullable CookieHandler cookieHandler) {
-        if(null == olympusConfig || null == olympusIMApiClient || null == cookieHandler) {
-            return null;
-        }
-        val feignClient = new OlympusIMFeignClient(olympusConfig,
-                                                   environment.getObjectMapper(), olympusIMApiClient);
-        return new OlympusIMClient(olympusConfig,
-                                   environment,
-                                   olympusIMApiClient,
-                                   feignClient,
-                                   cookieHandler);
     }
 }

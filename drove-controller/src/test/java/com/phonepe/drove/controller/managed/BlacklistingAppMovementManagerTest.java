@@ -44,9 +44,9 @@ class BlacklistingAppMovementManagerTest {
 
         val applicationEngine = mock(ApplicationEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        when(clusterResourcesDB.currentSnapshot()).thenAnswer(invocationMock -> called.get()
-            ? List.of(noInstanceEx)
-            : List.of(executor));
+        when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock -> called.get()
+                                                                                     ? List.of(noInstanceEx)
+                                                                                     : List.of(executor));
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
@@ -86,10 +86,8 @@ class BlacklistingAppMovementManagerTest {
                 .thenAnswer(invocationMock -> called.get()
                                               ? List.of(noInstanceEx)
                                               : List.of(executor));
-
-        when(clusterResourcesDB.isBlacklisted(executor.getExecutorId())).thenReturn(true);
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
-
+        when(clusterResourcesDB.isBlacklisted(executor.getExecutorId())).thenReturn(true);
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
                 .thenAnswer(invocationMock -> {
                     called.set(true);
@@ -131,9 +129,9 @@ class BlacklistingAppMovementManagerTest {
 
         val applicationEngine = mock(ApplicationEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        when(clusterResourcesDB.currentSnapshot()).thenAnswer(invocationMock -> called.incrementAndGet() > 2
-                                                                                ? List.of(noInstanceEx)
-                                                                                : List.of(executor));
+        when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock -> called.incrementAndGet() > 2
+                                                                                     ? List.of(noInstanceEx)
+                                                                                     : List.of(executor));
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
@@ -147,7 +145,9 @@ class BlacklistingAppMovementManagerTest {
                                                      clusterResourcesDB,
                                                      BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
                                                      new RetryPolicy<Boolean>()
-                                                             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
+                                                             .onFailedAttempt(event -> log.warn(
+                                                                     "Executor check attempt: {}",
+                                                                     event.getAttemptCount()))
                                                              .handleResult(false)
                                                              .withMaxAttempts(5)
                                                              .withDelay(Duration.ofMillis(100))
@@ -173,11 +173,11 @@ class BlacklistingAppMovementManagerTest {
 
         val applicationEngine = mock(ApplicationEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        when(clusterResourcesDB.currentSnapshot()).thenAnswer(invocationMock ->
-                                                              {
-                                                                  called.incrementAndGet();
-                                                                  return List.of(executor);
-                                                              });
+        when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock ->
+                                                                   {
+                                                                       called.incrementAndGet();
+                                                                       return List.of(executor);
+                                                                   });
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
@@ -191,7 +191,9 @@ class BlacklistingAppMovementManagerTest {
                                                      clusterResourcesDB,
                                                      BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
                                                      new RetryPolicy<Boolean>()
-                                                             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
+                                                             .onFailedAttempt(event -> log.warn(
+                                                                     "Executor check attempt: {}",
+                                                                     event.getAttemptCount()))
                                                              .handleResult(false)
                                                              .withMaxAttempts(2)
                                                              .withDelay(Duration.ofMillis(100))
@@ -218,14 +220,14 @@ class BlacklistingAppMovementManagerTest {
         val count = new AtomicInteger();
         val applicationEngine = mock(ApplicationEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        when(clusterResourcesDB.currentSnapshot()).thenAnswer(invocationMock -> called.get()
-                                                                                ? List.of(noInstanceEx)
-                                                                                : List.of(executor));
+        when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock -> called.get()
+                                                                                     ? List.of(noInstanceEx)
+                                                                                     : List.of(executor));
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
                 .thenAnswer(invocationMock -> {
-                    if(count.incrementAndGet() > 1) {
+                    if (count.incrementAndGet() > 1) {
                         called.set(true);
                         return ValidationResult.success();
                     }
@@ -237,7 +239,9 @@ class BlacklistingAppMovementManagerTest {
 
         val bmm = new BlacklistingAppMovementManager(le, applicationEngine, clusterResourcesDB,
                                                      new RetryPolicy<ValidationStatus>()
-                                                             .onFailedAttempt(event -> log.warn("Command submission attempt: {}", event.getAttemptCount()))
+                                                             .onFailedAttempt(event -> log.warn(
+                                                                     "Command submission attempt: {}",
+                                                                     event.getAttemptCount()))
                                                              .handleResult(ValidationStatus.FAILURE)
                                                              .withMaxAttempts(10)
                                                              .withDelay(Duration.ofMillis(100)),

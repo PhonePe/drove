@@ -106,7 +106,7 @@ class CommonUtilsTest {
         }
         { //It is in maintenance window and after buffer time
             val data = new ClusterStateData(ClusterState.NORMAL,
-                                            new Date(currTime.getTime() - 2 * Constants.EXECUTOR_REFRESH_INTERVAL.toMillis() + 1));
+                                            new Date(currTime.getTime() - 2 * Constants.EXECUTOR_REFRESH_INTERVAL.toMillis() - 1000));
             assertFalse(CommonUtils.isInMaintenanceWindow(data));
         }
     }

@@ -62,13 +62,8 @@ public class ControllerOptions {
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
     Duration staleAppAge;
 
-    /**
-     * This parameter is now deprecated.
-     * @deprecated Please use maxEventsStorageDuration instead
-     */
     @Min(0)
     @Max(4096)
-    @Deprecated
     int maxStaleInstancesCount;
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
@@ -77,11 +72,18 @@ public class ControllerOptions {
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
     Duration staleTaskAge;
 
+    /**
+     * This parameter is now deprecated.
+     * @deprecated Please use maxEventsStorageDuration instead
+     */
     @Min(0)
-    @Max(2^20)
+    @Max(1024)
+    @Deprecated
+    @SuppressWarnings("java:S1133")
     int maxEventsStorageCount;
 
     Duration maxEventsStorageDuration;
+
     @DurationRange(min = 10, max = 1_800, unit = TimeUnit.SECONDS)
     Duration clusterOpTimeout;
 
