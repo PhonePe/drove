@@ -9,10 +9,11 @@ import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.core.InvocationBuilder;
 import com.google.inject.Inject;
-import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.metrics.AverageCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.LongGauge;
+import com.phonepe.drove.executor.metrics.MemoryAllocatedGauge;
 import com.phonepe.drove.executor.metrics.MemoryUsageGauge;
 import com.phonepe.drove.executor.metrics.MemoryUsagePercentageGauge;
 import com.phonepe.drove.executor.metrics.OverallCpuUsageGauge;
@@ -117,6 +118,7 @@ public class ContainerStatsObserver implements Managed {
 
     private void registerTrackedContainer(final String instanceId, final InstanceInfo instanceInfo) {
         instances.computeIfAbsent(instanceId, iid -> {
+            val allocatedCpus = allocatedCpus(instanceInfo);
             val containers = client.listContainersCmd()
                     .withLabelFilter(Collections.singletonMap(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceId))
                     .exec();
@@ -139,8 +141,15 @@ public class ContainerStatsObserver implements Managed {
                                     .getThrottledPeriods()
                                           ? statistics.getCpuStats().getThrottlingData().getThrottledPeriods()
                                           : 0L))
+                    .connect(metricRegistry.register(metricName(instanceInfo, "cpu_cores_allocated"),
+                                                     new LongGauge<>() {
+                                                         @Override
+                                                         public void consume(Statistics data) {
+                                                            setValue(allocatedCpus); //This is a fixed value
+                                                         }
+                                                     }))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_per_core"),
-                                                     new PerCoreCpuUsageGauge(allocatedCpus(instanceInfo))))
+                                                     new PerCoreCpuUsageGauge(allocatedCpus)))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_overall"),
                                                      new OverallCpuUsageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_absolute_per_ms"),
@@ -148,7 +157,9 @@ public class ContainerStatsObserver implements Managed {
                     .connect(metricRegistry.register(metricName(instanceInfo, "memory_usage"),
                                                      new MemoryUsageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "memory_usage_percentage"),
-                                                     new MemoryUsagePercentageGauge()));
+                                                     new MemoryUsagePercentageGauge()))
+                    .connect(metricRegistry.register(metricName(instanceInfo, "memory_allocated"),
+                                                     new MemoryAllocatedGauge()));
 
             data.getMemoryStatsReceived()
                     .connect(gauge("memory_usage_max",
