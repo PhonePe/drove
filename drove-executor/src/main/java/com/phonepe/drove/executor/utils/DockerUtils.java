@@ -130,9 +130,11 @@ public class DockerUtils {
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
             // This makes all available GPUs available to the containers running on the executor
-            // This won't break anything if there are no GPUs at all and the config is tuned on; not recommended to enable this on non GPU machines
+            // This won't break anything if there are no GPUs at all and the config is tuned on; not recommended to
+            // enable this on non GPU machines
             // No discovery of GPUs, managing/rationing of GPU devices
-            // So this needs to be used in conjunction with tagging to ensure that only applications which require GPU end up on executors with GPU enabled
+            // So this needs to be used in conjunction with tagging to ensure that only applications which require
+            // GPU end up on executors with GPU enabled
             if (resourceConfig.isEnableNvidiaGpu()) {
                 // This strange request is equivalent to 'docker create --gpus all'
                 final DeviceRequest nvidiaGpuDeviceRequest = new DeviceRequest()
@@ -194,10 +196,27 @@ public class DockerUtils {
             }
 
             val labels = new HashMap<String, String>();
+            //Add all env with values
             env.addAll(deploymentUnitSpec.getEnv()
                                .entrySet()
                                .stream()
-                               .map(e -> e.getKey() + "=" + e.getValue())
+                               .map(e -> {
+                                   if(Strings.isNullOrEmpty(e.getValue())) {
+                                       val value = System.getenv(e.getKey());
+                                       if (Strings.isNullOrEmpty(value)) {
+                                           log.warn("No local value found for empty variable: {}. Nothing will be set.",
+                                                    e.getKey());
+                                           return null;
+                                       }
+                                       else {
+                                           return e.getKey() + "=" + value;
+                                       }
+                                   }
+                                   else {
+                                       return e.getKey() + "=" + e.getValue();
+                                   }
+                               })
+                               .filter(Objects::nonNull)
                                .toList());
             deploymentUnitSpec.getExecutable().accept((ExecutableTypeVisitor<Void>) dockerCoordinates -> {
                 env.add("DROVE_CONTAINER_ID=" + dockerCoordinates.getUrl());

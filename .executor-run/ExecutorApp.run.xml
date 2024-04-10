@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ExecutorApp" type="Application" factoryName="Application">
+    <envs>
+      <env name="CUSTOM_ENV" value="blah" />
+    </envs>
     <option name="MAIN_CLASS_NAME" value="com.phonepe.drove.executor.App" />
     <module name="drove-executor" />
     <option name="PROGRAM_PARAMETERS" value="server drove-executor/configs/config.yml" />
