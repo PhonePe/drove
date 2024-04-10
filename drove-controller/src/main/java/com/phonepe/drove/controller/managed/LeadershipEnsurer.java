@@ -27,7 +27,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Date;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -114,9 +113,8 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
 
         @Override
         public void stateChanged(CuratorFramework client, ConnectionState newState) {
-            if(client.getConnectionStateErrorPolicy().isErrorState(newState)
-                    && Boolean.TRUE.equals(Objects.requireNonNullElse(controllerOptions.getDieOnZkDisconnect(), true))) {
-                log.error("Lost ZK connectivity.. Committing seppuku as dieOnZkDisconnect is set to true in config...");
+            if(client.getConnectionStateErrorPolicy().isErrorState(newState)) {
+                log.error("Lost ZK connectivity.. Committing seppuku ...");
                 System.exit(-1);
             }
             else {
