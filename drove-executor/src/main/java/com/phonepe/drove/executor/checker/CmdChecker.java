@@ -81,7 +81,7 @@ public class CmdChecker implements Checker {
             switch (frame.getStreamType()) {
                 case STDOUT, STDERR, RAW -> buffer.append(new String(frame.getPayload()));
                 case STDIN -> log.error("Received frame of unsupported stream type: {}", frame.getStreamType());
-                default -> log.error("Unexpected stream type value: " + frame.getStreamType());
+                default -> log.error("Unexpected stream type value: {}", frame.getStreamType());
             }
         }
 
