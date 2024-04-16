@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.common.CommonTestUtils.httpCaller;
 import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
 import static com.phonepe.drove.models.taskinstance.TaskState.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +79,8 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
-                                completedSignal);
+                                completedSignal,
+                                httpCaller());
         val testDone = new AtomicBoolean();
         completedSignal.connect(runner -> testDone.set(true));
         tdb.updateTask(taskSpec.getSourceAppName(), taskSpec.getTaskId(), new TaskInfo(taskSpec.getSourceAppName(),
@@ -156,7 +158,8 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
-                                completedSignal);
+                                completedSignal,
+                                httpCaller());
         val testDone = new AtomicBoolean();
         completedSignal.connect(runner -> testDone.set(true));
 

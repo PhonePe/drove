@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.statemachine.applications.actions;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
@@ -54,6 +55,7 @@ public class ScaleAppAction extends AppAsyncAction {
     private final ThreadFactory threadFactory;
 
     private final ApplicationInstanceTokenManager tokenManager;
+    private final HttpCaller httpCaller;
 
     @Inject
     public ScaleAppAction(
@@ -66,7 +68,7 @@ public class ScaleAppAction extends AppAsyncAction {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
-            ApplicationInstanceTokenManager tokenManager) {
+            ApplicationInstanceTokenManager tokenManager, HttpCaller httpCaller) {
         super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -77,6 +79,7 @@ public class ScaleAppAction extends AppAsyncAction {
         this.instanceIdGenerator = instanceIdGenerator;
         this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
+        this.httpCaller = httpCaller;
     }
 
     @Override
@@ -115,7 +118,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                                schedulingSessionId,
                                                                                                                retrySpecFactory,
                                                                                                                instanceIdGenerator,
-                                                                                                               tokenManager))
+                                                                                                               tokenManager,
+                                                                                                               httpCaller))
                                                        .toList())
                                        .build());
         }

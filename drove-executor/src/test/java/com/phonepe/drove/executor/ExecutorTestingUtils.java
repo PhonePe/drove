@@ -2,7 +2,9 @@ package com.phonepe.drove.executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallbackTemplate;
 import com.github.dockerjava.api.exception.NotFoundException;
+import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -24,6 +26,7 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -31,6 +34,8 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.common.Protocol;
+import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
@@ -48,6 +53,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
+import static com.phonepe.drove.common.CommonUtils.base64;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -85,7 +91,8 @@ public class ExecutorTestingUtils {
                                            List.of(new MountedVolume("/tmp",
                                                                      "/tmp",
                                                                      MountedVolume.MountMode.READ_ONLY)),
-                                           new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                           List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
+                                           new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                                "main",
                                                                                "/",
                                                                                HTTPVerb.GET,
@@ -96,7 +103,7 @@ public class ExecutorTestingUtils {
                                                          Duration.seconds(3),
                                                          attempt,
                                                          Duration.seconds(0)),
-                                           new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                           new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                                "main",
                                                                                "/",
                                                                                HTTPVerb.GET,
@@ -109,7 +116,7 @@ public class ExecutorTestingUtils {
                                                          Duration.seconds(1)),
                                            LocalLoggingSpec.DEFAULT,
                                            Collections.emptyMap(),
-                                           new PreShutdownSpec(List.of(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                           new PreShutdownSpec(List.of(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                                              "main",
                                                                                              "/",
                                                                                              HTTPVerb.GET,
@@ -131,17 +138,18 @@ public class ExecutorTestingUtils {
 
     public static TaskInstanceSpec testTaskInstanceSpec(final String imageName, Map<String, String> env) {
         return new TaskInstanceSpec("T001",
-                                           "TEST_TASK_SPEC",
-                                           UUID.randomUUID().toString(),
-                                           new DockerCoordinates(imageName, Duration.seconds(100)),
-                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
-                                                                                                       Set.of(2, 3))),
-                                                            new MemoryAllocation(Collections.singletonMap(0, 512L))),
-                                           List.of(new MountedVolume("/tmp",
-                                                                     "/tmp",
-                                                                     MountedVolume.MountMode.READ_ONLY)),
-                                           LocalLoggingSpec.DEFAULT,
-                                           env);
+                                    "TEST_TASK_SPEC",
+                                    UUID.randomUUID().toString(),
+                                    new DockerCoordinates(imageName, Duration.seconds(100)),
+                                    ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                Set.of(2, 3))),
+                                                     new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                    List.of(new MountedVolume("/tmp",
+                                                              "/tmp",
+                                                              MountedVolume.MountMode.READ_ONLY)),
+                                    List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
+                                    LocalLoggingSpec.DEFAULT,
+                                    env);
     }
 
     public static ExecutorAddress localAddress() {
@@ -152,7 +160,9 @@ public class ExecutorTestingUtils {
         return createExecutorAppInstanceInfo(testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME), wm);
     }
 
-    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(ApplicationInstanceSpec spec, WireMockRuntimeInfo wm) {
+    public static ExecutorInstanceInfo createExecutorAppInstanceInfo(
+            ApplicationInstanceSpec spec,
+            WireMockRuntimeInfo wm) {
         return createExecutorAppInstanceInfo(spec, wm.getHttpPort());
     }
 
@@ -196,7 +206,7 @@ public class ExecutorTestingUtils {
     }
 
     public static HTTPCheckModeSpec httpCheck(HTTPVerb verb, String body) {
-        return new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+        return new HTTPCheckModeSpec(Protocol.HTTP,
                                      "main",
                                      "/",
                                      verb,
@@ -266,7 +276,7 @@ public class ExecutorTestingUtils {
             ExecutorInstanceInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
-        try(val create = DOCKER_CLIENT.createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)) {
+        try (val create = DOCKER_CLIENT.createContainerCmd(CommonTestUtils.APP_IMAGE_NAME)) {
             val createContainerResponse = create
                     .withName("AppRecoveryTest")
                     .withLabels(Map.of(
@@ -281,7 +291,7 @@ public class ExecutorTestingUtils {
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec();
             containerId = createContainerResponse.getId();
-            try(val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
+            try (val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
                 start.exec();
                 return containerId;
             }
@@ -294,7 +304,7 @@ public class ExecutorTestingUtils {
             ExecutorTaskInfo instanceData,
             ObjectMapper mapper) {
         String containerId;
-        try(val create = DOCKER_CLIENT
+        try (val create = DOCKER_CLIENT
                 .createContainerCmd(CommonTestUtils.TASK_IMAGE_NAME)) {
             val createContainerResponse = create
                     .withName("TaskRecoveryTest")
@@ -310,7 +320,7 @@ public class ExecutorTestingUtils {
                     .withHostConfig(new HostConfig().withAutoRemove(true))
                     .exec();
             containerId = createContainerResponse.getId();
-            try(val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
+            try (val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
                 start.exec();
                 return containerId;
             }
@@ -318,12 +328,43 @@ public class ExecutorTestingUtils {
     }
 
     public static boolean containerExists(String containerId) {
-        try(val inspect = DOCKER_CLIENT.inspectContainerCmd(containerId)) {
+        try (val inspect = DOCKER_CLIENT.inspectContainerCmd(containerId)) {
             val res = inspect.exec();
             return res != null && Objects.requireNonNullElse(res.getState().getRunning(), false);
         }
         catch (NotFoundException e) {
             return false;
+        }
+    }
+
+    @SneakyThrows
+    public static String runCmd(InstanceActionContext<ApplicationInstanceSpec> ctx, String cmd) {
+        val execId = DOCKER_CLIENT.execCreateCmd(ctx.getDockerInstanceId())
+                .withAttachStderr(true)
+                .withAttachStdout(true)
+                .withCmd("sh", "-c", cmd)
+                .exec()
+                .getId();
+        val callback =
+                DOCKER_CLIENT.execStartCmd(execId)
+                        .exec(new CmdOutputHandler())
+                        .awaitCompletion();
+        return callback.result();
+    }
+
+    private static final class CmdOutputHandler extends ResultCallbackTemplate<CmdOutputHandler, Frame> {
+        private final StringBuffer buffer = new StringBuffer();
+
+        @Override
+        public void onNext(Frame frame) {
+            switch (frame.getStreamType()) {
+                case STDOUT, STDERR, RAW -> buffer.append(new String(frame.getPayload()));
+                default -> log.error("Unexpected stream type value: {}", frame.getStreamType());
+            }
+        }
+
+        public String result() {
+            return buffer.toString();
         }
     }
 }

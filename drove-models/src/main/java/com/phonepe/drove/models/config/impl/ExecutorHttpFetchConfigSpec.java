@@ -1,0 +1,35 @@
+package com.phonepe.drove.models.config.impl;
+
+import com.phonepe.drove.models.common.HTTPCallSpec;
+import com.phonepe.drove.models.config.ConfigSpec;
+import com.phonepe.drove.models.config.ConfigSpecType;
+import com.phonepe.drove.models.config.ConfigSpecVisitor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+
+/**
+ * Executor fetches config by making HTTP calls at container startup
+ */
+@Value
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class ExecutorHttpFetchConfigSpec extends ConfigSpec {
+    HTTPCallSpec httpCall;
+
+    @Jacksonized
+    @Builder
+    public ExecutorHttpFetchConfigSpec(
+            String localFilename,
+            HTTPCallSpec httpCall) {
+        super(ConfigSpecType.EXECUTOR_HTTP_FETCH, localFilename);
+        this.httpCall = httpCall;
+    }
+
+    @Override
+    public <T> T accept(ConfigSpecVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+}

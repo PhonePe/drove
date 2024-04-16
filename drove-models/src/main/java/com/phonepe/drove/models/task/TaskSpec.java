@@ -5,6 +5,7 @@ import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import lombok.Value;
@@ -37,6 +38,9 @@ public class TaskSpec implements DeploymentSpec {
 
     @Valid
     List<MountedVolume> volumes;
+
+    @Valid
+    List<ConfigSpec> configs;
 
     @Valid
     LoggingSpec logging;

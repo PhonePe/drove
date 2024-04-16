@@ -13,10 +13,10 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.RandomInstanceIdGenerator;
-import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -30,6 +30,7 @@ import org.mockito.stubbing.Answer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.phonepe.drove.common.CommonTestUtils.httpCaller;
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -88,7 +89,10 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf, instanceIdGenerator, tokenManager);
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager,
+                                             httpCaller());
         val testStatus = new AtomicBoolean();
         val exec = new JobExecutor<Boolean>(MoreExecutors.newDirectExecutorService());
         exec.schedule(Collections.singletonList(job), new BooleanResponseCombiner(), r -> {
@@ -117,7 +121,8 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              sessionId,
                                              rf,
                                              instanceIdGenerator,
-                                             tokenManager);
+                                             tokenManager,
+                                             httpCaller());
         assertFailure(job);
     }
 
@@ -166,7 +171,8 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              sessionId,
                                              rf,
                                              instanceIdGenerator,
-                                             tokenManager);
+                                             tokenManager,
+                                             httpCaller());
         assertFailure(job);
     }
 
@@ -196,7 +202,8 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              sessionId,
                                              rf,
                                              instanceIdGenerator,
-                                             tokenManager);
+                                             tokenManager,
+                                             httpCaller());
         assertFailure(job);
     }
 
@@ -241,7 +248,10 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              instanceInfoDB,
                                              comm,
                                              sessionId,
-                                             rf, instanceIdGenerator, tokenManager);
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager,
+                                             httpCaller());
 
         assertFailure(job);
     }

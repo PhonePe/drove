@@ -2,9 +2,11 @@ package com.phonepe.drove.common;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 
 import java.time.Duration;
 import java.util.Date;
@@ -64,5 +66,9 @@ public class CommonTestUtils {
         return IntStream.rangeClosed(min, max)
                 .boxed()
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public HttpCaller httpCaller() {
+        return new HttpCaller(HttpClients.createDefault());
     }
 }

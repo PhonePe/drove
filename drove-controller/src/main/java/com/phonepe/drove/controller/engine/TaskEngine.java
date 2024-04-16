@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -60,6 +61,7 @@ public class TaskEngine {
     private final LeadershipEnsurer leadershipEnsurer;
     private final ClusterOpSpec defaultClusterOpSpec;
     private final ControllerOptions controllerOptions;
+    private final HttpCaller httpCaller;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
 
@@ -81,7 +83,7 @@ public class TaskEngine {
             ClusterStateDB clusterStateDB,
             LeadershipEnsurer leadershipEnsurer,
             ClusterOpSpec defaultClusterOpSpec,
-            ControllerOptions controllerOptions) {
+            ControllerOptions controllerOptions, HttpCaller httpCaller) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -95,6 +97,7 @@ public class TaskEngine {
         this.leadershipEnsurer = leadershipEnsurer;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
         this.controllerOptions = controllerOptions;
+        this.httpCaller = httpCaller;
         this.completed.connect(taskRunner -> {
             val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
             try {
@@ -225,7 +228,8 @@ public class TaskEngine {
                                     retrySpecFactory,
                                     instanceIdGenerator,
                                     threadFactory,
-                                    completed);
+                                    completed,
+                                    httpCaller);
         val f = executorService.submit(runner);
         runner.setTaskFuture(f);
         return runner;

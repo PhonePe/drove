@@ -48,6 +48,7 @@ import org.apache.hc.core5.util.Timeout;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
@@ -242,5 +243,13 @@ public class CommonUtils {
                 .setConnectionManager(connManager)
                 .setDefaultRequestConfig(rc)
                 .build();
+    }
+
+    public static byte[] base64(final String content) {
+        return Base64.getEncoder().encode(content.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static byte[] base64(final byte[] content) {
+        return Base64.getEncoder().encode(content);
     }
 }

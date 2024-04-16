@@ -270,6 +270,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                         ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(-1, -3))),
                                                                 new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                         Collections.emptyList(),
+                                        Collections.emptyList(),
                                         LocalLoggingSpec.DEFAULT,
                                         Collections.emptyMap());
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);

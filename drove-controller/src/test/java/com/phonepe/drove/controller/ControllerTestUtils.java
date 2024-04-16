@@ -7,6 +7,7 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
@@ -15,6 +16,7 @@ import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolic
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
@@ -38,6 +40,7 @@ import lombok.val;
 
 import java.util.*;
 
+import static com.phonepe.drove.common.CommonUtils.base64;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 
 /**
@@ -69,11 +72,12 @@ public class ControllerTestUtils {
                                    new DockerCoordinates(CommonTestUtils.APP_IMAGE_NAME, Duration.seconds(100)),
                                    Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                    List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                                   List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                                    JobType.SERVICE,
                                    LocalLoggingSpec.DEFAULT,
                                    List.of(new CPURequirement(1), new MemoryRequirement(512)),
                                    new AnyPlacementPolicy(),
-                                   new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                   new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                        "main",
                                                                        "/",
                                                                        HTTPVerb.GET,
@@ -84,7 +88,7 @@ public class ControllerTestUtils {
                                                  Duration.seconds(3),
                                                  3,
                                                  Duration.seconds(0)),
-                                   new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                                   new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                        "main",
                                                                        "/",
                                                                        HTTPVerb.GET,
@@ -118,6 +122,7 @@ public class ControllerTestUtils {
                             taskId,
                             new DockerCoordinates(CommonTestUtils.TASK_IMAGE_NAME, Duration.seconds(100)),
                             List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                            List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                             LocalLoggingSpec.DEFAULT,
                             List.of(new CPURequirement(1), new MemoryRequirement(512)),
                             new AnyPlacementPolicy(),

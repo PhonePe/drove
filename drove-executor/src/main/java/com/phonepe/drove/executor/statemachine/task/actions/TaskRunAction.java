@@ -3,6 +3,7 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -39,11 +40,13 @@ public class TaskRunAction extends TaskAction {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ResourceConfig schedulingConfig;
     private final ExecutorOptions executorOptions;
+    private final HttpCaller httpCaller;
 
     @Inject
-    public TaskRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions) {
+    public TaskRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions, HttpCaller httpCaller) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
+        this.httpCaller = httpCaller;
     }
 
     @Override

@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.common.CommonTestUtils.httpCaller;
 import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
 import static com.phonepe.drove.models.taskinstance.TaskState.RUNNING;
 import static com.phonepe.drove.models.taskinstance.TaskState.STOPPED;
@@ -123,7 +124,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
@@ -181,7 +185,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
@@ -256,7 +263,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         CommonTestUtils.waitUntil(() -> !te.activeTasks().isEmpty());
@@ -348,7 +358,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         te.handleZombieTask(taskSpec.getSourceAppName(), taskSpec.getTaskId());
         CommonTestUtils.waitUntil(() -> tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
                 .map(TaskInfo::getState)
@@ -404,7 +417,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
         tdb.updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
@@ -473,7 +489,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals(
@@ -523,7 +542,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals("Cluster does not have enough CPU. Required: 10000 Available: 25", r.getMessages().get(0));
@@ -573,7 +595,8 @@ class TaskEngineTest extends ControllerTestBase {
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                 ControllerOptions.DEFAULT
-                                        .withAllowedMountDirs(List.of("/tmp")));
+                                        .withAllowedMountDirs(List.of("/tmp")),
+                                httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals("Volume mount requested on non whitelisted host directory: /etc", r.getMessages().get(0));
@@ -604,7 +627,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 jobSched,
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals("Could not schedule job to start the task.", r.getMessages().get(0));
@@ -632,7 +658,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         val r = te.handleTaskOp(new TaskKillOperation(taskSpec.getSourceAppName(),
                                                       taskSpec.getTaskId(),
                                                       ControllerTestUtils.DEFAULT_CLUSTER_OP));
@@ -685,7 +714,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 jobSched,
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
 
         val r = te.handleTaskOp(new TaskKillOperation(taskSpec.getSourceAppName(),
@@ -729,7 +761,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
-                                le, ControllerTestUtils.DEFAULT_CLUSTER_OP, ControllerOptions.DEFAULT);
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.taskSpec(),
                                                         ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());

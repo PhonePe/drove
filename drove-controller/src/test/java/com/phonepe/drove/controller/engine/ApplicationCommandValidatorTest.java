@@ -11,6 +11,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -189,7 +190,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     void testCreateInvalidHealthCheckPortName() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val spec = ControllerTestUtils.appSpec(1)
-                .withHealthcheck(new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                .withHealthcheck(new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                      "Invalid",
                                                                      "/",
                                                                      GET,
@@ -211,7 +212,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     void testCreateInvalidReadinessCheckPortName() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val spec = ControllerTestUtils.appSpec(1)
-                .withReadiness(new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+                .withReadiness(new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                    "Invalid",
                                                                    "/",
                                                                    GET,

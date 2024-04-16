@@ -6,6 +6,7 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartTaskMessage;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
@@ -26,6 +27,8 @@ import net.jodah.failsafe.TimeoutExceededException;
 import java.util.Date;
 import java.util.List;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.translateConfigSpecs;
+
 /**
  * Starts  a single instance by whatever means necessary
  */
@@ -40,6 +43,7 @@ public class StartTaskJob implements Job<Boolean> {
     private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final InstanceIdGenerator instanceIdGenerator;
+    private final HttpCaller httpCaller;
 
     @SuppressWarnings("java:S107")
     public StartTaskJob(
@@ -50,7 +54,7 @@ public class StartTaskJob implements Job<Boolean> {
             ControllerCommunicator communicator,
             String schedulingSessionId,
             ControllerRetrySpecFactory retrySpecFactory,
-            InstanceIdGenerator instanceIdGenerator) {
+            InstanceIdGenerator instanceIdGenerator, HttpCaller httpCaller) {
         this.taskSpec = taskSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
@@ -59,6 +63,7 @@ public class StartTaskJob implements Job<Boolean> {
         this.schedulingSessionId = schedulingSessionId;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.httpCaller = httpCaller;
     }
 
 
@@ -141,14 +146,15 @@ public class StartTaskJob implements Job<Boolean> {
                                                                             node.getPort(),
                                                                             node.getTransportType()),
                                                 new TaskInstanceSpec(taskId,
-                                                                             sourceApp,
-                                                                             instanceId,
-                                                                             taskSpec.getExecutable(),
-                                                                             List.of(node.getCpu(),
+                                                                     sourceApp,
+                                                                     instanceId,
+                                                                     taskSpec.getExecutable(),
+                                                                     List.of(node.getCpu(),
                                                                                      node.getMemory()),
-                                                                             taskSpec.getVolumes(),
-                                                                             taskSpec.getLogging(),
-                                                                             taskSpec.getEnv()));
+                                                                     taskSpec.getVolumes(),
+                                                                     translateConfigSpecs(taskSpec.getConfigs(), httpCaller),
+                                                                     taskSpec.getLogging(),
+                                                                     taskSpec.getEnv()));
         var successful = false;
         try {
             val response = communicator.send(startMessage);

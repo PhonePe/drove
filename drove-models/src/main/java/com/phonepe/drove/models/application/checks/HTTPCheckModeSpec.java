@@ -1,6 +1,7 @@
 package com.phonepe.drove.models.application.checks;
 
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.common.Protocol;
 import io.dropwizard.util.Duration;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -21,11 +22,6 @@ import java.util.Set;
 @Jacksonized
 @Builder
 public class HTTPCheckModeSpec extends CheckModeSpec {
-
-    public enum Protocol {
-        HTTP,
-        HTTPS
-    }
 
     Protocol protocol;
     @NotEmpty

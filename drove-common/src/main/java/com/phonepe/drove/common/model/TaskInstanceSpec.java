@@ -3,6 +3,7 @@ package com.phonepe.drove.common.model;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
+import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import lombok.Value;
 
@@ -20,6 +21,7 @@ public class TaskInstanceSpec implements DeploymentUnitSpec {
     ExecutableCoordinates executable;
     List<ResourceAllocation> resources;
     List<MountedVolume> volumes;
+    List<ConfigSpec> configs;
     LoggingSpec loggingSpec;
     Map<String, String> env;
 

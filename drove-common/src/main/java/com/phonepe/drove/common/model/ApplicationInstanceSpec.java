@@ -6,6 +6,7 @@ import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
+import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import lombok.Value;
 
@@ -24,6 +25,7 @@ public class ApplicationInstanceSpec implements DeploymentUnitSpec {
     List<ResourceAllocation> resources;
     List<PortSpec> ports;
     List<MountedVolume> volumes;
+    List<ConfigSpec> configs;
     CheckSpec healthcheck;
     CheckSpec readiness;
     LoggingSpec loggingSpec;

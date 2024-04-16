@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
 import com.phonepe.drove.controller.engine.jobs.StartTaskJob;
 import com.phonepe.drove.controller.engine.jobs.StopTaskJob;
@@ -56,6 +57,7 @@ public class TaskRunner implements Runnable {
     private final ThreadFactory threadFactory;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed;
+    private final HttpCaller httpCaller;
 
     @Getter
     @Setter
@@ -77,7 +79,7 @@ public class TaskRunner implements Runnable {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ThreadFactory threadFactory,
-            ConsumingFireForgetSignal<TaskRunner> completed) {
+            ConsumingFireForgetSignal<TaskRunner> completed, HttpCaller httpCaller) {
         this.sourceAppName = sourceAppName;
         this.taskId = taskId;
         this.jobExecutor = jobExecutor;
@@ -89,6 +91,7 @@ public class TaskRunner implements Runnable {
         this.instanceIdGenerator = instanceIdGenerator;
         this.threadFactory = threadFactory;
         this.completed = completed;
+        this.httpCaller = httpCaller;
     }
 
     @Override
@@ -107,7 +110,8 @@ public class TaskRunner implements Runnable {
                                          communicator,
                                          schedulingSessionId,
                                          retrySpecFactory,
-                                         instanceIdGenerator))
+                                         instanceIdGenerator,
+                                         httpCaller))
 
                 .build();
         return jobExecutor.schedule(topology,

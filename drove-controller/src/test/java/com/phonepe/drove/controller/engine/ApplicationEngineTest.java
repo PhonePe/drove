@@ -10,8 +10,10 @@ import com.google.inject.name.Names;
 import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
@@ -163,6 +165,11 @@ class ApplicationEngineTest extends ControllerTestBase {
                 return ControllerOptions.DEFAULT;
             }
 
+            @Provides
+            @Singleton
+            public HttpCaller httpCaller() {
+                return CommonTestUtils.httpCaller();
+            }
         });
         injector.injectMembers(this);
         executor.start();

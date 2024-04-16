@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.utils;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.CmdChecker;
 import com.phonepe.drove.executor.checker.HttpChecker;
@@ -15,6 +16,12 @@ import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.config.ConfigSpec;
+import com.phonepe.drove.models.config.ConfigSpecVisitor;
+import com.phonepe.drove.models.config.impl.ControllerHttpFetchConfigSpec;
+import com.phonepe.drove.models.config.impl.ExecutorHttpFetchConfigSpec;
+import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
+import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -32,7 +39,10 @@ import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Date;
+import java.util.List;
 
 /**
  *
@@ -154,5 +164,37 @@ public class ExecutorUtils {
                                         curr.getCreated(),
                                         new Date()),
                 currState.getError());
+    }
+
+    public static List<ConfigSpec> translateConfigSpecs(final List<ConfigSpec> configs,
+                                                        final HttpCaller httpCaller) {
+        return configs.stream()
+                .map(configSpec -> configSpec.accept(new ConfigSpecVisitor<ConfigSpec>() {
+                    @Override
+                    public ConfigSpec visit(InlineConfigSpec inlineConfig) {
+                        return inlineConfig;
+                    }
+
+                    @Override
+                    @SneakyThrows
+                    public ConfigSpec visit(ExecutorLocalFileConfigSpec executorFileConfig) {
+                        return new InlineConfigSpec(
+                                executorFileConfig.getLocalFilename(),
+                                Files.readAllBytes(Paths.get(executorFileConfig.getFilePathOnHost())));
+                    }
+
+                    @Override
+                    public ConfigSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
+                        throw new IllegalStateException("Controller http should have been resolved to inline by controller");
+                    }
+
+                    @Override
+                    public ConfigSpec visit(ExecutorHttpFetchConfigSpec executorHttpFetchConfig) {
+                        return new InlineConfigSpec(
+                                executorHttpFetchConfig.getLocalFilename(),
+                                httpCaller.execute(executorHttpFetchConfig.getHttpCall()));
+                    }
+                }))
+                .toList();
     }
 }

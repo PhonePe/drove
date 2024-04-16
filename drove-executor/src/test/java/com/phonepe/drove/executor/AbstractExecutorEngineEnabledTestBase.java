@@ -6,6 +6,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -95,6 +97,11 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
                         new InjectingTaskActionFactory(injector),
                         resourceDB,
                         ExecutorTestingUtils.DOCKER_CLIENT);
+            }
+            @Provides
+            @Singleton
+            public HttpCaller httpCaller() {
+                return CommonTestUtils.httpCaller();
             }
         });
 

@@ -7,6 +7,7 @@ import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.common.HTTPVerb;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
@@ -171,7 +172,7 @@ class HttpCheckerTest {
     void testInvalidPort(WireMockRuntimeInfo wm) {
 
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
-        val httpSpec = new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+        val httpSpec = new HTTPCheckModeSpec(Protocol.HTTP,
                                              "wrongPort",
                                              "/",
                                              HTTPVerb.GET,

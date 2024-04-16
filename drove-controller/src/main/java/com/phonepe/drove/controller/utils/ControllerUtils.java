@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.utils;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -10,6 +11,11 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.common.HTTPCallSpec;
+import com.phonepe.drove.models.config.ConfigSpec;
+import com.phonepe.drove.models.config.ConfigSpecVisitorAdapter;
+import com.phonepe.drove.models.config.impl.ControllerHttpFetchConfigSpec;
+import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
@@ -404,5 +410,22 @@ public class ControllerUtils {
                     .toList();
         }
         return List.of();
+    }
+
+    public static List<ConfigSpec> translateConfigSpecs(final List<ConfigSpec> configs, final HttpCaller httpCaller) {
+        return configs.stream()
+                .map(configSpec -> switch (configSpec.getType()) {
+                    case CONTROLLER_HTTP_FETCH -> new InlineConfigSpec(
+                            configSpec.getLocalFilename(),
+                            httpCaller.execute(configSpec.accept(new ConfigSpecVisitorAdapter<>() {
+                                @Override
+                                public HTTPCallSpec visit(
+                                        ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
+                                    return controllerHttpFetchConfig.getHttp();
+                                }
+                            })));
+                    case INLINE, EXECUTOR_LOCAL_FILE, EXECUTOR_HTTP_FETCH -> configSpec;
+                })
+                .toList();
     }
 }

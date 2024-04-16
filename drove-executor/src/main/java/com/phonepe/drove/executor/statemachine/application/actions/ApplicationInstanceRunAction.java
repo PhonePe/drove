@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -42,10 +43,14 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ResourceConfig schedulingConfig;
     private final ExecutorOptions executorOptions;
+    private final HttpCaller httpCaller;
+
     @Inject
-    public ApplicationInstanceRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions) {
+    public ApplicationInstanceRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions,
+                                        HttpCaller httpCaller) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
+        this.httpCaller = httpCaller;
     }
 
     @Override
@@ -98,7 +103,7 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
                         env.add("DROVE_APP_INSTANCE_AUTH_TOKEN=" + instanceSpec.getInstanceAuthToken());
                     },
                     executorOptions);
-
+            DockerUtils.injectConfigs(containerId, context.getClient(), instanceSpec, httpCaller);
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)
                     .exec();

@@ -8,6 +8,7 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
@@ -31,6 +32,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
+import static com.phonepe.drove.controller.utils.ControllerUtils.translateConfigSpecs;
 
 /**
  * Starts  a single instance by whatever means necessary
@@ -48,6 +50,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final InstanceIdGenerator instanceIdGenerator;
 
     private final ApplicationInstanceTokenManager tokenManager;
+    private final HttpCaller httpCaller;
 
     @SuppressWarnings("java:S107")
     public StartSingleInstanceJob(
@@ -59,7 +62,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             String schedulingSessionId,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
-            ApplicationInstanceTokenManager tokenManager) {
+            ApplicationInstanceTokenManager tokenManager, HttpCaller httpCaller) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
@@ -69,6 +72,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
         this.tokenManager = tokenManager;
+        this.httpCaller = httpCaller;
     }
 
     @Override
@@ -134,15 +138,19 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                                 instanceId,
                                                                                 applicationSpec.getExecutable(),
                                                                                 List.of(node.getCpu(),
-                                                                             node.getMemory()),
+                                                                                        node.getMemory()),
                                                                                 applicationSpec.getExposedPorts(),
                                                                                 applicationSpec.getVolumes(),
+                                                                                translateConfigSpecs(applicationSpec.getConfigs(),
+                                                                                                     httpCaller),
                                                                                 applicationSpec.getHealthcheck(),
                                                                                 applicationSpec.getReadiness(),
                                                                                 applicationSpec.getLogging(),
                                                                                 applicationSpec.getEnv(),
                                                                                 applicationSpec.getPreShutdown(),
-                                                                                generateAppInstanceToken(node, appId, instanceId)));
+                                                                                generateAppInstanceToken(node,
+                                                                                                         appId,
+                                                                                                         instanceId)));
         var successful = false;
         try {
             val response = communicator.send(startMessage);
@@ -159,11 +167,11 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                 log.info("Start message for instance {}/{} accepted by executor {}",
                          appId, instanceId, node.getExecutorId());
                 successful = ensureInstanceState(instanceInfoDB,
-                                             clusterOpSpec,
-                                             appId,
-                                             instanceId,
-                                             InstanceState.HEALTHY,
-                                             retrySpecFactory);
+                                                 clusterOpSpec,
+                                                 appId,
+                                                 instanceId,
+                                                 InstanceState.HEALTHY,
+                                                 retrySpecFactory);
             }
         }
         finally {

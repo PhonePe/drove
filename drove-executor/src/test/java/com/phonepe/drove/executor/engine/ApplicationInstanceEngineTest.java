@@ -14,6 +14,7 @@ import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
@@ -100,24 +101,25 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                      new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                                Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                                Collections.emptyList(),
-                                               new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                        "main",
-                                                                        "/",
-                                                                        HTTPVerb.GET,
-                                                                        Collections.singleton(200),
-                                                                        "",
-                                                                        io.dropwizard.util.Duration.seconds(1)),
+                                               Collections.emptyList(),
+                                               new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                                                                   "main",
+                                                                                   "/",
+                                                                                   HTTPVerb.GET,
+                                                                                   Collections.singleton(200),
+                                                                                   "",
+                                                                                   io.dropwizard.util.Duration.seconds(1)),
                                                   io.dropwizard.util.Duration.seconds(1),
                                                   io.dropwizard.util.Duration.seconds(3),
                                                   3,
                                                   io.dropwizard.util.Duration.seconds(0)),
-                                               new CheckSpec(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
-                                                                        "main",
-                                                                        "/",
-                                                                        HTTPVerb.GET,
-                                                                        Collections.singleton(200),
-                                                                        "",
-                                                                        io.dropwizard.util.Duration.seconds(1)),
+                                               new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                                                                   "main",
+                                                                                   "/",
+                                                                                   HTTPVerb.GET,
+                                                                                   Collections.singleton(200),
+                                                                                   "",
+                                                                                   io.dropwizard.util.Duration.seconds(1)),
                                                   io.dropwizard.util.Duration.seconds(1),
                                                   io.dropwizard.util.Duration.seconds(3),
                                                   3,

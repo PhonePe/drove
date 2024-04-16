@@ -5,6 +5,7 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import lombok.val;
@@ -125,10 +126,12 @@ class CommonUtilsTest {
                                                                     null,
                                                                     null,
                                                                     null,
+                                                                    null,
                                                                     null)));
         assertEquals("test", instanceId(new TaskInstanceSpec(null,
                                                              null,
                                                              "test",
+                                                             null,
                                                              null,
                                                              null,
                                                              null,
@@ -143,7 +146,7 @@ class CommonUtilsTest {
 
     @Test
     void testInternalCreateHttpClient() {
-        assertNotNull(createInternalHttpClient(new HTTPCheckModeSpec(HTTPCheckModeSpec.Protocol.HTTP,
+        assertNotNull(createInternalHttpClient(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                      "admin",
                                                                      "/",
                                                                      GET,

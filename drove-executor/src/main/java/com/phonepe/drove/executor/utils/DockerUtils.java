@@ -9,6 +9,7 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
@@ -19,6 +20,7 @@ import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
+import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
@@ -28,8 +30,12 @@ import lombok.Value;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.function.Function;
 
@@ -201,7 +207,7 @@ public class DockerUtils {
                                .entrySet()
                                .stream()
                                .map(e -> {
-                                   if(Strings.isNullOrEmpty(e.getValue())) {
+                                   if (Strings.isNullOrEmpty(e.getValue())) {
                                        val value = System.getenv(e.getKey());
                                        if (Strings.isNullOrEmpty(value)) {
                                            log.warn("No local value found for empty variable: {}. Nothing will be set.",
@@ -234,6 +240,56 @@ public class DockerUtils {
                     .getId();
             log.debug("Created container id: {}", containerId);
             return containerId;
+        }
+    }
+
+
+    /**
+     * This will copy resources to container without creating tmp files.
+     * This ensures that residual files are not leaked outside
+     * The downside is that this will take memory
+     * @param containerId ID of the created container
+     * @param client Docker client
+     * @param deploymentUnitSpec Spec for deployable
+     * @param httpCaller HTP caller for remote task
+     */
+    @SneakyThrows
+    public static void injectConfigs(
+            final String containerId,
+            final DockerClient client,
+            final DeploymentUnitSpec deploymentUnitSpec,
+            final HttpCaller httpCaller) {
+        val configs = deploymentUnitSpec.getConfigs();
+        if (configs == null || configs.isEmpty()) {
+            log.info("No configs to be injected to container");
+            return;
+        }
+        val configSpecs = ExecutorUtils.translateConfigSpecs(configs, httpCaller);
+        try(val bos = new ByteArrayOutputStream()) {
+            try (val tos = new TarArchiveOutputStream(bos)) {
+                tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+                tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+                configSpecs
+                        .stream()
+                        .map(InlineConfigSpec.class::cast)
+                        .forEach(configSpec -> {
+                            try {
+                                val entry = new TarArchiveEntry(configSpec.getLocalFilename());
+                                entry.setSize(configSpec.getData().length);
+                                tos.putArchiveEntry(entry);
+                                tos.write(configSpec.getData());
+                                tos.closeArchiveEntry();
+                            }
+                            catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                tos.flush();
+                tos.finish();
+            }
+            client.copyArchiveToContainerCmd(containerId)
+                    .withTarInputStream(new ByteArrayInputStream(bos.toByteArray()))
+                    .exec();
         }
     }
 
