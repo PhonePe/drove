@@ -54,8 +54,8 @@ public class ControllerUtils {
             @Override
             public String visit(ApplicationSpec applicationSpec) {
                 return Strings.isNullOrEmpty(applicationSpec.getName()) || Strings.isNullOrEmpty(applicationSpec.getVersion())
-                        ? null
-                        : applicationSpec.getName() + "-" + applicationSpec.getVersion();
+                       ? null
+                       : applicationSpec.getName() + "-" + applicationSpec.getVersion();
             }
 
             @Override
@@ -95,13 +95,18 @@ public class ControllerUtils {
                     log.error("No instance info found at all for: {}/{}", appId, instanceId);
                 }
                 else {
-                    if(status.equals(MISMATCH)) {
+                    if (status.equals(MISMATCH)) {
                         log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
                                   appId, instanceId, curr.getState(), curr);
                     }
                     else {
-                        log.error("Looks like {}/{} has failed permanently and reached state: {}. Detailed instance data: {}}",
-                                  appId, instanceId, curr.getState(), curr);
+                        log.error(
+                                "Looks like {}/{} has failed permanently and reached state: {}. Detailed instance " +
+                                        "data: {}}",
+                                appId,
+                                instanceId,
+                                curr.getState(),
+                                curr);
                     }
                 }
             }
@@ -132,7 +137,7 @@ public class ControllerUtils {
                         }
                     })
                     .get(() -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId),
-                                                   required));
+                                               required));
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -142,13 +147,18 @@ public class ControllerUtils {
                     log.error("No instance info found at all for: {}/{}", sourceAppName, taskId);
                 }
                 else {
-                    if(status.equals(MISMATCH)) {
+                    if (status.equals(MISMATCH)) {
                         log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
                                   sourceAppName, taskId, curr.getState(), curr);
                     }
                     else {
-                        log.error("Looks like {}/{} has failed permanently and reached state: {}. Detailed instance data: {}}",
-                                  sourceAppName, taskId, curr.getState(), curr);
+                        log.error(
+                                "Looks like {}/{} has failed permanently and reached state: {}. Detailed instance " +
+                                        "data: {}}",
+                                sourceAppName,
+                                taskId,
+                                curr.getState(),
+                                curr);
                     }
                 }
             }
@@ -182,6 +192,7 @@ public class ControllerUtils {
                                        .getSimpleName() + " to " + clazz.getSimpleName());
         return obj;
     }
+
     private static InstanceInfo currentInstanceInfo(
             final ApplicationInstanceInfoDB instanceInfoDB,
             String appId,
@@ -196,7 +207,9 @@ public class ControllerUtils {
         return taskDB.task(sourceAppName, taskId).orElse(null);
     }
 
-    private static StateCheckStatus ensureTaskState(final InstanceInfo instanceInfo, final InstanceState instanceState) {
+    private static StateCheckStatus ensureTaskState(
+            final InstanceInfo instanceInfo,
+            final InstanceState instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Instance state for {}/{}: {}",
@@ -208,12 +221,13 @@ public class ControllerUtils {
                          instanceState);
                 return MATCH;
             }
-            if(currState.isTerminal()) { //Useless to wait if it has died anyway
+            if (currState.isTerminal()) { //Useless to wait if it has died anyway
                 return MISMATCH_NONRECOVERABLE;
             }
         }
         return MISMATCH;
     }
+
     private static StateCheckStatus ensureTaskState(final TaskInfo instanceInfo, final TaskState instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
@@ -226,7 +240,7 @@ public class ControllerUtils {
                          instanceState);
                 return MATCH;
             }
-            if(currState.isTerminal()) { //Useless to wait if it has died anyway
+            if (currState.isTerminal()) { //Useless to wait if it has died anyway
                 return MISMATCH_NONRECOVERABLE;
             }
         }
@@ -277,7 +291,7 @@ public class ControllerUtils {
 
         });
     }
-    
+
     public static String deployableObjectId(final TaskOperation operation) {
         return operation.accept(new TaskOperationVisitor<>() {
             @Override
@@ -374,8 +388,9 @@ public class ControllerUtils {
 
     public static Response commandValidationFailure(List<String> messages) {
         return ControllerUtils.badRequest(Map.of("validationErrors", messages),
-                                   "Command validation failure");
+                                          "Command validation failure");
     }
+
     public static <T> Response badRequest(T data, String message) {
         return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ApiResponse.failure(data, message))
@@ -406,26 +421,28 @@ public class ControllerUtils {
                     .filter(volume -> whitelistedDirs.stream()
                             .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
                     .map(volume -> "Volume mount requested on non whitelisted host directory: "
-                                                        + volume.getPathOnHost())
+                            + volume.getPathOnHost())
                     .toList();
         }
         return List.of();
     }
 
     public static List<ConfigSpec> translateConfigSpecs(final List<ConfigSpec> configs, final HttpCaller httpCaller) {
-        return configs.stream()
-                .map(configSpec -> switch (configSpec.getType()) {
-                    case CONTROLLER_HTTP_FETCH -> new InlineConfigSpec(
-                            configSpec.getLocalFilename(),
-                            httpCaller.execute(configSpec.accept(new ConfigSpecVisitorAdapter<>() {
-                                @Override
-                                public HTTPCallSpec visit(
-                                        ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
-                                    return controllerHttpFetchConfig.getHttp();
-                                }
-                            })));
-                    case INLINE, EXECUTOR_LOCAL_FILE, EXECUTOR_HTTP_FETCH -> configSpec;
-                })
+        return Objects.requireNonNullElse(configs, List.<ConfigSpec>of())
+                .stream()
+                .map(configSpec -> configSpec.accept(new ConfigSpecVisitorAdapter<>(configSpec) {
+                    @Override
+                    public ConfigSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
+                        return new InlineConfigSpec(
+                                configSpec.getLocalFilename(),
+                                httpCaller.execute(configSpec.accept(new ConfigSpecVisitorAdapter<>() {
+                                    @Override
+                                    public HTTPCallSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
+                                        return controllerHttpFetchConfig.getHttp();
+                                    }
+                                })));
+                    }
+                }))
                 .toList();
     }
 }
