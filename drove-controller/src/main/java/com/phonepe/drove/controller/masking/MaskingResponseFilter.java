@@ -45,12 +45,12 @@ public class MaskingResponseFilter implements ContainerResponseFilter {
             return;
         }
         for (Field field : object.getClass().getDeclaredFields()) {
-            log.info("Handling field: {}::{} of type: {}",
+            log.trace("Handling field: {}::{} of type: {}",
                      object.getClass().getSimpleName(),
                      field.getName(),
                      field.getType().getSimpleName());
             if (Objects.nonNull(field.getDeclaredAnnotation(Mask.class))) {
-                log.info("Found masked field: {}", field.getName());
+                log.trace("Found masked field: {}", field.getName());
                 try {
                     if (field.getType() == String.class) {
                         field.setAccessible(true);
@@ -73,8 +73,8 @@ public class MaskingResponseFilter implements ContainerResponseFilter {
                     continue;
                 }
                 if (ClassUtils.isAssignable(field.getType(), Collection.class)) {
-                    field.setAccessible(true);
                     try {
+                        field.setAccessible(true);
                         val values = (Collection<?>) field.get(object);
                         if (null != values) {
                             values.forEach(value -> mask(value, Object.class));
@@ -87,8 +87,8 @@ public class MaskingResponseFilter implements ContainerResponseFilter {
                     }
                 }
                 else if (ClassUtils.isAssignable(field.getType(), Map.class)) {
-                    field.setAccessible(true);
                     try {
+                        field.setAccessible(true);
                         val map = (Map<?, ?>) field.get(object);
                         if (null != map) {
                             map.values().forEach(value -> mask(value, Object.class));
