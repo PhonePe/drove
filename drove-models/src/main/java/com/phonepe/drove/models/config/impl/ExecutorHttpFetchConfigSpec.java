@@ -10,6 +10,8 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Executor fetches config by making HTTP calls at container startup
  */
@@ -17,6 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ExecutorHttpFetchConfigSpec extends ConfigSpec {
+    @NotNull
     HTTPCallSpec httpCall;
 
     @Jacksonized

@@ -1,18 +1,20 @@
 package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
-import com.phonepe.drove.models.events.DroveEvent;
+import com.phonepe.drove.controller.masking.EnforceMasking;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.common.ClusterStateData;
+import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -20,6 +22,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.Auth;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -59,17 +62,19 @@ public class Apis {
 
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
+    private final ObjectMapper mapper;
 
 
     @Inject
     public Apis(
             ApplicationEngine engine,
             TaskEngine taskEngine, ResponseEngine responseEngine,
-            ClusterStateDB clusterStateDB) {
+            ClusterStateDB clusterStateDB, ObjectMapper mapper) {
         this.engine = engine;
         this.taskEngine = taskEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
+        this.mapper = mapper;
     }
 
     @POST
@@ -96,7 +101,7 @@ public class Apis {
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public Response acceptAppOperation(
             @Auth final DroveUser user,
-            @NotNull@Valid final ApplicationOperation operation) {
+            @NotNull @Valid final ApplicationOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
         }
@@ -138,6 +143,8 @@ public class Apis {
     @GET
     @Path("/applications/{id}/spec")
     @Timed
+    @SneakyThrows
+    @EnforceMasking
     public ApiResponse<ApplicationSpec> applicationSpec(@PathParam("id") @NotEmpty final String appId) {
         return responseEngine.applicationSpec(appId);
     }
@@ -306,10 +313,10 @@ public class Apis {
     }
 
     /**
-     * @deprecated use the /latest api instead
      * @param lastSyncTime Last time sync happened
-     * @param size number of events
+     * @param size         number of events
      * @return List of events
+     * @deprecated use the /latest api instead
      */
     @GET
     @Path("/cluster/events")

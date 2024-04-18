@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.config.impl;
 
+import com.phonepe.drove.models.common.Mask;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecType;
 import com.phonepe.drove.models.config.ConfigSpecVisitor;
@@ -9,6 +10,8 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import javax.validation.constraints.NotEmpty;
+
 /**
  *
  */
@@ -17,6 +20,8 @@ import lombok.extern.jackson.Jacksonized;
 @ToString
 public class InlineConfigSpec extends ConfigSpec {
 
+    @Mask
+    @NotEmpty
     byte []data;
 
     @Jacksonized

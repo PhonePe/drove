@@ -22,6 +22,7 @@ import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -32,6 +33,7 @@ import java.util.concurrent.CancellationException;
  *
  */
 @Slf4j
+@Singleton
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
 public class HttpCaller {
     private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = 64 * (2 ^ 10); //64KB

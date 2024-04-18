@@ -10,6 +10,8 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Controller fetches config by making HTTP calls and serve it to executor during spin-up
  */
@@ -17,6 +19,7 @@ import lombok.extern.jackson.Jacksonized;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ControllerHttpFetchConfigSpec extends ConfigSpec {
+    @NotNull
     HTTPCallSpec http;
 
     @Jacksonized

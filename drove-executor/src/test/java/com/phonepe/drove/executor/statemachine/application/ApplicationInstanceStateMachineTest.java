@@ -1,6 +1,8 @@
 package com.phonepe.drove.executor.statemachine.application;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Provides;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
@@ -12,8 +14,11 @@ import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.junit.jupiter.api.Test;
 
+import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.Executors;
 
@@ -43,7 +48,13 @@ class ApplicationInstanceStateMachineTest extends AbstractTestBase {
                                                                                                new Date(),
                                                                                                new Date())),
                                                      new InjectingApplicationInstanceActionFactory(Guice.createInjector(
-                                                             Stage.DEVELOPMENT)),
+                                                             Stage.DEVELOPMENT, new AbstractModule() {
+                                                                 @Provides
+                                                                 @Singleton
+                                                                 public CloseableHttpClient httpClient() {
+                                                                     return HttpClients.createDefault();
+                                                                 }
+                                                             })),
                                                      ExecutorTestingUtils.DOCKER_CLIENT,
                                                      false);
         val stateChanges = new HashSet<>();

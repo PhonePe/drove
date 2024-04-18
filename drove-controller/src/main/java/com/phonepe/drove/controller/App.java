@@ -1,5 +1,7 @@
 package com.phonepe.drove.controller;
 
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.github.benmanes.caffeine.cache.CaffeineSpec;
 import com.google.common.base.Strings;
 import com.google.inject.Injector;
@@ -55,6 +57,7 @@ public class App extends Application<AppConfig> {
                                   "com.phonepe.drove.controller.healthcheck",
                                   "com.phonepe.drove.controller.managed",
                                   "com.phonepe.drove.controller.helpers",
+                                  "com.phonepe.drove.controller.masking",
                                   "com.phonepe.drove.controller.errorhandlers",
                                   "com.phonepe.olympus.im.client.exceptions")
                 .modules(new ControllerCoreModule())
@@ -131,6 +134,9 @@ public class App extends Application<AppConfig> {
                                                    ControllerOptions.DEFAULT_AUDITED_METHODS))));
         jersey.register(new AuthValueFactoryProvider.Binder<>(DroveUser.class));
         jersey.register(RolesAllowedDynamicFeature.class);
+        environment.getObjectMapper()
+                .setFilterProvider(new SimpleFilterProvider()
+                                           .addFilter("masked", SimpleBeanPropertyFilter.serializeAll()));
     }
 
     public static void main(String[] args) throws Exception {

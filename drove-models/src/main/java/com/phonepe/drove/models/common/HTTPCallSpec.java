@@ -61,8 +61,11 @@ public class HTTPCallSpec {
 
     Duration connectionTimeout;
     Duration operationTimeout;
+    @Mask
     String username;
+    @Mask
     String password;
+    @Mask
     String authHeader;
     Map<String, String> headers;
 
