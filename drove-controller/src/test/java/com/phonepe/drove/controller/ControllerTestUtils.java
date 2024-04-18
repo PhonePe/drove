@@ -40,7 +40,7 @@ import lombok.val;
 
 import java.util.*;
 
-import static com.phonepe.drove.common.CommonUtils.base64;
+import static com.phonepe.drove.common.CommonTestUtils.base64;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 
 /**

@@ -8,7 +8,9 @@ import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -70,5 +72,9 @@ public class CommonTestUtils {
 
     public HttpCaller httpCaller() {
         return new HttpCaller(HttpClients.createDefault());
+    }
+
+    public static byte[] base64(final String content) {
+        return Base64.getEncoder().encode(content.getBytes(StandardCharsets.UTF_8));
     }
 }

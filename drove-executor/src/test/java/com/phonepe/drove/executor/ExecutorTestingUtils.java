@@ -53,7 +53,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
-import static com.phonepe.drove.common.CommonUtils.base64;
+import static com.phonepe.drove.common.CommonTestUtils.base64;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
