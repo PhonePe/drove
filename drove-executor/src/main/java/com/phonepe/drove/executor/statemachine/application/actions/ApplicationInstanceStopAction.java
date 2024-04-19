@@ -9,9 +9,7 @@ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.PreShutdownSpec;
-import com.phonepe.drove.models.application.checks.CheckMode;
-import com.phonepe.drove.models.application.checks.CheckModeSpec;
-import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.application.checks.*;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -30,6 +28,8 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer;
 
 /**
  *
@@ -93,21 +93,38 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         }
         else {
             log.info("Calling {} pre-shutdown hooks", preShutdownHook.size());
-            preShutdownHook.forEach(hook -> executeHook(currentState, hook));
+            preShutdownHook.forEach(hook -> executeHook(context, currentState, hook));
         }
         sleepBeforeKill(preShutdown);
     }
 
     private void executeHook(
+            InstanceActionContext<ApplicationInstanceSpec> context,
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             CheckModeSpec preShutdownHook) {
-        val httpSpec = CheckMode.HTTP == preShutdownHook.getType()
-                       ? (HTTPCheckModeSpec) preShutdownHook
-                       : null;
-        if (null == httpSpec) {
-            log.error("Non-http hooks are not supported yet");
-            return;
+        try {
+            preShutdownHook.accept(new CheckModeSpecVisitor<Boolean>() {
+                @Override
+                public Boolean visit(HTTPCheckModeSpec httpCheck) {
+                    executeHttpShutdownHook(currentState, httpCheck);
+                    return null;
+                }
+
+                @Override
+                public Boolean visit(CmdCheckModeSpec cmdCheck) {
+                    executeCmdShutdownHook(context, currentState, cmdCheck);
+                    return null;
+                }
+            });
         }
+        catch (Exception e) {
+            log.error("Error executing shutdown hook.", e);
+        }
+    }
+
+    private void executeHttpShutdownHook(
+            StateData<InstanceState, ExecutorInstanceInfo> currentState,
+            HTTPCheckModeSpec httpSpec) {
         val instanceInfo = currentState.getData();
         val port = instanceInfo.getLocalInfo()
                 .getPorts()
@@ -132,12 +149,41 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
             Failsafe.with(List.of(retryPolicy))
                     .onFailure(e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()))
                     .get(() -> makeHTTPCall(httpClient, httpSpec, uri));
+            return;
         }
         catch (TimeoutExceededException e) {
             log.error("Timeout calling shutdown hook.");
         }
         catch (IOException e) {
-            log.error("Error creating http client: " + e.getMessage());
+            log.error("Error creating http client: {}", e.getMessage());
+        }
+    }
+
+    private void executeCmdShutdownHook(
+            InstanceActionContext<ApplicationInstanceSpec> context,
+            StateData<InstanceState, ExecutorInstanceInfo> currentState,
+            CmdCheckModeSpec cmdCheckModeSpec) {
+        val containerId = context.getDockerInstanceId();
+        if (Strings.isNullOrEmpty(containerId)) {
+            log.warn("No container found. Nothing will be done.");
+            return;
+        }
+        val client = context.getClient();
+        try {
+            val output = runCommandInContainer(
+                    containerId,
+                    client,
+                    cmdCheckModeSpec.getCommand());
+            if (output.getStatus() == 0) {
+                log.info("Hook completed successfully with output: {}", output.getOutput());
+            }
+            else {
+                log.error("Command hook failed with status: {} output: {} exception (if any): {}",
+                          output.getStatus(), output.getOutput(), output.getErrorMessage());
+            }
+        }
+        catch (NotFoundException e) {
+            log.info("No container found with ID: {}. Command hook execution failed.", containerId);
         }
     }
 

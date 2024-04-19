@@ -30,6 +30,7 @@ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
+import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
@@ -54,6 +55,7 @@ import java.util.function.Function;
 
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static com.phonepe.drove.common.CommonTestUtils.base64;
+import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -131,7 +133,10 @@ public class ExecutorTestingUtils {
                                                                                              Collections.singleton(200),
                                                                                              "",
                                                                                              Duration.seconds(1),
-                                                                                             useHttps)),
+                                                                                             useHttps),
+                                                                       new CmdCheckModeSpec("echo -n 1"),
+                                                                       new CmdCheckModeSpec("SomeWrongCommand")
+                                                                       ),
                                                                Duration.seconds(1)),
                                            "TestToken");
     }
@@ -357,17 +362,7 @@ public class ExecutorTestingUtils {
 
     @SneakyThrows
     public static String runCmd(InstanceActionContext<ApplicationInstanceSpec> ctx, String cmd) {
-        val execId = DOCKER_CLIENT.execCreateCmd(ctx.getDockerInstanceId())
-                .withAttachStderr(true)
-                .withAttachStdout(true)
-                .withCmd("sh", "-c", cmd)
-                .exec()
-                .getId();
-        val callback =
-                DOCKER_CLIENT.execStartCmd(execId)
-                        .exec(new CmdOutputHandler())
-                        .awaitCompletion();
-        return callback.result();
+        return runCommandInContainer(ctx.getDockerInstanceId(), DOCKER_CLIENT, cmd).getOutput();
     }
 
     private static final class CmdOutputHandler extends ResultCallbackTemplate<CmdOutputHandler, Frame> {

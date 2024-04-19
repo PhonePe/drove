@@ -56,7 +56,7 @@ public class ContainerHelperExtension implements BeforeAllCallback, BeforeEachCa
                 DOCKER_CLIENT.stopContainerCmd(cid).exec();
                 log.info("Stopped container: {}", cid);
             }
-            catch (NotModifiedException e) {
+            catch (NotFoundException | NotModifiedException e) {
                 log.info("Container {} has already been stopped.", cid);
             }
         });

@@ -1,10 +1,12 @@
 package com.phonepe.drove.executor.utils;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallbackTemplate;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
@@ -37,6 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
@@ -248,10 +251,11 @@ public class DockerUtils {
      * This will copy resources to container without creating tmp files.
      * This ensures that residual files are not leaked outside
      * The downside is that this will take memory
-     * @param containerId ID of the created container
-     * @param client Docker client
+     *
+     * @param containerId        ID of the created container
+     * @param client             Docker client
      * @param deploymentUnitSpec Spec for deployable
-     * @param httpCaller HTP caller for remote task
+     * @param httpCaller         HTP caller for remote task
      */
     @SneakyThrows
     public static void injectConfigs(
@@ -265,7 +269,7 @@ public class DockerUtils {
             return;
         }
         val configSpecs = ExecutorUtils.translateConfigSpecs(configs, httpCaller);
-        try(val bos = new ByteArrayOutputStream()) {
+        try (val bos = new ByteArrayOutputStream()) {
             try (val tos = new TarArchiveOutputStream(bos)) {
                 tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
                 tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
@@ -291,6 +295,55 @@ public class DockerUtils {
                     .withTarInputStream(new ByteArrayInputStream(bos.toByteArray()))
                     .exec();
         }
+    }
+
+    @Value
+    public static class CommandOutput {
+        long status;
+        String output;
+        String errorMessage;
+    }
+
+    @SneakyThrows
+    public static CommandOutput runCommandInContainer(
+            final String containerId,
+            final DockerClient client,
+            final String command) {
+        val execId = client.execCreateCmd(containerId)
+                .withAttachStderr(true)
+                .withAttachStdout(true)
+                .withCmd("sh", "-c", command)
+                .exec()
+                .getId();
+        val buffer = new StringBuffer();
+        val errMsg = new AtomicReference<String>();
+
+        client.execStartCmd(execId)
+                .exec(new ResultCallbackTemplate<ResultCallbackTemplate<?, Frame>, Frame>() {
+
+                    @Override
+                    public void onNext(Frame frame) {
+                        switch (frame.getStreamType()) {
+                            case STDOUT, STDERR, RAW -> buffer.append(new String(frame.getPayload()));
+                            case STDIN -> log.error("Received frame of unsupported stream type: {}",
+                                                    frame.getStreamType());
+                            default -> log.error("Unexpected stream type value: {}", frame.getStreamType());
+                        }
+                    }
+
+                    @Override
+                    @IgnoreInJacocoGeneratedReport
+                    public void onError(Throwable throwable) {
+                        log.error("Error executing command: " + throwable.getMessage(), throwable);
+                        errMsg.set(throwable.getMessage());
+                        super.onError(throwable);
+                    }
+                })
+                .awaitCompletion();
+        val exitCode = client.inspectExecCmd(execId)
+                .exec()
+                .getExitCodeLong();
+        return new CommandOutput(exitCode, buffer.toString(), errMsg.get());
     }
 
     private static Boolean autoRemove(DeploymentUnitSpec deploymentUnitSpec) {
