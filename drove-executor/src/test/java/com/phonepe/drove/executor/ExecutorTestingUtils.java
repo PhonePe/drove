@@ -80,6 +80,12 @@ public class ExecutorTestingUtils {
     }
 
     public static ApplicationInstanceSpec testAppInstanceSpec(final String imageName, int attempt) {
+        return testAppInstanceSpec(imageName, attempt, false);
+    }
+
+    public static ApplicationInstanceSpec testAppInstanceSpec(final String imageName, int attempt, boolean useHttps) {
+        val protocol = useHttps ? Protocol.HTTPS : Protocol.HTTP;
+        val portType = useHttps ? PortType.HTTPS : PortType.HTTP;
         return new ApplicationInstanceSpec("T001",
                                            "TEST_SPEC",
                                            UUID.randomUUID().toString(),
@@ -87,42 +93,45 @@ public class ExecutorTestingUtils {
                                            ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
                                                                                                        Set.of(2, 3))),
                                                             new MemoryAllocation(Collections.singletonMap(0, 512L))),
-                                           Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
+                                           Collections.singletonList(new PortSpec("main", 8000, portType)),
                                            List.of(new MountedVolume("/tmp",
                                                                      "/tmp",
                                                                      MountedVolume.MountMode.READ_ONLY)),
                                            List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
-                                           new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                           new CheckSpec(new HTTPCheckModeSpec(protocol,
                                                                                "main",
                                                                                "/",
                                                                                HTTPVerb.GET,
                                                                                Collections.singleton(200),
                                                                                "",
-                                                                               Duration.seconds(1)),
+                                                                               Duration.seconds(1),
+                                                                               useHttps),
                                                          Duration.seconds(1),
                                                          Duration.seconds(3),
                                                          attempt,
                                                          Duration.seconds(0)),
-                                           new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                           new CheckSpec(new HTTPCheckModeSpec(protocol,
                                                                                "main",
                                                                                "/",
                                                                                HTTPVerb.GET,
                                                                                Collections.singleton(200),
                                                                                "",
-                                                                               Duration.seconds(1)),
+                                                                               Duration.seconds(1),
+                                                                               useHttps),
                                                          Duration.seconds(1),
                                                          Duration.seconds(3),
                                                          attempt,
                                                          Duration.seconds(1)),
                                            LocalLoggingSpec.DEFAULT,
                                            Collections.emptyMap(),
-                                           new PreShutdownSpec(List.of(new HTTPCheckModeSpec(Protocol.HTTP,
+                                           new PreShutdownSpec(List.of(new HTTPCheckModeSpec(protocol,
                                                                                              "main",
                                                                                              "/",
                                                                                              HTTPVerb.GET,
                                                                                              Collections.singleton(200),
                                                                                              "",
-                                                                                             Duration.seconds(1))),
+                                                                                             Duration.seconds(1),
+                                                                                             useHttps)),
                                                                Duration.seconds(1)),
                                            "TestToken");
     }
@@ -202,25 +211,34 @@ public class ExecutorTestingUtils {
     }
 
     public static HTTPCheckModeSpec httpCheck(HTTPVerb verb) {
-        return httpCheck(verb, null);
+        return httpCheck(verb, null, false);
     }
 
-    public static HTTPCheckModeSpec httpCheck(HTTPVerb verb, String body) {
-        return new HTTPCheckModeSpec(Protocol.HTTP,
+    public static HTTPCheckModeSpec httpCheck(HTTPVerb verb, String body, boolean https) {
+        return new HTTPCheckModeSpec(https ? Protocol.HTTPS : Protocol.HTTP,
                                      "main",
                                      "/",
                                      verb,
                                      Collections.singleton(200),
                                      body,
-                                     Duration.seconds(1));
+                                     Duration.seconds(1),
+                                     https); //Needs to skip cert etc validation for tests
     }
 
     public static CheckSpec checkSpec(HTTPVerb verb) {
-        return checkSpec(verb, null);
+        return checkSpec(verb, false);
+    }
+
+    public static CheckSpec checkSpec(HTTPVerb verb, boolean https) {
+        return checkSpec(verb, null, https);
     }
 
     public static CheckSpec checkSpec(HTTPVerb verb, String body) {
-        return checkSpec(httpCheck(verb, body));
+        return checkSpec(verb, body, false);
+    }
+
+    public static CheckSpec checkSpec(HTTPVerb verb, String body, boolean https) {
+        return checkSpec(httpCheck(verb, body, https));
     }
 
     public static CheckSpec checkSpec(final CheckModeSpec checkModeSpec) {

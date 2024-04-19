@@ -152,7 +152,8 @@ class CommonUtilsTest {
                                                                      GET,
                                                                      Set.of(200),
                                                                      "",
-                                                                     io.dropwizard.util.Duration.seconds(1)),
+                                                                     io.dropwizard.util.Duration.seconds(1),
+                                                                     false),
                                                Duration.ofSeconds(2)));
     }
 }

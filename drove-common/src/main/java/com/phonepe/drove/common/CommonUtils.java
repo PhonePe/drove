@@ -19,6 +19,7 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -34,7 +35,9 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.protocol.RedirectStrategy;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.URIScheme;
@@ -42,6 +45,7 @@ import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
@@ -163,7 +167,7 @@ public class CommonUtils {
             return InetAddress.getLocalHost().getCanonicalHostName();
         }
         catch (UnknownHostException e) {
-            log.error("Error getting hostname: " + e.getMessage(), e);
+            log.error("Error getting hostname: {}", e.getMessage(), e);
         }
         return null;
     }
@@ -204,14 +208,24 @@ public class CommonUtils {
                 .build();
     }
 
+    @SneakyThrows
     public static CloseableHttpClient createInternalHttpClient(HTTPCheckModeSpec httpSpec, Duration requestTimeOut) {
         val connectionTimeout = Duration.ofMillis(
                 Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
                                            io.dropwizard.util.Duration.seconds(1))
                         .toMilliseconds());
+        val socketFactoryBuilder = SSLConnectionSocketFactoryBuilder.create();
+        if(httpSpec.isInsecure()) {
+            socketFactoryBuilder.setSslContext(
+                            SSLContextBuilder.create()
+                                    .loadTrustMaterial(TrustAllStrategy.INSTANCE)
+                                    .build())
+                    .setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+        }
+
         val socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
                 .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
-                .register(URIScheme.HTTPS.id, SSLConnectionSocketFactory.getSocketFactory())
+                .register(URIScheme.HTTPS.id, socketFactoryBuilder.build())
                 .build();
         val connManager = new PoolingHttpClientConnectionManager(
                 socketFactoryRegistry, PoolConcurrencyPolicy.STRICT, PoolReusePolicy.LIFO, TimeValue.ofMinutes(5));

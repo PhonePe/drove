@@ -3,12 +3,13 @@ package com.phonepe.drove.executor.checker;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.common.Protocol;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -19,9 +20,10 @@ import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.checkSpec;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testAppInstanceSpec;
 import static org.junit.jupiter.api.Assertions.*;
 
-@WireMockTest
+@WireMockTest(httpsEnabled = true)
 class HttpCheckerTest {
 
     @Test
@@ -30,7 +32,22 @@ class HttpCheckerTest {
         stubFor(get("/").willReturn(ok()));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.GET);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+            val r = checker.call();
+            assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testCheckGetSuccessInsecureHttps(WireMockRuntimeInfo wm) {
+        stubFor(get("/").willReturn(ok()));
+        val info =
+                ExecutorTestingUtils.createExecutorAppInstanceInfo(
+                        testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME, 1, true),
+                        wm.getHttpsPort());
+        val spec = checkSpec(HTTPVerb.GET, true);
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val r = checker.call();
             assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
         }
@@ -42,7 +59,7 @@ class HttpCheckerTest {
         stubFor(get("/").willReturn(serverError().withBody("Server Kaput!!")));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.GET);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
 
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
@@ -56,7 +73,7 @@ class HttpCheckerTest {
         stubFor(post("/").willReturn(ok()));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.POST);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
 
             val r = checker.call();
             assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
@@ -69,7 +86,7 @@ class HttpCheckerTest {
         stubFor(post("/").withRequestBody(equalTo("Hello")).willReturn(ok()));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.POST, "Hello");
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
 
             val r = checker.call();
             assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
@@ -82,7 +99,7 @@ class HttpCheckerTest {
         stubFor(post("/").willReturn(serverError().withBody("Server Kaput!!")));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.POST);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
 
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
@@ -96,7 +113,7 @@ class HttpCheckerTest {
         stubFor(put("/").willReturn(ok()));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val r = checker.call();
             assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
         }
@@ -108,7 +125,7 @@ class HttpCheckerTest {
         stubFor(put("/").withRequestBody(equalTo("Hello")).willReturn(ok()));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT, "Hello");
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val r = checker.call();
             assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
         }
@@ -120,7 +137,7 @@ class HttpCheckerTest {
         stubFor(put("/").willReturn(serverError().withBody("Server Kaput!!")));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
             assertTrue(r.getMessage().endsWith("Server Kaput!!"));
@@ -133,7 +150,7 @@ class HttpCheckerTest {
         stubFor(put("/").willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
             assertTrue(r.getMessage().startsWith("Healthcheck error from "));
@@ -146,7 +163,7 @@ class HttpCheckerTest {
         stubFor(put("/").willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val f = Executors.newSingleThreadExecutor()
                     .submit(() -> {
                         Thread.currentThread().interrupt();
@@ -163,7 +180,7 @@ class HttpCheckerTest {
     void testMode(WireMockRuntimeInfo wm) {
         val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
         val spec = checkSpec(HTTPVerb.PUT);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             assertEquals(CheckMode.HTTP, checker.mode());
         }
     }
@@ -178,9 +195,10 @@ class HttpCheckerTest {
                                              HTTPVerb.GET,
                                              Collections.singleton(200),
                                              null,
-                                             Duration.seconds(1));
+                                             Duration.seconds(1),
+                                             false);
         val spec = checkSpec(httpSpec);
-        try(val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
 
         }
         catch (NullPointerException e) {

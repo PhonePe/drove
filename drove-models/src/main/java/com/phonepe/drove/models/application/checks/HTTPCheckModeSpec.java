@@ -35,6 +35,7 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
     Set<Integer> successCodes;
     String payload;
     Duration connectionTimeout;
+    boolean insecure;
 
     public HTTPCheckModeSpec(
             Protocol protocol,
@@ -43,7 +44,8 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
             HTTPVerb verb,
             Set<Integer> successCodes,
             String payload,
-            Duration connectionTimeout) {
+            Duration connectionTimeout,
+            boolean insecure) {
         super(CheckMode.HTTP);
         this.protocol = protocol;
         this.portName = portName;
@@ -52,6 +54,7 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
         this.successCodes = successCodes;
         this.payload = payload;
         this.connectionTimeout = connectionTimeout;
+        this.insecure = insecure;
     }
 
     @Override
