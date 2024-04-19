@@ -2,6 +2,7 @@ package com.phonepe.drove.models.common;
 
 import io.dropwizard.util.Duration;
 import lombok.Builder;
+import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Range;
@@ -62,10 +63,13 @@ public class HTTPCallSpec {
     Duration connectionTimeout;
     Duration operationTimeout;
     @Mask
+    @ToString.Exclude
     String username;
     @Mask
+    @ToString.Exclude
     String password;
     @Mask
+    @ToString.Exclude
     String authHeader;
     Map<String, String> headers;
 

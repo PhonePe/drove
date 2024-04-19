@@ -22,6 +22,7 @@ public class InlineConfigSpec extends ConfigSpec {
 
     @Mask
     @NotEmpty
+    @ToString.Exclude
     byte []data;
 
     @Jacksonized

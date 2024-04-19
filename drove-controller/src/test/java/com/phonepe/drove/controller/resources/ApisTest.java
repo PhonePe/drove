@@ -67,7 +67,7 @@ class ApisTest {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB, mapper))
+            .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .addProvider(new AuthDynamicFeature(
                     new DummyAuthFilter.Builder()

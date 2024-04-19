@@ -1,7 +1,6 @@
 package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
@@ -62,19 +61,17 @@ public class Apis {
 
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
-    private final ObjectMapper mapper;
 
 
     @Inject
     public Apis(
             ApplicationEngine engine,
             TaskEngine taskEngine, ResponseEngine responseEngine,
-            ClusterStateDB clusterStateDB, ObjectMapper mapper) {
+            ClusterStateDB clusterStateDB) {
         this.engine = engine;
         this.taskEngine = taskEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
-        this.mapper = mapper;
     }
 
     @POST
