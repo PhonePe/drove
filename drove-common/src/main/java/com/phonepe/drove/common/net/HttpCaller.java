@@ -3,31 +3,37 @@ package com.phonepe.drove.common.net;
 import com.google.common.base.Strings;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.HttpHeaders;
-import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.io.CloseMode;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 
 /**
  *
@@ -36,7 +42,7 @@ import java.util.concurrent.CancellationException;
 @Singleton
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
 public class HttpCaller {
-    private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = 64 * (2 ^ 10); //64KB
+    private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = (2 ^ 20); //1MB
 
     private final CloseableHttpClient httpClient;
 
@@ -86,20 +92,25 @@ public class HttpCaller {
         val context = HttpClientContext.create();
 
         if (!Strings.isNullOrEmpty(httpSpec.getUsername()) && !Strings.isNullOrEmpty(httpSpec.getPassword())) {
-            final var credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(
-                    new AuthScope(HttpHost.create(uri)),
-                    new UsernamePasswordCredentials(httpSpec.getUsername(), httpSpec.getPassword().toCharArray()));
-            context.setCredentialsProvider(credentialsProvider);
+            request.setHeader(
+                    new BasicHeader(
+                            HttpHeaders.AUTHORIZATION,
+                            "Basic " + new String(
+                                    Base64.getUrlEncoder()
+                                            .encode(String.format("%s:%s",
+                                                                  httpSpec.getUsername(),
+                                                                  httpSpec.getPassword())
+                                                            .getBytes(StandardCharsets.ISO_8859_1)))));
         }
 
         if (!Strings.isNullOrEmpty(httpSpec.getAuthHeader())) {
             request.setHeader(new BasicHeader(HttpHeaders.AUTHORIZATION, httpSpec.getAuthHeader()));
         }
-
         Objects.requireNonNullElseGet(httpSpec.getHeaders(), Map::<String, String>of)
                 .forEach(request::setHeader);
-
+        val httpClient = httpSpec.isInsecure()
+                         ? createInsecureClient()
+                         : this.httpClient;
         try {
             return httpClient.execute(
                     request,
@@ -125,10 +136,27 @@ public class HttpCaller {
         catch (IOException e) {
             throw new IllegalStateException("Could not fetch config. Received IO exception: " + e.getMessage(), e);
         }
-        catch (CancellationException e) {
-            Thread.currentThread().interrupt();
+        finally {
+            if(httpSpec.isInsecure()) {
+                ((CloseableHttpClient)httpClient).close(CloseMode.IMMEDIATE);
+            }
         }
-        throw new IllegalStateException("Could not fetch config");
     }
 
+    @SneakyThrows
+    private HttpClient createInsecureClient() {
+        val connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create()
+                                             .setSslContext(
+                                                     SSLContextBuilder.create()
+                                                             .loadTrustMaterial(TrustAllStrategy.INSTANCE)
+                                                             .build())
+                                             .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                                             .build())
+                .build();
+        return HttpClients.custom()
+                .setConnectionManager(
+                        connectionManager)
+                .build();
+    }
 }
