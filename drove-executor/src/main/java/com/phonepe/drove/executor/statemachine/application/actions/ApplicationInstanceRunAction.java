@@ -40,18 +40,20 @@ import static com.phonepe.drove.common.CommonUtils.hostname;
 @Slf4j
 public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ResourceConfig schedulingConfig;
     private final ExecutorOptions executorOptions;
     private final HttpCaller httpCaller;
+    private final ObjectMapper mapper;
 
     @Inject
     public ApplicationInstanceRunAction(ResourceConfig resourceConfig,
                                         ExecutorOptions executorOptions,
-                                        HttpCaller httpCaller) {
+                                        HttpCaller httpCaller,
+                                        ObjectMapper mapper) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.httpCaller = httpCaller;
+        this.mapper = mapper;
     }
 
     @Override
@@ -93,8 +95,8 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
                         val labels = params.getCustomLabels();
                         labels.put(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.SERVICE.name());
                         labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceSpec.getInstanceId());
-                        labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
-                        labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
+                        labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, mapper.writeValueAsString(instanceSpec));
+                        labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, mapper.writeValueAsString(instanceInfo));
 
                         val env = params.getCustomEnv();
                         env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());

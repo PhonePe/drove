@@ -27,7 +27,8 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
         val action = new ApplicationInstanceStopAction();
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val startAction = new ApplicationInstanceRunAction(new ResourceConfig(), ExecutorOptions.DEFAULT,
-                                                           CommonTestUtils.httpCaller());
+                                                           CommonTestUtils.httpCaller(),
+                                                           MAPPER);
         val state = startAction.execute(context,
                                         StateData.create(InstanceState.PROVISIONING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(InstanceState.DEPROVISIONING,

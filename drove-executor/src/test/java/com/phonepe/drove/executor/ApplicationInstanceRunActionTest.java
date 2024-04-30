@@ -107,7 +107,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new ApplicationInstanceRunAction(
-                        new ResourceConfig(), ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller())
+                new ResourceConfig(), ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER)
                 .execute(ctx,
                          StateData.create(PROVISIONING,
                                           new ExecutorInstanceInfo(instanceSpec.getAppId(),
