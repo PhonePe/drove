@@ -20,15 +20,15 @@ import javax.validation.constraints.NotNull;
 @ToString(callSuper = true)
 public class ExecutorHttpFetchConfigSpec extends ConfigSpec {
     @NotNull
-    HTTPCallSpec httpCall;
+    HTTPCallSpec http;
 
     @Jacksonized
     @Builder
     public ExecutorHttpFetchConfigSpec(
             String localFilename,
-            HTTPCallSpec httpCall) {
+            HTTPCallSpec http) {
         super(ConfigSpecType.EXECUTOR_HTTP_FETCH, localFilename);
-        this.httpCall = httpCall;
+        this.http = http;
     }
 
     @Override

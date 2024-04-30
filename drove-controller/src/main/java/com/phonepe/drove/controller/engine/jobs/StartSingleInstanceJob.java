@@ -62,7 +62,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             String schedulingSessionId,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
-            ApplicationInstanceTokenManager tokenManager, HttpCaller httpCaller) {
+            ApplicationInstanceTokenManager tokenManager,
+            HttpCaller httpCaller) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;

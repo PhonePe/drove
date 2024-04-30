@@ -96,13 +96,12 @@ public class ControllerUtils {
                 }
                 else {
                     if (status.equals(MISMATCH)) {
-                        log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                        log.error("Looks like app instance {}/{} is stuck in state: {}. Detailed instance data: {}}",
                                   appId, instanceId, curr.getState(), curr);
                     }
                     else {
-                        log.error(
-                                "Looks like {}/{} has failed permanently and reached state: {}. Detailed instance " +
-                                        "data: {}}",
+                        log.error("Looks like app instance {}/{} has failed permanently and reached state: {}." +
+                                          " Detailed instance data: {}}",
                                 appId,
                                 instanceId,
                                 curr.getState(),
@@ -148,12 +147,12 @@ public class ControllerUtils {
                 }
                 else {
                     if (status.equals(MISMATCH)) {
-                        log.error("Looks like {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                        log.error("Looks like task {}/{} is stuck in state: {}. Detailed instance data: {}}",
                                   sourceAppName, taskId, curr.getState(), curr);
                     }
                     else {
                         log.error(
-                                "Looks like {}/{} has failed permanently and reached state: {}. Detailed instance " +
+                                "Looks like task {}/{} has failed permanently and reached state: {}. Detailed instance " +
                                         "data: {}}",
                                 sourceAppName,
                                 taskId,

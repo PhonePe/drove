@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.statemachine.task.actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
-import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -37,16 +36,17 @@ import static com.phonepe.drove.executor.utils.ExecutorUtils.injectResult;
 @Slf4j
 public class TaskRunAction extends TaskAction {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ResourceConfig schedulingConfig;
     private final ExecutorOptions executorOptions;
-    private final HttpCaller httpCaller;
+    private final ObjectMapper mapper;
 
     @Inject
-    public TaskRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions, HttpCaller httpCaller) {
+    public TaskRunAction(ResourceConfig resourceConfig,
+                         ExecutorOptions executorOptions,
+                         ObjectMapper mapper) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
-        this.httpCaller = httpCaller;
+        this.mapper = mapper;
     }
 
     @Override
@@ -72,8 +72,8 @@ public class TaskRunAction extends TaskAction {
                         val labels = params.getCustomLabels();
                         labels.put(DockerLabels.DROVE_JOB_TYPE_LABEL, JobType.COMPUTATION.name());
                         labels.put(DockerLabels.DROVE_INSTANCE_ID_LABEL, instanceId);
-                        labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, MAPPER.writeValueAsString(instanceSpec));
-                        labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, MAPPER.writeValueAsString(instanceInfo));
+                        labels.put(DockerLabels.DROVE_INSTANCE_SPEC_LABEL, mapper.writeValueAsString(instanceSpec));
+                        labels.put(DockerLabels.DROVE_INSTANCE_DATA_LABEL, mapper.writeValueAsString(instanceInfo));
 
                         val env = params.getCustomEnv();
                         env.add("DROVE_EXECUTOR_HOST=" + hostname());

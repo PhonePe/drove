@@ -46,7 +46,8 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
     private final HttpCaller httpCaller;
 
     @Inject
-    public ApplicationInstanceRunAction(ResourceConfig resourceConfig, ExecutorOptions executorOptions,
+    public ApplicationInstanceRunAction(ResourceConfig resourceConfig,
+                                        ExecutorOptions executorOptions,
                                         HttpCaller httpCaller) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;

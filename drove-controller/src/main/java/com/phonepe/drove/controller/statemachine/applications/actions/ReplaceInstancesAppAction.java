@@ -65,7 +65,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
-            ApplicationInstanceTokenManager tokenManager, HttpCaller httpCaller) {
+            ApplicationInstanceTokenManager tokenManager,
+            HttpCaller httpCaller) {
         super(jobExecutor, instanceInfoDB);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;

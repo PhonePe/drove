@@ -83,7 +83,8 @@ public class TaskEngine {
             ClusterStateDB clusterStateDB,
             LeadershipEnsurer leadershipEnsurer,
             ClusterOpSpec defaultClusterOpSpec,
-            ControllerOptions controllerOptions, HttpCaller httpCaller) {
+            ControllerOptions controllerOptions,
+            HttpCaller httpCaller) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;

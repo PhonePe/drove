@@ -1,6 +1,5 @@
 package com.phonepe.drove.controller.resources;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.auth.core.DroveAuthorizer;
 import com.phonepe.drove.auth.filters.DummyAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
@@ -64,7 +63,6 @@ class ApisTest {
     private static final TaskEngine taskEngine = mock(TaskEngine.class);
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
             .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB))

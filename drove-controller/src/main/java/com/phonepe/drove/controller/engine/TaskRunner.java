@@ -79,7 +79,8 @@ public class TaskRunner implements Runnable {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ThreadFactory threadFactory,
-            ConsumingFireForgetSignal<TaskRunner> completed, HttpCaller httpCaller) {
+            ConsumingFireForgetSignal<TaskRunner> completed,
+            HttpCaller httpCaller) {
         this.sourceAppName = sourceAppName;
         this.taskId = taskId;
         this.jobExecutor = jobExecutor;

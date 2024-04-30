@@ -54,7 +54,8 @@ public class StartTaskJob implements Job<Boolean> {
             ControllerCommunicator communicator,
             String schedulingSessionId,
             ControllerRetrySpecFactory retrySpecFactory,
-            InstanceIdGenerator instanceIdGenerator, HttpCaller httpCaller) {
+            InstanceIdGenerator instanceIdGenerator,
+            HttpCaller httpCaller) {
         this.taskSpec = taskSpec;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;

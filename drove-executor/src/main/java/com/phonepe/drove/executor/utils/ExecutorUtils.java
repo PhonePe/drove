@@ -192,7 +192,7 @@ public class ExecutorUtils {
                     public ConfigSpec visit(ExecutorHttpFetchConfigSpec executorHttpFetchConfig) {
                         return new InlineConfigSpec(
                                 executorHttpFetchConfig.getLocalFilename(),
-                                httpCaller.execute(executorHttpFetchConfig.getHttpCall()));
+                                httpCaller.execute(executorHttpFetchConfig.getHttp()));
                     }
                 }))
                 .toList();
