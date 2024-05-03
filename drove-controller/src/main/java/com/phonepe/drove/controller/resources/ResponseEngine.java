@@ -262,18 +262,6 @@ public class ResponseEngine {
                                .toList());
     }
 
-
-/*    public ApiResponse<Void> blacklistExecutor(final String executorId) {
-
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure("Cluster is in maintenance mode");
-        }
-        val blacklisted = blacklistExecutorsInternal(Set.of(executorId));
-        return blacklisted.contains(executorId)
-               ? success(null)
-               : failure("Failed to blacklist executor. Check logs for error details");
-    }*/
-
     public ApiResponse<Map<String, Set<String>>> blacklistExecutors(final Set<String> executorIds) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ApiResponse.failure("Cluster is in maintenance mode");
@@ -282,29 +270,6 @@ public class ResponseEngine {
         return success(Map.of("successful", successfullyBlacklisted,
                               "failed", Sets.difference(executorIds, successfullyBlacklisted)));
     }
-
-/*    public ApiResponse<Void> unblacklistExecutor(final String executorId) {
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure("Cluster is in maintenance mode");
-        }
-        val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-        if (null != executor) {
-            val msgResponse = communicator.send(
-                    new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                   new ExecutorAddress(executor.getExecutorId(),
-                                                                       executor.getNodeData().getHostname(),
-                                                                       executor.getNodeData().getPort(),
-                                                                       executor.getNodeData().getTransportType())));
-            if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                clusterResourcesDB.unmarkBlacklisted(executorId);
-                log.debug("Executor {} marked unblacklisted.", executorId);
-                eventBus.publish(new DroveExecutorUnblacklistedEvent(executorMetadata(executor.getNodeData())));
-                return success(null);
-            }
-            return failure("Error sending remote message");
-        }
-        return failure("No such executor");
-    }*/
 
     public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(final Set<String> executorIds) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
@@ -449,10 +414,11 @@ public class ResponseEngine {
 
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
+                        val backlistedState = clusterResourcesDB.isBlacklisted(hostInfo.getExecutorId())
+                                                   ? ExecutorSummary.ExecutorState.BLACKLISTED
+                                                   : ExecutorSummary.ExecutorState.ACTIVE;
                         val executorState = removed ? ExecutorSummary.ExecutorState.REMOVED
-                                                    : (clusterResourcesDB.isBlacklisted(hostInfo.getExecutorId())
-                                                       ? ExecutorSummary.ExecutorState.BLACKLISTED
-                                                       : ExecutorSummary.ExecutorState.ACTIVE);
+                                                    : backlistedState;
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                                                hostInfo.getNodeData().getHostname(),
                                                                hostInfo.getNodeData().getPort(),

@@ -65,6 +65,7 @@ public class StaleDataCleaner implements Managed {
     }
 
     @VisibleForTesting
+    @SuppressWarnings("java:S107")
     StaleDataCleaner(
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,

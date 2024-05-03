@@ -117,7 +117,7 @@ public class ApplicationStateMachineExecutor {
             try {
                 val status = Failsafe.with(List.of(retryPolicy))
                         .onFailure(e -> log.trace("Completion wait for {} completed with error: {}",
-                                                  appId, e.getFailure()))
+                                                  appId, e.getFailure().getMessage()))
                         .get(() -> currentState.isDone());
                 if(status) {
                     log.info("State machine for app {} has shut down with final state {}", appId, currentState.get());

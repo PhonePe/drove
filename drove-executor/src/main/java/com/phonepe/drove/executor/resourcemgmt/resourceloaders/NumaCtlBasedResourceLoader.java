@@ -38,7 +38,9 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
     }
 
     protected List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
-        val process = new ProcessBuilder("numactl", "-H").start();
+        val numaCtlExec = Objects.requireNonNullElse(System.getenv("NUMA_CTL_PATH"), "/usr/bin/numactl");
+        log.debug("numactl executable path: {}", numaCtlExec);
+        val process = new ProcessBuilder(numaCtlExec, "-H").start();
         var lines = Collections.<String>emptyList();
         try (val input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             lines = input.lines().toList();

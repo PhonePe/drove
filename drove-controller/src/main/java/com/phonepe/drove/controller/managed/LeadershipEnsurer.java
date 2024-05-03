@@ -2,7 +2,6 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.events.events.DroveClusterLeadershipAcquiredEvent;
@@ -41,7 +40,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
     private final NodeDataStore nodeDataStore;
     private final DroveEventBus eventBus;
-    private final ControllerOptions controllerOptions;
     private final LeaderSelector leaderLatch;
     private final ScheduledSignal checkLeadership = new ScheduledSignal(Duration.ofSeconds(60));
     private final ConsumingSyncSignal<Boolean> leadershipStateChanged = new ConsumingSyncSignal<>();
@@ -129,11 +127,9 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
             CuratorFramework curatorFramework,
             NodeDataStore nodeDataStore,
             Environment environment,
-            DroveEventBus eventBus,
-            ControllerOptions controllerOptions) {
+            DroveEventBus eventBus) {
         this.nodeDataStore = nodeDataStore;
         this.eventBus = eventBus;
-        this.controllerOptions = controllerOptions;
         this.listener = new ControllerLeadershipListener();
         val path = "/leaderselection";
 
@@ -156,6 +152,7 @@ public class LeadershipEnsurer implements Managed, ServerLifecycleListener {
             leaderLatch.close();
         }
         started.set(false);
+        checkLeadership.close();
         log.debug("Shut down {}", this.getClass().getSimpleName());
     }
 

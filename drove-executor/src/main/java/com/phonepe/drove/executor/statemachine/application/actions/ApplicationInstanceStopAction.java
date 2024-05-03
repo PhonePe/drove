@@ -36,7 +36,6 @@ import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer
  */
 @Slf4j
 public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     @Override
     @MonitoredFunction(method = "execute")

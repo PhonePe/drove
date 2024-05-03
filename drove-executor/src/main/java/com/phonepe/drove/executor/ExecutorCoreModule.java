@@ -34,6 +34,7 @@ import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningR
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -193,6 +194,7 @@ public class ExecutorCoreModule extends AbstractModule {
         return CommonUtils.createHttpClient();
     }
 
+    @UtilityClass
     public static final class ResourceLoaderIdentifiers {
         public static final String NUMA_CTL_BASED_RESOURCE_LOADER = "NumaCtlBasedResourceLoader";
         public static final String NUMA_ACTIVATION_RESOURCE_LOADER = "NumaActivationResourceLoader";

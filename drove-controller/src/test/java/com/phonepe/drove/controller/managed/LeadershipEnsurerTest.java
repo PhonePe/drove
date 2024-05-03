@@ -3,7 +3,6 @@ package com.phonepe.drove.controller.managed;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeData;
@@ -45,7 +44,7 @@ class LeadershipEnsurerTest {
                 when(env.lifecycle()).thenReturn(lifecycle);
                 val eventBus = mock(DroveEventBus.class);
 
-                val l1 = new LeadershipEnsurer(curator, nodeStore, env, eventBus, ControllerOptions.DEFAULT);
+                val l1 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
                 val nodeData = new AtomicReference<ControllerNodeData>();
                 doAnswer(invocationOnMock -> {
                     val node = invocationOnMock.getArgument(0, ControllerNodeData.class);
@@ -64,7 +63,7 @@ class LeadershipEnsurerTest {
                 assertEquals(8080, nodeData.get().getPort());
                 assertTrue(l1.isLeader());
                 //Check failover
-                val l2 = new LeadershipEnsurer(curator, nodeStore, env, eventBus, ControllerOptions.DEFAULT);
+                val l2 = new LeadershipEnsurer(curator, nodeStore, env, eventBus);
                 l2.start();
                 l2.serverStarted(server(9000));
                 l1.stop();

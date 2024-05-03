@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.controller.utils.EventUtils.instanceMetadata;
 
@@ -204,24 +205,25 @@ public class StateUpdater {
         }
 
         @Override
+        @SuppressWarnings("java:S2189")
         public Void call() throws Exception {
             while (true) {
-                var update = (UpdateData) null;
+                val update = new AtomicReference<UpdateData>();
                 try {
-                    update = updates.take();
-                    val updateStatus = update.accept(this);
-                    log.trace("Update status for {}: {}", update.getId(), updateStatus);
+                    update.set(updates.take());
+                    val updateStatus = update.get().accept(this);
+                    log.trace("Update status for {}: {}", update.get().getId(), updateStatus);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return null;
                 }
                 catch (Throwable t) {
-                    if (null == update) {
+                    if (null == update.get()) {
                         log.error("Error processing unknown update : " + t.getMessage(), t);
                     }
                     else {
-                        log.error("Error processing update " + update.getId() + ": " + t.getMessage(), t);
+                        log.error("Error processing update " + update.get().getId() + ": " + t.getMessage(), t);
                     }
                 }
             }

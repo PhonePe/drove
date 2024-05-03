@@ -154,54 +154,13 @@ public class DockerUtils {
                 hostConfig.withDeviceRequests(List.of(nvidiaGpuDeviceRequest));
             }
 
-            deploymentUnitSpec.getResources()
-                    .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
-                        @Override
-                        public Void visit(CPUAllocation cpu) {
-                            hostConfig.withCpuCount((long) cpu.getCores().size());
-                            if (!resourceConfig.isDisableNUMAPinning()) {
-                                hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores()
-                                                                                   .values()
-                                                                                   .stream()
-                                                                                   .flatMap(Set::stream)
-                                                                                   .map(i -> Integer.toString(i))
-                                                                                   .toList(),
-                                                                           ","));
-                            }
-                            return null;
-                        }
-
-                        @Override
-                        public Void visit(MemoryAllocation memory) {
-                            hostConfig.withMemory(memory.getMemoryInMB()
-                                                          .values()
-                                                          .stream()
-                                                          .mapToLong(Long::longValue)
-                                                          .sum() * (1 << 20));
-                            if (!resourceConfig.isDisableNUMAPinning()) {
-                                hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
-                            }
-                            return null;
-                        }
-                    }));
+            populateResourceRequirements(resourceConfig, deploymentUnitSpec, hostConfig);
             val exposedPorts = new ArrayList<ExposedPort>();
             val env = new ArrayList<String>();
             val hostName = hostname();
             env.add("HOST=" + hostName);
             if (null != deploymentUnitSpec.getVolumes()) {
-                hostConfig.withBinds(deploymentUnitSpec.getVolumes()
-                                             .stream()
-                                             .map(volume -> new Bind(volume.getPathOnHost(),
-                                                                     new Volume(
-                                                                             com.google.common.base.Strings.isNullOrEmpty(
-                                                                                     volume.getPathInContainer())
-                                                                             ? volume.getPathOnHost()
-                                                                             : volume.getPathInContainer()),
-                                                                     volume.getMode()
-                                                                             .equals(MountedVolume.MountMode.READ_ONLY)
-                                                                     ? AccessMode.ro
-                                                                     : AccessMode.rw))
-                                             .toList());
+                populateVolumeMounts(deploymentUnitSpec, hostConfig);
             }
 
             val labels = new HashMap<String, String>();
@@ -346,6 +305,57 @@ public class DockerUtils {
         return new CommandOutput(exitCode, buffer.toString(), errMsg.get());
     }
 
+    private static void populateVolumeMounts(DeploymentUnitSpec deploymentUnitSpec, HostConfig hostConfig) {
+        hostConfig.withBinds(deploymentUnitSpec.getVolumes()
+                                     .stream()
+                                     .map(volume -> new Bind(volume.getPathOnHost(),
+                                                             new Volume(
+                                                                     Strings.isNullOrEmpty(
+                                                                             volume.getPathInContainer())
+                                                                     ? volume.getPathOnHost()
+                                                                     : volume.getPathInContainer()),
+                                                             volume.getMode()
+                                                                     .equals(MountedVolume.MountMode.READ_ONLY)
+                                                             ? AccessMode.ro
+                                                             : AccessMode.rw))
+                                     .toList());
+    }
+
+    private static void populateResourceRequirements(
+            ResourceConfig resourceConfig,
+            DeploymentUnitSpec deploymentUnitSpec,
+            HostConfig hostConfig) {
+        deploymentUnitSpec.getResources()
+                .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
+                    @Override
+                    public Void visit(CPUAllocation cpu) {
+                        hostConfig.withCpuCount((long) cpu.getCores().size());
+                        if (!resourceConfig.isDisableNUMAPinning()) {
+                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores()
+                                                                               .values()
+                                                                               .stream()
+                                                                               .flatMap(Set::stream)
+                                                                               .map(i -> Integer.toString(i))
+                                                                               .toList(),
+                                                                       ","));
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(MemoryAllocation memory) {
+                        hostConfig.withMemory(memory.getMemoryInMB()
+                                                      .values()
+                                                      .stream()
+                                                      .mapToLong(Long::longValue)
+                                                      .sum() * (1 << 20));
+                        if (!resourceConfig.isDisableNUMAPinning()) {
+                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
+                        }
+                        return null;
+                    }
+                }));
+    }
     private static Boolean autoRemove(DeploymentUnitSpec deploymentUnitSpec) {
         return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
             @Override

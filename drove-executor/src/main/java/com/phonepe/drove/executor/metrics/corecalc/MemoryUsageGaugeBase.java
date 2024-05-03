@@ -24,9 +24,13 @@ public abstract class MemoryUsageGaugeBase implements SignalConsumer<Statistics>
     protected abstract void consumeUsage(long memUsage, MemoryStatsConfig mem);
 
     private long getCacheUsage(final MemoryStatsConfig mem) {
-        return null != mem.getStats()
-                ? Objects.requireNonNullElse(mem.getStats().getCache(), 0L)
-               : 0L;
+        if(null != mem) {
+            val stats = mem.getStats();
+            if(null != stats) {
+                return Objects.requireNonNullElse(stats.getCache(), 0L);
+            }
+        }
+        return 0L;
     }
 
 }

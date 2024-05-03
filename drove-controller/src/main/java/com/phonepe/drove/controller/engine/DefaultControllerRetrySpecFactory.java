@@ -23,7 +23,7 @@ public class DefaultControllerRetrySpecFactory implements ControllerRetrySpecFac
 
     public DefaultControllerRetrySpecFactory(ControllerOptions options) {
         numRetriesForJobExecution = Objects.requireNonNullElse(options.getJobRetryCount(),
-                                                               ControllerOptions.DEFAULT_JOB_RETRY_COUNT); ;
+                                                               ControllerOptions.DEFAULT_JOB_RETRY_COUNT);
         intervalBetweenJobRetry = Duration.ofMillis(
                 Objects.requireNonNullElse(options.getJobRetryInterval(),
                                            ControllerOptions.DEFAULT_JOB_RETRY_INTERVAL).toMilliseconds());

@@ -116,7 +116,7 @@ public class ApplicationEngine {
         }
         val appSm = sm.getStateMachine();
         val action = (AppAsyncAction) appSm.currentAction()
-                .filter(a -> a instanceof AppAsyncAction)
+                .filter(AppAsyncAction.class::isInstance)
                 .orElse(null);
         if (null == action) {
             return false;

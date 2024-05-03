@@ -94,6 +94,7 @@ public class BlacklistingAppMovementManager implements Managed {
              Constants.EXECUTOR_REFRESH_INTERVAL.toMillis() * 2 + 5); //Wait till whole cluster refreshes at least once
     }
 
+    @SuppressWarnings("java:S107")
     @VisibleForTesting
     BlacklistingAppMovementManager(
             LeadershipEnsurer leadershipEnsurer,
@@ -197,7 +198,6 @@ public class BlacklistingAppMovementManager implements Managed {
             catch (InterruptedException e) {
                 log.info("Blacklist manager interrupted");
                 Thread.currentThread().interrupt();
-                return;
             }
             catch (Exception e) {
                 log.error("Error in blacklist polling thread: " + e.getMessage(), e);

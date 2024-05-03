@@ -22,7 +22,7 @@ public class LogInfo {
         val lf = (DefaultLoggingFactory)appConfig.getLoggingFactory();
         val logPath = lf.getAppenders()
                 .stream()
-                .filter(af -> af instanceof DroveAppenderFactory)
+                .filter(DroveAppenderFactory.class::isInstance)
                 .map(af -> (DroveAppenderFactory)af)
                 .map(DroveAppenderFactory::getLogPath)
                 .findFirst()

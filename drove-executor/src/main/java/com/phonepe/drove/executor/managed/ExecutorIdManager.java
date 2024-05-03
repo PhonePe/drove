@@ -76,14 +76,14 @@ public class ExecutorIdManager implements Managed, ServerLifecycleListener {
                 : executorOptions.getHostname();
         val generatedExecutorId = CommonUtils.executorId(localPort, hostname);
         val cf = server.getConnectors()[0].getConnectionFactory("ssl");
-        val hostInfo = new ExecutorHostInfo(localPort, hostname,
+        val localhostInfo = new ExecutorHostInfo(localPort, hostname,
                                             null == cf
                                             ? NodeTransportType.HTTP
                                             :NodeTransportType.HTTPS,
                                             generatedExecutorId);
-        this.hostInfo.set(hostInfo);
-        log.info("Executor host info computed to be: {}", hostInfo);
-        hostInfoGenerated.dispatch(hostInfo); //Notify everyone waiting for this information
+        this.hostInfo.set(localhostInfo);
+        log.info("Executor host info computed to be: {}", localhostInfo);
+        hostInfoGenerated.dispatch(localhostInfo); //Notify everyone waiting for this information
     }
 
     public ConsumingFireForgetSignal<ExecutorHostInfo> onHostInfoGenerated() {
