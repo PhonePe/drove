@@ -52,7 +52,6 @@
             **/models/**,
             **/*Log*Stream**,
             **/*Module**,
-            **/*App**,
             **com/phonepe/drove/controller/ui/views/**,
         </sonar.exclusions>
         <guava.version>32.1.3-jre</guava.version>
