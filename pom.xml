@@ -51,9 +51,9 @@
             **/model/**,
             **/models/**,
             **/*Log*Stream**,
-            **com/phonepe/drove/controller/**,
+            **/*Module**,
+            **/*App**,
             **com/phonepe/drove/controller/ui/views/**,
-            **com/phonepe/drove/executor/**,
         </sonar.exclusions>
         <guava.version>32.1.3-jre</guava.version>
     </properties>
