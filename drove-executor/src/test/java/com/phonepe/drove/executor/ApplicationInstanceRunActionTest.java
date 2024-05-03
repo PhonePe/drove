@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.google.common.base.Strings;
@@ -107,7 +108,8 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val newState
                 = new ApplicationInstanceRunAction(
-                new ResourceConfig(), ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER)
+                new ResourceConfig(), ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER,
+                SharedMetricRegistries.getOrCreate("test"))
                 .execute(ctx,
                          StateData.create(PROVISIONING,
                                           new ExecutorInstanceInfo(instanceSpec.getAppId(),

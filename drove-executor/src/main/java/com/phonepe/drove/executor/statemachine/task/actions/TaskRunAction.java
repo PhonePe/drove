@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.task.actions;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
@@ -39,14 +40,17 @@ public class TaskRunAction extends TaskAction {
     private final ResourceConfig schedulingConfig;
     private final ExecutorOptions executorOptions;
     private final ObjectMapper mapper;
+    private final MetricRegistry metricRegistry;
 
     @Inject
     public TaskRunAction(ResourceConfig resourceConfig,
                          ExecutorOptions executorOptions,
-                         ObjectMapper mapper) {
+                         ObjectMapper mapper,
+                         MetricRegistry metricRegistry) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.mapper = mapper;
+        this.metricRegistry = metricRegistry;
     }
 
     @Override
@@ -91,7 +95,9 @@ public class TaskRunAction extends TaskAction {
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
-                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
+                                                 instanceInfoRef.get(),
+                                                 metricRegistry
                     ));
             return StateData.create(TaskState.RUNNING, instanceInfoRef.get());
         }

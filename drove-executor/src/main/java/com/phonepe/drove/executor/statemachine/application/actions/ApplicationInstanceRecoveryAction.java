@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
+import com.codahale.metrics.MetricRegistry;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -22,10 +23,11 @@ import java.util.Map;
  */
 @Slf4j
 public class ApplicationInstanceRecoveryAction extends ApplicationInstanceAction {
+    private final MetricRegistry metricRegistry;
 
     @Inject
-    public ApplicationInstanceRecoveryAction() {
-        //Nothing to do here
+    public ApplicationInstanceRecoveryAction(MetricRegistry metricRegistry) {
+        this.metricRegistry = metricRegistry;
     }
 
     @Override
@@ -60,7 +62,10 @@ public class ApplicationInstanceRecoveryAction extends ApplicationInstanceAction
                 .withFollowStream(true)
                 .withStdOut(true)
                 .withStdErr(true)
-                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                .exec(new InstanceLogHandler(
+                        MDC.getCopyOfContextMap(),
+                        currentState.getData(),
+                        metricRegistry
                 ));
 
         return StateData.from(currentState, InstanceState.UNREADY);

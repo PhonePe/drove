@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
@@ -30,7 +31,7 @@ class ApplicationInstanceRecoveryActionTest extends AbstractTestBase {
 
         val instanceId = spec.getInstanceId();
         ExecutorTestingUtils.startTestAppContainer(spec, instanceData, AbstractTestBase.MAPPER);
-        val ir = new ApplicationInstanceRecoveryAction();
+        val ir = new ApplicationInstanceRecoveryAction(SharedMetricRegistries.getOrCreate("test"));
         val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT, false);
         val r = ir.execute(ctx, StateData.create(InstanceState.UNKNOWN, instanceData));
         assertEquals(InstanceState.UNREADY, r.getState());
@@ -41,7 +42,7 @@ class ApplicationInstanceRecoveryActionTest extends AbstractTestBase {
     @SneakyThrows
     void testRecoverNone() {
         val spec = ExecutorTestingUtils.testAppInstanceSpec();
-        val ir = new ApplicationInstanceRecoveryAction();
+        val ir = new ApplicationInstanceRecoveryAction(SharedMetricRegistries.getOrCreate("test"));
         val ctx = new InstanceActionContext<>("E1", spec, ExecutorTestingUtils.DOCKER_CLIENT, false);
         val r = ir.execute(ctx,
                            StateData.create(InstanceState.UNKNOWN,

@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.task.actions;
 
+import com.codahale.metrics.MetricRegistry;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -23,10 +24,11 @@ import java.util.Map;
  */
 @Slf4j
 public class TaskRecoveryAction extends TaskAction {
+    private final MetricRegistry metricRegistry;
 
     @Inject
-    public TaskRecoveryAction() {
-        //Nothing to do here
+    public TaskRecoveryAction(MetricRegistry metricRegistry) {
+        this.metricRegistry = metricRegistry;
     }
 
     @Override
@@ -61,8 +63,9 @@ public class TaskRecoveryAction extends TaskAction {
                 .withFollowStream(true)
                 .withStdOut(true)
                 .withStdErr(true)
-                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
-                ));
+                .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
+                                             currentState.getData(),
+                                             metricRegistry));
 
         return StateData.from(currentState, TaskState.RUNNING);
     }

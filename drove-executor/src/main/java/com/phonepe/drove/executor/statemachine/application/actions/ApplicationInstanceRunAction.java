@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports;
@@ -44,16 +45,19 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
     private final ExecutorOptions executorOptions;
     private final HttpCaller httpCaller;
     private final ObjectMapper mapper;
+    private final MetricRegistry metricRegistry;
 
     @Inject
     public ApplicationInstanceRunAction(ResourceConfig resourceConfig,
                                         ExecutorOptions executorOptions,
                                         HttpCaller httpCaller,
-                                        ObjectMapper mapper) {
+                                        ObjectMapper mapper,
+                                        MetricRegistry metricRegistry) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.httpCaller = httpCaller;
         this.mapper = mapper;
+        this.metricRegistry = metricRegistry;
     }
 
     @Override
@@ -115,7 +119,9 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
                     .withFollowStream(true)
                     .withStdOut(true)
                     .withStdErr(true)
-                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap()
+                    .exec(new InstanceLogHandler(MDC.getCopyOfContextMap(),
+                                                 instanceInfoRef.get(),
+                                                 metricRegistry
                     ));
             return StateData.create(InstanceState.UNREADY, instanceInfoRef.get());
         }

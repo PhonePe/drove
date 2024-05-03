@@ -1,5 +1,6 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ContainerHelperExtension;
@@ -27,7 +28,8 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val action = new ApplicationInstanceRunAction(new ResourceConfig(),
                                                       ExecutorOptions.DEFAULT,
                                                       CommonTestUtils.httpCaller(),
-                                                      MAPPER);
+                                                      MAPPER,
+                                                      SharedMetricRegistries.getOrCreate("test"));
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resp = action.execute(context, StateData.create(STARTING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(UNREADY, resp.getState());
@@ -39,7 +41,8 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val action = new ApplicationInstanceRunAction(new ResourceConfig(),
                                                       ExecutorOptions.DEFAULT,
                                                       CommonTestUtils.httpCaller(),
-                                                      MAPPER);
+                                                      MAPPER,
+                                                      SharedMetricRegistries.getOrCreate("test"));
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resp = action.execute(context, StateData.create(STARTING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(START_FAILED, resp.getState());
