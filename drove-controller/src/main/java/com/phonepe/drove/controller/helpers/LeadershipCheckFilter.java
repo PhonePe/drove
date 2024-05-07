@@ -19,7 +19,7 @@ import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 
 /**
- *
+ * Blocks request to non leader nodes. Redirects to leader node for UI requests.
  */
 @Provider
 @Singleton
@@ -41,7 +41,7 @@ public class LeadershipCheckFilter implements ContainerRequestFilter {
         if (!leadershipEnsurer.isLeader()) {
             val leader = leadershipObserver.leader().orElse(null);
             val uriInfo = requestContext.getUriInfo();
-            final var absolutePath = uriInfo.getAbsolutePath().getPath();
+            val absolutePath = uriInfo.getAbsolutePath().getPath();
             if (null == leader) {
                 fail(requestContext);
             }

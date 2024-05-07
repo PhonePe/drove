@@ -29,7 +29,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.Objects;
@@ -47,6 +46,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
         DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE,
 })
 @Slf4j
+@Produces(MediaType.APPLICATION_JSON)
 public class ExecutorLogFileApis {
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
@@ -57,7 +57,9 @@ public class ExecutorLogFileApis {
 
     @Inject
     public ExecutorLogFileApis(
-            ApplicationInstanceInfoDB instanceInfoDB, TaskDB taskDB, ClusterResourcesDB clusterResourcesDB,
+            ApplicationInstanceInfoDB instanceInfoDB,
+            TaskDB taskDB,
+            ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig config,
             CloseableHttpClient httpClient) {
         this.instanceInfoDB = instanceInfoDB;
@@ -114,9 +116,9 @@ public class ExecutorLogFileApis {
                                       "/download/" + fileName,
                                       Map.of(),
                                       Map.of(HttpHeaders.CONTENT_TYPE,
-                                   MediaType.TEXT_PLAIN,
-                                   HttpHeaders.CONTENT_DISPOSITION,
-                                   "attachment; filename=" + fileName));
+                                             MediaType.TEXT_PLAIN,
+                                             HttpHeaders.CONTENT_DISPOSITION,
+                                             "attachment; filename=" + fileName));
     }
 
     @GET
@@ -125,10 +127,10 @@ public class ExecutorLogFileApis {
             @PathParam("sourceAppName") final String sourceAppName,
             @PathParam("taskId") final String taskId) {
         return callUpstreamForTaskLogs(sourceAppName,
-                                      taskId,
-                                      "/list",
-                                      Map.of(),
-                                      Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+                                       taskId,
+                                       "/list",
+                                       Map.of(),
+                                       Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
     @GET
@@ -142,9 +144,9 @@ public class ExecutorLogFileApis {
             @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
-                                      "/read/" + fileName,
-                                      Map.of("offset", offset, "length", length),
-                                      Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+                                       "/read/" + fileName,
+                                       Map.of("offset", offset, "length", length),
+                                       Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
     @GET
@@ -157,12 +159,12 @@ public class ExecutorLogFileApis {
             @PathParam("fileName") @NotEmpty final String fileName) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
-                                      "/download/" + fileName,
-                                      Map.of(),
-                                      Map.of(HttpHeaders.CONTENT_TYPE,
-                                   MediaType.TEXT_PLAIN,
-                                   HttpHeaders.CONTENT_DISPOSITION,
-                                   "attachment; filename=" + fileName));
+                                       "/download/" + fileName,
+                                       Map.of(),
+                                       Map.of(HttpHeaders.CONTENT_TYPE,
+                                              MediaType.TEXT_PLAIN,
+                                              HttpHeaders.CONTENT_DISPOSITION,
+                                              "attachment; filename=" + fileName));
     }
 
     private Response callUpstreamForAppLogs(
@@ -171,28 +173,35 @@ public class ExecutorLogFileApis {
             String path,
             Map<String, Object> queryParams,
             Map<String, String> responseHeaders) {
-        val executorHostInfo = executorNodeForApp(appId, instanceId).orElse(null);
-        if(null == executorHostInfo) {
-            return Response.noContent().build();
-        }
-        return callUpStream(appId, instanceId, path, queryParams, responseHeaders, executorHostInfo);
+        return executorNodeForApp(appId, instanceId)
+                .map(executorHostInfo -> callUpStream(appId,
+                                                      instanceId,
+                                                      path,
+                                                      queryParams,
+                                                      responseHeaders,
+                                                      executorHostInfo))
+                .orElseGet(() -> Response.noContent().build());
     }
-    
+
     private Response callUpstreamForTaskLogs(
             String sourceAppName,
             String taskId,
             String path,
             Map<String, Object> queryParams,
             Map<String, String> responseHeaders) {
-        val executorHostInfo = executorNodeForTask(sourceAppName, taskId).orElse(null);
-        if(null == executorHostInfo) {
-            return Response.noContent().build();
-        }
-        return callUpStream(sourceAppName, taskId, path, queryParams, responseHeaders, executorHostInfo);
+        return executorNodeForTask(sourceAppName, taskId)
+                .map(executorHostInfo -> callUpStream(sourceAppName,
+                                                      taskId,
+                                                      path,
+                                                      queryParams,
+                                                      responseHeaders,
+                                                      executorHostInfo))
+                .orElseGet(() -> Response.noContent().build());
     }
 
     private Optional<ExecutorNodeData> executorNodeForApp(String appId, String instanceId) {
-        return instanceInfoDB.instance(appId, instanceId).map(InstanceInfo::getExecutorId)
+        return instanceInfoDB.instance(appId, instanceId)
+                .map(InstanceInfo::getExecutorId)
                 .flatMap(clusterResourcesDB::currentSnapshot)
                 .map(ExecutorHostInfo::getNodeData);
     }
@@ -211,9 +220,6 @@ public class ExecutorLogFileApis {
             Map<String, Object> queryParams,
             Map<String, String> responseHeaders,
             ExecutorNodeData executorHostInfo) {
-        if (null == executorHostInfo) {
-            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
-        }
         val url = String.format("%s://%s:%d/apis/v1/logs/filestream/%s/%s%s",
                                 executorHostInfo.getTransportType() == NodeTransportType.HTTP
                                 ? "http"
@@ -235,14 +241,17 @@ public class ExecutorLogFileApis {
         val so = new StreamingOutput() {
             @Override
             @SneakyThrows
-            public void write(OutputStream output) throws IOException, WebApplicationException {
-                try(val r = httpClient.executeOpen(null, request, null)) {
+            public void write(OutputStream output) throws WebApplicationException {
+                try (val r = httpClient.executeOpen(null, request, null)) {
                     val statusCode = r.getCode();
                     if (statusCode != HttpStatus.OK_200) {
+                        val body = EntityUtils.toString(r.getEntity());
+                        log.error("Executor api {} returned error status: {}. Body: {}",
+                                  request.getRequestUri(), statusCode, body);
                         throw new WebApplicationException(Response.serverError()
                                                                   .entity(Map.of("error",
                                                                                  "Executor call returned: " + statusCode
-                                                                                 + " body: " + EntityUtils.toString(r.getEntity())))
+                                                                                         + " body: " + body))
                                                                   .build());
                     }
                     r.getEntity().getContent().transferTo(output);

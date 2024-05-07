@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.utils;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallbackTemplate;
+import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.model.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -62,29 +63,33 @@ public class DockerUtils {
             log.debug("No docker auth specified");
         }
         else {
-            val authEntries = dockerAuthConfig.getEntries();
-            val imageUri = Objects.requireNonNullElse(pullImageCmd.getRepository(), "");
-            val registry = imageUri.substring(0, imageUri.indexOf("/"));
-            if (!Strings.isNullOrEmpty(registry)) {
-                log.info("Docker image registry auth lookup: {}", registry);
-                if (authEntries.containsKey(registry)) {
-                    val ac = new AuthConfig();
-                    authEntries.get(registry).accept((DockerAuthConfigVisitor<Void>) credentials -> {
-                        ac.withUsername(credentials.getUsername()).withPassword(credentials.getPassword());
-                        return null;
-                    });
-                    pullImageCmd.withAuthConfig(ac);
-                    log.info("Docker auth setup for registry: {}", registry);
-                }
-                else {
-                    log.info("No auth info found for registry: {}", registry);
-                }
-            }
+            populateDockerRegistryAuth(dockerAuthConfig, pullImageCmd);
         }
         pullImageCmd.exec(new ImagePullProgressHandler(image)).awaitCompletion();
         val imageId = client.inspectImageCmd(image).exec().getId();
         log.info("Pulled image {} with image ID: {}", image, imageId);
         return responseHandler.apply(imageId);
+    }
+
+    public static void populateDockerRegistryAuth(DockerAuthConfig dockerAuthConfig, PullImageCmd pullImageCmd) {
+        val authEntries = dockerAuthConfig.getEntries();
+        val imageUri = Objects.requireNonNullElse(pullImageCmd.getRepository(), "");
+        val registry = imageUri.substring(0, imageUri.indexOf("/"));
+        if (!Strings.isNullOrEmpty(registry)) {
+            log.info("Docker image registry auth lookup: {}", registry);
+            if (authEntries.containsKey(registry)) {
+                val ac = new AuthConfig();
+                authEntries.get(registry).accept((DockerAuthConfigVisitor<Void>) credentials -> {
+                    ac.withUsername(credentials.getUsername()).withPassword(credentials.getPassword());
+                    return null;
+                });
+                pullImageCmd.withAuthConfig(ac);
+                log.info("Docker auth setup for registry: {}", registry);
+            }
+            else {
+                log.info("No auth info found for registry: {}", registry);
+            }
+        }
     }
 
     public static void cleanupImage(final DockerClient dockerClient, final String dockerImageId) {

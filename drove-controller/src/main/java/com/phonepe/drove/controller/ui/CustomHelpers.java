@@ -15,7 +15,6 @@
 package com.phonepe.drove.controller.ui;
 
 import com.google.common.base.Joiner;
-import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -24,7 +23,6 @@ import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisi
 /**
  *
  */
-@IgnoreInJacocoGeneratedReport
 @SuppressWarnings("unused")
 public class CustomHelpers {
 

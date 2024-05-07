@@ -15,6 +15,7 @@ import com.phonepe.drove.auth.filters.DroveApplicationInstanceAuthFilter;
 import com.phonepe.drove.auth.filters.DroveClusterAuthFilter;
 import com.phonepe.drove.auth.filters.DummyAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.ui.HandlebarsViewRenderer;
 import io.appform.functionmetrics.FunctionMetricsManager;
@@ -42,6 +43,7 @@ import static com.phonepe.drove.common.CommonUtils.configureMapper;
 /**
  *
  */
+@IgnoreInJacocoGeneratedReport
 public class App extends Application<AppConfig> {
     private GuiceBundle guiceBundle;
 

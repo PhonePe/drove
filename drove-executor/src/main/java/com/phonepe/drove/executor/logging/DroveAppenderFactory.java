@@ -25,47 +25,33 @@ import javax.validation.constraints.Min;
 /**
  *
  */
+@Setter
+@Getter
 @JsonTypeName("drove")
 @SuppressWarnings("java:S2326")
 public class DroveAppenderFactory<E extends DeferredProcessingAware> extends AbstractAppenderFactory<ILoggingEvent> {
     public static final String DEFAULT_LOG_FILE_NAME = "output.log";
 
     @Nullable
-    @Getter
-    @Setter
     private String logPath;
 
-    @Getter
-    @Setter
     private boolean archive = true;
 
     @Nullable
-    @Getter
-    @Setter
     private String archivedLogFileSuffix;
 
     @Min(0)
-    @Getter
-    @Setter
     private int archivedFileCount = 5;
 
     @Nullable
-    @Getter
-    @Setter
     private DataSize maxFileSize;
 
     @Nullable
-    @Getter
-    @Setter
     private DataSize totalSizeCap;
 
     @MinDataSize(1)
-    @Getter
-    @Setter
     private DataSize bufferSize = DataSize.bytes(FileAppender.DEFAULT_BUFFER_SIZE);
 
-    @Getter
-    @Setter
     private boolean immediateFlush = true;
 
 

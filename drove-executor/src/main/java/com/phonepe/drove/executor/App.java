@@ -7,6 +7,7 @@ import com.phonepe.drove.auth.core.DroveClusterSecretAuthenticator;
 import com.phonepe.drove.auth.core.DroveUnauthorizedHandler;
 import com.phonepe.drove.auth.filters.DroveClusterAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import io.appform.functionmetrics.FunctionMetricsManager;
 import io.dropwizard.Application;
 import io.dropwizard.auth.AuthDynamicFeature;
@@ -28,6 +29,7 @@ import static com.phonepe.drove.common.CommonUtils.configureMapper;
 /**
  *
  */
+@IgnoreInJacocoGeneratedReport
 public class App extends Application<AppConfig> {
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {

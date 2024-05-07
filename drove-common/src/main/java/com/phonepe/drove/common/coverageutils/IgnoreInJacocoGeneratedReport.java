@@ -14,4 +14,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 @Target({TYPE, METHOD, CONSTRUCTOR})
 public @interface IgnoreInJacocoGeneratedReport {
+    String value() default "";
 }

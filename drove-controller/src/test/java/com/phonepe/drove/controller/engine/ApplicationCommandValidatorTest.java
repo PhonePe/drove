@@ -403,7 +403,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
         ensureSuccess(validator.validate(
                 engine,
-                new ApplicationStopInstancesOperation(appId, List.of("TI-00001"), false, ClusterOpSpec.DEFAULT)));
+                new ApplicationStopInstancesOperation(appId, List.of("AI-00001"), false, ClusterOpSpec.DEFAULT)));
     }
 
     @Test
@@ -440,14 +440,14 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  1,
                                                                                  null,
                                                                                  null)));
-        when(aiDB.instance(appId, "TI-00001"))
+        when(aiDB.instance(appId, "AI-00001"))
                 .thenReturn(Optional.of(ControllerTestUtils.generateInstanceInfo(appId, spec, 1)));
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
         ensureSuccess(validator.validate(
                 engine,
-                new ApplicationReplaceInstancesOperation(appId, Set.of("TI-00001"), ClusterOpSpec.DEFAULT)));
+                new ApplicationReplaceInstancesOperation(appId, Set.of("AI-00001"), ClusterOpSpec.DEFAULT)));
     }
 
     @Test

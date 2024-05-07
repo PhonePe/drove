@@ -12,12 +12,12 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.TestingCluster;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Date;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonUtils.buildCurator;
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -52,7 +52,7 @@ class ZkApplicationInstanceInfoDBTest extends ControllerTestBase {
                         .collect(Collectors.toSet());
                 assertEquals(instances.size(), retrieved.size());
                 assertTrue(instances.containsAll(retrieved));
-                assertNotNull(db.instance(appId, "TI-00016").orElse(null));
+                assertNotNull(db.instance(appId, "AI-00016").orElse(null));
                 assertTrue(instances.stream()
                         .allMatch(iid -> db.deleteInstanceState(appId, iid)));
                 assertTrue(db.healthyInstances(appId).isEmpty());
@@ -143,7 +143,7 @@ class ZkApplicationInstanceInfoDBTest extends ControllerTestBase {
                         .collect(Collectors.toSet());
                 assertEquals(instances.size(), retrieved.size());
                 assertTrue(instances.containsAll(retrieved));
-                assertNotNull(db.instance(appId, "TI-00016").orElse(null));
+                assertNotNull(db.instance(appId, "AI-00016").orElse(null));
                 assertTrue(db.deleteAllInstancesForApp(appId));
                 assertTrue(db.healthyInstances(appId).isEmpty());
             }

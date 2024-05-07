@@ -167,9 +167,19 @@ public class ControllerTestUtils {
             final List<InstanceInfo> appInstances,
             final List<TaskInfo> taskInstances,
             boolean blacklisted) {
+        return executorHost("Ex" + index, index, port, appInstances, taskInstances, blacklisted);
+    }
+
+    public static ExecutorHostInfo executorHost(
+            final String hostname,
+            final int index,
+            final int port,
+            final List<InstanceInfo> appInstances,
+            final List<TaskInfo> taskInstances,
+            boolean blacklisted) {
         return new ExecutorHostInfo(
                 "Ex" + index,
-                new ExecutorNodeData("Ex" + index,
+                new ExecutorNodeData(hostname,
                                      port,
                                      NodeTransportType.HTTP,
                                      new Date(),
@@ -237,7 +247,7 @@ public class ControllerTestUtils {
             String errorMessage) {
         return new InstanceInfo(appId,
                                 spec.getName(),
-                                String.format("TI-%05d", idx),
+                                String.format("AI-%05d", idx),
                                 EXECUTOR_ID,
                                 new LocalInstanceInfo("localhost",
                                                       Collections.singletonMap("main",
