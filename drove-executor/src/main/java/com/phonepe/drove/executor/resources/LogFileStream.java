@@ -68,8 +68,9 @@ public class LogFileStream {
             return Response.ok(Map.of("files", List.of())).build();
         }
         try {
+            val basePath = logInfo.getLogPrefix() + (logInfo.getLogPrefix().endsWith("/") ? "" : "/");
             val actualPath = new File(logPath).getCanonicalPath();
-            if (!actualPath.startsWith(logInfo.getLogPrefix())) {
+            if (!actualPath.startsWith(basePath)) {
                 return error("Log list request to out of bounds path: " + actualPath);
             }
             try (val list = Files.list(java.nio.file.Path.of(actualPath))) {
@@ -93,6 +94,7 @@ public class LogFileStream {
     @GET
     @Path("/{appId}/{instanceId}/read/{fileName}")
     @Metered
+    @SuppressWarnings("javasecurity:S2083")
     public Response streamLogs(
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
@@ -113,7 +115,7 @@ public class LogFileStream {
                         var buf = new byte[actualLength];
                         val bytesRead = rf.read(buf);
                         return Response.ok(
-                                new LogBuffer(bytesRead > 0 ? new String(buf, 0, bytesRead) : "", offset))
+                                        new LogBuffer(bytesRead > 0 ? new String(buf, 0, bytesRead) : "", offset))
                                 .build();
                     }
                     catch (IOException e) {
@@ -136,9 +138,11 @@ public class LogFileStream {
                              logFile -> {
                                  val so = new StreamingOutput() {
                                      @Override
-                                     public void write(OutputStream output) throws IOException, WebApplicationException {
+                                     public void write(OutputStream output) throws IOException,
+                                                                                   WebApplicationException {
                                          try (val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
-                                              val bw = new BufferedWriter(new OutputStreamWriter(output), DEFAULT_BUFFER_SIZE)) {
+                                              val bw = new BufferedWriter(new OutputStreamWriter(output),
+                                                                          DEFAULT_BUFFER_SIZE)) {
                                              var buffer = new char[DEFAULT_BUFFER_SIZE];
                                              int bytesRead;
 
@@ -156,27 +160,31 @@ public class LogFileStream {
     private Response handleLogFile(
             String appId, String instanceId, String fileName,
             Function<File, Response> handler) {
-        val logFilePath = logInfo.logPathFor(appId, instanceId);
-        if (Strings.isNullOrEmpty(logFilePath)) {
+        val logPath = logInfo.logPathFor(appId, instanceId);
+        if (Strings.isNullOrEmpty(logPath)) {
             return error("This only works if the 'drove' appender type is configured");
         }
-        val extractedFileName = FilenameUtils.getName(fileName);
-        val fullPath = logFilePath + "/" + extractedFileName;
-        val logFile = new File(fullPath);
-        String canonicalPath = null;
+        val basePath = logInfo.getLogPrefix() + (logInfo.getLogPrefix().endsWith("/") ? "" : "/");
         try {
-            canonicalPath = logFile.getCanonicalPath();
+            val actualPath = new File(logPath).getCanonicalPath();
+            if (!actualPath.startsWith(basePath)) {
+                return error("Log read request to out of bounds directory: " + actualPath);
+            }
+            val extractedFileName = FilenameUtils.getName(fileName);
+            val fullPath = logPath + "/" + extractedFileName;
+            val logFile = new File(fullPath);
+            val canonicalFilePath = logFile.getCanonicalPath();
+            if (!canonicalFilePath.startsWith(basePath)) {
+                return error("Log read request to out of bounds file: " + canonicalFilePath);
+            }
+            if (!logFile.canRead()) {
+                return error("Could not read log file: " + fullPath);
+            }
+            return handler.apply(logFile);
         }
         catch (IOException e) {
-            return error("Error reading file " + logFilePath + ": " + e.getMessage());
+            return error("Error reading file " + logPath + ": " + e.getMessage());
         }
-        if (!canonicalPath.startsWith(logInfo.getLogPrefix())) {
-            return error("Out of bound log read request: " + canonicalPath);
-        }
-        if (!logFile.canRead()) {
-            return error("Could not read log file: " + fullPath);
-        }
-        return handler.apply(logFile);
     }
 
     private Response error(String message) {

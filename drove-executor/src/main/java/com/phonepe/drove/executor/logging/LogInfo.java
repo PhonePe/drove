@@ -1,8 +1,11 @@
 package com.phonepe.drove.executor.logging;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.executor.AppConfig;
 import io.dropwizard.logging.DefaultLoggingFactory;
 import lombok.*;
+
+import java.util.Objects;
 
 /**
  *
@@ -24,9 +27,11 @@ public class LogInfo {
                 .filter(DroveAppenderFactory.class::isInstance)
                 .map(af -> (DroveAppenderFactory)af)
                 .map(DroveAppenderFactory::getLogPath)
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        return new LogInfo(null != logPath, logPath);
+        val logPathEmpty = Strings.isNullOrEmpty(logPath);
+        return new LogInfo(!logPathEmpty, logPathEmpty ? "" : logPath);
     }
 
     public String logPathFor(final String appId, final String instanceId) {

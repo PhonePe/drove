@@ -299,7 +299,7 @@ class LogFileStreamTest {
                 val files = r.readEntity(new GenericType<Map<String, String>>() {
                 });
                 assertTrue(files.containsKey("error"));
-                assertTrue(files.get("error").startsWith("Out of bound log read request"));
+                assertTrue(files.get("error").startsWith("Log read request to out of bounds directory"));
             }
         }
     }
