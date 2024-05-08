@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.ws.rs.core.GenericType;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -105,10 +106,12 @@ class LogFileStreamTest {
     }
 
     @Test
+    @SneakyThrows
     void testFileList() {
         when(logInfo.isDroveLogging()).thenReturn(true);
         when(logInfo.logPathFor(anyString(), anyString()))
                 .thenReturn("src/test/resources/logtest/test_app/test_instance");
+        when(logInfo.getLogPrefix()).thenReturn(new File("src/test/resources/logtest").getCanonicalPath());
         { //Test Listing
             val files = EXT.target("/v1/logs/filestream/test_app/test_instance/list")
                     .request()
@@ -123,10 +126,12 @@ class LogFileStreamTest {
     }
 
     @Test
+    @SneakyThrows
     void testFileListException() {
         when(logInfo.isDroveLogging()).thenReturn(true);
         when(logInfo.logPathFor(anyString(), anyString()))
                 .thenReturn("wrong-path");
+        when(logInfo.getLogPrefix()).thenReturn(new File("").getCanonicalPath());
         { //Test Listing
             try (val r = EXT.target("/v1/logs/filestream/test_app/test_instance/list")
                     .request()
@@ -137,17 +142,18 @@ class LogFileStreamTest {
                 val files = r.readEntity(new GenericType<Map<String, String>>() {
                 });
                 assertTrue(files.containsKey("error"));
-                assertEquals("Could not read logs from wrong-path: wrong-path",
-                             files.get("error"));
+                assertTrue(files.get("error").startsWith("Could not read logs from wrong-path"));
             }
         }
     }
 
     @Test
+    @SneakyThrows
     void testFileRead() {
         when(logInfo.isDroveLogging()).thenReturn(true);
         when(logInfo.logPathFor(anyString(), anyString()))
                 .thenReturn("src/test/resources/logtest/test_app/test_instance");
+        when(logInfo.getLogPrefix()).thenReturn(new File("src/test/resources/logtest").getCanonicalPath());
         { //On first call, it sends the current last offset only
             val logLines = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
                     .request()
@@ -192,7 +198,6 @@ class LogFileStreamTest {
                     .header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, "DefaultControllerSecret")
                     .get(new GenericType<LogFileStream.LogBuffer>() {
                     });
-            System.out.println(logLines);
             assertEquals(14, logLines.getOffset());
             assertTrue(Strings.isNullOrEmpty(logLines.getData()));
         }
@@ -220,7 +225,7 @@ class LogFileStreamTest {
                 });
                 assertTrue(files.containsKey("error"));
                 assertEquals(
-                        "Error reading file src/test/resources/logtest/test_app/test_instance: Negative seek offset",
+                        "Error reading file src/test/resources/logtest/test_app/test_instance/output.1.log: Negative seek offset",
                         files.get("error"));
             }
         }
@@ -247,6 +252,7 @@ class LogFileStreamTest {
         when(logInfo.isDroveLogging()).thenReturn(true);
         when(logInfo.logPathFor(anyString(), anyString()))
                 .thenReturn("src/test/resources/logtest/test_app/test_instance");
+        when(logInfo.getLogPrefix()).thenReturn(new File("src/test/resources/logtest").getCanonicalPath());
         try (val r = EXT.target("/v1/logs/filestream/test_app/test_instance/download/output.1.log")
                 .request()
                 .header(NODE_ID_HEADER, NodeType.CONTROLLER.name())
@@ -271,6 +277,29 @@ class LogFileStreamTest {
                 assertEquals(
                         "Could not read log file: src/test/resources/logtest/test_app/test_instance/output.wrong.log",
                         files.get("error"));
+            }
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testPathBoundCheck() {
+        when(logInfo.isDroveLogging()).thenReturn(true);
+        when(logInfo.logPathFor(anyString(), anyString()))
+                .thenReturn("src/test/resources/logtest/test_app/test_instance");
+        when(logInfo.getLogPrefix()).thenReturn("/drove");
+        { //Invalid filenames means bad request
+            try (val r = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
+                    .queryParam("offset", "0")
+                    .request()
+                    .header(NODE_ID_HEADER, NodeType.CONTROLLER.name())
+                    .header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, "DefaultControllerSecret")
+                    .get()) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+                val files = r.readEntity(new GenericType<Map<String, String>>() {
+                });
+                assertTrue(files.containsKey("error"));
+                assertTrue(files.get("error").startsWith("Out of bound log read request"));
             }
         }
     }

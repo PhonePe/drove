@@ -22,6 +22,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  *
@@ -63,20 +64,26 @@ public class LogFileStream {
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId) {
         val logPath = logInfo.logPathFor(appId, instanceId);
-        if(Strings.isNullOrEmpty(logPath)) {
+        if (Strings.isNullOrEmpty(logPath)) {
             return Response.ok(Map.of("files", List.of())).build();
         }
-        try (val list = Files.list(new File(logPath).toPath())) {
-            return Response.ok(
-                            Map.of("files",
-                                   list
-                                           .filter(filePath -> FilenameUtils.getName(filePath.getFileName().toString())
-                                                   .startsWith("output."))
-                                           .map(java.nio.file.Path::toFile)
-                                           .filter(logFile -> logFile.exists() && logFile.isFile() && logFile.canRead())
-                                           .map(logFile -> FilenameUtils.getName(logFile.getAbsolutePath()))
-                                           .toList()))
-                    .build();
+        try {
+            val actualPath = new File(logPath).getCanonicalPath();
+            if (!actualPath.startsWith(logInfo.getLogPrefix())) {
+                return error("Log list request to out of bounds path: " + actualPath);
+            }
+            try (val list = Files.list(java.nio.file.Path.of(actualPath))) {
+                return Response.ok(
+                                Map.of("files",
+                                       list
+                                               .filter(filePath -> FilenameUtils.getName(filePath.getFileName().toString())
+                                                       .startsWith("output."))
+                                               .map(java.nio.file.Path::toFile)
+                                               .filter(logFile -> logFile.exists() && logFile.isFile() && logFile.canRead())
+                                               .map(logFile -> FilenameUtils.getName(logFile.getAbsolutePath()))
+                                               .toList()))
+                        .build();
+            }
         }
         catch (IOException e) {
             return error("Could not read logs from " + logPath + ": " + e.getMessage());
@@ -92,35 +99,27 @@ public class LogFileStream {
             @PathParam("fileName") @NotEmpty final String fileName,
             @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
             @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
-        val logFilePath = logInfo.logPathFor(appId, instanceId);
-        if (Strings.isNullOrEmpty(logFilePath)) {
-            return error("This only works if the 'drove' appender type is configured");
-        }
-        val extractedFileName = FilenameUtils.getName(fileName);
-        val fullPath = logFilePath + "/" + extractedFileName;
-        val logFile = new File(fullPath);
-        log.trace("File read request: file={} offset={} length={} full-path={}",
-                  extractedFileName, offset, length, fullPath);
-        if (!logFile.canRead()) {
-            return error("Could not read log file: " + fullPath);
-        }
-        if(offset == -1 && length==-1) {
-            return Response.ok(new LogBuffer("", logFile.length())).build();
-        }
-        val actualLength = length == -1 ? 32_768 : length;
-        try(val rf = new RandomAccessFile(logFile, "r")) {
-            rf.seek(offset);
-            var buf = new byte[actualLength];
-            val bytesRead = rf.read(buf);
-            return Response.ok(
-                    new LogBuffer(bytesRead > 0 ?
-                                  new String(buf, 0, bytesRead)
-                                  : "",
-                                  offset)).build();
-        }
-        catch (IOException e) {
-            return error("Error reading file " + logFilePath + ": " + e.getMessage());
-        }
+        return handleLogFile(
+                appId,
+                instanceId,
+                fileName,
+                logFile -> {
+                    if (offset == -1 && length == -1) {
+                        return Response.ok(new LogBuffer("", logFile.length())).build();
+                    }
+                    val actualLength = length == -1 ? 32_768 : length;
+                    try (val rf = new RandomAccessFile(logFile, "r")) {
+                        rf.seek(offset);
+                        var buf = new byte[actualLength];
+                        val bytesRead = rf.read(buf);
+                        return Response.ok(
+                                new LogBuffer(bytesRead > 0 ? new String(buf, 0, bytesRead) : "", offset))
+                                .build();
+                    }
+                    catch (IOException e) {
+                        return error("Error reading file " + logFile.toPath() + ": " + e.getMessage());
+                    }
+                });
     }
 
     @GET
@@ -131,32 +130,53 @@ public class LogFileStream {
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName) {
+        return handleLogFile(appId,
+                             instanceId,
+                             fileName,
+                             logFile -> {
+                                 val so = new StreamingOutput() {
+                                     @Override
+                                     public void write(OutputStream output) throws IOException, WebApplicationException {
+                                         try (val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
+                                              val bw = new BufferedWriter(new OutputStreamWriter(output), DEFAULT_BUFFER_SIZE)) {
+                                             var buffer = new char[DEFAULT_BUFFER_SIZE];
+                                             int bytesRead;
+
+                                             while ((bytesRead = br.read(buffer, 0, DEFAULT_BUFFER_SIZE)) != -1) {
+                                                 bw.write(buffer, 0, bytesRead);
+                                             }
+                                             bw.flush();
+                                         }
+                                     }
+                                 };
+                                 return Response.ok(so).build();
+                             });
+    }
+
+    private Response handleLogFile(
+            String appId, String instanceId, String fileName,
+            Function<File, Response> handler) {
         val logFilePath = logInfo.logPathFor(appId, instanceId);
         if (Strings.isNullOrEmpty(logFilePath)) {
             return error("This only works if the 'drove' appender type is configured");
         }
         val extractedFileName = FilenameUtils.getName(fileName);
-        val logFile = new File(logFilePath + "/" + extractedFileName);
-        log.debug("File read request: file={} path={}", extractedFileName, logFilePath);
-        if (!logFile.canRead()) {
-            return error("Could not read log file: " + logFile.toPath());
+        val fullPath = logFilePath + "/" + extractedFileName;
+        val logFile = new File(fullPath);
+        String canonicalPath = null;
+        try {
+            canonicalPath = logFile.getCanonicalPath();
         }
-        val so = new StreamingOutput() {
-            @Override
-            public void write(OutputStream output) throws IOException, WebApplicationException {
-                try (val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
-                     val bw = new BufferedWriter(new OutputStreamWriter(output), DEFAULT_BUFFER_SIZE)) {
-                    var buffer = new char[DEFAULT_BUFFER_SIZE];
-                    int bytesRead;
-
-                    while ((bytesRead = br.read(buffer, 0, DEFAULT_BUFFER_SIZE)) != -1) {
-                        bw.write(buffer, 0, bytesRead);
-                    }
-                    bw.flush();
-                }
-            }
-        };
-        return Response.ok(so).build();
+        catch (IOException e) {
+            return error("Error reading file " + logFilePath + ": " + e.getMessage());
+        }
+        if (!canonicalPath.startsWith(logInfo.getLogPrefix())) {
+            return error("Out of bound log read request: " + canonicalPath);
+        }
+        if (!logFile.canRead()) {
+            return error("Could not read log file: " + fullPath);
+        }
+        return handler.apply(logFile);
     }
 
     private Response error(String message) {

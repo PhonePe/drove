@@ -2,10 +2,7 @@ package com.phonepe.drove.executor.logging;
 
 import com.phonepe.drove.executor.AppConfig;
 import io.dropwizard.logging.DefaultLoggingFactory;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import lombok.val;
+import lombok.*;
 
 /**
  *
@@ -16,6 +13,8 @@ public class LogInfo {
     public static final LogInfo DEFAULT = new LogInfo(false, null);
 
     boolean droveLogging;
+
+    @Getter
     String logPrefix;
 
     public static LogInfo create(final AppConfig appConfig) {
