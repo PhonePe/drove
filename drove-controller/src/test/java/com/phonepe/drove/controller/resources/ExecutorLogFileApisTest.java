@@ -215,7 +215,6 @@ class ExecutorLogFileApisTest {
             try(val r = EXT.target(api)
                     .request()
                     .get()) {
-                System.out.println(r);
                 val tmpFile = Files.createTempFile("dt", "dld");
                 try(val out = new FileOutputStream(tmpFile.toFile())) {
                     IOUtils.copy(r.readEntity(InputStream.class), out);

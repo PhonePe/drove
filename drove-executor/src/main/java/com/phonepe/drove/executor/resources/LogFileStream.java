@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.resources;
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.base.Strings;
 import com.phonepe.drove.auth.model.DroveUserRole;
-import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.executor.logging.LogInfo;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,6 @@ import java.util.Map;
 @Slf4j
 @Path("/v1/logs/filestream")
 @RolesAllowed(DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE)
-@IgnoreInJacocoGeneratedReport
 @SuppressWarnings("java:S1075")
 public class LogFileStream {
 
@@ -46,7 +44,7 @@ public class LogFileStream {
     }
 
     @Value
-    private static class LogBuffer {
+    public static class LogBuffer {
         String data;
         long offset;
     }
@@ -65,6 +63,9 @@ public class LogFileStream {
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId) {
         val logPath = logInfo.logPathFor(appId, instanceId);
+        if(Strings.isNullOrEmpty(logPath)) {
+            return Response.ok(Map.of("files", List.of())).build();
+        }
         try (val list = Files.list(new File(logPath).toPath())) {
             return Response.ok(
                             Map.of("files",
@@ -100,8 +101,8 @@ public class LogFileStream {
         val logFile = new File(fullPath);
         log.trace("File read request: file={} offset={} length={} full-path={}",
                   extractedFileName, offset, length, fullPath);
-        if (!logFile.exists() || !logFile.isFile() || !logFile.canRead()) {
-            return error("Could not read log file: " + logFilePath);
+        if (!logFile.canRead()) {
+            return error("Could not read log file: " + fullPath);
         }
         if(offset == -1 && length==-1) {
             return Response.ok(new LogBuffer("", logFile.length())).build();
@@ -124,7 +125,7 @@ public class LogFileStream {
 
     @GET
     @Path("/{appId}/{instanceId}/download/{fileName}")
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces({MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
     @Metered
     public Response downloadLogFile(
             @PathParam("appId") @NotEmpty final String appId,
@@ -137,8 +138,8 @@ public class LogFileStream {
         val extractedFileName = FilenameUtils.getName(fileName);
         val logFile = new File(logFilePath + "/" + extractedFileName);
         log.debug("File read request: file={} path={}", extractedFileName, logFilePath);
-        if (!logFile.exists() || !logFile.isFile() || !logFile.canRead()) {
-            return error("Could not read log file: " + logFilePath);
+        if (!logFile.canRead()) {
+            return error("Could not read log file: " + logFile.toPath());
         }
         val so = new StreamingOutput() {
             @Override

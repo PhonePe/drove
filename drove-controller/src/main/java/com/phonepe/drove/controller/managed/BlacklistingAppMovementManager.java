@@ -119,6 +119,7 @@ public class BlacklistingAppMovementManager implements Managed {
     private void handleLeadershipChanged(boolean isLeader) {
         if (!isLeader) {
             log.debug("Doing nothing as I'm not the leader");
+            return;
         }
         //Timer task is needed below, because otherwise during complete cluster startup, the cluster status might not
         // have formed completely to take an informed decision

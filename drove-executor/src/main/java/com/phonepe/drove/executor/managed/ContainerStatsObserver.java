@@ -248,17 +248,24 @@ public class ContainerStatsObserver implements Managed {
     private void unregisterTrackedContainer(final String instanceId) {
         instances.computeIfPresent(instanceId, (iid, oldValue) -> {
             metricRegistry.remove(metricName(oldValue, "nr_throttled"));
+            metricRegistry.remove(metricName(oldValue, "cpu_cores_allocated"));
             metricRegistry.remove(metricName(oldValue, "cpu_percentage_per_core"));
+            metricRegistry.remove(metricName(oldValue, "cpu_percentage_overall"));
             metricRegistry.remove(metricName(oldValue, "cpu_absolute_per_ms"));
             metricRegistry.remove(metricName(oldValue, "memory_usage"));
+            metricRegistry.remove(metricName(oldValue, "memory_usage_percentage"));
+            metricRegistry.remove(metricName(oldValue, "memory_allocated"));
             metricRegistry.remove(metricName(oldValue, "memory_usage_max"));
             metricRegistry.remove(metricName(oldValue, "memory_usage_limit"));
             metricRegistry.remove(metricName(oldValue, "network_tx_bytes"));
+            metricRegistry.remove(metricName(oldValue, "network_tx_per_sec_bytes"));
             metricRegistry.remove(metricName(oldValue, "network_tx_errors"));
             metricRegistry.remove(metricName(oldValue, "network_tx_dropped"));
             metricRegistry.remove(metricName(oldValue, "network_rx_bytes"));
+            metricRegistry.remove(metricName(oldValue, "network_rx_per_sec_bytes"));
             metricRegistry.remove(metricName(oldValue, "network_rx_errors"));
             metricRegistry.remove(metricName(oldValue, "network_rx_dropped"));
+            metricRegistry.remove(metricName(oldValue, "block_io_write_bytes"));
             return null;
         });
     }

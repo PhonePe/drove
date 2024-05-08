@@ -50,6 +50,7 @@
             **/*.css,
             **/model/**,
             **/models/**,
+            **/ui/views/**,
             **/*Log*Stream**,
             **/*Module**,
             **/App.java,
