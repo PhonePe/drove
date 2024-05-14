@@ -31,7 +31,7 @@ quick_build_project() {
 }
 
 build_controller() {
-    VERSIONSTR=$(echo -n "${1}")
+    VERSIONSTR=$(echo -n "${1}"|sed 's/-SNAPSHOT/~snapshot/g')
     RELEASESTR=$(echo -n "${2}")
     echo  "Creating package dir for controller"
     cp -rf drove-controller-template/* BUILD/
@@ -51,7 +51,7 @@ build_controller() {
 }
 
 build_executor() {
-    VERSIONSTR=$(echo -n "${1}")
+    VERSIONSTR=$(echo -n "${1}"|sed 's/-SNAPSHOT/~snapshot/g')
     RELEASESTR=$(echo -n "${2}")
     echo  "Creating package dir for executor"
     cp -rf drove-executor-template/* BUILD/
