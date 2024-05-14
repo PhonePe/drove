@@ -60,6 +60,17 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
                 log.error("Error stopping instance: " + context.getDockerInstanceId(), e);
                 return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
             }
+            try {
+                dockerClient.removeContainerCmd(context.getDockerInstanceId()).exec();
+            }
+            catch (NotFoundException e) {
+                log.error("Container already removed");
+                return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
+            }
+            catch (Exception e) {
+                log.error("Error removing instance: " + context.getDockerInstanceId(), e);
+                return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
+            }
         }
         return StateData.from(currentState, InstanceState.DEPROVISIONING);
     }
