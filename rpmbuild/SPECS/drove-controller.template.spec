@@ -66,7 +66,6 @@ install -p -D -m 0644 drove.sysusers %{buildroot}%{_sysusersdir}/drove.sysusers
 %{_unitdir}/drove-controller.service
 %{_presetdir}/50-drove-controller.preset
 %{_sysusersdir}/drove.sysusers
-%{_prefix}/*
 %dir %{_var}/log/drove/drove-controller
 
 %changelog
