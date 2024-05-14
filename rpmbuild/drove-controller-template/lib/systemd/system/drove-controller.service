@@ -1,0 +1,14 @@
+[Unit]
+Description=drove-controller
+
+[Service]
+ExecStart=/usr/bin/drove-controller
+PermissionsStartOnly=true
+ExecStartPre=/bin/sh -c "echo JAVA_HOME=$(alternatives --display java | grep 'family java-17-openjdk' | cut -d' ' -f1| sed 's/bin.*java//g') > /etc/default/drove-controller "
+Restart=always
+OOMScoreAdjust=-1000
+User=drove
+Group=drove
+
+[Install]
+WantedBy=multi-user.target

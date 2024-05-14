@@ -1,0 +1,14 @@
+[Unit]
+Description=drove-executor
+
+[Service]
+ExecStart=/usr/bin/drove-executor
+PermissionsStartOnly=true
+ExecStartPre=/bin/sh -c "echo JAVA_HOME=$(alternatives --display java | grep 'family java-17-openjdk' | cut -d' ' -f1| sed 's/bin.*java//g') > /etc/default/drove-executor "
+Restart=always
+OOMScoreAdjust=-1000
+User=drove
+Group=drove
+
+[Install]
+WantedBy=multi-user.target
