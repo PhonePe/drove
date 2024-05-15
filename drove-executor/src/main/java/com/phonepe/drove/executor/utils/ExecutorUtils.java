@@ -1,6 +1,5 @@
 package com.phonepe.drove.executor.utils;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.checker.Checker;
@@ -32,17 +31,15 @@ import com.phonepe.drove.statemachine.StateData;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
+
+import static com.phonepe.drove.common.CommonUtils.buildRequest;
 
 /**
  *
@@ -110,24 +107,10 @@ public class ExecutorUtils {
 
     @SneakyThrows
     public static HttpUriRequest buildRequestFromSpec(final HTTPCheckModeSpec httpSpec, final URI uri) {
-        return switch (httpSpec.getVerb()) {
-            case GET -> new HttpGet(uri);
-            case POST -> {
-                val req = new HttpPost(uri);
-                if(!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    req.setEntity(new StringEntity(httpSpec.getPayload()));
-                }
-                yield req;
-            }
-            case PUT -> {
-                val req = new HttpPut(uri);
-                if(!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    req.setEntity(new StringEntity(httpSpec.getPayload()));
-                }
-                yield req;
-            }
-        };
+        return buildRequest(httpSpec.getVerb(), uri, httpSpec.getPayload());
     }
+
+
 
     public static String instanceId(final DeployedExecutionObjectInfo instanceInfo) {
         return instanceInfo.accept(new DeployedExecutorInstanceInfoVisitor<>() {

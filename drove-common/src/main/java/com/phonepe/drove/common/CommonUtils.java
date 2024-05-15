@@ -19,6 +19,7 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+import com.phonepe.drove.models.common.HTTPVerb;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,10 @@ import net.jodah.failsafe.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -42,6 +47,7 @@ import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.URIScheme;
 import org.apache.hc.core5.http.config.RegistryBuilder;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
@@ -256,5 +262,28 @@ public class CommonUtils {
                 .setConnectionManager(connManager)
                 .setDefaultRequestConfig(rc)
                 .build();
+    }
+
+    public static HttpUriRequestBase buildRequest(
+            HTTPVerb verb,
+            URI uri,
+            String payload) {
+        return switch (verb) {
+            case GET -> new HttpGet(uri);
+            case POST -> {
+                val req = new HttpPost(uri);
+                if(!Strings.isNullOrEmpty(payload)) {
+                    req.setEntity(new StringEntity(payload));
+                }
+                yield req;
+            }
+            case PUT -> {
+                val req = new HttpPut(uri);
+                if(!Strings.isNullOrEmpty(payload)) {
+                    req.setEntity(new StringEntity(payload));
+                }
+                yield req;
+            }
+        };
     }
 }

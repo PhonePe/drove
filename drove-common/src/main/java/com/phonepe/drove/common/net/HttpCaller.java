@@ -7,9 +7,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -20,7 +17,6 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
@@ -34,6 +30,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.phonepe.drove.common.CommonUtils.buildRequest;
 
 /**
  *
@@ -61,23 +59,7 @@ public class HttpCaller {
                                            path));
         val verb = Objects.requireNonNullElse(httpSpec.getVerb(), HTTPCallSpec.DEFAULT_VERB);
         log.debug("Will make {} call to: {}", verb, uri);
-        val request = switch (verb) {
-            case GET -> new HttpGet(uri);
-            case POST -> {
-                val req = new HttpPost(uri);
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    req.setEntity(new StringEntity(httpSpec.getPayload()));
-                }
-                yield req;
-            }
-            case PUT -> {
-                val req = new HttpPut(uri);
-                if (!Strings.isNullOrEmpty(httpSpec.getPayload())) {
-                    req.setEntity(new StringEntity(httpSpec.getPayload()));
-                }
-                yield req;
-            }
-        };
+        val request = buildRequest(verb, uri, httpSpec.getPayload());
         request.setConfig(
                 RequestConfig.custom()
                         .setResponseTimeout(Timeout.of(
