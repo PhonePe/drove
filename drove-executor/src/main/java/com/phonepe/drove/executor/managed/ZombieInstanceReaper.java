@@ -8,6 +8,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
@@ -62,14 +63,22 @@ public class ZombieInstanceReaper implements Managed {
     private final TaskInstanceEngine taskInstanceEngine;
 
     private final ClusterClient clusterClient;
+    private final ExecutorOptions executorOptions;
 
     @Inject
     @IgnoreInJacocoGeneratedReport
     public ZombieInstanceReaper(
             DockerClient client,
             ApplicationInstanceEngine applicationInstanceEngine,
-            TaskInstanceEngine taskInstanceEngine, ClusterClient clusterClient) {
-        this(client, applicationInstanceEngine, taskInstanceEngine, Duration.ofMinutes(1), clusterClient);
+            TaskInstanceEngine taskInstanceEngine,
+            ClusterClient clusterClient,
+            ExecutorOptions executorOptions) {
+        this(client,
+             applicationInstanceEngine,
+             taskInstanceEngine,
+             Duration.ofMinutes(1),
+             clusterClient,
+             executorOptions);
     }
 
     @VisibleForTesting
@@ -77,12 +86,15 @@ public class ZombieInstanceReaper implements Managed {
             DockerClient client,
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine,
-            Duration checkDuration, ClusterClient clusterClient) {
+            Duration checkDuration,
+            ClusterClient clusterClient,
+            ExecutorOptions executorOptions) {
         this.client = client;
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
         this.zombieCheckSignal = new ScheduledSignal(checkDuration);
         this.clusterClient = clusterClient;
+        this.executorOptions = executorOptions;
     }
 
     @Override
@@ -194,37 +206,62 @@ public class ZombieInstanceReaper implements Managed {
                     .forEach(container -> {
                         val droveInstanceId = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
                         val containerId = container.getId();
-                        if (DockerUtils.isRunning(client, container)) {
-                            log.info("Killing zombie container of type {}: {} {}", type, droveInstanceId, containerId);
-                            try (val cmd = client.killContainerCmd(containerId)) {
-                                cmd.exec();
-                            }
-                            catch (Exception e) {
-                                log.error("Error killing container " + droveInstanceId + " (" + containerId + ") : "
-                                                  + e.getMessage(),
-                                          e);
-                            }
-                            log.info("Killed zombie container: {} {}", droveInstanceId, containerId);
-                        }
-                        try {
-                            DockerUtils.cleanupContainer(client, containerId);
-                        }
-                        catch (NotFoundException | ConflictException e) {
-                            log.error("Looks like container {} ({}) has already been deleted. No cleanup needed for " +
-                                            "this zombie",
-                                    droveInstanceId,
-                                    containerId);
-                        }
-                        catch (Exception e) {
-                            log.error("Error cleaning up container " + droveInstanceId + " (" + containerId + ") : "
-                                              + e.getMessage(),
-                                      e);
-                        }
+                        killContainer(type, container, droveInstanceId, containerId);
+                        removeContainer(containerId, droveInstanceId);
+                        removeImage(container);
                     });
             log.info("All zombie containers of type {} killed", type);
         }
         else {
             log.debug("No zombie containers of type {} found", type);
+        }
+    }
+
+    private void removeImage(Container container) {
+        if (executorOptions.isCacheImages()) {
+            log.info("Skipping cleanup for image as caching is enabled");
+        }
+        else {
+            try {
+                DockerUtils.cleanupImage(client, container.getImageId());
+            } catch (NotFoundException | ConflictException e) {
+                log.error("Could not delete image. Not found or is being used by other container for {}",
+                          container.getImageId());
+            } catch (Exception e) {
+                log.error("Could could delete image: ", e);
+            }
+        }
+    }
+
+    private void removeContainer(String containerId, String droveInstanceId) {
+        try {
+            DockerUtils.cleanupContainer(client, containerId);
+        }
+        catch (NotFoundException | ConflictException e) {
+            log.error("Looks like container {} ({}) has already been deleted. No cleanup needed for " +
+                            "this zombie",
+                      droveInstanceId,
+                      containerId);
+        }
+        catch (Exception e) {
+            log.error("Error cleaning up container " + droveInstanceId + " (" + containerId + ") : "
+                              + e.getMessage(),
+                      e);
+        }
+    }
+
+    private void killContainer(JobType type, Container container, String droveInstanceId, String containerId) {
+        if (DockerUtils.isRunning(client, container)) {
+            log.info("Killing zombie container of type {}: {} {}", type, droveInstanceId, containerId);
+            try (val cmd = client.killContainerCmd(containerId)) {
+                cmd.exec();
+            }
+            catch (Exception e) {
+                log.error("Error killing container " + droveInstanceId + " (" + containerId + ") : "
+                                  + e.getMessage(),
+                          e);
+            }
+            log.info("Killed zombie container: {} {}", droveInstanceId, containerId);
         }
     }
 

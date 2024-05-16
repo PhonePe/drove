@@ -99,8 +99,7 @@ public class DockerUtils {
     }
 
     public static void cleanupImage(final DockerClient dockerClient, final String dockerImageId) {
-        try (val cmd = dockerClient.removeImageCmd(dockerImageId)
-                .withForce(true)) {
+        try (val cmd = dockerClient.removeImageCmd(dockerImageId)) {
             cmd.exec();
             log.info("Removed image: {}", dockerImageId);
         }

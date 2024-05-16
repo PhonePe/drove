@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ContainerHelperExtension;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
@@ -45,7 +46,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val cc = mock(ClusterClient.class);
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         val te = mock(TaskInstanceEngine.class);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(ids::isEmpty);
         assertTrue(ids.isEmpty());
@@ -63,7 +64,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         when(te.stopInstance(anyString())).thenAnswer(invocationOnMock -> ids.remove(invocationOnMock.getArgument(0, String.class)));
         val cc = mock(ClusterClient.class);
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(ids::isEmpty);
         assertTrue(ids.isEmpty());
@@ -82,7 +83,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         when(te.instanceIds(any())).thenReturn(Set.of());
         when(te.stopInstance(anyString())).thenReturn(false);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(cId));
         assertFalse(containerExists(cId));
@@ -101,7 +102,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         when(te.instanceIds(any())).thenReturn(Set.of());
         when(te.stopInstance(anyString())).thenReturn(false);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(cId));
         assertFalse(containerExists(cId));
@@ -127,7 +128,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val te = mock(TaskInstanceEngine.class);
         val cc = mock(ClusterClient.class);
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(cId));
         assertFalse(containerExists(cId));
@@ -155,7 +156,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val cc = mock(ClusterClient.class);
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
 
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(() -> !containerExists(appContainer));
         assertTrue(containerExists(cId));
@@ -185,7 +186,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
                                                                            Set.of(),
                                                                            Set.of()));
         val te = mock(TaskInstanceEngine.class);
-        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT, ae, te, Duration.ofSeconds(1), cc, ExecutorOptions.DEFAULT);
         zr.start();
         CommonTestUtils.waitUntil(() -> Sets.intersection(ids, killedIds).isEmpty());
         assertTrue(Sets.intersection(ids, killedIds).isEmpty());
