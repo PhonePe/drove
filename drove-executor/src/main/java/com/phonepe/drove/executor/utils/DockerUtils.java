@@ -8,10 +8,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
-import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
-import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
@@ -109,6 +106,18 @@ public class DockerUtils {
         }
     }
 
+    public static boolean isRunning(final DockerClient dockerClient, final Container container) {
+        try (val cmd = dockerClient.inspectContainerCmd(container.getId())) {
+            return Boolean.TRUE.equals(cmd.exec()
+                                               .getState()
+                                               .getRunning());
+        }
+        catch (Exception e) {
+            log.error("Error running inspect on " + container.getId(), e);
+        }
+        return false;
+    }
+
     @Value
     public static class DockerRunParams {
         String hostname;
@@ -149,7 +158,6 @@ public class DockerUtils {
                                                            ExecutorOptions.DEFAULT_LOG_CACHE_SIZE);
             val hostConfig = new HostConfig()
                     .withMemorySwappiness(0L)
-                    .withAutoRemove(autoRemove(deploymentUnitSpec))
                     .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
@@ -370,19 +378,6 @@ public class DockerUtils {
                         return null;
                     }
                 }));
-    }
-    private static Boolean autoRemove(DeploymentUnitSpec deploymentUnitSpec) {
-        return deploymentUnitSpec.accept(new DeploymentUnitSpecVisitor<>() {
-            @Override
-            public Boolean visit(ApplicationInstanceSpec instanceSpec) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(TaskInstanceSpec taskInstanceSpec) {
-                return false;
-            }
-        });
     }
 
     private static LogConfig logConfig(

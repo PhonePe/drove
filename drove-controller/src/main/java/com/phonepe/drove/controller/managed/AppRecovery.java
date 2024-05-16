@@ -100,8 +100,7 @@ public class AppRecovery implements Managed {
                 .stream()
                 .filter(state -> !state.isTerminal())
                 .collect(Collectors.toSet());
-        appNames.stream()
-                .forEach(
+        appNames.forEach(
                         appName -> { //This is done one by one to avoid memory blowup for busy clusters
                             log.info("Attempting to recover tasks for: {}", appName);
                             val pendingTasks = taskDB.tasks(List.of(appName), recoveryStates, true);

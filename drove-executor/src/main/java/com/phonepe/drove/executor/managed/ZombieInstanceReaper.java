@@ -1,6 +1,8 @@
 package com.phonepe.drove.executor.managed;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.ConflictException;
+import com.github.dockerjava.api.exception.NotFoundException;
 import com.github.dockerjava.api.model.Container;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -12,6 +14,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
+import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
@@ -97,6 +100,7 @@ public class ZombieInstanceReaper implements Managed {
 
     void reconcileInstances(final Date checkTime) {
         val containers = client.listContainersCmd()
+                .withShowAll(true)
                 .withLabelFilter(List.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
                                          DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
                                          DockerLabels.DROVE_INSTANCE_DATA_LABEL))
@@ -189,19 +193,33 @@ public class ZombieInstanceReaper implements Managed {
                                                                        .get(DockerLabels.DROVE_INSTANCE_ID_LABEL)))
                     .forEach(container -> {
                         val droveInstanceId = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
-                        log.info("Killing zombie container of type {}: {} {}",
-                                 type,
-                                 droveInstanceId,
-                                 container.getId());
+                        val containerId = container.getId();
+                        if (DockerUtils.isRunning(client, container)) {
+                            log.info("Killing zombie container of type {}: {} {}", type, droveInstanceId, containerId);
+                            try (val cmd = client.killContainerCmd(containerId)) {
+                                cmd.exec();
+                            }
+                            catch (Exception e) {
+                                log.error("Error killing container " + droveInstanceId + " (" + containerId + ") : "
+                                                  + e.getMessage(),
+                                          e);
+                            }
+                            log.info("Killed zombie container: {} {}", droveInstanceId, containerId);
+                        }
                         try {
-                            client.killContainerCmd(container.getId()).exec();
+                            DockerUtils.cleanupContainer(client, containerId);
+                        }
+                        catch (NotFoundException | ConflictException e) {
+                            log.error("Looks like container {} ({}) has already been deleted. No cleanup needed for " +
+                                            "this zombie",
+                                    droveInstanceId,
+                                    containerId);
                         }
                         catch (Exception e) {
-                            log.error("Error killing container " + droveInstanceId + " (" + container.getId() + ") : "
+                            log.error("Error cleaning up container " + droveInstanceId + " (" + containerId + ") : "
                                               + e.getMessage(),
                                       e);
                         }
-                        log.info("Killed zombie container: {} {}", droveInstanceId, container.getId());
                     });
             log.info("All zombie containers of type {} killed", type);
         }
