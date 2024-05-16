@@ -6,13 +6,15 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
+import com.phonepe.drove.executor.statemachine.common.actions.CommonContainerCleanupAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.PreShutdownSpec;
-import com.phonepe.drove.models.application.checks.*;
+import com.phonepe.drove.models.application.checks.CheckModeSpec;
+import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
+import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
+import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
-import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
@@ -35,11 +37,11 @@ import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer
  *
  */
 @Slf4j
-public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
+public class ApplicationInstanceStopAction
+        extends CommonContainerCleanupAction<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> {
 
     @Override
-    @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
+    protected StateData<InstanceState, ExecutorInstanceInfo> preRemoveAction(
             InstanceActionContext<ApplicationInstanceSpec> context,
             StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         if (Strings.isNullOrEmpty(context.getDockerInstanceId())) {
@@ -60,17 +62,6 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
                 log.error("Error stopping instance: " + context.getDockerInstanceId(), e);
                 return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
             }
-            try {
-                dockerClient.removeContainerCmd(context.getDockerInstanceId()).exec();
-            }
-            catch (NotFoundException e) {
-                log.error("Container already removed");
-                return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
-            }
-            catch (Exception e) {
-                log.error("Error removing instance: " + context.getDockerInstanceId(), e);
-                return StateData.errorFrom(currentState, InstanceState.DEPROVISIONING, e.getMessage());
-            }
         }
         return StateData.from(currentState, InstanceState.DEPROVISIONING);
     }
@@ -80,15 +71,14 @@ public class ApplicationInstanceStopAction extends ApplicationInstanceAction {
         //Ignored
     }
 
-
-    @Override
-    protected boolean isStopAllowed() {
-        return false;
-    }
-
     @Override
     protected InstanceState defaultErrorState() {
         return InstanceState.DEPROVISIONING;
+    }
+
+    @Override
+    protected InstanceState stoppedState() {
+        return defaultErrorState();
     }
 
     private void handlePreShutdown(

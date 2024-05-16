@@ -64,12 +64,12 @@ public class ApplicationInstanceStateMachine extends StateMachine<ExecutorInstan
             new Transition<>(START_FAILED,
                              ApplicationInstanceDestroyAction.class,
                              DEPROVISIONING),
-            new Transition<>(DEPROVISIONING,
-                             ApplicationExecutableCleanupAction.class,
-                             STOPPED),
             new Transition<>(READINESS_CHECK_FAILED,
                              ApplicationInstanceStopAction.class,
-                             DEPROVISIONING));
+                             DEPROVISIONING),
+            new Transition<>(DEPROVISIONING,
+                             ApplicationExecutableCleanupAction.class,
+                             STOPPED));
 
     public ApplicationInstanceStateMachine(
             String executorId,

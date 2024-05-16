@@ -92,11 +92,21 @@ public class DockerUtils {
         }
     }
 
-    public static void cleanupImage(final DockerClient dockerClient, final String dockerImageId) {
-        dockerClient.removeImageCmd(dockerImageId)
+    public static void cleanupContainer(final DockerClient dockerClient, final String containerId) {
+        try (val cmd = dockerClient.removeContainerCmd(containerId)
                 .withForce(true)
-                .exec();
-        log.info("Removed image: {}", dockerImageId);
+                .withRemoveVolumes(true)) {
+            cmd.exec();
+            log.info("Removed container: {}", containerId);
+        }
+    }
+
+    public static void cleanupImage(final DockerClient dockerClient, final String dockerImageId) {
+        try (val cmd = dockerClient.removeImageCmd(dockerImageId)
+                .withForce(true)) {
+            cmd.exec();
+            log.info("Removed image: {}", dockerImageId);
+        }
     }
 
     @Value
