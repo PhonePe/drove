@@ -10,7 +10,7 @@ Distribution:     el9
 
 BuildRequires: systemd-devel
 
-Requires: systemd,podman,podman-docker
+Requires: systemd,podman,podman-docker,numactl
 Requires: (java-17-openjdk-headless)
 Requires(pre): systemd-rpm-macros
 Requires(pre): /usr/sbin/useradd /usr/sbin/groupadd
