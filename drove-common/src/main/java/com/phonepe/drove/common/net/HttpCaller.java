@@ -11,7 +11,6 @@ import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicHeader;
-import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.inject.Inject;
@@ -76,7 +75,7 @@ public class HttpCaller {
                 .forEach(request::setHeader);
         val clientForUse = httpSpec.isInsecure()
                          ? insecureHttpClient
-                         : this.httpClient;
+                         : httpClient;
         try {
             return clientForUse.execute(
                     request,
@@ -101,11 +100,6 @@ public class HttpCaller {
         }
         catch (IOException e) {
             throw new IllegalStateException("Could not fetch config. Received IO exception: " + e.getMessage(), e);
-        }
-        finally {
-            if(httpSpec.isInsecure()) {
-                ((CloseableHttpClient)clientForUse).close(CloseMode.IMMEDIATE);
-            }
         }
     }
 
