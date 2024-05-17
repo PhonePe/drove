@@ -103,16 +103,16 @@ public class ApplicationInstanceStopAction
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             CheckModeSpec preShutdownHook) {
         try {
-            preShutdownHook.accept(new CheckModeSpecVisitor<Boolean>() {
+            preShutdownHook.accept(new CheckModeSpecVisitor<Void>() {
                 @Override
-                public Boolean visit(HTTPCheckModeSpec httpCheck) {
+                public Void visit(HTTPCheckModeSpec httpCheck) {
                     executeHttpShutdownHook(currentState, httpCheck);
                     return null;
                 }
 
                 @Override
-                public Boolean visit(CmdCheckModeSpec cmdCheck) {
-                    executeCmdShutdownHook(context, currentState, cmdCheck);
+                public Void visit(CmdCheckModeSpec cmdCheck) {
+                    executeCmdShutdownHook(context, cmdCheck);
                     return null;
                 }
             });
@@ -122,6 +122,7 @@ public class ApplicationInstanceStopAction
         }
     }
 
+    @SuppressWarnings("java:S1874")
     private void executeHttpShutdownHook(
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             HTTPCheckModeSpec httpSpec) {
@@ -149,7 +150,6 @@ public class ApplicationInstanceStopAction
             Failsafe.with(List.of(retryPolicy))
                     .onFailure(e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()))
                     .get(() -> makeHTTPCall(httpClient, httpSpec, uri));
-            return;
         }
         catch (TimeoutExceededException e) {
             log.error("Timeout calling shutdown hook.");
@@ -161,7 +161,6 @@ public class ApplicationInstanceStopAction
 
     private void executeCmdShutdownHook(
             InstanceActionContext<ApplicationInstanceSpec> context,
-            StateData<InstanceState, ExecutorInstanceInfo> currentState,
             CmdCheckModeSpec cmdCheckModeSpec) {
         val containerId = context.getDockerInstanceId();
         if (Strings.isNullOrEmpty(containerId)) {
@@ -170,10 +169,7 @@ public class ApplicationInstanceStopAction
         }
         val client = context.getClient();
         try {
-            val output = runCommandInContainer(
-                    containerId,
-                    client,
-                    cmdCheckModeSpec.getCommand());
+            val output = runCommandInContainer(containerId, client, cmdCheckModeSpec.getCommand());
             if (output.getStatus() == 0) {
                 log.info("Hook completed successfully with output: {}", output.getOutput());
             }
@@ -187,6 +183,7 @@ public class ApplicationInstanceStopAction
         }
     }
 
+    @SuppressWarnings("java:S1874")
     private boolean makeHTTPCall(
             final CloseableHttpClient httpClient,
             final HTTPCheckModeSpec httpSpec,
