@@ -3,12 +3,12 @@ package com.phonepe.drove.common.net;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.Test;
 
@@ -33,8 +33,9 @@ class HttpCallerTest {
                 .path("/config/v1/myapp")
                 .insecure(false)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -52,8 +53,9 @@ class HttpCallerTest {
                 .path("/config/v1/myapp")
                 .insecure(true)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -72,8 +74,9 @@ class HttpCallerTest {
                 .path("/config/v1/myapp")
                 .insecure(false)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             assertThrows(IllegalStateException.class, () -> fetcher.execute(spec));
         }
     }
@@ -94,8 +97,9 @@ class HttpCallerTest {
                 .verb(HTTPVerb.POST)
                 .payload("Test Body")
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -115,8 +119,9 @@ class HttpCallerTest {
                 .insecure(false)
                 .verb(HTTPVerb.POST)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -138,8 +143,9 @@ class HttpCallerTest {
                 .verb(HTTPVerb.PUT)
                 .payload("Test Body")
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -159,8 +165,9 @@ class HttpCallerTest {
                 .insecure(false)
                 .verb(HTTPVerb.PUT)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -183,8 +190,9 @@ class HttpCallerTest {
                 .verb(HTTPVerb.GET)
                 .insecure(false)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }
@@ -207,8 +215,9 @@ class HttpCallerTest {
                 .verb(HTTPVerb.GET)
                 .insecure(false)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             assertThrows(IllegalStateException.class,
                          () -> fetcher.execute(spec));
         }
@@ -230,8 +239,9 @@ class HttpCallerTest {
                 .verb(HTTPVerb.GET)
                 .insecure(false)
                 .build();
-        try(val client = HttpClients.createDefault()) {
-            val fetcher = new HttpCaller(client);
+        try (val client = CommonUtils.createHttpClient(false);
+             val insecureClient = CommonUtils.createHttpClient(true)) {
+            val fetcher = new HttpCaller(client, insecureClient);
             val response = new String(fetcher.execute(spec));
             assertEquals("name=John Doe", response);
         }

@@ -141,7 +141,8 @@ class CommonUtilsTest {
 
     @Test
     void testCreateHttpClient() {
-        assertNotNull(createHttpClient());
+        assertNotNull(createHttpClient(true));
+        assertNotNull(createHttpClient(false));
     }
 
     @Test

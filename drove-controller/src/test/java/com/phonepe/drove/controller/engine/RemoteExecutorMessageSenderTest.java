@@ -29,7 +29,7 @@ class RemoteExecutorMessageSenderTest extends ControllerTestBase {
 
     @Test
     void testSend(final WireMockRuntimeInfo wm) {
-        val ms = new RemoteExecutorMessageSender(ClusterAuthenticationConfig.DEFAULT, MAPPER, CommonUtils.createHttpClient());
+        val ms = new RemoteExecutorMessageSender(ClusterAuthenticationConfig.DEFAULT, MAPPER, CommonUtils.createHttpClient(false));
 
         assertTrue(true);
 

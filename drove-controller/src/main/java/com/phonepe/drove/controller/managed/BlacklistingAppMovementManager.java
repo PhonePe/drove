@@ -199,6 +199,7 @@ public class BlacklistingAppMovementManager implements Managed {
             catch (InterruptedException e) {
                 log.info("Blacklist manager interrupted");
                 Thread.currentThread().interrupt();
+                break;
             }
             catch (Exception e) {
                 log.error("Error in blacklist polling thread: " + e.getMessage(), e);

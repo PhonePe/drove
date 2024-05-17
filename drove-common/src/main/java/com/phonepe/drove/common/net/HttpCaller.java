@@ -3,26 +3,19 @@ package com.phonepe.drove.common.net;
 import com.google.common.base.Strings;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
-import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.io.CloseMode;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
@@ -43,20 +36,11 @@ public class HttpCaller {
     private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = (2 ^ 20); //1MB
 
     private final CloseableHttpClient httpClient;
+    private final @Named("insecure") CloseableHttpClient insecureHttpClient;
 
     public byte[] execute(final HTTPCallSpec httpSpec) {
         Objects.requireNonNull(httpSpec, "No config spec found");
-        val port = httpSpec.getPort() != 0
-                   ? httpSpec.getPort()
-                   : switch (httpSpec.getProtocol()) {
-                       case HTTP -> 80;
-                       case HTTPS -> 443;
-                   };
-        val path = Objects.requireNonNullElse(httpSpec.getPath(), HTTPCallSpec.DEFAULT_PATH);
-        val uri = URI.create(String.format("%s://localhost:%d%s",
-                                           httpSpec.getProtocol().name().toLowerCase(),
-                                           port,
-                                           path));
+        val uri = buildUri(httpSpec);
         val verb = Objects.requireNonNullElse(httpSpec.getVerb(), HTTPCallSpec.DEFAULT_VERB);
         log.debug("Will make {} call to: {}", verb, uri);
         val request = buildRequest(verb, uri, httpSpec.getPayload());
@@ -90,11 +74,11 @@ public class HttpCaller {
         }
         Objects.requireNonNullElseGet(httpSpec.getHeaders(), Map::<String, String>of)
                 .forEach(request::setHeader);
-        val httpClient = httpSpec.isInsecure()
-                         ? createInsecureClient()
+        val clientForUse = httpSpec.isInsecure()
+                         ? insecureHttpClient
                          : this.httpClient;
         try {
-            return httpClient.execute(
+            return clientForUse.execute(
                     request,
                     context,
                     response -> {
@@ -120,25 +104,23 @@ public class HttpCaller {
         }
         finally {
             if(httpSpec.isInsecure()) {
-                ((CloseableHttpClient)httpClient).close(CloseMode.IMMEDIATE);
+                ((CloseableHttpClient)clientForUse).close(CloseMode.IMMEDIATE);
             }
         }
     }
 
-    @SneakyThrows
-    private HttpClient createInsecureClient() {
-        val connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
-                .setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create()
-                                             .setSslContext(
-                                                     SSLContextBuilder.create()
-                                                             .loadTrustMaterial(TrustAllStrategy.INSTANCE)
-                                                             .build())
-                                             .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                                             .build())
-                .build();
-        return HttpClients.custom()
-                .setConnectionManager(
-                        connectionManager)
-                .build();
+    @SuppressWarnings("java:S2275")
+    private static URI buildUri(HTTPCallSpec httpSpec) {
+        val port = httpSpec.getPort() != 0
+                   ? httpSpec.getPort()
+                   : switch (httpSpec.getProtocol()) {
+                       case HTTP -> 80;
+                       case HTTPS -> 443;
+                   };
+        val path = Objects.requireNonNullElse(httpSpec.getPath(), HTTPCallSpec.DEFAULT_PATH);
+        return URI.create(String.format("%s://localhost:%d%s",
+                                        httpSpec.getProtocol().name().toLowerCase(),
+                                        port,
+                                        path));
     }
 }

@@ -122,7 +122,14 @@ public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public CloseableHttpClient httpClient() {
-        return CommonUtils.createHttpClient();
+        return CommonUtils.createHttpClient(false);
+    }
+
+    @Provides
+    @Singleton
+    @Named("insecure")
+    public CloseableHttpClient insecureHttpClient() {
+        return CommonUtils.createHttpClient(true);
     }
 
     @Provides

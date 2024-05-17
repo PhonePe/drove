@@ -40,6 +40,7 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.URI;
 import java.util.Objects;
@@ -191,7 +192,14 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public CloseableHttpClient httpClient() {
-        return CommonUtils.createHttpClient();
+        return CommonUtils.createHttpClient(false);
+    }
+
+    @Provides
+    @Singleton
+    @Named("insecure")
+    public CloseableHttpClient insecureHttpClient() {
+        return CommonUtils.createHttpClient(true);
     }
 
     @UtilityClass

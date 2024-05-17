@@ -53,7 +53,7 @@ class RemoteMessageSenderTest extends AbstractTestBase {
     private static abstract class TestMessageSender extends RemoteMessageSender<TestMessageType, TestMessage> {
 
         private TestMessageSender() {
-            super(MAPPER, ClusterAuthenticationConfig.DEFAULT, NodeType.CONTROLLER, CommonUtils.createHttpClient());
+            super(MAPPER, ClusterAuthenticationConfig.DEFAULT, NodeType.CONTROLLER, CommonUtils.createHttpClient(false));
         }
 
         @Override

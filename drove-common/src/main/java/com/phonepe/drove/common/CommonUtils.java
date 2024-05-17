@@ -37,6 +37,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.protocol.RedirectStrategy;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
@@ -192,9 +193,22 @@ public class CommonUtils {
         });
     }
 
-    public static CloseableHttpClient createHttpClient() {
+
+    @SneakyThrows
+    public static CloseableHttpClient createHttpClient(boolean insecure) {
         val connectionTimeout = Duration.ofSeconds(1);
-        val connectionManager = new PoolingHttpClientConnectionManager();
+        val cmBuilder = PoolingHttpClientConnectionManagerBuilder.create();
+        if(insecure) {
+            log.debug("Creating insecure http client");
+            cmBuilder.setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create()
+                                                  .setSslContext(
+                                                          SSLContextBuilder.create()
+                                                                  .loadTrustMaterial(TrustAllStrategy.INSTANCE)
+                                                                  .build())
+                                                  .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                                                  .build());
+        }
+        val connectionManager = cmBuilder.build();
         connectionManager.setDefaultMaxPerRoute(100);
         connectionManager.setMaxTotal(Integer.MAX_VALUE);
         connectionManager.setDefaultConnectionConfig(ConnectionConfig.custom()

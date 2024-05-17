@@ -47,7 +47,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
-                                                          CommonUtils.createHttpClient());
+                                                          CommonUtils.createHttpClient(false));
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -69,7 +69,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
-                                                          CommonUtils.createHttpClient());
+                                                          CommonUtils.createHttpClient(false));
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -92,7 +92,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
-                                                          CommonUtils.createHttpClient());
+                                                          CommonUtils.createHttpClient(false));
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")
@@ -110,7 +110,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
-                                                          CommonUtils.createHttpClient());
+                                                          CommonUtils.createHttpClient(false));
 
         val header = MessageHeader.executorRequest();
         assertEquals(FAILED, msgSender.send(new ExecutorSnapshotMessage(header, null)).getStatus());
@@ -130,7 +130,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         val msgSender = new RemoteControllerMessageSender(leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
-                                                          CommonUtils.createHttpClient());
+                                                          CommonUtils.createHttpClient(false));
 
         val header = MessageHeader.executorRequest();
         stubFor(post("/apis/v1/messages")

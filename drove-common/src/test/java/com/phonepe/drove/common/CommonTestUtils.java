@@ -6,7 +6,6 @@ import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -71,7 +70,7 @@ public class CommonTestUtils {
     }
 
     public HttpCaller httpCaller() {
-        return new HttpCaller(HttpClients.createDefault());
+        return new HttpCaller(CommonUtils.createHttpClient(false), CommonUtils.createHttpClient(true));
     }
 
     public static byte[] base64(final String content) {
