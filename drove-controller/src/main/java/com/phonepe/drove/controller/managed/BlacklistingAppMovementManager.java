@@ -159,21 +159,19 @@ public class BlacklistingAppMovementManager implements Managed {
 
     @SneakyThrows
     public boolean moveApps(final Set<String> executorIds) {
-        if (lock.tryLock()) {
-            try {
-                val status = processing.addAll(executorIds);
-                if (status) {
-                    condition.signalAll();
-                }
-                return status;
+        lock.lock();
+        try {
+            val status = processing.addAll(executorIds);
+            if (status) {
+                condition.signalAll();
             }
-            finally {
-                lock.unlock();
+            else {
+                log.info("Did not schedule executors for app movement. Looks like app movement is already underway.");
             }
+            return status;
         }
-        else {
-            log.info("Could not schedule executors for blacklisting. Looks like blacklisting is already underway.");
-            return false;
+        finally {
+            lock.unlock();
         }
     }
 
