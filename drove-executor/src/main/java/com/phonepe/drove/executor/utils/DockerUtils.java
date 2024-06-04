@@ -156,7 +156,6 @@ public class DockerUtils {
             val cacheFileSize = Objects.requireNonNullElse(executorOptions.getCacheFileSize(),
                                                            ExecutorOptions.DEFAULT_LOG_CACHE_SIZE);
             val hostConfig = new HostConfig()
-                    .withMemorySwappiness(0L)
                     .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount))
                     .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
 
