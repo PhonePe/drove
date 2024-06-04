@@ -42,6 +42,7 @@ import java.util.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static com.phonepe.drove.common.CommonTestUtils.APP_IMAGE_NAME;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.runCmd;
 import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
@@ -75,7 +76,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 "TEST_APP",
                 instanceId,
                 new DockerCoordinates(
-                        "docker.io/santanusinha/test-service:0.1",
+                        APP_IMAGE_NAME,
                         Duration.seconds(100)),
                 ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Collections.singleton(1))),
                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),

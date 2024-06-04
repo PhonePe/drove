@@ -24,13 +24,13 @@ import static org.awaitility.Awaitility.await;
  */
 @UtilityClass
 public class CommonTestUtils {
-    public static final String APP_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server:0.3";
-    public static final String TASK_IMAGE_NAME = dockerRepoPrefix() + "/test-task:0.3";
+    public static final String APP_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server-httplib:releases-0.1";
+    public static final String TASK_IMAGE_NAME = dockerRepoPrefix() + "/test-task:releases-0.1";
 
     private static String dockerRepoPrefix() {
         val prefix = System.getProperty("DOCKER_REPO_PREFIX");
         if(Strings.isNullOrEmpty(prefix)) {
-            return "docker.io/santanusinha";
+            return "ghcr.io/appform-io";
         }
         return prefix;
     }

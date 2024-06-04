@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.engine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
@@ -53,14 +54,16 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
+                                                        taskInstanceEngine,
+                                                        blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
         assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
         waitUntil(() -> applicationInstanceEngine.currentState(instanceId)
-                        .map(InstanceInfo::getState)
-                        .map(instanceState -> instanceState.equals(HEALTHY))
-                        .orElse(false));
+                .map(InstanceInfo::getState)
+                .map(instanceState -> instanceState.equals(HEALTHY))
+                .orElse(false));
         assertTrue(applicationInstanceEngine.exists(instanceId));
         assertFalse(applicationInstanceEngine.exists("WrongId"));
         val info = applicationInstanceEngine.currentState(instanceId).orElse(null);
@@ -95,10 +98,13 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                "TEST_SPEC",
                                                UUID.randomUUID().toString(),
                                                new DockerCoordinates(
-                                            "docker.io/santanusinha/perf-test-server:0.1",
-                                            io.dropwizard.util.Duration.seconds(100)),
-                                               ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(-1, -3))),
-                                                     new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                                       CommonTestUtils.APP_IMAGE_NAME,
+                                                       io.dropwizard.util.Duration.seconds(100)),
+                                               ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                           Set.of(-1,
+                                                                                                                  -3))),
+                                                                new MemoryAllocation(Collections.singletonMap(0,
+                                                                                                              512L))),
                                                Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
                                                Collections.emptyList(),
                                                Collections.emptyList(),
@@ -134,7 +140,9 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
+                                                        taskInstanceEngine,
+                                                        blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.FAILED, startResponse.getStatus());
     }
