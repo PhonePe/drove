@@ -36,6 +36,6 @@ public class JobContext<T> {
     }
 
     public boolean isCancelled() {
-        return stopped.get();
+        return cancelled.get();
     }
 }
