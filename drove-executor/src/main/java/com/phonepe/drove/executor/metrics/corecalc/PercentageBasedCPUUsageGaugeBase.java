@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.val;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,7 +44,12 @@ public abstract class PercentageBasedCPUUsageGaugeBase implements Gauge<Double>,
                 // There the calculation is much simpler
                 //Ref: https://github.com/containers/podman/blob/642a8f13a5f390a02c8ec05ec1b8557a0a1af2e9/libpod/stats_linux.go#L96
                 val onlineCPUs = Objects.requireNonNullElse(cpuStats.getOnlineCpus(), 1L);
-                val overallCPUUsagePercentage = ((double) cpuDelta * 100 * onlineCPUs)/ systemDelta;
+                //Looks like on cgroup v1, online cpus are not being returned properly
+                //We take number of percpu_usage array elements and use that as an approximation
+                val numPerCpuUsage = Objects.requireNonNullElse(
+                        cpuStats.getCpuUsage().getPercpuUsage(), Collections.emptyList()).size();
+                val cpuMultiplier = Math.max(onlineCPUs, numPerCpuUsage);
+                val overallCPUUsagePercentage = ((double) cpuDelta * 100 * cpuMultiplier)/ systemDelta;
                 consumeOverallPercentage(overallCPUUsagePercentage);
             }
         }
