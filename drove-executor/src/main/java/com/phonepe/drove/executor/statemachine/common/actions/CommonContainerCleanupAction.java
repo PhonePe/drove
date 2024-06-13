@@ -17,9 +17,8 @@ import lombok.val;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * This will clean up running container. Technically not needed as we set auto-remove true at least for app containers.
- * Anyway conflict is handled, just in case any platform has bugs in the cleanup code, this will ensure
- * everything is removed.
+ * This will clean up running container.
+ * Conflict and image caching is handled.
  */
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
