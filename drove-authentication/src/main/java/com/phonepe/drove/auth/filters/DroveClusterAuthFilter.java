@@ -15,7 +15,7 @@ import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
 import java.util.Optional;
 
-import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
 
 /**
  *

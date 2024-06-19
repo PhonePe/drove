@@ -40,5 +40,5 @@ public abstract class DroveEvent<T extends Enum<T>> {
         return new MapBuilder<>();
     }
 
-    public abstract <T> T accept(final DroveEventVisitor<T> visitor);
+    public abstract <U> U accept(final DroveEventVisitor<U> visitor);
 }

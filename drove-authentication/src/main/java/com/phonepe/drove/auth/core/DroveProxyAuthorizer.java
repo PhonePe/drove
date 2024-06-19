@@ -19,7 +19,7 @@ public class DroveProxyAuthorizer<T extends DroveUser> implements Authorizer<T> 
         this.coreAuthorizer = coreAuthorizer;
     }
 
-    @SuppressWarnings("deprecated")
+    @SuppressWarnings("deprecation")
     @Override
     public boolean authorize(T droveUser, String role) {
         //If the role requested is for read only (not r/w), then if disableReadAuth is set, just allow everyone in

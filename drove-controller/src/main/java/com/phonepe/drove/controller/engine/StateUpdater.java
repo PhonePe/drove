@@ -206,7 +206,7 @@ public class StateUpdater {
 
         @Override
         @SuppressWarnings("java:S2189")
-        public Void call() throws Exception {
+        public Void call() {
             while (true) {
                 val update = new AtomicReference<UpdateData>();
                 try {

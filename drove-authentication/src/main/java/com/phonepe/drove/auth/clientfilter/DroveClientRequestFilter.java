@@ -1,6 +1,6 @@
 package com.phonepe.drove.auth.clientfilter;
 
-import com.phonepe.drove.auth.core.AuthConstansts;
+import com.phonepe.drove.auth.core.AuthConstants;
 import com.phonepe.drove.auth.model.ClusterCommHeaders;
 
 import javax.ws.rs.client.ClientRequestContext;
@@ -24,7 +24,7 @@ public class DroveClientRequestFilter implements ClientRequestFilter {
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
         requestContext.getHeaders()
-                .putAll(Map.of(AuthConstansts.NODE_ID_HEADER, List.of(nodeId),
+                .putAll(Map.of(AuthConstants.NODE_ID_HEADER, List.of(nodeId),
                                ClusterCommHeaders.CLUSTER_AUTHORIZATION, List.of(secret)));
     }
 }

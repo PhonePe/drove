@@ -1,5 +1,7 @@
 package com.phonepe.drove.jobexecutor;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,6 +15,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JobUtils {
     public static <T> boolean executeSingleJob(
             JobContext<T> context, final JobResponseCombiner<T> responseCombiner, final Job<T> job) {

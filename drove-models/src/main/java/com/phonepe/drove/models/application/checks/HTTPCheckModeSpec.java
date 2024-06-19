@@ -37,6 +37,7 @@ public class HTTPCheckModeSpec extends CheckModeSpec {
     Duration connectionTimeout;
     boolean insecure;
 
+    @SuppressWarnings("java:S107")
     public HTTPCheckModeSpec(
             Protocol protocol,
             String portName,

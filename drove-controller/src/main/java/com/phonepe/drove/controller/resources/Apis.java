@@ -319,7 +319,7 @@ public class Apis {
     @Path("/cluster/events")
     @Timed
     @SuppressWarnings("rawtypes")
-    @Deprecated
+    @Deprecated(since = "1.27", forRemoval = true)
     public ApiResponse<List<DroveEvent>> events(
             @QueryParam("lastSyncTime") @DefaultValue("0") @Min(0) @Max(Long.MAX_VALUE) long lastSyncTime,
             @QueryParam("size") @DefaultValue("1024") @Min(0) @Max(Integer.MAX_VALUE) int size) {

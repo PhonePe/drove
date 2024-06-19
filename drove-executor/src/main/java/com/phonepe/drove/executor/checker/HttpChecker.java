@@ -46,6 +46,7 @@ public class HttpChecker implements Checker {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public CheckResult call() {
         val request = ExecutorUtils.buildRequestFromSpec(httpSpec, uri);
 

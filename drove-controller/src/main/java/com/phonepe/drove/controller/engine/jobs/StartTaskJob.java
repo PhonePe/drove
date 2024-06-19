@@ -22,6 +22,7 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
 import java.util.Date;
@@ -88,17 +89,7 @@ public class StartTaskJob implements Job<Boolean> {
         val instanceId = instanceIdGenerator.generate(this.taskSpec);
 
         try {
-            val status = Failsafe.with(retryPolicy)
-                    .onFailure(event -> {
-                        val failure = event.getFailure();
-                        if (null != failure) {
-                            log.error("Error setting up task for " + sourceApp + "/" + taskId, failure);
-                        }
-                        else {
-                            log.error("Error setting up task for {}/{}. Event: {}", sourceApp, taskId, event);
-                        }
-                    })
-                    .get(() -> startInstance(taskSpec, instanceId));
+            val status = waitForInstanceStart(retryPolicy, sourceApp, taskId, instanceId);
 
             if (context.isStopped() || context.isCancelled()) {
                 return false;
@@ -114,6 +105,22 @@ public class StartTaskJob implements Job<Boolean> {
         return false;
     }
 
+    @SuppressWarnings("java:S1874")
+    private Boolean waitForInstanceStart(RetryPolicy<Boolean> retryPolicy, String sourceApp, String taskId, String instanceId) {
+        return Failsafe.with(retryPolicy)
+                .onFailure(event -> {
+                    val failure = event.getFailure();
+                    if (null != failure) {
+                        log.error("Error setting up task for " + sourceApp + "/" + taskId, failure);
+                    }
+                    else {
+                        log.error("Error setting up task for {}/{}. Event: {}", sourceApp, taskId, event);
+                    }
+                })
+                .get(() -> startInstance(taskSpec, instanceId));
+    }
+
+    @SuppressWarnings("java:S1874")
     private boolean ensureDataAvailability() {
         val retryPolicy =
                 CommonUtils.<Boolean>policy(

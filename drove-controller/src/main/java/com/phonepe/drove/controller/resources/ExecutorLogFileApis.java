@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 /**

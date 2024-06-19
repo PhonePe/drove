@@ -28,6 +28,8 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.val;
@@ -45,6 +47,7 @@ import static com.phonepe.drove.common.CommonUtils.buildRequest;
  *
  */
 @UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExecutorUtils {
     public static Checker createChecker(
             InstanceActionContext<ApplicationInstanceSpec> context, ExecutorInstanceInfo instanceInfo,

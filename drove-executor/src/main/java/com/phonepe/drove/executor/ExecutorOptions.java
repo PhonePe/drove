@@ -27,6 +27,7 @@ public class ExecutorOptions {
     public static final DataSize DEFAULT_LOG_CACHE_SIZE = DataSize.megabytes(20);
     public static final int DEFAULT_LOG_CACHE_COUNT = 3;
     public static final Duration DEFAULT_CONTAINER_COMMAND_TIMEOUT = Duration.seconds(30);
+    @SuppressWarnings("java:S1075")
     public static final String DEFAULT_DOCKER_SOCKET_PATH = "/var/run/docker.sock";
 
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(null,

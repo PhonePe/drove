@@ -20,6 +20,8 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPVerb;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -68,10 +70,12 @@ import java.util.function.Predicate;
  */
 @UtilityClass
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtils {
     private static final String DEFAULT_NAMESPACE = "drove";
 
     @IgnoreInJacocoGeneratedReport
+    @SuppressWarnings("deprecation")
     public static void configureMapper(ObjectMapper objectMapper) {
         objectMapper.registerModule(new ParameterNamesModule());
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);

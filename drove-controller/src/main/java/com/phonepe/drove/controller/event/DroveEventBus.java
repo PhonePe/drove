@@ -10,6 +10,7 @@ import javax.inject.Singleton;
  *
  */
 @Singleton
+@SuppressWarnings("java:S3740") 
 public class DroveEventBus {
     private final ConsumingFireForgetSignal<DroveEvent> eventGenerated = new ConsumingFireForgetSignal<>();
 

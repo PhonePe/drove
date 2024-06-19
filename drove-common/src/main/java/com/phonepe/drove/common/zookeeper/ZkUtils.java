@@ -1,6 +1,8 @@
 package com.phonepe.drove.common.zookeeper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -20,6 +22,7 @@ import static com.phonepe.drove.common.CommonUtils.sublist;
  */
 @UtilityClass
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ZkUtils {
     public static boolean setNodeData(
             CuratorFramework curatorFramework,

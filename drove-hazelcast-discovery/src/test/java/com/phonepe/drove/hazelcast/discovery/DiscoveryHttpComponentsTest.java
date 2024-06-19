@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  */
 @WireMockTest(httpPort = 8878)
-public class DiscoveryHttpComponentsTest {
+class DiscoveryHttpComponentsTest {
     @BeforeEach
     void leaderStub() {
         stubFor(get(DroveClient.PING_API)

@@ -24,7 +24,7 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import java.io.IOException;
 import java.util.Optional;
 
-import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 /**
@@ -59,6 +59,7 @@ public abstract class RemoteMessageSender<
 
     @Override
     @MonitoredFunction
+    @SuppressWarnings("java:S1874")
     public MessageResponse send(SendMessage message) {
         val retryPolicy = retryStrategy();
         return Failsafe.with(retryPolicy).onFailure(result -> {
@@ -74,6 +75,7 @@ public abstract class RemoteMessageSender<
 
     protected abstract RetryPolicy<MessageResponse> retryStrategy();
 
+    @SuppressWarnings("deprecation")
     private MessageResponse sendRemoteMessage(SendMessage message) {
         val host = translateRemoteAddress(message).orElse(null);
         if (null == host) {

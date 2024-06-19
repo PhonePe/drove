@@ -23,6 +23,8 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.statemachine.StateData;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
@@ -35,6 +37,7 @@ import java.util.Optional;
  *
  */
 @UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventUtils {
     public static Map<AppEventDataTag, Object> appMetadata(
             final String appId,

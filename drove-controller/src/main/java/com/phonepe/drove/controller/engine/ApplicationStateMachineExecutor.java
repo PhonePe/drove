@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 import org.slf4j.MDC;
 
@@ -115,10 +116,7 @@ public class ApplicationStateMachineExecutor {
             stateMachine.stop();
             val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
-                val status = Failsafe.with(List.of(retryPolicy))
-                        .onFailure(e -> log.trace("Completion wait for {} completed with error: {}",
-                                                  appId, e.getFailure().getMessage()))
-                        .get(() -> currentState.isDone());
+                val status = waitForCompletion(retryPolicy);
                 if(status) {
                     log.info("State machine for app {} has shut down with final state {}", appId, currentState.get());
                 }
@@ -141,5 +139,13 @@ public class ApplicationStateMachineExecutor {
                 log.error("State machine for " + appId + " shut down with exception: " + e.getMessage(), e);
             }
         }
+    }
+
+    @SuppressWarnings("java:S1874")
+    private Boolean waitForCompletion(RetryPolicy<Boolean> retryPolicy) {
+        return Failsafe.with(List.of(retryPolicy))
+                .onFailure(e -> log.trace("Completion wait for {} completed with error: {}",
+                                          appId, e.getFailure().getMessage()))
+                .get(() -> currentState.isDone());
     }
 }

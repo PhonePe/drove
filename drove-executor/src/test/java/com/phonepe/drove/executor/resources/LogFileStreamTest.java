@@ -32,7 +32,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
-import static com.phonepe.drove.auth.core.AuthConstansts.NODE_ID_HEADER;
+import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 

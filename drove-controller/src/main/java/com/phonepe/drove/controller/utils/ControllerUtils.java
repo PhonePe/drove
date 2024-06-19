@@ -32,10 +32,13 @@ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 
 import javax.ws.rs.core.Response;
 import java.util.*;
@@ -47,6 +50,7 @@ import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
  */
 @Slf4j
 @UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ControllerUtils {
 
     public static String deployableObjectId(DeploymentSpec deploymentSpec) {
@@ -77,15 +81,7 @@ public class ControllerUtils {
                         retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
                         MISMATCH::equals);
         try {
-            val status = Failsafe.with(List.of(retryPolicy))
-                    .onComplete(e -> {
-                        val failure = e.getFailure();
-                        if (null != failure) {
-                            log.error("Error starting instance: {}", failure.getMessage());
-                        }
-                    })
-                    .get(() -> ensureTaskState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
-                                               required));
+            val status = waitForAppInstanceState(instanceInfoDB, appId, instanceId, required, retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -128,15 +124,7 @@ public class ControllerUtils {
                         retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
                         MISMATCH::equals);
         try {
-            val status = Failsafe.with(List.of(retryPolicy))
-                    .onComplete(e -> {
-                        val failure = e.getFailure();
-                        if (null != failure) {
-                            log.error("Error starting instance: {}", failure.getMessage());
-                        }
-                    })
-                    .get(() -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId),
-                                               required));
+            val status = waitForTaskState(taskDB, sourceAppName, taskId, required, retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -206,7 +194,7 @@ public class ControllerUtils {
         return taskDB.task(sourceAppName, taskId).orElse(null);
     }
 
-    private static StateCheckStatus ensureTaskState(
+    private static StateCheckStatus ensureAppInstanceState(
             final InstanceInfo instanceInfo,
             final InstanceState instanceState) {
         if (null != instanceInfo) {
@@ -443,5 +431,41 @@ public class ControllerUtils {
                     }
                 }))
                 .toList();
+    }
+
+    @SuppressWarnings("java:S1874")
+    private static StateCheckStatus waitForAppInstanceState(
+            ApplicationInstanceInfoDB instanceInfoDB,
+            String appId,
+            String instanceId,
+            InstanceState required,
+            RetryPolicy<StateCheckStatus> retryPolicy) {
+        return Failsafe.with(List.of(retryPolicy))
+                .onComplete(e -> {
+                    val failure = e.getFailure();
+                    if (null != failure) {
+                        log.error("Error starting instance: {}", failure.getMessage());
+                    }
+                })
+                .get(() -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
+                                                  required));
+    }
+
+    @SuppressWarnings("java:S1874")
+    private static StateCheckStatus waitForTaskState(
+            TaskDB taskDB,
+            String sourceAppName,
+            String taskId,
+            TaskState required,
+            RetryPolicy<StateCheckStatus> retryPolicy) {
+        return Failsafe.with(List.of(retryPolicy))
+                .onComplete(e -> {
+                    val failure = e.getFailure();
+                    if (null != failure) {
+                        log.error("Error starting instance: {}", failure.getMessage());
+                    }
+                })
+                .get(() -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId),
+                                           required));
     }
 }
