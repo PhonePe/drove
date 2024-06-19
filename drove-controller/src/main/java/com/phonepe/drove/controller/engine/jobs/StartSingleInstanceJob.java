@@ -25,7 +25,6 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
 import java.util.Date;
@@ -94,7 +93,17 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                       instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {
-            val status = waitForInstanceStart(retryPolicy, appId);
+            val status = waitForAction(retryPolicy,
+                                       () -> startInstance(applicationSpec, clusterOpSpec),
+                                       event -> {
+                                           val failure = event.getFailure();
+                                           if (null != failure) {
+                                               log.error("Error setting up instance for " + appId, failure);
+                                           }
+                                           else {
+                                               log.error("Error setting up instance for {}. Event: {}", appId, event);
+                                           }
+                                       });
             if (context.isStopped() || context.isCancelled()) {
                 return false;
             }
@@ -107,21 +116,6 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             log.error("Could not allocate an instance for " + appId + " after retires.", e);
         }
         return false;
-    }
-
-    @SuppressWarnings("java:S1874")
-    private Boolean waitForInstanceStart(RetryPolicy<Boolean> retryPolicy, String appId) {
-        return waitForAction(retryPolicy,
-                             () -> startInstance(applicationSpec, clusterOpSpec),
-                             event -> {
-                                 val failure = event.getFailure();
-                                 if (null != failure) {
-                                     log.error("Error setting up instance for " + appId, failure);
-                                 }
-                                 else {
-                                     log.error("Error setting up instance for {}. Event: {}", appId, event);
-                                 }
-                             });
     }
 
     private boolean startInstance(ApplicationSpec applicationSpec, ClusterOpSpec clusterOpSpec) {

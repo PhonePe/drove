@@ -5,7 +5,6 @@ import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAc
 import com.phonepe.drove.models.application.CheckResult;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.event.ExecutionCompletedEvent;
@@ -33,16 +32,7 @@ public abstract class ApplicationInstanceSingularCheckActionBase extends Applica
             Checker checker,
             CheckedConsumer<ExecutionCompletedEvent<CheckResult>> errorConsumer) {
         return Failsafe.with(List.of(retryPolicy))
-                .onComplete(e -> {
-                    val failure = e.getFailure();
-                    if (failure != null) {
-                        log.error("Initial health checks completed with error: {}", failure.getMessage());
-                    }
-                    else {
-                        val checkResult = e.getResult();
-                        log.info("Initial health check result: {}", checkResult);
-                    }
-                })
+                .onComplete(errorConsumer)
                 .get(() -> {
                     if (stop.get()) {
                         return CheckResult.stopped();
