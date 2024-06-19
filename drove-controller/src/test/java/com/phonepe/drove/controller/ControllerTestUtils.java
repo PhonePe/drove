@@ -7,7 +7,6 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
@@ -16,6 +15,7 @@ import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolic
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.HTTPVerb;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -35,7 +35,8 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.util.Duration;
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.val;
 
 import java.util.*;
@@ -46,7 +47,7 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 /**
  *
  */
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ControllerTestUtils {
 
     public static final String EXECUTOR_ID = "Ex1";

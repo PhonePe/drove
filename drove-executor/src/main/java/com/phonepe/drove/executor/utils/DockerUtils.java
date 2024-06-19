@@ -26,7 +26,6 @@ import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import io.dropwizard.util.DataSize;
 import lombok.*;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -43,7 +42,6 @@ import static com.phonepe.drove.common.CommonUtils.hostname;
 /**
  *
  */
-@UtilityClass
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DockerUtils {

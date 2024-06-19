@@ -23,7 +23,6 @@ import com.phonepe.drove.models.common.HTTPVerb;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.RetryPolicy;
@@ -68,7 +67,6 @@ import java.util.function.Predicate;
 /**
  *
  */
-@UtilityClass
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtils {

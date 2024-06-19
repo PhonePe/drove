@@ -1,7 +1,8 @@
 package com.phonepe.drove.auth.model;
 
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.experimental.UtilityClass;
+import lombok.NoArgsConstructor;
 
 import static com.phonepe.drove.auth.model.DroveUserRole.Values.*;
 
@@ -19,7 +20,7 @@ public enum DroveUserRole {
     @Getter
     private final String value;
 
-    @UtilityClass
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Values {
         public static final String DROVE_CLUSTER_NODE_ROLE = "DROVE_CLUSTER_NODE";
         public static final String DROVE_APPLICATION_INSTANCE_ROLE = "DROVE_APPLICATION_INSTANCE";

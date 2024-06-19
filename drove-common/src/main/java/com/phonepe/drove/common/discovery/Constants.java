@@ -1,13 +1,14 @@
 package com.phonepe.drove.common.discovery;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.time.Duration;
 
 /**
  *
  */
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Constants {
     public static final Duration EXECUTOR_REFRESH_INTERVAL = Duration.ofSeconds(20);
 }

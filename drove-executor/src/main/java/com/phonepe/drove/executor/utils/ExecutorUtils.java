@@ -31,7 +31,6 @@ import com.phonepe.drove.statemachine.StateData;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import lombok.val;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
 
@@ -46,7 +45,6 @@ import static com.phonepe.drove.common.CommonUtils.buildRequest;
 /**
  *
  */
-@UtilityClass
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExecutorUtils {
     public static Checker createChecker(

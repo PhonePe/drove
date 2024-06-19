@@ -34,7 +34,6 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import net.jodah.failsafe.Failsafe;
@@ -49,7 +48,6 @@ import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
  *
  */
 @Slf4j
-@UtilityClass
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ControllerUtils {
 

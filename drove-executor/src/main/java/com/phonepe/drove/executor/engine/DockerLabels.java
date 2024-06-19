@@ -1,11 +1,12 @@
 package com.phonepe.drove.executor.engine;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
  *
  */
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DockerLabels {
     public static final String DROVE_JOB_TYPE_LABEL = "drove.job.type";
     public static final String DROVE_INSTANCE_ID_LABEL = "drove.instance.id";

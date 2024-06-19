@@ -3,12 +3,6 @@ package com.phonepe.drove.controller.utils;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.models.events.MapBuilder;
-import com.phonepe.drove.models.events.events.datatags.AppEventDataTag;
-import com.phonepe.drove.models.events.events.datatags.AppInstanceEventDataTag;
-import com.phonepe.drove.models.events.events.datatags.TaskInstanceEventDataTag;
-import com.phonepe.drove.models.events.events.datatags.ClusterEventDataTag;
-import com.phonepe.drove.models.events.events.datatags.ExecutorEventDataTag;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -18,6 +12,8 @@ import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.events.MapBuilder;
+import com.phonepe.drove.models.events.events.datatags.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
@@ -25,7 +21,6 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.experimental.UtilityClass;
 import lombok.val;
 
 import java.util.Map;
@@ -36,7 +31,6 @@ import java.util.Optional;
 /**
  *
  */
-@UtilityClass
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventUtils {
     public static Map<AppEventDataTag, Object> appMetadata(

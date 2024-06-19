@@ -18,8 +18,9 @@ import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import lombok.val;
 
 import java.util.List;
@@ -30,7 +31,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 /**
  *
  */
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DiscoveryTestUtils {
 
     public static final ObjectMapper MAPPER = new ObjectMapper()

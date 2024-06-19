@@ -44,8 +44,9 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import io.dropwizard.util.Duration;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -53,8 +54,8 @@ import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
 
-import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static com.phonepe.drove.common.CommonTestUtils.base64;
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *
  */
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExecutorTestingUtils {
     public static final String EXECUTOR_ID = "TEST_EXEC";
     public static final DockerClient DOCKER_CLIENT
