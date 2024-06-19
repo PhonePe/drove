@@ -25,7 +25,10 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
+import net.jodah.failsafe.event.ExecutionCompletedEvent;
+import net.jodah.failsafe.function.CheckedConsumer;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
@@ -62,6 +65,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 /**
@@ -200,7 +204,7 @@ public class CommonUtils {
     public static CloseableHttpClient createHttpClient(boolean insecure) {
         val connectionTimeout = Duration.ofSeconds(1);
         val cmBuilder = PoolingHttpClientConnectionManagerBuilder.create();
-        if(insecure) {
+        if (insecure) {
             log.debug("Creating insecure http client");
             cmBuilder.setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create()
                                                   .setSslContext(
@@ -237,7 +241,7 @@ public class CommonUtils {
                                            io.dropwizard.util.Duration.seconds(1))
                         .toMilliseconds());
         val socketFactoryBuilder = SSLConnectionSocketFactoryBuilder.create();
-        if(httpSpec.isInsecure()) {
+        if (httpSpec.isInsecure()) {
             socketFactoryBuilder.setSslContext(
                             SSLContextBuilder.create()
                                     .loadTrustMaterial(TrustAllStrategy.INSTANCE)
@@ -288,18 +292,38 @@ public class CommonUtils {
             case GET -> new HttpGet(uri);
             case POST -> {
                 val req = new HttpPost(uri);
-                if(!Strings.isNullOrEmpty(payload)) {
+                if (!Strings.isNullOrEmpty(payload)) {
                     req.setEntity(new StringEntity(payload));
                 }
                 yield req;
             }
             case PUT -> {
                 val req = new HttpPut(uri);
-                if(!Strings.isNullOrEmpty(payload)) {
+                if (!Strings.isNullOrEmpty(payload)) {
                     req.setEntity(new StringEntity(payload));
                 }
                 yield req;
             }
         };
+    }
+
+    public static boolean waitForAction(
+            RetryPolicy<Boolean> retryPolicy,
+            BooleanSupplier action) {
+        return waitForAction(retryPolicy,
+                             action,
+                             e -> {
+                                 //Nothing to do here
+                             });
+    }
+
+    @SuppressWarnings("java:S1874")
+    public static boolean waitForAction(
+            RetryPolicy<Boolean> retryPolicy,
+            BooleanSupplier action,
+            CheckedConsumer<ExecutionCompletedEvent<Boolean>> failureObserver) {
+        return Failsafe.with(retryPolicy)
+                .onFailure(failureObserver)
+                .get(action::getAsBoolean);
     }
 }

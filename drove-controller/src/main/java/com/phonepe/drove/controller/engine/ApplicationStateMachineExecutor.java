@@ -8,13 +8,10 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 import org.slf4j.MDC;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -22,6 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.phonepe.drove.common.CommonUtils.waitForAction;
 
 /**
  *
@@ -116,12 +115,16 @@ public class ApplicationStateMachineExecutor {
             stateMachine.stop();
             val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
-                val status = waitForCompletion(retryPolicy);
-                if(status) {
+                val status = waitForAction(retryPolicy,
+                                           () -> currentState.isDone(),
+                                           e -> log.trace("Completion wait for {} completed with error: {}",
+                                                          appId, e.getFailure().getMessage()));
+                if (status) {
                     log.info("State machine for app {} has shut down with final state {}", appId, currentState.get());
                 }
                 else {
-                    log.warn("Could not ensure state machine has shut down for {}. There might be a leak somewhere.", appId);
+                    log.warn("Could not ensure state machine has shut down for {}. There might be a leak somewhere.",
+                             appId);
                 }
             }
             catch (InterruptedException e) {
@@ -132,20 +135,12 @@ public class ApplicationStateMachineExecutor {
                 log.error("Wait for SM for " + appId + " to stop has exceeded 60 secs. There might be thread leak.", e);
             }
             catch (Exception e) {
-                if(e.getCause() instanceof InterruptedException) {
+                if (e.getCause() instanceof InterruptedException) {
                     log.info("State machine for {} has been stopped by interruption", appId);
                     return;
                 }
                 log.error("State machine for " + appId + " shut down with exception: " + e.getMessage(), e);
             }
         }
-    }
-
-    @SuppressWarnings("java:S1874")
-    private Boolean waitForCompletion(RetryPolicy<Boolean> retryPolicy) {
-        return Failsafe.with(List.of(retryPolicy))
-                .onFailure(e -> log.trace("Completion wait for {} completed with error: {}",
-                                          appId, e.getFailure().getMessage()))
-                .get(() -> currentState.isDone());
     }
 }

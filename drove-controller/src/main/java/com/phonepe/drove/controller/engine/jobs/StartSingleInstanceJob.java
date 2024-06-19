@@ -25,13 +25,13 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
 
+import static com.phonepe.drove.common.CommonUtils.waitForAction;
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
 import static com.phonepe.drove.controller.utils.ControllerUtils.translateConfigSpecs;
 
@@ -111,17 +111,17 @@ public class StartSingleInstanceJob implements Job<Boolean> {
 
     @SuppressWarnings("java:S1874")
     private Boolean waitForInstanceStart(RetryPolicy<Boolean> retryPolicy, String appId) {
-        return Failsafe.with(retryPolicy)
-                .onFailure(event -> {
-                    val failure = event.getFailure();
-                    if (null != failure) {
-                        log.error("Error setting up instance for " + appId, failure);
-                    }
-                    else {
-                        log.error("Error setting up instance for {}. Event: {}", appId, event);
-                    }
-                })
-                .get(() -> startInstance(applicationSpec, clusterOpSpec));
+        return waitForAction(retryPolicy,
+                             () -> startInstance(applicationSpec, clusterOpSpec),
+                             event -> {
+                                 val failure = event.getFailure();
+                                 if (null != failure) {
+                                     log.error("Error setting up instance for " + appId, failure);
+                                 }
+                                 else {
+                                     log.error("Error setting up instance for {}. Event: {}", appId, event);
+                                 }
+                             });
     }
 
     private boolean startInstance(ApplicationSpec applicationSpec, ClusterOpSpec clusterOpSpec) {

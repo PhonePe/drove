@@ -18,11 +18,10 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureTaskState;
+import static com.phonepe.drove.common.CommonUtils.waitForAction;
 
 /**
  *
@@ -72,7 +71,17 @@ public class StopTaskJob implements Job<Boolean> {
             log.warn("No task found for {}/{}", sourceAppName, taskId);
         }
         try {
-            return waitForInstanceStop(retryPolicy, task);
+            return waitForAction(retryPolicy,
+                                 () -> stopTask(task, clusterOpSpec),
+                                 event -> {
+                                     val failure = event.getFailure();
+                                     if (null != failure) {
+                                         log.error("Error stopping instance for " + sourceAppName, failure);
+                                     }
+                                     else {
+                                         log.error("Error stopping instance for {}. Event: {}", sourceAppName, event);
+                                     }
+                                 });
         }
         catch (TimeoutExceededException e) {
             log.error("Could not stop an instance for {} after retires.", sourceAppName);
@@ -81,21 +90,6 @@ public class StopTaskJob implements Job<Boolean> {
             log.error("Could not stop an instance for " + sourceAppName + " after retires.", e);
         }
         return false;
-    }
-
-    @SuppressWarnings("java:S1874")
-    private Boolean waitForInstanceStop(RetryPolicy<Boolean> retryPolicy, TaskInfo task) {
-        return Failsafe.with(retryPolicy)
-                .onFailure(event -> {
-                    val failure = event.getFailure();
-                    if (null != failure) {
-                        log.error("Error stopping instance for " + sourceAppName, failure);
-                    }
-                    else {
-                        log.error("Error stopping instance for {}. Event: {}", sourceAppName, event);
-                    }
-                })
-                .get(() -> stopTask(task, clusterOpSpec));
     }
 
     private boolean stopTask(final TaskInfo task, final ClusterOpSpec clusterOpSpec) {

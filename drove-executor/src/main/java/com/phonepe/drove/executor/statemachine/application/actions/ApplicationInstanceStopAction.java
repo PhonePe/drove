@@ -17,7 +17,6 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -28,9 +27,9 @@ import java.net.ConnectException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
+import static com.phonepe.drove.common.CommonUtils.waitForAction;
 import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer;
 
 /**
@@ -147,9 +146,9 @@ public class ApplicationInstanceStopAction
                 .handle(Exception.class)
                 .handleResultIf(r -> !r);
         try (val httpClient = CommonUtils.createInternalHttpClient(httpSpec, Duration.ofSeconds(1))) {
-            Failsafe.with(List.of(retryPolicy))
-                    .onFailure(e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()))
-                    .get(() -> makeHTTPCall(httpClient, httpSpec, uri));
+            waitForAction(retryPolicy,
+                          () -> makeHTTPCall(httpClient, httpSpec, uri),
+                    e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()));
         }
         catch (TimeoutExceededException e) {
             log.error("Timeout calling shutdown hook.");

@@ -19,11 +19,10 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.TimeoutExceededException;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
+import static com.phonepe.drove.common.CommonUtils.waitForAction;
 
 /**
  * Starts  a single instance by whatever means necessary
@@ -74,7 +73,17 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             return true;
         }
         try {
-            return waitForInstanceStop(retryPolicy, instanceInfo);
+            return waitForAction(retryPolicy,
+                                 () -> stopInstance(instanceInfo, clusterOpSpec),
+                                 event -> {
+                                     val failure = event.getFailure();
+                                     if (null != failure) {
+                                         log.error("Error stopping instance for " + appId, failure);
+                                     }
+                                     else {
+                                         log.error("Error stopping instance for {}. Event: {}", appId, event);
+                                     }
+                                 });
         }
         catch (TimeoutExceededException e) {
             log.error("Could not stop an instance for {} after retires.", appId);
@@ -83,21 +92,6 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             log.error("Could not stop an instance for " + appId + " after retires.", e);
         }
         return false;
-    }
-
-    @SuppressWarnings("java:S1874")
-    private Boolean waitForInstanceStop(RetryPolicy<Boolean> retryPolicy, InstanceInfo instanceInfo) {
-        return Failsafe.with(retryPolicy)
-                .onFailure(event -> {
-                    val failure = event.getFailure();
-                    if (null != failure) {
-                        log.error("Error stopping instance for " + appId, failure);
-                    }
-                    else {
-                        log.error("Error stopping instance for {}. Event: {}", appId, event);
-                    }
-                })
-                .get(() -> stopInstance(instanceInfo, clusterOpSpec));
     }
 
     private boolean stopInstance(final InstanceInfo instanceInfo, final ClusterOpSpec clusterOpSpec) {

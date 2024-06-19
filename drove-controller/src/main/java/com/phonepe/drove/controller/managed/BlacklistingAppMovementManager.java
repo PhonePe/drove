@@ -30,6 +30,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.common.CommonUtils.waitForAction;
+
 /**
  * Moves instances from blacklisted hosts in a sequential manner to ensure app commands do not fail due to being busy
  */
@@ -87,7 +89,10 @@ public class BlacklistingAppMovementManager implements Managed {
                      .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
                      .handleResult(false)
                      .withMaxAttempts(-1)
-                     .withMaxDuration(defaultClusterOpSpec.getTimeout().toJavaDuration().plus(Duration.ofSeconds(30))) //Wait for max app operation timeout and then some
+                     .withMaxDuration(defaultClusterOpSpec.getTimeout()
+                                              .toJavaDuration()
+                                              .plus(Duration.ofSeconds(30))) //Wait for max app operation timeout and
+                     // then some
                      .withDelay(10, 30, ChronoUnit.SECONDS), //
              defaultClusterOpSpec,
              appMovementExecutor,
@@ -210,7 +215,7 @@ public class BlacklistingAppMovementManager implements Managed {
 
     private void moveAppsFromExecutors(final Set<String> executorIds) {
         val healthyInstances = healthyInstances(executorIds);
-        if(healthyInstances.isEmpty()) {
+        if (healthyInstances.isEmpty()) {
             log.info("Nothing to do as no app instances need to be moved from executors: {}", executorIds);
             return;
         }
@@ -267,13 +272,15 @@ public class BlacklistingAppMovementManager implements Managed {
                 .map(Pair::getFirst)
                 .collect(Collectors.toUnmodifiableSet());
         if (!failedApps.isEmpty()) {
-            log.error("Could not shut down instances on {}. Failed apps: {}. Check log for details.", executorIds, failedApps);
+            log.error("Could not shut down instances on {}. Failed apps: {}. Check log for details.",
+                      executorIds,
+                      failedApps);
         }
         else {
             log.info("Commands accepted for all relevant app instances to be moved");
             try {
-                val allClear = Failsafe.with(noInstanceEnsurerPolicy)
-                        .get(() -> healthyInstances(executorIds).isEmpty());
+                val allClear = waitForAction(noInstanceEnsurerPolicy,
+                                             () -> healthyInstances(executorIds).isEmpty());
                 if (allClear) {
                     log.info("All app instances moved from executors {}", executorIds);
                 }
