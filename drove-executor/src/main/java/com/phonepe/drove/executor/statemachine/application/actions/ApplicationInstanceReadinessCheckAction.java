@@ -3,7 +3,6 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -12,21 +11,17 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
  */
 @Slf4j
 @NoArgsConstructor
-public class ApplicationInstanceReadinessCheckAction extends ApplicationInstanceAction {
-    private final AtomicBoolean stop = new AtomicBoolean();
+public class ApplicationInstanceReadinessCheckAction extends ApplicationInstanceSingularCheckActionBase {
 
     @Override
     @MonitoredFunction(method = "execute")
@@ -55,8 +50,10 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
         try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), readinessCheckSpec)) {
-            val result = Failsafe.with(List.of(retryPolicy))
-                    .onComplete(e -> {
+            val result = checkWithRetry(
+                    retryPolicy,
+                    checker,
+                    e -> {
                         val failure = e.getFailure();
                         if (failure != null) {
                             log.error("Readiness checks completed with error: {}", failure.getMessage());
@@ -65,12 +62,6 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
                             val checkResult = e.getResult();
                             log.info("Readiness check result: {}", checkResult);
                         }
-                    })
-                    .get(() -> {
-                        if(stop.get()) {
-                            return CheckResult.stopped();
-                        }
-                        return checker.call();
                     });
             return switch (result.getStatus()) {
                 case HEALTHY -> StateData.from(currentState, InstanceState.READY);
@@ -86,11 +77,6 @@ public class ApplicationInstanceReadinessCheckAction extends ApplicationInstance
     @Override
     protected InstanceState defaultErrorState() {
         return InstanceState.READINESS_CHECK_FAILED;
-    }
-
-    @Override
-    public void stop() {
-        stop.set(true);
     }
 
 }

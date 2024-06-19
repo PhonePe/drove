@@ -41,6 +41,7 @@ import net.jodah.failsafe.RetryPolicy;
 
 import javax.ws.rs.core.Response;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 
@@ -79,7 +80,9 @@ public class ControllerUtils {
                         retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
                         MISMATCH::equals);
         try {
-            val status = waitForAppInstanceState(instanceInfoDB, appId, instanceId, required, retryPolicy);
+            val status = waitForState(
+                    () -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId), required),
+                    retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -96,10 +99,10 @@ public class ControllerUtils {
                     else {
                         log.error("Looks like app instance {}/{} has failed permanently and reached state: {}." +
                                           " Detailed instance data: {}}",
-                                appId,
-                                instanceId,
-                                curr.getState(),
-                                curr);
+                                  appId,
+                                  instanceId,
+                                  curr.getState(),
+                                  curr);
                     }
                 }
             }
@@ -122,7 +125,8 @@ public class ControllerUtils {
                         retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
                         MISMATCH::equals);
         try {
-            val status = waitForTaskState(taskDB, sourceAppName, taskId, required, retryPolicy);
+            val status = waitForState(
+                    () -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId), required), retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -138,7 +142,8 @@ public class ControllerUtils {
                     }
                     else {
                         log.error(
-                                "Looks like task {}/{} has failed permanently and reached state: {}. Detailed instance " +
+                                "Looks like task {}/{} has failed permanently and reached state: {}. Detailed " +
+                                        "instance " +
                                         "data: {}}",
                                 sourceAppName,
                                 taskId,
@@ -432,11 +437,8 @@ public class ControllerUtils {
     }
 
     @SuppressWarnings("java:S1874")
-    private static StateCheckStatus waitForAppInstanceState(
-            ApplicationInstanceInfoDB instanceInfoDB,
-            String appId,
-            String instanceId,
-            InstanceState required,
+    public static StateCheckStatus waitForState(
+            Supplier<StateCheckStatus> checker,
             RetryPolicy<StateCheckStatus> retryPolicy) {
         return Failsafe.with(List.of(retryPolicy))
                 .onComplete(e -> {
@@ -445,25 +447,6 @@ public class ControllerUtils {
                         log.error("Error starting instance: {}", failure.getMessage());
                     }
                 })
-                .get(() -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId),
-                                                  required));
-    }
-
-    @SuppressWarnings("java:S1874")
-    private static StateCheckStatus waitForTaskState(
-            TaskDB taskDB,
-            String sourceAppName,
-            String taskId,
-            TaskState required,
-            RetryPolicy<StateCheckStatus> retryPolicy) {
-        return Failsafe.with(List.of(retryPolicy))
-                .onComplete(e -> {
-                    val failure = e.getFailure();
-                    if (null != failure) {
-                        log.error("Error starting instance: {}", failure.getMessage());
-                    }
-                })
-                .get(() -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId),
-                                           required));
+                .get(checker::get);
     }
 }

@@ -1,10 +1,8 @@
 package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -13,21 +11,17 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
  */
 @Slf4j
 @NoArgsConstructor
-public class ApplicationInstanceSingularHealthCheckAction extends ApplicationInstanceAction {
-    private final AtomicBoolean stop = new AtomicBoolean();
+public class ApplicationInstanceSingularHealthCheckAction extends ApplicationInstanceSingularCheckActionBase {
 
     @Override
     @MonitoredFunction(method = "execute")
@@ -56,7 +50,19 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                 .handle(Exception.class)
                 .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
         try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck)) {
-            val result = checkWithRetry(retryPolicy, checker);
+            val result = checkWithRetry(
+                    retryPolicy,
+                    checker,
+                    e -> {
+                        val failure = e.getFailure();
+                        if (failure != null) {
+                            log.error("Initial health checks completed with error: {}", failure.getMessage());
+                        }
+                        else {
+                            val checkResult = e.getResult();
+                            log.info("Initial health check result: {}", checkResult);
+                        }
+                    });
             val status = result.getStatus();
             if(status == CheckResult.Status.HEALTHY) {
                 return StateData.from(currentState, InstanceState.HEALTHY);
@@ -78,29 +84,4 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
         return InstanceState.STOPPING;
     }
 
-    @Override
-    public void stop() {
-        stop.set(true);
-    }
-
-    @SuppressWarnings("java:S1874")
-    private CheckResult checkWithRetry(RetryPolicy<CheckResult> retryPolicy, Checker checker) {
-        return Failsafe.with(List.of(retryPolicy))
-                .onComplete(e -> {
-                    val failure = e.getFailure();
-                    if (failure != null) {
-                        log.error("Initial health checks completed with error: {}", failure.getMessage());
-                    }
-                    else {
-                        val checkResult = e.getResult();
-                        log.info("Initial health check result: {}", checkResult);
-                    }
-                })
-                .get(() -> {
-                    if (stop.get()) {
-                        return CheckResult.stopped();
-                    }
-                    return checker.call();
-                });
-    }
 }
