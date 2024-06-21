@@ -37,8 +37,7 @@ class UITest {
     private static final UI resource = new UI(applicationStateDB,
                                               applicationInstanceInfoDB,
                                               taskDB,
-                                              ControllerOptions.DEFAULT,
-                                              null);
+                                              ControllerOptions.DEFAULT);
 
     @BeforeAll
     static void initializeTemplate() {
