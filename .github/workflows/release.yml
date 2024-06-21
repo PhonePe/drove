@@ -48,20 +48,18 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
     - name: Build and push Docker image for executor
-      uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-      context: drove-executor
+      uses: docker/build-push-action@v6
       with:
-        context: docker
+        context: drove-executor
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         build-args: VERSION=${{ steps.meta.outputs.tags }}
 
     - name: Build and push Docker image for controller
-      uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-      context: drove-controller
+      uses: docker/build-push-action@v6
       with:
-        context: docker
+        context: drove-executor
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
