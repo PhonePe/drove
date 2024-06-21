@@ -30,7 +30,7 @@ jobs:
         distribution: 'temurin'
 
     - name: Deploy with Maven
-      run: mvn -B clean build --file pom.xml --batch-mode
+      run: mvn -B deploy
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
