@@ -1,0 +1,58 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 3000
+  adminConnectors:
+    - type: http
+      port: 3001
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: console
+        timeZone: ${DROVE_TIMEZONE}
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: ${DROVE_LOG_LEVEL}
+
+  appenders:
+    - type: console
+      threshold: TRACE
+      timeZone: ${DROVE_TIMEZONE}
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceLogId}] %message%n"
+
+    - type: drove
+      logPath: "/drove/logs"
+      archivedLogFileSuffix: "%d"
+      archivedFileCount: 3
+      threshold: TRACE
+      timeZone: ${DROVE_TIMEZONE}
+      logFormat: "%(%-5level) | %-23date | %-30logger{0} | %message%n"
+      archive: true
+
+options:
+  cacheImages: true
+  maxOpenFiles: 10_000
+  logBufferSize: 5m
+  cacheFileSize: 10m
+  cacheFileCount: 3
+
+zookeeper:
+  connectionString: ${ZK_CONNECTION_STRING}
+
+resources:
+  osCores: [ 0, 1 ]
+  exposedMemPercentage: 60
+  disableNUMAPinning: ${DROVE_DISABLE_NUMA_PINNING}
+  enableNvidiaGpu: ${DROVE_ENABLE_NVIDIA_GPU}
+
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: ${DROVE_CONTROLLER_SECRET}
+  - nodeType: EXECUTOR
+    secret: ${DROVE_EXECUTOR_SECRET}
+
+
+

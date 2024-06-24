@@ -1,0 +1,56 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 4000
+  adminConnectors:
+    - type: http
+      port: 4001
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: console
+        timeZone: ${DROVE_TIMEZONE}
+  gzip:
+    syncFlush: true
+
+logging:
+  level: INFO
+  loggers:
+    com.phonepe.drove: ${DROVE_LOG_LEVEL}
+
+  appenders:
+    - type: console
+      threshold: TRACE
+      timeZone: ${DROVE_TIMEZONE}
+      logFormat: "%(%-5level) [%date] [%logger{0} - %X{appId}] %message%n"
+
+zookeeper:
+  connectionString: ${ZK_CONNECTION_STRING}
+
+clusterAuth:
+  secrets:
+  - nodeType: CONTROLLER
+    secret: ${DROVE_CONTROLLER_SECRET}
+  - nodeType: EXECUTOR
+    secret: ${DROVE_EXECUTOR_SECRET}
+
+userAuth:
+  enabled: true
+  users:
+    - username: admin
+      password: ${DROVE_ADMIN_PASSWORD}
+      role: EXTERNAL_READ_WRITE
+    - username: guest
+      password: ${DROVE_GUEST_PASSWORD}
+      role: EXTERNAL_READ_ONLY
+
+instanceAuth:
+  secret: ${DROVE_INSTANCE_AUTH_SECRET}
+
+options:
+  maxStaleInstancesCount: 3
+  staleCheckInterval: 1m
+  staleAppAge: 1d
+  staleInstanceAge: 18h
+  staleTaskAge: 1d
+  clusterOpParallelism: 4
