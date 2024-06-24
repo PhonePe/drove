@@ -11,7 +11,7 @@ on:
       - '*'           # Push events to every tag not containing /
 
 jobs:
-  build:
+  deploy-java:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -24,11 +24,28 @@ jobs:
           cache: maven
           distribution: 'temurin'
 
-      - name: Build with Maven
-        run: mvn -B package -DskipTests
+      - name: Deploy with Maven
+        run: mvn -B deploy -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  deploy:
-    needs: build
+      - name: Save Executor jar for next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: drove-executor
+          path: drove-executor/target/drove-executor-${{ github.ref_name }}.jar
+          retention-days: 1
+          overwrite: true
+      - name: Save Controller jar for next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: drove-controller
+          path: drove-controller/target/drove-controller-${{ github.ref_name }}.jar
+          retention-days: 1
+          overwrite: true
+
+  deploy-containers:
+    needs: deploy-java
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,20 +53,24 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          - image: ghcr.io/PhonePe/drove-executor
-            context: drove-executor
-          - image: ghcr.io/PhonePe/drove-controller
-            context: drove-controller
+          - context: drove-executor
+          - context: drove-controller
     permissions:
       contents: read
       packages: write
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  #     - name: Deploy with Maven
-  #       run: mvn -B deploy -DskipTests
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create directories
+        run: mkdir -p ${{ matrix.context }}/target
+
+      - name: Download artifacts from build step
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.context }}
+          path: ${{ matrix.context }}/target
 
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
@@ -62,7 +83,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-            images: ${{ matrix.image }}
+            images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.context }}
 
       - name: Build and push Docker image for executor
         uses: docker/build-push-action@v6
