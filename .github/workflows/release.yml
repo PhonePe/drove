@@ -11,7 +11,7 @@ on:
       - '*'           # Push events to every tag not containing /
 
 jobs:
-  build:
+  deploy-java:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -26,6 +26,24 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B package -DskipTests
+#     - name: Deploy with Maven
+#       run: mvn -B deploy -DskipTests
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Save Executor jar for next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: drove-executor
+          path: drove-executor/target/drove-executor-${{ github.ref_name }}.jar
+          retention-days: 1
+          overwrite: true
+      - name: Save Controller jar for next job
+        uses: actions/upload-artifact@v4
+        with:
+          name: drove-controller
+          path: drove-controller/target/drove-controller-${{ github.ref_name }}.jar
+          retention-days: 1
+          overwrite: true
 
   deploy:
     needs: build
@@ -45,11 +63,17 @@ jobs:
       packages: write
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  #     - name: Deploy with Maven
-  #       run: mvn -B deploy -DskipTests
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create directories
+        run: mkdir -p ${{ matrix.context }}/target
+
+      - name: Download artifacts from build step
+        uses: actions/download-artifact@v4
+          with:
+            name: ${{ matrix.context }}
+            path: ${{ matrix.context }}/target
 
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
