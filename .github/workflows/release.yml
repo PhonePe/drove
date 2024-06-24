@@ -14,9 +14,7 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +23,9 @@ jobs:
             context: drove-executor
           - image: ghcr.io/PhonePe/drove-controller
             context: drove-controller
+    permissions:
+      contents: read
+      packages: write
 
   steps:
     - name: Checkout Code
@@ -55,8 +56,6 @@ jobs:
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-#       with:
-#         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
      with:
           images: ${{ matrix.image }}
 
@@ -68,12 +67,3 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         build-args: VERSION=${{ github.ref_name }}
-
-#     - name: Build and push Docker image for controller
-#       uses: docker/build-push-action@v6
-#       with:
-#         context: drove-controller
-#         push: true
-#         tags: ${{ steps.meta.outputs.tags }}
-#         labels: ${{ steps.meta.outputs.labels }}
-#         build-args: VERSION=${{ github.ref_name }}
