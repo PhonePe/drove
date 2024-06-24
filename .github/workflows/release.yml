@@ -11,22 +11,8 @@ on:
       - '*'           # Push events to every tag not containing /
 
 jobs:
-
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: ghcr.io/PhonePe/drove-executor
-            context: drove-executor
-          - image: ghcr.io/PhonePe/drove-controller
-            context: drove-controller
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -40,6 +26,25 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B package -DskipTests
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - image: ghcr.io/PhonePe/drove-executor
+            context: drove-executor
+          - image: ghcr.io/PhonePe/drove-controller
+            context: drove-controller
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
 
   #     - name: Deploy with Maven
   #       run: mvn -B deploy -DskipTests
