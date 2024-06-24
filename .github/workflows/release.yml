@@ -17,8 +17,16 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ghcr.io/PhonePe/drove-executor
+            context: drove-executor
+          - image: ghcr.io/PhonePe/drove-controller
+            context: drove-controller
 
-    steps:
+  steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
@@ -29,10 +37,13 @@ jobs:
         cache: maven
         distribution: 'temurin'
 
-    - name: Deploy with Maven
-      run: mvn -B deploy -DskipTests
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build with Maven
+      run: mvn -B package -DskipTests
+
+#     - name: Deploy with Maven
+#       run: mvn -B deploy -DskipTests
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Log in to the Container registry
       uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
@@ -44,23 +55,25 @@ jobs:
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+#       with:
+#         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+     with:
+          images: ${{ matrix.image }}
 
     - name: Build and push Docker image for executor
       uses: docker/build-push-action@v6
       with:
-        context: drove-executor
+        context: ${{ matrix.context }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         build-args: VERSION=${{ github.ref_name }}
 
-    - name: Build and push Docker image for controller
-      uses: docker/build-push-action@v6
-      with:
-        context: drove-executor
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        build-args: VERSION=${{ github.ref_name }}
+#     - name: Build and push Docker image for controller
+#       uses: docker/build-push-action@v6
+#       with:
+#         context: drove-controller
+#         push: true
+#         tags: ${{ steps.meta.outputs.tags }}
+#         labels: ${{ steps.meta.outputs.labels }}
+#         build-args: VERSION=${{ github.ref_name }}
