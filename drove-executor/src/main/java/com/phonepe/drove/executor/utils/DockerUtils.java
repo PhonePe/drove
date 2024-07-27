@@ -398,9 +398,7 @@ public class DockerUtils {
                                                       .sum() * (1 << 20));
                         //Memory pinning is not done in case NUMA pinning is turned off,
                         //This is because if over scaling is enabled, one core might not actually have that much memory
-//                        if (!resourceConfig.isDisableNUMAPinning()) {
-                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
-//                        }
+                        hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
                         return null;
                     }
                 }));
