@@ -8,7 +8,9 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.application.*;
+import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
@@ -207,7 +209,7 @@ public class ApplicationCommandValidator {
                 return ValidationResult.failure("No spec found for app " + appId);
             }
             val errs = new ArrayList<String>(2);
-            val requiredCores = requiredInstances * spec.getResources()
+            val requiredCoresPerInstance = spec.getResources()
                     .stream()
                     .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
                         @Override
@@ -221,7 +223,8 @@ public class ApplicationCommandValidator {
                         }
                     }))
                     .sum();
-            val requiredMem = requiredInstances * spec.getResources()
+            val requiredCores = requiredInstances * requiredCoresPerInstance;
+            val requiredMemPerInstance = spec.getResources()
                     .stream()
                     .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
                         @Override
@@ -235,6 +238,7 @@ public class ApplicationCommandValidator {
                         }
                     }))
                     .sum();
+            val requiredMem = requiredInstances * requiredMemPerInstance;
             if (requiredCores > freeCores) {
                 errs.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
                                                         "Available: " + freeCores);
@@ -242,6 +246,17 @@ public class ApplicationCommandValidator {
             if (requiredMem > freeMemory) {
                 errs.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
                                                         "Available: " + freeMemory);
+            }
+            val maxAvailablePhysicalCoresPerNode = executors.stream()
+                    .map(e -> e.getNodeData().getState().getLayout())
+                    .filter(Objects::nonNull)
+                    .flatMap(physicalLayout -> physicalLayout.getCores().values().stream().map(Set::size))
+                    .mapToInt(Integer::intValue)
+                    .max()
+                    .orElse(Integer.MAX_VALUE);
+            if(maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
+                errs.add("Required cores " + requiredCores + " exceeds the maximum core available on a single " +
+                                 "NUMA node in the cluster " + maxAvailablePhysicalCoresPerNode);
             }
             if(!errs.isEmpty()) {
                 return ValidationResult.failure(errs);

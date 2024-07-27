@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.executor.utils.ExecutorUtils.mapCores;
+
 @Slf4j
 @Singleton
 public class NumaActivationResourceLoader implements ResourceLoader {
@@ -21,8 +23,9 @@ public class NumaActivationResourceLoader implements ResourceLoader {
     private final ResourceConfig resourceConfig;
 
     @Inject
-    public NumaActivationResourceLoader(@Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) ResourceLoader root,
-                                        ResourceConfig resourceConfig) {
+    public NumaActivationResourceLoader(
+            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) ResourceLoader root,
+            ResourceConfig resourceConfig) {
         this.root = root;
         this.resourceConfig = resourceConfig;
     }
@@ -41,7 +44,12 @@ public class NumaActivationResourceLoader implements ResourceLoader {
                             .map(ResourceManager.NodeInfo::getMemoryInMB)
                             .mapToLong(Long::longValue)
                             .sum();
-            return Map.of(0, new ResourceManager.NodeInfo(availableCores, availableMemory));
+            return Map.of(0,
+                          new ResourceManager.NodeInfo(availableCores,
+                                                       mapCores(availableCores),
+                                                       availableMemory,
+                                                       availableCores,
+                                                       availableMemory));
         }
         return resources;
     }

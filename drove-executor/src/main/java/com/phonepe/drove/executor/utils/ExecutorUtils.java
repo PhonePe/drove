@@ -9,6 +9,7 @@ import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
@@ -37,8 +38,9 @@ import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.common.CommonUtils.buildRequest;
 
@@ -103,7 +105,8 @@ public class ExecutorUtils {
     public static ExecutorResourceSnapshot executorSnapshot(ResourceInfo resourceState, String executorId) {
         return new ExecutorResourceSnapshot(executorId,
                                             resourceState.getCpu(),
-                                            resourceState.getMemory());
+                                            resourceState.getMemory(),
+                                            resourceState.getPhysicalLayout());
     }
 
     @SneakyThrows
@@ -180,5 +183,19 @@ public class ExecutorUtils {
                     }
                 }))
                 .toList();
+    }
+
+    public static int cpuMultiplier(ResourceConfig resourceConfig) {
+        val cfg = Objects.requireNonNullElse(resourceConfig, ResourceConfig.DEFAULT).getOverProvisioning();
+        if(null == cfg || !cfg.isEnabled()) {
+            return 1;
+        }
+        return cfg.getCpuMultiplier();
+    }
+
+    public static Map<Integer, Integer> mapCores(Set<Integer> cores) {
+        return cores.stream()
+                .collect(Collectors.toMap(Function.identity(),
+                                          Function.identity()));
     }
 }

@@ -106,9 +106,9 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
         });
 
         injector.injectMembers(this);
-        resourceDB.populateResources(Map.of(0, new ResourceManager.NodeInfo(IntStream.rangeClosed(0, 7)
+        resourceDB.populateResources(Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
                                                                                .boxed()
                                                                                .collect(Collectors.toUnmodifiableSet()),
-                                                                            16_000_000)));
+                                                                             16_000_000)));
     }
 }

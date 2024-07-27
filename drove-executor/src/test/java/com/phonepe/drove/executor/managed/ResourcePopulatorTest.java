@@ -21,11 +21,15 @@ class ResourcePopulatorTest extends AbstractExecutorEngineEnabledTestBase {
     void testResourcePopulatorLoadsPopulatedResource() {
         val resourceDB = Mockito.mock(ResourceManager.class);
         val resourceLoader = Mockito.mock(ResourceLoader.class);
-        val resource = Map.of(0, new ResourceManager.NodeInfo(Set.of(1, 2, 3, 4), 1000));
+        val availableCores0 = Set.of(1, 2, 3, 4);
+        val discoveredNodeInfo = ResourceManager.NodeInfo.from(availableCores0, 1000);
+        val resource = Map.of(0,
+                              discoveredNodeInfo);
         Mockito.when(resourceLoader.loadSystemResources()).thenReturn(resource);
         val resourcePopulator = new ResourcePopulator(resourceDB, resourceLoader);
         resourcePopulator.start();
-        Mockito.verify(resourceDB, Mockito.times(1)).populateResources(resource);
+        Mockito.verify(resourceDB, Mockito.times(1))
+                .populateResources(Map.of(0, discoveredNodeInfo));
         resourcePopulator.stop();
     }
 

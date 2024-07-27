@@ -11,17 +11,16 @@ import org.mockito.Mockito;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.discoveredNumaNode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OverProvisioningResourceLoaderTest {
     @Test
     @SneakyThrows
     void testIfNoChangeIsMadeWhenOverProvisioningIsDisabled() {
         val baseLoader = Mockito.mock(ResourceLoader.class);
-        val resourceMap = Map.of(0, new ResourceManager.NodeInfo(Set.of(1, 2, 3, 4), 1000));
+        val resourceMap = Map.of(0, discoveredNumaNode());
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val rl = new OverProvisioningResourceLoader(baseLoader, ExecutorTestingUtils.resourceConfig());
         val processedResource = rl.loadSystemResources();
@@ -32,19 +31,32 @@ class OverProvisioningResourceLoaderTest {
     @SneakyThrows
     void testIfResourcesAreOverProvisionedIfOverProvisioningIsEnabled() {
         val baseLoader = Mockito.mock(ResourceLoader.class);
-        val resourceMap = Map.of(0, new ResourceManager.NodeInfo(Set.of(1, 2, 3, 4), 1000));
+        val rootNodeInfo = discoveredNumaNode();
+        val resourceMap = Map.of(0, rootNodeInfo);
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setOverProvisioning(
-                new OverProvisioning(true,2,2)
-        );
+                new OverProvisioning(true, 2, 2)
+                                          );
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
+        val mappedCores = Set.of(6, 7, 11, 12, 16, 17, 21, 22);
+        val vCoreMapping = Map.of(
+                6, 1,
+                7, 1,
+                11, 2,
+                12, 2,
+                16, 3,
+                17, 3,
+                21, 4,
+                22, 4);
         assertEquals(Map.of(0,
-                new ResourceManager.NodeInfo(
-                IntStream.rangeClosed(0,7).boxed()
-                        .collect(Collectors.toSet()), 2000)),
-                processedResource);
+                            new ResourceManager.NodeInfo(
+                                    rootNodeInfo.getPhysicalCores(),
+                                    vCoreMapping,
+                                    rootNodeInfo.getPhysicalMemoryInMB(),
+                                    mappedCores,
+                                    2000)), processedResource);
     }
 
     @Test
@@ -54,12 +66,10 @@ class OverProvisioningResourceLoaderTest {
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(Collections.emptyMap());
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setOverProvisioning(
-                new OverProvisioning(true,2,2)
-        );
+                new OverProvisioning(true, 2, 2)
+                                          );
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        assertEquals(Map.of(0,
-                new ResourceManager.NodeInfo(Collections.emptySet(), 0)),
-                processedResource);
+        assertEquals(Map.of(), processedResource);
     }
 }

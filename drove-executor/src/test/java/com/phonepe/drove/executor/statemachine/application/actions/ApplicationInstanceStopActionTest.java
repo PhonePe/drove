@@ -6,15 +6,23 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Map;
+import java.util.Set;
+
 import static com.phonepe.drove.executor.ExecutorTestingUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -27,10 +35,15 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
         val spec = testAppInstanceSpec();
         val action = new ApplicationInstanceStopAction();
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
+        val resourceManager = mock(ResourceManager.class);
+        when(resourceManager.currentState())
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
         val startAction = new ApplicationInstanceRunAction(new ResourceConfig(), ExecutorOptions.DEFAULT,
                                                            CommonTestUtils.httpCaller(),
                                                            MAPPER,
-                                                           SharedMetricRegistries.getOrCreate("test"));
+                                                           SharedMetricRegistries.getOrCreate("test"),
+                                                           resourceManager);
         val state = startAction.execute(context,
                                         StateData.create(InstanceState.PROVISIONING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(InstanceState.DEPROVISIONING,

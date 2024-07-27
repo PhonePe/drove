@@ -9,6 +9,7 @@ import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
@@ -40,7 +41,8 @@ class MessagingTest {
                                    new TaskStateReportMessage(MessageHeader.controllerRequest(),
                                                               new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                                                            new AvailableCPU(Map.of(), Map.of()),
-                                                                                           new AvailableMemory(Map.of(), Map.of())),
+                                                                                           new AvailableMemory(Map.of(), Map.of()),
+                                                                                           new PhysicalLayout(Map.of(), Map.of())),
                                                               null));
         assertEquals(MessageDeliveryStatus.ACCEPTED, res.getStatus());
     }

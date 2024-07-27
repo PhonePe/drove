@@ -17,6 +17,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.executor.utils.ExecutorUtils.mapCores;
+
 /**
  * Runs 'numactl -H' to populate resource topology of the machine. This is used by controller to allocate containers
  */
@@ -63,6 +65,9 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
                 .map(e -> new Pair<>(
                         e.getKey(),
                         new ResourceManager.NodeInfo(
+                                e.getValue(),
+                                mapCores(e.getValue()),
+                                mem.get(e.getKey()),
                                 e.getValue(),
                                 mem.get(e.getKey()))))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));

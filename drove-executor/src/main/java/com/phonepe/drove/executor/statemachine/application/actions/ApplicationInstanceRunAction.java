@@ -11,6 +11,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.executor.utils.DockerUtils;
@@ -46,18 +47,21 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
     private final HttpCaller httpCaller;
     private final ObjectMapper mapper;
     private final MetricRegistry metricRegistry;
+    private final ResourceManager resourceManager;
 
     @Inject
     public ApplicationInstanceRunAction(ResourceConfig resourceConfig,
                                         ExecutorOptions executorOptions,
                                         HttpCaller httpCaller,
                                         ObjectMapper mapper,
-                                        MetricRegistry metricRegistry) {
+                                        MetricRegistry metricRegistry,
+                                        ResourceManager resourceManager) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.httpCaller = httpCaller;
         this.mapper = mapper;
         this.metricRegistry = metricRegistry;
+        this.resourceManager = resourceManager;
     }
 
     @Override
@@ -109,7 +113,8 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
                         env.add("DROVE_APP_NAME=" + instanceSpec.getAppName());
                         env.add("DROVE_APP_INSTANCE_AUTH_TOKEN=" + instanceSpec.getInstanceAuthToken());
                     },
-                    executorOptions);
+                    executorOptions,
+                    resourceManager);
             DockerUtils.injectConfigs(containerId, context.getClient(), instanceSpec, httpCaller);
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)

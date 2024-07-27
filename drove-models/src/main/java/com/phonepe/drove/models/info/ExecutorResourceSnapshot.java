@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.info;
 
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.AllArgsConstructor;
@@ -18,4 +19,5 @@ public class ExecutorResourceSnapshot {
     String executorId;
     AvailableCPU cpus;
     AvailableMemory memory;
+    PhysicalLayout layout;
 }

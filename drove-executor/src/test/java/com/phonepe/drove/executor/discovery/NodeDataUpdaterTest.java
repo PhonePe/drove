@@ -41,7 +41,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         nds.onNodeDataUpdate().connect(nodeData -> updateCounter.incrementAndGet());
         //when(nds.updateNodeData(any(NodeData.class));
         val rdb = new ResourceManager();
-        rdb.populateResources(Map.of(0, new ResourceManager.NodeInfo(IntStream.rangeClosed(0, 20)
+        rdb.populateResources(Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 20)
                                                                              .boxed()
                                                                              .collect(Collectors.toUnmodifiableSet()),
                                                                      512_000_000)));
@@ -67,7 +67,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         validateSteadyState(updateCounter, nds, 1);
         assertTrue(rdb.lockResources(new ResourceManager.ResourceUsage("test", ResourceManager.ResourceLockType.HARD,
                                                                        Map.of(0,
-                                                                              new ResourceManager.NodeInfo(IntStream.rangeClosed(
+                                                                              ResourceManager.NodeInfo.from(IntStream.rangeClosed(
                                                                                               0,
                                                                                               10)
                                                                                                                    .boxed()

@@ -4,11 +4,11 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import lombok.val;
 
 
 @Slf4j
@@ -36,7 +36,8 @@ public class ResourcePopulator implements Managed {
                             id,
                             info.getAvailableCores().stream().sorted().toList(),
                             info.getMemoryInMB()));
-        } else {
+        }
+        else {
             log.error("No usable resources found");
         }
         resourceDB.populateResources(resources);

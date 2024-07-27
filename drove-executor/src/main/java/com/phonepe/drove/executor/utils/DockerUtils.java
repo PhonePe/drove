@@ -14,6 +14,7 @@ import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
@@ -136,7 +137,8 @@ public class DockerUtils {
             final String id,
             final DeploymentUnitSpec deploymentUnitSpec,
             final DockerCreateParmAugmenter augmenter,
-            final ExecutorOptions executorOptions) {
+            final ExecutorOptions executorOptions,
+            final ResourceManager resourceManager) {
         val image = deploymentUnitSpec.getExecutable().accept(DockerCoordinates::getUrl);
 
         try (val containerCmd = client.createContainerCmd(image)) {
@@ -172,7 +174,7 @@ public class DockerUtils {
                 hostConfig.withDeviceRequests(List.of(nvidiaGpuDeviceRequest));
             }
 
-            populateResourceRequirements(resourceConfig, deploymentUnitSpec, hostConfig);
+            populateResourceRequirements(resourceConfig, deploymentUnitSpec, hostConfig, resourceManager);
             val exposedPorts = new ArrayList<ExposedPort>();
             val env = new ArrayList<String>();
             val hostName = hostname();
@@ -342,21 +344,48 @@ public class DockerUtils {
     private static void populateResourceRequirements(
             ResourceConfig resourceConfig,
             DeploymentUnitSpec deploymentUnitSpec,
-            HostConfig hostConfig) {
+            HostConfig hostConfig,
+            ResourceManager resourceManager) {
         deploymentUnitSpec.getResources()
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                     @Override
                     public Void visit(CPUAllocation cpu) {
                         hostConfig.withCpuCount((long) cpu.getCores().size());
-                        if (!resourceConfig.isDisableNUMAPinning()) {
-                            hostConfig.withCpusetCpus(StringUtils.join(cpu.getCores()
-                                                                               .values()
-                                                                               .stream()
-                                                                               .flatMap(Set::stream)
-                                                                               .map(i -> Integer.toString(i))
-                                                                               .toList(),
-                                                                       ","));
+                        //If over-scaling is enabled,
+                        // We take list of physical cores and randomly map the processor to some cores
+                        val cpuset = new ArrayList<Integer>();
+                        if(resourceConfig.getOverProvisioning().isEnabled()) {
+                            val physicalCores = new ArrayList<>(resourceManager.currentState()
+                                                                        .getPhysicalLayout()
+                                                                        .getCores()
+                                                                        .values()
+                                                                        .stream()
+                                                                        .flatMap(Set::stream)
+                                                                        .toList());
+                            val numCoresRequested = cpu.getCores()
+                                    .values()
+                                    .stream()
+                                    .map(Set::size)
+                                    .mapToInt(Integer::intValue)
+                                    .sum();
+                            Collections.shuffle(physicalCores);
+                            if(physicalCores.size() < numCoresRequested) {
+                                log.warn("Available physical core count {} is less than number of cores requested {}." +
+                                                 " CPUSET will be skipped.",
+                                         physicalCores.size(), physicalCores);
+                            }
+                            else {
+                                cpuset.addAll(physicalCores.subList(0, numCoresRequested));
+                            }
                         }
+                        else {
+                            cpuset.addAll(cpu.getCores()
+                                    .values()
+                                    .stream()
+                                    .flatMap(Set::stream)
+                                    .toList());
+                        }
+                        hostConfig.withCpusetCpus(StringUtils.join(cpuset, ","));
                         return null;
                     }
 
@@ -367,9 +396,11 @@ public class DockerUtils {
                                                       .stream()
                                                       .mapToLong(Long::longValue)
                                                       .sum() * (1 << 20));
-                        if (!resourceConfig.isDisableNUMAPinning()) {
+                        //Memory pinning is not done in case NUMA pinning is turned off,
+                        //This is because if over scaling is enabled, one core might not actually have that much memory
+//                        if (!resourceConfig.isDisableNUMAPinning()) {
                             hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
-                        }
+//                        }
                         return null;
                     }
                 }));

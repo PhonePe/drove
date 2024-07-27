@@ -123,7 +123,8 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                 spec.accept(new DeploymentUnitSpecVisitor<Void>() {
                     @Override
                     public Void visit(ApplicationInstanceSpec applicationInstanceSpec) {
-                        MDC.put(LOG_ID, applicationInstanceSpec.getAppId() + ":" + applicationInstanceSpec.getInstanceId());
+                        MDC.put(LOG_ID,
+                                applicationInstanceSpec.getAppId() + ":" + applicationInstanceSpec.getInstanceId());
                         return null;
                     }
 
@@ -266,7 +267,6 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                                     val info = nodeInfo(nodeInfo);
                                     info.setAvailableCores(allocCpus);
                                     return info;
-
                                 }));
                         return null;
                     }
@@ -288,9 +288,8 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
     }
 
     private ResourceManager.NodeInfo nodeInfo(ResourceManager.NodeInfo nodeInfo) {
-        return nodeInfo == null
-               ? new ResourceManager.NodeInfo(new HashSet<>(), 0L)
-               : nodeInfo;
+        return Objects.requireNonNullElse(nodeInfo,
+                                          new ResourceManager.NodeInfo(Set.of(), Map.of(), 0, new HashSet<>(), 0L));
     }
 
     @MonitoredFunction

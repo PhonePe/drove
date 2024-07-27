@@ -1,9 +1,10 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.model.utils.Pair;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
-import com.phonepe.drove.common.model.utils.Pair;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -41,25 +43,45 @@ public class ResourceManager {
     @Data
     @AllArgsConstructor
     public static class NodeInfo {
+        private final Set<Integer> physicalCores;
+        private final Map<Integer, Integer> vCoreMapping;
+        private final long physicalMemoryInMB;
         private Set<Integer> availableCores;
         private long memoryInMB;
+
+        public static NodeInfo from(Set<Integer> availableCores, long memoryInMB) {
+            return new NodeInfo(availableCores,
+                                availableCores.stream()
+                                        .collect(Collectors.toMap(Function.identity(), Function.identity())),
+                                memoryInMB,
+                                availableCores,
+                                memoryInMB);
+        }
     }
 
-    private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
     private final Map<String, ResourceUsage> resourceLocks = new HashMap<>();
     private final ConsumingFireForgetSignal<ResourceInfo> resourceUpdated
             = ConsumingFireForgetSignal.<ResourceInfo>builder()
             .executorService(Executors.newSingleThreadExecutor())
             .build();
+    private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
+    private PhysicalLayout physicalLayout = null;
 
     @MonitoredFunction
     public synchronized void populateResources(Map<Integer, NodeInfo> nodes) {
         this.nodes = Map.copyOf(nodes);
+        val cores = new HashMap<Integer, Set<Integer>>();
+        val memory = new HashMap<Integer, Long>();
+        nodes.forEach((numaNode, info) -> {
+            cores.put(numaNode, info.getPhysicalCores());
+            memory.put(numaNode, info.getPhysicalMemoryInMB());
+        });
+        this.physicalLayout = new PhysicalLayout(cores, memory);
     }
 
     @MonitoredFunction
     public synchronized boolean lockResources(final ResourceUsage usage) {
-        if(resourceLocks.containsKey(usage.getId())) {
+        if (resourceLocks.containsKey(usage.getId())) {
             log.error("Resources already allocated for: {}", usage.getId());
             return false;
         }
@@ -78,9 +100,12 @@ public class ResourceManager {
         resourceRequirements
                 .forEach((node, requirement)
                                  -> currNodes.computeIfPresent(
-                        node, (key, old) -> new NodeInfo(Set.copyOf(
-                                Sets.difference(old.getAvailableCores(), requirement.getAvailableCores())),
-                                                         old.getMemoryInMB() - requirement.getMemoryInMB())));
+                        node, (key, old) -> new NodeInfo(
+                                old.getPhysicalCores(),
+                                old.getVCoreMapping(),
+                                old.getPhysicalMemoryInMB(),
+                                Set.copyOf(Sets.difference(old.getAvailableCores(), requirement.getAvailableCores())),
+                                old.getMemoryInMB() - requirement.getMemoryInMB())));
         nodes = Map.copyOf(currNodes);
         resourceLocks.put(usage.getId(), usage);
         resourceUpdated.dispatch(calculateResources());
@@ -89,7 +114,7 @@ public class ResourceManager {
 
     @MonitoredFunction
     public synchronized boolean reclaimResources(String id) {
-        if(!resourceLocks.containsKey(id)) {
+        if (!resourceLocks.containsKey(id)) {
             log.warn("No recorded usage for id: {}", id);
             return false;
         }
@@ -100,9 +125,12 @@ public class ResourceManager {
         resourceRequirements
                 .forEach((node, requirement)
                                  -> currNodes.computeIfPresent(
-                        node, (key, old) -> new NodeInfo(Set.copyOf(
-                                Sets.union(old.getAvailableCores(), requirement.getAvailableCores())),
-                                                         old.getMemoryInMB() + requirement.getMemoryInMB())));
+                        node, (key, old) -> new NodeInfo(
+                                old.getPhysicalCores(),
+                                old.getVCoreMapping(),
+                                old.getPhysicalMemoryInMB(),
+                                Set.copyOf(Sets.union(old.getAvailableCores(), requirement.getAvailableCores())),
+                                old.getMemoryInMB() + requirement.getMemoryInMB())));
         nodes = Map.copyOf(currNodes);
         resourceLocks.remove(id);
         resourceUpdated.dispatch(calculateResources());
@@ -138,10 +166,14 @@ public class ResourceManager {
         val usedMemory = resourceLocks.values()
                 .stream()
                 .map(ResourceUsage::getUsedResources)
-                .flatMap(usage -> usage.entrySet().stream().map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
+                .flatMap(usage -> usage.entrySet()
+                        .stream()
+                        .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Long::sum));
 
-        return new ResourceInfo(new AvailableCPU(cpus, usedCores), new AvailableMemory(memory, usedMemory));
+        return new ResourceInfo(new AvailableCPU(cpus, usedCores),
+                                new AvailableMemory(memory, usedMemory),
+                                physicalLayout);
     }
 
     private boolean ensureNodeResource(NodeInfo actual, NodeInfo requirement) {

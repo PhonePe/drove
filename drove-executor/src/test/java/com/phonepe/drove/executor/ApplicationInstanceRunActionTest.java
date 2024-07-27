@@ -11,6 +11,8 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.actions.ApplicationExecutableFetchAction;
 import com.phonepe.drove.executor.statemachine.application.actions.ApplicationInstanceRunAction;
@@ -23,6 +25,7 @@ import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.config.impl.ExecutorHttpFetchConfigSpec;
 import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -48,6 +51,8 @@ import static com.phonepe.drove.executor.ExecutorTestingUtils.runCmd;
 import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
@@ -107,10 +112,15 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val executorId = CommonUtils.executorId(3000, "test-host");
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT, false);
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
+        val resourceManager = mock(ResourceManager.class);
+        when(resourceManager.currentState())
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
         val newState
                 = new ApplicationInstanceRunAction(
                 new ResourceConfig(), ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER,
-                SharedMetricRegistries.getOrCreate("test"))
+                SharedMetricRegistries.getOrCreate("test"),
+                resourceManager)
                 .execute(ctx,
                          StateData.create(PROVISIONING,
                                           new ExecutorInstanceInfo(instanceSpec.getAppId(),

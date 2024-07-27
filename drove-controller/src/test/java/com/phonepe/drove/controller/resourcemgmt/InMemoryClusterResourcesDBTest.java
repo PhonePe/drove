@@ -6,6 +6,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
@@ -75,7 +76,15 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                                                 Map.of(1, Set.of(0, 1))),
                                                new AvailableMemory(
                                                        Map.of(0, 3 * 128 * (2L ^ 20)),
-                                                       Map.of(0, 128 * (2L ^ 20)))));
+                                                       Map.of(0, 128 * (2L ^ 20))),
+                                               new PhysicalLayout(Map.of(0,
+                                                                         Set.of(0, 1, 2, 3, 4),
+                                                                         1,
+                                                                         Set.of(0, 1, 2, 3, 4)),
+                                                                  Map.of(0,
+                                                                         4 * 128 * (2L ^ 20),
+                                                                         1,
+                                                                         4 * 128 * (2L ^ 20)))));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
@@ -127,7 +136,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                                                                   .get(0) - allocatedNode.getMemory()
                                                                                   .getMemoryInMB()
                                                                                   .get(0)),
-                                                                   allocatedNode.getMemory().getMemoryInMB())));
+                                                                   allocatedNode.getMemory().getMemoryInMB()),
+                                               originalResource.getLayout()));
         //Ensure states have reflected properly
         {
             val nodeInfo = db.currentSnapshot(allocatedNode.getExecutorId()).orElse(null);

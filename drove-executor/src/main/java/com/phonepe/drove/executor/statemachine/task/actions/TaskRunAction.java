@@ -9,6 +9,7 @@ import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.TaskAction;
 import com.phonepe.drove.executor.utils.DockerUtils;
@@ -41,16 +42,19 @@ public class TaskRunAction extends TaskAction {
     private final ExecutorOptions executorOptions;
     private final ObjectMapper mapper;
     private final MetricRegistry metricRegistry;
+    private final ResourceManager resourceManager;
 
     @Inject
     public TaskRunAction(ResourceConfig resourceConfig,
                          ExecutorOptions executorOptions,
                          ObjectMapper mapper,
-                         MetricRegistry metricRegistry) {
+                         MetricRegistry metricRegistry,
+                         ResourceManager resourceManager) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.mapper = mapper;
         this.metricRegistry = metricRegistry;
+        this.resourceManager = resourceManager;
     }
 
     @Override
@@ -85,7 +89,8 @@ public class TaskRunAction extends TaskAction {
                         env.add("DROVE_INSTANCE_ID=" + instanceSpec.getInstanceId());
                         env.add("DROVE_SOURCE_APP_NAME=" + instanceSpec.getSourceAppName());
                     },
-                    executorOptions);
+                    executorOptions,
+                    resourceManager);
 
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)

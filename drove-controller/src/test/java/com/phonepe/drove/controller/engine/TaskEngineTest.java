@@ -24,6 +24,7 @@ import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
@@ -741,7 +742,8 @@ class TaskEngineTest extends ControllerTestBase {
                                                                                               Map.of()),
                                                                              new AvailableMemory(
                                                                                      Map.of(),
-                                                                                     Map.of())),
+                                                                                     Map.of()),
+                                                                             new PhysicalLayout(Map.of(), Map.of())),
                                                 List.of(),
                                                 List.of(),
                                                 Set.of(),

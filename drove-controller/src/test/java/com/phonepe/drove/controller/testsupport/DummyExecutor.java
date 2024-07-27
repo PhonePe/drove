@@ -10,6 +10,7 @@ import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
@@ -259,11 +260,13 @@ public class DummyExecutor implements Runnable, AutoCloseable {
     private void updateSnapshot() {
         val resourceSnapshot = new ExecutorResourceSnapshot(ControllerTestUtils.EXECUTOR_ID,
                                                             new AvailableCPU(Map.of(0, availableCPUs),
-                                                                             Map.of(0, usedCPUs)),
+                                                                             Map.of(1, usedCPUs)),
                                                             new AvailableMemory(Map.of(0,
                                                                                        availableMemory.get()),
-                                                                                Map.of(0,
-                                                                                       TOTAL_MEMORY - availableMemory.get())));
+                                                                                Map.of(1,
+                                                                                       TOTAL_MEMORY - availableMemory.get())),
+                                                            new PhysicalLayout(Map.of(0, availableCPUs, 1, availableCPUs),
+                                                                               Map.of(0, TOTAL_MEMORY, 1, TOTAL_MEMORY)));
         clusterResourcesDB.update(List.of(new ExecutorNodeData("localhost",
                                                                8080,
                                                                NodeTransportType.HTTP,

@@ -20,6 +20,7 @@ import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
@@ -189,7 +190,15 @@ public class ControllerTestUtils {
                                                                                    Map.of(1, Set.of(0, 1))),
                                                                   new AvailableMemory(
                                                                           Map.of(0, 3 * 128 * (2L ^ 20)),
-                                                                          Map.of(0, 128 * (2L ^ 20)))),
+                                                                          Map.of(0, 128 * (2L ^ 20))),
+                                                                  new PhysicalLayout(Map.of(0,
+                                                                                            Set.of(0, 1, 2, 3, 4),
+                                                                                            1,
+                                                                                            Set.of(0, 1, 2, 3, 4)),
+                                                                                     Map.of(0,
+                                                                                            4 * 128 * (2L ^ 20),
+                                                                                            1,
+                                                                                            4 * 128 * (2L ^ 20)))),
                                      appInstances,
                                      taskInstances, Set.of(),
                                      blacklisted),
@@ -216,7 +225,15 @@ public class ControllerTestUtils {
                                                                                   Map.of(0, Set.of())),
                                                                  new AvailableMemory(
                                                                          Map.of(0, 5 * 512L),
-                                                                         Map.of(0, 0L))),
+                                                                         Map.of(0, 0L)),
+                                                                 new PhysicalLayout(Map.of(0,
+                                                                                           Set.of(0, 1, 2, 3, 4),
+                                                                                           1,
+                                                                                           Set.of(0, 1, 2, 3, 4)),
+                                                                                    Map.of(0,
+                                                                                           4 * 128 * (2L ^ 20),
+                                                                                           1,
+                                                                                           4 * 128 * (2L ^ 20)))),
                                     List.of(),
                                     List.of(),
                                     tags,

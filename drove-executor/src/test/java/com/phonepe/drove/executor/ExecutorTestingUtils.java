@@ -2,9 +2,7 @@ package com.phonepe.drove.executor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallbackTemplate;
 import com.github.dockerjava.api.exception.NotFoundException;
-import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -26,7 +24,9 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -53,6 +53,8 @@ import lombok.val;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.phonepe.drove.common.CommonTestUtils.base64;
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
@@ -366,19 +368,16 @@ public class ExecutorTestingUtils {
         return runCommandInContainer(ctx.getDockerInstanceId(), DOCKER_CLIENT, cmd).getOutput();
     }
 
-    private static final class CmdOutputHandler extends ResultCallbackTemplate<CmdOutputHandler, Frame> {
-        private final StringBuffer buffer = new StringBuffer();
+    public static ResourceManager.NodeInfo numaNode() {
+        return ResourceManager.NodeInfo.from(Set.of(1, 2, 3, 4), 1000);
+    }
 
-        @Override
-        public void onNext(Frame frame) {
-            switch (frame.getStreamType()) {
-                case STDOUT, STDERR, RAW -> buffer.append(new String(frame.getPayload()));
-                default -> log.error("Unexpected stream type value: {}", frame.getStreamType());
-            }
-        }
+    public static ResourceManager.NodeInfo discoveredNumaNode() {
+        return discoveredNumaNode(1);
+    }
 
-        public String result() {
-            return buffer.toString();
-        }
+    public static ResourceManager.NodeInfo discoveredNumaNode(int base) {
+        val cores = IntStream.rangeClosed(base, base + 3).boxed().collect(Collectors.toUnmodifiableSet());
+        return new ResourceManager.NodeInfo(cores, ExecutorUtils.mapCores(cores), 1000, cores, 1000);
     }
 }

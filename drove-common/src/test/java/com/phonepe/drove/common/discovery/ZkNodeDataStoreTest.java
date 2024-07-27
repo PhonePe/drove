@@ -7,6 +7,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.SneakyThrows;
@@ -48,7 +49,9 @@ class ZkNodeDataStoreTest {
                     new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
                                      Collections.singletonMap(0, Collections.singleton(0))),
                     new AvailableMemory(Collections.singletonMap(0, 1024L),
-                                        Collections.singletonMap(0, 1024L)));
+                                        Collections.singletonMap(0, 1024L)),
+                    new PhysicalLayout(Collections.singletonMap(0, Collections.singleton(1)),
+                                       Collections.singletonMap(0, 1024L)));
             val nodeData = new ExecutorNodeData("localhost",
                                                 8080,
                                                 NodeTransportType.HTTP,

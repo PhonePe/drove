@@ -9,6 +9,7 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -122,7 +123,8 @@ class StateUpdaterTest {
         val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
         su.updateSingle(new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                      new AvailableCPU(Map.of(), Map.of()),
-                                                     new AvailableMemory(Map.of(), Map.of())), instance);
+                                                     new AvailableMemory(Map.of(), Map.of()),
+                                                     new PhysicalLayout(Map.of(), Map.of())), instance);
         CommonTestUtils.waitUntil(() -> counter.get() == 2);
         assertEquals(2, counter.get());
     }
