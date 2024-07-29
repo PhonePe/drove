@@ -40,16 +40,16 @@ class OverProvisioningResourceLoaderTest {
                                           );
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        val mappedCores = Set.of(6, 7, 11, 12, 16, 17, 21, 22);
+        val mappedCores = Set.of(11, 12, 16, 17, 21, 22, 26, 27);
         val vCoreMapping = Map.of(
-                6, 1,
-                7, 1,
-                11, 2,
-                12, 2,
-                16, 3,
-                17, 3,
-                21, 4,
-                22, 4);
+                11, 1,
+                12, 1,
+                16, 2,
+                17, 2,
+                21, 3,
+                22, 3,
+                26, 4,
+                27, 4);
         assertEquals(Map.of(0,
                             new ResourceManager.NodeInfo(
                                     rootNodeInfo.getPhysicalCores(),
