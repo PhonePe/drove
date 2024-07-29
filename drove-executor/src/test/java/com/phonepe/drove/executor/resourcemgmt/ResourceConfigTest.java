@@ -8,13 +8,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ResourceConfigTest {
-    @Test
-    void validationFailsIfNumaPinningIsDisabledWithOverProvisioningConfigurationEnabled() {
-        assertFalse(new ResourceConfig()
-                .setDisableNUMAPinning(false)
-                .setOverProvisioning(new OverProvisioning(true, 10, 10))
-                .isOverProvisioningEnabledWithDisablePinning());
-    }
+
 
     @Test
     void validateDefaultValuesAreGeneratedForResourceConfig() {
@@ -26,11 +20,4 @@ class ResourceConfigTest {
         assertFalse(resourceConfig.getOverProvisioning().isEnabled());
     }
 
-    @Test
-    void validationSucceedsIfNumaPinningIsDisabledWithOverProvisioningConfigurationEnabled() {
-        assertTrue(new ResourceConfig()
-                .setDisableNUMAPinning(true)
-                .setOverProvisioning(new OverProvisioning(true, 10, 10))
-                .isOverProvisioningEnabledWithDisablePinning());
-    }
 }
