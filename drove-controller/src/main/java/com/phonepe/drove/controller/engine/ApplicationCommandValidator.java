@@ -197,68 +197,12 @@ public class ApplicationCommandValidator {
 
 
         private ValidationResult ensureResources(long requiredInstances) {
-            val executors = clusterResourcesDB.currentSnapshot(true);
-            var freeCores = 0;
-            var freeMemory = 0L;
-            for (val exec : executors) {
-                freeCores += ControllerUtils.freeCores(exec);
-                freeMemory += ControllerUtils.freeMemory(exec);
-            }
             val spec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
             if (null == spec) {
                 return ValidationResult.failure("No spec found for app " + appId);
             }
-            val errs = new ArrayList<String>(2);
-            val requiredCoresPerInstance = spec.getResources()
-                    .stream()
-                    .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
-                        @Override
-                        public Integer visit(CPURequirement cpuRequirement) {
-                            return (int) cpuRequirement.getCount();
-                        }
-
-                        @Override
-                        public Integer visit(MemoryRequirement memoryRequirement) {
-                            return 0;
-                        }
-                    }))
-                    .sum();
-            val requiredCores = requiredInstances * requiredCoresPerInstance;
-            val requiredMemPerInstance = spec.getResources()
-                    .stream()
-                    .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
-                        @Override
-                        public Long visit(CPURequirement cpuRequirement) {
-                            return 0L;
-                        }
-
-                        @Override
-                        public Long visit(MemoryRequirement memoryRequirement) {
-                            return memoryRequirement.getSizeInMB();
-                        }
-                    }))
-                    .sum();
-            val requiredMem = requiredInstances * requiredMemPerInstance;
-            if (requiredCores > freeCores) {
-                errs.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
-                                                        "Available: " + freeCores);
-            }
-            if (requiredMem > freeMemory) {
-                errs.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
-                                                        "Available: " + freeMemory);
-            }
-            val maxAvailablePhysicalCoresPerNode = executors.stream()
-                    .map(e -> e.getNodeData().getState().getLayout())
-                    .filter(Objects::nonNull)
-                    .flatMap(physicalLayout -> physicalLayout.getCores().values().stream().map(Set::size))
-                    .mapToInt(Integer::intValue)
-                    .max()
-                    .orElse(Integer.MAX_VALUE);
-            if(maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
-                errs.add("Required cores exceeds the maximum core available on a single " +
-                                 "NUMA node in the cluster. Required: " + requiredCores
-                                 + " Max: " + maxAvailablePhysicalCoresPerNode);
-            }
+            val errs = new ArrayList<String>();
+            ControllerUtils.checkResources(clusterResourcesDB, spec, requiredInstances, errs);
             if(!errs.isEmpty()) {
                 return ValidationResult.failure(errs);
             }

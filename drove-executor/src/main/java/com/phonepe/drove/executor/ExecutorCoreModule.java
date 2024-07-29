@@ -61,9 +61,9 @@ public class ExecutorCoreModule extends AbstractModule {
                 .to(RemoteControllerMessageSender.class);
         bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER))
                 .to(NumaCtlBasedResourceLoader.class);
-        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_ACTIVATION_RESOURCE_LOADER))
-                .to(NumaActivationResourceLoader.class);
-        bind(ResourceLoader.class).to(OverProvisioningResourceLoader.class);
+        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.OVERPROVISIONIN_RESOURCE_LOADER))
+                .to(OverProvisioningResourceLoader.class);
+        bind(ResourceLoader.class).to(NumaActivationResourceLoader.class);
     }
 
 
@@ -206,7 +206,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class ResourceLoaderIdentifiers {
         public static final String NUMA_CTL_BASED_RESOURCE_LOADER = "NumaCtlBasedResourceLoader";
-        public static final String NUMA_ACTIVATION_RESOURCE_LOADER = "NumaActivationResourceLoader";
+        public static final String OVERPROVISIONIN_RESOURCE_LOADER = "OverProvisioningResourceLoader";
 
     }
 

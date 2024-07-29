@@ -11,9 +11,6 @@ import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
@@ -241,48 +238,8 @@ public class TaskEngine {
     }
 
     private List<String> resourceCheck(final TaskSpec taskSpec) {
-        val executors = clusterResourcesDB.currentSnapshot(true);
-        var freeCores = 0;
-        var freeMemory = 0L;
-        for (val exec : executors) {
-            freeCores += ControllerUtils.freeCores(exec);
-            freeMemory += ControllerUtils.freeMemory(exec);
-        }
-        val requiredCores = taskSpec.getResources()
-                .stream()
-                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<Integer>() {
-                    @Override
-                    public Integer visit(CPURequirement cpuRequirement) {
-                        return (int) cpuRequirement.getCount();
-                    }
-
-                    @Override
-                    public Integer visit(MemoryRequirement memoryRequirement) {
-                        return 0;
-                    }
-                }))
-                .sum();
-        val requiredMem = taskSpec.getResources()
-                .stream()
-                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<Long>() {
-                    @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return 0L;
-                    }
-
-                    @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return memoryRequirement.getSizeInMB();
-                    }
-                }))
-                .sum();
         val errors = new ArrayList<String>();
-        if (requiredCores > freeCores) {
-            errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " Available: " + freeCores);
-        }
-        if (requiredMem > freeMemory) {
-            errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " Available: " + freeMemory);
-        }
+        ControllerUtils.checkResources(clusterResourcesDB, taskSpec, 1, errors);
         return errors;
     }
 }

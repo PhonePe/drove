@@ -5,12 +5,16 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecVisitorAdapter;
@@ -388,7 +392,7 @@ public class ControllerUtils {
     }
 
     public static String deployableObjectId(DeployedInstanceInfo instanceInfo) {
-        return instanceInfo.accept(new DeployedInstanceInfoVisitor<String>() {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<>() {
             @Override
             public String visit(InstanceInfo applicationInstanceInfo) {
                 return applicationInstanceInfo.getInstanceId();
@@ -448,5 +452,70 @@ public class ControllerUtils {
                     }
                 })
                 .get(checker::get);
+    }
+
+    public static void checkResources(
+            final ClusterResourcesDB clusterResourcesDB,
+            final DeploymentSpec spec,
+            final long requiredInstances,
+            final List<String> errors) {
+        val executors = clusterResourcesDB.currentSnapshot(true);
+        var freeCores = 0;
+        var freeMemory = 0L;
+        for (val exec : executors) {
+            freeCores += ControllerUtils.freeCores(exec);
+            freeMemory += ControllerUtils.freeMemory(exec);
+        }
+
+        val requiredCoresPerInstance = spec.getResources()
+                .stream()
+                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Integer visit(CPURequirement cpuRequirement) {
+                        return (int) cpuRequirement.getCount();
+                    }
+
+                    @Override
+                    public Integer visit(MemoryRequirement memoryRequirement) {
+                        return 0;
+                    }
+                }))
+                .sum();
+        val requiredCores = requiredInstances * requiredCoresPerInstance;
+        val requiredMemPerInstance = spec.getResources()
+                .stream()
+                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return 0L;
+                    }
+
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return memoryRequirement.getSizeInMB();
+                    }
+                }))
+                .sum();
+        val requiredMem = requiredInstances * requiredMemPerInstance;
+        if (requiredCores > freeCores) {
+            errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
+                             "Available: " + freeCores);
+        }
+        if (requiredMem > freeMemory) {
+            errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
+                             "Available: " + freeMemory);
+        }
+        val maxAvailablePhysicalCoresPerNode = executors.stream()
+                .map(e -> e.getNodeData().getState().getLayout())
+                .filter(Objects::nonNull)
+                .flatMap(physicalLayout -> physicalLayout.getCores().values().stream().map(Set::size))
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(Integer.MAX_VALUE);
+        if(maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
+            errors.add("Required cores exceeds the maximum core available on a single " +
+                             "NUMA node in the cluster. Required: " + requiredCores
+                             + " Max: " + maxAvailablePhysicalCoresPerNode);
+        }
     }
 }
