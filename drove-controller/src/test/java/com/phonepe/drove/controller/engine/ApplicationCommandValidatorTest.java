@@ -11,9 +11,11 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.*;
 import io.dropwizard.util.Duration;
@@ -25,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static com.phonepe.drove.models.common.HTTPVerb.GET;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -333,6 +336,30 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
 
     @Test
+    void testStartInstValidateMaxCorePerNode() {
+        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val appId = "SomeAppId";
+        when(engine.applicationState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
+        val appSpec = ControllerTestUtils.appSpec()
+                .withResources(List.of(new CPURequirement(6), new MemoryRequirement(100)));
+        when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
+                                                                                 appSpec,
+                                                                                 1,
+                                                                                 null,
+                                                                                 null)));
+
+        when(crDB.currentSnapshot(true))
+                .thenReturn(IntStream.range(0, 3)
+                                    .mapToObj(i -> ControllerTestUtils.executorHost(i, 8000, List.of(), List.of()))
+                                    .toList());
+
+        ensureFailure(validator.validate(
+                              engine, new ApplicationStartInstancesOperation(appId, 1, ClusterOpSpec.DEFAULT)),
+                      "Required cores exceeds the maximum core available on a single NUMA node in the cluster. " +
+                              "Required: 6 Max: 5");
+    }
+
+    @Test
     void testScaleSuccess() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val appId = "SomeAppId";
@@ -424,8 +451,9 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
         ensureFailure(validator.validate(
-                engine,
-                new ApplicationStopInstancesOperation(appId, List.of("Invalid"), false, ClusterOpSpec.DEFAULT)),
+                              engine,
+                              new ApplicationStopInstancesOperation(appId, List.of("Invalid"), false,
+                                                                    ClusterOpSpec.DEFAULT)),
                       "App SomeAppId does not have any instances with the following ids: Invalid");
     }
 
@@ -465,11 +493,12 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
         ensureFailure(validator.validate(
-                engine,
-                new ApplicationReplaceInstancesOperation(appId, Set.of("Invalid"), ClusterOpSpec.DEFAULT)),
+                              engine,
+                              new ApplicationReplaceInstancesOperation(appId, Set.of("Invalid"),
+                                                                       ClusterOpSpec.DEFAULT)),
                       "There are no replaceable healthy instances with ids: [Invalid]");
     }
-    
+
     @Test
     void testDestroyAppSuccess() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);

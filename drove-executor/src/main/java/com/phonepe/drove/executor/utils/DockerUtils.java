@@ -376,6 +376,8 @@ public class DockerUtils {
                             }
                             else {
                                 cpuset.addAll(physicalCores.subList(0, numCoresRequested));
+                                log.info("Binding container to the following cores randomly as over-provisioning" +
+                                                 " is enabled: {}", cpuset);
                             }
                         }
                         else {
@@ -396,9 +398,10 @@ public class DockerUtils {
                                                       .stream()
                                                       .mapToLong(Long::longValue)
                                                       .sum() * (1 << 20));
-                        //Memory pinning is not done in case NUMA pinning is turned off,
-                        //This is because if over scaling is enabled, one core might not actually have that much memory
-                        hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
+                        //Memory pinning is not done in case NUMA pinning is turned off
+                        if (!resourceConfig.isDisableNUMAPinning()) {
+                            hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
+                        }
                         return null;
                     }
                 }));

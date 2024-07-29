@@ -255,8 +255,9 @@ public class ApplicationCommandValidator {
                     .max()
                     .orElse(Integer.MAX_VALUE);
             if(maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
-                errs.add("Required cores " + requiredCores + " exceeds the maximum core available on a single " +
-                                 "NUMA node in the cluster " + maxAvailablePhysicalCoresPerNode);
+                errs.add("Required cores exceeds the maximum core available on a single " +
+                                 "NUMA node in the cluster. Required: " + requiredCores
+                                 + " Max: " + maxAvailablePhysicalCoresPerNode);
             }
             if(!errs.isEmpty()) {
                 return ValidationResult.failure(errs);

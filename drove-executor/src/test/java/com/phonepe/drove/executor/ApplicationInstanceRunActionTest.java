@@ -10,12 +10,14 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.application.actions.ApplicationExecutableFetchAction;
 import com.phonepe.drove.executor.statemachine.application.actions.ApplicationInstanceRunAction;
+import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
@@ -42,6 +44,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -68,6 +72,37 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRun() {
+        runAction(1, new ResourceConfig(), 1);
+    }
+
+    @Test
+    @SneakyThrows
+    void testRunWithOverProvisioning() {
+        val availableCPUs = Runtime.getRuntime().availableProcessors();
+        val numCpus = Math.min(1, availableCPUs);
+        runAction(4, new ResourceConfig()
+                .setOverProvisioning(new OverProvisioning()
+                                             .setCpuMultiplier(10)
+                                             .setMemoryMultiplier(10)
+                                             .setEnabled(true)),
+                  Math.min(4, availableCPUs));
+    }
+
+
+    @Test
+    @SneakyThrows
+    void testRunWithOverProvisioningNoCpuset() {
+        val availableCPUs = Runtime.getRuntime().availableProcessors();
+        runAction(Math.max(2, availableCPUs + 2), new ResourceConfig()
+                .setOverProvisioning(new OverProvisioning()
+                                             .setCpuMultiplier(10)
+                                             .setMemoryMultiplier(10)
+                                             .setEnabled(true)),
+                  availableCPUs); //Will have all CPUs as cpuset will not be done
+    }
+
+    @SneakyThrows
+    void runAction(int numCpus, final ResourceConfig resourceConfig, int expectedCpus) {
         val tmpFile = Files.createTempFile("tdc", "");
 
         try (val ris = Objects.requireNonNull(this.getClass().getClassLoader().getResourceAsStream("config.txt"))) {
@@ -83,7 +118,11 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 new DockerCoordinates(
                         APP_IMAGE_NAME,
                         Duration.seconds(100)),
-                ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Collections.singleton(1))),
+                ImmutableList.of(new CPUAllocation(
+                                         Collections.singletonMap(0,
+                                                                  IntStream.range(0, numCpus)
+                                                                          .boxed()
+                                                                          .collect(Collectors.toUnmodifiableSet()))),
                                  new MemoryAllocation(Collections.singletonMap(0, 512L))),
                 Collections.singletonList(new PortSpec("main", 3000, PortType.HTTP)),
                 Collections.emptyList(),
@@ -118,7 +157,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                              new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
         val newState
                 = new ApplicationInstanceRunAction(
-                new ResourceConfig(), ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER,
+                resourceConfig, ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER,
                 SharedMetricRegistries.getOrCreate("test"),
                 resourceManager)
                 .execute(ctx,
@@ -146,9 +185,13 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         assertEquals("Drove Test", runCmd(ctx, "cat /files/drove.txt"));
         assertEquals("Drove Local Config", runCmd(ctx, "cat /files/drovelocal.txt"));
         assertEquals("Remote config", runCmd(ctx, "cat /files/remote.txt"));
+        val nprocOut = DockerUtils.runCommandInContainer(ctx.getDockerInstanceId(),
+                                                         DOCKER_CLIENT,
+                                                         "nproc|tr -d '\n'");
+        log.info("nproc output: {}", nprocOut);
+        assertEquals(expectedCpus, Integer.parseInt(nprocOut.getOutput()));
         DOCKER_CLIENT.stopContainerCmd(ctx.getDockerInstanceId()).exec();
         FileUtils.deleteQuietly(tmpFile.toFile());
-
     }
 
 }
