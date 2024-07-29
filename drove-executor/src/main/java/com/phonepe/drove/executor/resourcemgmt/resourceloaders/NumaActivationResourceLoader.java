@@ -1,13 +1,11 @@
 package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
-import com.phonepe.drove.executor.ExecutorCoreModule;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +22,7 @@ public class NumaActivationResourceLoader implements ResourceLoader {
 
     @Inject
     public NumaActivationResourceLoader(
-            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) ResourceLoader root,
+            ResourceLoader root,
             ResourceConfig resourceConfig) {
         this.root = root;
         this.resourceConfig = resourceConfig;

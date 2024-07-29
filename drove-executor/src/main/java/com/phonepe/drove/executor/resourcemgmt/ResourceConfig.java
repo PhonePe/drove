@@ -1,6 +1,5 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
-import io.dropwizard.validation.ValidationMethod;
 import lombok.Data;
 
 import javax.validation.constraints.Max;
@@ -35,9 +34,4 @@ public class ResourceConfig {
     private Set<String> tags = Collections.emptySet();
 
     private OverProvisioning overProvisioning = new OverProvisioning();
-
-    @ValidationMethod(message = "For over provisioning to be enabled, numa pinning needs to be disabled")
-    boolean isOverProvisioningEnabledWithDisablePinning() {
-        return !overProvisioning.isEnabled() || disableNUMAPinning;
-    }
 }

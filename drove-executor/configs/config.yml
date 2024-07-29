@@ -54,9 +54,9 @@ zookeeper:
   connectionString: localhost:2181
 
 resources:
-  osCores: [ 0, 1 ]
+#   osCores: [ 0, 1 ]
   exposedMemPercentage: 60
-  disableNUMAPinning: true
+  #disableNUMAPinning: true
   # set the following to true to enable all available Nvidia GPUs for any/all containers running on executor.
   # GPU resources are not discovered on the executor, managed and rationed between containers.
   # Needs to be used in conjunction with tagging to ensure only the applications which require a GPU end up on the

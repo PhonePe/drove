@@ -27,7 +27,7 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
 
     @Inject
     public OverProvisioningResourceLoader(
-            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_ACTIVATION_RESOURCE_LOADER) ResourceLoader root,
+            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) ResourceLoader root,
             ResourceConfig resourceConfig) {
         this.resourceConfig = resourceConfig;
         this.root = root;
@@ -63,11 +63,11 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
                     .sorted()
                     .forEach(actualCore -> {
                         val generated = IntStream.rangeClosed(1, cpuMultiplier)
-                                .map(i -> actualCore * primeMultiplier + i)
+                                .map(i -> (actualCore + 1) * primeMultiplier + i)
                                 .boxed()
                                 .sorted()
                                 .toList();
-                        log.info("NUMANode: {} Actual Core: {} -> Generated VCores: {}",
+                        log.info("NUMA Node: {} Actual Core: {} -> Generated VCores: {}",
                                  numaNode, actualCore, generated);
                         generated.forEach(vc -> vCoreMappings.put(vc, actualCore));
                     });
@@ -77,7 +77,7 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
                                                               info.getPhysicalMemoryInMB(),
                                                               vCoreMappings.keySet(),
                                                               generatedMem));
-            log.info("Node: {} Original Memory: {} Generated: {}", numaNode, info.getMemoryInMB(), generatedMem);
+            log.info("NUMA Node: {} Original Memory: {} Generated: {}", numaNode, info.getMemoryInMB(), generatedMem);
         });
 
         return result;
