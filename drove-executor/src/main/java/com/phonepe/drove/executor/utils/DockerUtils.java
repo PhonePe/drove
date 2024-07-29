@@ -372,7 +372,7 @@ public class DockerUtils {
                             if(physicalCores.size() < numCoresRequested) {
                                 log.warn("Available physical core count {} is less than number of cores requested {}." +
                                                  " CPUSET will be skipped.",
-                                         physicalCores.size(), physicalCores);
+                                         physicalCores.size(), numCoresRequested);
                             }
                             else {
                                 cpuset.addAll(physicalCores.subList(0, numCoresRequested));

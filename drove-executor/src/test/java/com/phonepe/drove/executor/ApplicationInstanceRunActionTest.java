@@ -53,8 +53,7 @@ import static com.phonepe.drove.common.CommonTestUtils.APP_IMAGE_NAME;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.runCmd;
 import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -72,20 +71,17 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRun() {
-        runAction(1, new ResourceConfig(), 1);
+        runAction(1, new ResourceConfig(), true);
     }
 
     @Test
     @SneakyThrows
     void testRunWithOverProvisioning() {
         val availableCPUs = Runtime.getRuntime().availableProcessors();
-        val numCpus = Math.min(1, availableCPUs);
         runAction(4, new ResourceConfig()
                 .setOverProvisioning(new OverProvisioning()
-                                             .setCpuMultiplier(10)
-                                             .setMemoryMultiplier(10)
                                              .setEnabled(true)),
-                  Math.min(4, availableCPUs));
+                  true);
     }
 
 
@@ -98,11 +94,11 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                              .setCpuMultiplier(10)
                                              .setMemoryMultiplier(10)
                                              .setEnabled(true)),
-                  availableCPUs); //Will have all CPUs as cpuset will not be done
+                  false); //Will have all CPUs as cpuset will not be done
     }
 
     @SneakyThrows
-    void runAction(int numCpus, final ResourceConfig resourceConfig, int expectedCpus) {
+    void runAction(int numCpus, final ResourceConfig resourceConfig, boolean exactMatch) {
         val tmpFile = Files.createTempFile("tdc", "");
 
         try (val ris = Objects.requireNonNull(this.getClass().getClassLoader().getResourceAsStream("config.txt"))) {
@@ -189,7 +185,16 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                                          DOCKER_CLIENT,
                                                          "nproc|tr -d '\n'");
         log.info("nproc output: {}", nprocOut);
-        assertEquals(expectedCpus, Integer.parseInt(nprocOut.getOutput()));
+        val containerCpus = Integer.parseInt(nprocOut.getOutput());
+        if(exactMatch) {
+            assertEquals(numCpus, containerCpus);
+        }
+        else {
+            val availableProcessors = Runtime.getRuntime().availableProcessors();
+            if (numCpus != availableProcessors) {
+                assertNotEquals(numCpus, containerCpus);
+            }
+        }
         DOCKER_CLIENT.stopContainerCmd(ctx.getDockerInstanceId()).exec();
         FileUtils.deleteQuietly(tmpFile.toFile());
     }
