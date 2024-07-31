@@ -350,44 +350,7 @@ public class DockerUtils {
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                     @Override
                     public Void visit(CPUAllocation cpu) {
-                        hostConfig.withCpuCount((long) cpu.getCores().size());
-                        //If over-scaling is enabled,
-                        // We take list of physical cores and randomly map the processor to some cores
-                        val cpuset = new ArrayList<Integer>();
-                        if(resourceConfig.getOverProvisioning().isEnabled()) {
-                            val physicalCores = new ArrayList<>(resourceManager.currentState()
-                                                                        .getPhysicalLayout()
-                                                                        .getCores()
-                                                                        .values()
-                                                                        .stream()
-                                                                        .flatMap(Set::stream)
-                                                                        .toList());
-                            val numCoresRequested = cpu.getCores()
-                                    .values()
-                                    .stream()
-                                    .map(Set::size)
-                                    .mapToInt(Integer::intValue)
-                                    .sum();
-                            Collections.shuffle(physicalCores);
-                            if(physicalCores.size() < numCoresRequested) {
-                                log.warn("Available physical core count {} is less than number of cores requested {}." +
-                                                 " CPUSET will be skipped.",
-                                         physicalCores.size(), numCoresRequested);
-                            }
-                            else {
-                                cpuset.addAll(physicalCores.subList(0, numCoresRequested));
-                                log.info("Binding container to the following cores randomly as over-provisioning" +
-                                                 " is enabled: {}", cpuset);
-                            }
-                        }
-                        else {
-                            cpuset.addAll(cpu.getCores()
-                                    .values()
-                                    .stream()
-                                    .flatMap(Set::stream)
-                                    .toList());
-                        }
-                        hostConfig.withCpusetCpus(StringUtils.join(cpuset, ","));
+                        setupCPUParams(resourceConfig, hostConfig, resourceManager, cpu);
                         return null;
                     }
 
@@ -405,6 +368,72 @@ public class DockerUtils {
                         return null;
                     }
                 }));
+    }
+
+    private static void setupCPUParams(ResourceConfig resourceConfig,
+                                       HostConfig hostConfig,
+                                       ResourceManager resourceManager,
+                                       CPUAllocation cpu) {
+        val requestedCores = cpu.getCores();
+        val numCoresRequested = requestedCores
+                .values()
+                .stream()
+                .map(Set::size)
+                .mapToInt(Integer::intValue)
+                .sum();
+        hostConfig.withCpuCount((long) numCoresRequested);
+        //If over-scaling is enabled,
+        // We take list of physical cores and randomly map the processor to some cores
+        // The mapping will be node to node. If 5 vcores are requested from node 1, we shall map
+        // it to 5 physical cores on node 1. If this is not possible, we shall attempt to map the remaining
+        // from other nodes
+        val cpuset = new ArrayList<Integer>();
+        if (resourceConfig.getOverProvisioning().isEnabled()) {
+            val cores = resourceManager.currentState()
+                    .getPhysicalLayout()
+                    .getCores();
+            requestedCores.forEach((numaNode, coresForNode) -> {
+                val physicalCoresForNode = new ArrayList<>(cores.get(numaNode));
+                val numCoresRequestedForThisNode = coresForNode.size();
+                if (physicalCoresForNode.size() < numCoresRequestedForThisNode) {
+                    log.warn("Available physical core count {} on node {} is less than number of cores requested {}.",
+                            physicalCoresForNode.size(), numaNode, numCoresRequestedForThisNode);
+                }
+                else {
+                    Collections.shuffle(physicalCoresForNode);
+                    cpuset.addAll(physicalCoresForNode.subList(0, numCoresRequestedForThisNode));
+                }
+            });
+            if (cpuset.size() < numCoresRequested) {
+                // Looks like we could not find enough physical cores on this node to map
+                // Will take a few from other nodes
+                val alreadyMappedCores = Set.copyOf(cpuset);
+                val remaining = numCoresRequested - cpuset.size();
+                val physicalCores = new ArrayList<>(cores
+                                                            .values()
+                                                            .stream()
+                                                            .flatMap(Set::stream)
+                                                            .filter(pCore -> !alreadyMappedCores.contains(pCore))
+                                                            .toList());
+                Collections.shuffle(physicalCores);
+                cpuset.addAll(physicalCores.subList(0, Math.min(physicalCores.size(), remaining)));
+            }
+        }
+        else {
+            cpuset.addAll(requestedCores
+                                  .values()
+                                  .stream()
+                                  .flatMap(Set::stream)
+                                  .toList());
+        }
+        if (cpuset.size() < numCoresRequested) {
+            log.warn("Looks like we could not map all requested vcores to physical cores. " +
+                             "Cpuset will not be called. Requested: {} Actual: {}",
+                     numCoresRequested, cpuset.size());
+        }
+        else {
+            hostConfig.withCpusetCpus(StringUtils.join(cpuset, ","));
+        }
     }
 
     private static LogConfig logConfig(
