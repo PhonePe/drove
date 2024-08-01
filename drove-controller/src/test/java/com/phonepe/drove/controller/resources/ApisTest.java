@@ -624,6 +624,18 @@ class ApisTest {
     }
 
     @Test
+    void endpointsForApp() {
+        val endpoints = List.of(new ExposedAppInfo("app_id_" + 1, "host-1", Map.of(), Set.of()));
+        when(responseEngine.endpoints("test")).thenReturn(ApiResponse.success(endpoints));
+        val r = EXT.target("/v1/endpoints/app/test")
+                .request()
+                .get(new GenericType<ApiResponse<List<ExposedAppInfo>>>() {
+                });
+        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertEquals(endpoints.size(), r.getData().size());
+    }
+
+    @Test
     void ping() {
         val r = EXT.target("/v1/ping")
                 .request()

@@ -351,6 +351,13 @@ public class Apis {
     }
 
     @GET
+    @Path("/endpoints/app/{appName}")
+    @Timed
+    public ApiResponse<List<ExposedAppInfo>> endpoints(@PathParam("appName") @NotEmpty final String appName) {
+        return responseEngine.endpoints(appName);
+    }
+
+    @GET
     @Path("/ping")
     @Timed
     public ApiResponse<String> ping() {

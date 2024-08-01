@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resources;
 
+import com.google.common.collect.Maps;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -564,6 +565,61 @@ class ResponseEngineTest {
     }
 
     @Test
+    void testEndpointsForApp() {
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val engine = mock(ApplicationEngine.class);
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
+        val eventStore = mock(EventStore.class);
+        val communicator = mock(ControllerCommunicator.class);
+        val eventBus = mock(DroveEventBus.class);
+        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
+        val re = new ResponseEngine(leadershipObserver,
+                                    engine,
+                                    applicationStateDB,
+                                    instanceInfoDB,
+                                    taskDB, clusterStateDB,
+                                    clusterResourcesDB,
+                                    eventStore,
+                                    communicator,
+                                    eventBus, blacklistingAppMovementManager);
+
+        val apps = IntStream.rangeClosed(1, 100)
+                .mapToObj(i -> createApp(i, 10))
+                .toList();
+        when(applicationStateDB.applications(0, Integer.MAX_VALUE)).thenReturn(apps);
+        when(engine.applicationState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+        val instances = apps.stream()
+                .flatMap(applicationInfo -> LongStream.rangeClosed(1, applicationInfo.getInstances())
+                        .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(),
+                                                            applicationInfo.getSpec(),
+                                                            (int) i))
+                        .toList()
+                        .stream())
+                .collect(Collectors.groupingBy(InstanceInfo::getAppId));
+
+
+        when(instanceInfoDB.instances(anyList(), anySet(), eq(false)))
+                .thenAnswer(invocationOnMock -> {
+                    val appIds = (List<String>)invocationOnMock.getArgument(0);
+                    return Map.copyOf(Maps.filterKeys(instances, appIds::contains));
+                });
+
+        apps.stream()
+                .map(app -> app.getSpec().getName())
+                .forEach(appName -> {
+                    val r = re.endpoints(appName);
+                    assertEquals(SUCCESS, r.getStatus());
+                    assertEquals(1, r.getData().size());
+                    r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
+                });
+
+    }
+
+    @Test
     void testBlacklistExecutors() {
         testBlacklistingMultiFunctionality(ResponseEngine::blacklistExecutors);
     }
@@ -671,7 +727,8 @@ class ResponseEngineTest {
         }
     }
 
-    private void testBlacklistingFunctionality(final BiFunction<ResponseEngine, String, ApiResponse<Map<String, String>>> func) {
+    private void testBlacklistingFunctionality(final BiFunction<ResponseEngine, String, ApiResponse<Map<String,
+            String>>> func) {
         val leadershipObserver = mock(LeadershipObserver.class);
         val engine = mock(ApplicationEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
