@@ -94,30 +94,30 @@ class NumaActivationResourceLoaderTest extends AbstractTestBase {
 
     private static HashMap<Integer, Integer> coreMappings() {
         val coreMapping = new HashMap<Integer, Integer>();
-        coreMapping.put(23,1);
-        coreMapping.put( 24,1);
-        coreMapping.put( 25,1);
-        coreMapping.put( 34,2);
-        coreMapping.put( 35,2);
-        coreMapping.put( 36,2);
-        coreMapping.put( 45,3);
-        coreMapping.put( 46,3);
-        coreMapping.put( 47,3);
-        coreMapping.put( 56,4);
-        coreMapping.put( 57,4);
-        coreMapping.put( 58,4);
-        coreMapping.put( 67,5);
-        coreMapping.put( 68,5);
-        coreMapping.put( 69,5);
-        coreMapping.put( 78,6);
-        coreMapping.put( 79,6);
-        coreMapping.put( 80,6);
-        coreMapping.put( 89,7);
-        coreMapping.put( 90,7);
-        coreMapping.put( 91,7);
-        coreMapping.put(100,8);
-        coreMapping.put(101,8);
-        coreMapping.put(102,8);
+        coreMapping.put(11,1);
+        coreMapping.put( 12,1);
+        coreMapping.put( 13,1);
+        coreMapping.put( 16,2);
+        coreMapping.put( 17,2);
+        coreMapping.put( 18,2);
+        coreMapping.put( 21,3);
+        coreMapping.put( 22,3);
+        coreMapping.put( 23,3);
+        coreMapping.put( 26,4);
+        coreMapping.put( 27,4);
+        coreMapping.put( 28,4);
+        coreMapping.put( 31,5);
+        coreMapping.put( 32,5);
+        coreMapping.put( 33,5);
+        coreMapping.put( 36,6);
+        coreMapping.put( 37,6);
+        coreMapping.put( 38,6);
+        coreMapping.put( 41,7);
+        coreMapping.put( 42,7);
+        coreMapping.put( 43,7);
+        coreMapping.put( 46,8);
+        coreMapping.put( 47,8);
+        coreMapping.put( 48,8);
         return coreMapping;
     }
 
