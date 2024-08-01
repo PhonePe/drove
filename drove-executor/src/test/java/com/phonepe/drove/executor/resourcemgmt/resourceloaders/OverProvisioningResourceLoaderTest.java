@@ -6,6 +6,8 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 import java.util.Collections;
@@ -36,26 +38,24 @@ class OverProvisioningResourceLoaderTest {
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setOverProvisioning(
-                new OverProvisioning(true, 2, 2)
-                                          );
+                new OverProvisioning(true, 2, 2));
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
-        val mappedCores = Set.of(11, 12, 16, 17, 21, 22, 26, 27);
         val vCoreMapping = Map.of(
-                11, 1,
-                12, 1,
-                16, 2,
-                17, 2,
-                21, 3,
-                22, 3,
-                26, 4,
-                27, 4);
+                7, 1,
+                8, 1,
+                10, 2,
+                11, 2,
+                13, 3,
+                14, 3,
+                16, 4,
+                17, 4);
         assertEquals(Map.of(0,
                             new ResourceManager.NodeInfo(
                                     rootNodeInfo.getPhysicalCores(),
                                     vCoreMapping,
                                     rootNodeInfo.getPhysicalMemoryInMB(),
-                                    mappedCores,
+                                    vCoreMapping.keySet(),
                                     2000)), processedResource);
     }
 
@@ -71,5 +71,29 @@ class OverProvisioningResourceLoaderTest {
         val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
         assertEquals(Map.of(), processedResource);
+    }
+
+    @SneakyThrows
+    @ParameterizedTest
+    @CsvSource({"4,20", "20,4", "20,20"})
+    void testNoOverlap(int numCores, int cpuMultiplier) {
+        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val rootNodeInfo = discoveredNumaNode(0, numCores);
+        val resourceMap = Map.of(0, rootNodeInfo);
+        Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
+        val resourceConfig = ExecutorTestingUtils.resourceConfig();
+
+        resourceConfig.setOverProvisioning(
+                new OverProvisioning(true, cpuMultiplier, 1));
+        val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
+        val processedResource = rl.loadSystemResources();
+        System.out.println(processedResource);
+        val out = processedResource.values()
+                .stream()
+                .map(ResourceManager.NodeInfo::getAvailableCores)
+                .flatMap(Set::stream)
+                .toList();
+        assertEquals(numCores * cpuMultiplier, out.size());
+        assertEquals(Set.copyOf(out).size(), out.size());
     }
 }

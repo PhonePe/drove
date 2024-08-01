@@ -13,7 +13,6 @@ import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -44,17 +43,10 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
         if (!resourceConfig.getOverProvisioning().isEnabled()) {
             return resources;
         }
-        log.info("Over Provisioning CPU by : {} and Memory by : {}",
-                 resourceConfig.getOverProvisioning().getCpuMultiplier(),
-                 resourceConfig.getOverProvisioning().getMemoryMultiplier());
-        val maxCore = resources.values()
-                .stream()
-                .map(ResourceManager.NodeInfo::getPhysicalCores)
-                .flatMap(Set::stream)
-                .max(Integer::compareTo).orElse(0);
+        log.info("Over Provisioning CPU by : {} and Memory by : {}", cpuMultiplier, memoryMultiplier);
 
-        val primeMultiplier = nextPrime(maxCore);
-        log.info("Max core: {} Prime Multiplier: {}", maxCore, primeMultiplier);
+        val primeMultiplier = nextPrime(cpuMultiplier);
+        log.info("CPU Multiplier: {} Prime Multiplier: {}", cpuMultiplier, primeMultiplier);
         val result = new HashMap<Integer, ResourceManager.NodeInfo>();
         val vCoreMappings = new HashMap<Integer, Integer>();
         resources.forEach((numaNode, info) -> {
@@ -62,8 +54,9 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
             cores.stream()
                     .sorted()
                     .forEach(actualCore -> {
+                        val base = (actualCore + 1) * primeMultiplier;
                         val generated = IntStream.rangeClosed(1, cpuMultiplier)
-                                .map(i -> (actualCore + 1) * primeMultiplier + i)
+                                .map(i -> base + i)
                                 .boxed()
                                 .sorted()
                                 .toList();
@@ -83,7 +76,7 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
         return result;
     }
 
-    int nextPrime(int m) {
+    private int nextPrime(int m) {
         return Integer.parseInt(new BigInteger(Integer.toString(m)).nextProbablePrime().toString());
     }
 }

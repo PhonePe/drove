@@ -377,7 +377,11 @@ public class ExecutorTestingUtils {
     }
 
     public static ResourceManager.NodeInfo discoveredNumaNode(int base) {
-        val cores = IntStream.rangeClosed(base, base + 3).boxed().collect(Collectors.toUnmodifiableSet());
+        return discoveredNumaNode(base, 4);
+    }
+
+    public static ResourceManager.NodeInfo discoveredNumaNode(int base, int count) {
+        val cores = IntStream.range(base, base + count).boxed().collect(Collectors.toUnmodifiableSet());
         return new ResourceManager.NodeInfo(cores, ExecutorUtils.mapCores(cores), 1000, cores, 1000);
     }
 }
