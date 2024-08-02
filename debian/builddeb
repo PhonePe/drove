@@ -1,5 +1,21 @@
 #!/bin/bash
 
+#
+#  Copyright (c) 2022 Original Author(s), PhonePe India Pvt. Ltd.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
 build_project() {
 
     echo "Building maven project"
@@ -7,7 +23,7 @@ build_project() {
     pushd .. 2>&1 > /dev/null
     mvn clean package
     STATUS=$?
-    popd 2>&1 > /dev/null
+    popd 2>&1 > /dev/null || exit
 
     echo "Maven build completed. Status: ${STATUS}"
 
@@ -22,7 +38,7 @@ quick_build_project() {
     pushd .. 2>&1 > /dev/null
     mvn clean package -DskipTests
     STATUS=$?
-    popd 2>&1 > /dev/null
+    popd 2>&1 > /dev/null || exit
 
     echo "Maven build completed. Status: ${STATUS}"
 
@@ -37,13 +53,13 @@ build_controller() {
     chmod -R 755 drove-controller/DEBIAN
     mkdir -p drove-controller/usr/share/java/
     cp ../drove-controller/target/drove-controller-${VERSION}.jar drove-controller/usr/share/java/drove-controller.jar
-    pushd drove-controller 2>&1 > /dev/null
+    pushd drove-controller 2>&1 > /dev/null || exit
     JARSIZE=$(du -k usr/share/java/drove-controller.jar| awk -F '\t' '{print $1}')
     cat DEBIAN/control | sed 's/VERSIONSTR/'${VERSIONSTR}'/g' | sed 's/JARSIZE/'${JARSIZE}'/g' > DEBIAN/control.tmp
     mv -f DEBIAN/control.tmp DEBIAN/control
     md5sum $(find . -type f |  awk '!/^\.\/DEBIAN/ { printf "./%s\n", substr($0, 3) }') > DEBIAN/md5sums
-    popd 2>&1 > /dev/null
-    dpkg-deb -b drove-controller drove-controller-${VERSIONSTR}.deb
+    popd 2>&1 > /dev/null || exit
+    dpkg-deb -b drove-controller drove-controller-"${VERSIONSTR}".deb
     STATUS=$?
     if [ ${STATUS} -eq 0 ]; then
         rm -rf drove-controller
@@ -59,13 +75,13 @@ build_executor() {
     chmod -R 755 drove-executor/DEBIAN
     mkdir -p drove-executor/usr/share/java/
     cp ../drove-executor/target/drove-executor-${VERSION}.jar drove-executor/usr/share/java/drove-executor.jar
-    pushd drove-executor 2>&1 > /dev/null
+    pushd drove-executor 2>&1 > /dev/null || exit
     JARSIZE=$(du -k usr/share/java/drove-executor.jar| awk -F '\t' '{print $1}')
     cat DEBIAN/control | sed 's/VERSIONSTR/'${VERSIONSTR}'/g' | sed 's/JARSIZE/'${JARSIZE}'/g' > DEBIAN/control.tmp
     mv -f DEBIAN/control.tmp DEBIAN/control
     md5sum $(find . -type f |  awk '!/^\.\/DEBIAN/ { printf "./%s\n", substr($0, 3) }') > DEBIAN/md5sums
-    popd 2>&1 > /dev/null
-    dpkg-deb -b drove-executor drove-executor-${VERSIONSTR}.deb
+    popd 2>&1 > /dev/null || exit
+    dpkg-deb -b drove-executor drove-executor-"${VERSIONSTR}".deb
     STATUS=$?
     if [ ${STATUS} -eq 0 ]; then
         rm -rf drove-executor
@@ -107,7 +123,7 @@ TIMESTAMP=$(date +%Y%m%d%H%M%S)
 
 echo "Building deb version ${VERSION}-${TIMESTAMP}"
 
-rm -rf *.deb drove-controller drove-executor
+rm -rf ./*.deb drove-controller drove-executor
 
 if [ ${QUICK_REBUILD} -eq 1 ]; then
     quick_build_project
@@ -117,12 +133,12 @@ else
   fi
 fi
 
-build_controller ${VERSION} ${TIMESTAMP}
-build_executor ${VERSION} ${TIMESTAMP}
+build_controller "${VERSION}" "${TIMESTAMP}"
+build_executor "${VERSION}" "${TIMESTAMP}"
 
 rm -rf packages 
 mkdir packages
-mv *.deb packages
+mv ./*.deb packages
 
 
 if [ ${BUILDZIP} -eq 1 ]; then
