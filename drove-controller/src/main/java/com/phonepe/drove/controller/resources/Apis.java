@@ -362,15 +362,16 @@ public class Apis {
     @GET
     @Path("/endpoints")
     @Timed
-    public ApiResponse<List<ExposedAppInfo>> endpoints() {
-        return responseEngine.endpoints();
+    public ApiResponse<List<ExposedAppInfo>> endpoints(
+            @QueryParam("app") final Set<String> appNames) {
+        return responseEngine.endpoints(appNames);
     }
 
     @GET
     @Path("/endpoints/app/{appName}")
     @Timed
     public ApiResponse<List<ExposedAppInfo>> endpoints(@PathParam("appName") @NotEmpty final String appName) {
-        return responseEngine.endpoints(appName);
+        return responseEngine.endpoints(Set.of(appName));
     }
 
     @GET

@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.resources;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
@@ -233,11 +232,7 @@ public class ResponseEngine {
                 .orElse(failure("No executor found with id: " + executorId));
     }
 
-    public ApiResponse<List<ExposedAppInfo>> endpoints() {
-        return endpoints(null);
-    }
-
-    public ApiResponse<List<ExposedAppInfo>> endpoints(String appName) {
+    public ApiResponse<List<ExposedAppInfo>> endpoints(Set<String> appNames) {
         //TODO::HANDLE EXPOSURE MODE
         val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
@@ -247,7 +242,7 @@ public class ResponseEngine {
                 .filter(app -> app.getSpec().getExposureSpec() != null && !app.getSpec()
                         .getExposedPorts()
                         .isEmpty()) //Has any exposed ports
-                .filter(app -> Strings.isNullOrEmpty(appName) || app.getSpec().getName().equals(appName))
+                .filter(app -> appNames == null || appNames.isEmpty() || appNames.contains(app.getSpec().getName()))
                 .sorted(Comparator.comparing(ApplicationInfo::getAppId)) //Reduce chaos by sorting so that order
                 // remains same
                 .toList();
@@ -388,6 +383,7 @@ public class ResponseEngine {
                               healthyInstances,
                               cpus,
                               memory,
+                              spec.getTags(),
                               engine.applicationState(info.getAppId()).orElse(null),
                               info.getCreated(),
                               info.getUpdated());

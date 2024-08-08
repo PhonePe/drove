@@ -20,6 +20,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import lombok.Value;
 
 import java.util.Date;
+import java.util.Map;
 
 /**
  *
@@ -32,6 +33,7 @@ public class AppSummary {
     long healthyInstances;
     long totalCPUs;
     long totalMemory;
+    Map<String, String> tags;
     ApplicationState state;
     Date created;
     Date updated;

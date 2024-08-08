@@ -574,7 +574,7 @@ class ResponseEngineTest {
         when(instanceInfoDB.instances(anyList(), anySet(), eq(false))).thenReturn(instances);
 
 
-        val r = re.endpoints();
+        val r = re.endpoints(Set.of());
         assertEquals(SUCCESS, r.getStatus());
         assertEquals(100, r.getData().size());
         r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
@@ -627,7 +627,7 @@ class ResponseEngineTest {
         apps.stream()
                 .map(app -> app.getSpec().getName())
                 .forEach(appName -> {
-                    val r = re.endpoints(appName);
+                    val r = re.endpoints(Set.of(appName));
                     assertEquals(SUCCESS, r.getStatus());
                     assertEquals(1, r.getData().size());
                     r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
