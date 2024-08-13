@@ -33,6 +33,7 @@ public class ExposedAppInfo {
         int port;
         PortType portType;
     }
+    String appName;
     String appId;
     String vhost;
     Map<String, String> tags;
