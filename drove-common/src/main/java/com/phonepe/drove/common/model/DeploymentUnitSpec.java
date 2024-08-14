@@ -35,6 +35,6 @@ public interface DeploymentUnitSpec {
     List<ConfigSpec> getConfigs();
     LoggingSpec getLoggingSpec();
     Map<String, String> getEnv();
-
+    List<String> getArgs();
     <T> T accept(final DeploymentUnitSpecVisitor<T> visitor);
 }

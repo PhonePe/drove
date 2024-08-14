@@ -46,6 +46,7 @@ public class ApplicationInstanceSpec implements DeploymentUnitSpec {
     CheckSpec readiness;
     LoggingSpec loggingSpec;
     Map<String, String> env;
+    List<String> args;
     PreShutdownSpec preShutdown;
     String instanceAuthToken;
 

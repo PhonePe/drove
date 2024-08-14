@@ -67,6 +67,7 @@ public class ControllerOptions {
                                                                           DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
                                                                           DEFAULT_AUDITED_METHODS,
                                                                           DEFAULT_ALLOWED_MOUNT_DIRS,
+                                                                          false,
                                                                           false);
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
@@ -107,4 +108,6 @@ public class ControllerOptions {
     List<String> allowedMountDirs;
 
     Boolean disableReadAuth;
+
+    Boolean disableCmdlArgs;
 }

@@ -229,6 +229,10 @@ public class DockerUtils {
             val params = new DockerRunParams(hostName, hostConfig, exposedPorts, labels, env);
             augmenter.augment(params);
             log.debug("Environment: {}", env);
+            if(!Objects.requireNonNullElse(deploymentUnitSpec.getArgs(), List.<String>of()).isEmpty()) {
+                containerCmd.withCmd(deploymentUnitSpec.getArgs())
+                        .withArgsEscaped(true);
+            }
             val containerId = containerCmd
                     .withHostConfig(hostConfig)
                     .withEnv(env)

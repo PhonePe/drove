@@ -45,6 +45,8 @@ public interface DeploymentSpec {
 
     Map<String, String> getEnv();
 
+    List<String> getArgs();
+
     List<ConfigSpec> getConfigs();
 
     <T> T accept(final DeploymentSpecVisitor<T> visitor);

@@ -145,6 +145,9 @@ public class ExecutorTestingUtils {
                                                          Duration.seconds(1)),
                                            LocalLoggingSpec.DEFAULT,
                                            Collections.emptyMap(),
+                                           imageName.equals(CommonTestUtils.APP_IMAGE_NAME)
+                                           ? List.of("./entrypoint.sh", "arg1", "arg2")
+                                           : null,
                                            new PreShutdownSpec(List.of(new HTTPCheckModeSpec(protocol,
                                                                                              "main",
                                                                                              "/",
@@ -155,7 +158,7 @@ public class ExecutorTestingUtils {
                                                                                              useHttps),
                                                                        new CmdCheckModeSpec("echo -n 1"),
                                                                        new CmdCheckModeSpec("SomeWrongCommand")
-                                                                       ),
+                                                                      ),
                                                                Duration.seconds(1)),
                                            "TestToken");
     }
@@ -182,7 +185,8 @@ public class ExecutorTestingUtils {
                                                               MountedVolume.MountMode.READ_ONLY)),
                                     List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                                     LocalLoggingSpec.DEFAULT,
-                                    env);
+                                    env,
+                                    null);
     }
 
     public static ExecutorAddress localAddress() {

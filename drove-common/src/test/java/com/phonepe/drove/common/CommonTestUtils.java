@@ -40,7 +40,7 @@ import static org.awaitility.Awaitility.await;
  */
 @UtilityClass
 public class CommonTestUtils {
-    public static final String APP_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server-httplib:releases-0.1";
+    public static final String APP_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server-httplib:releases-0.2";
     public static final String TASK_IMAGE_NAME = dockerRepoPrefix() + "/test-task:releases-0.1";
 
     private static String dockerRepoPrefix() {

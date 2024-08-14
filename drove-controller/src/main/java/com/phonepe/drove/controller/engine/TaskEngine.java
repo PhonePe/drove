@@ -147,6 +147,7 @@ public class TaskEngine {
                 val taskSpec = create.getSpec();
                 val errors = new ArrayList<String>();
                 errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));
+                errors.addAll(ControllerUtils.ensureCmdlArgs(taskSpec.getArgs(), controllerOptions));
                 errors.addAll(resourceCheck(taskSpec));
                 if (!errors.isEmpty()) {
                     return ValidationResult.failure(errors);

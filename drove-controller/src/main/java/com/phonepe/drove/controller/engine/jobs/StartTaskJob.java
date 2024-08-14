@@ -173,7 +173,8 @@ public class StartTaskJob implements Job<Boolean> {
                                                                      taskSpec.getVolumes(),
                                                                      translateConfigSpecs(taskSpec.getConfigs(), httpCaller),
                                                                      taskSpec.getLogging(),
-                                                                     taskSpec.getEnv()));
+                                                                     taskSpec.getEnv(),
+                                                                     taskSpec.getArgs()));
         var successful = false;
         try {
             val response = communicator.send(startMessage);

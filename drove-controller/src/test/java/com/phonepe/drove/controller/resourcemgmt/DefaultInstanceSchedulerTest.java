@@ -82,6 +82,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
+                                       originalSpec.getArgs(),
                                        originalSpec.getExposureSpec(),
                                        originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -115,6 +116,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
+                                       originalSpec.getArgs(),
                                        originalSpec.getExposureSpec(),
                                        originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -148,6 +150,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
+                                       originalSpec.getArgs(),
                                        originalSpec.getExposureSpec(),
                                        originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -182,6 +185,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
+                                       originalSpec.getArgs(),
                                        originalSpec.getExposureSpec(),
                                        originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -219,6 +223,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
+                                       originalSpec.getArgs(),
                                        originalSpec.getExposureSpec(),
                                        originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -256,6 +261,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                        originalSpec.getReadiness(),
                                        originalSpec.getTags(),
                                        originalSpec.getEnv(),
+                                       originalSpec.getArgs(),
                                        originalSpec.getExposureSpec(),
                                        originalSpec.getPreShutdown());
         rdb.update(IntStream.rangeClosed(1, 2).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());

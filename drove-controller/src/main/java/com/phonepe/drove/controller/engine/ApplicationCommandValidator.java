@@ -144,6 +144,7 @@ public class ApplicationCommandValidator {
                                  + " is undefined. Defined port names: " + ports.keySet());
             }
             errs.addAll(ControllerUtils.ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
+            errs.addAll(ControllerUtils.ensureCmdlArgs(spec.getArgs(), controllerOptions));
             return errs.isEmpty()
                    ? ValidationResult.success()
                    : ValidationResult.failure(errs);

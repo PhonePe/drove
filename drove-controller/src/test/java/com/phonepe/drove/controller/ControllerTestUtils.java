@@ -121,6 +121,7 @@ public class ControllerTestUtils {
                                                  Duration.seconds(1)),
                                    Collections.emptyMap(),
                                    Collections.emptyMap(),
+                                   null,
                                    new ExposureSpec("test.appform.io", "main", ExposureMode.ALL),
                                    null);
     }
@@ -147,7 +148,8 @@ public class ControllerTestUtils {
                             List.of(new CPURequirement(1), new MemoryRequirement(512)),
                             new AnyPlacementPolicy(),
                             Collections.emptyMap(),
-                            Collections.emptyMap());
+                            Collections.emptyMap(),
+                            null);
     }
 
     public static AllocatedExecutorNode allocatedExecutorNode(int port) {

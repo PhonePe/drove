@@ -151,6 +151,7 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                LocalLoggingSpec.DEFAULT,
                                                Collections.emptyMap(),
                                                null,
+                                               null,
                                                "TestToken");
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),

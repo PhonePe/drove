@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.utils;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -433,6 +434,19 @@ public class ControllerUtils {
                     .map(volume -> "Volume mount requested on non whitelisted host directory: "
                             + volume.getPathOnHost())
                     .toList();
+        }
+        return List.of();
+    }
+
+    public static List<String> ensureCmdlArgs(
+            List<String> args, ControllerOptions controllerOptions) {
+        val argsDisabled = Objects.requireNonNullElse(controllerOptions.getDisableCmdlArgs(), false);
+        val argList = Objects.requireNonNullElse(args, List.<String>of());
+        if (argsDisabled && !argList.isEmpty()) {
+            return List.of("Passing command line to containers is disabled on this cluster");
+        }
+        if(Joiner.on(" ").join(argList).length() <= 2048) {
+            return List.of("Maximum combined length of command line arguments can be 2048");
         }
         return List.of();
     }

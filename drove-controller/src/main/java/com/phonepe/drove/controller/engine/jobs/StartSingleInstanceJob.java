@@ -164,6 +164,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                                                 applicationSpec.getReadiness(),
                                                                                 applicationSpec.getLogging(),
                                                                                 applicationSpec.getEnv(),
+                                                                                applicationSpec.getArgs(),
                                                                                 applicationSpec.getPreShutdown(),
                                                                                 generateAppInstanceToken(node,
                                                                                                          appId,

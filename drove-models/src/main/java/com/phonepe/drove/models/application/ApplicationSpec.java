@@ -88,6 +88,8 @@ public class ApplicationSpec implements DeploymentSpec {
 
     Map<String, String> env;
 
+    List<String> args;
+
     @Valid
     ExposureSpec exposureSpec;
 

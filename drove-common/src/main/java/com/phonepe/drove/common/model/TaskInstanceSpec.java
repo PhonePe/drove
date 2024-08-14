@@ -40,7 +40,7 @@ public class TaskInstanceSpec implements DeploymentUnitSpec {
     List<ConfigSpec> configs;
     LoggingSpec loggingSpec;
     Map<String, String> env;
-
+    List<String> args;
 
     @Override
     public <T> T accept(DeploymentUnitSpecVisitor<T> visitor) {
