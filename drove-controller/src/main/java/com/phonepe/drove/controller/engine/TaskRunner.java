@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.engine;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
 import com.phonepe.drove.controller.engine.jobs.StartTaskJob;
@@ -32,6 +33,7 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +59,12 @@ import static java.lang.Boolean.TRUE;
  */
 @Slf4j
 public class TaskRunner implements Runnable {
+
+    @Data
+    private static final class TaskJobContext {
+        private String schedulingSessionId;
+    }
+
     @Getter
     private final String sourceAppName;
     @Getter
@@ -118,6 +126,8 @@ public class TaskRunner implements Runnable {
 
     public String startTask(final TaskCreateOperation taskCreateOperation) {
         val schedulingSessionId = UUID.randomUUID().toString();
+        val context = new TaskJobContext().setSchedulingSessionId(schedulingSessionId);
+
         val topology = JobTopology.<Boolean>builder()
                 .withThreadFactory(threadFactory)
                 .addJob(new StartTaskJob(taskCreateOperation.getSpec(),
@@ -132,8 +142,8 @@ public class TaskRunner implements Runnable {
 
                 .build();
         return jobExecutor.schedule(topology,
-                                         new BooleanResponseCombiner(),
-                                         this::handleJobCompletionResult);
+                                    new BooleanResponseCombiner(),
+                                    executionResult -> handleJobCompletionResult(context, executionResult));
     }
 
     public String stopTask(final TaskKillOperation taskKillOperation) {
@@ -147,9 +157,10 @@ public class TaskRunner implements Runnable {
                                         communicator,
                                         retrySpecFactory))
                 .build();
+        val context = new TaskJobContext();
         return jobExecutor.schedule(topology,
-                                         new BooleanResponseCombiner(),
-                                         this::handleJobCompletionResult);
+                                    new BooleanResponseCombiner(),
+                                    executionResult -> handleJobCompletionResult(context, executionResult));
     }
 
     public void stop() {
@@ -159,15 +170,15 @@ public class TaskRunner implements Runnable {
     public Optional<TaskState> updateCurrentState() {
         val validUpdateDate = new Date(new Date().getTime() - TaskDB.MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
         val instance = taskDB.task(sourceAppName, taskId).orElse(null);
-        if(null == instance) {
+        if (null == instance) {
             return Optional.empty();
         }
-        if(ACTIVE_STATES.contains(instance.getState())
+        if (ACTIVE_STATES.contains(instance.getState())
                 && instance.getUpdated().before(validUpdateDate)) {
             log.info("Stale instance detected: {}/{}", sourceAppName, taskId);
             val updateStatus = taskDB.updateTask(sourceAppName, taskId, convertToLost(instance));
             log.info("Stale mark status for task {}/{} is {}", sourceAppName, taskId, updateStatus);
-            if(updateStatus) {
+            if (updateStatus) {
                 updateCurrentState(LOST);
             }
             return Optional.of(LOST);
@@ -181,13 +192,20 @@ public class TaskRunner implements Runnable {
         return Optional.ofNullable(currState);
     }
 
-    private void handleJobCompletionResult(final JobExecutionResult<Boolean> executionResult) {
+    private void handleJobCompletionResult(
+            final TaskJobContext context,
+            final JobExecutionResult<Boolean> executionResult) {
         if (TRUE.equals(executionResult.getResult())) {
             updateCurrentState();
         }
         else {
             log.error("Unable to start job for {}/{}", sourceAppName, taskId);
             updateCurrentState(TaskState.LOST);
+        }
+        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+            scheduler.finaliseSession(context.getSchedulingSessionId());
+            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
+            context.setSchedulingSessionId(null);
         }
     }
 

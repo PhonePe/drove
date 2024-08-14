@@ -107,10 +107,7 @@ public class CachingProxyTaskDB extends TaskDB {
                     deleted.add(new Pair<>(appName, taskId));
                 }
             }));
-            deleted.forEach(pair -> {
-                cache.get(pair.getFirst()).remove(pair.getSecond());
-                log.debug("Removed task info: {}/{}", pair.getFirst(), pair.getSecond());
-            });
+            deleted.forEach(pair -> removeTaskEntry(pair.getFirst(), pair.getSecond()));
         }
         finally {
             lock.unlock(stamp);
@@ -159,10 +156,7 @@ public class CachingProxyTaskDB extends TaskDB {
         try {
             val status = root.deleteTask(sourceAppName, taskId);
             if (status) {
-                val instances = cache.get(sourceAppName);
-                if (null != instances) {
-                    instances.remove(taskId);
-                }
+                removeTaskEntry(sourceAppName, taskId);
             }
             return status;
         }
@@ -192,5 +186,17 @@ public class CachingProxyTaskDB extends TaskDB {
         finally {
             lock.unlock(stamp);
         }
+    }
+
+    private void removeTaskEntry(String sourceAppName, String taskId) {
+        val instances = cache.get(sourceAppName);
+        if (null != instances) {
+            instances.remove(taskId);
+            if (instances.isEmpty()) {
+                cache.remove(sourceAppName);
+                log.debug("Removed entry for source app: {}", sourceAppName);
+            }
+        }
+        log.debug("Removed task info: {}/{}", sourceAppName, taskId);
     }
 }

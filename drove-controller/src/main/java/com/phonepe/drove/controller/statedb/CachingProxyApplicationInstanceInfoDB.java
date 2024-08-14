@@ -130,10 +130,7 @@ public class CachingProxyApplicationInstanceInfoDB implements ApplicationInstanc
         try {
             val status = root.deleteInstanceState(appId, instanceId);
             if (status) {
-                val instances = cache.get(appId);
-                if (null != instances) {
-                    instances.remove(instanceId);
-                }
+                removeCacheEntry(appId, instanceId);
             }
             return status;
         }
@@ -194,6 +191,17 @@ public class CachingProxyApplicationInstanceInfoDB implements ApplicationInstanc
         }
         finally {
             lock.unlock(stamp);
+        }
+    }
+
+    private void removeCacheEntry(String appId, String instanceId) {
+        val instances = cache.get(appId);
+        if (null != instances) {
+            instances.remove(instanceId);
+            if (cache.get(appId).isEmpty()) {
+                cache.remove(appId);
+                log.debug("Removing cache key: {}", appId);
+            }
         }
     }
 }

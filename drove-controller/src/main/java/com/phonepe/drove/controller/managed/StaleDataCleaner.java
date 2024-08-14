@@ -168,7 +168,7 @@ public class StaleDataCleaner implements Managed {
                     var count = 0;
                     for (val instanceInfo : instances.stream()
                             .sorted(Comparator.comparing(InstanceInfo::getUpdated).reversed())
-                            .collect(Collectors.toUnmodifiableList())) {
+                            .toList()) {
                         count++;
                         if (count <= maxInstances && instanceInfo.getUpdated().after(slateInstanceLifetime)) {
                             continue;
