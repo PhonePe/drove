@@ -445,7 +445,7 @@ public class ControllerUtils {
         if (argsDisabled && !argList.isEmpty()) {
             return List.of("Passing command line to containers is disabled on this cluster");
         }
-        if(Joiner.on(" ").join(argList).length() <= 2048) {
+        if(Joiner.on(" ").join(argList).length() > 2048) {
             return List.of("Maximum combined length of command line arguments can be 2048");
         }
         return List.of();
