@@ -32,6 +32,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 
@@ -88,6 +89,7 @@ public class ApplicationSpec implements DeploymentSpec {
 
     Map<String, String> env;
 
+    @Size(max = 2048)
     List<String> args;
 
     @Valid

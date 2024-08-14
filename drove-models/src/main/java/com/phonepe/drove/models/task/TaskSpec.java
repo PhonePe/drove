@@ -26,12 +26,12 @@ import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import lombok.Value;
 import lombok.With;
-import org.hibernate.validator.constraints.Length;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 
@@ -73,7 +73,7 @@ public class TaskSpec implements DeploymentSpec {
 
     Map<String, String> env;
 
-    @Length(max = 2048)
+    @Size(max = 2048)
     List<String> args;
 
     @Override
