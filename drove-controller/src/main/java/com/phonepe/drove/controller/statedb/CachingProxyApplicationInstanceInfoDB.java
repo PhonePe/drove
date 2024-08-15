@@ -198,7 +198,7 @@ public class CachingProxyApplicationInstanceInfoDB implements ApplicationInstanc
         val instances = cache.get(appId);
         if (null != instances) {
             instances.remove(instanceId);
-            if (cache.get(appId).isEmpty()) {
+            if (instances.isEmpty()) {
                 cache.remove(appId);
                 log.debug("Removing cache key: {}", appId);
             }
