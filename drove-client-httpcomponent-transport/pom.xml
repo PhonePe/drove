@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.phonepe.drove</groupId>
         <artifactId>drove</artifactId>
-        <version>1.28-SNAPSHOT</version>
+        <version>1.28</version>
     </parent>
 
     <artifactId>drove-client-httpcomponent-transport</artifactId>

@@ -18,11 +18,11 @@ package com.phonepe.drove.client.decorators;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.google.api.client.http.HttpStatusCodes;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.client.DroveClientConfig;
 import com.phonepe.drove.client.transport.basic.DroveHttpNativeTransport;
 import lombok.val;
+import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -36,22 +36,22 @@ class BasicAuthDecoratorTest {
 
     @Test
     void testBasicAuthSuccess(WireMockRuntimeInfo wm) {
-        runTest(wm, "test", "testpassword", HttpStatusCodes.STATUS_CODE_OK);
+        runTest(wm, "test", "testpassword", HttpStatus.SC_OK);
     }
 
     @Test
     void testBasicAuthFail(WireMockRuntimeInfo wm) {
-        runTest(wm, "test", "wrong", HttpStatusCodes.STATUS_CODE_NOT_FOUND);
+        runTest(wm, "test", "wrong", HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
     void testBasicAuthFailEmptyUser(WireMockRuntimeInfo wm) {
-        runTest(wm, "", "wrong", HttpStatusCodes.STATUS_CODE_NOT_FOUND);
+        runTest(wm, "", "wrong", HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
     void testBasicAuthFailEmptyPassword(WireMockRuntimeInfo wm) {
-        runTest(wm, "test", "", HttpStatusCodes.STATUS_CODE_NOT_FOUND);
+        runTest(wm, "test", "", HttpStatus.SC_NOT_FOUND);
     }
 
     private static void runTest(WireMockRuntimeInfo wm, String username, String password, int statusCode) {

@@ -18,12 +18,12 @@ package com.phonepe.drove.client.decorators;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import com.google.api.client.http.HttpStatusCodes;
 import com.google.common.net.HttpHeaders;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.client.DroveClientConfig;
 import com.phonepe.drove.client.transport.basic.DroveHttpNativeTransport;
 import lombok.val;
+import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -40,17 +40,17 @@ class AuthHeaderDecoratorTest {
 
     @Test
     void testAuthHeaderSuccess(WireMockRuntimeInfo wm) {
-        runTest(wm, "AuthHeader", HttpStatusCodes.STATUS_CODE_OK);
+        runTest(wm, "AuthHeader", HttpStatus.SC_OK);
     }
 
     @Test
     void testAuthHeaderFail(WireMockRuntimeInfo wm) {
-        runTest(wm,  "wrong", HttpStatusCodes.STATUS_CODE_NOT_FOUND);
+        runTest(wm,  "wrong", HttpStatus.SC_NOT_FOUND);
     }
 
     @Test
     void testAuthHeaderFailEmptyPassword(WireMockRuntimeInfo wm) {
-        runTest(wm, "", HttpStatusCodes.STATUS_CODE_NOT_FOUND);
+        runTest(wm, "", HttpStatus.SC_NOT_FOUND);
     }
 
     private static void runTest(WireMockRuntimeInfo wm, String header, int statusCode) {
