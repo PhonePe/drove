@@ -65,6 +65,8 @@
             **com/phonepe/drove/controller/ui/Handlebars**,
         </sonar.exclusions>
         <guava.version>32.1.3-jre</guava.version>
+        <sonar.organization>phonepe</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencyManagement>
