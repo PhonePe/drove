@@ -46,7 +46,6 @@ class TimeDiffGaugeTest {
             s.connect(d -> {
                 g.setValue(ctr.longValue() * 10_000);
                 hitCount.incrementAndGet();
-                System.out.println(ctr.get() + ":" + g.getValue());
             });
             CommonTestUtils.delay(Duration.ofSeconds(15));
             val v = g.getValue();
