@@ -23,6 +23,49 @@
     <artifactId>drove</artifactId>
     <packaging>pom</packaging>
     <version>1.29</version>
+    <name>Drove</name>
+    <url>https://github.com/PhonePe/drove</url>
+    <description>Distributed Container Orchestrator</description>
+    <inceptionYear>2024</inceptionYear>
+
+    <scm>
+        <connection>scm:git:https://github.com/PhonePe/drove.git</connection>
+        <developerConnection>scm:git:https://github.com/PhonePe/drove.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/PhonePe/drove</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/PhonePe/drove/issues</url>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>santanusinha</id>
+            <name>Santanu Sinha</name>
+            <email>santanu.sinha@gmail.com</email>
+        </developer>
+        <developer>
+            <id>Tushar-Naik</id>
+            <name>Tushar Naik</name>
+            <email>tushar.naik@phonepe.com</email>
+        </developer>
+        <developer>
+            <id>vishnunaini</id>
+            <name>Vishnu Naini</name>
+            <email>vishnu.naini@phonepe.com</email>
+        </developer>
+    </developers>
 
     <modules>
         <module>drove-statemachine</module>
