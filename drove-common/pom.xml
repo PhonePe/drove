@@ -26,10 +26,6 @@
 
     <artifactId>drove-common</artifactId>
 
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.phonepe.drove</groupId>
@@ -133,7 +129,6 @@
 
                 <configuration>
                     <complianceLevel>17</complianceLevel>
-                    <release>11</release>
                     <source>17</source>
                     <target>17</target>
                     <showWeaveInfo>true</showWeaveInfo>
