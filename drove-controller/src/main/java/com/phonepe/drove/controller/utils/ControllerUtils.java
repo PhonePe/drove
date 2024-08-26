@@ -29,6 +29,7 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
@@ -447,6 +448,16 @@ public class ControllerUtils {
         }
         if(Joiner.on(" ").join(argList).length() > 2048) {
             return List.of("Maximum combined length of command line arguments can be 2048");
+        }
+        return List.of();
+    }
+
+    public static List<String> checkDeviceDisabled(
+            List<DeviceSpec> devices, ControllerOptions controllerOptions) {
+        val deviceEnabled = Objects.requireNonNullElse(controllerOptions.getEnableRawDeviceAccess(), false);
+        if(!deviceEnabled && null != devices && !devices.isEmpty()) {
+            return List.of("Device access is disabled. " +
+                                   "To enable, set enableRawDeviceAccess: true in controller options.");
         }
         return List.of();
     }

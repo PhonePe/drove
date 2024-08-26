@@ -48,6 +48,7 @@ import com.phonepe.drove.models.application.checks.CheckModeSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPVerb;
@@ -148,6 +149,11 @@ public class ExecutorTestingUtils {
                                            imageName.equals(CommonTestUtils.APP_IMAGE_NAME)
                                            ? List.of("./entrypoint.sh", "arg1", "arg2")
                                            : null,
+                                           List.of(DirectDeviceSpec.builder()
+                                                           .pathOnHost("/dev/random")
+                                                           .pathInContainer("/dev/random")
+                                                           .permissions(DirectDeviceSpec.DirectDevicePermissions.ALL)
+                                                           .build()),
                                            new PreShutdownSpec(List.of(new HTTPCheckModeSpec(protocol,
                                                                                              "main",
                                                                                              "/",
@@ -186,7 +192,8 @@ public class ExecutorTestingUtils {
                                     List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                                     LocalLoggingSpec.DEFAULT,
                                     env,
-                                    null);
+                                    null,
+                                    Collections.emptyList());
     }
 
     public static ExecutorAddress localAddress() {

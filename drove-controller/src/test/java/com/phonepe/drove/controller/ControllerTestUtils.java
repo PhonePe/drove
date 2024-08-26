@@ -122,6 +122,7 @@ public class ControllerTestUtils {
                                    Collections.emptyMap(),
                                    Collections.emptyMap(),
                                    null,
+                                   Collections.emptyList(),
                                    new ExposureSpec("test.appform.io", "main", ExposureMode.ALL),
                                    null);
     }
@@ -149,7 +150,8 @@ public class ControllerTestUtils {
                             new AnyPlacementPolicy(),
                             Collections.emptyMap(),
                             Collections.emptyMap(),
-                            null);
+                            null,
+                            Collections.emptyList());
     }
 
     public static AllocatedExecutorNode allocatedExecutorNode(int port) {

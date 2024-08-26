@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.application;
 
 import com.phonepe.drove.models.application.checks.CheckSpec;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
@@ -91,6 +92,8 @@ public class ApplicationSpec implements DeploymentSpec {
 
     @Size(max = 2048)
     List<String> args;
+
+    List<DeviceSpec> devices;
 
     @Valid
     ExposureSpec exposureSpec;

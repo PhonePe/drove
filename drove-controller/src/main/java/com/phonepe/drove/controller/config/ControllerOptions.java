@@ -68,6 +68,7 @@ public class ControllerOptions {
                                                                           DEFAULT_AUDITED_METHODS,
                                                                           DEFAULT_ALLOWED_MOUNT_DIRS,
                                                                           false,
+                                                                          false,
                                                                           false);
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
@@ -110,4 +111,6 @@ public class ControllerOptions {
     Boolean disableReadAuth;
 
     Boolean disableCmdlArgs;
+
+    Boolean enableRawDeviceAccess;
 }

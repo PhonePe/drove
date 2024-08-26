@@ -145,6 +145,7 @@ public class ApplicationCommandValidator {
             }
             errs.addAll(ControllerUtils.ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
             errs.addAll(ControllerUtils.ensureCmdlArgs(spec.getArgs(), controllerOptions));
+            errs.addAll(ControllerUtils.checkDeviceDisabled(spec.getDevices(), controllerOptions));
             return errs.isEmpty()
                    ? ValidationResult.success()
                    : ValidationResult.failure(errs);

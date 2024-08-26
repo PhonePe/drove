@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.task;
 
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
@@ -75,6 +76,8 @@ public class TaskSpec implements DeploymentSpec {
 
     @Size(max = 2048)
     List<String> args;
+
+    List<DeviceSpec> devices;
 
     @Override
     public <T> T accept(DeploymentSpecVisitor<T> visitor) {

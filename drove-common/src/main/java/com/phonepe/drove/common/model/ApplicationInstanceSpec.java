@@ -20,6 +20,7 @@ import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
@@ -47,6 +48,7 @@ public class ApplicationInstanceSpec implements DeploymentUnitSpec {
     LoggingSpec loggingSpec;
     Map<String, String> env;
     List<String> args;
+    List<DeviceSpec> devices;
     PreShutdownSpec preShutdown;
     String instanceAuthToken;
 

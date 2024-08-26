@@ -148,6 +148,7 @@ public class TaskEngine {
                 val errors = new ArrayList<String>();
                 errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));
                 errors.addAll(ControllerUtils.ensureCmdlArgs(taskSpec.getArgs(), controllerOptions));
+                errors.addAll(ControllerUtils.checkDeviceDisabled(taskSpec.getDevices(), controllerOptions));
                 errors.addAll(resourceCheck(taskSpec));
                 if (!errors.isEmpty()) {
                     return ValidationResult.failure(errors);

@@ -17,6 +17,7 @@
 package com.phonepe.drove.common.model;
 
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
@@ -41,6 +42,7 @@ public class TaskInstanceSpec implements DeploymentUnitSpec {
     LoggingSpec loggingSpec;
     Map<String, String> env;
     List<String> args;
+    List<DeviceSpec> devices;
 
     @Override
     public <T> T accept(DeploymentUnitSpecVisitor<T> visitor) {

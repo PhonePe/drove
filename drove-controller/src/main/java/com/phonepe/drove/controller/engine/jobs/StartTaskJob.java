@@ -174,7 +174,8 @@ public class StartTaskJob implements Job<Boolean> {
                                                                      translateConfigSpecs(taskSpec.getConfigs(), httpCaller),
                                                                      taskSpec.getLogging(),
                                                                      taskSpec.getEnv(),
-                                                                     taskSpec.getArgs()));
+                                                                     taskSpec.getArgs(),
+                                                                     taskSpec.getDevices()));
         var successful = false;
         try {
             val response = communicator.send(startMessage);

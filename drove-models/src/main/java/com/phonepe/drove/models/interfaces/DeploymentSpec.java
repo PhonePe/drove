@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.interfaces;
 
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
@@ -46,6 +47,8 @@ public interface DeploymentSpec {
     Map<String, String> getEnv();
 
     List<String> getArgs();
+
+    List<DeviceSpec> getDevices();
 
     List<ConfigSpec> getConfigs();
 
