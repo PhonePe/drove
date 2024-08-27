@@ -26,6 +26,7 @@ import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import lombok.Value;
+import lombok.With;
 
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import java.util.Map;
  *
  */
 @Value
+@With
 public class ApplicationInstanceSpec implements DeploymentUnitSpec {
     String appId;
     String appName;

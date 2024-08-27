@@ -25,12 +25,14 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.models.application.devices.DetailedDeviceSpec;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,7 +69,11 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
 
     @Test
     void testRunFail() {
-        val spec = testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid");
+        val spec = testAppInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid")
+                .withDevices(List.of(DetailedDeviceSpec.builder()
+                                             .driver("random")
+                                             .deviceIds(List.of("/dev/random"))
+                                             .build()));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,
