@@ -27,6 +27,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
@@ -39,10 +40,7 @@ import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.models.common.HTTPVerb.GET;
@@ -311,6 +309,50 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         }
     }
 
+    @Test
+    void testCmdlArgs() {
+
+        {
+            val validator = new ApplicationCommandValidator(asDB, crDB, aiDB,
+                                                            ControllerOptions.DEFAULT
+                                                                    .withDisableCmdlArgs(true));
+            val spec = ControllerTestUtils.appSpec(1)
+                    .withArgs(List.of("random"));
+            val res = validator.validate(engine,
+                                         new ApplicationCreateOperation(spec,
+                                                                        1,
+                                                                        ClusterOpSpec.DEFAULT));
+            ensureFailure(res, "Passing command line to containers is disabled on this cluster");
+        }
+        {
+            val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+            val spec = ControllerTestUtils.appSpec(1)
+                    .withArgs(Collections.nCopies(1024, "0123456789"));
+            val res = validator.validate(engine,
+                                         new ApplicationCreateOperation(spec,
+                                                                        1,
+                                                                        ClusterOpSpec.DEFAULT));
+            ensureFailure(res, "Maximum combined length of command line arguments can be 2048");
+        }
+    }
+
+    @Test
+    void testDeviceLoading() {
+        {
+            val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+            val spec = ControllerTestUtils.appSpec(1)
+                    .withDevices(List.of(DirectDeviceSpec.builder()
+                                                 .pathOnHost("/dev/random")
+                                                 .build()));
+            val res = validator.validate(engine,
+                                         new ApplicationCreateOperation(spec,
+                                                                        1,
+                                                                        ClusterOpSpec.DEFAULT));
+            ensureFailure(res, "Device access is disabled. To enable, set enableRawDeviceAccess: true " +
+                    "in controller options.");
+        }
+
+    }
 
     @Test
     void testStartInstSuccess() {
