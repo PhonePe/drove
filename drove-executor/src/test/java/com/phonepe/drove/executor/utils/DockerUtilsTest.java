@@ -121,15 +121,15 @@ class DockerUtilsTest {
                 Arguments.of(defaultConfig, spec, executorOptions),
                 Arguments.of(
                         defaultConfig
-                                .withOverProvisioning(new OverProvisioning()
+                                .setOverProvisioning(new OverProvisioning()
                                                               .setEnabled(true)
                                                               .setCpuMultiplier(1)
                                                               .setMemoryMultiplier(1)),
                         spec.withConfigs(null),
                         executorOptions),
                 Arguments.of(defaultConfig, spec, executorOptions
-                        .withMaxOpenFiles(-1)
-                        .withCacheFileCount(-1)),
+                        .setMaxOpenFiles(-1)
+                        .setCacheFileCount(-1)),
                 Arguments.of(defaultConfig,
                              spec
                                      .withEnv(Map.of("TEST_PREDEF_VAL", "PreDevValue",

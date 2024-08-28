@@ -17,6 +17,7 @@
 package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.phonepe.drove.executor.ExecutorCoreModule;
+import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
@@ -29,6 +30,7 @@ import javax.inject.Singleton;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -36,7 +38,7 @@ import java.util.stream.IntStream;
 public class OverProvisioningResourceLoader implements ResourceLoader {
 
     private final ResourceLoader root;
-    private final ResourceConfig resourceConfig;
+    private final OverProvisioning overProvisioning;
     private final int cpuMultiplier;
     private final int memoryMultiplier;
 
@@ -44,19 +46,18 @@ public class OverProvisioningResourceLoader implements ResourceLoader {
     public OverProvisioningResourceLoader(
             @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) ResourceLoader root,
             ResourceConfig resourceConfig) {
-        this.resourceConfig = resourceConfig;
+        this.overProvisioning = Objects.requireNonNullElse(
+                resourceConfig.getOverProvisioning(), OverProvisioning.DEFAULT);
         this.root = root;
         this.cpuMultiplier = ExecutorUtils.cpuMultiplier(resourceConfig);
-        this.memoryMultiplier = resourceConfig
-                .getOverProvisioning()
-                .getMemoryMultiplier();
+        this.memoryMultiplier = overProvisioning.getMemoryMultiplier();
     }
 
     @Override
     public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() {
         val resources = root.loadSystemResources();
-        log.info("Over Provisioning is : {}", resourceConfig.getOverProvisioning().isEnabled() ? "On" : "Off");
-        if (!resourceConfig.getOverProvisioning().isEnabled()) {
+        log.info("Over Provisioning is : {}", overProvisioning.isEnabled() ? "On" : "Off");
+        if (!overProvisioning.isEnabled()) {
             return resources;
         }
         log.info("Over Provisioning CPU by : {} and Memory by : {}", cpuMultiplier, memoryMultiplier);

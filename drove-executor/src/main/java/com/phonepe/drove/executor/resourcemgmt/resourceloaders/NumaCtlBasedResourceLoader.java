@@ -117,10 +117,19 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
     }
 
     private int nodeNum(final String cpuLine) {
-        return new Scanner(new StringReader(cpuLine.substring(0, cpuLine.indexOf(':')))).findAll(Pattern.compile("\\d+")).findAny().map(m -> Integer.parseInt(m.group())).filter(i -> i >= 0).orElse(-1);
+        return new Scanner(new StringReader(cpuLine.substring(0,
+                                                              cpuLine.indexOf(':')))).findAll(Pattern.compile("\\d+"))
+                .findAny()
+                .map(m -> Integer.parseInt(m.group()))
+                .filter(i -> i >= 0)
+                .orElse(-1);
     }
 
     private Set<Integer> cores(final String line) {
-        return new Scanner(new StringReader(line.substring(line.indexOf(':')))).findAll(Pattern.compile("\\d+")).map(r -> Integer.parseInt(r.group())).filter(i -> i >= 0).filter(core -> !resourceConfig.getOsCores().contains(core)).collect(Collectors.toUnmodifiableSet());
+        return new Scanner(new StringReader(line.substring(line.indexOf(':')))).findAll(Pattern.compile("\\d+"))
+                .map(r -> Integer.parseInt(r.group()))
+                .filter(i -> i >= 0)
+                .filter(core -> !Objects.requireNonNullElse(resourceConfig.getOsCores(), Set.<Integer>of()).contains(core))
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

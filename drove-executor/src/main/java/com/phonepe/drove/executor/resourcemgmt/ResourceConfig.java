@@ -17,13 +17,12 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.With;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.Set;
 
@@ -31,29 +30,34 @@ import java.util.Set;
  *
  */
 @Data
-@With
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ResourceConfig {
     public static final ResourceConfig DEFAULT = new ResourceConfig();
 
-    @NotNull
+    @Builder.Default
     private Set<Integer> osCores = Collections.emptySet();
 
     @Min(50)
     @Max(100)
+    @Builder.Default
     private int exposedMemPercentage = 100;
 
-    private boolean disableNUMAPinning;
+    @Builder.Default
+    private boolean disableNUMAPinning = false;
 
     /**
      * This setting makes all available Nvidia GPUs on the current executor machine available for any container running on this executor.
      * GPU resources are not discovered on the executor, managed and rationed between containers.
      * Needs to be used in conjunction with tagging to ensure only the applications which require a GPU end up on the executor with GPUs.
      */
+    @Builder.Default
     private boolean enableNvidiaGpu = false;
 
+    @Builder.Default
     private Set<String> tags = Collections.emptySet();
 
-    private OverProvisioning overProvisioning = new OverProvisioning();
+    @Builder.Default
+    private OverProvisioning overProvisioning = OverProvisioning.DEFAULT;
 }

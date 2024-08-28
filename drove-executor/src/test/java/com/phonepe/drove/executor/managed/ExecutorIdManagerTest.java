@@ -71,7 +71,7 @@ class ExecutorIdManagerTest {
         when(env.lifecycle()).thenReturn(lifecycle);
         doNothing().when(lifecycle).addServerLifecycleListener(any());
 
-        val eim = new ExecutorIdManager(env, ExecutorOptions.DEFAULT.withHostname("test-host"));
+        val eim = new ExecutorIdManager(env, ExecutorOptions.DEFAULT.setHostname("test-host"));
         eim.start();
         val server = mock(Server.class);
         try(val connector = mock(ServerConnector.class)) {

@@ -24,7 +24,6 @@ import io.dropwizard.validation.DurationRange;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.With;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.Range;
 
@@ -37,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@With
 public class ExecutorOptions {
     public static final long DEFAULT_MAX_OPEN_FILES = 470_000;
     public static final DataSize DEFAULT_LOG_BUFFER_SIZE = DataSize.megabytes(10);
@@ -57,7 +55,6 @@ public class ExecutorOptions {
                                                                       DEFAULT_DOCKER_SOCKET_PATH);
 
     @Length(max = 255)
-    @With
     private String hostname;
 
     private boolean cacheImages;
