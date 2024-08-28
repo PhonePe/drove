@@ -193,7 +193,9 @@ public class ExecutorTestingUtils {
                                     LocalLoggingSpec.DEFAULT,
                                     env,
                                     null,
-                                    Collections.emptyList());
+                                    List.of(DirectDeviceSpec.builder()
+                                                    .pathOnHost("/dev/random")
+                                                    .build()));
     }
 
     public static ExecutorAddress localAddress() {

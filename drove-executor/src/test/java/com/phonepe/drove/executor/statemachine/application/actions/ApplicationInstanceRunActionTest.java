@@ -61,7 +61,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                                       CommonTestUtils.httpCaller(),
                                                       MAPPER,
                                                       SharedMetricRegistries.getOrCreate("test"),
-                                                      new ResourceManager());
+                                                      resourceManager);
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resp = action.execute(context, StateData.create(STARTING, createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(UNREADY, resp.getState());

@@ -20,6 +20,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
@@ -56,18 +57,20 @@ public class TaskRunAction extends TaskAction {
 
     private final ResourceConfig schedulingConfig;
     private final ExecutorOptions executorOptions;
+    private final HttpCaller httpCaller;
     private final ObjectMapper mapper;
     private final MetricRegistry metricRegistry;
     private final ResourceManager resourceManager;
 
     @Inject
     public TaskRunAction(ResourceConfig resourceConfig,
-                         ExecutorOptions executorOptions,
+                         ExecutorOptions executorOptions, HttpCaller httpCaller,
                          ObjectMapper mapper,
                          MetricRegistry metricRegistry,
                          ResourceManager resourceManager) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
+        this.httpCaller = httpCaller;
         this.mapper = mapper;
         this.metricRegistry = metricRegistry;
         this.resourceManager = resourceManager;
@@ -107,7 +110,7 @@ public class TaskRunAction extends TaskAction {
                     },
                     executorOptions,
                     resourceManager);
-
+            DockerUtils.injectConfigs(containerId, context.getClient(), instanceSpec, httpCaller);
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)
                     .exec();

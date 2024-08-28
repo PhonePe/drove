@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@With
 public class ExecutorOptions {
     public static final long DEFAULT_MAX_OPEN_FILES = 470_000;
     public static final DataSize DEFAULT_LOG_BUFFER_SIZE = DataSize.megabytes(10);

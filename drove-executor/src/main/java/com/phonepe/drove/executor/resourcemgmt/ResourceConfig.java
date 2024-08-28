@@ -16,7 +16,10 @@
 
 package com.phonepe.drove.executor.resourcemgmt;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.With;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -28,6 +31,9 @@ import java.util.Set;
  *
  */
 @Data
+@With
+@AllArgsConstructor
+@NoArgsConstructor
 public class ResourceConfig {
     public static final ResourceConfig DEFAULT = new ResourceConfig();
 

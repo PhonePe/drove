@@ -238,67 +238,6 @@ public class DockerUtils {
         }
     }
 
-    private static void setupDevices(
-            ResourceConfig resourceConfig,
-            DeploymentUnitSpec deploymentUnitSpec,
-            HostConfig hostConfig) {
-        val deviceSpecs = Objects.requireNonNullElse(deploymentUnitSpec.getDevices(), List.<DeviceSpec>of());
-        val devices = new ArrayList<Device>();
-        val deviceRequests = new ArrayList<DeviceRequest>();
-        deviceSpecs.forEach(device -> device.accept(new DeviceSpecVisitor<Void>() {
-            @Override
-            public Void visit(DirectDeviceSpec directDeviceSpec) {
-                val permissions = Objects.requireNonNullElse(directDeviceSpec.getPermissions(),
-                                                             DirectDeviceSpec.DirectDevicePermissions.ALL);
-
-                val cGroupPermissions = switch (permissions) {
-                    case READ_ONLY -> "r";
-                    case WRITE_ONLY -> "w";
-                    case MKNOD_ONLY -> "m";
-                    case ALL -> "rwm";
-                    case READ_WRITE -> "rw";
-                };
-                devices.add(new Device(cGroupPermissions,
-                                       Objects.requireNonNullElse(directDeviceSpec.getPathInContainer(),
-                                                                  directDeviceSpec.getPathOnHost()),
-                                       directDeviceSpec.getPathOnHost()));
-                return null;
-            }
-
-            @Override
-            public Void visit(DetailedDeviceSpec detailedDeviceSpec) {
-                deviceRequests.add(new DeviceRequest()
-                                           .withDriver(detailedDeviceSpec.getDriver())
-                                           .withCount(detailedDeviceSpec.getCount())
-                                           .withDeviceIds(detailedDeviceSpec.getDeviceIds())
-                                           .withCapabilities(detailedDeviceSpec.getCapabilities())
-                                           .withOptions(detailedDeviceSpec.getOptions()));
-                return null;
-            }
-        }));
-        // This makes all available GPUs available to the containers running on the executor
-        // This won't break anything if there are no GPUs at all and the config is tuned on; not recommended to
-        // enable this on non GPU machines
-        // No discovery of GPUs, managing/rationing of GPU devices
-        // So this needs to be used in conjunction with tagging to ensure that only applications which require
-        // GPU end up on executors with GPU enabled
-        if (resourceConfig.isEnableNvidiaGpu()) {
-            // This strange request is equivalent to 'docker create --gpus all'
-            val nvidiaGpuDeviceRequest = new DeviceRequest()
-                    .withDriver("nvidia")
-                    .withCount(-1)
-                    .withCapabilities(List.of(List.of("gpu")))
-                    .withDeviceIds(Collections.emptyList());
-            deviceRequests.add(nvidiaGpuDeviceRequest);
-        }
-        if (!devices.isEmpty()) {
-            hostConfig.withDevices(devices);
-        }
-        if (!deviceRequests.isEmpty()) {
-            hostConfig.withDeviceRequests(deviceRequests);
-        }
-    }
-
     /**
      * This will copy resources to container without creating tmp files.
      * This ensures that residual files are not leaked outside
