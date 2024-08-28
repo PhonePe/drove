@@ -82,8 +82,8 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             @Provides
             @Singleton
             public ExecutorOptions executorOptions() {
-                return new ExecutorOptions()
-                        .setCacheImages(true);
+                return ExecutorOptions.DEFAULT
+                        .withCacheImages(true);
             }
 
             @Provides

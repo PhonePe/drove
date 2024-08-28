@@ -21,9 +21,8 @@ import io.dropwizard.util.DataSizeUnit;
 import io.dropwizard.util.Duration;
 import io.dropwizard.validation.DataSizeRange;
 import io.dropwizard.validation.DurationRange;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.Range;
 
@@ -33,9 +32,11 @@ import java.util.concurrent.TimeUnit;
 /**
  *
  */
-@Data
-@NoArgsConstructor
+@Value
+@Jacksonized
+@Builder
 @AllArgsConstructor
+@With
 public class ExecutorOptions {
     public static final long DEFAULT_MAX_OPEN_FILES = 470_000;
     public static final DataSize DEFAULT_LOG_BUFFER_SIZE = DataSize.megabytes(10);
@@ -55,24 +56,24 @@ public class ExecutorOptions {
                                                                       DEFAULT_DOCKER_SOCKET_PATH);
 
     @Length(max = 255)
-    private String hostname;
+    String hostname;
 
-    private boolean cacheImages;
+    boolean cacheImages;
 
     @Min(0)
     long maxOpenFiles;
 
     @DataSizeRange(min = 1, max = 128, unit = DataSizeUnit.MEGABYTES)
-    private DataSize logBufferSize;
+    DataSize logBufferSize;
 
     @DataSizeRange(min = 10, max = 100 * 1024, unit = DataSizeUnit.MEGABYTES)
-    private DataSize cacheFileSize;
+    DataSize cacheFileSize;
 
     @Range(max = 1024)
-    private int cacheFileCount;
+    int cacheFileCount;
 
     @DurationRange(min = 5, max = 300, unit = TimeUnit.SECONDS)
-    private Duration containerCommandTimeout;
+    Duration containerCommandTimeout;
 
-    private String dockerSocketPath;
+    String dockerSocketPath;
 }

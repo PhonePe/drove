@@ -128,8 +128,8 @@ class DockerUtilsTest {
                         spec.withConfigs(null),
                         executorOptions),
                 Arguments.of(defaultConfig, spec, executorOptions
-                        .setMaxOpenFiles(-1)
-                        .setCacheFileCount(-1)),
+                        .withMaxOpenFiles(-1)
+                        .withCacheFileCount(-1)),
                 Arguments.of(defaultConfig,
                              spec
                                      .withEnv(Map.of("TEST_PREDEF_VAL", "PreDevValue",
