@@ -26,7 +26,7 @@
     <artifactId>drove-controller</artifactId>
 
     <properties>
-        <guicey-server-pages.version>5.6.1-1</guicey-server-pages.version>
+        <guicey-server-pages.version>5.10.2</guicey-server-pages.version>
         <handlebars.version>4.3.1</handlebars.version>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
@@ -54,6 +54,11 @@
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>${jakarta.inject-api.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
