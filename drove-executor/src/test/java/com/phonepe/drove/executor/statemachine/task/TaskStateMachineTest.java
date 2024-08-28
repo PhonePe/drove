@@ -21,6 +21,7 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingTaskActionFactory;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
@@ -71,6 +72,12 @@ class TaskStateMachineTest {
                                                                  @Singleton
                                                                  public CloseableHttpClient httpClient() {
                                                                      return HttpClients.createDefault();
+                                                                 }
+
+                                                                 @Provides
+                                                                 @Singleton
+                                                                 public ExecutorOptions executorOptions() {
+                                                                     return ExecutorOptions.DEFAULT;
                                                                  }
                                                              })),
                                                      ExecutorTestingUtils.DOCKER_CLIENT);

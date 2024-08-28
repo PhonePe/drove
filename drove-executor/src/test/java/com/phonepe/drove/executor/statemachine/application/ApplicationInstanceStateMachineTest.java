@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
@@ -69,6 +70,12 @@ class ApplicationInstanceStateMachineTest extends AbstractTestBase {
                                                                  @Singleton
                                                                  public CloseableHttpClient httpClient() {
                                                                      return HttpClients.createDefault();
+                                                                 }
+
+                                                                 @Provides
+                                                                 @Singleton
+                                                                 public ExecutorOptions executorOptions() {
+                                                                     return ExecutorOptions.DEFAULT;
                                                                  }
                                                              })),
                                                      ExecutorTestingUtils.DOCKER_CLIENT,
