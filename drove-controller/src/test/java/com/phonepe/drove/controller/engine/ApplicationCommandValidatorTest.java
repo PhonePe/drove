@@ -34,18 +34,34 @@ import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.ops.*;
+import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationRecoverOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationStartInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationStopInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
 import io.dropwizard.util.Duration;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.models.common.HTTPVerb.GET;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 
 /**
  *
