@@ -27,7 +27,7 @@ import com.phonepe.drove.common.net.RemoteMessageSender;
 import com.phonepe.drove.executor.discovery.ManagedLeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Inject;
@@ -55,11 +55,12 @@ public class RemoteControllerMessageSender extends RemoteMessageSender<Controlle
 
     @Override
     protected RetryPolicy<MessageResponse> retryStrategy() {
-        return new RetryPolicy<MessageResponse>()
+        return RetryPolicy.<MessageResponse>builder()
                 .withDelay(Duration.ofSeconds(1))
                 .withMaxAttempts(3)
                 .handle(Exception.class)
-                .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()));
+                .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()))
+                .build();
     }
 
     @Override

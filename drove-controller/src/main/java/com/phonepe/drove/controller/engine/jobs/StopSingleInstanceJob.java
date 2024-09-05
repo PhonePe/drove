@@ -35,7 +35,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.TimeoutExceededException;
+import dev.failsafe.TimeoutExceededException;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
 import static com.phonepe.drove.common.CommonUtils.waitForAction;
@@ -92,7 +92,7 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             return waitForAction(retryPolicy,
                                  () -> stopInstance(instanceInfo, clusterOpSpec),
                                  event -> {
-                                     val failure = event.getFailure();
+                                     val failure = event.getException();
                                      if (null != failure) {
                                          log.error("Error stopping instance for " + appId, failure);
                                      }

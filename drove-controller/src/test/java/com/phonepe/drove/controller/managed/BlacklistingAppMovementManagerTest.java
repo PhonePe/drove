@@ -27,7 +27,7 @@ import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.RetryPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -117,12 +117,13 @@ class BlacklistingAppMovementManagerTest {
                                                      applicationEngine,
                                                      clusterResourcesDB,
                                                      BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
-                                                     new RetryPolicy<Boolean>()
+                                                     RetryPolicy.<Boolean>builder()
                                                              .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
                                                              .handleResult(false)
                                                              .withMaxAttempts(-1)
                                                              .withMaxDuration(Duration.ofSeconds(60))
-                                                             .withDelay(1, 5, ChronoUnit.SECONDS),
+                                                             .withDelay(1, 5, ChronoUnit.SECONDS)
+                                                             .build(),
                                                      DEFAULT_CLUSTER_OP,
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
@@ -160,14 +161,15 @@ class BlacklistingAppMovementManagerTest {
                                                      applicationEngine,
                                                      clusterResourcesDB,
                                                      BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
-                                                     new RetryPolicy<Boolean>()
+                                                     RetryPolicy.<Boolean>builder()
                                                              .onFailedAttempt(event -> log.warn(
                                                                      "Executor check attempt: {}",
                                                                      event.getAttemptCount()))
                                                              .handleResult(false)
                                                              .withMaxAttempts(5)
                                                              .withDelay(Duration.ofMillis(100))
-                                                             .withMaxDuration(Duration.ofSeconds(1)),
+                                                             .withMaxDuration(Duration.ofSeconds(1))
+                                                             .build(),
                                                      DEFAULT_CLUSTER_OP,
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
@@ -206,14 +208,15 @@ class BlacklistingAppMovementManagerTest {
                                                      applicationEngine,
                                                      clusterResourcesDB,
                                                      BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
-                                                     new RetryPolicy<Boolean>()
+                                                     RetryPolicy.<Boolean>builder()
                                                              .onFailedAttempt(event -> log.warn(
                                                                      "Executor check attempt: {}",
                                                                      event.getAttemptCount()))
                                                              .handleResult(false)
                                                              .withMaxAttempts(2)
                                                              .withDelay(Duration.ofMillis(100))
-                                                             .withMaxDuration(Duration.ofSeconds(1)),
+                                                             .withMaxDuration(Duration.ofSeconds(1))
+                                                             .build(),
                                                      DEFAULT_CLUSTER_OP,
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
@@ -254,13 +257,14 @@ class BlacklistingAppMovementManagerTest {
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
         val bmm = new BlacklistingAppMovementManager(le, applicationEngine, clusterResourcesDB,
-                                                     new RetryPolicy<ValidationStatus>()
+                                                     RetryPolicy.<ValidationStatus>builder()
                                                              .onFailedAttempt(event -> log.warn(
                                                                      "Command submission attempt: {}",
                                                                      event.getAttemptCount()))
                                                              .handleResult(ValidationStatus.FAILURE)
                                                              .withMaxAttempts(10)
-                                                             .withDelay(Duration.ofMillis(100)),
+                                                             .withDelay(Duration.ofMillis(100))
+                                                             .build(),
                                                      BlacklistingAppMovementManager.DEFAULT_COMPLETION_POLICY,
                                                      DEFAULT_CLUSTER_OP,
                                                      Executors.newSingleThreadExecutor(),

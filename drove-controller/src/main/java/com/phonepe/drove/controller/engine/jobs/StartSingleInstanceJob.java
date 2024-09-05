@@ -41,7 +41,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.TimeoutExceededException;
+import dev.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
@@ -112,7 +112,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             val status = waitForAction(retryPolicy,
                                        () -> startInstance(applicationSpec, clusterOpSpec),
                                        event -> {
-                                           val failure = event.getFailure();
+                                           val failure = event.getException();
                                            if (null != failure) {
                                                log.error("Error setting up instance for " + appId, failure);
                                            }

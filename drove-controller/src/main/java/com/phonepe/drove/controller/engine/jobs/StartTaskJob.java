@@ -37,8 +37,8 @@ import com.phonepe.drove.models.task.TaskSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.TimeoutExceededException;
+import dev.failsafe.Failsafe;
+import dev.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
@@ -108,7 +108,7 @@ public class StartTaskJob implements Job<Boolean> {
             val status = waitForAction(retryPolicy,
                                        () -> startInstance(taskSpec, instanceId),
                                        event -> {
-                                           val failure = event.getFailure();
+                                           val failure = event.getException();
                                            if (null != failure) {
                                                log.error("Error setting up task for " + sourceApp + "/" + taskId, failure);
                                            }

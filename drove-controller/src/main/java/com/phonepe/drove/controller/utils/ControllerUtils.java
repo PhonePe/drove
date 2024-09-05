@@ -58,8 +58,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
 
 import javax.ws.rs.core.Response;
 import java.util.*;
@@ -487,7 +487,7 @@ public class ControllerUtils {
             RetryPolicy<StateCheckStatus> retryPolicy) {
         return Failsafe.with(List.of(retryPolicy))
                 .onComplete(e -> {
-                    val failure = e.getFailure();
+                    val failure = e.getException();
                     if (null != failure) {
                         log.error("Error starting instance: {}", failure.getMessage());
                     }

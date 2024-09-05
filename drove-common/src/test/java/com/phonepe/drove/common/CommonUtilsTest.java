@@ -25,7 +25,7 @@ import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
+import dev.failsafe.Failsafe;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -67,15 +67,15 @@ class CommonUtilsTest {
     void testPolicy() {
         {
             val p = policy(new IntervalRetrySpec(Duration.ofSeconds(1)), null);
-            assertEquals(Duration.ofSeconds(1), p.getDelay());
+            assertEquals(Duration.ofSeconds(1), p.getConfig().getDelay());
         }
         {
             val p = policy(new MaxDurationRetrySpec(Duration.ofSeconds(1)), null);
-            assertEquals(Duration.ofSeconds(1), p.getMaxDuration());
+            assertEquals(Duration.ofSeconds(1), p.getConfig().getMaxDuration());
         }
         {
             val p = policy(new MaxRetriesRetrySpec(5), null);
-            assertEquals(6, p.getMaxAttempts());
+            assertEquals(6, p.getConfig().getMaxAttempts());
         }
         {
             val p = policy(new RetryOnAllExceptionsSpec(), null);
@@ -83,7 +83,7 @@ class CommonUtilsTest {
             try {
                 Failsafe.with(List.of(p))
                         .onComplete(e -> {
-                            excep.set(e.getFailure() instanceof IllegalStateException);
+                            excep.set(e.getException() instanceof IllegalStateException);
                         })
                         .run(() -> {
                             throw new IllegalStateException("Test fail");
@@ -98,8 +98,8 @@ class CommonUtilsTest {
             val p = policy(new CompositeRetrySpec(
                     List.of(new IntervalRetrySpec(Duration.ofSeconds(1)),
                             new MaxRetriesRetrySpec(5))), null);
-            assertEquals(Duration.ofSeconds(1), p.getDelay());
-            assertEquals(6, p.getMaxAttempts());
+            assertEquals(Duration.ofSeconds(1), p.getConfig().getDelay());
+            assertEquals(6, p.getConfig().getMaxAttempts());
         }
         {
             val p = CommonUtils.<Integer>policy(new MaxRetriesRetrySpec(5), x -> x < 5);

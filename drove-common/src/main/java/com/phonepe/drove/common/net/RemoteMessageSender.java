@@ -26,11 +26,11 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ParseException;
@@ -78,15 +78,16 @@ public abstract class RemoteMessageSender<
     @SuppressWarnings("java:S1874")
     public MessageResponse send(SendMessage message) {
         val retryPolicy = retryStrategy();
-        return Failsafe.with(retryPolicy).onFailure(result -> {
-            val failure = result.getFailure();
-            if (null != failure) {
-                log.error("Message sending failed with error: {}", failure.getMessage());
-            }
-            else {
-                log.error("Message sending failed with response: {}", result.getResult());
-            }
-        }).get(() -> sendRemoteMessage(message));
+        return Failsafe.with(retryPolicy)
+                .onFailure(result -> {
+                    val failure = result.getException();
+                    if (null != failure) {
+                        log.error("Message sending failed with error: {}", failure.getMessage());
+                    }
+                    else {
+                        log.error("Message sending failed with response: {}", result.getResult());
+                    }
+                }).get(() -> sendRemoteMessage(message));
     }
 
     protected abstract RetryPolicy<MessageResponse> retryStrategy();
@@ -108,7 +109,7 @@ public abstract class RemoteMessageSender<
         try {
             request.setHeader(CONTENT_TYPE, "application/json");
             request.setHeader(NODE_ID_HEADER, nodeId);
-            if(null != secret) {
+            if (null != secret) {
                 request.setHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
             }
             request.setEntity(new StringEntity(mapper.writeValueAsString(message)));
@@ -118,7 +119,7 @@ public abstract class RemoteMessageSender<
             return new MessageResponse(message.getHeader(), MessageDeliveryStatus.FAILED);
         }
         log.debug("Sending message to remote host: {}. Message: {}", uri, message);
-        try(val response = httpClient.execute(request)) {
+        try (val response = httpClient.execute(request)) {
             val body = EntityUtils.toString(response.getEntity());
             if (response.getCode() == 200) {
                 return mapper.readValue(body, MessageResponse.class);

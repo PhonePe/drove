@@ -28,11 +28,11 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
+import dev.failsafe.RetryPolicy;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -69,16 +69,21 @@ class RemoteMessageSenderTest extends AbstractTestBase {
     private static abstract class TestMessageSender extends RemoteMessageSender<TestMessageType, TestMessage> {
 
         private TestMessageSender() {
-            super(MAPPER, ClusterAuthenticationConfig.DEFAULT, NodeType.CONTROLLER, CommonUtils.createHttpClient(false));
+            super(MAPPER,
+                  ClusterAuthenticationConfig.DEFAULT,
+                  NodeType.CONTROLLER,
+                  CommonUtils.createHttpClient(false));
         }
 
         @Override
         protected RetryPolicy<MessageResponse> retryStrategy() {
-            return new RetryPolicy<MessageResponse>()
+            return RetryPolicy.<MessageResponse>builder()
                     .withDelay(Duration.ofSeconds(1))
                     .withMaxAttempts(1)
                     .handle(Exception.class)
-                    .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()));        }
+                    .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()))
+                    .build();
+        }
 
     }
 
@@ -90,12 +95,15 @@ class RemoteMessageSenderTest extends AbstractTestBase {
         val msgSender = new TestMessageSender() {
             @Override
             protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
-                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+                return Optional.of(new RemoteHost("localhost",
+                                                  wireMockRuntimeInfo.getHttpPort(),
+                                                  NodeTransportType.HTTP));
             }
         };
         val res = msgSender.send(new TestMessage(header, "Test"));
         assertEquals(MessageDeliveryStatus.ACCEPTED, res.getStatus());
     }
+
     @Test
     void testMessageSendNoSecret(final WireMockRuntimeInfo wireMockRuntimeInfo) {
         val header = MessageHeader.controllerRequest();
@@ -104,7 +112,9 @@ class RemoteMessageSenderTest extends AbstractTestBase {
         val msgSender = new TestMessageSender() {
             @Override
             protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
-                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+                return Optional.of(new RemoteHost("localhost",
+                                                  wireMockRuntimeInfo.getHttpPort(),
+                                                  NodeTransportType.HTTP));
             }
         };
         val res = msgSender.send(new TestMessage(header, "Test"));
@@ -119,7 +129,9 @@ class RemoteMessageSenderTest extends AbstractTestBase {
         val msgSender = new TestMessageSender() {
             @Override
             protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
-                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+                return Optional.of(new RemoteHost("localhost",
+                                                  wireMockRuntimeInfo.getHttpPort(),
+                                                  NodeTransportType.HTTP));
             }
         };
         val res = msgSender.send(new TestMessage(header, "Test"));
@@ -134,7 +146,9 @@ class RemoteMessageSenderTest extends AbstractTestBase {
         val msgSender = new TestMessageSender() {
             @Override
             protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
-                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+                return Optional.of(new RemoteHost("localhost",
+                                                  wireMockRuntimeInfo.getHttpPort(),
+                                                  NodeTransportType.HTTP));
             }
         };
         val res = msgSender.send(new TestMessage(header, "Test"));
@@ -163,7 +177,9 @@ class RemoteMessageSenderTest extends AbstractTestBase {
         val msgSender = new TestMessageSender() {
             @Override
             protected Optional<RemoteHost> translateRemoteAddress(TestMessage message) {
-                return Optional.of(new RemoteHost("localhost", wireMockRuntimeInfo.getHttpPort(), NodeTransportType.HTTP));
+                return Optional.of(new RemoteHost("localhost",
+                                                  wireMockRuntimeInfo.getHttpPort(),
+                                                  NodeTransportType.HTTP));
             }
         };
         val res = msgSender.send(new TestMessage(header, "Test"));

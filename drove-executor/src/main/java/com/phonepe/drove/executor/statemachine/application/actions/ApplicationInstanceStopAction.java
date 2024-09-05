@@ -33,8 +33,8 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
-import net.jodah.failsafe.TimeoutExceededException;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.TimeoutExceededException;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 
@@ -155,16 +155,17 @@ public class ApplicationInstanceStopAction
                                            port.getHostPort(),
                                            httpSpec.getPath()));
 
-        val retryPolicy = new RetryPolicy<Boolean>()
+        val retryPolicy = RetryPolicy.<Boolean>builder()
                 .withDelay(Duration.ofSeconds(3))
                 .withMaxAttempts(5)
                 .withMaxDuration(Duration.ofSeconds(30))
                 .handle(Exception.class)
-                .handleResultIf(r -> !r);
+                .handleResultIf(r -> !r)
+                .build();
         try (val httpClient = CommonUtils.createInternalHttpClient(httpSpec, Duration.ofSeconds(1))) {
             waitForAction(retryPolicy,
                           () -> makeHTTPCall(httpClient, httpSpec, uri),
-                    e -> log.error("Pre-shutdown hook call failure: ", e.getFailure()));
+                    e -> log.error("Pre-shutdown hook call failure: ", e.getException()));
         }
         catch (TimeoutExceededException e) {
             log.error("Timeout calling shutdown hook.");

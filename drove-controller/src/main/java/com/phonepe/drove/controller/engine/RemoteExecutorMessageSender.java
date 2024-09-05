@@ -27,7 +27,7 @@ import com.phonepe.drove.common.net.RemoteMessageSender;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Inject;
@@ -53,11 +53,12 @@ public class RemoteExecutorMessageSender extends RemoteMessageSender<ExecutorMes
 
     @Override
     protected RetryPolicy<MessageResponse> retryStrategy() {
-        return new RetryPolicy<MessageResponse>()
+        return RetryPolicy.<MessageResponse>builder()
                 .withDelay(Duration.ofSeconds(1))
                 .withMaxDuration(Duration.ofSeconds(30))
                 .handle(Exception.class)
-                .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()));
+                .handleResultIf(response -> !MessageDeliveryStatus.ACCEPTED.equals(response.getStatus()))
+                .build();
     }
 
     @Override

@@ -19,12 +19,12 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
 import com.phonepe.drove.models.application.CheckResult;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.event.EventListener;
+import dev.failsafe.event.ExecutionCompletedEvent;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
-import net.jodah.failsafe.event.ExecutionCompletedEvent;
-import net.jodah.failsafe.function.CheckedConsumer;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +46,7 @@ public abstract class ApplicationInstanceSingularCheckActionBase extends Applica
     protected final CheckResult checkWithRetry(
             RetryPolicy<CheckResult> retryPolicy,
             Checker checker,
-            CheckedConsumer<ExecutionCompletedEvent<CheckResult>> errorConsumer) {
+            EventListener<ExecutionCompletedEvent<CheckResult>> errorConsumer) {
         return Failsafe.with(List.of(retryPolicy))
                 .onComplete(errorConsumer)
                 .get(() -> {

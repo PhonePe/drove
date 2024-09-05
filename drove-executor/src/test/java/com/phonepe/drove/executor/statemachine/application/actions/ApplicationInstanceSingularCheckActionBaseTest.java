@@ -25,8 +25,8 @@ import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
+import dev.failsafe.RetryPolicy;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
@@ -46,24 +46,27 @@ class ApplicationInstanceSingularCheckActionBaseTest {
             protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
                     InstanceActionContext<ApplicationInstanceSpec> context,
                     StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-                val result = checkWithRetry(new RetryPolicy<CheckResult>().withMaxAttempts(1),
-                                            new Checker() {
-                                                @Override
-                                                public CheckMode mode() {
-                                                    return CheckMode.HTTP;
-                                                }
+                val result = checkWithRetry(
+                        RetryPolicy.<CheckResult>builder()
+                                .withMaxAttempts(1)
+                                .build(),
+                        new Checker() {
+                            @Override
+                            public CheckMode mode() {
+                                return CheckMode.HTTP;
+                            }
 
-                                                @Override
-                                                public void close() throws Exception {
+                            @Override
+                            public void close() throws Exception {
 
-                                                }
+                            }
 
-                                                @Override
-                                                public CheckResult call() throws Exception {
-                                                    return CheckResult.healthy();
-                                                }
-                                            },
-                                            e -> {});
+                            @Override
+                            public CheckResult call() throws Exception {
+                                return CheckResult.healthy();
+                            }
+                        },
+                        e -> {});
                 return result.getStatus() == CheckResult.Status.HEALTHY
                        ? StateData.from(currentState, InstanceState.HEALTHY)
                        : StateData.from(currentState, InstanceState.UNHEALTHY);
@@ -88,24 +91,27 @@ class ApplicationInstanceSingularCheckActionBaseTest {
                     InstanceActionContext<ApplicationInstanceSpec> context,
                     StateData<InstanceState, ExecutorInstanceInfo> currentState) {
                 try {
-                    val result = checkWithRetry(new RetryPolicy<CheckResult>().withMaxAttempts(1),
-                                                new Checker() {
-                                                    @Override
-                                                    public CheckMode mode() {
-                                                        return CheckMode.HTTP;
-                                                    }
+                    val result = checkWithRetry(
+                            RetryPolicy.<CheckResult>builder()
+                                    .withMaxAttempts(1)
+                                    .build(),
+                            new Checker() {
+                                @Override
+                                public CheckMode mode() {
+                                    return CheckMode.HTTP;
+                                }
 
-                                                    @Override
-                                                    public void close() {
+                                @Override
+                                public void close() {
 
-                                                    }
+                                }
 
-                                                    @Override
-                                                    public CheckResult call() {
-                                                        throw new RuntimeException();
-                                                    }
-                                                },
-                                                e -> failed.set(Objects.nonNull(e.getFailure())));
+                                @Override
+                                public CheckResult call() {
+                                    throw new RuntimeException();
+                                }
+                            },
+                            e -> failed.set(Objects.nonNull(e.getException())));
                     return result.getStatus() == CheckResult.Status.HEALTHY
                            ? StateData.from(currentState, InstanceState.HEALTHY)
                            : StateData.from(currentState, InstanceState.UNHEALTHY);
@@ -139,24 +145,27 @@ class ApplicationInstanceSingularCheckActionBaseTest {
                     InstanceActionContext<ApplicationInstanceSpec> context,
                     StateData<InstanceState, ExecutorInstanceInfo> currentState) {
                 try {
-                    val result = checkWithRetry(new RetryPolicy<CheckResult>().withMaxAttempts(1),
-                                                new Checker() {
-                                                    @Override
-                                                    public CheckMode mode() {
-                                                        return CheckMode.HTTP;
-                                                    }
+                    val result = checkWithRetry(
+                            RetryPolicy.<CheckResult>builder()
+                                    .withMaxAttempts(1)
+                                    .build(),
+                            new Checker() {
+                                @Override
+                                public CheckMode mode() {
+                                    return CheckMode.HTTP;
+                                }
 
-                                                    @Override
-                                                    public void close() {
+                                @Override
+                                public void close() {
 
-                                                    }
+                                }
 
-                                                    @Override
-                                                    public CheckResult call() {
-                                                        throw new RuntimeException();
-                                                    }
-                                                },
-                                                e -> {});
+                                @Override
+                                public CheckResult call() {
+                                    throw new RuntimeException();
+                                }
+                            },
+                            e -> {});
                     return result.getStatus() == CheckResult.Status.HEALTHY
                            ? StateData.from(currentState, InstanceState.HEALTHY)
                            : StateData.from(currentState, InstanceState.STOPPED);

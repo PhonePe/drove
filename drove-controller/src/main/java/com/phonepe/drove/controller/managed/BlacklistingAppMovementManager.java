@@ -29,9 +29,9 @@ import io.dropwizard.lifecycle.Managed;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.FailsafeException;
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.Failsafe;
+import dev.failsafe.FailsafeException;
+import dev.failsafe.RetryPolicy;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
@@ -55,19 +55,21 @@ import static com.phonepe.drove.common.CommonUtils.waitForAction;
 @Slf4j
 @Singleton
 public class BlacklistingAppMovementManager implements Managed {
-    static final RetryPolicy<ValidationStatus> DEFAULT_COMMAND_POLICY = new RetryPolicy<ValidationStatus>()
+    static final RetryPolicy<ValidationStatus> DEFAULT_COMMAND_POLICY = RetryPolicy.<ValidationStatus>builder()
             .onFailedAttempt(event -> log.warn("Command submission attempt: {}", event.getAttemptCount()))
             .handleResult(ValidationStatus.FAILURE)
             .withMaxAttempts(-1)
             .withMaxDuration(Duration.ofMinutes(5))
-            .withDelay(10, 30, ChronoUnit.SECONDS); //Will try for 5 minutes to get the command accepted
+            .withDelay(10, 30, ChronoUnit.SECONDS)  //Will try for 5 minutes to get the command accepted
+            .build();
 
-    static final RetryPolicy<Boolean> DEFAULT_COMPLETION_POLICY = new RetryPolicy<Boolean>()
+    static final RetryPolicy<Boolean> DEFAULT_COMPLETION_POLICY = RetryPolicy.<Boolean>builder()
             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
             .handleResult(false)
             .withMaxAttempts(-1)
             .withMaxDuration(Duration.ofMinutes(15))
-            .withDelay(10, 30, ChronoUnit.SECONDS); //Will wait 15 minutes for the app to move
+            .withDelay(10, 30, ChronoUnit.SECONDS) //Will wait 15 minutes for the app to move
+            .build();
 
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
@@ -101,7 +103,7 @@ public class BlacklistingAppMovementManager implements Managed {
              applicationEngine,
              clusterResourcesDB,
              DEFAULT_COMMAND_POLICY,
-             new RetryPolicy<Boolean>()
+             RetryPolicy.<Boolean>builder()
                      .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
                      .handleResult(false)
                      .withMaxAttempts(-1)
@@ -109,7 +111,8 @@ public class BlacklistingAppMovementManager implements Managed {
                                               .toJavaDuration()
                                               .plus(Duration.ofSeconds(30))) //Wait for max app operation timeout and
                      // then some
-                     .withDelay(10, 30, ChronoUnit.SECONDS), //
+                     .withDelay(10, 30, ChronoUnit.SECONDS)
+                     .build(), //
              defaultClusterOpSpec,
              appMovementExecutor,
              Constants.EXECUTOR_REFRESH_INTERVAL.toMillis() * 2 + 5); //Wait till whole cluster refreshes at least once

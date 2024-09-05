@@ -24,7 +24,7 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.TimeoutExceededException;
+import dev.failsafe.TimeoutExceededException;
 import org.slf4j.MDC;
 
 import java.util.EnumSet;
@@ -134,7 +134,7 @@ public class ApplicationStateMachineExecutor {
                 val status = waitForAction(retryPolicy,
                                            () -> currentState.isDone(),
                                            e -> log.trace("Completion wait for {} completed with error: {}",
-                                                          appId, e.getFailure().getMessage()));
+                                                          appId, e.getException().getMessage()));
                 if (status) {
                     log.info("State machine for app {} has shut down with final state {}", appId, currentState.get());
                 }

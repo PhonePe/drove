@@ -36,15 +36,16 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPVerb;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.event.EventListener;
+import dev.failsafe.event.ExecutionCompletedEvent;
+import dev.failsafe.function.CheckedPredicate;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
-import net.jodah.failsafe.event.ExecutionCompletedEvent;
-import net.jodah.failsafe.function.CheckedConsumer;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryForever;
@@ -82,7 +83,6 @@ import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
 /**
  *
@@ -140,8 +140,8 @@ public class CommonUtils {
         return list.subList(start, end);
     }
 
-    public static <T> RetryPolicy<T> policy(final RetrySpec spec, final Predicate<T> resultChecker) {
-        val policy = new RetryPolicy<T>();
+    public static <T> RetryPolicy<T> policy(final RetrySpec spec, final CheckedPredicate<T> resultChecker) {
+        val policy = RetryPolicy.<T>builder();
         spec.accept(new RetrySpecVisitor<Void>() {
             @Override
             public Void visit(CompositeRetrySpec composite) {
@@ -177,7 +177,7 @@ public class CommonUtils {
         if (null != resultChecker) {
             policy.handleResultIf(resultChecker);
         }
-        return policy;
+        return policy.build();
     }
 
     public static boolean isInMaintenanceWindow(final ClusterStateData clusterState) {
@@ -337,7 +337,7 @@ public class CommonUtils {
     public static boolean waitForAction(
             RetryPolicy<Boolean> retryPolicy,
             BooleanSupplier action,
-            CheckedConsumer<ExecutionCompletedEvent<Boolean>> failureObserver) {
+            EventListener<ExecutionCompletedEvent<Boolean>> failureObserver) {
         return Failsafe.with(retryPolicy)
                 .onFailure(failureObserver)
                 .get(action::getAsBoolean);

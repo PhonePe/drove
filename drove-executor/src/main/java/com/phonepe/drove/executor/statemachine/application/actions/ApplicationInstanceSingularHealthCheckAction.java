@@ -27,7 +27,7 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.RetryPolicy;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -60,17 +60,18 @@ public class ApplicationInstanceSingularHealthCheckAction extends ApplicationIns
                 return StateData.from(currentState, InstanceState.STOPPING);
             }
         }
-        val retryPolicy = new RetryPolicy<CheckResult>()
+        val retryPolicy = RetryPolicy.<CheckResult>builder()
                 .withDelay(Duration.ofMillis(healthcheck.getInterval().toMilliseconds()))
                 .withMaxAttempts(healthcheck.getAttempts())
                 .handle(Exception.class)
-                .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY);
+                .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY)
+                .build();
         try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck)) {
             val result = checkWithRetry(
                     retryPolicy,
                     checker,
                     e -> {
-                        val failure = e.getFailure();
+                        val failure = e.getException();
                         if (failure != null) {
                             log.error("Initial health checks completed with error: {}", failure.getMessage());
                         }

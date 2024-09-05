@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.utils;
 
-import net.jodah.failsafe.RetryPolicy;
+import dev.failsafe.RetryPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +31,7 @@ class ControllerUtilsTest {
         assertEquals(StateCheckStatus.MATCH,
                      ControllerUtils.waitForState(
                              () -> StateCheckStatus.MATCH,
-                             new RetryPolicy<StateCheckStatus>().withMaxAttempts(1)));
+                             RetryPolicy.<StateCheckStatus>builder().withMaxAttempts(1).build()));
     }
 
     @Test
@@ -41,6 +41,6 @@ class ControllerUtilsTest {
                              () -> {
                                  throw new RuntimeException("Test");
                              },
-                             new RetryPolicy<StateCheckStatus>().withMaxAttempts(1)));
+                             RetryPolicy.<StateCheckStatus>builder().withMaxAttempts(1).build()));
     }
 }

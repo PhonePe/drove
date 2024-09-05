@@ -34,7 +34,7 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.jodah.failsafe.TimeoutExceededException;
+import dev.failsafe.TimeoutExceededException;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.ensureTaskState;
 import static com.phonepe.drove.common.CommonUtils.waitForAction;
@@ -90,7 +90,7 @@ public class StopTaskJob implements Job<Boolean> {
             return waitForAction(retryPolicy,
                                  () -> stopTask(task, clusterOpSpec),
                                  event -> {
-                                     val failure = event.getFailure();
+                                     val failure = event.getException();
                                      if (null != failure) {
                                          log.error("Error stopping instance for " + sourceAppName, failure);
                                      }
