@@ -79,6 +79,7 @@
         <module>drove-client-httpcomponent-transport</module>
         <module>drove-hazelcast-discovery</module>
         <module>drove-events-client</module>
+        <module>drove-ignite-discovery</module>
     </modules>
 
     <distributionManagement>

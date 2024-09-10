@@ -28,7 +28,6 @@
     <properties>
         <guicey-server-pages.version>5.10.2</guicey-server-pages.version>
         <handlebars.version>4.3.1</handlebars.version>
-        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>

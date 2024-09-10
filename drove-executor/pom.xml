@@ -27,7 +27,6 @@
 
     <properties>
         <docker-java.version>3.3.6</docker-java.version>
-        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
