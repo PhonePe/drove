@@ -21,6 +21,7 @@ import com.github.dockerjava.api.model.PullResponseItem;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.slf4j.MDC;
 
 import java.util.Map;
 import java.util.Objects;
@@ -33,14 +34,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ImagePullProgressHandler extends ResultCallback.Adapter<PullResponseItem> {
 
     private final Map<String, Long> downloadState = new ConcurrentHashMap<>();
+    private final Map<String, String> mdc;
     private final String image;
 
-    public ImagePullProgressHandler(String image) {
+    public ImagePullProgressHandler(Map<String, String> mdc, String image) {
+        this.mdc = mdc;
         this.image = image;
     }
 
     @Override
     public void onNext(PullResponseItem responseItem) {
+        if (null != mdc) {
+            MDC.setContextMap(mdc);
+        }
         val layerId = responseItem.getId();
         if (!Strings.isNullOrEmpty(layerId)) {
             val progressDetail = responseItem.getProgressDetail();

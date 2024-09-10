@@ -96,7 +96,7 @@ public class ContainerHelperExtension implements BeforeAllCallback, BeforeEachCa
         }
         try {
             DOCKER_CLIENT.pullImageCmd(imageName)
-                    .exec(new ImagePullProgressHandler(imageName))
+                    .exec(new ImagePullProgressHandler(null, imageName))
                     .awaitCompletion();
         }
         catch (InterruptedException e) {

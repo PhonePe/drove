@@ -29,6 +29,7 @@ import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 import static com.phonepe.drove.common.CommonTestUtils.TASK_IMAGE_NAME;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
@@ -99,7 +100,8 @@ class CmdCheckerTest extends AbstractTestBase {
     @SneakyThrows
     void runTest(TestConsumer<String> test) {
         DOCKER_CLIENT.pullImageCmd(TASK_IMAGE_NAME)
-                .exec(new ImagePullProgressHandler(TASK_IMAGE_NAME))
+                .exec(new ImagePullProgressHandler(MDC.getCopyOfContextMap(),
+                                                   TASK_IMAGE_NAME))
                 .awaitCompletion();
         val containerId = DOCKER_CLIENT.createContainerCmd(TASK_IMAGE_NAME)
                 .withHostConfig(new HostConfig().withAutoRemove(true))
