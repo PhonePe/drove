@@ -23,6 +23,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.StateUpdater;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.test.TestingCluster;
@@ -82,9 +83,13 @@ class ExecutorObserverTest extends ControllerTestBase {
                     removedIds.addAll(invocationOnMock.getArgument(0));
                     return null;
                 }).when(updater).remove(anyCollection());
-
-                val obs = new ExecutorObserver(curator, MAPPER, updater, eventBus);
+                val le = mock(LeadershipEnsurer.class);
+                when(le.isLeader()).thenReturn(true);
+                val s = new ConsumingSyncSignal<Boolean>();
+                when(le.onLeadershipStateChanged()).thenReturn(s);
+                val obs = new ExecutorObserver(curator, MAPPER, updater, le, eventBus);
                 obs.start();
+                s.dispatch(true);
                 waitForTest(testExecuted, 1);
                 assertFalse(ids.isEmpty());
                 assertEquals(100, ids.size());

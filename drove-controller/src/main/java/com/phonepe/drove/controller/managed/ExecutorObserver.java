@@ -53,6 +53,7 @@ public class ExecutorObserver implements Managed {
     private final CuratorFramework curatorFramework;
     private final ObjectMapper mapper;
     private final StateUpdater updater;
+    private final LeadershipEnsurer leadershipEnsurer;
     private final DroveEventBus eventBus;
     private final Lock refreshLock = new ReentrantLock();
     private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(10));
@@ -63,17 +64,25 @@ public class ExecutorObserver implements Managed {
             CuratorFramework curatorFramework,
             ObjectMapper mapper,
             StateUpdater updater,
+            LeadershipEnsurer leadershipEnsurer,
             DroveEventBus eventBus) {
         this.curatorFramework = curatorFramework;
         this.mapper = mapper;
         this.updater = updater;
+        this.leadershipEnsurer = leadershipEnsurer;
         this.eventBus = eventBus;
     }
 
     @Override
     public void start() throws Exception {
-        refreshDataFromZK(new Date());
         dataRefresher.connect(this::refreshDataFromZK);
+        leadershipEnsurer.onLeadershipStateChanged()
+                .connect(leader -> {
+                    if (Boolean.TRUE.equals(leader)) {
+                        log.info("Became leader, doing an emergency update to rebuild cluster metadata");
+                        refreshDataFromZK(new Date());
+                    }
+                });
     }
 
     @Override
@@ -84,6 +93,10 @@ public class ExecutorObserver implements Managed {
     }
 
     private void refreshDataFromZK(final Date currentDate) {
+        if (!leadershipEnsurer.isLeader()) {
+            log.info("Skipping data refresh from zk as i'm not the leader");
+            return;
+        }
         if (refreshLock.tryLock()) {
             try {
                 val currentExecutors = fetchNodes();

@@ -14,12 +14,10 @@ server:
       port: 10001
   applicationContextPath: /
   requestLog:
-#     appenders: []
-    appenders:
-      - type: console
-        timeZone: IST
-  gzip:
-    syncFlush: true
+    appenders: []
+#     appenders:
+#       - type: console
+#         timeZone: IST
 
 logging:
   level: INFO
