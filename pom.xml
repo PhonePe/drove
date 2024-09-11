@@ -284,8 +284,7 @@
                     <consoleOutputReporter>
                         <disable>true</disable>
                     </consoleOutputReporter>
-                    <statelessTestsetInfoReporter
-                            implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter">
+                    <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter">
                         <printStacktraceOnError>true</printStacktraceOnError>
                         <printStacktraceOnFailure>true</printStacktraceOnFailure>
                         <printStdoutOnError>true</printStdoutOnError>
