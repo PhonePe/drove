@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.statemachine.applications.actions;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -53,6 +54,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final InstanceScheduler scheduler;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final ThreadFactory threadFactory;
@@ -63,6 +65,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
             final ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             final ClusterResourcesDB clusterResourcesDB,
+            final InstanceScheduler scheduler,
             final ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
@@ -70,6 +73,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.scheduler = scheduler;
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.threadFactory = threadFactory;
@@ -89,6 +93,8 @@ public class StopAppInstancesAction extends AppAsyncAction {
                         .map(instanceId -> (Job<Boolean>)new StopSingleInstanceJob(stopAction.getAppId(),
                                                                                    instanceId,
                                                                                    stopAction.getOpSpec(),
+                                                                                   scheduler,
+                                                                                   null,
                                                                                    instanceInfoDB,
                                                                                    clusterResourcesDB,
                                                                                    communicator,

@@ -31,7 +31,8 @@ import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.application.requirements.*;
+import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
@@ -159,7 +160,7 @@ public class ApplicationCommandValidator {
         @Override
         public ValidationResult visit(ApplicationStartInstancesOperation deploy) {
             val requiredInstances = deploy.getInstances();
-            return ensureResources(requiredInstances);
+            return ensureResources(deploy, requiredInstances);
         }
 
         @Override
@@ -184,7 +185,7 @@ public class ApplicationCommandValidator {
             if (requiredInstances <= currentInstances) {
                 return ValidationResult.success();
             }
-            return ensureResources(requiredInstances - currentInstances);
+            return ensureResources(scale, requiredInstances - currentInstances);
         }
 
         @Override
@@ -214,14 +215,19 @@ public class ApplicationCommandValidator {
         }
 
 
-        private ValidationResult ensureResources(long requiredInstances) {
+        private ValidationResult ensureResources(final ApplicationOperation operation,
+                                                 long requiredNewInstances) {
+            val executorCount = clusterResourcesDB.executorCount(true);
+            if(executorCount == 0) {
+                return ValidationResult.failure("No executors on cluster");
+            }
             val spec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
             if (null == spec) {
                 return ValidationResult.failure("No spec found for app " + appId);
             }
             val errs = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterResourcesDB, spec, requiredInstances, errs);
-            if(!errs.isEmpty()) {
+            ControllerUtils.checkResources(clusterResourcesDB, spec, requiredNewInstances, errs);
+            if (!errs.isEmpty()) {
                 return ValidationResult.failure(errs);
             }
             return ValidationResult.success();

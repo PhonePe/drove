@@ -20,6 +20,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
+import com.phonepe.drove.controller.metrics.ClusterMetricNames;
+import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.models.api.DroveEventsList;
 import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.events.DroveEvent;
@@ -44,15 +46,19 @@ public class InMemoryEventStore implements EventStore {
     private final TreeMap<Long, List<DroveEvent>> events;
     private final StampedLock lock = new StampedLock();
     private final ScheduledSignal cleaner;
+    private final ClusterMetricsRegistry metricsRegistry;
 
     @Inject
     @IgnoreInJacocoGeneratedReport
-    public InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options) {
-        this(leadershipEnsurer, options, Duration.ofMinutes(1));
+    public InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options,
+                              ClusterMetricsRegistry metricsRegistry) {
+        this(leadershipEnsurer, options, Duration.ofMinutes(1), metricsRegistry);
     }
 
     @VisibleForTesting
-    InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options, Duration checkDuration) {
+    InMemoryEventStore(LeadershipEnsurer leadershipEnsurer, ControllerOptions options, Duration checkDuration,
+                       ClusterMetricsRegistry metricsRegistry) {
+        this.metricsRegistry = metricsRegistry;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::nuke);
         val maxEventStorageDurationMs = Objects.requireNonNullElse(options.getMaxEventsStorageDuration(),
                                                                    ControllerOptions.DEFAULT_MAX_EVENT_STORAGE_DURATION)
@@ -85,6 +91,8 @@ public class InMemoryEventStore implements EventStore {
         val stamp = lock.writeLock();
         try {
             events.computeIfAbsent(event.getTime().getTime(), i -> new ArrayList<>()).add(event);
+            metricsRegistry.markMeter(ClusterMetricNames.Meters.CLUSTER_EVENTS);
+            metricsRegistry.markMeter(ClusterMetricNames.Meters.CLUSTER_EVENTS + "." + event.getType().name());
         }
         finally {
             lock.unlock(stamp);

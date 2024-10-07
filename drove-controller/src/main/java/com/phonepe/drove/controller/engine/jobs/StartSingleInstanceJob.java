@@ -135,7 +135,10 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     }
 
     private boolean startInstance(ApplicationSpec applicationSpec, ClusterOpSpec clusterOpSpec) {
-        val node = scheduler.schedule(schedulingSessionId, applicationSpec)
+        val appId = ControllerUtils.deployableObjectId(applicationSpec);
+        val instanceId = instanceIdGenerator.generate(applicationSpec);
+
+        val node = scheduler.schedule(schedulingSessionId, instanceId, applicationSpec)
                 .orElse(null);
         if (null == node) {
             log.warn("No node found in the cluster that can provide required resources" +
@@ -143,8 +146,6 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                      ControllerUtils.deployableObjectId(applicationSpec));
             return false;
         }
-        val appId = ControllerUtils.deployableObjectId(applicationSpec);
-        val instanceId = instanceIdGenerator.generate(applicationSpec);
         val startMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                     new ExecutorAddress(node.getExecutorId(),
                                                                         node.getHostname(),
@@ -196,7 +197,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         finally {
             if (!successful) {
                 log.warn("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
-                scheduler.discardAllocation(schedulingSessionId, node);
+                scheduler.discardAllocation(schedulingSessionId, instanceId, node);
             }
         }
         return successful;

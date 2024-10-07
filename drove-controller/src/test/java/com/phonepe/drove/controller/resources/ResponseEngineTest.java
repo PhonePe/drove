@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resources;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Maps;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
@@ -30,6 +31,7 @@ import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
 import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
+import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -667,7 +669,8 @@ class ResponseEngineTest {
         val taskDB = mock(TaskDB.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
-        val eventStore = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
+        val eventStore = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT,
+                                                new ClusterMetricsRegistry(SharedMetricRegistries.getOrCreate("test")));
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
         val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);

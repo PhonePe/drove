@@ -70,7 +70,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
-        when(instanceScheduler.schedule(sessionId, APP_SPEC))
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
                 .thenReturn(Optional.of(allocatedExecutorNode));
         when(comm.send(any(StartInstanceMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
@@ -124,7 +124,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
-        when(instanceScheduler.schedule(sessionId, appSpec))
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
                 .thenReturn(Optional.empty());
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
@@ -150,7 +150,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
-        when(instanceScheduler.schedule(sessionId, appSpec))
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
                 .thenReturn(Optional.of(allocatedExecutorNode));
         when(comm.send(any(StartInstanceMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
@@ -200,7 +200,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
-        when(instanceScheduler.schedule(sessionId, appSpec))
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
                 .thenReturn(Optional.of(allocatedExecutorNode));
         when(comm.send(any(StartInstanceMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) invocationOnMock
@@ -231,7 +231,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val sessionId = UUID.randomUUID().toString();
         val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
-        when(instanceScheduler.schedule(sessionId, appSpec))
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
                 .thenReturn(Optional.of(allocatedExecutorNode));
         when(comm.send(any(StartInstanceMessage.class)))
                 .thenThrow(new RuntimeException("Test Exception"));

@@ -39,10 +39,6 @@ public final class JobExecutor<T> {
 
     public JobExecutor(ExecutorService executorService) {
         this.executorService = executorService;
-        this.jobCompleted.connect(r -> {
-            log.debug("Cleaning up context for job: {}", r.getJobId());
-            contexts.remove(r.getJobId());
-        });
     }
 
     public ConsumingSyncSignal<JobExecutionResult<T>> onComplete() {
@@ -79,6 +75,8 @@ public final class JobExecutor<T> {
                 val result = responseCombiner.buildResult(id);
                 context.getHandler().accept(result);
                 jobCompleted.dispatch(result);
+                log.debug("Cleaning up context for job: {}", result.getJobId());
+                contexts.remove(result.getJobId());
                 return result;
             });
             context.setFuture(jobFuture);

@@ -25,10 +25,11 @@ import java.util.Optional;
  */
 public interface InstanceScheduler {
     Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId,
+            final String schedulingSessionId,
+            final String instanceId,
             final DeploymentSpec applicationSpec);
 
     void finaliseSession(String schedulingSessionId);
 
-    boolean discardAllocation(String schedulingSessionId, final AllocatedExecutorNode node);
+    boolean discardAllocation(String schedulingSessionId, String instanceId, final AllocatedExecutorNode node);
 }

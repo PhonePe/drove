@@ -14,30 +14,15 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.ignite.discovery.config;
+package com.phonepe.drove.controller.managed;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Set;
 
-import java.time.Duration;
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class DroveIgniteConfig {
-
-    private String droveEndpoint;
-
-    private String transportName;
-
-    private String communicationPortName;
-
-    private String discoveryPortName;
-
-    private boolean useAppNameForDiscovery;
-
-    private Duration leaderElectionMaxRetryDuration;
+/**
+ *
+ */
+public record ExecutorTopologyChanges(Set<String> addedExecutors,
+                                      Set<String> removedExecutors,
+                                      Set<String> currentKnown) {
+    //Nothing to do here
 }

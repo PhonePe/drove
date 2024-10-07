@@ -180,17 +180,8 @@ public class ResponseEngine {
                         : 0;
             allApps++;
         }
-        var freeCores = 0;
-        var usedCores = 0;
-        var freeMemory = 0L;
-        var usedMemory = 0L;
-        val executors = clusterResourcesDB.currentSnapshot(true);
-        for (val executor : executors) {
-            usedCores += ControllerUtils.usedCores(executor);
-            freeCores += ControllerUtils.freeCores(executor);
-            freeMemory += ControllerUtils.freeMemory(executor);
-            usedMemory += ControllerUtils.usedMemory(executor);
-        }
+        val resourceSummary = ControllerUtils.summarizeResources(clusterResourcesDB.currentSnapshot(true));
+
         return success(
                 new ClusterSummary(
                         leadershipObserver.leader()
@@ -199,15 +190,15 @@ public class ResponseEngine {
                         clusterStateDB.currentState()
                                 .map(ClusterStateData::getState)
                                 .orElse(ClusterState.NORMAL),
-                        executors.size(),
+                        resourceSummary.getNumExecutors(),
                         allApps,
                         liveApps,
-                        freeCores,
-                        usedCores,
-                        freeCores + usedCores,
-                        freeMemory,
-                        usedMemory,
-                        freeMemory + usedMemory));
+                        resourceSummary.getFreeCores(),
+                        resourceSummary.getUsedCores(),
+                        resourceSummary.getTotalCores(),
+                        resourceSummary.getFreeMemory(),
+                        resourceSummary.getUsedMemory(),
+                        resourceSummary.getTotalMemory()));
     }
 
     public ApiResponse<List<ExecutorSummary>> nodes() {
@@ -434,8 +425,8 @@ public class ResponseEngine {
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
                         val backlistedState = clusterResourcesDB.isBlacklisted(hostInfo.getExecutorId())
-                                                   ? ExecutorSummary.ExecutorState.BLACKLISTED
-                                                   : ExecutorSummary.ExecutorState.ACTIVE;
+                                              ? ExecutorSummary.ExecutorState.BLACKLISTED
+                                              : ExecutorSummary.ExecutorState.ACTIVE;
                         val executorState = removed ? ExecutorSummary.ExecutorState.REMOVED
                                                     : backlistedState;
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),

@@ -254,16 +254,12 @@ public class BlacklistingAppMovementManager implements Managed {
                                         val res = applicationEngine.handleOperation(
                                                 new ApplicationReplaceInstancesOperation(appId,
                                                                                          instances,
+                                                                                         false,
                                                                                          defaultClusterOpSpec));
                                         log.info("Instances to be replaced for {}: {}. command acceptance status: {}",
-                                                 appId,
-                                                 instances,
-                                                 res);
+                                                appId, instances, res);
                                         return res.getStatus();
                                     });
-
-                            log.info("Final status for op acceptance for {}/{} is {}", appId, instances, finalStatus);
-
                             return new Pair<>(appId, finalStatus == ValidationStatus.SUCCESS);
                         }
                         catch (FailsafeException e) {
@@ -273,6 +269,7 @@ public class BlacklistingAppMovementManager implements Managed {
                     });
                 })
                 .toList();
+
         val failedApps = futures.stream()
                 .map(f -> {
                     try {

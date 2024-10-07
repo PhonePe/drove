@@ -24,6 +24,7 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -76,9 +77,21 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
+        val scheduler = mock(InstanceScheduler.class);
+        val schedulerCalled = new AtomicBoolean(false);
+        when(scheduler.discardAllocation(eq("S1"), anyString(), eq(null)))
+                .thenAnswer(new Answer<Boolean>() {
+                    @Override
+                    public Boolean answer(InvocationOnMock invocationOnMock) {
+                        schedulerCalled.set(true);
+                        return true;
+                    }
+                });
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
                                             DEFAULT_CLUSTER_OP,
+                                            scheduler,
+                                            "S1",
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -89,6 +102,7 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
             testStatus.set(r.getResult());
         });
         assertTrue(testStatus.get());
+        assertTrue(schedulerCalled.get());
     }
 
     @Test
@@ -110,9 +124,14 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
+        val scheduler = mock(InstanceScheduler.class);
+        when(scheduler.discardAllocation(eq("S1"), anyString(), any(AllocatedExecutorNode.class)))
+                .thenReturn(true);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
                                             DEFAULT_CLUSTER_OP,
+                                            scheduler,
+                                            "S1",
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -145,9 +164,14 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
+        val scheduler = mock(InstanceScheduler.class);
+        when(scheduler.discardAllocation(eq("S1"), anyString(), any(AllocatedExecutorNode.class)))
+                .thenReturn(true);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
                                             DEFAULT_CLUSTER_OP,
+                                            scheduler,
+                                            null,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -179,9 +203,14 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
+        val scheduler = mock(InstanceScheduler.class);
+        when(scheduler.discardAllocation(eq("S1"), anyString(), any(AllocatedExecutorNode.class)))
+                .thenReturn(true);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
                                             DEFAULT_CLUSTER_OP,
+                                            scheduler,
+                                            null,
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,
@@ -213,9 +242,14 @@ class StopSingleInstanceJobTest extends ControllerTestBase {
         val rf = mock(ControllerRetrySpecFactory.class);
         when(rf.jobRetrySpec()).thenReturn(NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(NO_RETRY_SPEC);
+        val scheduler = mock(InstanceScheduler.class);
+        when(scheduler.discardAllocation(eq("S1"), anyString(), any(AllocatedExecutorNode.class)))
+                .thenReturn(true);
         val job = new StopSingleInstanceJob(appId,
                                             instanceId,
                                             DEFAULT_CLUSTER_OP,
+                                            scheduler,
+                                            "S1",
                                             instanceInfoDB,
                                             resourcesDB,
                                             comm,

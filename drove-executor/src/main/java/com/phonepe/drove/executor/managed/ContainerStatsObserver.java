@@ -25,6 +25,7 @@ import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.core.InvocationBuilder;
 import com.google.inject.Inject;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.metrics.AverageCpuUsageGauge;
@@ -87,6 +88,7 @@ public class ContainerStatsObserver implements Managed {
 
 
     @Inject
+    @IgnoreInJacocoGeneratedReport
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
             ApplicationInstanceEngine instanceEngine,

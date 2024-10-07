@@ -16,44 +16,82 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.controller.managed.ExecutorTopologyChanges;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
+import io.appform.signals.signals.ConsumingFireForgetSignal;
+import lombok.Value;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
  *
  */
-public interface ClusterResourcesDB {
-    List<ExecutorHostInfo> currentSnapshot(boolean skipOffDutyNodes);
+public abstract class ClusterResourcesDB {
+
+    @Value
+    public static class ClusterResourcesSummary {
+        int numExecutors;
+        int freeCores;
+        int usedCores;
+        int totalCores;
+        long freeMemory;
+        long usedMemory;
+        long totalMemory;
+    }
+
+    protected final ConsumingFireForgetSignal<ExecutorTopologyChanges> topologyChanged = new ConsumingFireForgetSignal<>();
+
+    public ConsumingFireForgetSignal<ExecutorTopologyChanges> onTopologyChange() {
+        return topologyChanged;
+    }
 
     @MonitoredFunction
-    List<ExecutorHostInfo> lastKnownSnapshots();
+    public abstract long executorCount(boolean skipOffDutyNodes);
 
-    Optional<ExecutorHostInfo> currentSnapshot(String executorId);
+    public abstract List<ExecutorHostInfo> currentSnapshot(boolean skipOffDutyNodes);
 
-    Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId);
+    @MonitoredFunction
+    public abstract List<ExecutorHostInfo> lastKnownSnapshots();
 
-    void remove(Collection<String> executorIds);
+    public abstract Optional<ExecutorHostInfo> currentSnapshot(String executorId);
 
-    void update(final List<ExecutorNodeData> nodeData);
+    public abstract Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId);
 
-    void update(ExecutorResourceSnapshot snapshot);
+    public abstract void remove(Collection<String> executorIds);
 
-    Optional<AllocatedExecutorNode> selectNodes(
+    public abstract void update(final List<ExecutorNodeData> nodeData);
+
+    public abstract void update(ExecutorResourceSnapshot snapshot);
+
+    public abstract Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter);
 
-    void deselectNode(final AllocatedExecutorNode executorNode);
+    public abstract void deselectNode(String executorId,
+                                             CPUAllocation cpuAllocation,
+                                             MemoryAllocation memoryAllocation) ;
 
-    boolean isBlacklisted(String executorId);
+    public abstract boolean isBlacklisted(String executorId);
 
-    void markBlacklisted(String executorId);
+    public abstract void markBlacklisted(String executorId);
 
-    void unmarkBlacklisted(String executorId);
+    public abstract void unmarkBlacklisted(String executorId);
+
+    protected final void raiseEvent(
+            Set<String> addedExecutors,
+            Set<String> removedExecutors,
+            Set<String> currentKnown) {
+        if(!addedExecutors.isEmpty() || !removedExecutors.isEmpty()) {
+            topologyChanged.dispatch(new ExecutorTopologyChanges(addedExecutors, removedExecutors, currentKnown));
+        }
+    }
 
 }

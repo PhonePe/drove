@@ -24,28 +24,32 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
+import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
-import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -109,7 +113,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                 .filter(instanceInfo -> (restartOp.getInstanceIds() == null || restartOp.getInstanceIds().isEmpty())
                         || restartOp.getInstanceIds().contains(instanceInfo.getInstanceId()))
                 .toList();
-        if(instances.isEmpty()) {
+        if (instances.isEmpty()) {
             log.info("Nothing done to replace instances for {}. No relevant instances found.", appId);
             return Optional.empty();
         }
@@ -126,29 +130,51 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
                  instances.size(),
                  parallelism,
                  schedulingSessionId);
+        val stopFirst = restartOp.isStopFirst();
+        log.info("Stop first enforced: {}", stopFirst);
         val restartJobs = instances.stream()
                 .map(instanceInfo -> (Job<Boolean>) JobTopology.<Boolean>builder()
                         .withThreadFactory(threadFactory)
-                        .addJob(List.of(new StartSingleInstanceJob(appSpec,
-                                                                   clusterOpSpec,
-                                                                   scheduler,
-                                                                   instanceInfoDB, communicator,
-                                                                   schedulingSessionId,
-                                                                   retrySpecFactory,
-                                                                   instanceIdGenerator,
-                                                                   tokenManager,
-                                                                   httpCaller),
-                                        new StopSingleInstanceJob(appId,
-                                                                  instanceInfo.getInstanceId(),
-                                                                  clusterOpSpec,
-                                                                  instanceInfoDB, clusterResourcesDB,
-                                                                  communicator, retrySpecFactory)))
+                        .addJob(stopFirst
+                                ? List.of(stopOldInstanceJob(instanceInfo, appId, clusterOpSpec, schedulingSessionId),
+                                          startNewInstanceJob(appSpec, clusterOpSpec, schedulingSessionId))
+                                : List.of(startNewInstanceJob(appSpec, clusterOpSpec, schedulingSessionId),
+                                          stopOldInstanceJob(instanceInfo, appId, clusterOpSpec, schedulingSessionId)))
                         .build())
                 .toList();
         return Optional.of(JobTopology.<Boolean>builder()
                                    .withThreadFactory(threadFactory)
                                    .addParallel(parallelism, restartJobs)
                                    .build());
+    }
+
+    private StopSingleInstanceJob stopOldInstanceJob(
+            InstanceInfo instanceInfo,
+            String appId,
+            ClusterOpSpec clusterOpSpec,
+            String schedulingSessionId) {
+        return new StopSingleInstanceJob(appId,
+                                         instanceInfo.getInstanceId(),
+                                         clusterOpSpec,
+                                         scheduler,
+                                         schedulingSessionId,
+                                         instanceInfoDB, clusterResourcesDB,
+                                         communicator, retrySpecFactory);
+    }
+
+    private @NotNull StartSingleInstanceJob startNewInstanceJob(
+            ApplicationSpec appSpec,
+            ClusterOpSpec clusterOpSpec,
+            String schedulingSessionId) {
+        return new StartSingleInstanceJob(appSpec,
+                                          clusterOpSpec,
+                                          scheduler,
+                                          instanceInfoDB, communicator,
+                                          schedulingSessionId,
+                                          retrySpecFactory,
+                                          instanceIdGenerator,
+                                          tokenManager,
+                                          httpCaller);
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -24,8 +25,14 @@ import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
+import com.phonepe.drove.models.application.requirements.ResourceType;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.task.TaskSpec;
@@ -34,11 +41,13 @@ import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -65,7 +74,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
     private final ClusterResourcesDB clusterResourcesDB;
-    private final Map<String, Map<String, Long>> schedulingSessionData = new ConcurrentHashMap<>();
+    //Map of sessionId -> [executorId -> [ instanceId -> resources]]]
+    private final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> schedulingSessionData =
+            new ConcurrentHashMap<>();
 
     @Inject
     public DefaultInstanceScheduler(
@@ -78,14 +89,11 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, DeploymentSpec applicationSpec) {
-        //Take a snapshot of all instances in this cluster at the onset of the session
-        //This will get augmented every time a new node is allocated in this session
-        schedulingSessionData.computeIfAbsent(schedulingSessionId,
-                                              id -> new HashMap<>(clusterSnapshot(applicationSpec)));
+            String schedulingSessionId, String instanceId, DeploymentSpec applicationSpec) {
+
         var placementPolicy = Objects.requireNonNullElse(applicationSpec.getPlacementPolicy(),
                                                          new AnyPlacementPolicy());
-        if(hasTagPolicy(placementPolicy)) {
+        if (hasTagPolicy(placementPolicy)) {
             log.info("Placement policy seems to have tags already, skipping mutation");
         }
         else {
@@ -93,25 +101,29 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
                                                            CompositePlacementPolicy.CombinerType.AND);
         }
-
+        val sessionData = schedulingSessionData.computeIfAbsent(
+                schedulingSessionId,
+                id -> clusterSnapshot(applicationSpec));
         val finalPlacementPolicy = placementPolicy;
-        val selectedNode = clusterResourcesDB.selectNodes(applicationSpec.getResources(),
-                                                          allocatedNode -> validateNode(
-                                                                  finalPlacementPolicy,
-                                                                  schedulingSessionData.get(
-                                                                          schedulingSessionId),
-                                                                  allocatedNode));
+        val selectedNode = clusterResourcesDB.selectNodes(
+                applicationSpec.getResources(),
+                allocatedNode -> validateNode(finalPlacementPolicy, sessionData, allocatedNode));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration
         selectedNode.ifPresent(allocatedExecutorNode -> schedulingSessionData.computeIfPresent(
                 schedulingSessionId,
-                (sid, executors) -> {
-                    executors.compute(allocatedExecutorNode.getExecutorId(),
-                                      (eid, existingCount) -> null == existingCount
-                                                              ? 1L
-                                                              : existingCount + 1L);
-                    return executors;
+                (sid, executorAllocations) -> {
+                    val executorId = allocatedExecutorNode.getExecutorId();
+                    val currentAllocations = executorAllocations.computeIfAbsent(executorId, eId -> new HashMap<>());
+                    currentAllocations.put(instanceId,
+                                           new InstanceResourceAllocation(executorId,
+                                                                          instanceId,
+                                                                          allocatedExecutorNode.getCpu(),
+                                                                          allocatedExecutorNode.getMemory()));
+                    log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
+                             sid, executorId, currentAllocations.size());
+                    return executorAllocations;
                 }));
         return selectedNode;
     }
@@ -124,57 +136,134 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
     @Override
     @MonitoredFunction
-    public synchronized boolean discardAllocation(String schedulingSessionId, AllocatedExecutorNode node) {
-        clusterResourcesDB.deselectNode(node);
+    public synchronized boolean discardAllocation(
+            String schedulingSessionId,
+            String instanceId,
+            AllocatedExecutorNode node) {
         schedulingSessionData.computeIfPresent(schedulingSessionId, (id, executors) -> {
-            executors.remove(node.getExecutorId());
+            var executorId = executorId(instanceId, node, executors);
+            if(!Strings.isNullOrEmpty(executorId)) {
+                val updatedAllocation = executors.compute(
+                        executorId,
+                        (eId, allocation) -> {
+                            if (null != allocation) {
+                                val removed = allocation.remove(instanceId);
+                                if (removed != null) {
+                                    clusterResourcesDB.deselectNode(removed.getExecutorId(),
+                                                                    removed.getCpu(),
+                                                                    removed.getMemory());
+                                    log.info("Relinquished resources for {}/{}",
+                                             removed.getExecutorId(), removed.getInstanceId());
+                                }
+                            }
+                            return allocation;
+                        });
+                log.info("POST_DISCARD::SID: {} exec id: {} count: {}",
+                         schedulingSessionId,
+                         executorId,
+                         null == updatedAllocation ? 0 : updatedAllocation.size());
+            }
             return executors;
         });
         return true;
     }
 
-    private Map<String, Long> clusterSnapshot(DeploymentSpec deploymentSpec) {
-        return deploymentSpec.accept(new DeploymentSpecVisitor<Map<String, Long>>() {
+    @Nullable
+    private static String executorId(
+            String instanceId,
+            AllocatedExecutorNode node,
+            Map<String, Map<String, InstanceResourceAllocation>> executors) {
+        return null != node
+               ? node.getExecutorId()
+               : executors.values()
+                       .stream().map(instances -> instances.get(instanceId))
+                       .filter(Objects::nonNull)
+                       .map(InstanceResourceAllocation::getExecutorId)
+                       .findAny()
+                       .orElse(null);
+    }
+
+    private Map<String, Map<String, InstanceResourceAllocation>> clusterSnapshot(DeploymentSpec deploymentSpec) {
+        return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
             @Override
-            public Map<String, Long> visit(ApplicationSpec applicationSpec) {
+            public Map<String, Map<String, InstanceResourceAllocation>> visit(ApplicationSpec applicationSpec) {
                 return instanceInfoDB.instances(Set.of(ControllerUtils.deployableObjectId(applicationSpec)),
                                                 RESOURCE_CONSUMING_INSTANCE_STATES,
                                                 false)
                         .values()
                         .stream()
                         .flatMap(Collection::stream)
-                        .collect(Collectors.groupingBy(InstanceInfo::getExecutorId, Collectors.counting()));
+                        .map(info -> convert(info))
+                        .collect(Collectors.groupingBy(InstanceResourceAllocation::getExecutorId,
+                                                       Collectors.toMap(InstanceResourceAllocation::getInstanceId,
+                                                                        Function.identity())));
             }
 
             @Override
-            public Map<String, Long> visit(TaskSpec taskSpec) {
+            public Map<String, Map<String, InstanceResourceAllocation>> visit(TaskSpec taskSpec) {
                 return taskDB.tasks(Set.of(taskSpec.getSourceAppName()), RESOURCE_CONSUMING_TASK_STATES, false)
                         .values()
                         .stream()
                         .flatMap(Collection::stream)
-                        .collect(Collectors.groupingBy(TaskInfo::getExecutorId, Collectors.counting()));
+                        .map(info -> convert(info))
+                        .collect(Collectors.groupingBy(InstanceResourceAllocation::getExecutorId,
+                                                       Collectors.toMap(InstanceResourceAllocation::getInstanceId,
+                                                                        Function.identity())));
+            }
+        });
+    }
+
+    private InstanceResourceAllocation convert(final DeployedInstanceInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<>() {
+            @Override
+            public InstanceResourceAllocation visit(InstanceInfo applicationInstanceInfo) {
+                return new InstanceResourceAllocation(
+                        applicationInstanceInfo.getExecutorId(),
+                        applicationInstanceInfo.getInstanceId(),
+                        (CPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.CPU),
+                        (MemoryAllocation) filterAllocation(applicationInstanceInfo.getResources(),
+                                                            ResourceType.MEMORY));
+            }
+
+            @Override
+            public InstanceResourceAllocation visit(TaskInfo taskInfo) {
+                return new InstanceResourceAllocation(
+                        taskInfo.getExecutorId(),
+                        taskInfo.getInstanceId(),
+                        (CPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.CPU),
+                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY));
+            }
+
+            private static ResourceAllocation filterAllocation(
+                    List<ResourceAllocation> applicationInstanceInfo,
+                    ResourceType resourceType) {
+                return Objects.requireNonNullElse(applicationInstanceInfo, List.<ResourceAllocation>of())
+                        .stream()
+                        .filter(resourceAllocation -> resourceAllocation.getType().equals(resourceType))
+                        .findAny()
+                        .orElse(null);
             }
         });
     }
 
     private boolean validateNode(
             final PlacementPolicy placementPolicy,
-            Map<String, Long> sessionLevelData,
+            Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
                 log.debug("Existing: {} allocated: {}", sessionLevelData.keySet(), allocatedExecutorId);
-                return !sessionLevelData.containsKey(allocatedExecutorId);
+                val existing = sessionLevelData.get(allocatedExecutorId);
+                return existing == null || existing.isEmpty();
             }
 
             @Override
             public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
-                val numExistingInstances = sessionLevelData.getOrDefault(allocatedExecutorId, 0L);
+                val numExistingInstances = sessionLevelData.getOrDefault(allocatedExecutorId, Map.of()).size();
                 log.debug("Existing Instances: {} on allocated executor: {}",
-                          numExistingInstances,
-                          allocatedExecutorId);
+                          numExistingInstances, allocatedExecutorId);
                 return numExistingInstances < maxNPerHost.getMax();
             }
 

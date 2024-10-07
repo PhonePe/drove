@@ -21,7 +21,7 @@
     </envs>
     <option name="MAIN_CLASS_NAME" value="com.phonepe.drove.executor.App" />
     <module name="drove-executor" />
-    <option name="PROGRAM_PARAMETERS" value="server drove-executor/configs/config.yml" />
+    <option name="PROGRAM_PARAMETERS" value="server drove-executor/configs/config-2.yml" />
     <option name="VM_PARAMETERS" value="-Djdk.internal.httpclient.disableHostnameVerification " />
     <extension name="coverage">
       <pattern>

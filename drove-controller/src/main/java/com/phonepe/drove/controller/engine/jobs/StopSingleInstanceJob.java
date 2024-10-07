@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.engine.jobs;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
@@ -25,6 +26,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
@@ -48,21 +50,28 @@ public class StopSingleInstanceJob implements Job<Boolean> {
     private final String appId;
     private final String instanceId;
     private final ClusterOpSpec clusterOpSpec;
+    private final InstanceScheduler scheduler;
+    private final String schedulingSessionId;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
+    @SuppressWarnings("java:S107")
     public StopSingleInstanceJob(
             String appId,
             String instanceId,
             ClusterOpSpec clusterOpSpec,
+            InstanceScheduler scheduler,
+            String schedulingSessionId,
             ApplicationInstanceInfoDB instanceInfoDB, ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory) {
         this.appId = appId;
         this.instanceId = instanceId;
         this.clusterOpSpec = clusterOpSpec;
+        this.scheduler = scheduler;
+        this.schedulingSessionId = schedulingSessionId;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
@@ -110,7 +119,8 @@ public class StopSingleInstanceJob implements Job<Boolean> {
         return false;
     }
 
-    private boolean stopInstance(final InstanceInfo instanceInfo, final ClusterOpSpec clusterOpSpec) {
+    private boolean stopInstance(
+            final InstanceInfo instanceInfo, final ClusterOpSpec clusterOpSpec) {
         val executorId = instanceInfo.getExecutorId();
         val node = clusterResourcesDB.currentSnapshot(executorId)
                 .map(ExecutorHostInfo::getNodeData)
@@ -131,7 +141,11 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
             return false;
         }
-        return ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED, retrySpecFactory);
+        val stopped = ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED, retrySpecFactory);
+        if(stopped && !Strings.isNullOrEmpty(schedulingSessionId)) {
+            scheduler.discardAllocation(schedulingSessionId, instanceId, null);
+        }
+        return stopped;
     }
 
 }

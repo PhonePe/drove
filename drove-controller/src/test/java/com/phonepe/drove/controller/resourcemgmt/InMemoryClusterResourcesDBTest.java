@@ -171,7 +171,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         }
         assertNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)), node -> true)
                            .orElse(null));
-        db.deselectNode(allocatedNode); // Free up cores
+        db.deselectNode(allocatedNode.getExecutorId(), allocatedNode.getCpu(), allocatedNode.getMemory()); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)), node -> true)
                               .orElse(null));

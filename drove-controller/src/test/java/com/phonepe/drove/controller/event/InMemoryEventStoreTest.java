@@ -16,9 +16,11 @@
 
 package com.phonepe.drove.controller.event;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
+import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
 import io.appform.signals.signals.ConsumingSyncSignal;
@@ -43,7 +45,8 @@ class InMemoryEventStoreTest {
     void test() {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
-        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
+        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT,
+                                        new ClusterMetricsRegistry(SharedMetricRegistries.getOrCreate("test")));
         es.recordEvent(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()));
 
         val res = es.latest(0, 10);
@@ -63,8 +66,8 @@ class InMemoryEventStoreTest {
         val es = new InMemoryEventStore(
                 leadershipEnsurer,
                 DEFAULT.withMaxEventsStorageDuration(io.dropwizard.util.Duration.seconds(2)),
-                Duration.ofSeconds(1));
-
+                Duration.ofSeconds(1),
+                new ClusterMetricsRegistry(SharedMetricRegistries.getOrCreate("test")));
         IntStream.rangeClosed(1, 200)
                 .forEach(i -> {
                     CommonTestUtils.delay(Duration.ofMillis(1)); //Otherwise all time will be same
@@ -96,7 +99,8 @@ class InMemoryEventStoreTest {
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         val leaderChanged = new ConsumingSyncSignal<Boolean>();
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(leaderChanged);
-        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT);
+        val es = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT,
+                                        new ClusterMetricsRegistry(SharedMetricRegistries.getOrCreate("test")));
         es.recordEvent(new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata()));
 
         {

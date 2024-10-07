@@ -1,7 +1,7 @@
 server:
   applicationConnectors:
     - type: http
-      port: 3000
+      port: 3010
 #    - type: https
 #      port: 3000
 #      bindHost: ssdev.test
@@ -11,7 +11,7 @@ server:
 #      validatePeers: false
   adminConnectors:
     - type: http
-      port: 3001
+      port: 3011
   applicationContextPath: /
   requestLog:
     appenders:
@@ -41,14 +41,14 @@ logging:
       archive: true
 
 options:
-  hostname: host-1
+  hostname: host-2
   cacheImages: true
   maxOpenFiles: 10_000
   logBufferSize: 5m
   cacheFileSize: 10m
   cacheFileCount: 3
   # See podman notes to create podman rootless socket
-  # dockerSocketPath: /run/user/1000/podman/podman.sock
+  dockerSocketPath: /run/user/1000/podman/podman.sock
 
 zookeeper:
   connectionString: localhost:2181

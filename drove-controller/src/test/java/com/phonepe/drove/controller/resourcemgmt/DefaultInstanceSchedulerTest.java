@@ -20,7 +20,6 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
-import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.policies.*;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -52,12 +51,16 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         //Load cluster nodes
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 25)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
 
     }
 
@@ -68,32 +71,19 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val taskDB = new InMemoryTaskDB();
         val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
-        val spec = new ApplicationSpec(originalSpec.getName(),
-                                       originalSpec.getVersion(),
-                                       originalSpec.getExecutable(),
-                                       originalSpec.getExposedPorts(),
-                                       originalSpec.getVolumes(),
-                                       originalSpec.getConfigs(),
-                                       originalSpec.getType(),
-                                       originalSpec.getLogging(),
-                                       originalSpec.getResources(),
-                                       new OnePerHostPlacementPolicy(),
-                                       originalSpec.getHealthcheck(),
-                                       originalSpec.getReadiness(),
-                                       originalSpec.getTags(),
-                                       originalSpec.getEnv(),
-                                       originalSpec.getArgs(),
-                                       originalSpec.getDevices(),
-                                       originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdown());
+        val spec = originalSpec.withPlacementPolicy(new OnePerHostPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 5)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 
     @Test
@@ -103,32 +93,19 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val taskDB = new InMemoryTaskDB();
         val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
-        val spec = new ApplicationSpec(originalSpec.getName(),
-                                       originalSpec.getVersion(),
-                                       originalSpec.getExecutable(),
-                                       originalSpec.getExposedPorts(),
-                                       originalSpec.getVolumes(),
-                                       originalSpec.getConfigs(),
-                                       originalSpec.getType(),
-                                       originalSpec.getLogging(),
-                                       originalSpec.getResources(),
-                                       new MaxNPerHostPlacementPolicy(2),
-                                       originalSpec.getHealthcheck(),
-                                       originalSpec.getReadiness(),
-                                       originalSpec.getTags(),
-                                       originalSpec.getEnv(),
-                                       originalSpec.getArgs(),
-                                       originalSpec.getDevices(),
-                                       originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdown());
+        val spec = originalSpec.withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 10)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 
     @Test
@@ -138,33 +115,20 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val taskDB = new InMemoryTaskDB();
         val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
-        val spec = new ApplicationSpec(originalSpec.getName(),
-                                       originalSpec.getVersion(),
-                                       originalSpec.getExecutable(),
-                                       originalSpec.getExposedPorts(),
-                                       originalSpec.getVolumes(),
-                                       originalSpec.getConfigs(),
-                                       originalSpec.getType(),
-                                       originalSpec.getLogging(),
-                                       originalSpec.getResources(),
-                                       new MatchTagPlacementPolicy("test"),
-                                       originalSpec.getHealthcheck(),
-                                       originalSpec.getReadiness(),
-                                       originalSpec.getTags(),
-                                       originalSpec.getEnv(),
-                                       originalSpec.getArgs(),
-                                       originalSpec.getDevices(),
-                                       originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdown());
+        val spec = originalSpec.withPlacementPolicy(new MatchTagPlacementPolicy("test"));
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 15)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 
     @Test
@@ -174,33 +138,20 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val taskDB = new InMemoryTaskDB();
         val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
-        val spec = new ApplicationSpec(originalSpec.getName(),
-                                       originalSpec.getVersion(),
-                                       originalSpec.getExecutable(),
-                                       originalSpec.getExposedPorts(),
-                                       originalSpec.getVolumes(),
-                                       originalSpec.getConfigs(),
-                                       originalSpec.getType(),
-                                       originalSpec.getLogging(),
-                                       originalSpec.getResources(),
-                                       new NoTagPlacementPolicy(),
-                                       originalSpec.getHealthcheck(),
-                                       originalSpec.getReadiness(),
-                                       originalSpec.getTags(),
-                                       originalSpec.getEnv(),
-                                       originalSpec.getArgs(),
-                                       originalSpec.getDevices(),
-                                       originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdown());
+        val spec = originalSpec.withPlacementPolicy(new NoTagPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 10)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 
     @Test
@@ -210,36 +161,23 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val taskDB = new InMemoryTaskDB();
         val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
-        val spec = new ApplicationSpec(originalSpec.getName(),
-                                       originalSpec.getVersion(),
-                                       originalSpec.getExecutable(),
-                                       originalSpec.getExposedPorts(),
-                                       originalSpec.getVolumes(),
-                                       originalSpec.getConfigs(),
-                                       originalSpec.getType(),
-                                       originalSpec.getLogging(),
-                                       originalSpec.getResources(),
-                                       new CompositePlacementPolicy(
-                                               List.of(new MatchTagPlacementPolicy("test"),
-                                                       new MaxNPerHostPlacementPolicy(2)),
-                                               AND),
-                                       originalSpec.getHealthcheck(),
-                                       originalSpec.getReadiness(),
-                                       originalSpec.getTags(),
-                                       originalSpec.getEnv(),
-                                       originalSpec.getArgs(),
-                                       originalSpec.getDevices(),
-                                       originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdown());
+        val spec = originalSpec
+                .withPlacementPolicy(new CompositePlacementPolicy(
+                        List.of(new MatchTagPlacementPolicy("test"), new MaxNPerHostPlacementPolicy(2)),
+                        AND));
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 6)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 
     @Test
@@ -249,37 +187,24 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val taskDB = new InMemoryTaskDB();
         val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
         val originalSpec = appSpec();
-        val spec = new ApplicationSpec(originalSpec.getName(),
-                                       originalSpec.getVersion(),
-                                       originalSpec.getExecutable(),
-                                       originalSpec.getExposedPorts(),
-                                       originalSpec.getVolumes(),
-                                       originalSpec.getConfigs(),
-                                       originalSpec.getType(),
-                                       originalSpec.getLogging(),
-                                       originalSpec.getResources(),
-                                       new CompositePlacementPolicy(
-                                               List.of(new MatchTagPlacementPolicy("test"),
-                                                       new MatchTagPlacementPolicy("test2")),
-                                               OR),
-                                       originalSpec.getHealthcheck(),
-                                       originalSpec.getReadiness(),
-                                       originalSpec.getTags(),
-                                       originalSpec.getEnv(),
-                                       originalSpec.getArgs(),
-                                       originalSpec.getDevices(),
-                                       originalSpec.getExposureSpec(),
-                                       originalSpec.getPreShutdown());
+        val spec = originalSpec.withPlacementPolicy(new CompositePlacementPolicy(
+                List.of(new MatchTagPlacementPolicy("test"),
+                        new MatchTagPlacementPolicy("test2")),
+                OR));
         rdb.update(IntStream.rangeClosed(1, 2).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
         rdb.update(IntStream.rangeClosed(2, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test2"))).toList());
         rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 15)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 
 
@@ -296,13 +221,19 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         {
             val schedId = "SCHED_ID_1";
             IntStream.rangeClosed(1, 20)
-                    .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
+                    .forEach(i -> {
+                        val instanceId = "I" + i;
+                        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+                    });
             sched.finaliseSession(schedId);
         }
         {
             val schedId = "SCHED_ID_2";
             IntStream.rangeClosed(1, 5)
-                    .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
+                    .forEach(i -> {
+                        val instanceId = "I" + i + 10;
+                        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+                    });
             sched.finaliseSession(schedId);
         }
 
@@ -318,13 +249,19 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
         //Load cluster nodes
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
-        rdb.update(IntStream.rangeClosed(4, 5).mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true)).toList());
+        rdb.update(IntStream.rangeClosed(4, 5)
+                           .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true))
+                           .toList());
         val schedId = "SCHED_ID_1";
-        val node = sched.schedule(schedId, spec).orElse(null);
+        val instanceId = "I1";
+        val node = sched.schedule(schedId, instanceId, spec).orElse(null);
         IntStream.rangeClosed(2, 15)
-                .forEach(i -> assertNotNull(sched.schedule(schedId, spec).orElse(null)));
-        assertNull(sched.schedule(schedId, spec).orElse(null));
-        sched.discardAllocation(schedId, node);
-        assertNotNull(sched.schedule(schedId, spec).orElse(null));
+                .forEach(i -> {
+                    val iId = "I" + i;
+                    assertNotNull(sched.schedule(schedId, iId, spec).orElse(null));
+                });
+        assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+        sched.discardAllocation(schedId, instanceId, node);
+        assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
     }
 }

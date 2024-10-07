@@ -20,10 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
@@ -40,20 +37,26 @@ import java.util.Set;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@With
 public class ApplicationReplaceInstancesOperation extends ApplicationOperation {
     @NotEmpty
     String appId;
 
     Set<String> instanceIds;
 
+    boolean stopFirst;
+
     @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public ApplicationReplaceInstancesOperation(String appId, Set<String> instanceIds, ClusterOpSpec opSpec) {
+    public ApplicationReplaceInstancesOperation(String appId, Set<String> instanceIds,
+                                                boolean stopFirst,
+                                                ClusterOpSpec opSpec) {
         super(ApplicationOperationType.REPLACE_INSTANCES);
         this.appId = appId;
         this.instanceIds = instanceIds == null ? Collections.emptySet() : instanceIds;
+        this.stopFirst = stopFirst;
         this.opSpec = opSpec;
     }
 

@@ -14,30 +14,19 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.ignite.discovery.config;
+package com.phonepe.drove.controller.resourcemgmt;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import lombok.Value;
 
-import java.time.Duration;
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class DroveIgniteConfig {
-
-    private String droveEndpoint;
-
-    private String transportName;
-
-    private String communicationPortName;
-
-    private String discoveryPortName;
-
-    private boolean useAppNameForDiscovery;
-
-    private Duration leaderElectionMaxRetryDuration;
+/**
+ *
+ */
+@Value
+class InstanceResourceAllocation {
+    String executorId;
+    String instanceId;
+    CPUAllocation cpu;
+    MemoryAllocation memory;
 }

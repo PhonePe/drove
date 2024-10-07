@@ -19,6 +19,7 @@ package com.phonepe.drove.common.discovery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.info.nodedata.NodeData;
 import com.phonepe.drove.models.info.nodedata.NodeType;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -51,6 +52,7 @@ public class ZkNodeDataStore implements NodeDataStore {
     }
 
     @Override
+    @MonitoredFunction
     public void updateNodeData(NodeData nodeData) {
         try {
             curator.create()
@@ -66,6 +68,7 @@ public class ZkNodeDataStore implements NodeDataStore {
     }
 
     @Override
+    @MonitoredFunction
     public List<NodeData> nodes(NodeType nodeType) {
         try {
             val parentPath = "/" + nodeType.name().toLowerCase();
@@ -96,6 +99,7 @@ public class ZkNodeDataStore implements NodeDataStore {
     }
 
     @Override
+    @MonitoredFunction
     public void removeNodeData(NodeData nodeData) {
         try {
             curator.delete()

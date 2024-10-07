@@ -446,7 +446,7 @@ public class ControllerUtils {
         if (argsDisabled && !argList.isEmpty()) {
             return List.of("Passing command line to containers is disabled on this cluster");
         }
-        if(Joiner.on(" ").join(argList).length() > 2048) {
+        if (Joiner.on(" ").join(argList).length() > 2048) {
             return List.of("Maximum combined length of command line arguments can be 2048");
         }
         return List.of();
@@ -455,7 +455,7 @@ public class ControllerUtils {
     public static List<String> checkDeviceDisabled(
             List<DeviceSpec> devices, ControllerOptions controllerOptions) {
         val deviceEnabled = Objects.requireNonNullElse(controllerOptions.getEnableRawDeviceAccess(), false);
-        if(!deviceEnabled && null != devices && !devices.isEmpty()) {
+        if (!deviceEnabled && null != devices && !devices.isEmpty()) {
             return List.of("Device access is disabled. " +
                                    "To enable, set enableRawDeviceAccess: true in controller options.");
         }
@@ -540,11 +540,11 @@ public class ControllerUtils {
         val requiredMem = requiredInstances * requiredMemPerInstance;
         if (requiredCores > freeCores) {
             errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
-                             "Available: " + freeCores);
+                               "Available: " + freeCores);
         }
         if (requiredMem > freeMemory) {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
-                             "Available: " + freeMemory);
+                               "Available: " + freeMemory);
         }
         val maxAvailablePhysicalCoresPerNode = executors.stream()
                 .map(e -> e.getNodeData().getState().getLayout())
@@ -553,10 +553,30 @@ public class ControllerUtils {
                 .mapToInt(Integer::intValue)
                 .max()
                 .orElse(Integer.MAX_VALUE);
-        if(maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
+        if (maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
             errors.add("Required cores exceeds the maximum core available on a single " +
-                             "NUMA node in the cluster. Required: " + requiredCores
-                             + " Max: " + maxAvailablePhysicalCoresPerNode);
+                               "NUMA node in the cluster. Required: " + requiredCores
+                               + " Max: " + maxAvailablePhysicalCoresPerNode);
         }
+    }
+
+    public static ClusterResourcesDB.ClusterResourcesSummary summarizeResources(final List<ExecutorHostInfo> executors) {
+        var freeCores = 0;
+        var usedCores = 0;
+        var freeMemory = 0L;
+        var usedMemory = 0L;
+        for (val executor : executors) {
+            usedCores += usedCores(executor);
+            freeCores += freeCores(executor);
+            freeMemory += freeMemory(executor);
+            usedMemory += usedMemory(executor);
+        }
+        return new ClusterResourcesDB.ClusterResourcesSummary(executors.size(),
+                                                              freeCores,
+                                                              usedCores,
+                                                              freeCores + usedCores,
+                                                              freeMemory,
+                                                              usedMemory,
+                                                              freeMemory + usedMemory);
     }
 }

@@ -382,6 +382,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null)));
         when(aiDB.instanceCount(eq(appId), anySet())).thenReturn(2L);
 
+        when(crDB.executorCount(true)).thenReturn(1L);
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
@@ -400,6 +401,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null,
                                                                                  null)));
 
+        when(crDB.executorCount(true)).thenReturn(1L);
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
@@ -422,6 +424,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null,
                                                                                  null)));
 
+        when(crDB.executorCount(true)).thenReturn(4L);
         when(crDB.currentSnapshot(true))
                 .thenReturn(IntStream.range(0, 3)
                                     .mapToObj(i -> ControllerTestUtils.executorHost(i, 8000, List.of(), List.of()))
@@ -458,6 +461,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         val appId = "SomeAppId";
         when(engine.applicationState(anyString())).thenReturn(Optional.of(ApplicationState.MONITORING));
         when(asDB.application(appId)).thenReturn(Optional.empty());
+        when(crDB.executorCount(true)).thenReturn(1L);
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
@@ -476,6 +480,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  1,
                                                                                  null,
                                                                                  null)));
+        when(crDB.executorCount(true)).thenReturn(1L);
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
@@ -549,7 +554,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
         ensureSuccess(validator.validate(
                 engine,
-                new ApplicationReplaceInstancesOperation(appId, Set.of("AI-00001"), ClusterOpSpec.DEFAULT)));
+                new ApplicationReplaceInstancesOperation(appId, Set.of("AI-00001"), false, ClusterOpSpec.DEFAULT)));
     }
 
     @Test
@@ -569,6 +574,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         ensureFailure(validator.validate(
                               engine,
                               new ApplicationReplaceInstancesOperation(appId, Set.of("Invalid"),
+                                                                       false,
                                                                        ClusterOpSpec.DEFAULT)),
                       "There are no replaceable healthy instances with ids: [Invalid]");
     }

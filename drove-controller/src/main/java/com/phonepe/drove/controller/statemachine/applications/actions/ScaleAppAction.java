@@ -165,6 +165,8 @@ public class ScaleAppAction extends AppAsyncAction {
                                                    .map(iid -> (Job<Boolean>)new StopSingleInstanceJob(scaleOp.getAppId(),
                                                                                                        iid,
                                                                                                        scaleOp.getOpSpec(),
+                                                                                                       scheduler,
+                                                                                                       null,
                                                                                                        instanceInfoDB,
                                                                                                        clusterResourcesDB,
                                                                                                        communicator,

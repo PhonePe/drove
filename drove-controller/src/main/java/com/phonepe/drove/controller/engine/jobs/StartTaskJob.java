@@ -150,7 +150,7 @@ public class StartTaskJob implements Job<Boolean> {
     private boolean startInstance(TaskSpec taskSpec, String instanceId) {
         val sourceApp = taskSpec.getSourceAppName();
         val taskId = taskSpec.getTaskId();
-        val node = scheduler.schedule(schedulingSessionId, taskSpec)
+        val node = scheduler.schedule(schedulingSessionId, instanceId, taskSpec)
                 .orElse(null);
         if (null == node) {
             log.warn("No node found in the cluster that can provide required resources" +
@@ -197,7 +197,7 @@ public class StartTaskJob implements Job<Boolean> {
         finally {
             if (!successful) {
                 log.warn("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
-                scheduler.discardAllocation(schedulingSessionId, node);
+                scheduler.discardAllocation(schedulingSessionId, instanceId, node);
             }
         }
         return successful;

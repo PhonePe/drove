@@ -60,6 +60,7 @@ import com.phonepe.drove.statemachine.ActionFactory;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -283,14 +284,14 @@ class ApplicationEngineTest extends ControllerTestBase {
         setupStateRecorder(appId, states);
         createApp(spec, appId);
         sendCommand(appId, new ApplicationStartInstancesOperation(appId, 1, TEST_STRATEGY), RUNNING);
-        sendCommand(appId, new ApplicationReplaceInstancesOperation(appId, Set.of(), TEST_STRATEGY), RUNNING);
+        sendCommand(appId, new ApplicationReplaceInstancesOperation(appId, Set.of(), false, TEST_STRATEGY), RUNNING);
         sendCommand(appId,
                     new ApplicationReplaceInstancesOperation(appId,
                                                              instanceInfoDB.healthyInstances(appId)
                                                                      .stream()
                                                                      .map(InstanceInfo::getInstanceId)
                                                                      .collect(Collectors.toUnmodifiableSet()),
-                                                             TEST_STRATEGY),
+                                                             false, TEST_STRATEGY),
                     RUNNING);
         sendCommand(appId, new ApplicationSuspendOperation(appId, TEST_STRATEGY), MONITORING);
         destroyApp(appId);
@@ -313,7 +314,9 @@ class ApplicationEngineTest extends ControllerTestBase {
         setupStateRecorder(appId, states);
         createApp(spec, appId);
         sendCommand(appId, new ApplicationStartInstancesOperation(appId, 1, TEST_STRATEGY), RUNNING);
-        val res = engine.handleOperation(new ApplicationReplaceInstancesOperation(appId, Set.of("a123"), TEST_STRATEGY));
+        val res = engine.handleOperation(new ApplicationReplaceInstancesOperation(appId, Set.of("a123"),
+                                                                                  false,
+                                                                                  TEST_STRATEGY));
         assertEquals(FAILURE, res.getStatus(), Joiner.on(",").join(res.getMessages()));
         assertEquals("There are no replaceable healthy instances with ids: [a123]", res.getMessages().get(0));
 //        sendCommand(appId, new ApplicationReplaceInstancesOperation(appId, Set.of("a123"), TEST_STRATEGY), RUNNING);
@@ -367,9 +370,14 @@ class ApplicationEngineTest extends ControllerTestBase {
             ApplicationState requiredState) {
         val res = engine.handleOperation(operation);
         assertEquals(SUCCESS, res.getStatus(), Joiner.on(",").join(res.getMessages()));
-        await().pollDelay(Duration.ofSeconds(3))
-                .atMost(Duration.ofSeconds(10))
-                .until(() -> requiredState.equals(engine.applicationState(appId).orElse(ApplicationState.FAILED)));
+        try {
+            await().pollDelay(Duration.ofSeconds(3))
+                    .atMost(Duration.ofSeconds(10))
+                    .until(() -> requiredState.equals(engine.applicationState(appId).orElse(ApplicationState.FAILED)));
+        } catch (ConditionTimeoutException e) {
+            log.warn("Timeout waiting for state: {}", requiredState);
+            throw e;
+        }
     }
 
 

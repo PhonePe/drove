@@ -66,12 +66,13 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
     private final ResourceManager resourceManager;
 
     @Inject
-    public ApplicationInstanceRunAction(ResourceConfig resourceConfig,
-                                        ExecutorOptions executorOptions,
-                                        HttpCaller httpCaller,
-                                        ObjectMapper mapper,
-                                        MetricRegistry metricRegistry,
-                                        ResourceManager resourceManager) {
+    public ApplicationInstanceRunAction(
+            ResourceConfig resourceConfig,
+            ExecutorOptions executorOptions,
+            HttpCaller httpCaller,
+            ObjectMapper mapper,
+            MetricRegistry metricRegistry,
+            ResourceManager resourceManager) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.httpCaller = httpCaller;
@@ -83,7 +84,8 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
     @Override
     @MonitoredFunction(method = "execute")
     protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+            InstanceActionContext<ApplicationInstanceSpec> context,
+            StateData<InstanceState, ExecutorInstanceInfo> currentState) {
         val instanceSpec = context.getInstanceSpec();
         val client = context.getClient();
         try {
