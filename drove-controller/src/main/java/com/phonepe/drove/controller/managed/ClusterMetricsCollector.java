@@ -24,6 +24,7 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
@@ -139,12 +140,12 @@ public class ClusterMetricsCollector implements Managed, ServerLifecycleListener
         val liveExecutors = new ArrayList<ExecutorHostInfo>();
         for (val executor : executors) {
             val nodeData = executor.getNodeData();
-            if (nodeData.isBlacklisted()) {
-                inactiveExecutorsCount++;
-            }
-            else {
+            if (ExecutorState.ACTIVE.equals(nodeData.getExecutorState())) {
                 activeExecutorsCount++;
                 liveExecutors.add(executor);
+            }
+            else {
+                inactiveExecutorsCount++;
             }
             val appInstances = Objects.requireNonNullElse(nodeData.getInstances(),
                                                           List.<InstanceInfo>of());

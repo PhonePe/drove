@@ -25,6 +25,7 @@ import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
@@ -302,7 +303,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                List.of(),
                                                                List.of(),
                                                                Set.of(),
-                                                               false)));
+                                                               ExecutorState.ACTIVE)));
         log.info("Snapshot updated");
     }
 

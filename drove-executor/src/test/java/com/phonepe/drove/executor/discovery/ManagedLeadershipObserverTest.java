@@ -166,7 +166,7 @@ class ManagedLeadershipObserverTest {
                                              null,
                                              null,
                                              null,
-                                             false)));
+                                             ExecutorState.ACTIVE)));
         val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
         obs.start();
         waitUntil(() -> obs.leader().isEmpty());

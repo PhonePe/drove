@@ -40,6 +40,7 @@ import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
@@ -777,7 +778,7 @@ class TaskEngineTest extends ControllerTestBase {
                                                 List.of(),
                                                 List.of(),
                                                 Set.of(),
-                                                false)));
+                                                ExecutorState.ACTIVE)));
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
 

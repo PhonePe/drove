@@ -52,6 +52,7 @@ import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
 import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -521,9 +522,9 @@ public class ResponseEngine {
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
                         val backlistedState = clusterResourcesDB.isBlacklisted(hostInfo.getExecutorId())
-                                              ? ExecutorSummary.ExecutorState.BLACKLISTED
-                                              : ExecutorSummary.ExecutorState.ACTIVE;
-                        val executorState = removed ? ExecutorSummary.ExecutorState.REMOVED
+                                              ? ExecutorState.BLACKLISTED
+                                              : executorData.getExecutorState();
+                        val executorState = removed ? ExecutorState.REMOVED
                                                     : backlistedState;
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                                                hostInfo.getNodeData().getHostname(),

@@ -23,6 +23,7 @@ import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -239,6 +240,19 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         }
     }
 
+
+    @MonitoredFunction
+    @Override
+    public boolean isActive(String executorId) {
+        val stamp = lock.readLock();
+        try {
+            return isActiveInternal(executorId);
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
+
     @Override
     @MonitoredFunction
     public void markBlacklisted(String executorId) {
@@ -291,9 +305,16 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
 
     private boolean isBlackListedInternal(String executorId) {
         return Optional.ofNullable(nodes.get(executorId))
-                .map(node -> node.getNodeData().isBlacklisted())
+                .map(node -> ExecutorState.BLACKLISTED.equals(node.getNodeData().getExecutorState()))
                 .orElse(false)
                 || blackListedNodes.getOrDefault(executorId, false);
+    }
+
+    private boolean isActiveInternal(String executorId) {
+        return Optional.ofNullable(nodes.get(executorId))
+                .map(node -> ExecutorState.ACTIVE.equals(node.getNodeData().getExecutorState()))
+                .orElse(false)
+                || blackListedNodes.getOrDefault(executorId, true);
     }
 
     private void softLockResources(AllocatedExecutorNode node) {

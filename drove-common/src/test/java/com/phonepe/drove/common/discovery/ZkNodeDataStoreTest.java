@@ -21,6 +21,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
@@ -77,7 +78,7 @@ class ZkNodeDataStoreTest {
                                                 List.of(),
                                                 List.of(),
                                                 Set.of(),
-                                                false);
+                                                ExecutorState.ACTIVE);
             store.updateNodeData(nodeData);
             var executors = store.nodes(NodeType.EXECUTOR);
             assertFalse(executors.isEmpty());

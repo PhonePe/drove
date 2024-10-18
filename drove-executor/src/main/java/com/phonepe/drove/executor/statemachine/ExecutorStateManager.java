@@ -16,34 +16,38 @@
 
 package com.phonepe.drove.executor.statemachine;
 
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 
 import javax.inject.Singleton;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
  */
 @Singleton
-public class BlacklistingManager {
-    private final AtomicBoolean blacklisted = new AtomicBoolean();
-    private final ConsumingFireForgetSignal<Boolean> stateChanged = new ConsumingFireForgetSignal<>();
+public class ExecutorStateManager {
+    private final AtomicReference<ExecutorState> currentState = new AtomicReference<>(ExecutorState.ACTIVE);
+    private final ConsumingFireForgetSignal<ExecutorState> stateChanged = new ConsumingFireForgetSignal<>();
 
     public void blacklist() {
-        blacklisted.set(true);
-        stateChanged.dispatch(true);
+        currentState.set(ExecutorState.BLACKLISTED);
+        stateChanged.dispatch(ExecutorState.BLACKLISTED);
     }
 
     public void unblacklist() {
-        blacklisted.set(false);
-        stateChanged.dispatch(false);
+        currentState.set(ExecutorState.ACTIVE);
+        stateChanged.dispatch(ExecutorState.ACTIVE);
+    }
+    public ExecutorState currentState() {
+        return currentState.get();
     }
 
     public boolean isBlacklisted() {
-        return blacklisted.get();
+        return ExecutorState.BLACKLISTED.equals(currentState.get());
     }
 
-    public ConsumingFireForgetSignal<Boolean> onStateChange() {
+    public ConsumingFireForgetSignal<ExecutorState> onStateChange() {
         return stateChanged;
     }
 }

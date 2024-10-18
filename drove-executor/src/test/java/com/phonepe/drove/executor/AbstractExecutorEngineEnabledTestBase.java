@@ -29,7 +29,7 @@ import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
+import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
 import lombok.val;
@@ -53,7 +53,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
     protected ResourceManager resourceDB;
 
     @Inject
-    protected BlacklistingManager blacklistingManager;
+    protected ExecutorStateManager executorStateManager;
 
     @Inject
     protected ApplicationInstanceEngine applicationInstanceEngine;

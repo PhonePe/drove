@@ -27,7 +27,7 @@ import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
+import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
@@ -61,7 +61,7 @@ public class NodeDataUpdater implements Managed {
     private final TaskInstanceEngine taskInstanceEngine;
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ResourceConfig resourceConfig;
-    private final BlacklistingManager blacklistingManager;
+    private final ExecutorStateManager executorStateManager;
 
     private final ScheduledSignal refreshSignal = new ScheduledSignal(Constants.EXECUTOR_REFRESH_INTERVAL);
     private final AtomicBoolean started = new AtomicBoolean();
@@ -76,14 +76,14 @@ public class NodeDataUpdater implements Managed {
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine, LocalServiceInstanceEngine localServiceInstanceEngine,
             ResourceConfig resourceConfig,
-            BlacklistingManager blacklistingManager) {
+            ExecutorStateManager executorStateManager) {
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
         this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.resourceConfig = resourceConfig;
-        this.blacklistingManager = blacklistingManager;
+        this.executorStateManager = executorStateManager;
         this.refreshSignal.connect(this::refresh);
         this.applicationInstanceEngine.onStateChange().connect(info -> refresh(new Date()));
         executorIdManager.onHostInfoGenerated()
@@ -93,7 +93,7 @@ public class NodeDataUpdater implements Managed {
     @Override
     public void start() throws Exception {
         resourceDB.onResourceUpdated().connect(this::refreshNodeState);
-        blacklistingManager.onStateChange().connect(b -> refreshNodeState());
+        executorStateManager.onStateChange().connect(state -> refreshNodeState());
     }
 
     @Override
@@ -133,7 +133,7 @@ public class NodeDataUpdater implements Managed {
                     taskInstanceEngine.currentState(),
                     localServiceInstanceEngine.currentState(),
                     tags(),
-                    blacklistingManager.isBlacklisted());
+                    executorStateManager.currentState());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {
@@ -160,7 +160,7 @@ public class NodeDataUpdater implements Managed {
                     taskInstanceEngine.currentState(),
                     localServiceInstanceEngine.currentState(),
                     tags(),
-                    blacklistingManager.isBlacklisted());
+                    executorStateManager.currentState());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {

@@ -20,7 +20,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
+import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -36,18 +36,18 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
-    private final BlacklistingManager blacklistingManager;
+    private final ExecutorStateManager executorStateManager;
 
     @Inject
     public ExecutorMessageHandler(
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine,
             LocalServiceInstanceEngine localServiceInstanceEngine,
-            BlacklistingManager blacklistingManager) {
+            ExecutorStateManager executorStateManager) {
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
         this.localServiceInstanceEngine = localServiceInstanceEngine;
-        this.blacklistingManager = blacklistingManager;
+        this.executorStateManager = executorStateManager;
     }
 
     @Override
@@ -123,7 +123,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(BlacklistExecutorMessage blacklistExecutorMessage) {
         try {
-            blacklistingManager.blacklist();
+            executorStateManager.blacklist();
         }
         catch (Exception e) {
             return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);
@@ -134,7 +134,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage) {
         try {
-            blacklistingManager.unblacklist();
+            executorStateManager.unblacklist();
         }
         catch (Exception e) {
             return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);

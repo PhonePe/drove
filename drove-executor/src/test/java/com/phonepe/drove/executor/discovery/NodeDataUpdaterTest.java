@@ -26,7 +26,7 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
+import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
 import com.phonepe.drove.models.info.nodedata.*;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -59,7 +59,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                                              .boxed()
                                                                              .collect(Collectors.toUnmodifiableSet()),
                                                                      512_000_000)));
-        val blm = new BlacklistingManager();
+        val blm = new ExecutorStateManager();
         final var injector = Guice.createInjector();
         val ie = new ApplicationInstanceEngine(eim,
                                                Executors.newSingleThreadExecutor(),
@@ -111,7 +111,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
 
                 @Override
                 public Void visit(ExecutorNodeData executorData) {
-                    assertFalse(executorData.isBlacklisted());
+                    assertNotEquals(ExecutorState.BLACKLISTED, executorData.getExecutorState());
                     assertFalse(executorData.getState().getCpus().getUsedCores().isEmpty());
                     assertFalse(executorData.getState().getMemory().getUsedMemory().isEmpty());
                     return null;
@@ -137,7 +137,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
 
                 @Override
                 public Void visit(ExecutorNodeData executorData) {
-                    assertTrue(executorData.isBlacklisted());
+                    assertEquals(ExecutorState.BLACKLISTED, executorData.getExecutorState());
                     return null;
                 }
             });
@@ -162,7 +162,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
 
             @Override
             public Void visit(ExecutorNodeData executorData) {
-                assertFalse(executorData.isBlacklisted());
+                assertNotEquals(ExecutorState.BLACKLISTED, executorData.getExecutorState());
                 assertTrue(executorData.getState().getCpus().getUsedCores().isEmpty());
                 assertTrue(executorData.getState().getMemory().getUsedMemory().isEmpty());
                 return null;

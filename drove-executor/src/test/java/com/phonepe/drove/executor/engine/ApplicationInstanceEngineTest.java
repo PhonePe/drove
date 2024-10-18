@@ -73,7 +73,7 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
                                                         localServiceInstanceEngine,
-                                                        blacklistingManager);
+                                                        executorStateManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
         assertEquals(MessageDeliveryStatus.FAILED, startInstanceMessage.accept(messageHandler).getStatus());
@@ -162,7 +162,7 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
                                                         localServiceInstanceEngine,
-                                                        blacklistingManager);
+                                                        executorStateManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.FAILED, startResponse.getStatus());
     }

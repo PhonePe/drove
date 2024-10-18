@@ -24,7 +24,7 @@ import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.statemachine.BlacklistingManager;
+import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +44,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -63,7 +63,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -82,7 +82,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -102,7 +102,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -123,7 +123,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -143,7 +143,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -162,7 +162,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -182,7 +182,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -202,7 +202,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -218,7 +218,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -235,7 +235,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -251,7 +251,7 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(BlacklistingManager.class);
+        val blacklistingManager = mock(ExecutorStateManager.class);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,

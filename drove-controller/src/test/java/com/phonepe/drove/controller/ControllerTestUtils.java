@@ -35,6 +35,7 @@ import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
@@ -223,7 +224,7 @@ public class ControllerTestUtils {
                                      taskInstances,
                                      List.of(),
                                      Set.of(),
-                                     blacklisted),
+                                     blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
 
@@ -260,7 +261,7 @@ public class ControllerTestUtils {
                                     List.of(),
                                     List.of(),
                                     tags,
-                                    blacklisted);
+                                    blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE);
     }
 
     public static String executorId(int index) {

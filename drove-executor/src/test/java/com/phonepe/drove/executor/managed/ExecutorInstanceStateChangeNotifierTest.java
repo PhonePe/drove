@@ -54,7 +54,7 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
                                                         localServiceInstanceEngine,
-                                                        blacklistingManager);
+                                                        executorStateManager);
         val scn = new ExecutorInstanceStateChangeNotifier(
                 resourceDB,
                 new ExecutorCommunicator(

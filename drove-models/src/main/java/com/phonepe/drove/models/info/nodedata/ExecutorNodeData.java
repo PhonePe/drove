@@ -44,7 +44,7 @@ public class ExecutorNodeData extends NodeData {
     List<TaskInfo> tasks;
     List<LocalServiceInstanceInfo> serviceInstances;
     Set<String> tags;
-    boolean blacklisted;
+    ExecutorState executorState;
 
     @Jacksonized
     @Builder
@@ -59,14 +59,14 @@ public class ExecutorNodeData extends NodeData {
             List<TaskInfo> tasks,
             List<LocalServiceInstanceInfo> serviceInstances,
             Set<String> tags,
-            boolean blacklisted) {
+            ExecutorState executorState) {
         super(NodeType.EXECUTOR, hostname, port, transportType, updated);
         this.state = state;
         this.instances = instances;
         this.tasks = tasks;
         this.serviceInstances = serviceInstances;
         this.tags = tags;
-        this.blacklisted = blacklisted;
+        this.executorState = executorState;
     }
 
     @Override
@@ -80,7 +80,8 @@ public class ExecutorNodeData extends NodeData {
             final List<InstanceInfo> instances,
             final List<TaskInfo> taskInstances,
             final List<LocalServiceInstanceInfo> serviceInstances,
-            final Set<String> tags, boolean blacklisted) {
+            final Set<String> tags,
+            final ExecutorState executorState) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),
                                     nodeData.getTransportType(),
@@ -90,6 +91,6 @@ public class ExecutorNodeData extends NodeData {
                                     taskInstances,
                                     serviceInstances,
                                     null == tags ? Collections.emptySet() : tags,
-                                    blacklisted);
+                                    executorState);
     }
 }

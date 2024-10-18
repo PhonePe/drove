@@ -33,6 +33,7 @@ import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -517,7 +518,7 @@ class ApisTest {
                                                    512,
                                                    1024,
                                                    Set.of(),
-                                                   ExecutorSummary.ExecutorState.ACTIVE))
+                                                   ExecutorState.ACTIVE))
                 .toList();
         when(responseEngine.nodes()).thenReturn(ApiResponse.success(executors));
         val r = EXT.target("/v1/cluster/executors")
