@@ -33,29 +33,33 @@ import javax.inject.Singleton;
 @Slf4j
 @Singleton
 public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageResponse> {
-    private final ApplicationInstanceEngine engine;
+    private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final BlacklistingManager blacklistingManager;
 
     @Inject
-    public ExecutorMessageHandler(ApplicationInstanceEngine engine,
-                                  TaskInstanceEngine taskInstanceEngine,
-                                  BlacklistingManager blacklistingManager) {
-        this.engine = engine;
+    public ExecutorMessageHandler(
+            ApplicationInstanceEngine applicationInstanceEngine,
+            TaskInstanceEngine taskInstanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
+            BlacklistingManager blacklistingManager) {
+        this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.blacklistingManager = blacklistingManager;
     }
 
     @Override
     public MessageResponse visit(StartInstanceMessage startInstanceMessage) {
         val instanceId = startInstanceMessage.getSpec().getInstanceId();
-        if (engine.exists(instanceId)) {
+        if (applicationInstanceEngine.exists(instanceId)) {
             return new MessageResponse(startInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
             log.info("Starting application instance {}", instanceId);
             return new MessageResponse(startInstanceMessage.getHeader(),
-                                       engine.startInstance(startInstanceMessage.getSpec())
+                                       applicationInstanceEngine.startInstance(startInstanceMessage.getSpec())
                                        ? MessageDeliveryStatus.ACCEPTED
                                        : MessageDeliveryStatus.FAILED);
         }
@@ -71,7 +75,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
         try {
             log.info("Stopping application instance {}", instanceId);
             return new MessageResponse(stopInstanceMessage.getHeader(),
-                                       engine.stopInstance(instanceId)
+                                       applicationInstanceEngine.stopInstance(instanceId)
                                        ? MessageDeliveryStatus.ACCEPTED
                                        : MessageDeliveryStatus.FAILED);
         }
@@ -84,7 +88,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(StartTaskMessage startTaskMessage) {
         val instanceId = CommonUtils.instanceId(startTaskMessage.getSpec());
-        if (engine.exists(instanceId)) {
+        if (applicationInstanceEngine.exists(instanceId)) {
             return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
@@ -136,5 +140,40 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
             return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         return new MessageResponse(unBlacklistExecutorMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
+    }
+
+    @Override
+    public MessageResponse visit(StartLocalServiceInstanceMessage startLocalServiceInstanceMessage) {
+        val instanceId = startLocalServiceInstanceMessage.getSpec().getInstanceId();
+        if (applicationInstanceEngine.exists(instanceId)) {
+            return new MessageResponse(startLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
+        try {
+            log.info("Starting local service instance {}", instanceId);
+            return new MessageResponse(startLocalServiceInstanceMessage.getHeader(),
+                                       localServiceInstanceEngine.startInstance(startLocalServiceInstanceMessage.getSpec())
+                                       ? MessageDeliveryStatus.ACCEPTED
+                                       : MessageDeliveryStatus.FAILED);
+        }
+        catch (Exception e) {
+            log.error("Could not start local service instance: ", e);
+            return new MessageResponse(startLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
+    }
+
+    @Override
+    public MessageResponse visit(StopLocalServiceInstanceMessage stopLocalServiceInstanceMessage) {
+        val instanceId = stopLocalServiceInstanceMessage.getInstanceId();
+        try {
+            log.info("Stopping local service instance {}", instanceId);
+            return new MessageResponse(stopLocalServiceInstanceMessage.getHeader(),
+                                       localServiceInstanceEngine.stopInstance(instanceId)
+                                       ? MessageDeliveryStatus.ACCEPTED
+                                       : MessageDeliveryStatus.FAILED);
+        }
+        catch (Exception e) {
+            log.error("Could not stop local service instance: ", e);
+            return new MessageResponse(stopLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
     }
 }

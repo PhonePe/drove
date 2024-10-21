@@ -25,7 +25,6 @@ import com.github.dockerjava.api.model.StatisticNetworksConfig;
 import com.github.dockerjava.api.model.Statistics;
 import com.github.dockerjava.core.InvocationBuilder;
 import com.google.inject.Inject;
-import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.metrics.AverageCpuUsageGauge;
@@ -36,10 +35,18 @@ import com.phonepe.drove.executor.metrics.MemoryUsagePercentageGauge;
 import com.phonepe.drove.executor.metrics.OverallCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.PerCoreCpuUsageGauge;
 import com.phonepe.drove.executor.metrics.TimeDiffGauge;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
+import com.phonepe.drove.executor.metrics.*;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
@@ -51,13 +58,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.ToLongFunction;
 
@@ -77,12 +78,13 @@ public class ContainerStatsObserver implements Managed {
     private final MetricRegistry metricRegistry;
     private final Map<String, InstanceData> instances = new ConcurrentHashMap<>();
     private final ApplicationInstanceEngine instanceEngine;
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ScheduledSignal statsChecker;
     private final DockerClient client;
 
     @Value
     private static class SignalData<T> {
-        InstanceInfo instanceInfo;
+        DeployedInstanceInfo instanceInfo;
         T data;
     }
 
@@ -92,17 +94,20 @@ public class ContainerStatsObserver implements Managed {
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
             ApplicationInstanceEngine instanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
             DockerClient client) {
-        this(metricRegistry, instanceEngine, client, Duration.ofSeconds(30));
+        this(metricRegistry, instanceEngine, localServiceInstanceEngine, client, Duration.ofSeconds(30));
     }
 
     public ContainerStatsObserver(
             MetricRegistry metricRegistry,
             ApplicationInstanceEngine instanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
             DockerClient client,
             Duration refreshDuration) {
         this.metricRegistry = metricRegistry;
         this.instanceEngine = instanceEngine;
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.statsChecker = new ScheduledSignal(refreshDuration);
         this.client = client;
     }
@@ -113,12 +118,25 @@ public class ContainerStatsObserver implements Managed {
                 .connect(STATS_OBSERVER_HANDLER_NAME, instanceInfo -> {
                     if (instanceInfo.getState().equals(InstanceState.HEALTHY)) {
                         registerTrackedContainer(instanceInfo.getInstanceId(), instanceInfo);
-                        log.info("Starting to track instance: {}", instanceInfo.getInstanceId());
+                        log.info("Starting to track application instance: {}", instanceInfo.getInstanceId());
                     }
                     else {
                         if (!ACTIVE_STATES.contains(instanceInfo.getState())) {
                             unregisterTrackedContainer(instanceInfo.getInstanceId());
-                            log.info("Stopped tracking instance: {}", instanceInfo.getInstanceId());
+                            log.info("Stopped tracking application instance: {}", instanceInfo.getInstanceId());
+                        }
+                    }
+                });
+        localServiceInstanceEngine.onStateChange()
+                .connect(STATS_OBSERVER_HANDLER_NAME, instanceInfo -> {
+                    if (instanceInfo.getState().equals(LocalServiceInstanceState.HEALTHY)) {
+                        registerTrackedContainer(instanceInfo.getInstanceId(), instanceInfo);
+                        log.info("Starting to track local service instance: {}", instanceInfo.getInstanceId());
+                    }
+                    else {
+                        if (!LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState())) {
+                            unregisterTrackedContainer(instanceInfo.getInstanceId());
+                            log.info("Stopped tracking local service instance: {}", instanceInfo.getInstanceId());
                         }
                     }
                 });
@@ -134,7 +152,7 @@ public class ContainerStatsObserver implements Managed {
         log.info("All handlers disconnected");
     }
 
-    private void registerTrackedContainer(final String instanceId, final InstanceInfo instanceInfo) {
+    private void registerTrackedContainer(final String instanceId, final DeployedInstanceInfo instanceInfo) {
         instances.computeIfAbsent(instanceId, iid -> {
             val allocatedCpus = allocatedCpus(instanceInfo);
             val containers = client.listContainersCmd()
@@ -163,7 +181,7 @@ public class ContainerStatsObserver implements Managed {
                                                      new LongGauge<>() {
                                                          @Override
                                                          public void consume(Statistics data) {
-                                                            setValue(allocatedCpus); //This is a fixed value
+                                                             setValue(allocatedCpus); //This is a fixed value
                                                          }
                                                      }))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_per_core"),
@@ -288,8 +306,23 @@ public class ContainerStatsObserver implements Managed {
         });
     }
 
-    private int allocatedCpus(InstanceInfo instanceInfo) {
-        return instanceInfo.getResources()
+    private int allocatedCpus(DeployedInstanceInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<List<ResourceAllocation>>() {
+                    @Override
+                    public List<ResourceAllocation> visit(InstanceInfo applicationInstanceInfo) {
+                        return applicationInstanceInfo.getResources();
+                    }
+
+                    @Override
+                    public List<ResourceAllocation> visit(TaskInfo taskInfo) {
+                        return taskInfo.getResources();
+                    }
+
+                    @Override
+                    public List<ResourceAllocation> visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
+                        return localServiceInstanceInfo.getResources();
+                    }
+                })
                 .stream()
                 .filter(r -> r.getType().equals(ResourceType.CPU))
                 .map(r -> (CPUAllocation) r)
@@ -310,13 +343,13 @@ public class ContainerStatsObserver implements Managed {
                 instanceData.getDataReceived().dispatch(callback.awaitResult());
             }
             catch (NotFoundException e) {
-                log.warn("Looks like the container {}/{} being tracked is not available anymore. Time to disconnect..",
-                         instanceData.getInstanceInfo().getAppId(), instanceId);
+                log.warn("Looks like the container {} being tracked is not available anymore. Time to disconnect..",
+                         instanceData.getInstanceInfo().name());
                 unregisterTrackedContainer(instanceId);
                 instances.remove(instanceId);
             }
             catch (RuntimeException e) {
-                if(e.getCause() instanceof InterruptedException) {
+                if (e.getCause() instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                     log.info("Stats call interrupted");
                 }
@@ -337,7 +370,7 @@ public class ContainerStatsObserver implements Managed {
     }
 
 
-    private <T> TimeDiffGauge<T> diffGauge(final String name, InstanceInfo instanceInfo, ToLongFunction<T> generator) {
+    private <T> TimeDiffGauge<T> diffGauge(final String name, DeployedInstanceInfo instanceInfo, ToLongFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
         return metricRegistry.register(metricName,
                                        new TimeDiffGauge<T>() {
@@ -348,7 +381,7 @@ public class ContainerStatsObserver implements Managed {
                                        });
     }
 
-    private <T> LongGauge<T> gauge(final String name, InstanceInfo instanceInfo, ToLongFunction<T> generator) {
+    private <T> LongGauge<T> gauge(final String name, DeployedInstanceInfo instanceInfo, ToLongFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
         return metricRegistry.register(metricName,
                                        new LongGauge<T>() {
@@ -361,14 +394,15 @@ public class ContainerStatsObserver implements Managed {
 
     @Value
     private static class InstanceData {
-        InstanceInfo instanceInfo;
+        DeployedInstanceInfo instanceInfo;
         String dockerId;
         ConsumingSyncSignal<Statistics> dataReceived = new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<MemoryStatsConfig>> memoryStatsReceived = new ConsumingSyncSignal<>();
-        ConsumingSyncSignal<SignalData<Collection<StatisticNetworksConfig>>> networkStatsReceived = new ConsumingSyncSignal<>();
+        ConsumingSyncSignal<SignalData<Collection<StatisticNetworksConfig>>> networkStatsReceived =
+                new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<Collection<BlkioStatEntry>>> ioStatsReceived = new ConsumingSyncSignal<>();
 
-        public InstanceData(InstanceInfo instanceInfo, String dockerId) {
+        public InstanceData(DeployedInstanceInfo instanceInfo, String dockerId) {
             this.instanceInfo = instanceInfo;
             this.dockerId = dockerId;
             this.dataReceived.connect(this::handleStats);
@@ -392,13 +426,14 @@ public class ContainerStatsObserver implements Managed {
                                                                        .filter(Objects::nonNull)
                                                                        .toList()));
             }
-            if(null != data.getBlkioStats()) {
-                val ioData = Objects.requireNonNullElse(data.getBlkioStats().getIoServiceBytesRecursive(), List.<BlkioStatEntry>of());
-                if(!ioData.isEmpty()) {
-                ioStatsReceived.dispatch(new SignalData<>(instanceInfo,
-                                                          ioData.stream()
-                                                                  .filter(Objects::nonNull)
-                                                                  .toList()));
+            if (null != data.getBlkioStats()) {
+                val ioData = Objects.requireNonNullElse(data.getBlkioStats().getIoServiceBytesRecursive(),
+                                                        List.<BlkioStatEntry>of());
+                if (!ioData.isEmpty()) {
+                    ioStatsReceived.dispatch(new SignalData<>(instanceInfo,
+                                                              ioData.stream()
+                                                                      .filter(Objects::nonNull)
+                                                                      .toList()));
                 }
             }
         }
@@ -408,15 +443,39 @@ public class ContainerStatsObserver implements Managed {
         return metricName(instanceData.getInstanceInfo(), name);
     }
 
-    private static String metricName(final InstanceInfo instanceInfo, String name) {
-        return name("com",
-                    "phonepe",
-                    "drove",
-                    "executor",
-                    "applications",
-                    instanceInfo.getAppName(),
-                    "instance",
-                    instanceInfo.getInstanceId(),
-                    name);
+    private static String metricName(final DeployedInstanceInfo instanceInfo, String name) {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<>() {
+            @Override
+            public String visit(InstanceInfo applicationInstanceInfo) {
+                return name("com",
+                            "phonepe",
+                            "drove",
+                            "executor",
+                            "applications",
+                            applicationInstanceInfo.getAppName(),
+                            "instance",
+                            applicationInstanceInfo.getInstanceId(),
+                            name);
+            }
+
+            @Override
+            public String visit(TaskInfo taskInfo) {
+                return "";
+            }
+
+            @Override
+            public String visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
+                return name("com",
+                            "phonepe",
+                            "drove",
+                            "executor",
+                            "localservices",
+                            localServiceInstanceInfo.getServiceName(),
+                            "instance",
+                            localServiceInstanceInfo.getInstanceId(),
+                            name);
+            }
+        });
+
     }
 }

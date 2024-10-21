@@ -150,6 +150,9 @@ public class TaskEngine {
                 errors.addAll(ControllerUtils.ensureCmdlArgs(taskSpec.getArgs(), controllerOptions));
                 errors.addAll(ControllerUtils.checkDeviceDisabled(taskSpec.getDevices(), controllerOptions));
                 errors.addAll(resourceCheck(taskSpec));
+                if(ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
+                    errors.add("Local service placement is not allowed for tasks");
+                }
                 if (!errors.isEmpty()) {
                     return ValidationResult.failure(errors);
                 }

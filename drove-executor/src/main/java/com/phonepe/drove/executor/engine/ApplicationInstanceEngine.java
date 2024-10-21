@@ -44,7 +44,6 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
 @Slf4j
 public class ApplicationInstanceEngine extends InstanceEngine<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec, InstanceInfo> {
 
-
     public ApplicationInstanceEngine(
             final ExecutorIdManager executorIdManager, ExecutorService service,
             ExecutorActionFactory<ExecutorInstanceInfo, InstanceState, ApplicationInstanceSpec> actionFactory,
@@ -107,6 +106,6 @@ public class ApplicationInstanceEngine extends InstanceEngine<ExecutorInstanceIn
 
     @Override
     protected InstanceInfo convertStateToInstanceInfo(StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        return ExecutorUtils.convert(currentState);
+        return ExecutorUtils.convertAppInstanceState(currentState);
     }
 }

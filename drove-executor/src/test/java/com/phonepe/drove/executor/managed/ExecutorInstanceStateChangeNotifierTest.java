@@ -51,20 +51,23 @@ class ExecutorInstanceStateChangeNotifierTest extends AbstractExecutorEngineEnab
                                    null,
                                    null);
         val ctr = new AtomicInteger();
-        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
+                                                        taskInstanceEngine,
+                                                        localServiceInstanceEngine,
+                                                        blacklistingManager);
         val scn = new ExecutorInstanceStateChangeNotifier(
                 resourceDB,
                 new ExecutorCommunicator(
                         message -> {
-                                             ctr.incrementAndGet();
-                                             if (ctr.get() > 1) {
-                                                 return new MessageResponse(message.getHeader(),
-                                                                            MessageDeliveryStatus.REJECTED);
-                                             }
-                                             return new MessageResponse(message.getHeader(),
-                                                                        MessageDeliveryStatus.ACCEPTED);
-                                         },
-                                         messageHandler), applicationInstanceEngine, taskInstanceEngine);
+                            ctr.incrementAndGet();
+                            if (ctr.get() > 1) {
+                                return new MessageResponse(message.getHeader(),
+                                                           MessageDeliveryStatus.REJECTED);
+                            }
+                            return new MessageResponse(message.getHeader(),
+                                                       MessageDeliveryStatus.ACCEPTED);
+                        },
+                        messageHandler), applicationInstanceEngine, taskInstanceEngine);
         scn.start();
         applicationInstanceEngine.onStateChange().dispatch(iin);
         assertEquals(1, ctr.get());

@@ -25,6 +25,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -59,6 +60,9 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
 
     @Inject
     protected TaskInstanceEngine taskInstanceEngine;
+
+    @Inject
+    protected LocalServiceInstanceEngine localServiceInstanceEngine;
 
 
     @BeforeEach
@@ -100,6 +104,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
                         resourceDB,
                         ExecutorTestingUtils.DOCKER_CLIENT);
             }
+
             @Provides
             @Singleton
             public TaskInstanceEngine taskInstanceEngine(
@@ -114,6 +119,22 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
                         resourceDB,
                         ExecutorTestingUtils.DOCKER_CLIENT);
             }
+
+            @Provides
+            @Singleton
+            public LocalServiceInstanceEngine localServiceInstanceEngine(
+                    final Injector injector,
+                    final ResourceManager resourceDB,
+                    final ExecutorIdManager executorIdManager) {
+                val executorService = Executors.newSingleThreadExecutor();
+                return new LocalServiceInstanceEngine(
+                        executorIdManager,
+                        executorService,
+                        new InjectingLocalServiceInstanceActionFactory(injector),
+                        resourceDB,
+                        ExecutorTestingUtils.DOCKER_CLIENT);
+            }
+
             @Provides
             @Singleton
             public HttpCaller httpCaller() {

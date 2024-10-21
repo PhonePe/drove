@@ -26,10 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.Constants;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.common.model.DeploymentUnitSpec;
-import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
-import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -211,6 +208,11 @@ public class CommonUtils {
             @Override
             public String visit(TaskInstanceSpec taskInstanceSpec) {
                 return taskInstanceSpec.getInstanceId();
+            }
+
+            @Override
+            public String visit(LocalServiceInstanceSpec localServiceInstanceSpec) {
+                return localServiceInstanceSpec.getInstanceId();
             }
         });
     }

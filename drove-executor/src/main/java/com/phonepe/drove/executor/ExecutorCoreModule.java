@@ -38,6 +38,7 @@ import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.logging.LogInfo;
@@ -77,7 +78,7 @@ public class ExecutorCoreModule extends AbstractModule {
                 .to(RemoteControllerMessageSender.class);
         bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER))
                 .to(NumaCtlBasedResourceLoader.class);
-        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.OVERPROVISIONIN_RESOURCE_LOADER))
+        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER))
                 .to(OverProvisioningResourceLoader.class);
         bind(ResourceLoader.class).to(NumaActivationResourceLoader.class);
     }
@@ -103,6 +104,30 @@ public class ExecutorCoreModule extends AbstractModule {
                 executorIdManager,
                 executorService,
                 new InjectingApplicationInstanceActionFactory(injector),
+                resourceDB,
+                client);
+    }
+
+    @Provides
+    @Singleton
+    public LocalServiceInstanceEngine localServiceEngine(
+            final Environment environment,
+            final Injector injector,
+            final ResourceManager resourceDB,
+            final ExecutorIdManager executorIdManager,
+            final DockerClient client) {
+        val executorService = environment.lifecycle()
+                .executorService("local-service-engine")
+                .maxThreads(Integer.MAX_VALUE)
+                .minThreads(0)
+                .workQueue(new SynchronousQueue<>())
+                .keepAliveTime(Duration.seconds(60))
+
+                .build();
+        return new LocalServiceInstanceEngine(
+                executorIdManager,
+                executorService,
+                new InjectingLocalServiceInstanceActionFactory(injector),
                 resourceDB,
                 client);
     }
@@ -222,7 +247,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class ResourceLoaderIdentifiers {
         public static final String NUMA_CTL_BASED_RESOURCE_LOADER = "NumaCtlBasedResourceLoader";
-        public static final String OVERPROVISIONIN_RESOURCE_LOADER = "OverProvisioningResourceLoader";
+        public static final String OVER_PROVISIONING_RESOURCE_LOADER = "OverProvisioningResourceLoader";
 
     }
 

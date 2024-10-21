@@ -54,4 +54,14 @@ public class TaskInfo implements DeployedInstanceInfo {
     public <T> T accept(DeployedInstanceInfoVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    @Override
+    public String name() {
+        return sourceAppName + "/" + instanceId;
+    }
+
+    @Override
+    public String instanceId() {
+        return instanceId;
+    }
 }

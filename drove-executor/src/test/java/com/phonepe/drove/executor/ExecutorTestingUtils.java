@@ -33,10 +33,7 @@ import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
-import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
-import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
-import com.phonepe.drove.executor.engine.TaskInstanceEngine;
+import com.phonepe.drove.executor.engine.*;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -289,6 +286,7 @@ public class ExecutorTestingUtils {
     public static <R> R executeOnceContainerStarted(
             final ApplicationInstanceEngine engine,
             final TaskInstanceEngine taskInstanceEngine,
+            final LocalServiceInstanceEngine localServiceInstanceEngine,
             final Function<InstanceInfo, R> check) {
         val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val instanceId = spec.getInstanceId();
@@ -296,7 +294,7 @@ public class ExecutorTestingUtils {
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(engine, taskInstanceEngine, null);
+        val messageHandler = new ExecutorMessageHandler(engine, taskInstanceEngine, localServiceInstanceEngine, null);
         val startResponse = startInstanceMessage.accept(messageHandler);
         try {
             assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());

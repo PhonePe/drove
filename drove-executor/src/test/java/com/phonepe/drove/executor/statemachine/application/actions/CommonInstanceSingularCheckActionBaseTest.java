@@ -21,6 +21,7 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.executor.statemachine.common.actions.CommonInstanceSingularCheckActionBase;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -38,10 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  *
  */
-class ApplicationInstanceSingularCheckActionBaseTest {
+class CommonInstanceSingularCheckActionBaseTest {
     @Test
     void testSuccess() {
-        val action = new ApplicationInstanceSingularCheckActionBase() {
+        val action = new CommonInstanceSingularCheckActionBase<ExecutorInstanceInfo, InstanceState,
+                ApplicationInstanceSpec>() {
             @Override
             protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
                     InstanceActionContext<ApplicationInstanceSpec> context,
@@ -77,6 +79,11 @@ class ApplicationInstanceSingularCheckActionBaseTest {
             protected InstanceState defaultErrorState() {
                 return null;
             }
+
+            @Override
+            protected InstanceState stoppedState() {
+                return InstanceState.STOPPED;
+            }
         };
         assertEquals(InstanceState.HEALTHY,
                      action.executeImpl(null, StateData.create(InstanceState.STARTING, null)).getState());
@@ -85,7 +92,8 @@ class ApplicationInstanceSingularCheckActionBaseTest {
     @Test
     void testSuccessFailure() {
         val failed = new AtomicBoolean(false);
-        val action = new ApplicationInstanceSingularCheckActionBase() {
+        val action = new CommonInstanceSingularCheckActionBase<ExecutorInstanceInfo, InstanceState,
+                ApplicationInstanceSpec>() {
             @Override
             protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
                     InstanceActionContext<ApplicationInstanceSpec> context,
@@ -126,6 +134,11 @@ class ApplicationInstanceSingularCheckActionBaseTest {
             protected InstanceState defaultErrorState() {
                 return null;
             }
+
+            @Override
+            protected InstanceState stoppedState() {
+                return InstanceState.STOPPED;
+            }
         };
 
         assertEquals(
@@ -139,7 +152,8 @@ class ApplicationInstanceSingularCheckActionBaseTest {
 
     @Test
     void testSuccessStop() {
-        val action = new ApplicationInstanceSingularCheckActionBase() {
+        val action = new CommonInstanceSingularCheckActionBase<ExecutorInstanceInfo, InstanceState,
+                ApplicationInstanceSpec>() {
             @Override
             protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
                     InstanceActionContext<ApplicationInstanceSpec> context,
@@ -179,6 +193,11 @@ class ApplicationInstanceSingularCheckActionBaseTest {
             @Override
             protected InstanceState defaultErrorState() {
                 return null;
+            }
+
+            @Override
+            protected InstanceState stoppedState() {
+                return InstanceState.STOPPED;
             }
         };
         action.stop();

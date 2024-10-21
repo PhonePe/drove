@@ -159,7 +159,12 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
         return InstanceState.START_FAILED;
     }
 
-    private ExecutorInstanceInfo instanceInfo(
+    @Override
+    protected InstanceState stoppedState() {
+        return InstanceState.STOPPED;
+    }
+
+    protected ExecutorInstanceInfo instanceInfo(
             StateData<InstanceState, ExecutorInstanceInfo> currentState,
             HashMap<String, InstancePort> portMappings,
             List<ResourceAllocation> resources,
@@ -178,23 +183,5 @@ public class ApplicationInstanceRunAction extends ApplicationInstanceAction {
                 ? new Date()
                 : oldData.getCreated(),
                 new Date());
-    }
-
-    @Override
-    public void stop() {
-        //Nothing to do here
-    }
-
-    private int findFreePort() {
-        /*//IANA recommended range
-        IntStream.rangeClosed(49152, 65535)
-                .filter(port -> try(val s ))*/
-        try (val s = new ServerSocket(0)) {
-            return s.getLocalPort();
-        }
-        catch (Exception e) {
-            log.error("Port allocation failure");
-        }
-        return 0;
     }
 }

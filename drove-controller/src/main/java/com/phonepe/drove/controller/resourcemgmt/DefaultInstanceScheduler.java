@@ -300,6 +300,11 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                        ? policiesStream.allMatch(placementPolicy -> placementPolicy.accept(this))
                        : policiesStream.anyMatch(placementPolicy -> placementPolicy.accept(this));
             }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return true;
+            }
         });
     }
 
@@ -340,6 +345,11 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                 return compositePlacementPolicy.getPolicies()
                         .stream()
                         .anyMatch(DefaultInstanceScheduler.this::hasTagPolicy);
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return false;
             }
         });
     }

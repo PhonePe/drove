@@ -36,4 +36,5 @@ public interface PlacementPolicyVisitor<T> {
 
     T visit(CompositePlacementPolicy compositePlacementPolicy);
 
+    T visit(LocalPlacementPolicy localPlacementPolicy);
 }

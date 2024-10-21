@@ -17,7 +17,9 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.models.events.events.DroveInstanceStateChangeEvent;
+import com.phonepe.drove.models.events.events.DroveLocalServiceInstanceStateChangeEvent;
 import com.phonepe.drove.models.events.events.DroveTaskStateChangeEvent;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -28,6 +30,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +59,7 @@ public class StateUpdater {
     private final ClusterResourcesDB resourcesDB;
     private final TaskDB taskDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
+    private final LocalServiceStateDB localServiceStateDB;
 
     private final DroveEventBus droveEventBus;
 
@@ -197,6 +201,11 @@ public class StateUpdater {
                 public Boolean visit(TaskInfo taskInfo) {
                     return updateTask(taskInfo);
                 }
+
+                @Override
+                public Boolean visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
+                    return updateInstanceInfo(localServiceInstanceInfo);
+                }
             });
             if (updated) {
                 resourcesDB.update(instanceData.getSnapshot());
@@ -215,7 +224,7 @@ public class StateUpdater {
                     .filter(Objects::nonNull)
                     .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
                     .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(),
-                                                                            instance.getInstanceId()));
+                                                                                 instance.getInstanceId()));
             resourcesDB.remove(executorIds);
             return true;
         }
@@ -266,7 +275,7 @@ public class StateUpdater {
         private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
             val appId = instanceInfo.getAppId();
             val instanceId = instanceInfo.getInstanceId();
-            val existing = instanceInfoDB.instance(appId, instanceId).orElse(null);
+            val existing = localServiceStateDB.instance(appId, instanceId).orElse(null);
             val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
             if (!isNewUpdate) {
                 log.trace("Ignoring stale state update for instance {}/{}. Existing: {} Current: {}",
@@ -296,6 +305,23 @@ public class StateUpdater {
             }
             return accepted;
         }
+
+        private boolean updateInstanceInfo(LocalServiceInstanceInfo instanceInfo) {
+            val serviceId = instanceInfo.getServiceId();
+            val instanceId = instanceInfo.getInstanceId();
+            val existing = localServiceStateDB.instance(serviceId, instanceId).orElse(null);
+            val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
+            if (!isNewUpdate) {
+                log.trace("Ignoring stale state update for local service instance {}/{}. Existing: {} Current: {}",
+                          serviceId, instanceId, existing.getUpdated().getTime(), instanceInfo.getUpdated().getTime());
+                return false;
+            }
+            val accepted = localServiceStateDB.updateInstanceState(serviceId, instanceId, instanceInfo);
+            if (accepted && (null == existing || !existing.getState().equals(instanceInfo.getState()))) {
+                droveEventBus.publish(new DroveLocalServiceInstanceStateChangeEvent(instanceMetadata(instanceInfo)));
+            }
+            return accepted;
+        }
     }
 
     @Inject
@@ -303,10 +329,12 @@ public class StateUpdater {
             ClusterResourcesDB resourcesDB,
             TaskDB taskDB,
             ApplicationInstanceInfoDB instanceInfoDB,
+            LocalServiceStateDB localServiceStateDB,
             DroveEventBus droveEventBus) {
         this.resourcesDB = resourcesDB;
         this.taskDB = taskDB;
         this.instanceInfoDB = instanceInfoDB;
+        this.localServiceStateDB = localServiceStateDB;
         this.droveEventBus = droveEventBus;
         this.executor.submit(new UpdateHandler());
     }

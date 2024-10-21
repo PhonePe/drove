@@ -63,7 +63,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         taskInstanceEngine.onStateChange().connect(state -> {
             if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
-                if(state.getState().isTerminal()) {
+                if (state.getState().isTerminal()) {
                     res.set(state.getTaskResult());
                 }
             }
@@ -74,6 +74,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                         spec);
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
+                                                        localServiceInstanceEngine,
                                                         blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
@@ -107,14 +108,14 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
 
     @Test
     void testContainerLoss() {
-        val spec = ExecutorTestingUtils.testTaskInstanceSpec( Map.of("ITERATIONS", "1000"));
+        val spec = ExecutorTestingUtils.testTaskInstanceSpec(Map.of("ITERATIONS", "1000"));
         val instanceId = CommonUtils.instanceId(spec);
         val stateChanges = new HashSet<TaskState>();
         val res = new AtomicReference<TaskResult>();
         taskInstanceEngine.onStateChange().connect(state -> {
             if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
-                if(state.getState().isTerminal()) {
+                if (state.getState().isTerminal()) {
                     res.set(state.getTaskResult());
                 }
             }
@@ -125,6 +126,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                         spec);
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
+                                                        localServiceInstanceEngine,
                                                         blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
@@ -174,7 +176,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         taskInstanceEngine.onStateChange().connect(state -> {
             if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
-                if(state.getState().isTerminal()) {
+                if (state.getState().isTerminal()) {
                     res.set(state.getTaskResult());
                 }
             }
@@ -185,6 +187,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                         spec);
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
+                                                        localServiceInstanceEngine,
                                                         blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
@@ -226,7 +229,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         taskInstanceEngine.onStateChange().connect(state -> {
             if (state.getInstanceId().equals(instanceId)) {
                 stateChanges.add(state.getState());
-                if(state.getState().isTerminal()) {
+                if (state.getState().isTerminal()) {
                     res.set(state.getTaskResult());
                 }
             }
@@ -237,6 +240,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                                         spec);
         val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
                                                         taskInstanceEngine,
+                                                        localServiceInstanceEngine,
                                                         blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());
@@ -282,9 +286,9 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                         UUID.randomUUID().toString(),
                                         new DockerCoordinates(
                                                 CommonTestUtils.TASK_IMAGE_NAME,
-                                                       io.dropwizard.util.Duration.seconds(100)),
+                                                io.dropwizard.util.Duration.seconds(100)),
                                         ImmutableList.of(new CPUAllocation(Collections.singletonMap(0, Set.of(-1, -3))),
-                                                                new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                                         new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                         Collections.emptyList(),
                                         Collections.emptyList(),
                                         LocalLoggingSpec.DEFAULT,
@@ -295,7 +299,10 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
         val startInstanceMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
                                                         executorAddress,
                                                         spec);
-        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, blacklistingManager);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine,
+                                                        taskInstanceEngine,
+                                                        localServiceInstanceEngine,
+                                                        blacklistingManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         assertEquals(MessageDeliveryStatus.FAILED, startResponse.getStatus());
     }

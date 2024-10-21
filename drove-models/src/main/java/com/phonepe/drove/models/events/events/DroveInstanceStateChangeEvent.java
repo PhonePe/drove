@@ -34,9 +34,9 @@ import java.util.Map;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-@Jacksonized
 public class DroveInstanceStateChangeEvent extends DroveEvent<AppInstanceEventDataTag> {
 
+    @Jacksonized
     @Builder
     public DroveInstanceStateChangeEvent(@JsonProperty("metadata") Map<AppInstanceEventDataTag, Object> metadata) {
         super(DroveEventType.INSTANCE_STATE_CHANGE, metadata);

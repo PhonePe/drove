@@ -20,10 +20,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.Frame;
 import com.google.common.base.Strings;
-import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
-import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.model.ExecutorTaskInfo;
+import com.phonepe.drove.executor.model.*;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
@@ -84,6 +81,11 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
             public String visit(ExecutorTaskInfo taskInfo) {
                 return metricNameForTasks(taskInfo, name);
             }
+
+            @Override
+            public String visit(ExecutorLocalServiceInstanceInfo localServiceInstanceInfo) {
+                return metricNameForLocalService(localServiceInstanceInfo, name);
+            }
         });
     }
 
@@ -104,6 +106,18 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
                     "executor",
                     "applications",
                     instanceInfo.getAppName(),
+                    "instance",
+                    instanceInfo.getInstanceId(),
+                    name);
+    }
+
+    private static String metricNameForLocalService(final ExecutorLocalServiceInstanceInfo instanceInfo, String name) {
+        return name("com",
+                    "phonepe",
+                    "drove",
+                    "executor",
+                    "localservices",
+                    instanceInfo.getServiceName(),
                     "instance",
                     instanceInfo.getInstanceId(),
                     name);

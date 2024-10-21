@@ -14,10 +14,12 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.executor.statemachine.application.actions;
+package com.phonepe.drove.executor.statemachine.common.actions;
 
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.executor.checker.Checker;
-import com.phonepe.drove.executor.statemachine.application.ApplicationInstanceAction;
+import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
+import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
 import com.phonepe.drove.models.application.CheckResult;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
@@ -34,7 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @NoArgsConstructor
-public abstract class ApplicationInstanceSingularCheckActionBase extends ApplicationInstanceAction {
+public abstract class CommonInstanceSingularCheckActionBase<E extends DeployedExecutionObjectInfo, S extends Enum<S>,
+        T extends DeploymentUnitSpec> extends ExecutorActionBase<E, S, T> {
     protected final AtomicBoolean stop = new AtomicBoolean();
 
     @Override

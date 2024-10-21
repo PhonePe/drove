@@ -24,8 +24,10 @@ public enum ExecutorMessageType {
     STOP_INSTANCE,
 
     START_TASK,
-
     STOP_TASK,
+
+    START_LOCAL_SERVICE_INSTANCE,
+    STOP_LOCAL_SERVICE_INSTANCE,
 
     BLACKLIST,
     UNBLACKLIST

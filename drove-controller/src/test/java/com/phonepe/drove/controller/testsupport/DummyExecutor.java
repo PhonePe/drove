@@ -252,6 +252,16 @@ public class DummyExecutor implements Runnable, AutoCloseable {
             public Void visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage) {
                 return null;
             }
+
+            @Override
+            public Void visit(StartLocalServiceInstanceMessage startLocalServiceInstanceMessage) {
+                return null;
+            }
+
+            @Override
+            public Void visit(StopLocalServiceInstanceMessage stopLocalServiceInstanceMessage) {
+                return null;
+            }
         });
     }
 
@@ -289,6 +299,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                new Date(),
                                                                resourceSnapshot,
                                                                List.copyOf(instances.values()),
+                                                               List.of(),
                                                                List.of(),
                                                                Set.of(),
                                                                false)));

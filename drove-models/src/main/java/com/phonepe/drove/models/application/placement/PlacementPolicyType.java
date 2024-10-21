@@ -26,5 +26,6 @@ public enum PlacementPolicyType {
     NO_TAG,
     RULE_BASED,
     ANY,
-    COMPOSITE
+    COMPOSITE,
+    LOCAL
 }

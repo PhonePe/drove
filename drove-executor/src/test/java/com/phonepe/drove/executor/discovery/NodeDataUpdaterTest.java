@@ -19,11 +19,9 @@ package com.phonepe.drove.executor.discovery;
 import com.google.inject.Guice;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.executor.ExecutorOptions;
-import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
-import com.phonepe.drove.executor.InjectingTaskActionFactory;
+import com.phonepe.drove.executor.*;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -62,18 +60,24 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                                              .collect(Collectors.toUnmodifiableSet()),
                                                                      512_000_000)));
         val blm = new BlacklistingManager();
+        final var injector = Guice.createInjector();
         val ie = new ApplicationInstanceEngine(eim,
                                                Executors.newSingleThreadExecutor(),
-                                               new InjectingApplicationInstanceActionFactory(Guice.createInjector()),
+                                               new InjectingApplicationInstanceActionFactory(injector),
                                                rdb,
                                                ExecutorTestingUtils.DOCKER_CLIENT);
         val te = new TaskInstanceEngine(eim,
                                         Executors.newSingleThreadExecutor(),
-                                        new InjectingTaskActionFactory(Guice.createInjector()),
+                                        new InjectingTaskActionFactory(injector),
                                         rdb,
                                         ExecutorTestingUtils.DOCKER_CLIENT);
+        val lse = new LocalServiceInstanceEngine(eim,
+                                                 Executors.newSingleThreadExecutor(),
+                                                 new InjectingLocalServiceInstanceActionFactory(injector),
+                                                 rdb,
+                                                 ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
-        val ndu = new NodeDataUpdater(eim, nds, rdb, ie, te, rCfg, blm);
+        val ndu = new NodeDataUpdater(eim, nds, rdb, ie, te, lse, rCfg, blm);
         ndu.start();
         assertTrue(nds.nodes(NodeType.EXECUTOR).isEmpty());
         ndu.hostInfoAvailable(new ExecutorIdManager.ExecutorHostInfo(8080,

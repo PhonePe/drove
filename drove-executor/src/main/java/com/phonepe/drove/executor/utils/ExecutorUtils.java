@@ -16,15 +16,12 @@
 
 package com.phonepe.drove.executor.utils;
 
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.CmdChecker;
 import com.phonepe.drove.executor.checker.HttpChecker;
-import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
-import com.phonepe.drove.executor.model.DeployedExecutorInstanceInfoVisitor;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.model.ExecutorTaskInfo;
+import com.phonepe.drove.executor.model.*;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
@@ -41,6 +38,8 @@ import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -65,8 +64,8 @@ import static com.phonepe.drove.common.CommonUtils.buildRequest;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExecutorUtils {
-    public static Checker createChecker(
-            InstanceActionContext<ApplicationInstanceSpec> context, ExecutorInstanceInfo instanceInfo,
+    public static<T extends DeploymentUnitSpec, I extends DeployedExecutionObjectInfo> Checker createChecker(
+            InstanceActionContext<T> context, I instanceInfo,
             CheckSpec checkSpec) {
         return checkSpec.getMode().accept(new CheckModeSpecVisitor<>() {
             @Override
@@ -81,11 +80,27 @@ public class ExecutorUtils {
         });
     }
 
-    public static InstanceInfo convert(final StateData<InstanceState, ExecutorInstanceInfo> state) {
+    public static InstanceInfo convertAppInstanceState(final StateData<InstanceState, ExecutorInstanceInfo> state) {
         val data = state.getData();
         return new InstanceInfo(
                 data.getAppId(),
                 data.getAppName(),
+                data.getInstanceId(),
+                data.getExecutorId(),
+                data.getLocalInfo(),
+                data.getResources(),
+                state.getState(),
+                data.getMetadata(),
+                state.getError(),
+                data.getCreated(),
+                new Date());
+    }
+
+    public static LocalServiceInstanceInfo convert(final StateData<LocalServiceInstanceState, ExecutorLocalServiceInstanceInfo> state) {
+        val data = state.getData();
+        return new LocalServiceInstanceInfo(
+                data.getServiceId(),
+                data.getServiceName(),
                 data.getInstanceId(),
                 data.getExecutorId(),
                 data.getLocalInfo(),
@@ -142,6 +157,11 @@ public class ExecutorUtils {
             @Override
             public String visit(ExecutorTaskInfo taskInfo) {
                 return taskInfo.getInstanceId();
+            }
+
+            @Override
+            public String visit(ExecutorLocalServiceInstanceInfo localServiceInstanceInfo) {
+                return localServiceInstanceInfo.getInstanceId();
             }
         });
     }

@@ -17,7 +17,7 @@
 package com.phonepe.drove.executor.checker;
 
 import com.google.common.base.Strings;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
@@ -33,9 +33,9 @@ import static com.phonepe.drove.executor.utils.DockerUtils.runCommandInContainer
 @Slf4j
 public class CmdChecker implements Checker {
     private final CmdCheckModeSpec cmdCheckModeSpec;
-    private final InstanceActionContext<ApplicationInstanceSpec> context;
+    private final InstanceActionContext<? extends DeploymentUnitSpec> context;
 
-    public CmdChecker(CmdCheckModeSpec cmdCheckModeSpec, InstanceActionContext<ApplicationInstanceSpec> context) {
+    public CmdChecker(CmdCheckModeSpec cmdCheckModeSpec, InstanceActionContext<? extends DeploymentUnitSpec> context) {
         this.cmdCheckModeSpec = cmdCheckModeSpec;
         this.context = context;
     }

@@ -43,4 +43,5 @@ public interface DroveEventVisitor<T> {
     T visit(DroveClusterLeadershipLostEvent leadershipLost);
 
 
+    T visit(DroveLocalServiceInstanceStateChangeEvent droveLocalServiceInstanceStateChangeEvent);
 }

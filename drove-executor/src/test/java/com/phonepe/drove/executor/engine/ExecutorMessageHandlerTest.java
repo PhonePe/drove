@@ -43,8 +43,12 @@ class ExecutorMessageHandlerTest {
     void testCreateInstanceMessage() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
         when(applicationEngine.exists(anyString())).thenReturn(false);
         when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(true);
         assertEquals(MessageDeliveryStatus.ACCEPTED,
@@ -58,8 +62,12 @@ class ExecutorMessageHandlerTest {
     void testCreateInstanceMessageExists() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.exists(anyString())).thenReturn(true);
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -73,8 +81,12 @@ class ExecutorMessageHandlerTest {
     void testCreateInstanceMessageFail() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.exists(anyString())).thenReturn(false);
         when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(false);
@@ -89,11 +101,16 @@ class ExecutorMessageHandlerTest {
     void testCreateInstanceMessageException() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.exists(anyString())).thenReturn(false);
-        when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenThrow(new IllegalStateException("Forced failure"));
+        when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenThrow(new IllegalStateException(
+                "Forced failure"));
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                        executor(),
@@ -105,8 +122,12 @@ class ExecutorMessageHandlerTest {
     void testStopInstanceMessage() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.exists(anyString())).thenReturn(true);
         when(applicationEngine.stopInstance(anyString())).thenReturn(true);
@@ -121,8 +142,12 @@ class ExecutorMessageHandlerTest {
     void testStopInstanceMessageWrongId() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.stopInstance(anyString())).thenReturn(false);
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -136,8 +161,12 @@ class ExecutorMessageHandlerTest {
     void testStopInstanceMessageFail() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.exists(anyString())).thenReturn(true);
         when(applicationEngine.stopInstance(anyString())).thenReturn(false);
@@ -152,8 +181,12 @@ class ExecutorMessageHandlerTest {
     void testStopInstanceMessageThrow() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         when(applicationEngine.exists(anyString())).thenReturn(true);
         when(applicationEngine.stopInstance(anyString())).thenThrow(new IllegalArgumentException("Forced fail"));
@@ -168,8 +201,12 @@ class ExecutorMessageHandlerTest {
     void testBlacklist() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      mh.visit(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
@@ -180,8 +217,12 @@ class ExecutorMessageHandlerTest {
     void testBlacklistException() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         doThrow(new IllegalArgumentException()).when(blacklistingManager).blacklist();
         assertEquals(MessageDeliveryStatus.FAILED,
@@ -193,8 +234,12 @@ class ExecutorMessageHandlerTest {
     void testUnBlacklist() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
@@ -205,12 +250,16 @@ class ExecutorMessageHandlerTest {
     void testUnBlacklistException() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val blacklistingManager = mock(BlacklistingManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine, taskEngine, blacklistingManager);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            blacklistingManager);
 
         doThrow(new IllegalArgumentException()).when(blacklistingManager).unblacklist();
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                           executor())).getStatus());
+                                                             executor())).getStatus());
     }
 }

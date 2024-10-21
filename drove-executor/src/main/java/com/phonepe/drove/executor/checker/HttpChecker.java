@@ -17,12 +17,13 @@
 package com.phonepe.drove.executor.checker;
 
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.*;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.application.CheckResult;
 import com.phonepe.drove.models.application.checks.CheckMode;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.instance.InstancePort;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -46,13 +47,28 @@ public class HttpChecker implements Checker {
     private final URI uri;
 
 
-    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, ExecutorInstanceInfo instance) {
+    public HttpChecker(CheckSpec checkSpec, HTTPCheckModeSpec httpSpec, DeployedExecutionObjectInfo instance) {
         val requestTimeOut = Duration.ofMillis(
                 Objects.requireNonNullElse(checkSpec.getTimeout(), io.dropwizard.util.Duration.seconds(1))
                         .toMilliseconds());
         this.httpClient = CommonUtils.createInternalHttpClient(httpSpec, requestTimeOut);
         this.httpSpec = httpSpec;
-        val portSpec = instance.getLocalInfo().getPorts().get(httpSpec.getPortName());
+        val portSpec = instance.accept(new DeployedExecutorInstanceInfoVisitor<InstancePort>() {
+            @Override
+            public InstancePort visit(ExecutorInstanceInfo applicationInstanceInfo) {
+                return applicationInstanceInfo.getLocalInfo().getPorts().get(httpSpec.getPortName());
+            }
+
+            @Override
+            public InstancePort visit(ExecutorTaskInfo taskInfo) {
+                return null;
+            }
+
+            @Override
+            public InstancePort visit(ExecutorLocalServiceInstanceInfo localServiceInstanceInfo) {
+                return localServiceInstanceInfo.getLocalInfo().getPorts().get(httpSpec.getPortName());
+            }
+        });
         Objects.requireNonNull(portSpec, "Invalid port spec. No port of name '" + httpSpec.getPortName() + "' exists");
         this.uri = URI.create(String.format("%s://localhost:%d%s",
                                        httpSpec.getProtocol().urlPrefix(),

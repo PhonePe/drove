@@ -18,6 +18,7 @@ package com.phonepe.drove.models.info.nodedata;
 
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -41,6 +42,7 @@ public class ExecutorNodeData extends NodeData {
     ExecutorResourceSnapshot state;
     List<InstanceInfo> instances;
     List<TaskInfo> tasks;
+    List<LocalServiceInstanceInfo> serviceInstances;
     Set<String> tags;
     boolean blacklisted;
 
@@ -55,12 +57,14 @@ public class ExecutorNodeData extends NodeData {
             ExecutorResourceSnapshot state,
             List<InstanceInfo> instances,
             List<TaskInfo> tasks,
+            List<LocalServiceInstanceInfo> serviceInstances,
             Set<String> tags,
             boolean blacklisted) {
         super(NodeType.EXECUTOR, hostname, port, transportType, updated);
         this.state = state;
         this.instances = instances;
         this.tasks = tasks;
+        this.serviceInstances = serviceInstances;
         this.tags = tags;
         this.blacklisted = blacklisted;
     }
@@ -75,6 +79,7 @@ public class ExecutorNodeData extends NodeData {
             final ExecutorResourceSnapshot currentState,
             final List<InstanceInfo> instances,
             final List<TaskInfo> taskInstances,
+            final List<LocalServiceInstanceInfo> serviceInstances,
             final Set<String> tags, boolean blacklisted) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),
@@ -83,6 +88,7 @@ public class ExecutorNodeData extends NodeData {
                                     currentState,
                                     instances,
                                     taskInstances,
+                                    serviceInstances,
                                     null == tags ? Collections.emptySet() : tags,
                                     blacklisted);
     }

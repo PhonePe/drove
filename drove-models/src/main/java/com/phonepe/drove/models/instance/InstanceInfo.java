@@ -52,4 +52,14 @@ public class InstanceInfo implements DeployedInstanceInfo {
     public <T> T accept(DeployedInstanceInfoVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    @Override
+    public String name() {
+        return appName + "/" + instanceId;
+    }
+
+    @Override
+    public String instanceId() {
+        return instanceId;
+    }
 }

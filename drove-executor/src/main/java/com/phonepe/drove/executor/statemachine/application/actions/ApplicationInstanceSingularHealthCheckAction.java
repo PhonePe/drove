@@ -18,87 +18,40 @@ package com.phonepe.drove.executor.statemachine.application.actions;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.executor.statemachine.InstanceActionContext;
-import com.phonepe.drove.executor.utils.ExecutorUtils;
-import com.phonepe.drove.models.application.CheckResult;
+import com.phonepe.drove.executor.statemachine.common.actions.CommonInstanceSingularHealthCheckAction;
+import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.statemachine.StateData;
-import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import dev.failsafe.RetryPolicy;
-
-import java.time.Duration;
-import java.util.Objects;
 
 /**
  *
  */
 @Slf4j
 @NoArgsConstructor
-public class ApplicationInstanceSingularHealthCheckAction extends ApplicationInstanceSingularCheckActionBase {
+public class ApplicationInstanceSingularHealthCheckAction extends CommonInstanceSingularHealthCheckAction<ExecutorInstanceInfo, InstanceState,
+        ApplicationInstanceSpec> {
 
-    @Override
-    @MonitoredFunction(method = "execute")
-    protected StateData<InstanceState, ExecutorInstanceInfo> executeImpl(
-            InstanceActionContext<ApplicationInstanceSpec> context, StateData<InstanceState, ExecutorInstanceInfo> currentState) {
-        val healthcheck = context.getInstanceSpec().getHealthcheck();
-        var initialDelay = Objects.requireNonNullElse(healthcheck.getInitialDelay(),
-                                                   io.dropwizard.util.Duration.seconds(0)).toMilliseconds();
-        if(context.isRecovered()) {
-            log.info("This state machine is in recovery flow. Health check initial delay will be ignored");
-            initialDelay = 0;
-        }
-        if (initialDelay > 0) {
-            log.info("Waiting {} ms before running initial health check", initialDelay);
-            try {
-                Thread.sleep(initialDelay);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return StateData.from(currentState, InstanceState.STOPPING);
-            }
-        }
-        val retryPolicy = RetryPolicy.<CheckResult>builder()
-                .withDelay(Duration.ofMillis(healthcheck.getInterval().toMilliseconds()))
-                .withMaxAttempts(healthcheck.getAttempts())
-                .handle(Exception.class)
-                .handleResultIf(result -> null == result || result.getStatus() != CheckResult.Status.HEALTHY)
-                .build();
-        try(val checker = ExecutorUtils.createChecker(context, currentState.getData(), healthcheck)) {
-            val result = checkWithRetry(
-                    retryPolicy,
-                    checker,
-                    e -> {
-                        val failure = e.getException();
-                        if (failure != null) {
-                            log.error("Initial health checks completed with error: {}", failure.getMessage());
-                        }
-                        else {
-                            val checkResult = e.getResult();
-                            log.info("Initial health check result: {}", checkResult);
-                        }
-                    });
-            val status = result.getStatus();
-            if(status == CheckResult.Status.HEALTHY) {
-                return StateData.from(currentState, InstanceState.HEALTHY);
-            }
-            else {
-                log.warn("Instance still unhealthy with state: {}. Will be killing this.", status);
-            }
-        }
-        catch (Exception e) {
-            return StateData.errorFrom(currentState,
-                                       InstanceState.STOPPING,
-                                       "Error running health-checks: " + e.getMessage());
-        }
-        return StateData.from(currentState, InstanceState.STOPPING);
-    }
 
     @Override
     protected InstanceState defaultErrorState() {
         return InstanceState.STOPPING;
+    }
+
+    @Override
+    protected InstanceState stoppedState() {
+        return InstanceState.STOPPED;
+    }
+
+    @Override
+    protected CheckSpec healthcheck(ApplicationInstanceSpec instanceSpec) {
+        return instanceSpec.getHealthcheck();
+    }
+
+    @Override
+    protected StateData<InstanceState, ExecutorInstanceInfo> healthyState(StateData<InstanceState, ExecutorInstanceInfo> currentState) {
+        return StateData.from(currentState, InstanceState.HEALTHY);
     }
 
 }

@@ -25,11 +25,15 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
+import com.phonepe.drove.models.application.placement.PlacementPolicy;
+import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
+import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
@@ -47,6 +51,7 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.operation.*;
 import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
@@ -88,6 +93,51 @@ public class ControllerUtils {
                 return taskSpec.getSourceAppName() + "-" + taskSpec.getTaskId();
             }
         });
+    }
+
+    public static boolean ensureInstanceState(
+            final LocalServiceStateDB instanceInfoDB,
+            ClusterOpSpec clusterOpSpec,
+            String serviceId,
+            String instanceId,
+            InstanceState required,
+            ControllerRetrySpecFactory retrySpecFactory) {
+        val retryPolicy =
+                CommonUtils.<StateCheckStatus>policy(
+                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        MISMATCH::equals);
+        try {
+            val status = waitForState(
+                    () -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB, serviceId, instanceId), required),
+                    retryPolicy);
+            if (status.equals(MATCH)) {
+                return true;
+            }
+            else {
+                val curr = currentInstanceInfo(instanceInfoDB, serviceId, instanceId);
+                if (null == curr) {
+                    log.error("No instance info found at all for: {}/{}", serviceId, instanceId);
+                }
+                else {
+                    if (status.equals(MISMATCH)) {
+                        log.error("Looks like app instance {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                                  serviceId, instanceId, curr.getState(), curr);
+                    }
+                    else {
+                        log.error("Looks like app instance {}/{} has failed permanently and reached state: {}." +
+                                          " Detailed instance data: {}}",
+                                  serviceId,
+                                  instanceId,
+                                  curr.getState(),
+                                  curr);
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+            log.error("Error starting instance: " + serviceId + "/" + instanceId, e);
+        }
+        return false;
     }
 
     public static boolean ensureInstanceState(
@@ -205,6 +255,13 @@ public class ControllerUtils {
         return obj;
     }
 
+    private static LocalServiceInstanceInfo currentInstanceInfo(
+            final LocalServiceStateDB instanceInfoDB,
+            String serviceId,
+            String instanceId) {
+        return instanceInfoDB.instance(serviceId, instanceId).orElse(null);
+    }
+
     private static InstanceInfo currentInstanceInfo(
             final ApplicationInstanceInfoDB instanceInfoDB,
             String appId,
@@ -219,9 +276,30 @@ public class ControllerUtils {
         return taskDB.task(sourceAppName, taskId).orElse(null);
     }
 
-    private static StateCheckStatus ensureAppInstanceState(
+    private static<T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
+            final LocalServiceInstanceInfo instanceInfo,
+            final T instanceState) {
+        if (null != instanceInfo) {
+            val currState = instanceInfo.getState();
+            log.trace("Local Service Instance state for {}/{}: {}",
+                      instanceInfo.getServiceId(), instanceInfo.getInstanceId(), currState);
+            if (currState == instanceState) {
+                log.info("Local Service Instance {}/{} reached desired state: {}",
+                         instanceInfo.getServiceId(),
+                         instanceInfo.getInstanceId(),
+                         instanceState);
+                return MATCH;
+            }
+            if (currState.isTerminal()) { //Useless to wait if it has died anyway
+                return MISMATCH_NONRECOVERABLE;
+            }
+        }
+        return MISMATCH;
+    }
+
+    private static<T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
             final InstanceInfo instanceInfo,
-            final InstanceState instanceState) {
+            final T instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Instance state for {}/{}: {}",
@@ -420,6 +498,11 @@ public class ControllerUtils {
             public String visit(TaskInfo taskInfo) {
                 return taskInfo.getTaskId();
             }
+
+            @Override
+            public String visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
+                return localServiceInstanceInfo.getInstanceId();
+            }
         });
     }
 
@@ -558,6 +641,53 @@ public class ControllerUtils {
                                "NUMA node in the cluster. Required: " + requiredCores
                                + " Max: " + maxAvailablePhysicalCoresPerNode);
         }
+    }
+
+
+    public static boolean hasLocalPolicy(final PlacementPolicy policy) {
+        return policy.accept(new PlacementPolicyVisitor<Boolean>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                return compositePlacementPolicy.getPolicies()
+                        .stream()
+                        .anyMatch(policy -> hasLocalPolicy(policy));
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return true;
+            }
+        });
     }
 
     public static ClusterResourcesDB.ClusterResourcesSummary summarizeResources(final List<ExecutorHostInfo> executors) {

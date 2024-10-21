@@ -75,6 +75,7 @@ class ZkNodeDataStoreTest {
                                                 state,
                                                 List.of(),
                                                 List.of(),
+                                                List.of(),
                                                 Set.of(),
                                                 false);
             store.updateNodeData(nodeData);

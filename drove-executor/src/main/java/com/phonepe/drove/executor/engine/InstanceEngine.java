@@ -17,10 +17,7 @@
 package com.phonepe.drove.executor.engine;
 
 import com.github.dockerjava.api.DockerClient;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.common.model.DeploymentUnitSpec;
-import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
-import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.executor.ExecutorActionFactory;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
@@ -147,6 +144,13 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                     @Override
                     public Void visit(TaskInstanceSpec taskInstanceSpec) {
                         MDC.put(LOG_ID, taskInstanceSpec.getSourceAppName() + ":" + taskInstanceSpec.getTaskId());
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(LocalServiceInstanceSpec localServiceInstanceSpec) {
+                        MDC.put(LOG_ID,
+                                localServiceInstanceSpec.getServiceName() + ":" + localServiceInstanceSpec.getInstanceId());
                         return null;
                     }
                 });

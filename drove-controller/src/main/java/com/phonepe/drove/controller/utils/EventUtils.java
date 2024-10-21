@@ -33,6 +33,7 @@ import com.phonepe.drove.models.events.events.datatags.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.AccessLevel;
@@ -145,6 +146,31 @@ public class EventUtils {
         return metadata.build();
     }
 
+    public static Map<LocalServiceInstanceEventDataTag, Object> instanceMetadata(final LocalServiceInstanceInfo instanceInfo) {
+        val metadata = new MapBuilder<LocalServiceInstanceEventDataTag, Object>()
+                .put(LocalServiceInstanceEventDataTag.SERVICE_ID, instanceInfo.getServiceId())
+                .put(LocalServiceInstanceEventDataTag.SERVICE_NAME, instanceInfo.getServiceName())
+                .put(LocalServiceInstanceEventDataTag.INSTANCE_ID, instanceInfo.getInstanceId())
+                .put(LocalServiceInstanceEventDataTag.EXECUTOR_ID, instanceInfo.getExecutorId())
+                .put(LocalServiceInstanceEventDataTag.CREATED, instanceInfo.getCreated().getTime())
+                .put(LocalServiceInstanceEventDataTag.CURRENT_STATE, instanceInfo.getState());
+        Optional.ofNullable(instanceInfo.getLocalInfo())
+                .ifPresent(info -> metadata.put(LocalServiceInstanceEventDataTag.EXECUTOR_HOST, info.getHostname())
+                        .put(LocalServiceInstanceEventDataTag.PORTS, Joiner.on(",")
+                                .join(Objects.requireNonNullElse(instanceInfo.getLocalInfo().getPorts(),
+                                                                 Map.<String, InstancePort>of())
+                                              .entrySet()
+                                              .stream()
+                                              .map(entry -> entry.getKey()
+                                                      + ":" + entry.getValue().getHostPort()
+                                                      + ":" + entry.getValue().getPortType().name().toLowerCase())
+                                              .toList())));
+        if (!Strings.isNullOrEmpty(instanceInfo.getErrorMessage())) {
+            metadata.put(LocalServiceInstanceEventDataTag.ERROR, instanceInfo.getErrorMessage());
+        }
+        return metadata.build();
+    }
+    
     public static Map<ExecutorEventDataTag, Object> executorMetadata(final String executorId) {
         return new MapBuilder<ExecutorEventDataTag, Object>()
                 .put(ExecutorEventDataTag.EXECUTOR_ID, executorId)

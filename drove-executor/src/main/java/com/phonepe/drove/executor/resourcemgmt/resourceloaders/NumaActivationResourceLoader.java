@@ -39,7 +39,7 @@ public class NumaActivationResourceLoader implements ResourceLoader {
 
     @Inject
     public NumaActivationResourceLoader(
-            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.OVERPROVISIONIN_RESOURCE_LOADER) ResourceLoader root,
+            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER) ResourceLoader root,
             ResourceConfig resourceConfig) {
         this.root = root;
         this.resourceConfig = resourceConfig;

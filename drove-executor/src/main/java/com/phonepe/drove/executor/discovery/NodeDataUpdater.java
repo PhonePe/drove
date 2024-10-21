@@ -21,6 +21,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -57,6 +58,7 @@ public class NodeDataUpdater implements Managed {
     private final ResourceManager resourceDB;
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ResourceConfig resourceConfig;
     private final BlacklistingManager blacklistingManager;
 
@@ -71,13 +73,14 @@ public class NodeDataUpdater implements Managed {
             NodeDataStore nodeDataStore,
             ResourceManager resourceDB,
             ApplicationInstanceEngine applicationInstanceEngine,
-            TaskInstanceEngine taskInstanceEngine,
+            TaskInstanceEngine taskInstanceEngine, LocalServiceInstanceEngine localServiceInstanceEngine,
             ResourceConfig resourceConfig,
             BlacklistingManager blacklistingManager) {
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.resourceConfig = resourceConfig;
         this.blacklistingManager = blacklistingManager;
         this.refreshSignal.connect(this::refresh);
@@ -126,6 +129,7 @@ public class NodeDataUpdater implements Managed {
                     ExecutorUtils.executorSnapshot(resourceState, executorId),
                     applicationInstanceEngine.currentState(),
                     taskInstanceEngine.currentState(),
+                    localServiceInstanceEngine.currentState(),
                     tags(),
                     blacklistingManager.isBlacklisted());
             nodeDataStore.updateNodeData(currentData);
@@ -152,6 +156,7 @@ public class NodeDataUpdater implements Managed {
                     ExecutorUtils.executorSnapshot(resourceState, currentData.getState().getExecutorId()),
                     applicationInstanceEngine.currentState(),
                     taskInstanceEngine.currentState(),
+                    localServiceInstanceEngine.currentState(),
                     tags(),
                     blacklistingManager.isBlacklisted());
             nodeDataStore.updateNodeData(currentData);

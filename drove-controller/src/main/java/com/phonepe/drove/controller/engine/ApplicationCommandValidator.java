@@ -147,6 +147,9 @@ public class ApplicationCommandValidator {
             errs.addAll(ControllerUtils.ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
             errs.addAll(ControllerUtils.ensureCmdlArgs(spec.getArgs(), controllerOptions));
             errs.addAll(ControllerUtils.checkDeviceDisabled(spec.getDevices(), controllerOptions));
+            if(ControllerUtils.hasLocalPolicy(spec.getPlacementPolicy())) {
+                errs.add("Local service placement is not allowed for apps");
+            }
             return errs.isEmpty()
                    ? ValidationResult.success()
                    : ValidationResult.failure(errs);
@@ -249,6 +252,7 @@ public class ApplicationCommandValidator {
                         }
                     });
         }
+
     }
 
 
