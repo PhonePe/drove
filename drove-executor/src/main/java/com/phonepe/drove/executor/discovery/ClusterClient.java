@@ -24,6 +24,7 @@ import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
+import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
 import com.phonepe.drove.models.internal.KnownInstancesData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -75,6 +76,43 @@ public class ClusterClient {
         return readSnapshot("current");
     }
 
+    public LocalServiceInstanceResources reservedResources() {
+        val leader = leadershipObserver.leader().orElse(null);
+        if (null == leader) {
+            log.info("Leader not found for cluster. Cannot fetch last state data from controller.");
+            return LocalServiceInstanceResources.EMPTY;
+        }
+        try {
+            val uri = String.format("%s://%s:%d/apis/v1/internal/cluster/resources/reserved",
+                                    leader.getTransportType() == NodeTransportType.HTTP
+                                    ? "http"
+                                    : "https",
+                                    leader.getHostname(),
+                                    leader.getPort());
+            val request = new HttpGet(uri);
+            val response = httpClient.execute(
+                    request,
+                    (ResponseHandler<ApiResponse<LocalServiceInstanceResources>>) response1 -> {
+                        if (response1.getStatusLine().getStatusCode() == 200) {
+                            return mapper.readValue(EntityUtils.toByteArray(response1.getEntity()),
+                                                    new TypeReference<>() {});
+                        }
+                        log.error("Error fetching resources for local service instances. Received response: [{}] {}",
+                                  response1.getStatusLine().getStatusCode(), EntityUtils.toString(response1.getEntity()));
+                        return null;
+                    });
+            if (null == response || null == response.getData()) {
+                return LocalServiceInstanceResources.EMPTY;
+            }
+            return response.getData();
+
+        }
+        catch (Exception e) {
+            log.error("Could not fetch all placed apps data. Error " + e.getMessage(), e);
+        }
+        return LocalServiceInstanceResources.EMPTY;
+    }
+
     private KnownInstancesData readSnapshot(String from) {
         val executorId = executorIdManager.executorId().orElse(null);
         if (null == executorId) {
@@ -87,7 +125,8 @@ public class ClusterClient {
             return KnownInstancesData.EMPTY;
         }
         try {
-            val uri = String.format("%s://%s:%d/apis/v1/internal/cluster/executors/" + executorId + "/instances/" + from,
+            val uri =
+                    String.format("%s://%s:%d/apis/v1/internal/cluster/executors/" + executorId + "/instances/" + from,
                                     leader.getTransportType() == NodeTransportType.HTTP
                                     ? "http"
                                     : "https",

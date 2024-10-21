@@ -21,15 +21,17 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Provides;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
 import lombok.val;
@@ -139,6 +141,18 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             @Singleton
             public HttpCaller httpCaller() {
                 return CommonTestUtils.httpCaller();
+            }
+
+            @Provides
+            @Singleton
+            public ClusterAuthenticationConfig clusterAuthenticationConfig() {
+                return ClusterAuthenticationConfig.DEFAULT;
+            }
+
+            @Provides
+            @Singleton
+            public LeadershipObserver leadershipObserver() {
+                return mock(LeadershipObserver.class);
             }
         });
 

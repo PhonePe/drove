@@ -284,6 +284,12 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();
+/*        if (!executorNode.getExecutorState().equals(ExecutorState.ACTIVE)
+                && !placementPolicy.getType().equals(PlacementPolicyType.ALL)) {
+            log.debug("Cannot spin up app of type {} on executor {} in state {}",
+                      placementPolicy.getType(), executorNode.getExecutorId(), executorNode.getExecutorState());
+            return false;
+        }*/
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {

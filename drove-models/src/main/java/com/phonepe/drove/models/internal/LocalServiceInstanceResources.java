@@ -14,27 +14,20 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.resourcemgmt;
+package com.phonepe.drove.models.internal;
 
-import com.phonepe.drove.models.info.nodedata.ExecutorState;
-import com.phonepe.drove.models.info.nodedata.NodeTransportType;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
-import java.util.Set;
+import java.util.Map;
 
 /**
- *
+ * Details for local service instances
  */
 @Value
-public class AllocatedExecutorNode {
-    String executorId;
-    String hostname;
-    int port;
-    NodeTransportType transportType;
-    CPUAllocation cpu;
-    MemoryAllocation memory;
-    Set<String> tags;
-    ExecutorState executorState;
+public class LocalServiceInstanceResources {
+    public static final LocalServiceInstanceResources EMPTY  = new LocalServiceInstanceResources(0L, 0L, Map.of());
+
+    long cpus;
+    long memory;
+    Map<String, Integer> requiredInstances;
 }

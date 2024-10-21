@@ -18,15 +18,19 @@ package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.internal.KnownInstancesData;
+import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.val;
 
@@ -37,10 +41,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -55,17 +56,20 @@ public class InternalApis {
     private final ApplicationStateDB applicationStateDB;
     private final TaskDB taskDB;
     private final LocalServiceStateDB localServiceStateDB;
+    private final LocalServiceLifecycleManagementEngine localServiceEngine;
 
     @Inject
     public InternalApis(
             ClusterResourcesDB resourcesDB,
             ApplicationStateDB applicationStateDB,
             TaskDB taskDB,
-            LocalServiceStateDB localServiceStateDB) {
+            LocalServiceStateDB localServiceStateDB,
+            LocalServiceLifecycleManagementEngine localServiceEngine) {
         this.resourcesDB = resourcesDB;
         this.applicationStateDB = applicationStateDB;
         this.taskDB = taskDB;
         this.localServiceStateDB = localServiceStateDB;
+        this.localServiceEngine = localServiceEngine;
     }
 
     @GET
@@ -78,6 +82,26 @@ public class InternalApis {
     @Path("/executors/{executorId}/instances/current")
     public ApiResponse<KnownInstancesData> currentKnownInstances(@PathParam("executorId") final String executorId) {
         return knownInstances(executorId, () -> resourcesDB.currentSnapshot(executorId));
+    }
+
+    @GET
+    @Path("/resources/reserved")
+    public ApiResponse<LocalServiceInstanceResources> reservedResources() {
+        var requiredCPU = 0L;
+        var requiredMemory = 0L;
+        val requiredApps = new HashMap<String, Integer>();
+        for(val localServiceInfo : localServiceStateDB.services(0, Integer.MAX_VALUE)) {
+            val currState = localServiceEngine.currentState(localServiceInfo.getServiceId()).orElse(
+                    LocalServiceState.DESTROYED);
+            val spec = localServiceInfo.getSpec();
+            if(LocalServiceState.ACTIVE_STATES.contains(currState)) {
+                val instancesPerNode = localServiceInfo.getInstancesPerHost();
+                requiredCPU += ControllerUtils.totalCPU(spec, instancesPerNode);
+                requiredMemory+= ControllerUtils.totalMemory(spec, instancesPerNode);
+                requiredApps.put(localServiceInfo.getServiceId(), instancesPerNode);
+            }
+        }
+        return ApiResponse.success(new LocalServiceInstanceResources(requiredCPU, requiredMemory, requiredApps));
     }
 
     private ApiResponse<KnownInstancesData> knownInstances(

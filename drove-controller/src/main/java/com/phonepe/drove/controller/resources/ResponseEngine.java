@@ -40,9 +40,6 @@ import com.phonepe.drove.models.api.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.DroveEvent;
@@ -57,7 +54,6 @@ import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
-import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
@@ -70,6 +66,8 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.totalCPU;
+import static com.phonepe.drove.controller.utils.ControllerUtils.totalMemory;
 import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
 import static com.phonepe.drove.models.api.ApiResponse.failure;
 import static com.phonepe.drove.models.api.ApiResponse.success;
@@ -477,38 +475,6 @@ public class ResponseEngine {
                                        info.getCreated(),
                                        info.getUpdated());
 
-    }
-
-    private long totalMemory(DeploymentSpec spec, long instances) {
-        return instances * spec.getResources()
-                .stream()
-                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return 0L;
-                    }
-
-                    @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return memoryRequirement.getSizeInMB();
-                    }
-                }))
-                .sum();
-    }
-
-    private long totalCPU(DeploymentSpec spec, long instances) {
-        return instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return cpuRequirement.getCount();
-                    }
-
-                    @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return 0L;
-                    }
-                }))
-                .sum();
     }
 
     private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo, boolean removed) {

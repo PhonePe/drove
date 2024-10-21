@@ -733,6 +733,38 @@ public class ControllerUtils {
                                                               freeMemory + usedMemory);
     }
 
+    public static long totalMemory(DeploymentSpec spec, long instances) {
+        return instances * spec.getResources()
+                .stream()
+                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return 0L;
+                    }
+
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return memoryRequirement.getSizeInMB();
+                    }
+                }))
+                .sum();
+    }
+
+    public static long totalCPU(DeploymentSpec spec, long instances) {
+        return instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return cpuRequirement.getCount();
+                    }
+
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return 0L;
+                    }
+                }))
+                .sum();
+    }
+
     public static String deployableObjectId(LocalServiceOperation operation) {
         return operation.accept(new LocalServiceOperationVisitor<>() {
             @Override

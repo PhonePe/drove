@@ -17,6 +17,7 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
@@ -55,9 +56,10 @@ class InternalApisTest {
     private static final ClusterResourcesDB clusterResourcesDB = mock(ClusterResourcesDB.class);
     private static final TaskDB taskDB = mock(TaskDB.class);
     private static final LocalServiceStateDB localServicesDB = mock(LocalServiceStateDB.class);
+    private static final LocalServiceLifecycleManagementEngine localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new InternalApis(clusterResourcesDB, applicationStateDB, taskDB, localServicesDB))
+            .addResource(new InternalApis(clusterResourcesDB, applicationStateDB, taskDB, localServicesDB, localServiceEngine))
             .build();
 
     @AfterEach

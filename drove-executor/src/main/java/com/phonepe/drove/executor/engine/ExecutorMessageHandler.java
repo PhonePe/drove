@@ -20,7 +20,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
-import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 

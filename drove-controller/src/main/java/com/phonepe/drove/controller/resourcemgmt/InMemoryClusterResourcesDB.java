@@ -411,7 +411,8 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                                                                Collections.singletonMap(node.getKey(), memory)),
                                                        hostInfo.getNodeData().getTags() == null
                                                        ? Set.of()
-                                                       : hostInfo.getNodeData().getTags()))
+                                                       : hostInfo.getNodeData().getTags(),
+                                                       hostInfo.getNodeData().getExecutorState()))
                 .findAny();
     }
 

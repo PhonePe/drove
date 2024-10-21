@@ -26,7 +26,7 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.models.info.nodedata.*;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -59,7 +59,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                                              .boxed()
                                                                              .collect(Collectors.toUnmodifiableSet()),
                                                                      512_000_000)));
-        val blm = new ExecutorStateManager();
+        val blm = new ExecutorStateManager(null, null);
         final var injector = Guice.createInjector();
         val ie = new ApplicationInstanceEngine(eim,
                                                Executors.newSingleThreadExecutor(),

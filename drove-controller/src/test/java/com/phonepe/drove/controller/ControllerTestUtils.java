@@ -162,7 +162,8 @@ public class ControllerTestUtils {
                                          NodeTransportType.HTTP,
                                          new CPUAllocation(Collections.singletonMap(0, Collections.singleton(2))),
                                          new MemoryAllocation(Collections.singletonMap(0, 512L)),
-                                         Collections.emptySet());
+                                         Collections.emptySet(),
+                                         ExecutorState.ACTIVE);
     }
 
     public static ExecutorHostInfo executorHost(final int port) {

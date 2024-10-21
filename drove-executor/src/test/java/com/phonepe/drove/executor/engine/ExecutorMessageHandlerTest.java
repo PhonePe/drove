@@ -24,7 +24,7 @@ import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.statemachine.ExecutorStateManager;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
