@@ -14,22 +14,20 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.statemachine.applications;
+package com.phonepe.drove.controller.statemachine.common.actions;
 
-import com.phonepe.drove.controller.statemachine.common.actions.JobEnabledContext;
-import com.phonepe.drove.models.application.ApplicationSpec;
-import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.statemachine.ActionContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 /**
- * Context for application actions
+ * A context that stores job information
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class AppActionContext extends JobEnabledContext<ApplicationOperation> {
-    private final String appId;
-    private final ApplicationSpec applicationSpec;
+public abstract class JobEnabledContext<D> extends ActionContext<D> {
+    private String jobId;
+    private String schedulingSessionId;
 }

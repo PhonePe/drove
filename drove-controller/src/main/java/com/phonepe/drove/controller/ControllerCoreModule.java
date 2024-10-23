@@ -42,7 +42,6 @@ import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.*;
-import com.phonepe.drove.controller.statemachine.applications.AppAction;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -50,6 +49,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
+import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
@@ -166,6 +166,8 @@ public class ControllerCoreModule extends AbstractModule {
                 ZkApplicationInstanceInfoDB.class);
         bind(TaskDB.class).to(CachingProxyTaskDB.class);
         bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(ZkTaskDB.class);
+        bind(LocalServiceStateDB.class).to(CachingProxyLocalServiceStateDB.class);
+        bind(LocalServiceStateDB.class).annotatedWith(Names.named("StoredLocalServiceDB")).to(ZKLocalServiceStateDB.class);
         bind(ClusterStateDB.class).to(CachingProxyClusterStateDB.class);
         bind(ClusterStateDB.class).annotatedWith(Names.named("StoredClusterStateDB")).to(ZkClusterStateDB.class);
         bind(EventStore.class).to(InMemoryEventStore.class);
@@ -176,7 +178,7 @@ public class ControllerCoreModule extends AbstractModule {
         })
                 .to(RemoteExecutorMessageSender.class);
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
-                AppAction>>() {
+                Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>>() {
         }).to(InjectingAppActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }

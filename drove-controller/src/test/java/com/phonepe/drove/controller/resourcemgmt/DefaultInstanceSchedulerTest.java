@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.models.application.placement.policies.*;
 import lombok.val;
@@ -45,7 +46,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val spec = appSpec();
 
         //Load cluster nodes
@@ -69,7 +71,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new OnePerHostPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -91,7 +94,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -113,7 +117,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MatchTagPlacementPolicy("test"));
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -136,7 +141,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new NoTagPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -159,7 +165,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val originalSpec = appSpec();
         val spec = originalSpec
                 .withPlacementPolicy(new CompositePlacementPolicy(
@@ -185,7 +192,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new CompositePlacementPolicy(
                 List.of(new MatchTagPlacementPolicy("test"),
@@ -213,7 +221,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val spec = appSpec();
 
         //Load cluster nodes
@@ -244,7 +253,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val rdb = new InMemoryClusterResourcesDB();
         val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = new InMemoryTaskDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, rdb);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
+        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
         val spec = appSpec();
 
         //Load cluster nodes

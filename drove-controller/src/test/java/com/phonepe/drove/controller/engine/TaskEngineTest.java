@@ -31,6 +31,7 @@ import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryClusterStateDB;
+import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
@@ -74,6 +75,7 @@ class TaskEngineTest extends ControllerTestBase {
     void testRunStartStop() {
         val tdb = new InMemoryTaskDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -133,7 +135,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -160,6 +162,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testRunAutoStop() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -194,7 +197,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -237,6 +240,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testRunTaskLoss() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -272,7 +276,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -315,6 +319,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testRunZombieKill() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -367,7 +372,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -393,6 +398,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testRunRecovery() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -426,7 +432,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -469,6 +475,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testTaskStartFailIdCollision() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -498,7 +505,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -521,6 +528,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testTaskStartFailNoResource() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -551,7 +559,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -571,6 +579,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testTaskStartFailNoWhitelisting() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -601,7 +610,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -623,6 +632,7 @@ class TaskEngineTest extends ControllerTestBase {
     @SuppressWarnings("unchecked")
     void testTaskStartSchedFail() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -636,7 +646,7 @@ class TaskEngineTest extends ControllerTestBase {
         when(jobSched.schedule(any(JobTopology.class), any(), any())).thenReturn(null);
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -656,6 +666,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testTaskKillFail() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -667,7 +678,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -691,6 +702,7 @@ class TaskEngineTest extends ControllerTestBase {
     @SuppressWarnings("unchecked")
     void testTaskKillSchedFail() {
         val tdb = mock(TaskDB.class);
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -723,7 +735,7 @@ class TaskEngineTest extends ControllerTestBase {
         when(tdb.onStateChange()).thenReturn(new ConsumingFireForgetSignal<>());
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -747,6 +759,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     void testResourceCrunch() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(List.of(new ExecutorNodeData("poor-host",
@@ -762,6 +775,7 @@ class TaskEngineTest extends ControllerTestBase {
                                                                              new PhysicalLayout(Map.of(), Map.of())),
                                                 List.of(),
                                                 List.of(),
+                                                List.of(),
                                                 Set.of(),
                                                 false)));
         val le = mock(LeadershipEnsurer.class);
@@ -771,7 +785,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val te = new TaskEngine(tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),

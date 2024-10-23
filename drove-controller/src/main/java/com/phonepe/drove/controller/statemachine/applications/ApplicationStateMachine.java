@@ -20,10 +20,7 @@ import com.phonepe.drove.controller.statemachine.applications.actions.*;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.statemachine.ActionFactory;
-import com.phonepe.drove.statemachine.StateData;
-import com.phonepe.drove.statemachine.StateMachine;
-import com.phonepe.drove.statemachine.Transition;
+import com.phonepe.drove.statemachine.*;
 import lombok.NonNull;
 
 import java.util.List;
@@ -33,8 +30,8 @@ import static com.phonepe.drove.models.application.ApplicationState.*;
 /**
  *
  */
-public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> {
-    private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS;
+public class ApplicationStateMachine extends StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> {
+    private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>> TRANSITIONS;
 
     static {
         TRANSITIONS = List.of(
@@ -79,7 +76,7 @@ public class ApplicationStateMachine extends StateMachine<ApplicationInfo, Appli
     public ApplicationStateMachine(
             @NonNull StateData<ApplicationState, ApplicationInfo> initalState,
             AppActionContext context,
-            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> actionFactory) {
+            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> actionFactory) {
         super(initalState, context, actionFactory, TRANSITIONS);
     }
 

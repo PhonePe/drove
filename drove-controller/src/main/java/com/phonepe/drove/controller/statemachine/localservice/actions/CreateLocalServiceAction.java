@@ -43,7 +43,7 @@ public class CreateLocalServiceAction extends LocalServiceAction {
     public StateData<LocalServiceState, LocalServiceInfo> execute(
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState) {
-        val info = stateDB.getInfo(context.getServiceId())
+        val info = stateDB.service(context.getServiceId())
                 .orElse(null);
         if(null == info) {
             return StateData.from(currentState, LocalServiceState.DESTROYED);
@@ -51,7 +51,7 @@ public class CreateLocalServiceAction extends LocalServiceAction {
 /*        if (info.getInstancesPerHost() > 0) {
             return StateData.from(currentState, LocalServiceState.SCALING);
         }*/
-        stateDB.updateInfo(context.getServiceId(), currentState.getData());
+        stateDB.updateService(context.getServiceId(), currentState.getData());
         return StateData.from(currentState, LocalServiceState.SCALING);
     }
 }

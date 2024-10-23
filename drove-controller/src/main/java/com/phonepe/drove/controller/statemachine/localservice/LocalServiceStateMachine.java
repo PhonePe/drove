@@ -16,34 +16,23 @@
 
 package com.phonepe.drove.controller.statemachine.localservice;
 
-import com.phonepe.drove.controller.statemachine.applications.AppAction;
-import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.statemachine.applications.actions.*;
-import com.phonepe.drove.models.application.ApplicationInfo;
-import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
-import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
-import com.phonepe.drove.statemachine.ActionFactory;
-import com.phonepe.drove.statemachine.StateData;
-import com.phonepe.drove.statemachine.StateMachine;
-import com.phonepe.drove.statemachine.Transition;
+import com.phonepe.drove.statemachine.*;
 import lombok.NonNull;
 
 import java.util.List;
 
-import static com.phonepe.drove.models.application.ApplicationState.*;
-
 /**
  *
  */
-public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, AppAction> {
-    private static final List<Transition<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction>> TRANSITIONS;
+public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
+    private static final List<Transition<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>>> TRANSITIONS;
 
     static {
         TRANSITIONS = List.of(
-                new Transition<>(INIT,
+                /*new Transition<>(INIT,
                                  CreateAppAction.class,
                                  MONITORING,
                                  RUNNING),
@@ -78,13 +67,13 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
                                  MONITORING),
                 new Transition<>(DESTROY_REQUESTED,
                                  DestroyAppAction.class,
-                                 DESTROYED));
+                                 DESTROYED)*/);
     }
 
     public LocalServiceStateMachine(
-            @NonNull StateData<ApplicationState, ApplicationInfo> initalState,
-            AppActionContext context,
-            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> actionFactory) {
+            @NonNull StateData<LocalServiceState, LocalServiceInfo> initalState,
+            LocalServiceActionContext context,
+            ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> actionFactory) {
         super(initalState, context, actionFactory, TRANSITIONS);
     }
 

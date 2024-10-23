@@ -16,8 +16,14 @@
 
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
+import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.common.model.utils.Pair;
+import com.phonepe.drove.common.net.HttpCaller;
+import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAction;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
@@ -38,11 +44,34 @@ import java.util.stream.Collectors;
 public class ScaleLocalServiceAction extends LocalServiceAction {
     private final LocalServiceStateDB stateDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final InstanceScheduler scheduler;
+    private final ControllerCommunicator communicator;
+    private final String schedulingSessionId;
+    private final ControllerRetrySpecFactory retrySpecFactory;
+
+    private final InstanceIdGenerator instanceIdGenerator;
+
+    private final ApplicationInstanceTokenManager tokenManager;
+    private final HttpCaller httpCaller;
 
     @Inject
-    public ScaleLocalServiceAction(LocalServiceStateDB stateDB, ClusterResourcesDB clusterResourcesDB) {
+    public ScaleLocalServiceAction(LocalServiceStateDB stateDB, ClusterResourcesDB clusterResourcesDB,
+                                   InstanceScheduler scheduler,
+                                   ControllerCommunicator communicator,
+                                   String schedulingSessionId,
+                                   ControllerRetrySpecFactory retrySpecFactory,
+                                   InstanceIdGenerator instanceIdGenerator,
+                                   ApplicationInstanceTokenManager tokenManager,
+                                   HttpCaller httpCaller) {
         this.stateDB = stateDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.scheduler = scheduler;
+        this.communicator = communicator;
+        this.schedulingSessionId = schedulingSessionId;
+        this.retrySpecFactory = retrySpecFactory;
+        this.instanceIdGenerator = instanceIdGenerator;
+        this.tokenManager = tokenManager;
+        this.httpCaller = httpCaller;
     }
 
     @Override
@@ -52,11 +81,11 @@ public class ScaleLocalServiceAction extends LocalServiceAction {
         val executors = clusterResourcesDB.currentSnapshot(true);
         val currInfo = currentState.getData();
         val currInstances = stateDB.instances(currInfo.getServiceId(),
-                                              LocalServiceInstanceState.ACTIVE_STATES);
+                                              LocalServiceInstanceState.ACTIVE_STATES, false);
         val instancesByExecutor = currInstances.stream()
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
         val pending = executors.stream()
-                .map(executorHostInfo -> Pair.of(executorHostInfo.getExecutorId(),
+                .map(executorHostInfo -> Pair.of(executorHostInfo,
                                                     Math.max(0,
                                                              currInfo.getInstancesPerHost()
                                                               - instancesByExecutor.getOrDefault(executorHostInfo.getExecutorId(),

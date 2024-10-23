@@ -220,7 +220,9 @@ public class ControllerTestUtils {
                                                                                             1,
                                                                                             4 * 128 * (2L ^ 20)))),
                                      appInstances,
-                                     taskInstances, Set.of(),
+                                     taskInstances,
+                                     List.of(),
+                                     Set.of(),
                                      blacklisted),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
@@ -254,6 +256,7 @@ public class ControllerTestUtils {
                                                                                            4 * 128 * (2L ^ 20),
                                                                                            1,
                                                                                            4 * 128 * (2L ^ 20)))),
+                                    List.of(),
                                     List.of(),
                                     List.of(),
                                     tags,

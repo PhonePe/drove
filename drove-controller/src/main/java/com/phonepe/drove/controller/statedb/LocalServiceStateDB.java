@@ -19,7 +19,9 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import io.appform.functionmetrics.MonitoredFunction;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -28,15 +30,26 @@ import java.util.Set;
  *
  */
 public interface LocalServiceStateDB {
-    Optional<LocalServiceInfo> updateInfo(final String serviceId,
-                                      final LocalServiceInfo info);
+    Duration MAX_ACCEPTABLE_UPDATE_INTERVAL = Duration.ofMinutes(1);
 
-    Optional<LocalServiceInfo> getInfo(final String serviceId);
+    Optional<LocalServiceInfo> service(String serviceId);
 
-    boolean removeInfo(final String serviceId);
+    List<LocalServiceInfo> services(int start, int size);
+
+    boolean updateService(final String serviceId,
+                          final LocalServiceInfo info);
+
+    boolean removeService(final String serviceId);
 
     Optional<LocalServiceInstanceInfo> instance(String serviceId, String instanceId);
-    List<LocalServiceInstanceInfo> instances(String serviceId, Set<LocalServiceInstanceState> states);
+    List<LocalServiceInstanceInfo> instances(String serviceId, Set<LocalServiceInstanceState> states,
+                                             boolean skipStaleCheck);
+
+    @MonitoredFunction
+    boolean deleteInstanceState(String serviceId, String instanceId);
+
+    @MonitoredFunction
+    boolean deleteAllInstancesForService(String serviceId);
 
     boolean updateInstanceState(String serviceId, String instanceId, LocalServiceInstanceInfo instanceInfo);
 

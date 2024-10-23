@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 
 import java.util.Optional;
@@ -28,6 +29,12 @@ public interface InstanceScheduler {
             final String schedulingSessionId,
             final String instanceId,
             final DeploymentSpec applicationSpec);
+
+    Optional<AllocatedExecutorNode> schedule(
+            final String schedulingSessionId,
+            final String instanceId,
+            final DeploymentSpec applicationSpec,
+            final PlacementPolicy placementPolicy);
 
     void finaliseSession(String schedulingSessionId);
 

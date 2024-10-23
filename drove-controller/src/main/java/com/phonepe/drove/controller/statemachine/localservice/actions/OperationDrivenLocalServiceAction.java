@@ -16,14 +16,11 @@
 
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
-import com.phonepe.drove.controller.statemachine.applications.AppAction;
-import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
+import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAction;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
-import com.phonepe.drove.models.application.ApplicationInfo;
-import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
-import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -32,7 +29,8 @@ import lombok.val;
  *
  */
 @Slf4j
-public abstract class OperationDrivenLocalServiceAction extends AppAction {
+public abstract class OperationDrivenLocalServiceAction extends LocalServiceAction {
+
     @Override
     public final StateData<LocalServiceState, LocalServiceInfo> execute(
             LocalServiceActionContext context, StateData<LocalServiceState, LocalServiceInfo> currentState) {
@@ -46,15 +44,14 @@ public abstract class OperationDrivenLocalServiceAction extends AppAction {
         }
         catch (Exception e) {
             log.error("Error occurred: ", e);
-            return StateData.errorFrom(currentState, ApplicationState.RUNNING, "Error: " + e.getMessage());
+            return StateData.errorFrom(currentState, LocalServiceState.ACTIVE, "Error: " + e.getMessage());
         }
         finally {
             log.debug("Acking operation of type: {}. Status: {}", operation.getType(), context.ackUpdate());
         }
     }
 
-    protected abstract StateData<ApplicationState, ApplicationInfo> commandReceived(
-            AppActionContext context,
-            StateData<ApplicationState, ApplicationInfo> currentState,
-            ApplicationOperation operation);
+    protected abstract StateData<LocalServiceState, LocalServiceInfo> commandReceived(
+            LocalServiceActionContext context, StateData<LocalServiceState, LocalServiceInfo> currentState,
+            LocalServiceOperation operation);
 }

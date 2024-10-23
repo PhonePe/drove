@@ -41,7 +41,6 @@ import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.*;
-import com.phonepe.drove.controller.statemachine.applications.AppAction;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.testsupport.*;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -56,6 +55,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.*;
+import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.extern.slf4j.Slf4j;
@@ -120,13 +120,15 @@ class ApplicationEngineTest extends ControllerTestBase {
                         .to(InMemoryApplicationInstanceInfoDB.class);
                 bind(TaskDB.class).to(CachingProxyTaskDB.class);
                 bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(InMemoryTaskDB.class);
+                bind(LocalServiceStateDB.class).to(CachingProxyLocalServiceStateDB.class);
+                bind(LocalServiceStateDB.class).annotatedWith(Names.named("StoredLocalServiceDB")).to(InMemoryLocalServiceStateDB.class);
                 bind(InstanceIdGenerator.class).to(RandomInstanceIdGenerator.class).asEagerSingleton();
                 bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
                 bind(ClusterResourcesDB.class).to(InMemoryClusterResourcesDB.class);
                 bind(InstanceScheduler.class).to(DefaultInstanceScheduler.class);
                 bind(ApplicationInstanceTokenManager.class).to(JWTApplicationInstanceTokenManager.class);
                 bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState,
-                        AppActionContext, AppAction>>() {
+                        AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>>() {
                 }).to(InjectingAppActionFactory.class);
                 bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
                 })

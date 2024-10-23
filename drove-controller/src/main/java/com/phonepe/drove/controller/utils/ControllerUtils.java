@@ -52,6 +52,7 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.*;
 import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
@@ -91,6 +92,14 @@ public class ControllerUtils {
             @Override
             public String visit(TaskSpec taskSpec) {
                 return taskSpec.getSourceAppName() + "-" + taskSpec.getTaskId();
+            }
+
+            @Override
+            public String visit(LocalServiceSpec localServiceSpec) {
+
+                return Strings.isNullOrEmpty(localServiceSpec.getName()) || Strings.isNullOrEmpty(localServiceSpec.getVersion())
+                       ? null
+                       : localServiceSpec.getName() + "-" + localServiceSpec.getVersion();
             }
         });
     }

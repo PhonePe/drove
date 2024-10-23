@@ -21,6 +21,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
@@ -53,7 +54,7 @@ class StateUpdaterTest {
         val cDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
-
+        val lsDB = mock(LocalServiceStateDB.class);
         val spec = appSpec(1);
         val taskSpec = taskSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
@@ -73,7 +74,7 @@ class StateUpdaterTest {
             return true;
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
         val droveEventBus = mock(DroveEventBus.class);
-        val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, droveEventBus);
         su.updateClusterResources(nodes);
         su.updateClusterResources(List.of());
         CommonTestUtils.waitUntil(() -> counter.get() == 2);
@@ -84,6 +85,7 @@ class StateUpdaterTest {
     void testRemove() {
         val cDB = mock(ClusterResourcesDB.class);
         val taskDB = mock(TaskDB.class);
+        val lsDB = mock(LocalServiceStateDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
 
         val spec = appSpec(1);
@@ -107,7 +109,7 @@ class StateUpdaterTest {
         }).when(iiDB).deleteInstanceState(anyString(), anyString());
         val droveEventBus = mock(DroveEventBus.class);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, droveEventBus);
         su.remove(List.of(executor.getExecutorId()));
         CommonTestUtils.waitUntil(() -> count.get() == 2);
         assertEquals(2, count.get());
@@ -116,6 +118,7 @@ class StateUpdaterTest {
     @Test
     void testUpdateSingle() {
         val cDB = mock(ClusterResourcesDB.class);
+        val lsDB = mock(LocalServiceStateDB.class);
         val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
 
@@ -136,7 +139,7 @@ class StateUpdaterTest {
         }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
         val droveEventBus = mock(DroveEventBus.class);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, droveEventBus);
         su.updateSingle(new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                      new AvailableCPU(Map.of(), Map.of()),
                                                      new AvailableMemory(Map.of(), Map.of()),

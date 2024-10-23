@@ -29,13 +29,18 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
+import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import dev.failsafe.TimeoutExceededException;
@@ -55,7 +60,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.translateConfig
  */
 @Slf4j
 public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
-    private final LocalServiceSpec localServiceSpec;
+    private final LocalServiceInfo localServiceInfo;
     private final ClusterOpSpec clusterOpSpec;
     private final InstanceScheduler scheduler;
     private final LocalServiceStateDB instanceInfoDB;
@@ -67,10 +72,11 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
 
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
+    private final ExecutorHostInfo executor;
 
     @SuppressWarnings("java:S107")
     public StartSingleLocalServiceInstanceJob(
-            LocalServiceSpec localServiceSpec,
+            LocalServiceInfo localServiceInfo,
             ClusterOpSpec clusterOpSpec,
             InstanceScheduler scheduler,
             LocalServiceStateDB instanceInfoDB,
@@ -79,8 +85,9 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ApplicationInstanceTokenManager tokenManager,
-            HttpCaller httpCaller) {
-        this.localServiceSpec = localServiceSpec;
+            HttpCaller httpCaller,
+            ExecutorHostInfo executor) {
+        this.localServiceInfo = localServiceInfo;
         this.clusterOpSpec = clusterOpSpec;
         this.scheduler = scheduler;
         this.instanceInfoDB = instanceInfoDB;
@@ -90,11 +97,12 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         this.instanceIdGenerator = instanceIdGenerator;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
+        this.executor = executor;
     }
 
     @Override
     public String jobId() {
-        return "start-instance-" + ControllerUtils.deployableObjectId(localServiceSpec) + "-" + new Date().getTime();
+        return "start-instance-" + ControllerUtils.deployableObjectId(localServiceInfo.getSpec()) + "-" + new Date().getTime();
     }
 
     @Override
@@ -107,10 +115,10 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
                                                       instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
-        val appId = ControllerUtils.deployableObjectId(localServiceSpec);
+        val appId = ControllerUtils.deployableObjectId(localServiceInfo.getSpec());
         try {
             val status = waitForAction(retryPolicy,
-                                       () -> startInstance(localServiceSpec, clusterOpSpec),
+                                       () -> startInstance(localServiceInfo.getSpec(), clusterOpSpec),
                                        event -> {
                                            val failure = event.getException();
                                            if (null != failure) {
@@ -135,7 +143,14 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     }
 
     private boolean startInstance(LocalServiceSpec localServiceSpec, ClusterOpSpec clusterOpSpec) {
-        val node = scheduler.schedule(schedulingSessionId, localServiceSpec)
+        val appId = ControllerUtils.deployableObjectId(localServiceSpec);
+        val instanceId = instanceIdGenerator.generate(localServiceSpec);
+        val node = scheduler.schedule(
+                        schedulingSessionId, instanceId, localServiceSpec,
+                        new CompositePlacementPolicy(List.of(
+                                new MaxNPerHostPlacementPolicy(localServiceInfo.getInstancesPerHost()),
+                                new MatchTagPlacementPolicy(executor.getNodeData().getHostname())),
+                                                     CompositePlacementPolicy.CombinerType.AND))
                 .orElse(null);
         if (null == node) {
             log.warn("No node found in the cluster that can provide required resources" +
@@ -143,22 +158,22 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                      ControllerUtils.deployableObjectId(localServiceSpec));
             return false;
         }
-        val appId = ControllerUtils.deployableObjectId(localServiceSpec);
-        val instanceId = instanceIdGenerator.generate(localServiceSpec);
+
         val startMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                                 new ExecutorAddress(node.getExecutorId(),
-                                                                        node.getHostname(),
-                                                                        node.getPort(),
-                                                                        node.getTransportType()),
+                                                                                    node.getHostname(),
+                                                                                    node.getPort(),
+                                                                                    node.getTransportType()),
                                                                 new LocalServiceInstanceSpec(appId,
                                                                                              localServiceSpec.getName(),
                                                                                              instanceId,
                                                                                              localServiceSpec.getExecutable(),
                                                                                              List.of(node.getCpu(),
-                                                                                        node.getMemory()),
+                                                                                                     node.getMemory()),
                                                                                              localServiceSpec.getExposedPorts(),
                                                                                              localServiceSpec.getVolumes(),
-                                                                                             translateConfigSpecs(localServiceSpec.getConfigs(),
+                                                                                             translateConfigSpecs(
+                                                                                                     localServiceSpec.getConfigs(),
                                                                                                      httpCaller),
                                                                                              localServiceSpec.getHealthcheck(),
                                                                                              localServiceSpec.getReadiness(),
@@ -167,9 +182,10 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                                                              localServiceSpec.getArgs(),
                                                                                              localServiceSpec.getDevices(),
                                                                                              localServiceSpec.getPreShutdown(),
-                                                                                             generateAppInstanceToken(node,
-                                                                                                         appId,
-                                                                                                         instanceId)));
+                                                                                             generateAppInstanceToken(
+                                                                                                     node,
+                                                                                                     appId,
+                                                                                                     instanceId)));
         var successful = false;
         try {
             val response = communicator.send(startMessage);
@@ -196,7 +212,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         finally {
             if (!successful) {
                 log.warn("Instance could not be started. Deallocating resources on node: {}", node.getExecutorId());
-                scheduler.discardAllocation(schedulingSessionId, node);
+                scheduler.discardAllocation(schedulingSessionId, instanceId, node);
             }
         }
         return successful;

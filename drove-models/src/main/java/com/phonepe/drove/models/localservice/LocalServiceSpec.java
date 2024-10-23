@@ -103,6 +103,6 @@ public class LocalServiceSpec implements DeploymentSpec {
 
     @Override
     public <T> T accept(DeploymentSpecVisitor<T> visitor) {
-        return null;
+        return visitor.visit(this);
     }
 }

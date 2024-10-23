@@ -36,6 +36,7 @@ import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationStartInstancesOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
+import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -63,7 +64,7 @@ import static com.phonepe.drove.controller.utils.EventUtils.appMetadata;
 public class ApplicationEngine {
 
     private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
-    private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
+    private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory;
     private final ApplicationStateDB stateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final ApplicationCommandValidator applicationCommandValidator;
@@ -77,7 +78,7 @@ public class ApplicationEngine {
 
     @Inject
     public ApplicationEngine(
-            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
+            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory,
             ApplicationStateDB stateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             ApplicationCommandValidator applicationCommandValidator,

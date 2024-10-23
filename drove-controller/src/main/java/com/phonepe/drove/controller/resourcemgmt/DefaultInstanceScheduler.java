@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -70,8 +71,19 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                                                     TaskState.RUNNING,
                                                                                     TaskState.RUN_COMPLETED,
                                                                                     TaskState.DEPROVISIONING);
+    private static final Set<LocalServiceInstanceState> RESOURCE_CONSUMING_LOCAL_SERVICE_INSTANCE_STATES = EnumSet.of(
+            LocalServiceInstanceState.PENDING,
+            LocalServiceInstanceState.PROVISIONING,
+            LocalServiceInstanceState.STARTING,
+            LocalServiceInstanceState.UNREADY,
+            LocalServiceInstanceState.READY,
+            LocalServiceInstanceState.HEALTHY,
+            LocalServiceInstanceState.UNHEALTHY,
+            LocalServiceInstanceState.DEPROVISIONING,
+            LocalServiceInstanceState.STOPPING);
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
+    private final LocalServiceStateDB localServiceStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     //Map of sessionId -> [executorId -> [ instanceId -> resources]]]
     private final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> schedulingSessionData =
@@ -79,17 +91,19 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
     @Inject
     public DefaultInstanceScheduler(
-            ApplicationInstanceInfoDB instanceInfoDB, TaskDB taskDB, ClusterResourcesDB clusterResourcesDB) {
+            ApplicationInstanceInfoDB instanceInfoDB,
+            TaskDB taskDB,
+            LocalServiceStateDB localServiceStateDB,
+            ClusterResourcesDB clusterResourcesDB) {
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.localServiceStateDB = localServiceStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
     }
 
     @Override
-    @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
             String schedulingSessionId, String instanceId, DeploymentSpec applicationSpec) {
-
         var placementPolicy = Objects.requireNonNullElse(applicationSpec.getPlacementPolicy(),
                                                          new AnyPlacementPolicy());
         if (hasTagPolicy(placementPolicy)) {
@@ -100,6 +114,16 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
                                                            CompositePlacementPolicy.CombinerType.AND);
         }
+        return schedule(schedulingSessionId, instanceId, applicationSpec, placementPolicy);
+    }
+
+    @Override
+    @MonitoredFunction
+    public synchronized Optional<AllocatedExecutorNode> schedule(
+            String schedulingSessionId, String instanceId, DeploymentSpec applicationSpec,
+            final PlacementPolicy placementPolicy) {
+
+
         val sessionData = schedulingSessionData.computeIfAbsent(
                 schedulingSessionId,
                 id -> clusterSnapshot(applicationSpec));
@@ -141,7 +165,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             AllocatedExecutorNode node) {
         schedulingSessionData.computeIfPresent(schedulingSessionId, (id, executors) -> {
             var executorId = executorId(instanceId, node, executors);
-            if(!Strings.isNullOrEmpty(executorId)) {
+            if (!Strings.isNullOrEmpty(executorId)) {
                 val updatedAllocation = executors.compute(
                         executorId,
                         (eId, allocation) -> {
@@ -203,6 +227,17 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         .values()
                         .stream()
                         .flatMap(Collection::stream)
+                        .map(info -> convert(info))
+                        .collect(Collectors.groupingBy(InstanceResourceAllocation::getExecutorId,
+                                                       Collectors.toMap(InstanceResourceAllocation::getInstanceId,
+                                                                        Function.identity())));
+            }
+
+            @Override
+            public Map<String, Map<String, InstanceResourceAllocation>> visit(LocalServiceSpec localServiceSpec) {
+                return localServiceStateDB.instances(ControllerUtils.deployableObjectId(localServiceSpec),
+                                                     RESOURCE_CONSUMING_LOCAL_SERVICE_INSTANCE_STATES, false)
+                        .stream()
                         .map(info -> convert(info))
                         .collect(Collectors.groupingBy(InstanceResourceAllocation::getExecutorId,
                                                        Collectors.toMap(InstanceResourceAllocation::getInstanceId,

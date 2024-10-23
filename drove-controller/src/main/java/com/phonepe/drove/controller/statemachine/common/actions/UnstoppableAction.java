@@ -14,22 +14,22 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.statemachine.applications;
+package com.phonepe.drove.controller.statemachine.common.actions;
 
-import com.phonepe.drove.controller.statemachine.common.actions.JobEnabledContext;
-import com.phonepe.drove.models.application.ApplicationSpec;
-import com.phonepe.drove.models.operation.ApplicationOperation;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import com.phonepe.drove.statemachine.Action;
+import com.phonepe.drove.statemachine.ActionContext;
 
 /**
- * Context for application actions
+ *
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
-public class AppActionContext extends JobEnabledContext<ApplicationOperation> {
-    private final String appId;
-    private final ApplicationSpec applicationSpec;
+public abstract class UnstoppableAction<T, S extends Enum<S>, C extends ActionContext<D>, D> implements Action<T,S,C,D> {
+    @Override
+    public void stop() {
+        //Nothing to do here
+    }
+
+    @SuppressWarnings("unused")
+    public boolean cancel(final C context) {
+        return false;
+    }
 }

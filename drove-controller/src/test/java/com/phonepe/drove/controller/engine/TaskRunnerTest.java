@@ -27,6 +27,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -66,6 +67,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @SneakyThrows
     void testTaskRun() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -90,7 +92,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new JobExecutor<>(Executors.newSingleThreadExecutor()),
                                 tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -152,6 +154,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @SneakyThrows
     void testTaskRunFail() {
         val tdb = new InMemoryTaskDB();
+        val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -169,7 +172,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new JobExecutor<>(Executors.newSingleThreadExecutor()),
                                 tdb,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, cdb),
+                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),

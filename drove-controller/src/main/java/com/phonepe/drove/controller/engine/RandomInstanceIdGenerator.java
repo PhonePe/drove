@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.task.TaskSpec;
 
 import javax.inject.Singleton;
@@ -41,6 +42,11 @@ public class RandomInstanceIdGenerator implements InstanceIdGenerator {
             public String visit(TaskSpec taskSpec) {
                 return "TI-";
             }
-        }) + UUID.randomUUID().toString();
+
+            @Override
+            public String visit(LocalServiceSpec localServiceSpec) {
+                return "SI-";
+            }
+        }) + UUID.randomUUID();
     }
 }
