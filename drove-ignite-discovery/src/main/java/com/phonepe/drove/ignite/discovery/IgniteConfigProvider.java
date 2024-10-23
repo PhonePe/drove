@@ -29,9 +29,11 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.DroveIgniteTcpDiscovery;
 
+import java.util.Collections;
 import java.util.Objects;
 
 @NoArgsConstructor
@@ -56,6 +58,8 @@ public class IgniteConfigProvider {
         igniteConfiguration.setConsistentId(getConsistentId(localInstanceInfo));
         igniteConfiguration.setDiscoverySpi(new DroveIgniteTcpDiscovery(droveIgniteConfig, localInstanceInfo,
                 droveIgniteInstanceHelper, objectMapper));
+        igniteConfiguration.setUserAttributes(Collections.singletonMap(IgniteNodeAttributes.ATTR_MACS_OVERRIDE,
+                System.getenv("DROVE_INSTANCE_ID")));
 
         igniteConfiguration.setCommunicationSpi(new DroveIgniteTcpCommunication(droveIgniteConfig, localInstanceInfo));
 
