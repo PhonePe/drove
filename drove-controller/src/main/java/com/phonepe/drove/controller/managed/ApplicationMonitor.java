@@ -18,7 +18,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -59,7 +59,7 @@ public class ApplicationMonitor implements Managed {
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private ClusterStateDB clusterStateDB;
-    private final ApplicationLifecycleManagentEngine engine;
+    private final ApplicationLifecycleManagementEngine engine;
     private final LeadershipEnsurer leadershipEnsurer;
 
     @Inject
@@ -67,7 +67,7 @@ public class ApplicationMonitor implements Managed {
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             ClusterStateDB clusterStateDB,
-            ApplicationLifecycleManagentEngine engine,
+            ApplicationLifecycleManagementEngine engine,
             LeadershipEnsurer leadershipEnsurer) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;

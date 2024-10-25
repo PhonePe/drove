@@ -88,7 +88,7 @@ import static org.mockito.Mockito.when;
  *
  */
 @Slf4j
-class ApplicationLifecycleManagentEngineTest extends ControllerTestBase {
+class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
 
     private static final ClusterOpSpec TEST_STRATEGY = new ClusterOpSpec(io.dropwizard.util.Duration.seconds(120),
                                                                          1,
@@ -103,7 +103,7 @@ class ApplicationLifecycleManagentEngineTest extends ControllerTestBase {
     DummyExecutor executor;
 
     @Inject
-    ApplicationLifecycleManagentEngine engine;
+    ApplicationLifecycleManagementEngine engine;
 
     @BeforeEach
     public void setup() {

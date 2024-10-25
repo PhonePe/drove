@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -58,7 +58,7 @@ class BlacklistingAppMovementManagerTest {
         val noInstanceEx = executorHost(8080);
         val called = new AtomicBoolean();
 
-        val applicationEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock -> called.get()
                                                                                      ? List.of(noInstanceEx)
@@ -96,7 +96,7 @@ class BlacklistingAppMovementManagerTest {
         val noInstanceEx = executorHost(1, 8080, List.of(), List.of(), true);
         val called = new AtomicBoolean();
 
-        val applicationEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         when(clusterResourcesDB.currentSnapshot(anyBoolean()))
                 .thenAnswer(invocationMock -> called.get()
@@ -144,7 +144,7 @@ class BlacklistingAppMovementManagerTest {
         val noInstanceEx = executorHost(8080);
         val called = new AtomicInteger();
 
-        val applicationEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock -> called.incrementAndGet() > 2
                                                                                      ? List.of(noInstanceEx)
@@ -189,7 +189,7 @@ class BlacklistingAppMovementManagerTest {
         val executor = executorHost(8080, List.of(instance), List.of());
         val called = new AtomicInteger();
 
-        val applicationEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock ->
                                                                    {
@@ -237,7 +237,7 @@ class BlacklistingAppMovementManagerTest {
         val noInstanceEx = executorHost(8080);
         val called = new AtomicBoolean();
         val count = new AtomicInteger();
-        val applicationEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock -> called.get()
                                                                                      ? List.of(noInstanceEx)

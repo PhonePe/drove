@@ -18,7 +18,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -54,7 +54,7 @@ class AppRecoveryTest extends ControllerTestBase {
     @Test
     void testRecovery() {
         val le = mock(LeadershipEnsurer.class);
-        val ae = mock(ApplicationLifecycleManagentEngine.class);
+        val ae = mock(ApplicationLifecycleManagementEngine.class);
         val te = mock(TaskEngine.class);
         val asdb = mock(ApplicationStateDB.class);
         val tdb = mock(TaskDB.class);
@@ -87,7 +87,7 @@ class AppRecoveryTest extends ControllerTestBase {
     @Test
     void testNoRecovery() {
         val le = mock(LeadershipEnsurer.class);
-        val ae = mock(ApplicationLifecycleManagentEngine.class);
+        val ae = mock(ApplicationLifecycleManagementEngine.class);
         val te = mock(TaskEngine.class);
         val asdb = mock(ApplicationStateDB.class);
         val tdb = mock(TaskDB.class);

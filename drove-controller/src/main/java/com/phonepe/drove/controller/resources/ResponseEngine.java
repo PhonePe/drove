@@ -25,7 +25,7 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
@@ -79,7 +79,7 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 public class ResponseEngine {
 
     private final LeadershipObserver leadershipObserver;
-    private final ApplicationLifecycleManagentEngine engine;
+    private final ApplicationLifecycleManagementEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
@@ -93,7 +93,7 @@ public class ResponseEngine {
     @Inject
     public ResponseEngine(
             LeadershipObserver leadershipObserver,
-            ApplicationLifecycleManagentEngine engine,
+            ApplicationLifecycleManagementEngine engine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,

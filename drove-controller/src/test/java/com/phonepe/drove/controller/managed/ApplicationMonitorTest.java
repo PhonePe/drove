@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -58,7 +58,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -92,7 +92,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -126,7 +126,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -162,7 +162,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -193,7 +193,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(false);
 

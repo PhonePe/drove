@@ -73,7 +73,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     private final ClusterResourcesDB crDB = mock(ClusterResourcesDB.class);
     private final ApplicationInstanceInfoDB aiDB = mock(ApplicationInstanceInfoDB.class);
 
-    private final ApplicationLifecycleManagentEngine engine = mock(ApplicationLifecycleManagentEngine.class);
+    private final ApplicationLifecycleManagementEngine engine = mock(ApplicationLifecycleManagementEngine.class);
 
     @BeforeEach
     void resetMocks() {

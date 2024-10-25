@@ -58,7 +58,7 @@ import static com.phonepe.drove.controller.utils.EventUtils.appMetadata;
  */
 @Singleton
 @Slf4j
-public class ApplicationLifecycleManagentEngine extends DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
+public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
         ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
         ApplicationOperation>> {
 
@@ -66,7 +66,7 @@ public class ApplicationLifecycleManagentEngine extends DeployableLifeCycleManag
     private final ApplicationInstanceInfoDB instanceInfoDB;
 
     @Inject
-    public ApplicationLifecycleManagentEngine(
+    public ApplicationLifecycleManagementEngine(
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
                     Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory,
             ApplicationStateDB stateDB,

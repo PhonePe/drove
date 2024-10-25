@@ -53,7 +53,7 @@ public class LocalServiceCommandValidator {
     private final ControllerOptions controllerOptions;
 
     @MonitoredFunction
-    public ValidationResult validate(final ApplicationLifecycleManagentEngine engine, final ApplicationOperation operation) {
+    public ValidationResult validate(final ApplicationLifecycleManagementEngine engine, final ApplicationOperation operation) {
         val appId = deployableObjectId(operation);
         if (Strings.isNullOrEmpty(appId)) {
             return ValidationResult.failure("no app id found in operation");
@@ -89,7 +89,7 @@ public class LocalServiceCommandValidator {
         private final ApplicationInstanceInfoDB instancesDB;
         private final ControllerOptions controllerOptions;
 
-        private final ApplicationLifecycleManagentEngine engine;
+        private final ApplicationLifecycleManagementEngine engine;
 
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {

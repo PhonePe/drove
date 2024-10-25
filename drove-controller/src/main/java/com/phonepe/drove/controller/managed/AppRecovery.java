@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.managed;
 
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 @Singleton
 public class AppRecovery implements Managed {
 
-    private final ApplicationLifecycleManagentEngine applicationEngine;
+    private final ApplicationLifecycleManagementEngine applicationEngine;
     private final TaskEngine taskEngine;
     private final ApplicationStateDB applicationStateDB;
     private final TaskDB taskDB;
@@ -53,7 +53,7 @@ public class AppRecovery implements Managed {
     @Inject
     public AppRecovery(
             LeadershipEnsurer leadershipEnsurer,
-            ApplicationLifecycleManagentEngine applicationEngine,
+            ApplicationLifecycleManagementEngine applicationEngine,
             TaskEngine taskEngine,
             ApplicationStateDB applicationStateDB,
             TaskDB taskDB,

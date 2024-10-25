@@ -18,7 +18,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -67,7 +67,7 @@ class StaleDataCleanerTest {
         val taskDB = mock(TaskDB.class);
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
-        val engine = mock(ApplicationLifecycleManagentEngine.class);
+        val engine = mock(ApplicationLifecycleManagementEngine.class);
         val taskEngine = mock(TaskEngine.class);
 
         val sdc = new StaleDataCleaner(appStateDB,
@@ -106,7 +106,7 @@ class StaleDataCleanerTest {
         val taskDB = mock(TaskDB.class);
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
-        val engine = mock(ApplicationLifecycleManagentEngine.class);
+        val engine = mock(ApplicationLifecycleManagementEngine.class);
 
         val sdc = new StaleDataCleaner(appStateDB,
                                        instanceDB,
@@ -155,7 +155,7 @@ class StaleDataCleanerTest {
         val taskDB = new InMemoryTaskDB();
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
-        val engine = mock(ApplicationLifecycleManagentEngine.class);
+        val engine = mock(ApplicationLifecycleManagementEngine.class);
 
         val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, DEFAULT, Duration.ofSeconds(1),
                                        ControllerTestUtils.DEFAULT_CLUSTER_OP);
@@ -195,7 +195,7 @@ class StaleDataCleanerTest {
         val taskDB = mock(TaskDB.class);
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
-        val engine = mock(ApplicationLifecycleManagentEngine.class);
+        val engine = mock(ApplicationLifecycleManagementEngine.class);
 
         val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, options, Duration.ofSeconds(1),
                                        ControllerTestUtils.DEFAULT_CLUSTER_OP);

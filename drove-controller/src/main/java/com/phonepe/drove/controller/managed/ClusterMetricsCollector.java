@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -60,7 +60,7 @@ public class ClusterMetricsCollector implements Managed, ServerLifecycleListener
 
     private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationStateDB applicationStateDB;
-    private final ApplicationLifecycleManagentEngine applicationEngine;
+    private final ApplicationLifecycleManagementEngine applicationEngine;
     private final LeadershipEnsurer leadershipEnsurer;
     private final ClusterMetricsRegistry metricsRegistry;
 
@@ -68,7 +68,7 @@ public class ClusterMetricsCollector implements Managed, ServerLifecycleListener
     public ClusterMetricsCollector(
             ClusterResourcesDB clusterResourcesDB,
             ApplicationStateDB applicationStateDB,
-            ApplicationLifecycleManagentEngine applicationEngine,
+            ApplicationLifecycleManagementEngine applicationEngine,
             LeadershipEnsurer leadershipEnsurer,
             Environment environment,
             ClusterMetricsRegistry metricsRegistry) {
@@ -85,7 +85,7 @@ public class ClusterMetricsCollector implements Managed, ServerLifecycleListener
     ClusterMetricsCollector(
             ClusterResourcesDB clusterResourcesDB,
             ApplicationStateDB applicationStateDB,
-            ApplicationLifecycleManagentEngine applicationEngine,
+            ApplicationLifecycleManagementEngine applicationEngine,
             LeadershipEnsurer leadershipEnsurer,
             Environment environment,
             ClusterMetricsRegistry metricsRegistry,
