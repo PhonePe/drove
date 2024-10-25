@@ -14,16 +14,11 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.models.operation;
+package com.phonepe.drove.controller.engine;
 
 /**
  *
  */
-public enum LocalServiceOperationType {
-    START,
-    SCALE,
-    DEACTIVATE,
-    RESTART,
-    UPDATE,
-    ACTIVATE, DESTROY
+public interface CommandValidator<C, E> {
+    ValidationResult validate(final E engine, final C command);
 }

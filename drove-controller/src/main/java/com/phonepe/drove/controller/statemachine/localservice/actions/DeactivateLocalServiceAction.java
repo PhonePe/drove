@@ -32,11 +32,11 @@ import javax.inject.Inject;
  *
  */
 @Slf4j
-public class CreateLocalServiceAction extends LocalServiceAction {
+public class DeactivateLocalServiceAction extends LocalServiceAction {
     private final LocalServiceStateDB stateDB;
 
     @Inject
-    public CreateLocalServiceAction(LocalServiceStateDB stateDB) {
+    public DeactivateLocalServiceAction(LocalServiceStateDB stateDB) {
         this.stateDB = stateDB;
     }
 
@@ -48,9 +48,8 @@ public class CreateLocalServiceAction extends LocalServiceAction {
                 .map(LocalServiceInfo::getState)
                 .orElse(ActivationState.UNKNOWN);
         val toState = switch (activationState) {
-            case ACTIVE -> LocalServiceState.ACTIVE;
             case INACTIVE -> LocalServiceState.INACTIVE;
-            case UNKNOWN -> {
+            case ACTIVE, UNKNOWN -> {
                 if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.INACTIVE))) {
                     yield LocalServiceState.INACTIVE;
                 }

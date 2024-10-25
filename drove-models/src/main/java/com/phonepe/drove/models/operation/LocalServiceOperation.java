@@ -26,9 +26,10 @@ import lombok.Data;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(name = "START", value = LocalServiceStartOperation.class),
+        @JsonSubTypes.Type(name = "START", value = LocalServiceCreateOperation.class),
+        @JsonSubTypes.Type(name = "ACTIVATE", value = LocalServiceActivateOperation.class),
         @JsonSubTypes.Type(name = "SCALE", value = LocalServiceScaleOperation.class),
-        @JsonSubTypes.Type(name = "STOP", value = LocalServiceStopOperation.class),
+        @JsonSubTypes.Type(name = "STOP", value = LocalServiceDeactivateOperation.class),
         @JsonSubTypes.Type(name = "RESTART", value = LocalServiceRestartOperation.class),
         @JsonSubTypes.Type(name = "UPDATE", value = LocalServiceUpdateOperation.class),
         @JsonSubTypes.Type(name = "DESTROY", value = LocalServiceDestroyOperation.class),

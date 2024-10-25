@@ -21,7 +21,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.metrics.ClusterMetricNames;
 import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -54,7 +54,7 @@ class ClusterMetricsCollectorTest {
     void testMetricsCollection() {
         val crdb = mock(ClusterResourcesDB.class);
         val asDB = mock(ApplicationStateDB.class);
-        val ae = mock(ApplicationEngine.class);
+        val ae = mock(ApplicationLifecycleManagentEngine.class);
         val le = mock(LeadershipEnsurer.class);
         val env = mock(Environment.class);
         val lenv = mock(LifecycleEnvironment.class);
@@ -68,7 +68,7 @@ class ClusterMetricsCollectorTest {
                                                         1,
                                                         new Date(),
                                                         new Date())));
-        when(ae.applicationState("testapp-1")).thenReturn(Optional.of(ApplicationState.RUNNING));
+        when(ae.currentState("testapp-1")).thenReturn(Optional.of(ApplicationState.RUNNING));
         when(lenv.getMetricRegistry()).thenReturn(metricRegistry);
         when(env.lifecycle()).thenReturn(lenv);
         when(env.metrics()).thenReturn(metricRegistry);

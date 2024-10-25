@@ -25,7 +25,7 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
@@ -79,7 +79,7 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 public class ResponseEngine {
 
     private final LeadershipObserver leadershipObserver;
-    private final ApplicationEngine engine;
+    private final ApplicationLifecycleManagentEngine engine;
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
@@ -93,7 +93,7 @@ public class ResponseEngine {
     @Inject
     public ResponseEngine(
             LeadershipObserver leadershipObserver,
-            ApplicationEngine engine,
+            ApplicationLifecycleManagentEngine engine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
@@ -174,7 +174,7 @@ public class ResponseEngine {
         var liveApps = 0;
         var allApps = 0;
         for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
-            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(engine.applicationState(appInfo.getAppId())
+            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(engine.currentState(appInfo.getAppId())
                                                                             .orElse(ApplicationState.FAILED))
                         ? 1
                         : 0;
@@ -227,7 +227,7 @@ public class ResponseEngine {
         //TODO::HANDLE EXPOSURE MODE
         val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
-                .filter(app -> engine.applicationState(app.getAppId())
+                .filter(app -> engine.currentState(app.getAppId())
                         .filter(ApplicationState.ACTIVE_APP_STATES::contains)
                         .isPresent()) //Only running
                 .filter(app -> app.getSpec().getExposureSpec() != null && !app.getSpec()
@@ -357,7 +357,7 @@ public class ResponseEngine {
                               cpus,
                               memory,
                               instances,
-                              engine.applicationState(info.getAppId()).orElse(null),
+                              engine.currentState(info.getAppId()).orElse(null),
                               info.getCreated(),
                               info.getUpdated());
 
@@ -376,7 +376,7 @@ public class ResponseEngine {
                               cpus,
                               memory,
                               spec.getTags(),
-                              engine.applicationState(info.getAppId()).orElse(null),
+                              engine.currentState(info.getAppId()).orElse(null),
                               info.getCreated(),
                               info.getUpdated());
 

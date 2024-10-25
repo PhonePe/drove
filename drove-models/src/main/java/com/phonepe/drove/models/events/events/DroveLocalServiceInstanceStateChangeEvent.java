@@ -39,7 +39,7 @@ public class DroveLocalServiceInstanceStateChangeEvent extends DroveEvent<LocalS
     @Jacksonized
     @Builder
     public DroveLocalServiceInstanceStateChangeEvent(@JsonProperty("metadata") Map<LocalServiceInstanceEventDataTag, Object> metadata) {
-        super(DroveEventType.LOCAL_SERVICE_STATE_CHANGE, metadata);
+        super(DroveEventType.LOCAL_SERVICE_INSTANCE_STATE_CHANGE, metadata);
     }
 
     @Override

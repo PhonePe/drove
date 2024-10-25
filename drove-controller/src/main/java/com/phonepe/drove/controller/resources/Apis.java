@@ -20,7 +20,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.masking.EnforceMasking;
@@ -72,7 +72,7 @@ public class Apis {
     public static final int MAX_ELEMENTS = Integer.MAX_VALUE - 1;
     public static final String MAX_ELEMENTS_TEXT = "2147483646";
 
-    private final ApplicationEngine engine;
+    private final ApplicationLifecycleManagentEngine engine;
     private final TaskEngine taskEngine;
 
     private final ResponseEngine responseEngine;
@@ -81,7 +81,7 @@ public class Apis {
 
     @Inject
     public Apis(
-            ApplicationEngine engine,
+            ApplicationLifecycleManagentEngine engine,
             TaskEngine taskEngine, ResponseEngine responseEngine,
             ClusterStateDB clusterStateDB) {
         this.engine = engine;

@@ -28,20 +28,20 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Scale number of service instances on executors
+ * Destroy a stopped service on executor nodes
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceScaleOperation extends LocalServiceOperation {
+public class LocalServiceActivateOperation extends LocalServiceOperation {
     @NotEmpty
     String serviceId;
 
-    public LocalServiceScaleOperation(
+    public LocalServiceActivateOperation(
             String serviceId) {
-        super(LocalServiceOperationType.SCALE);
+        super(LocalServiceOperationType.ACTIVATE);
         this.serviceId = serviceId;
     }
 

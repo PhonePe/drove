@@ -35,13 +35,13 @@ import javax.validation.constraints.NotEmpty;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceStopOperation extends LocalServiceOperation {
+public class LocalServiceDeactivateOperation extends LocalServiceOperation {
     @NotEmpty
     String serviceId;
 
-    public LocalServiceStopOperation(
+    public LocalServiceDeactivateOperation(
             String serviceId) {
-        super(LocalServiceOperationType.STOP);
+        super(LocalServiceOperationType.DEACTIVATE);
         this.serviceId = serviceId;
     }
 

@@ -21,7 +21,6 @@ import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppAction;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
 import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -39,8 +38,7 @@ import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import com.phonepe.drove.statemachine.StateData;
-import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.signals.signals.ConsumingFireForgetSignal;
+import com.phonepe.drove.statemachine.StateMachine;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -50,35 +48,27 @@ import javax.inject.Singleton;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 
 import static com.phonepe.drove.controller.utils.EventUtils.appMetadata;
 
 /**
- *
+ * Manages application lifecycle
  */
 @Singleton
 @Slf4j
-public class ApplicationEngine {
+public class ApplicationLifecycleManagentEngine extends DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
+        ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
+        ApplicationOperation>> {
 
-    private final Map<String, ApplicationStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
-    private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory;
     private final ApplicationStateDB stateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
-    private final ApplicationCommandValidator applicationCommandValidator;
-    private final DroveEventBus droveEventBus;
-    private final ControllerRetrySpecFactory retrySpecFactory;
-
-    private final ExecutorService monitorExecutor;
-    private final ClusterOpSpec defaultClusterOpSpec;
-    private final ConsumingFireForgetSignal<ApplicationStateMachineExecutor> stateMachineCompleted =
-            new ConsumingFireForgetSignal<>();
 
     @Inject
-    public ApplicationEngine(
-            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory,
+    public ApplicationLifecycleManagentEngine(
+            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
+                    Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory,
             ApplicationStateDB stateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             ApplicationCommandValidator applicationCommandValidator,
@@ -86,78 +76,19 @@ public class ApplicationEngine {
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("MonitorThreadPool") ExecutorService monitorExecutor,
             ClusterOpSpec defaultClusterOpSpec) {
-        this.factory = factory;
+        super(factory, applicationCommandValidator, droveEventBus, retrySpecFactory, monitorExecutor, defaultClusterOpSpec);
         this.stateDB = stateDB;
-        this.instanceInfoDB = instanceInfoDB;
-        this.applicationCommandValidator = applicationCommandValidator;
-        this.droveEventBus = droveEventBus;
-        this.retrySpecFactory = retrySpecFactory;
-        this.monitorExecutor = monitorExecutor;
-        this.defaultClusterOpSpec = defaultClusterOpSpec;
-        this.stateMachineCompleted.connect(stoppedExecutor -> {
-            stoppedExecutor.stop();
-            log.info("State machine executor is done for {}", stoppedExecutor.getAppId());
-        });
     }
 
-    @MonitoredFunction
-    public ValidationResult handleOperation(final ApplicationOperation operation) {
-        val appId = ControllerUtils.deployableObjectId(operation);
-        val res = validateOp(operation);
-        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
-            stateMachines.compute(appId, (id, monitor) -> {
-                if (null == monitor) {
-                    log.info("App {} is unknown. Going to create it now.", appId);
-                    return createApp(operation);
-                }
-                if (!monitor.notifyUpdate(translateOp(operation))) {
-                    log.warn("Update could not be sent");
-                }
-                return monitor;
-            });
-        }
-        return res;
+    @Override
+    protected String deployableObjectId(ApplicationOperation operation) {
+        return ControllerUtils.deployableObjectId(operation);
     }
-
-    @MonitoredFunction
-    public void stopAll() {
-        stateMachines.forEach((appId, exec) -> exec.stop());
-        stateMachines.clear();
-    }
-
-    @MonitoredFunction
-    public boolean cancelCurrentJob(final String appId) {
-        val sm = stateMachines.get(appId);
-        if (null == sm) {
-            return false;
-        }
-        val appSm = sm.getStateMachine();
-        val action = (AppAsyncAction) appSm.currentAction()
-                .filter(AppAsyncAction.class::isInstance)
-                .orElse(null);
-        if (null == action) {
-            return false;
-        }
-        return action.cancel(appSm.getContext());
-    }
-
-
-    @MonitoredFunction
-    public Optional<ApplicationState> applicationState(final String appId) {
-        return Optional.ofNullable(stateMachines.get(appId))
-                .map(executor -> executor.getStateMachine().getCurrentState().getState());
-    }
-
-    boolean exists(final String appId) {
-        return stateMachines.containsKey(appId);
-    }
-
-    private ValidationResult validateOp(final ApplicationOperation operation) {
-        Objects.requireNonNull(operation, "Operation cannot be null");
-        return applicationCommandValidator.validate(this, operation);
-    }
-
-    private ApplicationOperation translateOp(final ApplicationOperation original) {
+ 
+    @Override
+    protected ApplicationOperation translateOp(
+            ApplicationOperation original,
+            ClusterOpSpec defaultClusterOpSpec) {
         return original.accept(new ApplicationOperationVisitorAdapter<>(original) {
             @Override
             public ApplicationOperation visit(ApplicationStartInstancesOperation deploy) {
@@ -179,7 +110,17 @@ public class ApplicationEngine {
         });
     }
 
-    private ApplicationStateMachineExecutor createApp(ApplicationOperation operation) {
+    @Override
+    protected StateMachineExecutor<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
+            Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> createDeployable(
+            ApplicationOperation operation,
+            ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
+                    Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> factory,
+            ExecutorService monitorExecutor,
+            ControllerRetrySpecFactory retrySpecFactory,
+            BiConsumer<StateMachine<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
+                    Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>,
+                    AppActionContext> signalConnector) {
         return operation.accept(new ApplicationOperationVisitorAdapter<>(null) {
             @Override
             public ApplicationStateMachineExecutor visit(ApplicationCreateOperation create) {
@@ -191,7 +132,7 @@ public class ApplicationEngine {
                 val stateMachine = new ApplicationStateMachine(StateData.create(
                         ApplicationState.INIT,
                         appInfo), context, factory);
-                stateMachine.onStateChange().connect(newState -> handleAppStateUpdate(appId, context, newState));
+                signalConnector.accept(stateMachine, context);
                 val monitor = new ApplicationStateMachineExecutor(
                         appId,
                         stateMachine,
@@ -209,10 +150,13 @@ public class ApplicationEngine {
         });
     }
 
-    private void handleAppStateUpdate(
+    @Override
+    protected void handleAppStateUpdate(
             String appId,
             AppActionContext context,
-            StateData<ApplicationState, ApplicationInfo> newState) {
+            StateData<ApplicationState, ApplicationInfo> newState,
+            Map<String, StateMachineExecutor<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>> stateMachines,
+            ClusterOpSpec defaultClusterOpSpec, DroveEventBus droveEventBus) {
         val state = newState.getState();
         log.info("App state: {}", state);
         if (state.equals(ApplicationState.SCALING_REQUESTED)) {
@@ -251,5 +195,9 @@ public class ApplicationEngine {
             }
         }
         droveEventBus.publish(new DroveAppStateChangeEvent(appMetadata(appId, context.getApplicationSpec(), newState)));
+
+
     }
+
+
 }

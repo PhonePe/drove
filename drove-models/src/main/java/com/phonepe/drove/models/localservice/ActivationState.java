@@ -14,16 +14,13 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.models.operation;
+package com.phonepe.drove.models.localservice;
 
 /**
  *
  */
-public enum LocalServiceOperationType {
-    START,
-    SCALE,
-    DEACTIVATE,
-    RESTART,
-    UPDATE,
-    ACTIVATE, DESTROY
+public enum ActivationState {
+    ACTIVE,
+    INACTIVE,
+    UNKNOWN
 }

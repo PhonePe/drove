@@ -44,4 +44,6 @@ public interface DroveEventVisitor<T> {
 
 
     T visit(DroveLocalServiceInstanceStateChangeEvent droveLocalServiceInstanceStateChangeEvent);
+
+    T visit(DroveLocalServiceStateChangeEvent droveLocalServiceStateChangeEvent);
 }

@@ -81,4 +81,14 @@ public abstract class DroveEventVisitorAdapter<T> implements DroveEventVisitor<T
     public T visit(DroveClusterLeadershipLostEvent leadershipLost) {
         return defaultValue;
     }
+
+    @Override
+    public T visit(DroveLocalServiceInstanceStateChangeEvent droveLocalServiceInstanceStateChangeEvent) {
+        return defaultValue;
+    }
+
+    @Override
+    public T visit(DroveLocalServiceStateChangeEvent droveLocalServiceStateChangeEvent) {
+        return defaultValue;
+    }
 }

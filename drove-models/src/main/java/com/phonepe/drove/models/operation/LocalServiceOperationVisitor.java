@@ -22,15 +22,17 @@ import com.phonepe.drove.models.operation.localserviceops.*;
  * To handle local service operation subtypes
  */
 public interface LocalServiceOperationVisitor<T> {
-    T visit(LocalServiceStartOperation localServiceStartOperation);
+    T visit(LocalServiceCreateOperation localServiceCreateOperation);
 
     T visit(LocalServiceScaleOperation localServiceScaleOperation);
 
-    T visit(LocalServiceStopOperation localServiceStopOperation);
+    T visit(LocalServiceDeactivateOperation localServiceDeactivateOperation);
 
     T visit(LocalServiceRestartOperation localServiceRestartOperation);
 
     T visit(LocalServiceUpdateOperation localServiceUpdateOperation);
 
     T visit(LocalServiceDestroyOperation localServiceDestroyOperation);
+
+    T visit(LocalServiceActivateOperation localServiceActivateOperation);
 }

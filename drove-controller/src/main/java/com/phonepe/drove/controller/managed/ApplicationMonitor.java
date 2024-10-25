@@ -18,7 +18,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -59,7 +59,7 @@ public class ApplicationMonitor implements Managed {
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private ClusterStateDB clusterStateDB;
-    private final ApplicationEngine engine;
+    private final ApplicationLifecycleManagentEngine engine;
     private final LeadershipEnsurer leadershipEnsurer;
 
     @Inject
@@ -67,7 +67,7 @@ public class ApplicationMonitor implements Managed {
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             ClusterStateDB clusterStateDB,
-            ApplicationEngine engine,
+            ApplicationLifecycleManagentEngine engine,
             LeadershipEnsurer leadershipEnsurer) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -106,7 +106,7 @@ public class ApplicationMonitor implements Managed {
         apps.values()
                 .forEach(app -> {
                     val appId = app.getAppId();
-                    val state = engine.applicationState(appId).orElse(ApplicationState.FAILED);
+                    val state = engine.currentState(appId).orElse(ApplicationState.FAILED);
                     if (state != ApplicationState.RUNNING && state != ApplicationState.MONITORING) {
                         log.trace("Checks skipped on {} as it is in {} state", appId, state.name());
                         return;

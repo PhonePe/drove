@@ -16,46 +16,12 @@
 
 package com.phonepe.drove.controller.engine;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.application.ApplicationInfo;
-import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.application.PortSpec;
-import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
-import com.phonepe.drove.models.application.checks.CheckSpec;
-import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
-import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.application.requirements.ResourceRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceType;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.operation.ApplicationOperation;
-import com.phonepe.drove.models.operation.ApplicationOperationType;
-import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
-import com.phonepe.drove.models.operation.ops.*;
-import com.phonepe.drove.statemachine.Action;
-import io.appform.functionmetrics.MonitoredFunction;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
-import static com.phonepe.drove.models.application.ApplicationState.*;
-import static com.phonepe.drove.models.instance.InstanceState.*;
-import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
 
 /**
  *
@@ -63,10 +29,11 @@ import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
 @Singleton
 @Slf4j
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
-public class ApplicationCommandValidator implements CommandValidator<ApplicationOperation, DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
-        ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
-        ApplicationOperation>>> {
-    private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
+public class LocalServiceCommandValidator {
+    public ValidationResult validate(LocalServiceEngine localServiceEngine, LocalServiceOperation operation) {
+        return ValidationResult.success();
+    }
+    /*private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
             .put(INIT, Set.of())
             .put(MONITORING, Set.of(START_INSTANCES, SCALE_INSTANCES, DESTROY, RECOVER))
@@ -85,17 +52,14 @@ public class ApplicationCommandValidator implements CommandValidator<Application
     private final ApplicationInstanceInfoDB instanceInfoStore;
     private final ControllerOptions controllerOptions;
 
-    @Override
     @MonitoredFunction
-    public ValidationResult validate(final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
-            ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
-            ApplicationOperation>> engine, final ApplicationOperation operation) {
+    public ValidationResult validate(final ApplicationLifecycleManagentEngine engine, final ApplicationOperation operation) {
         val appId = deployableObjectId(operation);
         if (Strings.isNullOrEmpty(appId)) {
             return ValidationResult.failure("no app id found in operation");
         }
         if (!operation.getType().equals(CREATE)) {
-            val currState = engine.currentState(appId).orElse(null);
+            val currState = engine.applicationState(appId).orElse(null);
             if (null == currState) {
                 return ValidationResult.failure("No state found for app: " + appId);
             }
@@ -125,9 +89,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         private final ApplicationInstanceInfoDB instancesDB;
         private final ControllerOptions controllerOptions;
 
-        private final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
-                ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
-                ApplicationOperation>> engine;
+        private final ApplicationLifecycleManagentEngine engine;
 
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {
@@ -172,7 +134,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         @Override
         public ValidationResult visit(ApplicationStartInstancesOperation deploy) {
             val requiredInstances = deploy.getInstances();
-            return ensureResources(requiredInstances);
+            return ensureResources(deploy, requiredInstances);
         }
 
         @Override
@@ -197,7 +159,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             if (requiredInstances <= currentInstances) {
                 return ValidationResult.success();
             }
-            return ensureResources(requiredInstances - currentInstances);
+            return ensureResources(scale, requiredInstances - currentInstances);
         }
 
         @Override
@@ -227,7 +189,8 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         }
 
 
-        private ValidationResult ensureResources(long requiredNewInstances) {
+        private ValidationResult ensureResources(final ApplicationOperation operation,
+                                                 long requiredNewInstances) {
             val executorCount = clusterResourcesDB.executorCount(true);
             if(executorCount == 0) {
                 return ValidationResult.failure("No executors on cluster");
@@ -262,7 +225,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
                     });
         }
 
-    }
+    }*/
 
 
 }

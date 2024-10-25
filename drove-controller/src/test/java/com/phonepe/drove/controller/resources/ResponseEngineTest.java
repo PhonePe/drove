@@ -24,7 +24,7 @@ import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
@@ -79,7 +79,7 @@ class ResponseEngineTest {
     @Test
     void testApplications() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -117,7 +117,7 @@ class ResponseEngineTest {
     @Test
     void testApplication() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -153,7 +153,7 @@ class ResponseEngineTest {
     @Test
     void testApplicationSpec() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -191,7 +191,7 @@ class ResponseEngineTest {
     @Test
     void testApplicationInstances() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -230,7 +230,7 @@ class ResponseEngineTest {
     @Test
     void testInstanceDetails() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -273,7 +273,7 @@ class ResponseEngineTest {
     @Test
     void testApplicationOldInstances() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -310,7 +310,7 @@ class ResponseEngineTest {
     @Test
     void testTaskDetails() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -346,7 +346,7 @@ class ResponseEngineTest {
     @Test
     void testTaskDelete() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -381,7 +381,7 @@ class ResponseEngineTest {
     @Test
     void testCluster() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -413,7 +413,7 @@ class ResponseEngineTest {
                 .thenReturn(IntStream.rangeClosed(1, 100)
                                     .mapToObj(i -> createApp(i, 10))
                                     .toList());
-        when(engine.applicationState(anyString())).thenAnswer(new Answer<Optional<ApplicationState>>() {
+        when(engine.currentState(anyString())).thenAnswer(new Answer<Optional<ApplicationState>>() {
             int count = 0;
 
             @Override
@@ -464,7 +464,7 @@ class ResponseEngineTest {
     @Test
     void testNodes() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -498,7 +498,7 @@ class ResponseEngineTest {
     @Test
     void testExecutorDetails() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -539,7 +539,7 @@ class ResponseEngineTest {
     @Test
     void testEndpoints() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -563,7 +563,7 @@ class ResponseEngineTest {
                 .mapToObj(i -> createApp(i, 10))
                 .toList();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE)).thenReturn(apps);
-        when(engine.applicationState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+        when(engine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
         val instances = apps.stream()
                 .flatMap(applicationInfo -> LongStream.rangeClosed(1, applicationInfo.getInstances())
                         .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(),
@@ -585,7 +585,7 @@ class ResponseEngineTest {
     @Test
     void testEndpointsForApp() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -609,7 +609,7 @@ class ResponseEngineTest {
                 .mapToObj(i -> createApp(i, 10))
                 .toList();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE)).thenReturn(apps);
-        when(engine.applicationState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+        when(engine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
         val instances = apps.stream()
                 .flatMap(applicationInfo -> LongStream.rangeClosed(1, applicationInfo.getInstances())
                         .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(),
@@ -661,7 +661,7 @@ class ResponseEngineTest {
     @Test
     void testEvents() {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -697,7 +697,7 @@ class ResponseEngineTest {
     private void testBlacklistingMultiFunctionality(
             final BiFunction<ResponseEngine, Set<String>, ApiResponse<Map<String, Set<String>>>> func) {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -749,7 +749,7 @@ class ResponseEngineTest {
     private void testBlacklistingFunctionality(final BiFunction<ResponseEngine, String, ApiResponse<Map<String,
             String>>> func) {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
@@ -799,7 +799,7 @@ class ResponseEngineTest {
             final ClusterState state,
             final Function<ResponseEngine, ApiResponse<ClusterStateData>> func) {
         val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationEngine.class);
+        val engine = mock(ApplicationLifecycleManagentEngine.class);
         val applicationStateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);

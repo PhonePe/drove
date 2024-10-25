@@ -33,7 +33,10 @@ import com.phonepe.drove.models.events.events.datatags.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.AccessLevel;
@@ -95,6 +98,53 @@ public class EventUtils {
                                       .toList())));
         Optional.ofNullable(spec.getExposureSpec())
                 .ifPresent(exposureSpec -> metadata.put(AppEventDataTag.VHOST, exposureSpec.getVhost()));
+
+        return metadata.build();
+    }
+
+    public static Map<LocalServiceEventDataTag, Object> localServiceMetadata(
+            final String serviceId,
+            final LocalServiceSpec spec,
+            StateData<LocalServiceState, LocalServiceInfo> newState) {
+        val metadata = new MapBuilder<LocalServiceEventDataTag, Object>()
+                .put(LocalServiceEventDataTag.LOCAL_SERVICE_ID, serviceId)
+                .put(LocalServiceEventDataTag.CURRENT_STATE, newState.getState())
+                .put(LocalServiceEventDataTag.LOCAL_SERVICE_NAME, spec.getName())
+                .put(LocalServiceEventDataTag.LOCAL_SERVICE_VERSION, spec.getVersion())
+                .put(LocalServiceEventDataTag.EXECUTABLE,
+                     spec.getExecutable().accept(DockerCoordinates::getUrl))
+
+                .put(LocalServiceEventDataTag.PLACEMENT_POLICY,
+                     Optional.ofNullable(spec.getPlacementPolicy())
+                             .map(PlacementPolicy::getType)
+                             .orElse(PlacementPolicyType.ANY))
+                .put(LocalServiceEventDataTag.EXECUTABLE,
+                     spec.getExecutable().accept(DockerCoordinates::getUrl))
+                .put(LocalServiceEventDataTag.CURRENT_INSTANCES_PER_HOST,
+                     Optional.ofNullable(newState.getData())
+                             .map(LocalServiceInfo::getInstancesPerHost)
+                             .orElse(0));
+        spec.getResources()
+                .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceRequirementVisitor<Void>() {
+                    @Override
+                    public Void visit(CPURequirement cpuRequirement) {
+                        metadata.put(LocalServiceEventDataTag.CPU_COUNT, cpuRequirement.getCount());
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(MemoryRequirement memoryRequirement) {
+                        metadata.put(LocalServiceEventDataTag.MEMORY, memoryRequirement.getSizeInMB());
+                        return null;
+                    }
+                }));
+        Optional.ofNullable(spec.getExposedPorts())
+                .ifPresent(ports -> metadata.put(LocalServiceEventDataTag.PORTS, Joiner.on(",")
+                        .join(ports.stream()
+                                      .map(portSpec -> portSpec.getName()
+                                              + ":" + portSpec.getPort()
+                                              + ":" + portSpec.getType().name().toLowerCase())
+                                      .toList())));
 
         return metadata.build();
     }

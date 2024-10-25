@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.statemachine.localservice;
 
+import com.phonepe.drove.controller.statemachine.localservice.actions.*;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
@@ -23,6 +24,8 @@ import com.phonepe.drove.statemachine.*;
 import lombok.NonNull;
 
 import java.util.List;
+
+import static com.phonepe.drove.models.localservice.LocalServiceState.*;
 
 /**
  *
@@ -32,42 +35,46 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
 
     static {
         TRANSITIONS = List.of(
-                /*new Transition<>(INIT,
-                                 CreateAppAction.class,
-                                 MONITORING,
-                                 RUNNING),
-                new Transition<>(MONITORING,
-                                 AppOperationRouterAction.class,
-                                 OUTAGE_DETECTED,
+                new Transition<>(INIT,
+                                 CreateLocalServiceAction.class,
+                                 INACTIVE,
+                                 ACTIVE,
+                                 DESTROYED),
+                new Transition<>(ACTIVE,
+                                 RoutingLocalServiceAction.class,
+                                 ACTIVATION_REQUESTED,
+                                 DEACTIVATION_REQUESTED,
+                                 SCALING,
+                                 RESTARTING,
                                  DESTROY_REQUESTED,
-                                 SCALING_REQUESTED,
-                                 MONITORING),
-                new Transition<>(RUNNING,
-                                 AppOperationRouterAction.class,
-                                 STOP_INSTANCES_REQUESTED,
-                                 SCALING_REQUESTED,
-                                 REPLACE_INSTANCES_REQUESTED,
-                                 OUTAGE_DETECTED,
-                                 RUNNING),
-                new Transition<>(OUTAGE_DETECTED,
-                                 RecoverAppAction.class,
-                                 SCALING_REQUESTED),
-                new Transition<>(SCALING_REQUESTED,
-                                 ScaleAppAction.class,
-                                 SCALING_REQUESTED,
-                                 RUNNING,
-                                 MONITORING),
-                new Transition<>(REPLACE_INSTANCES_REQUESTED,
-                                 ReplaceInstancesAppAction.class,
-                                 RUNNING,
-                                 MONITORING),
-                new Transition<>(STOP_INSTANCES_REQUESTED,
-                                 StopAppInstancesAction.class,
-                                 RUNNING,
-                                 MONITORING),
+                                 DESTROYED),
+                new Transition<>(INACTIVE,
+                                 RoutingLocalServiceAction.class,
+                                 INACTIVE,
+                                 ACTIVATION_REQUESTED,
+                                 DEACTIVATION_REQUESTED,
+                                 DESTROY_REQUESTED,
+                                 SCALING,
+                                 RESTARTING,
+                                 DESTROYED),
+                new Transition<>(ACTIVATION_REQUESTED,
+                                 ActivateLocalServiceAction.class,
+                                 INACTIVE,
+                                 DESTROYED),
+                new Transition<>(DEACTIVATION_REQUESTED,
+                                 DeactivateLocalServiceAction.class,
+                                 INACTIVE,
+                                 DESTROYED),
+                new Transition<>(DEACTIVATION_REQUESTED,
+                                 DeactivateLocalServiceAction.class,
+                                 INACTIVE,
+                                 DESTROYED),
+                new Transition<>(SCALING,
+                                 ScaleLocalServiceAction.class,
+                                 ACTIVE),
                 new Transition<>(DESTROY_REQUESTED,
-                                 DestroyAppAction.class,
-                                 DESTROYED)*/);
+                                 DestroyLocalServiceAction.class,
+                                 DESTROYED));
     }
 
     public LocalServiceStateMachine(

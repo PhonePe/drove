@@ -30,7 +30,7 @@ public class LocalServiceInfo {
     String serviceId;
     LocalServiceSpec spec;
     int instancesPerHost;
-    LocalServiceState state;
+    ActivationState state;
     Date created;
     Date updated;
 }

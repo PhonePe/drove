@@ -20,7 +20,7 @@ import com.phonepe.drove.auth.core.DroveAuthorizer;
 import com.phonepe.drove.auth.filters.DummyAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -75,7 +75,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(DropwizardExtensionsSupport.class)
 class ApisTest {
 
-    private static final ApplicationEngine applicationEngine = mock(ApplicationEngine.class);
+    private static final ApplicationLifecycleManagentEngine applicationEngine = mock(ApplicationLifecycleManagentEngine.class);
     private static final TaskEngine taskEngine = mock(TaskEngine.class);
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);

@@ -16,48 +16,20 @@
 
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
-import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAction;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
-import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.statemachine.StateData;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
-import javax.inject.Inject;
 
 /**
  *
  */
-@Slf4j
-public class CreateLocalServiceAction extends LocalServiceAction {
-    private final LocalServiceStateDB stateDB;
-
-    @Inject
-    public CreateLocalServiceAction(LocalServiceStateDB stateDB) {
-        this.stateDB = stateDB;
-    }
-
+public class DestroyLocalServiceAction extends LocalServiceAction {
     @Override
     public StateData<LocalServiceState, LocalServiceInfo> execute(
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState) {
-        val activationState = stateDB.service(context.getServiceId())
-                .map(LocalServiceInfo::getState)
-                .orElse(ActivationState.UNKNOWN);
-        val toState = switch (activationState) {
-            case ACTIVE -> LocalServiceState.ACTIVE;
-            case INACTIVE -> LocalServiceState.INACTIVE;
-            case UNKNOWN -> {
-                if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.INACTIVE))) {
-                    yield LocalServiceState.INACTIVE;
-                }
-                yield LocalServiceState.DESTROYED;
-            }
-        };
-
-        return StateData.from(currentState, toState);
+        return StateData.from(currentState, LocalServiceState.DESTROYED);
     }
 }

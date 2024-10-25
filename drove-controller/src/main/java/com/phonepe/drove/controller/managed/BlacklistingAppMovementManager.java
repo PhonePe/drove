@@ -19,7 +19,7 @@ package com.phonepe.drove.controller.managed;
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.model.utils.Pair;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -80,7 +80,7 @@ public class BlacklistingAppMovementManager implements Managed {
     private final ExecutorService queuePollingExecutor = Executors.newSingleThreadExecutor();
     private final ExecutorService appMovementExecutor;
 
-    private final ApplicationEngine applicationEngine;
+    private final ApplicationLifecycleManagentEngine applicationEngine;
     private final ClusterResourcesDB clusterResourcesDB;
 
     private final RetryPolicy<ValidationStatus> opSubmissionPolicy;
@@ -95,7 +95,7 @@ public class BlacklistingAppMovementManager implements Managed {
     @Inject
     public BlacklistingAppMovementManager(
             LeadershipEnsurer leadershipEnsurer,
-            ApplicationEngine applicationEngine,
+            ApplicationLifecycleManagentEngine applicationEngine,
             ClusterResourcesDB clusterResourcesDB,
             ClusterOpSpec defaultClusterOpSpec,
             @Named("BlacklistingAppMover") ExecutorService appMovementExecutor) {
@@ -122,7 +122,7 @@ public class BlacklistingAppMovementManager implements Managed {
     @VisibleForTesting
     BlacklistingAppMovementManager(
             LeadershipEnsurer leadershipEnsurer,
-            ApplicationEngine applicationEngine,
+            ApplicationLifecycleManagentEngine applicationEngine,
             ClusterResourcesDB clusterResourcesDB,
             RetryPolicy<ValidationStatus> opSubmissionPolicy,
             RetryPolicy<Boolean> noInstanceEnsurerPolicy,

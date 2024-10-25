@@ -14,39 +14,36 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.models.operation.localserviceops;
+package com.phonepe.drove.models.events.events;
 
-import com.phonepe.drove.models.operation.LocalServiceOperation;
-import com.phonepe.drove.models.operation.LocalServiceOperationType;
-import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.phonepe.drove.models.events.DroveEvent;
+import com.phonepe.drove.models.events.DroveEventType;
+import com.phonepe.drove.models.events.events.datatags.LocalServiceEventDataTag;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import javax.validation.constraints.NotEmpty;
+import java.util.Map;
 
 /**
- * Scale number of service instances on executors
+ *
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
-@Builder
-public class LocalServiceScaleOperation extends LocalServiceOperation {
-    @NotEmpty
-    String serviceId;
+public class DroveLocalServiceStateChangeEvent extends DroveEvent<LocalServiceEventDataTag> {
 
-    public LocalServiceScaleOperation(
-            String serviceId) {
-        super(LocalServiceOperationType.SCALE);
-        this.serviceId = serviceId;
+    @Builder
+    public DroveLocalServiceStateChangeEvent(@JsonProperty("metadata") Map<LocalServiceEventDataTag, Object> metadata) {
+        super(DroveEventType.LOCAL_SERVICE_STATE_CHANGE, metadata);
     }
 
     @Override
-    public <T> T accept(LocalServiceOperationVisitor<T> visitor) {
+    public <T> T accept(DroveEventVisitor<T> visitor) {
         return visitor.visit(this);
     }
 }

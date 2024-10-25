@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -58,7 +58,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -69,7 +69,7 @@ class ApplicationMonitorTest {
                 .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
-        when(appEngine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(RUNNING));
         when(instanceInfoDB.instanceCount(ArgumentMatchers.<Collection<String>>any(), eq(HEALTHY))).thenAnswer(
                 invocationOnMock -> ((Collection<String>)invocationOnMock.getArgument(0, Collection.class))
                         .stream()
@@ -92,7 +92,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -103,7 +103,7 @@ class ApplicationMonitorTest {
                 .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 0, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
-        when(appEngine.applicationState(anyString())).thenReturn(Optional.of(MONITORING));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(MONITORING));
         when(instanceInfoDB.instanceCount(ArgumentMatchers.<Collection<String>>any(), eq(HEALTHY))).thenAnswer(
                 invocationOnMock -> ((Collection<String>)invocationOnMock.getArgument(0, Collection.class))
                         .stream()
@@ -126,7 +126,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -137,7 +137,7 @@ class ApplicationMonitorTest {
                 .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
-        when(appEngine.applicationState(anyString())).thenReturn(Optional.of(RUNNING));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(RUNNING));
         when(instanceInfoDB.instanceCount(ArgumentMatchers.<Collection<String>>any(), eq(HEALTHY))).thenAnswer(
                 invocationOnMock -> ((Collection<String>)invocationOnMock.getArgument(0, Collection.class))
                         .stream()
@@ -162,7 +162,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
@@ -173,7 +173,7 @@ class ApplicationMonitorTest {
                 .map(spec -> new ApplicationInfo(ControllerUtils.deployableObjectId(spec), spec, 10, new Date(), new Date()))
                 .toList();
         when(stateDB.applications(0, Integer.MAX_VALUE)).thenReturn(specs);
-        when(appEngine.applicationState(anyString())).thenReturn(Optional.of(DESTROY_REQUESTED));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(DESTROY_REQUESTED));
         when(instanceInfoDB.instanceCount(anyString(), eq(HEALTHY))).thenReturn(9L);
         when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL, new Date(0))));
         val ids = new HashSet<String>();
@@ -193,7 +193,7 @@ class ApplicationMonitorTest {
         val stateDB = mock(ApplicationStateDB.class);
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
-        val appEngine = mock(ApplicationEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagentEngine.class);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(false);
 

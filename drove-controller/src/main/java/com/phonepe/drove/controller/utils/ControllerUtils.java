@@ -54,6 +54,7 @@ import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.*;
+import com.phonepe.drove.models.operation.localserviceops.*;
 import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
@@ -717,5 +718,44 @@ public class ControllerUtils {
                                                               freeMemory,
                                                               usedMemory,
                                                               freeMemory + usedMemory);
+    }
+
+    public static String deployableObjectId(LocalServiceOperation operation) {
+        return operation.accept(new LocalServiceOperationVisitor<String>() {
+            @Override
+            public String visit(LocalServiceCreateOperation localServiceCreateOperation) {
+                return ControllerUtils.deployableObjectId(localServiceCreateOperation.getSpec());
+            }
+
+            @Override
+            public String visit(LocalServiceScaleOperation localServiceScaleOperation) {
+                return localServiceScaleOperation.getServiceId();
+            }
+
+            @Override
+            public String visit(LocalServiceDeactivateOperation localServiceDeactivateOperation) {
+                return localServiceDeactivateOperation.getServiceId();
+            }
+
+            @Override
+            public String visit(LocalServiceRestartOperation localServiceRestartOperation) {
+                return localServiceRestartOperation.getServiceId();
+            }
+
+            @Override
+            public String visit(LocalServiceUpdateOperation localServiceUpdateOperation) {
+                return localServiceUpdateOperation.getServiceId();
+            }
+
+            @Override
+            public String visit(LocalServiceDestroyOperation localServiceDestroyOperation) {
+                return localServiceDestroyOperation.getServiceId();
+            }
+
+            @Override
+            public String visit(LocalServiceActivateOperation localServiceActivateOperation) {
+                return localServiceActivateOperation.getServiceId();
+            }
+        });
     }
 }

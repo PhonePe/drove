@@ -38,7 +38,7 @@ import javax.validation.constraints.NotNull;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceStartOperation extends LocalServiceOperation {
+public class LocalServiceCreateOperation extends LocalServiceOperation {
     @Valid
     @NotNull
     LocalServiceSpec spec;
@@ -46,7 +46,7 @@ public class LocalServiceStartOperation extends LocalServiceOperation {
     @Range(min = 1, max = 256)
     int instancesPerHost;
 
-    public LocalServiceStartOperation(
+    public LocalServiceCreateOperation(
             LocalServiceSpec spec,
             int instancesPerHost) {
         super(LocalServiceOperationType.START);

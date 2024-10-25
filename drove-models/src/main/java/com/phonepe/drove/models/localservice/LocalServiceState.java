@@ -25,11 +25,14 @@ import java.util.Set;
  */
 @Getter
 public enum LocalServiceState {
-    CREATED(false),
-    SCALING(false),
+    INIT(false),
+    ACTIVATION_REQUESTED(false),
+    DEACTIVATION_REQUESTED(false),
+    INACTIVE(false),
     ACTIVE(false),
-    SUSPENDED(false),
+    SCALING(false),
     RESTARTING(false),
+    DESTROY_REQUESTED(false),
     DESTROYED(true);
 
     public static final Set<LocalServiceState> ACTIVE_STATES = Set.of(ACTIVE);

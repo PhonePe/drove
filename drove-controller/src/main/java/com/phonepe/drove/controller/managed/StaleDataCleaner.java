@@ -19,7 +19,7 @@ package com.phonepe.drove.controller.managed;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.controller.engine.ApplicationEngine;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagentEngine;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -53,7 +53,7 @@ public class StaleDataCleaner implements Managed {
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
     private final LeadershipEnsurer leadershipEnsurer;
-    private final ApplicationEngine applicationEngine;
+    private final ApplicationLifecycleManagentEngine applicationEngine;
 
     private final ControllerOptions options;
 
@@ -65,7 +65,7 @@ public class StaleDataCleaner implements Managed {
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             LeadershipEnsurer leadershipEnsurer,
-            ApplicationEngine applicationEngine,
+            ApplicationLifecycleManagentEngine applicationEngine,
             TaskDB taskDB,
             ControllerOptions options,
             ClusterOpSpec defaultClusterOpSpec) {
@@ -87,7 +87,7 @@ public class StaleDataCleaner implements Managed {
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
             LeadershipEnsurer leadershipEnsurer,
-            ApplicationEngine applicationEngine,
+            ApplicationLifecycleManagentEngine applicationEngine,
             ControllerOptions options,
             Duration interval,
             ClusterOpSpec defaultClusterOpSpec) {
@@ -144,7 +144,7 @@ public class StaleDataCleaner implements Managed {
                 .stream()
                 .filter(applicationInfo -> applicationInfo.getUpdated().before(slateAppLifetime))
                 .map(ApplicationInfo::getAppId)
-                .filter(appId -> applicationEngine.applicationState(appId)
+                .filter(appId -> applicationEngine.currentState(appId)
                         .map(applicationState -> applicationState.equals(ApplicationState.MONITORING))
                         .orElse(false))
                 .toList();

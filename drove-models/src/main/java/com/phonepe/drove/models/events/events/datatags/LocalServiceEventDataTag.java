@@ -14,16 +14,21 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.models.operation;
+package com.phonepe.drove.models.events.events.datatags;
 
 /**
  *
  */
-public enum LocalServiceOperationType {
-    START,
-    SCALE,
-    DEACTIVATE,
-    RESTART,
-    UPDATE,
-    ACTIVATE, DESTROY
+public enum LocalServiceEventDataTag {
+
+    LOCAL_SERVICE_ID,
+    LOCAL_SERVICE_NAME,
+    LOCAL_SERVICE_VERSION,
+    EXECUTABLE,
+    CPU_COUNT,
+    MEMORY,
+    PLACEMENT_POLICY,
+    PORTS,
+    CURRENT_INSTANCES_PER_HOST,
+    CURRENT_STATE
 }

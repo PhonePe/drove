@@ -41,7 +41,7 @@ public class LocalServiceDestroyOperation extends LocalServiceOperation {
 
     public LocalServiceDestroyOperation(
             String serviceId) {
-        super(LocalServiceOperationType.STOP);
+        super(LocalServiceOperationType.DESTROY);
         this.serviceId = serviceId;
     }
 

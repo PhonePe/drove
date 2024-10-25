@@ -16,9 +16,9 @@
 
 package com.phonepe.drove.controller.statemachine.localservice;
 
+import com.phonepe.drove.controller.statemachine.common.actions.JobEnabledContext;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
-import com.phonepe.drove.statemachine.ActionContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,10 +29,8 @@ import lombok.ToString;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class LocalServiceActionContext extends ActionContext<LocalServiceOperation> {
+public class LocalServiceActionContext extends JobEnabledContext<LocalServiceOperation> {
     private final String serviceId;
     private final LocalServiceSpec localServiceSpec;
 
-    private String jobId;
-    private String schedulingSessionId;
 }

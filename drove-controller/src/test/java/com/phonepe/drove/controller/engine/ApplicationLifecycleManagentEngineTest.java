@@ -88,7 +88,7 @@ import static org.mockito.Mockito.when;
  *
  */
 @Slf4j
-class ApplicationEngineTest extends ControllerTestBase {
+class ApplicationLifecycleManagentEngineTest extends ControllerTestBase {
 
     private static final ClusterOpSpec TEST_STRATEGY = new ClusterOpSpec(io.dropwizard.util.Duration.seconds(120),
                                                                          1,
@@ -103,7 +103,7 @@ class ApplicationEngineTest extends ControllerTestBase {
     DummyExecutor executor;
 
     @Inject
-    ApplicationEngine engine;
+    ApplicationLifecycleManagentEngine engine;
 
     @BeforeEach
     public void setup() {
@@ -375,7 +375,7 @@ class ApplicationEngineTest extends ControllerTestBase {
         try {
             await().pollDelay(Duration.ofSeconds(3))
                     .atMost(Duration.ofSeconds(10))
-                    .until(() -> requiredState.equals(engine.applicationState(appId).orElse(ApplicationState.FAILED)));
+                    .until(() -> requiredState.equals(engine.currentState(appId).orElse(ApplicationState.FAILED)));
         } catch (ConditionTimeoutException e) {
             log.warn("Timeout waiting for state: {}", requiredState);
             throw e;

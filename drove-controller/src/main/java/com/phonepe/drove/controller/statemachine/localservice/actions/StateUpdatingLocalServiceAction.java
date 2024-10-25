@@ -23,41 +23,30 @@ import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.statemachine.StateData;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
-import javax.inject.Inject;
 
 /**
  *
  */
-@Slf4j
-public class CreateLocalServiceAction extends LocalServiceAction {
+public abstract class StateUpdatingLocalServiceAction extends LocalServiceAction  {
+    private final ActivationState activationState;
+    private final LocalServiceState toState;
     private final LocalServiceStateDB stateDB;
 
-    @Inject
-    public CreateLocalServiceAction(LocalServiceStateDB stateDB) {
+    protected StateUpdatingLocalServiceAction(ActivationState activationState, LocalServiceState toState,
+                                              LocalServiceStateDB stateDB) {
+        this.activationState = activationState;
+        this.toState = toState;
         this.stateDB = stateDB;
     }
 
+
     @Override
-    public StateData<LocalServiceState, LocalServiceInfo> execute(
+    public final StateData<LocalServiceState, LocalServiceInfo> execute(
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState) {
-        val activationState = stateDB.service(context.getServiceId())
-                .map(LocalServiceInfo::getState)
-                .orElse(ActivationState.UNKNOWN);
-        val toState = switch (activationState) {
-            case ACTIVE -> LocalServiceState.ACTIVE;
-            case INACTIVE -> LocalServiceState.INACTIVE;
-            case UNKNOWN -> {
-                if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.INACTIVE))) {
-                    yield LocalServiceState.INACTIVE;
-                }
-                yield LocalServiceState.DESTROYED;
-            }
-        };
-
+        if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(activationState))) {
+            return currentState;
+        }
         return StateData.from(currentState, toState);
     }
 }
