@@ -17,9 +17,9 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
-import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAsyncAction;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.events.events.DroveLocalServiceStateChangeEvent;
@@ -33,8 +33,7 @@ import com.phonepe.drove.models.operation.localserviceops.LocalServiceCreateOper
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import com.phonepe.drove.statemachine.StateData;
-import io.appform.functionmetrics.MonitoredFunction;
-import io.appform.signals.signals.ConsumingFireForgetSignal;
+import com.phonepe.drove.statemachine.StateMachine;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -43,135 +42,84 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
 
 import static com.phonepe.drove.controller.utils.EventUtils.localServiceMetadata;
 
 /**
- *
+ * Manages application lifecycle
  */
 @Singleton
 @Slf4j
-public class LocalServiceEngine {
+public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleManagementEngine<LocalServiceInfo,
+        LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo,
+        LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
 
-    private final Map<String, LocalServiceStateMachineExecutor> stateMachines = new ConcurrentHashMap<>();
-    private final ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext
-            , Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> factory;
     private final LocalServiceStateDB stateDB;
-    private final LocalServiceCommandValidator localServiceCommandValidator;
-    private final DroveEventBus droveEventBus;
-    private final ControllerRetrySpecFactory retrySpecFactory;
-
-    private final ExecutorService monitorExecutor;
-    private final ClusterOpSpec defaultClusterOpSpec;
-    private final ConsumingFireForgetSignal<StateMachineExecutor<LocalServiceInfo, LocalServiceOperation,
-            LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState,
-            LocalServiceActionContext, LocalServiceOperation>>> stateMachineCompleted =
-            new ConsumingFireForgetSignal<>();
 
     @Inject
-    public LocalServiceEngine(
+    public LocalServiceLifecycleManagementEngine(
             ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext,
                     Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> factory,
             LocalServiceStateDB stateDB,
+            ClusterResourcesDB clusterResourcesDB,
             LocalServiceCommandValidator localServiceCommandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("MonitorThreadPool") ExecutorService monitorExecutor,
             ClusterOpSpec defaultClusterOpSpec) {
-        this.factory = factory;
+        super(factory,
+              localServiceCommandValidator,
+              droveEventBus,
+              retrySpecFactory,
+              monitorExecutor,
+              defaultClusterOpSpec);
         this.stateDB = stateDB;
-        this.localServiceCommandValidator = localServiceCommandValidator;
-        this.droveEventBus = droveEventBus;
-        this.retrySpecFactory = retrySpecFactory;
-        this.monitorExecutor = monitorExecutor;
-        this.defaultClusterOpSpec = defaultClusterOpSpec;
-        this.stateMachineCompleted.connect(stoppedExecutor -> {
-            stoppedExecutor.stop();
-            log.info("State machine executor is done for {}", stoppedExecutor.getDeployableId());
-        });
     }
 
-    @MonitoredFunction
-    public ValidationResult handleOperation(final LocalServiceOperation operation) {
-        val appId = ControllerUtils.deployableObjectId(operation);
-        val res = validateOp(operation);
-        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
-            stateMachines.compute(appId, (id, monitor) -> {
-                if (null == monitor) {
-                    log.info("App {} is unknown. Going to create it now.", appId);
-                    return createApp(operation);
-                }
-                if (!monitor.notifyUpdate(translateOp(operation))) {
-                    log.warn("Update could not be sent");
-                }
-                return monitor;
-            });
-        }
-        return res;
+    @Override
+    protected String deployableObjectId(LocalServiceOperation operation) {
+        return ControllerUtils.deployableObjectId(operation);
     }
 
-    @MonitoredFunction
-    public void stopAll() {
-        stateMachines.forEach((appId, exec) -> exec.stop());
-        stateMachines.clear();
+    @Override
+    protected LocalServiceOperation translateOp(
+            LocalServiceOperation original,
+            ClusterOpSpec defaultClusterOpSpec) {
+        return original; //TODO::LOCAL_SERVICE IF NEEDED
     }
 
-    @MonitoredFunction
-    public boolean cancelCurrentJob(final String appId) {
-        val sm = stateMachines.get(appId);
-        if (null == sm) {
-            return false;
-        }
-        val appSm = sm.getStateMachine();
-        val action = (LocalServiceAsyncAction) appSm.currentAction()
-                .filter(LocalServiceAsyncAction.class::isInstance)
-                .orElse(null);
-        if (null == action) {
-            return false;
-        }
-        return action.cancel(appSm.getContext());
-    }
-
-
-    @MonitoredFunction
-    public Optional<LocalServiceState> applicationState(final String appId) {
-        return Optional.ofNullable(stateMachines.get(appId))
-                .map(executor -> executor.getStateMachine().getCurrentState().getState());
-    }
-
-    boolean exists(final String appId) {
-        return stateMachines.containsKey(appId);
-    }
-
-    private ValidationResult validateOp(final LocalServiceOperation operation) {
-        Objects.requireNonNull(operation, "Operation cannot be null");
-        return localServiceCommandValidator.validate(this, operation);
-    }
-
-    private LocalServiceOperation translateOp(final LocalServiceOperation original) {
-        return original.accept(new LocalServiceOperationVisitorAdapter<LocalServiceOperation>(original) {
-            //TODO::LOCAL_SERVICE
-        });
-    }
-
-    private LocalServiceStateMachineExecutor createApp(LocalServiceOperation operation) {
-        return operation.accept(new LocalServiceOperationVisitorAdapter<>(null) {
+    @Override
+    protected StateMachineExecutor<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+            LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+            LocalServiceOperation>> createDeployable(
+            LocalServiceOperation operation,
+            ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext,
+                    Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> factory,
+            ExecutorService monitorExecutor,
+            ControllerRetrySpecFactory retrySpecFactory,
+            BiConsumer<StateMachine<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+                    LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+                    LocalServiceOperation>>,
+                    LocalServiceActionContext> signalConnector) {
+        return operation.accept(new LocalServiceOperationVisitorAdapter<LocalServiceStateMachineExecutor>(null) {
             @Override
             public LocalServiceStateMachineExecutor visit(LocalServiceCreateOperation create) {
-                val lsSpec = create.getSpec();
+                val appSpec = create.getSpec();
                 val now = new Date();
-                val serviceId = ControllerUtils.deployableObjectId(lsSpec);
-                val localServiceInfo = new LocalServiceInfo(serviceId, lsSpec, create.getInstancesPerHost(),
-                                                   ActivationState.UNKNOWN, now, now);
-                val context = new LocalServiceActionContext(serviceId, lsSpec);
+                val serviceId = ControllerUtils.deployableObjectId(appSpec);
+                val appInfo = new LocalServiceInfo(serviceId,
+                                                   appSpec,
+                                                   create.getInstancesPerHost(),
+                                                   ActivationState.INACTIVE,
+                                                   now,
+                                                   now);
+                val context = new LocalServiceActionContext(serviceId, appSpec);
                 val stateMachine = new LocalServiceStateMachine(StateData.create(
                         LocalServiceState.INIT,
-                        localServiceInfo), context, factory);
-                stateMachine.onStateChange().connect(newState -> handleAppStateUpdate(serviceId, context, newState));
+                        appInfo), context, factory);
+                signalConnector.accept(stateMachine, context);
                 val monitor = new LocalServiceStateMachineExecutor(
                         serviceId,
                         stateMachine,
@@ -181,7 +129,7 @@ public class LocalServiceEngine {
                 //Record the update first then start the monitor
                 // as the first thing it will do is look for the update
                 if (!monitor.notifyUpdate(create)) {
-                    log.error("Create operation could not be registered for app: {}", serviceId);
+                    log.error("Create operation could not be registered for local service: {}", serviceId);
                 }
                 monitor.start();
                 return monitor;
@@ -189,10 +137,15 @@ public class LocalServiceEngine {
         });
     }
 
-    private void handleAppStateUpdate(
+    @Override
+    protected void handleAppStateUpdate(
             String serviceId,
             LocalServiceActionContext context,
-            StateData<LocalServiceState, LocalServiceInfo> newState) {
+            StateData<LocalServiceState, LocalServiceInfo> newState,
+            Map<String, StateMachineExecutor<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+                    LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+                    LocalServiceOperation>>> stateMachines,
+            ClusterOpSpec defaultClusterOpSpec, DroveEventBus droveEventBus) {
         val state = newState.getState();
         log.info("Local Service state: {}", state);
 /*        if (state.equals(ApplicationState.SCALING_REQUESTED)) { //TODO::LOCAL_SERVICE
@@ -221,15 +174,19 @@ public class LocalServiceEngine {
             }
         }
         else {*/
-            if (state.equals(LocalServiceState.DESTROYED)) {
-                stateMachines.computeIfPresent(serviceId, (id, sm) -> {
-                    stateDB.removeService(serviceId);
-                    stateDB.deleteAllInstancesForService(serviceId);
-                    log.info("Local service state machine and instance data cleaned up for: {}", serviceId);
-                    return null;
-                });
-            }
+        if (state.equals(LocalServiceState.DESTROYED)) {
+            stateMachines.computeIfPresent(serviceId, (id, sm) -> {
+                stateDB.removeService(serviceId);
+                stateDB.deleteAllInstancesForService(serviceId);
+                log.info("Local service state machine and instance data cleaned up for: {}", serviceId);
+                return null;
+            });
+        }
 //        }
         droveEventBus.publish(new DroveLocalServiceStateChangeEvent(localServiceMetadata(serviceId, context.getLocalServiceSpec(), newState)));
+
+
     }
+
+
 }

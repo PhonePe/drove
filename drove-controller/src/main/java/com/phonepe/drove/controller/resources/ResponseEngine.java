@@ -32,10 +32,7 @@ import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.*;
@@ -57,9 +54,15 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -83,6 +86,7 @@ public class ResponseEngine {
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
+    private final LocalServiceStateDB localServiceStateDB;
     private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final EventStore eventStore;
@@ -97,6 +101,7 @@ public class ResponseEngine {
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
+            LocalServiceStateDB localServiceStateDB,
             ClusterStateDB clusterStateDB,
             ClusterResourcesDB clusterResourcesDB,
             EventStore eventStore,
@@ -107,6 +112,7 @@ public class ResponseEngine {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.localServiceStateDB = localServiceStateDB;
         this.clusterStateDB = clusterStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.eventStore = eventStore;
@@ -168,6 +174,60 @@ public class ResponseEngine {
         return taskDB.deleteTask(sourceAppName, taskId)
                ? ApiResponse.success(Map.of("deleted", true))
                : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
+    }
+
+    public ApiResponse<Map<String, LocalServiceSummary>> localServices(final int from, final int size) {
+        val services = localServiceStateDB.services(from, size);
+        return success(services.stream()
+                               .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
+                                                                     info -> toLocalServiceSummary(info, instancesForService(info.getServiceId())))));
+    }
+
+    public ApiResponse<LocalServiceSummary> localService(final String serviceId) {
+        return localServiceStateDB.service(serviceId)
+                .map(appInfo -> success(toLocalServiceSummary(
+                        appInfo,
+                        instancesForService(serviceId))))
+                .orElse(failure("Local service " + serviceId + " not found"));
+    }
+
+    @NotNull
+    private Map<String, List<LocalServiceInstanceInfo>> instancesForService(String serviceId) {
+        return localServiceStateDB.instances(
+                        serviceId,
+                        EnumSet.allOf(LocalServiceInstanceState.class),
+                        true)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        LocalServiceInstanceInfo::getExecutorId));
+    }
+
+    public ApiResponse<LocalServiceSpec> localServiceSpec(final String serviceId) {
+        return localServiceStateDB.service(serviceId)
+                .map(info -> success(info.getSpec()))
+                .orElse(failure("Local Service " + serviceId + " not found"));
+    }
+
+    public ApiResponse<List<LocalServiceInstanceInfo>> localServiceInstances(final String serviceId, final Set<LocalServiceInstanceState> state) {
+        val checkStates = null == state || state.isEmpty()
+                          ? InstanceState.ACTIVE_STATES
+                          : state;
+        return success(localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
+                               .stream()
+                               .filter(info -> checkStates.contains(info.getState()))
+                               .toList());
+    }
+
+    public ApiResponse<LocalServiceInstanceInfo> localServiceInstanceDetails(final String serviceId, final String instanceId) {
+        return localServiceStateDB.instance(serviceId, instanceId)
+                .map(ApiResponse::success)
+                .orElseGet(() -> failure("No such local service instance " + serviceId + "/" + instanceId));
+    }
+
+    public ApiResponse<List<LocalServiceInstanceInfo>> localServiceOldInstances(final String serviceId) {
+        return success(localServiceStateDB.instances(serviceId, Sets.difference(EnumSet.allOf(LocalServiceInstanceState.class),
+                                                                                LocalServiceInstanceState.ACTIVE_STATES),
+                                                     true));
     }
 
     public ApiResponse<ClusterSummary> cluster() {
@@ -382,7 +442,37 @@ public class ResponseEngine {
 
     }
 
-    private long totalMemory(ApplicationSpec spec, long instances) {
+    private LocalServiceSummary toLocalServiceSummary(
+            final LocalServiceInfo info,
+            Map<String, List<LocalServiceInstanceInfo>> instancesPerExecutor) {
+        val spec = info.getSpec();
+        val instances = instancesPerExecutor.values()
+                .stream()
+                .map(List::size)
+                .mapToInt(size -> size)
+                .sum();
+        val healthyInstances = instancesPerExecutor.values()
+                .stream()
+                .flatMap(List::stream)
+                .filter(instanceInfo -> instanceInfo.getState().equals(LocalServiceInstanceState.HEALTHY))
+                .count();
+        val cpus = totalCPU(spec, instances);
+        val memory = totalMemory(spec, instances);
+        return new LocalServiceSummary(info.getServiceId(),
+                                       spec.getName(),
+                                       info.getInstancesPerHost(),
+                                       instances,
+                                       healthyInstances,
+                                       cpus,
+                                       memory,
+                                       spec.getTags(),
+                                       engine.currentState(info.getServiceId()).orElse(null),
+                                       info.getCreated(),
+                                       info.getUpdated());
+
+    }
+
+    private long totalMemory(DeploymentSpec spec, long instances) {
         return instances * spec.getResources()
                 .stream()
                 .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
@@ -399,7 +489,7 @@ public class ResponseEngine {
                 .sum();
     }
 
-    private long totalCPU(ApplicationSpec spec, long instances) {
+    private long totalCPU(DeploymentSpec spec, long instances) {
         return instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
                     @Override
                     public Long visit(CPURequirement cpuRequirement) {

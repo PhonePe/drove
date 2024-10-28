@@ -24,11 +24,13 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +68,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 public class ExecutorLogFileApis {
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
+    private final LocalServiceStateDB localServiceStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterAuthenticationConfig.SecretConfig secret;
     private final String nodeId;
@@ -74,12 +77,13 @@ public class ExecutorLogFileApis {
     @Inject
     public ExecutorLogFileApis(
             ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB,
+            TaskDB taskDB, LocalServiceStateDB localServiceStateDB,
             ClusterResourcesDB clusterResourcesDB,
             ClusterAuthenticationConfig config,
             CloseableHttpClient httpClient) {
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.localServiceStateDB = localServiceStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.secret = Objects.requireNonNullElse(config, ClusterAuthenticationConfig.DEFAULT)
                 .getSecrets()
@@ -183,6 +187,52 @@ public class ExecutorLogFileApis {
                                               "attachment; filename=" + fileName));
     }
 
+    @GET
+    @Path("/localservices/{serviceId}/{instanceId}/list")
+    public Response listLocalServiceFiles(
+            @PathParam("serviceId") final String serviceId,
+            @PathParam("instanceId") final String instanceId) {
+        return callUpstreamForLocalServiceLogs(serviceId,
+                                               instanceId,
+                                               "/list",
+                                               Map.of(),
+                                               Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+    }
+
+    @GET
+    @Path("/localservices/{serviceId}/{instanceId}/read/{fileName}")
+    @Metered
+    public Response streamLocalServiceLogs(
+            @PathParam("serviceId") @NotEmpty final String serviceId,
+            @PathParam("instanceId") @NotEmpty final String instanceId,
+            @PathParam("fileName") @NotEmpty final String fileName,
+            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+        return callUpstreamForLocalServiceLogs(serviceId,
+                                               instanceId,
+                                               "/read/" + fileName,
+                                               Map.of("offset", offset, "length", length),
+                                               Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
+    }
+
+    @GET
+    @Path("/localservices/{serviceId}/{instanceId}/download/{fileName}")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Metered
+    public Response downloadLocalServiceLogFile(
+            @PathParam("serviceId") @NotEmpty final String serviceId,
+            @PathParam("instanceId") @NotEmpty final String instanceId,
+            @PathParam("fileName") @NotEmpty final String fileName) {
+        return callUpstreamForLocalServiceLogs(serviceId,
+                                               instanceId,
+                                               "/download/" + fileName,
+                                               Map.of(),
+                                               Map.of(HttpHeaders.CONTENT_TYPE,
+                                                      MediaType.TEXT_PLAIN,
+                                                      HttpHeaders.CONTENT_DISPOSITION,
+                                                      "attachment; filename=" + fileName));
+    }
+
     private Response callUpstreamForAppLogs(
             String appId,
             String instanceId,
@@ -191,6 +241,22 @@ public class ExecutorLogFileApis {
             Map<String, String> responseHeaders) {
         return executorNodeForApp(appId, instanceId)
                 .map(executorHostInfo -> callUpStream(appId,
+                                                      instanceId,
+                                                      path,
+                                                      queryParams,
+                                                      responseHeaders,
+                                                      executorHostInfo))
+                .orElseGet(() -> Response.noContent().build());
+    }
+
+    private Response callUpstreamForLocalServiceLogs(
+            String serviceId,
+            String instanceId,
+            String path,
+            Map<String, Object> queryParams,
+            Map<String, String> responseHeaders) {
+        return executorNodeForLocalService(serviceId, instanceId)
+                .map(executorHostInfo -> callUpStream(serviceId,
                                                       instanceId,
                                                       path,
                                                       queryParams,
@@ -225,6 +291,13 @@ public class ExecutorLogFileApis {
     private Optional<ExecutorNodeData> executorNodeForTask(String sourceAppName, String taskId) {
         return taskDB.task(sourceAppName, taskId)
                 .map(TaskInfo::getExecutorId)
+                .flatMap(clusterResourcesDB::currentSnapshot)
+                .map(ExecutorHostInfo::getNodeData);
+    }
+
+    private Optional<ExecutorNodeData> executorNodeForLocalService(String serviceId, String instanceId) {
+        return localServiceStateDB.instance(serviceId, instanceId)
+                .map(LocalServiceInstanceInfo::getExecutorId)
                 .flatMap(clusterResourcesDB::currentSnapshot)
                 .map(ExecutorHostInfo::getNodeData);
     }

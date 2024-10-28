@@ -16,7 +16,11 @@
 
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
+import com.phonepe.drove.statemachine.Action;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,9 +33,19 @@ import javax.inject.Singleton;
 @Singleton
 @Slf4j
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
-public class LocalServiceCommandValidator {
-    public ValidationResult validate(LocalServiceEngine localServiceEngine, LocalServiceOperation operation) {
-        return ValidationResult.success();
+public class LocalServiceCommandValidator implements CommandValidator<LocalServiceOperation,
+        DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+                LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+                LocalServiceOperation>>> {
+
+
+    @Override
+    public ValidationResult validate(
+            DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+                    LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+                    LocalServiceOperation>> engine,
+            LocalServiceOperation command) {
+        return ValidationResult.success(); //TODO::LOCAL_SERVICE
     }
     /*private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<ApplicationState, Set<ApplicationOperationType>>builder()
@@ -53,7 +67,8 @@ public class LocalServiceCommandValidator {
     private final ControllerOptions controllerOptions;
 
     @MonitoredFunction
-    public ValidationResult validate(final ApplicationLifecycleManagementEngine engine, final ApplicationOperation operation) {
+    public ValidationResult validate(final ApplicationLifecycleManagementEngine engine, final ApplicationOperation
+    operation) {
         val appId = deployableObjectId(operation);
         if (Strings.isNullOrEmpty(appId)) {
             return ValidationResult.failure("no app id found in operation");
@@ -172,7 +187,8 @@ public class LocalServiceCommandValidator {
                                 .isEmpty())
                         .toList();
                 if (!unknownInstances.isEmpty()) {
-                    return ValidationResult.failure("There are no replaceable healthy instances with ids: " + unknownInstances);
+                    return ValidationResult.failure("There are no replaceable healthy instances with ids: " +
+                    unknownInstances);
                 }
             }
             return ValidationResult.success();

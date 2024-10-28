@@ -21,6 +21,7 @@ import com.phonepe.drove.auth.filters.DummyAuthFilter;
 import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -75,14 +76,16 @@ import static org.mockito.Mockito.*;
 @ExtendWith(DropwizardExtensionsSupport.class)
 class ApisTest {
 
-    private static final ApplicationLifecycleManagementEngine applicationEngine = mock(
-            ApplicationLifecycleManagementEngine.class);
+    private static final ApplicationLifecycleManagementEngine applicationEngine
+            = mock(ApplicationLifecycleManagementEngine.class);
     private static final TaskEngine taskEngine = mock(TaskEngine.class);
+    private static final LocalServiceLifecycleManagementEngine localServiceEngine
+            = mock(LocalServiceLifecycleManagementEngine.class);
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new Apis(applicationEngine, taskEngine, responseEngine, clusterStateDB))
+            .addResource(new Apis(applicationEngine, taskEngine, localServiceEngine, responseEngine, clusterStateDB))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .addProvider(new AuthDynamicFeature(
                     new DummyAuthFilter.Builder()

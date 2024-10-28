@@ -34,10 +34,7 @@ import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.ApiResponse;
@@ -84,7 +81,8 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -94,7 +92,9 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB,
+                                    localServiceStateDB,
+                                    clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -122,7 +122,8 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -131,7 +132,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -158,7 +159,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -167,7 +170,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -196,7 +199,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -205,7 +210,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -235,7 +240,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -244,7 +251,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -278,7 +285,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -287,7 +296,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -315,7 +324,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -324,7 +335,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -351,7 +362,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -360,7 +373,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -386,7 +399,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -395,7 +410,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -469,7 +484,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -478,7 +495,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -503,7 +520,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -512,7 +531,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -544,7 +563,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -553,7 +574,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -590,7 +611,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -599,7 +622,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -666,7 +689,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
         val eventStore = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT,
@@ -681,7 +706,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -702,7 +727,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -711,7 +738,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -754,7 +781,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -763,7 +792,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,
@@ -804,7 +833,9 @@ class ResponseEngineTest {
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
         val clusterStateDB = mock(ClusterStateDB.class);
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
+                val taskDB = mock(TaskDB.class);
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+
         val eventStore = mock(EventStore.class);
         val communicator = mock(ControllerCommunicator.class);
         val eventBus = mock(DroveEventBus.class);
@@ -813,7 +844,7 @@ class ResponseEngineTest {
                                     engine,
                                     applicationStateDB,
                                     instanceInfoDB,
-                                    taskDB, clusterStateDB,
+                                    taskDB, localServiceStateDB, clusterStateDB,
                                     clusterResourcesDB,
                                     eventStore,
                                     communicator,

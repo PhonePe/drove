@@ -24,6 +24,7 @@ import com.phonepe.drove.auth.model.ClusterCommHeaders;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.info.nodedata.NodeType;
@@ -65,6 +66,7 @@ import static org.mockito.Mockito.when;
 class ExecutorLogFileApisTest {
     private static final ApplicationInstanceInfoDB instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
     private static final TaskDB taskDB = mock(TaskDB.class);
+    private static final LocalServiceStateDB localServiceDB = mock(LocalServiceStateDB.class);
     private static final ClusterResourcesDB clusterResourcesDB = mock(ClusterResourcesDB.class);
     private static final ClusterAuthenticationConfig config = ClusterAuthenticationConfig.builder()
             .secrets(List.of(new ClusterAuthenticationConfig.SecretConfig(NodeType.CONTROLLER, "SuperSecret")))
@@ -72,12 +74,12 @@ class ExecutorLogFileApisTest {
     private static final CloseableHttpClient httpClient = HttpClients.createDefault();
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new ExecutorLogFileApis(instanceInfoDB, taskDB, clusterResourcesDB, config, httpClient))
+            .addResource(new ExecutorLogFileApis(instanceInfoDB, taskDB, localServiceDB, clusterResourcesDB, config, httpClient))
             .build();
 
     @AfterEach
     void reset() {
-        Mockito.reset(instanceInfoDB, taskDB, clusterResourcesDB);
+        Mockito.reset(instanceInfoDB, taskDB, localServiceDB, clusterResourcesDB);
     }
 
     @Test

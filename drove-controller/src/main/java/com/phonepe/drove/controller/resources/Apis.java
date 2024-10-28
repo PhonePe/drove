@@ -21,6 +21,7 @@ import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.masking.EnforceMasking;
@@ -33,7 +34,11 @@ import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.Auth;
@@ -72,8 +77,9 @@ public class Apis {
     public static final int MAX_ELEMENTS = Integer.MAX_VALUE - 1;
     public static final String MAX_ELEMENTS_TEXT = "2147483646";
 
-    private final ApplicationLifecycleManagementEngine engine;
+    private final ApplicationLifecycleManagementEngine applicationEngine;
     private final TaskEngine taskEngine;
+    private final LocalServiceLifecycleManagementEngine localServiceEngine;
 
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
@@ -81,11 +87,14 @@ public class Apis {
 
     @Inject
     public Apis(
-            ApplicationLifecycleManagementEngine engine,
-            TaskEngine taskEngine, ResponseEngine responseEngine,
+            ApplicationLifecycleManagementEngine applicationEngine,
+            TaskEngine taskEngine,
+            LocalServiceLifecycleManagementEngine localServiceEngine,
+            ResponseEngine responseEngine,
             ClusterStateDB clusterStateDB) {
-        this.engine = engine;
+        this.applicationEngine = applicationEngine;
         this.taskEngine = taskEngine;
+        this.localServiceEngine = localServiceEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
     }
@@ -118,7 +127,7 @@ public class Apis {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
         }
-        val res = engine.handleOperation(operation);
+        val res = applicationEngine.handleOperation(operation);
         log.info("ACCESS_AUDIT: Application Operation {} received from user: {}. Validation result: {}",
                  operation, user.getName(), res);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
@@ -132,7 +141,7 @@ public class Apis {
     @Timed
     @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
     public Response cancelJobForCurrentAppOp(@PathParam("appId") @NotEmpty final String appId) {
-        return engine.cancelCurrentJob(appId)
+        return applicationEngine.cancelCurrentJob(appId)
                ? ControllerUtils.ok(null)
                : ControllerUtils.badRequest(null, "Current operation could not be cancelled");
     }
@@ -191,6 +200,91 @@ public class Apis {
             @QueryParam("size") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue(MAX_ELEMENTS_TEXT) int size) {
 
         return responseEngine.applicationOldInstances(appId, start, size);
+    }
+
+
+    @POST
+    @Path("/localservices/operations")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public Response acceptLocalServiceOperation(
+            @Auth final DroveUser user,
+            @NotNull @Valid final LocalServiceOperation operation) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
+        }
+        val res = localServiceEngine.handleOperation(operation);
+        log.info("ACCESS_AUDIT: Local Service Operation {} received from user: {}. Validation result: {}",
+                 operation, user.getName(), res);
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
+            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
+        }
+        return ControllerUtils.commandValidationFailure(res.getMessages());
+    }
+
+    @POST
+    @Path("/localservices/operations/{serviceId}/cancel")
+    @Timed
+    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    public Response cancelJobForCurrentLocalServiceOp(@PathParam("serviceId") @NotEmpty final String serviceId) {
+        return localServiceEngine.cancelCurrentJob(serviceId)
+               ? ControllerUtils.ok(null)
+               : ControllerUtils.badRequest(null, "Current operation could not be cancelled");
+    }
+
+    @GET
+    @Path("/localservices")
+    @Timed
+    public ApiResponse<Map<String, LocalServiceSummary>> localServices(
+            @QueryParam("from") @DefaultValue("0") @Min(0) @Max(MAX_ELEMENTS) final int from,
+            @QueryParam("size") @DefaultValue(MAX_ELEMENTS_TEXT) @Min(0) @Max(MAX_ELEMENTS) final int size) {
+        return responseEngine.localServices(from, size);
+    }
+
+    @GET
+    @Path("/localservices/{serviceId}")
+    @Timed
+    public ApiResponse<LocalServiceSummary> localService(@PathParam("serviceId") @NotEmpty final String serviceId) {
+        return responseEngine.localService(serviceId);
+    }
+
+    @GET
+    @Path("/localservices/{id}/spec")
+    @Timed
+    @SneakyThrows
+    @EnforceMasking
+    public ApiResponse<LocalServiceSpec> localServiceSpec(@PathParam("id") @NotEmpty final String serviceId) {
+        return responseEngine.localServiceSpec(serviceId);
+    }
+
+    @GET
+    @Path("/localservices/{id}/instances")
+    @Timed
+    public ApiResponse<List<LocalServiceInstanceInfo>> locaServiceInstances(
+            @PathParam("id") @NotEmpty final String serviceId,
+            @QueryParam("state") final Set<LocalServiceInstanceState> state) {
+
+        return responseEngine.localServiceInstances(serviceId, state);
+    }
+
+    @GET
+    @Path("/localservices/{serviceId}/instances/{instanceId}")
+    @Timed
+    public ApiResponse<LocalServiceInstanceInfo> localServiceInstances(
+            @PathParam("serviceId") @NotEmpty final String serviceId,
+            @PathParam("instanceId") @NotEmpty final String instanceId) {
+        return responseEngine.localServiceInstanceDetails(serviceId, instanceId);
+    }
+
+
+    @GET
+    @Path("/localservices/{serviceId}/instances/old")
+    @Timed
+    public ApiResponse<List<LocalServiceInstanceInfo>> localServiceOldInstances(
+            @PathParam("serviceId") @NotEmpty final String serviceId,
+            @QueryParam("start") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue("0") int start,
+            @QueryParam("size") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue(MAX_ELEMENTS_TEXT) int size) {
+        return responseEngine.localServiceOldInstances(serviceId);
     }
 
     @POST
