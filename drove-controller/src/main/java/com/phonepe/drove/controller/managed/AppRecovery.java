@@ -17,12 +17,16 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceCreateOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.lifecycle.Managed;
@@ -46,22 +50,26 @@ public class AppRecovery implements Managed {
 
     private final ApplicationLifecycleManagementEngine applicationEngine;
     private final TaskEngine taskEngine;
+    private final LocalServiceLifecycleManagementEngine localServiceEngine;
     private final ApplicationStateDB applicationStateDB;
     private final TaskDB taskDB;
+    private final LocalServiceStateDB localServiceStateDB;
     private final ClusterOpSpec defaultClusterOpSpec;
 
     @Inject
     public AppRecovery(
             LeadershipEnsurer leadershipEnsurer,
             ApplicationLifecycleManagementEngine applicationEngine,
-            TaskEngine taskEngine,
+            TaskEngine taskEngine, LocalServiceLifecycleManagementEngine localServiceEngine,
             ApplicationStateDB applicationStateDB,
-            TaskDB taskDB,
+            TaskDB taskDB, LocalServiceStateDB localServiceStateDB,
             ClusterOpSpec defaultClusterOpSpec) {
         this.applicationEngine = applicationEngine;
         this.taskEngine = taskEngine;
+        this.localServiceEngine = localServiceEngine;
         this.applicationStateDB = applicationStateDB;
         this.taskDB = taskDB;
+        this.localServiceStateDB = localServiceStateDB;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChange);
     }
@@ -82,6 +90,7 @@ public class AppRecovery implements Managed {
             val allApps = applicationStateDB.applications(0, Integer.MAX_VALUE);
             recoverApps(allApps);
             recoverTasks(allApps);
+            recoverLocalServices(localServiceStateDB.services(0, Integer.MAX_VALUE));
         }
         else {
             log.info("This controller is not the leader anymore. All executors will be stopped");
@@ -131,5 +140,24 @@ public class AppRecovery implements Managed {
                                         }
                                     });
                         });
+    }
+
+    private void recoverLocalServices(List<LocalServiceInfo> services) {
+        services
+                .forEach(serviceInfo -> {
+                    val serviceId = serviceInfo.getServiceId();
+                    log.info("Found service: {}. Starting it.", serviceId);
+                    try {
+                        val res = localServiceEngine.handleOperation(
+                                new LocalServiceCreateOperation(serviceInfo.getSpec(),
+                                                                serviceInfo.getInstancesPerHost()));
+                        if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
+                            log.error("Error sending command to state machine. Error: " + res.getMessages());
+                        }
+                    }
+                    catch (Exception e) {
+                        log.error("Error recovering state machine for " + serviceId, e);
+                    }
+                });
     }
 }

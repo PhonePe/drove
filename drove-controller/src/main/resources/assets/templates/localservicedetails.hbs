@@ -1,0 +1,247 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col">
+                <table class="table table-bordered" id="localservicesummary">
+                    <thead>
+                    <tr>
+                        <th class="text-wrap">ID</th>
+                        <th class="text-wrap">Name</th>
+                        <th class="text-wrap">Expected Instances</th>
+                        <th class="text-wrap">Healthy Instances</th>
+                        <th class="text-wrap">CPU</th>
+                        <th class="text-wrap">Memory</th>
+                        <th class="text-wrap">State</th>
+                        <th class="text-wrap"></th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="row">
+            <div class="col">
+                <div class="row">
+                    <div class="col"><h4>Instances</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered"  id="instances" style="width: 100%">
+                            <thead>
+                            <tr>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">ExecutorId</th>
+                                <th class="text-wrap">Host</th>
+                                <th class="text-wrap">Ports</th>
+                                <th class="text-wrap">Cores</th>
+                                <th class="text-wrap">Memory</th>
+                                <th class="text-wrap">Current Age</th>
+                                <th class="text-wrap">State</th>
+                                <th class="text-wrap"></th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="row">
+            <div class="col">
+                <div class="row">
+                    <div class="col"><h4>Old Instances</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered"  id="oldinstances">
+                            <thead>
+                            <tr>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">ExecutorId</th>
+                                <th class="text-wrap">Host</th>
+                                <th class="text-wrap">Ports</th>
+                                <th class="text-wrap">Cores</th>
+                                <th class="text-wrap">Memory</th>
+                                <th class="text-wrap">State</th>
+                                <th class="text-wrap">Lifetime</th>
+                                <th class="text-wrap">Created</th>
+                                <th class="text-wrap">Last Updated</th>
+                                <th class="text-wrap">Error Message</th>
+                                <th class="text-wrap"></th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade bd-example-modal-lg" tabindex="-1" id="appSpec"role="dialog" aria-labelledby="myLargeModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="overflow-y: initial !important">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <pre id="appSpecJson" class="code-display"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{{/partial}}
+
+{{#partial "page_js"}}
+    //Preload config as it won't change
+    $.get('/apis/v1/localservices/{{serviceId}}/spec', function(data) {
+        if(data.status === 'SUCCESS') {
+            $('#appSpecJson').html(JSON.stringify(data.data, null, 4));
+        }
+        else {
+            $('#appSpecJson').html('Could not load config');
+        }
+    });
+
+    var summary = $('#localservicesummary').DataTable({
+        'processing' : true,
+        'ajax': {
+            'url' : '/apis/v1/localservices/{{serviceId}}',
+            'dataSrc' : function(res) { return res.data ? [ res.data ] : []; }
+        },
+        'paging': false,
+        'searching' : false,
+        'ordering' : false,
+        'info' : false,
+        'columnDefs': [
+            {
+                'targets': 7,
+                'data': null,
+                'defaultContent': '<button type="button" class="btn btn-small btn-primary" data-toggle="modal" data-target="#appSpec">Spec</button>'
+            },
+            {'className': 'text-wrap', 'targets': '_all'}
+        ],
+        'columns' : [
+            { 'data' : 'id' },
+            { 'data' : 'name' },
+            { 'data' : 'requiredInstances' },
+            { 'data' : 'healthyInstances' },
+            { 'data' : 'totalCPUs' },
+            { 'data' : 'totalMemory', 'render' : formatBytes },
+            { 'data' : 'state', 'render' : renderLocalServiceState }
+        ]
+    });
+    function instanceDataHandler(res) {
+        if(!res.data) {
+        return [];
+        }
+        res.data.forEach( (info, i) => {
+            if(info.localInfo) {
+                info['hostname'] = info.localInfo.hostname;
+                info['ports'] = Object.keys(info.localInfo.ports)
+                    .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
+                    .join(",");
+            }
+            else {
+                info['hostname'] = '';
+                info['ports'] = '';
+            }
+            info.resources.forEach((r,i) => {
+                if(r.type === 'CPU') {
+                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+                }
+                if(r.type === 'MEMORY') {
+                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+                }
+            });
+        });
+        return res.data;
+    }
+
+    function executorLink(data, type, row, meta) {
+        if(type === "display") {
+            return '<a href="/executors/' + data + '">' + data + '</a>';
+        }
+        return data;
+    }
+
+    var instances = $('#instances').DataTable({
+        'processing' : true,
+        'ajax': {
+            'url' : '/apis/v1/localservices/{{serviceId}}/instances',
+            'dataSrc' : instanceDataHandler
+        },
+        'paging': true,
+        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
+        'columns' : [
+            { 'data' : 'instanceId' },
+            { 'data' : 'executorId', 'render' : executorLink },
+            { 'data' : 'hostname' },
+            { 'data' : 'ports' },
+            { 'data' : 'usedCores' },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'created', 'render' : timeSince },
+            { 'data' : 'state', 'render' : renderInstanceState },
+            { 'data' : 'details',
+                'render' : function(data, type, row, meta) {
+                    return '<a href="/localservices/{{serviceId}}/instances/' + row['instanceId'] + '">Details</a>';
+                }
+            }
+        ],
+        'order' : [[6, 'desc']]
+
+    });
+    var oldinstances = $('#oldinstances').DataTable({
+        'processing' : true,
+        'ajax': {
+            'url' : '/apis/v1/localservices/{{serviceId}}/instances/old',
+            'dataSrc' : instanceDataHandler
+        },
+        'paging': true,
+        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'info' : false,
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
+        'columns' : [
+            { 'data' : 'instanceId' },
+            { 'data' : 'executorId', 'render' : executorLink },
+            { 'data' : 'hostname' },
+            { 'data' : 'ports' },
+            { 'data' : 'usedCores' },
+            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'state', 'render': renderInstanceState },
+            { 'data' : 'created', 'render' : lifetime },
+            { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+            { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+            { 'data' : 'errorMessage',
+                'render' : function (data, type, full, meta) {
+                    if(type === 'display') {
+                        if(data) {
+                            return '<div style="white-space:normal; width:200px; word-break: break-word; word-break: break-all; " class="text-danger">' + data + '</div>';
+                        }
+                        else {
+                            return 'No Errors';
+                        }
+                    }
+                    return data;
+                }
+            },
+            { 'data' : 'details',
+                'render' : function(data, type, row, meta) {
+                    return '<a href="/localservices/{{serviceId}}/instances/' + row['instanceId'] + '">Details</a>';
+                }
+            }
+        ],
+        'order' : [[9, 'desc']]
+    });
+    setInterval(() => {
+        summary.ajax.reload(null, false);
+        instances.ajax.reload(null, false);
+        oldinstances.ajax.reload(null, false);
+    }, 5000);
+{{/partial}}
+{{> common/base}}

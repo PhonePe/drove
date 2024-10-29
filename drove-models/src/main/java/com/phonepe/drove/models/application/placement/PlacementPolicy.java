@@ -33,7 +33,7 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "RULE_BASED", value = RuleBasedPlacementPolicy.class),
         @JsonSubTypes.Type(name = "ANY", value = AnyPlacementPolicy.class),
         @JsonSubTypes.Type(name = "COMPOSITE", value = CompositePlacementPolicy.class),
-        @JsonSubTypes.Type(name = "LOCAL", value = CompositePlacementPolicy.class),
+        @JsonSubTypes.Type(name = "LOCAL", value = LocalPlacementPolicy.class),
 })
 @Data
 public abstract class PlacementPolicy {

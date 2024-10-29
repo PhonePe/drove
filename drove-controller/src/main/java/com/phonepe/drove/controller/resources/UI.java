@@ -52,22 +52,25 @@ public class UI {
 
     private static final Set<DroveUserRole> READ_ALLOWED_ROLES = EnumSet.of(DroveUserRole.EXTERNAL_READ_WRITE,
                                                                             DroveUserRole.EXTERNAL_READ_ONLY);
-    private final ApplicationStateDB stateDB;
+    private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
+    private final LocalServiceStateDB localServiceStateDB;
 
     private final ControllerOptions controllerOptions;
 
 
     @Inject
     public UI(
-            ApplicationStateDB stateDB,
+            ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
+            LocalServiceStateDB localServiceStateDB,
             ControllerOptions controllerOptions) {
-        this.stateDB = stateDB;
+        this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.localServiceStateDB = localServiceStateDB;
         this.controllerOptions = controllerOptions;
     }
 
@@ -79,7 +82,7 @@ public class UI {
     @GET
     @Path("/applications/{id}")
     public ApplicationDetailsPageView applicationDetails(@PathParam("id") final String appId) {
-        if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
+        if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
         return new ApplicationDetailsPageView(appId);
@@ -88,17 +91,17 @@ public class UI {
 
     @GET
     @Path("/applications/{id}/instances/{instanceId}")
-    public InstanceDetailsPage instanceDetailsPage(
+    public ApplicationInstanceDetailsPage applicationInstanceDetailsPage(
             @Auth DroveUser user,
             @PathParam("id") final String appId,
             @PathParam("instanceId") final String instanceId) {
-        if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
+        if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new InstanceDetailsPage(appId,
-                                       instanceId,
-                                       instanceInfoDB.instance(appId, instanceId).orElse(null),
-                                       hasReadAccess(user));
+        return new ApplicationInstanceDetailsPage(appId,
+                                                  instanceId,
+                                                  instanceInfoDB.instance(appId, instanceId).orElse(null),
+                                                  hasReadAccess(user));
     }
 
     @GET
@@ -107,7 +110,7 @@ public class UI {
             @PathParam("id") final String appId,
             @PathParam("instanceId") final String instanceId,
             @QueryParam("logFileName") final String logFileName) {
-        if (Strings.isNullOrEmpty(appId) || stateDB.application(appId).isEmpty()) {
+        if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
         return new LogPailerPage("applications", appId, instanceId, logFileName);
@@ -136,6 +139,42 @@ public class UI {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
         return new LogPailerPage("tasks", appId, instanceId, logFileName);
+    }
+
+    @GET
+    @Path("/localservices/{id}")
+    public LocalServiceDetailsPageView localserviceDetails(@PathParam("id") final String serviceId) {
+        if (Strings.isNullOrEmpty(serviceId) || localServiceStateDB.service(serviceId).isEmpty()) {
+            throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
+        }
+        return new LocalServiceDetailsPageView(serviceId);
+    }
+
+    @GET
+    @Path("/localservices/{id}/instances/{instanceId}")
+    public LocalServiceInstanceDetailsPage localServiceInstanceDetailsPage(
+            @Auth DroveUser user,
+            @PathParam("id") final String serviceId,
+            @PathParam("instanceId") final String instanceId) {
+        if (Strings.isNullOrEmpty(serviceId) || localServiceStateDB.service(serviceId).isEmpty()) {
+            throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
+        }
+        return new LocalServiceInstanceDetailsPage(serviceId,
+                                                  instanceId,
+                                                  localServiceStateDB.instance(serviceId, instanceId).orElse(null),
+                                                  hasReadAccess(user));
+    }
+
+    @GET
+    @Path("/localservices/{id}/instances/{instanceId}/stream")
+    public LogPailerPage localServiceLogPailerPage(
+            @PathParam("id") final String serviceId,
+            @PathParam("instanceId") final String instanceId,
+            @QueryParam("logFileName") final String logFileName) {
+        if (Strings.isNullOrEmpty(serviceId) || localServiceStateDB.service(serviceId).isEmpty()) {
+            throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
+        }
+        return new LogPailerPage("localservices", serviceId, instanceId, logFileName);
     }
 
     @GET

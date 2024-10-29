@@ -127,6 +127,20 @@ $(document).ready(function() {
         }
     }
 
+    function renderLocalServiceState(data, type, row, meta) {
+        switch(data) {
+            case 'INIT' : return '<span class="font-weight-bold text-primary">Initializing</span>';
+            case 'INACTIVE' : return '<span class="font-weight-bold text-info">Inactive</span>';
+            case 'ACTIVE' : return '<span class="font-weight-bold text-success">Active</span>';
+            case 'ACTIVATION_REQUESTED' : return '<span class="font-weight-bold text-warning">Activation Requested</span>';
+            case 'DEACTIVATION_REQUESTED' : return '<span class="font-weight-bold text-warning">Deactivation Requested</span>';
+            case 'SCALING' : return '<span class="font-weight-bold text-warning">Scaling</span>';
+            case 'RESTARTING' : return '<span class="font-weight-bold text-warning">Restarting</span>';
+            case 'DESTROY_REQUESTED' : return '<span class="font-weight-bold text-danger">Destruction Underway</span>';
+            case 'DESTROYED' : return '<span class="font-weight-bold text-danger">Destroyed</span>';
+        }
+    }
+
     function renderInstanceState(data, type, row, meta) {
         switch(data) {
             case 'PENDING' : return '<span class="font-weight-bold text-primary">Pending</span>';

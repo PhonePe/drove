@@ -32,6 +32,9 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="taskdetails-tab" data-toggle="tab" data-target="#taskdetails" type="button" role="tab" aria-controls="taskdetails" aria-selected="false">Tasks</button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="localservicedetails-tab" data-toggle="tab" data-target="#localservicedetails" type="button" role="tab" aria-controls="localservicedetails" aria-selected="false">Local Services</button>
+                    </li>
                 </ul>
                 <div class="tab-content" id="">
                     <div class="tab-pane fade show active" id="applicationdetails" role="tabpanel" aria-labelledby="applicationdetails-tab">
@@ -89,6 +92,27 @@
                             </div>
                         </div>
                     </div>
+                    <div class="tab-pane fade" id="localservicedetails" role="tabpanel" aria-labelledby="localservicedetails-tab">
+                        <div class="row">
+                            <div class="col">
+                                <table class="table table-bordered" id="localservices" title="localservices" style="width: 100%">
+                                    <thead>
+                                    <tr>
+                                        <th class="text-wrap">Name</th>
+                                        <th class="text-wrap">Instances Per Host</th>
+                                        <th class="text-wrap">Expected Instances</th>
+                                        <th class="text-wrap">Healthy Instances</th>
+                                        <th class="text-wrap">CPU</th>
+                                        <th class="text-wrap">Memory</th>
+                                        <th class="text-wrap">Activation State</th>
+                                        <th class="text-wrap">State</th>
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <div class="col-lg-6 col-md-12">
@@ -213,6 +237,40 @@
             'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data)
         }
     });
+    var localservices = $('#localservices').DataTable({
+        'processing' : true,
+        'ajax': {
+            'url' : '/apis/v1/localservices',
+            'dataSrc' : function(res) {
+                return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
+            }
+        },
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'info' : false,
+        'columnDefs': [
+            {
+                'className': 'text-center text-wrap',
+                'targets': '_all'
+            }
+        ],
+        'columns' : [
+            {
+                'data' : 'name' ,
+                'render' : function(data, type, row, meta) {
+                    return '<a href="/localservices/' + data + '">' + data + '</a>';
+                }
+            },
+            { 'data' : 'instancesPerHost' },
+            { 'data' : 'knownInstances' },
+            { 'data' : 'healthyInstances' },
+            { 'data' : 'totalCPUs' },
+            { 'data' : 'totalMemory', 'render' : formatBytes },
+            { 'data' : 'activationState' },
+            { 'data' : 'state', render: renderLocalServiceState }
+        ]
+    });
+ 
     var executors = $('#executors').DataTable({
         'processing' : true,
         'ajax': '/apis/v1/cluster/executors',
@@ -264,6 +322,7 @@
         cluster.ajax.reload(null, false);
         applications.ajax.reload(null, false);
         tasks.ajax.reload(null, false);
+        localservices.ajax.reload(null, false);
         executors.ajax.reload(null, false);
     }, 5000);
 {{/partial}}

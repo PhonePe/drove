@@ -14,30 +14,24 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.models.api;
+package com.phonepe.drove.controller.ui.views;
 
-import com.phonepe.drove.models.localservice.ActivationState;
-import com.phonepe.drove.models.localservice.LocalServiceState;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
-
-import java.util.Date;
-import java.util.Map;
+import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
- *
+ * Renders the homepage
  */
 @Value
-public class LocalServiceSummary {
-    String id;
-    String name;
-    long instancesPerHost;
-    long knownInstances;
-    long healthyInstances;
-    long totalCPUs;
-    long totalMemory;
-    Map<String, String> tags;
-    ActivationState activationState;
-    LocalServiceState state;
-    Date created;
-    Date updated;
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class LocalServiceDetailsPageView extends TemplateView {
+    String serviceId;
+
+    public LocalServiceDetailsPageView(String serviceId) {
+        super("templates/localservicedetails.hbs");
+        this.serviceId = serviceId;
+    }
 }

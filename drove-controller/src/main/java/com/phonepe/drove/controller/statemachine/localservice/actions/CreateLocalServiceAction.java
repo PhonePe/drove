@@ -17,11 +17,12 @@
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
-import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAction;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
+import com.phonepe.drove.controller.statemachine.localservice.OperationDrivenLocalServiceAction;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -32,7 +33,7 @@ import javax.inject.Inject;
  *
  */
 @Slf4j
-public class CreateLocalServiceAction extends LocalServiceAction {
+public class CreateLocalServiceAction extends OperationDrivenLocalServiceAction {
     private final LocalServiceStateDB stateDB;
 
     @Inject
@@ -41,9 +42,10 @@ public class CreateLocalServiceAction extends LocalServiceAction {
     }
 
     @Override
-    public StateData<LocalServiceState, LocalServiceInfo> execute(
+    public StateData<LocalServiceState, LocalServiceInfo> commandReceived(
             LocalServiceActionContext context,
-            StateData<LocalServiceState, LocalServiceInfo> currentState) {
+            StateData<LocalServiceState, LocalServiceInfo> currentState,
+            LocalServiceOperation operation) {
         val activationState = stateDB.service(context.getServiceId())
                 .map(LocalServiceInfo::getState)
                 .orElse(ActivationState.UNKNOWN);

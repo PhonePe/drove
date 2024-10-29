@@ -90,7 +90,7 @@ class UITest {
     }
 
     @Test
-    void testInstanceDetailsPage() {
+    void testApplicationInstanceDetailsPage() {
 
 
         when(applicationStateDB.application("TEST_APP"))
@@ -100,16 +100,16 @@ class UITest {
                                                             new Date(),
                                                             new Date())));
         assertThrows(WebApplicationException.class,
-                     () -> resource.instanceDetailsPage(null,
-                                                        null,
-                                                        null));
+                     () -> resource.applicationInstanceDetailsPage(null,
+                                                                   null,
+                                                                   null));
         assertThrows(WebApplicationException.class,
-                     () -> resource.instanceDetailsPage(null,
-                                                        "WrongApp",
-                                                        null));
-        assertNotNull(resource.instanceDetailsPage(new DroveExternalUser("BLAH", DroveUserRole.EXTERNAL_READ_ONLY, null),
-                                                   "TEST_APP",
-                                                   null));
+                     () -> resource.applicationInstanceDetailsPage(null,
+                                                                   "WrongApp",
+                                                                   null));
+        assertNotNull(resource.applicationInstanceDetailsPage(new DroveExternalUser("BLAH", DroveUserRole.EXTERNAL_READ_ONLY, null),
+                                                              "TEST_APP",
+                                                              null));
     }
 
     @Test

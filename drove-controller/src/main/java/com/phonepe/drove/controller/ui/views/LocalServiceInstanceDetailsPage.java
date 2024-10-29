@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.ui.views;
 
-import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -28,18 +28,19 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class InstanceDetailsPage extends TemplateView {
-    String appId;
+public class LocalServiceInstanceDetailsPage extends TemplateView {
+    String serviceId;
     String instanceId;
-    InstanceInfo instanceInfo;
+    LocalServiceInstanceInfo instanceInfo;
     boolean hasReadAccess;
 
-    public InstanceDetailsPage(
-            String appId,
+    public LocalServiceInstanceDetailsPage(
+            String serviceId,
             String instanceId,
-            InstanceInfo instanceInfo, boolean hasReadAccess) {
-        super("templates/instancedetails.hbs");
-        this.appId = appId;
+            LocalServiceInstanceInfo instanceInfo,
+            boolean hasReadAccess) {
+        super("templates/localservice-instancedetails.hbs");
+        this.serviceId = serviceId;
         this.instanceId = instanceId;
         this.instanceInfo = instanceInfo;
         this.hasReadAccess = hasReadAccess;

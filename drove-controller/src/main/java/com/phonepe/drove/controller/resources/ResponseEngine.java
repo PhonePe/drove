@@ -27,6 +27,7 @@ import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
@@ -82,10 +83,11 @@ import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 public class ResponseEngine {
 
     private final LeadershipObserver leadershipObserver;
-    private final ApplicationLifecycleManagementEngine engine;
+    private final ApplicationLifecycleManagementEngine applicationEngine;
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
+    private final LocalServiceLifecycleManagementEngine localServiceEngine;
     private final LocalServiceStateDB localServiceStateDB;
     private final ClusterStateDB clusterStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
@@ -97,10 +99,10 @@ public class ResponseEngine {
     @Inject
     public ResponseEngine(
             LeadershipObserver leadershipObserver,
-            ApplicationLifecycleManagementEngine engine,
+            ApplicationLifecycleManagementEngine applicationEngine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB,
+            TaskDB taskDB, LocalServiceLifecycleManagementEngine localServiceEngine,
             LocalServiceStateDB localServiceStateDB,
             ClusterStateDB clusterStateDB,
             ClusterResourcesDB clusterResourcesDB,
@@ -108,10 +110,11 @@ public class ResponseEngine {
             ControllerCommunicator communicator,
             DroveEventBus eventBus, BlacklistingAppMovementManager blacklistingAppMovementManager) {
         this.leadershipObserver = leadershipObserver;
-        this.engine = engine;
+        this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.localServiceEngine = localServiceEngine;
         this.localServiceStateDB = localServiceStateDB;
         this.clusterStateDB = clusterStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
@@ -234,7 +237,7 @@ public class ResponseEngine {
         var liveApps = 0;
         var allApps = 0;
         for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
-            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(engine.currentState(appInfo.getAppId())
+            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(applicationEngine.currentState(appInfo.getAppId())
                                                                             .orElse(ApplicationState.FAILED))
                         ? 1
                         : 0;
@@ -287,7 +290,7 @@ public class ResponseEngine {
         //TODO::HANDLE EXPOSURE MODE
         val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
                 .stream()
-                .filter(app -> engine.currentState(app.getAppId())
+                .filter(app -> applicationEngine.currentState(app.getAppId())
                         .filter(ApplicationState.ACTIVE_APP_STATES::contains)
                         .isPresent()) //Only running
                 .filter(app -> app.getSpec().getExposureSpec() != null && !app.getSpec()
@@ -417,7 +420,7 @@ public class ResponseEngine {
                               cpus,
                               memory,
                               instances,
-                              engine.currentState(info.getAppId()).orElse(null),
+                              applicationEngine.currentState(info.getAppId()).orElse(null),
                               info.getCreated(),
                               info.getUpdated());
 
@@ -436,7 +439,7 @@ public class ResponseEngine {
                               cpus,
                               memory,
                               spec.getTags(),
-                              engine.currentState(info.getAppId()).orElse(null),
+                              applicationEngine.currentState(info.getAppId()).orElse(null),
                               info.getCreated(),
                               info.getUpdated());
 
@@ -466,7 +469,8 @@ public class ResponseEngine {
                                        cpus,
                                        memory,
                                        spec.getTags(),
-                                       engine.currentState(info.getServiceId()).orElse(null),
+                                       info.getState(),
+                                       localServiceEngine.currentState(info.getServiceId()).orElse(null),
                                        info.getCreated(),
                                        info.getUpdated());
 

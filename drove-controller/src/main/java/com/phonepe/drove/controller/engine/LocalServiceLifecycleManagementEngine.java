@@ -106,16 +106,16 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
         return operation.accept(new LocalServiceOperationVisitorAdapter<LocalServiceStateMachineExecutor>(null) {
             @Override
             public LocalServiceStateMachineExecutor visit(LocalServiceCreateOperation create) {
-                val appSpec = create.getSpec();
+                val serviceSpec = create.getSpec();
                 val now = new Date();
-                val serviceId = ControllerUtils.deployableObjectId(appSpec);
+                val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
                 val appInfo = new LocalServiceInfo(serviceId,
-                                                   appSpec,
+                                                   serviceSpec,
                                                    create.getInstancesPerHost(),
                                                    ActivationState.INACTIVE,
                                                    now,
                                                    now);
-                val context = new LocalServiceActionContext(serviceId, appSpec);
+                val context = new LocalServiceActionContext(serviceId, serviceSpec);
                 val stateMachine = new LocalServiceStateMachine(StateData.create(
                         LocalServiceState.INIT,
                         appInfo), context, factory);

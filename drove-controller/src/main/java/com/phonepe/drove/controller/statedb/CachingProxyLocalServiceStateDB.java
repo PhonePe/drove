@@ -57,7 +57,10 @@ public class CachingProxyLocalServiceStateDB implements LocalServiceStateDB {
 
     @Override
     public Optional<LocalServiceInfo> service(String serviceId) {
-        return Optional.empty();
+        return services(0, Integer.MAX_VALUE)
+                .stream()
+                .filter(service -> service.getServiceId().equals(serviceId))
+                .findAny();
     }
 
     @Override
