@@ -160,7 +160,7 @@ public class ApplicationCommandValidator {
         @Override
         public ValidationResult visit(ApplicationStartInstancesOperation deploy) {
             val requiredInstances = deploy.getInstances();
-            return ensureResources(deploy, requiredInstances);
+            return ensureResources(requiredInstances);
         }
 
         @Override
@@ -185,7 +185,7 @@ public class ApplicationCommandValidator {
             if (requiredInstances <= currentInstances) {
                 return ValidationResult.success();
             }
-            return ensureResources(scale, requiredInstances - currentInstances);
+            return ensureResources(requiredInstances - currentInstances);
         }
 
         @Override
@@ -215,8 +215,7 @@ public class ApplicationCommandValidator {
         }
 
 
-        private ValidationResult ensureResources(final ApplicationOperation operation,
-                                                 long requiredNewInstances) {
+        private ValidationResult ensureResources(long requiredNewInstances) {
             val executorCount = clusterResourcesDB.executorCount(true);
             if(executorCount == 0) {
                 return ValidationResult.failure("No executors on cluster");

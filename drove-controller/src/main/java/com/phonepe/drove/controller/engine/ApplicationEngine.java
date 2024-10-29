@@ -17,7 +17,6 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppAction;
@@ -67,7 +66,6 @@ public class ApplicationEngine {
     private final ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory;
     private final ApplicationStateDB stateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
-    private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationCommandValidator applicationCommandValidator;
     private final DroveEventBus droveEventBus;
     private final ControllerRetrySpecFactory retrySpecFactory;
@@ -82,7 +80,6 @@ public class ApplicationEngine {
             ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext, AppAction> factory,
             ApplicationStateDB stateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            ClusterResourcesDB clusterResourcesDB,
             ApplicationCommandValidator applicationCommandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
@@ -91,7 +88,6 @@ public class ApplicationEngine {
         this.factory = factory;
         this.stateDB = stateDB;
         this.instanceInfoDB = instanceInfoDB;
-        this.clusterResourcesDB = clusterResourcesDB;
         this.applicationCommandValidator = applicationCommandValidator;
         this.droveEventBus = droveEventBus;
         this.retrySpecFactory = retrySpecFactory;
