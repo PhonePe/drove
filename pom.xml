@@ -22,7 +22,7 @@
     <groupId>com.phonepe.drove</groupId>
     <artifactId>drove</artifactId>
     <packaging>pom</packaging>
-    <version>1.32-SNAPSHOT</version>
+    <version>1.31</version>
     <name>Drove</name>
     <url>https://github.com/PhonePe/drove</url>
     <description>Distributed Container Orchestrator</description>
