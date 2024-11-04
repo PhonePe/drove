@@ -39,6 +39,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -115,6 +116,7 @@ public class NodeDataUpdater implements Managed {
             log.warn("Node not started yet. Skipping state update");
         }
         refreshNodeState();
+        log.info("Node data updated at: {}", Instant.now());
     }
 
     private void refreshNodeState(int port, NodeTransportType transportType, String hostname, String executorId) {

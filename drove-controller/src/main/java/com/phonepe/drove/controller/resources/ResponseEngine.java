@@ -63,7 +63,6 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -102,13 +101,15 @@ public class ResponseEngine {
             ApplicationLifecycleManagementEngine applicationEngine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB, LocalServiceLifecycleManagementEngine localServiceEngine,
+            TaskDB taskDB,
+            LocalServiceLifecycleManagementEngine localServiceEngine,
             LocalServiceStateDB localServiceStateDB,
             ClusterStateDB clusterStateDB,
             ClusterResourcesDB clusterResourcesDB,
             EventStore eventStore,
             ControllerCommunicator communicator,
-            DroveEventBus eventBus, BlacklistingAppMovementManager blacklistingAppMovementManager) {
+            DroveEventBus eventBus,
+            BlacklistingAppMovementManager blacklistingAppMovementManager) {
         this.leadershipObserver = leadershipObserver;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
@@ -183,18 +184,19 @@ public class ResponseEngine {
         val services = localServiceStateDB.services(from, size);
         return success(services.stream()
                                .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
-                                                                     info -> toLocalServiceSummary(info, instancesForService(info.getServiceId())))));
+                                                                     info -> toLocalServiceSummary(info, Map.of()))));
+//                                                                     info -> toLocalServiceSummary(info, instancesForService(info.getServiceId())))));
     }
 
     public ApiResponse<LocalServiceSummary> localService(final String serviceId) {
         return localServiceStateDB.service(serviceId)
                 .map(appInfo -> success(toLocalServiceSummary(
                         appInfo,
-                        instancesForService(serviceId))))
+                        Map.of())))
+//                        instancesForService(serviceId))))
                 .orElse(failure("Local service " + serviceId + " not found"));
     }
 
-    @NotNull
     private Map<String, List<LocalServiceInstanceInfo>> instancesForService(String serviceId) {
         return localServiceStateDB.instances(
                         serviceId,
@@ -213,7 +215,7 @@ public class ResponseEngine {
 
     public ApiResponse<List<LocalServiceInstanceInfo>> localServiceInstances(final String serviceId, final Set<LocalServiceInstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                          ? InstanceState.ACTIVE_STATES
+                          ? LocalServiceInstanceState.ACTIVE_STATES
                           : state;
         return success(localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
                                .stream()
@@ -449,23 +451,23 @@ public class ResponseEngine {
             final LocalServiceInfo info,
             Map<String, List<LocalServiceInstanceInfo>> instancesPerExecutor) {
         val spec = info.getSpec();
-        val instances = instancesPerExecutor.values()
+        val knownInstances = instancesPerExecutor.values()
                 .stream()
-                .map(List::size)
-                .mapToInt(size -> size)
-                .sum();
+                .flatMap(List::stream)
+                .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState()))
+                .count();
         val healthyInstances = instancesPerExecutor.values()
                 .stream()
                 .flatMap(List::stream)
                 .filter(instanceInfo -> instanceInfo.getState().equals(LocalServiceInstanceState.HEALTHY))
                 .count();
-        val cpus = totalCPU(spec, instances);
-        val memory = totalMemory(spec, instances);
+        val cpus = totalCPU(spec, knownInstances);
+        val memory = totalMemory(spec, knownInstances);
         return new LocalServiceSummary(info.getServiceId(),
                                        spec.getName(),
                                        info.getInstancesPerHost(),
-                                       instances,
-                                       healthyInstances,
+/*                                       knownInstances,
+                                       healthyInstances,*/
                                        cpus,
                                        memory,
                                        spec.getTags(),

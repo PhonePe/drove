@@ -148,6 +148,12 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
             ClusterOpSpec defaultClusterOpSpec, DroveEventBus droveEventBus) {
         val state = newState.getState();
         log.info("Local Service state: {}", state);
+        if(/*state.equals(LocalServiceState.ACTIVE) || */state.equals(LocalServiceState.INACTIVE)) {
+/*            val res = handleOperation(new LocalServiceScaleOperation(serviceId));
+            if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
+                log.error("Error sending command to state machine. Error: " + res.getMessages());
+            }*/
+        }
 /*        if (state.equals(ApplicationState.SCALING_REQUESTED)) { //TODO::LOCAL_SERVICE
             val scalingOperation = context.getUpdate()
                     .filter(op -> op.getType().equals(ApplicationOperationType.SCALE_INSTANCES))

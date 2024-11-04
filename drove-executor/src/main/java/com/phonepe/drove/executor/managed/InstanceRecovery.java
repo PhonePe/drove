@@ -21,15 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.DockerLabels;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorLocalServiceInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.lifecycle.Managed;
@@ -57,6 +61,7 @@ import java.util.stream.Collectors;
 public class InstanceRecovery implements Managed, ServerLifecycleListener {
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ObjectMapper mapper;
     private final DockerClient client;
     private final ClusterClient clusterClient;
@@ -65,6 +70,7 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
     public InstanceRecovery(
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
             ObjectMapper mapper,
             DockerClient client,
             ClusterClient clusterClient,
@@ -74,6 +80,7 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
         this.mapper = mapper;
         this.client = client;
         this.clusterClient = clusterClient;
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
         environment.lifecycle().addServerLifecycleListener(this);
     }
 
@@ -115,8 +122,12 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
         val staleAppInstances = knownInstances.getStaleAppInstanceIds();
         val knownTaskInstances = knownInstances.getTaskInstanceIds();
         val staleTaskInstances = knownInstances.getStaleTaskInstanceIds();
+        val knownLocalServiceInstances = knownInstances.getLocalServiceInstanceIds();
+        val staleLocalServiceInstances = knownInstances.getStaleLocalServiceInstanceIds();
+
         recoverAppInstances(runningInstances, knownAppInstances, staleAppInstances);
         recoverTaskInstances(runningInstances, knownTaskInstances, staleTaskInstances);
+        recoverLocalServiceInstances(runningInstances, knownLocalServiceInstances, staleLocalServiceInstances);
     }
 
     private void recoverAppInstances(
@@ -180,6 +191,40 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
                     else {
                         log.warn(
                                 "Unknown task instance {} found to be running. Ignoring it. This will get " +
+                                        "reaped by the zombie reaper later on",
+                                id);
+                    }
+                });
+    }
+
+    private void recoverLocalServiceInstances(
+            Map<JobType, List<Container>> runningInstances,
+            Set<String> knownAppInstances,
+            Set<String> staleAppInstances) {
+        runningInstances
+                .getOrDefault(JobType.LOCAL_SERVICE, List.of())
+                .forEach(container -> {
+                    val id = container.getLabels().get(DockerLabels.DROVE_INSTANCE_ID_LABEL);
+                    if ((knownAppInstances.isEmpty() || knownAppInstances.contains(id))
+                            && !staleAppInstances.contains(id)) {
+                        try {
+                            val spec = mapper.readValue(container.getLabels()
+                                                                .get(DockerLabels.DROVE_INSTANCE_SPEC_LABEL),
+                                                        LocalServiceInstanceSpec.class);
+                            val data = mapper.readValue(container.getLabels()
+                                                                .get(DockerLabels.DROVE_INSTANCE_DATA_LABEL),
+                                                        ExecutorLocalServiceInstanceInfo.class);
+                            val status = localServiceInstanceEngine.registerInstance(
+                                    id, spec, StateData.create(LocalServiceInstanceState.UNKNOWN, data));
+                            log.info("Recovery status for local service instance {}: {}", id, status);
+                        }
+                        catch (JsonProcessingException e) {
+                            log.error("Error recovering state for container: " + container.getId(), e);
+                        }
+                    }
+                    else {
+                        log.warn(
+                                "Unknown local service instance {} found to be running. Ignoring it. This will get " +
                                         "reaped by the zombie reaper later on",
                                 id);
                     }

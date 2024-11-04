@@ -60,7 +60,8 @@ public class AppRecovery implements Managed {
     public AppRecovery(
             LeadershipEnsurer leadershipEnsurer,
             ApplicationLifecycleManagementEngine applicationEngine,
-            TaskEngine taskEngine, LocalServiceLifecycleManagementEngine localServiceEngine,
+            TaskEngine taskEngine,
+            LocalServiceLifecycleManagementEngine localServiceEngine,
             ApplicationStateDB applicationStateDB,
             TaskDB taskDB, LocalServiceStateDB localServiceStateDB,
             ClusterOpSpec defaultClusterOpSpec) {

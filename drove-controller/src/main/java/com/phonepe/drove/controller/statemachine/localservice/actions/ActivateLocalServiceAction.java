@@ -52,13 +52,16 @@ public class ActivateLocalServiceAction extends OperationDrivenLocalServiceActio
         val toState = switch (activationState) {
             case ACTIVE -> LocalServiceState.ACTIVE;
             case INACTIVE, UNKNOWN -> {
-                if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.ACTIVE))) {
+                if (stateDB.updateService(context.getServiceId(),
+                                          currentState.getData().withState(ActivationState.ACTIVE))) {
                     yield LocalServiceState.ACTIVE;
                 }
                 yield LocalServiceState.DESTROYED;
             }
         };
 
-        return StateData.from(currentState, toState);
+        return StateData.create(toState,
+                                stateDB.service(context.getServiceId())
+                                        .orElse(currentState.getData().withState(ActivationState.ACTIVE)));
     }
 }

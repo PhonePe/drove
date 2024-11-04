@@ -26,4 +26,6 @@ public interface ControllerMessageVisitor<T> {
     T visit(ExecutorSnapshotMessage executorSnapshot);
 
     T visit(TaskStateReportMessage taskStateReportMessage);
+
+    T visit(LocalServiceInstanceStateReportMessage localServiceStateReportMessage);
 }

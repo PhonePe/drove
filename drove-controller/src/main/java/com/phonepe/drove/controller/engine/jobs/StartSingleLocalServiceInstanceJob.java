@@ -39,7 +39,7 @@ import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
-import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -115,17 +115,17 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
                                                       instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
-        val appId = ControllerUtils.deployableObjectId(localServiceInfo.getSpec());
+        val serviceId = ControllerUtils.deployableObjectId(localServiceInfo.getSpec());
         try {
             val status = waitForAction(retryPolicy,
                                        () -> startInstance(localServiceInfo.getSpec(), clusterOpSpec),
                                        event -> {
                                            val failure = event.getException();
                                            if (null != failure) {
-                                               log.error("Error setting up instance for " + appId, failure);
+                                               log.error("Error setting up instance for " + serviceId, failure);
                                            }
                                            else {
-                                               log.error("Error setting up instance for {}. Event: {}", appId, event);
+                                               log.error("Error setting up instance for {}. Event: {}", serviceId, event);
                                            }
                                        });
             if (context.isStopped() || context.isCancelled()) {
@@ -134,16 +134,16 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
             return status;
         }
         catch (TimeoutExceededException e) {
-            log.error("Could not allocate an instance for {} after retires.", appId);
+            log.error("Could not allocate an instance for {} after retires.", serviceId);
         }
         catch (Exception e) {
-            log.error("Could not allocate an instance for " + appId + " after retires.", e);
+            log.error("Could not allocate an instance for " + serviceId + " after retires.", e);
         }
         return false;
     }
 
     private boolean startInstance(LocalServiceSpec localServiceSpec, ClusterOpSpec clusterOpSpec) {
-        val appId = ControllerUtils.deployableObjectId(localServiceSpec);
+        val serviceId = ControllerUtils.deployableObjectId(localServiceSpec);
         val instanceId = instanceIdGenerator.generate(localServiceSpec);
         val node = scheduler.schedule(
                         schedulingSessionId, instanceId, localServiceSpec,
@@ -164,7 +164,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                                                     node.getHostname(),
                                                                                     node.getPort(),
                                                                                     node.getTransportType()),
-                                                                new LocalServiceInstanceSpec(appId,
+                                                                new LocalServiceInstanceSpec(serviceId,
                                                                                              localServiceSpec.getName(),
                                                                                              instanceId,
                                                                                              localServiceSpec.getExecutable(),
@@ -184,13 +184,13 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                                                              localServiceSpec.getPreShutdown(),
                                                                                              generateAppInstanceToken(
                                                                                                      node,
-                                                                                                     appId,
+                                                                                                     serviceId,
                                                                                                      instanceId)));
         var successful = false;
         try {
             val response = communicator.send(startMessage);
             log.trace("Sent message to start instance: {}/{}. Response: {} Message: {}",
-                      appId,
+                      serviceId,
                       instanceId,
                       response,
                       startMessage);
@@ -200,12 +200,12 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
             }
             else {
                 log.info("Start message for instance {}/{} accepted by executor {}",
-                         appId, instanceId, node.getExecutorId());
+                         serviceId, instanceId, node.getExecutorId());
                 successful = ensureInstanceState(instanceInfoDB,
                                                  clusterOpSpec,
-                                                 appId,
+                                                 serviceId,
                                                  instanceId,
-                                                 InstanceState.HEALTHY,
+                                                 LocalServiceInstanceState.HEALTHY,
                                                  retrySpecFactory);
             }
         }
@@ -218,9 +218,9 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         return successful;
     }
 
-    private String generateAppInstanceToken(AllocatedExecutorNode node, String appId, String instanceId) {
+    private String generateAppInstanceToken(AllocatedExecutorNode node, String serviceId, String instanceId) {
         return tokenManager.generate(new DroveApplicationInstanceInfo(
-                appId,
+                serviceId,
                 instanceId,
                 node.getExecutorId())).orElse(null);
     }

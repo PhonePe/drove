@@ -26,14 +26,12 @@ import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.discovery.ClusterClient;
-import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
-import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.InstanceEngine;
-import com.phonepe.drove.executor.engine.TaskInstanceEngine;
+import com.phonepe.drove.executor.engine.*;
 import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.signals.signals.ScheduledSignal;
@@ -72,12 +70,20 @@ public class ZombieInstanceReaper implements Managed {
                                                                                      TaskState.RUNNING,
                                                                                      TaskState.RUN_COMPLETED,
                                                                                      TaskState.DEPROVISIONING);
+    private static final Set<LocalServiceInstanceState> EXPECTED_LOCAL_SERVICE_DOCKER_RUNNING_STATES
+            = Set.of(LocalServiceInstanceState.PROVISIONING,
+                     LocalServiceInstanceState.STARTING,
+                     LocalServiceInstanceState.UNREADY,
+                     LocalServiceInstanceState.READY,
+                     LocalServiceInstanceState.HEALTHY,
+                     LocalServiceInstanceState.UNHEALTHY,
+                     LocalServiceInstanceState.STOPPING);
 
     private final ScheduledSignal zombieCheckSignal;
     private final DockerClient client;
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
-
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ClusterClient clusterClient;
     private final ExecutorOptions executorOptions;
 
@@ -87,11 +93,13 @@ public class ZombieInstanceReaper implements Managed {
             DockerClient client,
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
             ClusterClient clusterClient,
             ExecutorOptions executorOptions) {
         this(client,
              applicationInstanceEngine,
              taskInstanceEngine,
+             localServiceInstanceEngine,
              Duration.ofMinutes(1),
              clusterClient,
              executorOptions);
@@ -102,6 +110,7 @@ public class ZombieInstanceReaper implements Managed {
             DockerClient client,
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
             Duration checkDuration,
             ClusterClient clusterClient,
             ExecutorOptions executorOptions) {
@@ -109,6 +118,7 @@ public class ZombieInstanceReaper implements Managed {
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
         this.zombieCheckSignal = new ScheduledSignal(checkDuration);
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.clusterClient = clusterClient;
         this.executorOptions = executorOptions;
     }
@@ -142,6 +152,11 @@ public class ZombieInstanceReaper implements Managed {
                                JobType.SERVICE,
                                knownInstances.getStaleAppInstanceIds(),
                                appInstances);
+        // Kill all local service instances that do not have a parent service
+        pruneHeadlessInstances(applicationInstanceEngine,
+                               JobType.LOCAL_SERVICE,
+                               knownInstances.getStaleAppInstanceIds(),
+                               appInstances);
 
         //Remove all instance ids that are marked as stale by containers
         pruneInstanceIds(containers,
@@ -152,6 +167,11 @@ public class ZombieInstanceReaper implements Managed {
                          taskInstanceEngine,
                          taskInstanceIds,
                          JobType.COMPUTATION);
+        pruneInstanceIds(containers,
+                         localServiceInstanceEngine,
+                         taskInstanceIds,
+                         JobType.LOCAL_SERVICE);
+
         pruneZombieContainers(containers,
                               applicationInstanceEngine,
                               EXPECTED_APP_DOCKER_RUNNING_STATES,
@@ -160,6 +180,10 @@ public class ZombieInstanceReaper implements Managed {
                               taskInstanceEngine,
                               EXPECTED_TASK_DOCKER_RUNNING_STATES,
                               JobType.COMPUTATION);
+        pruneZombieContainers(containers,
+                              localServiceInstanceEngine,
+                              EXPECTED_LOCAL_SERVICE_DOCKER_RUNNING_STATES,
+                              JobType.LOCAL_SERVICE);
     }
 
     private <E extends DeployedExecutionObjectInfo, S extends Enum<S>,
@@ -240,10 +264,12 @@ public class ZombieInstanceReaper implements Managed {
         else {
             try {
                 DockerUtils.cleanupImage(client, container.getImageId());
-            } catch (NotFoundException | ConflictException e) {
+            }
+            catch (NotFoundException | ConflictException e) {
                 log.error("Could not delete image. Not found or is being used by other container for {}",
                           container.getImageId());
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.error("Could could delete image: ", e);
             }
         }
@@ -255,7 +281,7 @@ public class ZombieInstanceReaper implements Managed {
         }
         catch (NotFoundException | ConflictException e) {
             log.error("Looks like container {} ({}) has already been deleted. No cleanup needed for " +
-                            "this zombie",
+                              "this zombie",
                       droveInstanceId,
                       containerId);
         }

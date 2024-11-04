@@ -23,6 +23,7 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleLocalServiceInstanceJob;
+import com.phonepe.drove.controller.engine.jobs.StopSingleLocalServiceInstanceJob;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
@@ -97,44 +98,75 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
         val currInfo = currentState.getData();
         val instancesPerHost = currInfo.getInstancesPerHost();
         val executors = clusterResourcesDB.currentSnapshot(true);
-        val newInstancesPerExecutor = executors.stream()
-                .map(executorHostInfo -> Pair.of(executorHostInfo.getExecutorId(),
-                                                 Math.max(0,
-                                                          instancesPerHost - instancesByExecutor.getOrDefault(
-                                                                  executorHostInfo.getExecutorId(),
-                                                                  List.of()).size())))
-                .filter(pair -> pair.getSecond() > 0)
-                .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
-        if (newInstancesPerExecutor.isEmpty()) {
-            log.info("No new instances are needed to be spun up for {}", serviceId);
-            return Optional.empty();
-        }
-        val schedulingSessionId = UUID.randomUUID().toString();
-        return Optional.of(
-                JobTopology.<Boolean>builder()
-                        .addJob(
-                                newInstancesPerExecutor.entrySet()
-                                        .stream()
-                                        .flatMap(entry -> {
-                                            val executorId = entry.getKey();
-                                            return IntStream.range(0, entry.getValue())
-                                                    .mapToObj(i -> new StartSingleLocalServiceInstanceJob(
-                                                            currInfo,
-                                                            ClusterOpSpec.DEFAULT,
-                                                            scheduler,
-                                                            stateDB,
-                                                            communicator,
-                                                            schedulingSessionId,
-                                                            retrySpecFactory,
-                                                            instanceIdGenerator,
-                                                            tokenManager,
-                                                            httpCaller,
-                                                            clusterResourcesDB.currentSnapshot(executorId)
-                                                                    .orElse(null)));
-                                        })
-                                        .map(x -> (Job<Boolean>)x)
-                                        .toList())
-                        .build());
+        return switch (currInfo.getState()) {
+            case ACTIVE -> {
+                val newInstancesPerExecutor = executors.stream()
+                        .map(executorHostInfo -> Pair.of(executorHostInfo.getExecutorId(),
+                                                         Math.max(0,
+                                                                  instancesPerHost - instancesByExecutor.getOrDefault(
+                                                                          executorHostInfo.getExecutorId(),
+                                                                          List.of()).size())))
+                        .filter(pair -> pair.getSecond() > 0)
+                        .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+                if (newInstancesPerExecutor.isEmpty()) {
+                    log.info("No new instances are needed to be spun up for {}", serviceId);
+                    yield Optional.empty();
+                }
+                val schedulingSessionId = UUID.randomUUID().toString();
+                yield Optional.of(
+                        JobTopology.<Boolean>builder()
+                                .addJob(
+                                        newInstancesPerExecutor.entrySet()
+                                                .stream()
+                                                .flatMap(entry -> {
+                                                    val executorId = entry.getKey();
+                                                    return IntStream.range(0, entry.getValue())
+                                                            .mapToObj(i -> new StartSingleLocalServiceInstanceJob(
+                                                                    currInfo,
+                                                                    ClusterOpSpec.DEFAULT,
+                                                                    scheduler,
+                                                                    stateDB,
+                                                                    communicator,
+                                                                    schedulingSessionId,
+                                                                    retrySpecFactory,
+                                                                    instanceIdGenerator,
+                                                                    tokenManager,
+                                                                    httpCaller,
+                                                                    clusterResourcesDB.currentSnapshot(executorId)
+                                                                            .orElse(null)));
+                                                })
+                                                .map(x -> (Job<Boolean>) x)
+                                                .toList())
+                                .build());
+            }
+            case INACTIVE, UNKNOWN -> {
+                val extraInstances = executors.stream()
+                        .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
+                        .filter(serviceInstance -> LocalServiceInstanceState.RUNNING_STATES.contains(serviceInstance.getState()))
+                        .map(LocalServiceInstanceInfo::getInstanceId)
+                        .toList();
+                if (extraInstances.isEmpty()) {
+                    log.info("No instances need to be shut down for inactive service {}", serviceId);
+                    yield Optional.empty();
+                }
+                yield Optional.of(
+                        JobTopology.<Boolean>builder()
+                                .addJob(
+                                        extraInstances.stream()
+                                                .map(instanceId -> new StopSingleLocalServiceInstanceJob(
+                                                        currInfo.getServiceId(),
+                                                        instanceId,
+                                                                ClusterOpSpec.DEFAULT,
+                                                        stateDB,
+                                                        clusterResourcesDB,
+                                                        communicator,
+                                                        retrySpecFactory))
+                                                .map(x -> (Job<Boolean>) x)
+                                                .toList())
+                                .build());
+            }
+        };
+
     }
 
     @Override
@@ -144,6 +176,9 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
             LocalServiceOperation operation,
             JobExecutionResult<Boolean> executionResult) {
         log.info("Execution result: {}", executionResult);
-        return StateData.from(currentState, LocalServiceState.ACTIVE);
+        return StateData.from(currentState, switch (currentState.getData().getState()) {
+            case ACTIVE -> LocalServiceState.ACTIVE;
+            case INACTIVE, UNKNOWN -> LocalServiceState.INACTIVE;
+        });
     }
 }

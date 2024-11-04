@@ -43,7 +43,7 @@ public abstract class OperationDrivenAction<T, S extends Enum<S>, C extends Acti
             return errorState(currentState, "Error: " + e.getMessage());
         }
         finally {
-            log.debug("Acking operation: {}. Status: {}", operation, context.ackUpdate());
+            log.info("Acking operation: {}. Status: {}", operation, context.ackUpdate());
         }
     }
 

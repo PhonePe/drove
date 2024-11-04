@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.resources;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiErrorCode;
 import com.phonepe.drove.models.api.ApiResponse;
@@ -53,14 +54,15 @@ class InternalApisTest {
     private static final ApplicationStateDB applicationStateDB = mock(ApplicationStateDB.class);
     private static final ClusterResourcesDB clusterResourcesDB = mock(ClusterResourcesDB.class);
     private static final TaskDB taskDB = mock(TaskDB.class);
+    private static final LocalServiceStateDB localServicesDB = mock(LocalServiceStateDB.class);
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new InternalApis(clusterResourcesDB, applicationStateDB, taskDB))
+            .addResource(new InternalApis(clusterResourcesDB, applicationStateDB, taskDB, localServicesDB))
             .build();
 
     @AfterEach
     void reset() {
-        Mockito.reset(applicationStateDB, clusterResourcesDB, taskDB);
+        Mockito.reset(applicationStateDB, clusterResourcesDB, taskDB, localServicesDB);
     }
 
     @Test

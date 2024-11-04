@@ -19,9 +19,11 @@ package com.phonepe.drove.controller.managed;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -58,11 +60,13 @@ class AppRecoveryTest extends ControllerTestBase {
         val te = mock(TaskEngine.class);
         val asdb = mock(ApplicationStateDB.class);
         val tdb = mock(TaskDB.class);
+        val lse = mock(LocalServiceLifecycleManagementEngine.class);
+        val lsdb = mock(LocalServiceStateDB.class);
 
         val lsc = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(lsc);
 
-        val ar = new AppRecovery(le, ae, te, asdb, tdb, ControllerTestUtils.DEFAULT_CLUSTER_OP);
+        val ar = new AppRecovery(le, ae, te, lse, asdb, tdb, lsdb, ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)
@@ -91,11 +95,13 @@ class AppRecoveryTest extends ControllerTestBase {
         val te = mock(TaskEngine.class);
         val asdb = mock(ApplicationStateDB.class);
         val tdb = mock(TaskDB.class);
+        val lse = mock(LocalServiceLifecycleManagementEngine.class);
+        val lsdb = mock(LocalServiceStateDB.class);
 
         val lsc = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(lsc);
 
-        val ar = new AppRecovery(le, ae, te, asdb, tdb, ControllerTestUtils.DEFAULT_CLUSTER_OP);
+        val ar = new AppRecovery(le, ae, te, lse, asdb, tdb, lsdb, ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val specs = IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::appSpec)

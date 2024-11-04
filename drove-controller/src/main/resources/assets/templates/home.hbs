@@ -258,7 +258,7 @@
             {
                 'data' : 'name' ,
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/localservices/' + data + '">' + data + '</a>';
+                    return '<a href="/localservices/' + row['id'] + '">' + data + '</a>';
                 }
             },
             { 'data' : 'instancesPerHost' },

@@ -17,13 +17,16 @@
 package com.phonepe.drove.controller.resources;
 
 import com.phonepe.drove.auth.model.DroveUserRole;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.internal.KnownInstancesData;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.val;
 
@@ -39,6 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -50,12 +54,18 @@ public class InternalApis {
     private final ClusterResourcesDB resourcesDB;
     private final ApplicationStateDB applicationStateDB;
     private final TaskDB taskDB;
+    private final LocalServiceStateDB localServiceStateDB;
 
     @Inject
-    public InternalApis(ClusterResourcesDB resourcesDB, ApplicationStateDB applicationStateDB, TaskDB taskDB) {
+    public InternalApis(
+            ClusterResourcesDB resourcesDB,
+            ApplicationStateDB applicationStateDB,
+            TaskDB taskDB,
+            LocalServiceStateDB localServiceStateDB) {
         this.resourcesDB = resourcesDB;
         this.applicationStateDB = applicationStateDB;
         this.taskDB = taskDB;
+        this.localServiceStateDB = localServiceStateDB;
     }
 
     @GET
@@ -70,8 +80,9 @@ public class InternalApis {
         return knownInstances(executorId, () -> resourcesDB.currentSnapshot(executorId));
     }
 
-    private ApiResponse<KnownInstancesData> knownInstances(String executorId,
-                                                           Supplier<Optional<ExecutorHostInfo>> hostInfoGenerator) {
+    private ApiResponse<KnownInstancesData> knownInstances(
+            String executorId,
+            Supplier<Optional<ExecutorHostInfo>> hostInfoGenerator) {
         return hostInfoGenerator.get()
                 .map(ExecutorHostInfo::getNodeData)
                 .map(executorNodeData -> {
@@ -79,8 +90,11 @@ public class InternalApis {
                     val staleAppInstances = new HashSet<String>();
                     val taskInstances = new HashSet<String>();
                     val staleTaskInstances = new HashSet<String>();
-                    for(val instanceInfo : Objects.requireNonNullElse(executorNodeData.getInstances(), List.<InstanceInfo>of())) {
-                        if(applicationStateDB.application(instanceInfo.getAppId())
+                    val lsInstances = new HashSet<String>();
+                    val staleLSInstances = new HashSet<String>();
+                    for (val instanceInfo : Objects.requireNonNullElse(executorNodeData.getInstances(),
+                                                                       List.<InstanceInfo>of())) {
+                        if (applicationStateDB.application(instanceInfo.getAppId())
                                 .filter(applicationInfo -> applicationInfo.getInstances() > 0)
                                 .isPresent()) {
                             appInstances.add(instanceInfo.getInstanceId());
@@ -89,15 +103,50 @@ public class InternalApis {
                             staleAppInstances.add(instanceInfo.getInstanceId());
                         }
                     }
-                    for(val taskInfo : Objects.requireNonNullElse(executorNodeData.getTasks(), List.<TaskInfo>of())) {
-                        if(taskDB.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).isPresent()) {
+                    for (val taskInfo : Objects.requireNonNullElse(executorNodeData.getTasks(), List.<TaskInfo>of())) {
+                        if (taskDB.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).isPresent()) {
                             taskInstances.add(taskInfo.getInstanceId());
                         }
                         else {
                             staleTaskInstances.add(taskInfo.getInstanceId());
                         }
                     }
-                    return new KnownInstancesData(appInstances, staleAppInstances, taskInstances, staleTaskInstances);
+                    val instancesByService = Objects.requireNonNullElse(executorNodeData.getServiceInstances(),
+                                                                        List.<LocalServiceInstanceInfo>of())
+                            .stream()
+                            .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
+                                                           Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
+                                                                              Collectors.toUnmodifiableList())));
+                    instancesByService.forEach((serviceId, instances) -> {
+                        val service = localServiceStateDB.service(serviceId);
+                        if (service.isPresent()) {
+                            val extraInstances = service
+                                    .filter(serviceInfo -> serviceInfo.getInstancesPerHost() < instances.size())
+                                    .map(serviceInfo -> CommonUtils.sublist(instances,
+                                                                            serviceInfo.getInstancesPerHost(),
+                                                                            instances.size()))
+                                    .orElse(List.of());
+                            if (extraInstances.isEmpty()) {
+                                lsInstances.addAll(instances);
+                            }
+                            else {
+                                lsInstances.addAll(CommonUtils.sublist(instances,
+                                                                       0,
+                                                                       service.get().getInstancesPerHost()));
+                                staleLSInstances.addAll(extraInstances);
+                            }
+                        }
+                        else {
+                            staleLSInstances.addAll(instances);
+                        }
+                    });
+
+                    return new KnownInstancesData(appInstances,
+                                                  staleAppInstances,
+                                                  taskInstances,
+                                                  staleTaskInstances,
+                                                  lsInstances,
+                                                  staleLSInstances);
                 })
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.failure("No data found for executor " + executorId));

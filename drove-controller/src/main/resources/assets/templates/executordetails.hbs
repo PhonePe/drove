@@ -78,6 +78,35 @@
             </div>
         </div>
     </section>
+    <section>
+        <div class="row">
+            <div class="col">
+                <div class="row">
+                    <div class="col"><h4>Local Service Instances</h4></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered" id="service-instances">
+                            <thead>
+                            <tr>
+                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">Service Id</th>
+                                <th class="text-wrap">Port</th>
+                                <th class="text-wrap">Cores</th>
+                                <th class="text-wrap">Memory</th>
+                                <th class="text-wrap">Current Age</th>
+                                <th class="text-wrap">Created</th>
+                                <th class="text-wrap">Last Updated</th>
+                                <th class="text-wrap">State</th>
+                                <th class="text-wrap"></th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 {{/partial}}
 
 {{#partial "page_js"}}
@@ -120,7 +149,24 @@
             }
         ]
     });
-    function executorDataTransformer(res) {
+
+    function executorDataTransformerForAppInstances(res, instances) {
+        if(!res || !res.data) {
+            console.error("No data");
+            return [];
+        }
+        return executorDataTransformer(res, res.data.instances);
+    }
+
+    function executorDataTransformerForServiceInstances(res, instances) {
+        if(!res || !res.data) {
+            console.error("No data");
+            return [];
+        }
+        return executorDataTransformer(res, res.data.serviceInstances);
+    }
+
+    function executorDataTransformer(res, instances) {
         if(!res || !res.data) {
             console.error("No data");
             return [];
@@ -142,7 +188,6 @@
         summary.clear();
         summary.rows.add([esum]).draw();
 
-        var instances = res.data.instances;
         instances.forEach( (info, i) => {
                 if(info.localInfo) {
                     info['hostname'] = info.localInfo.hostname;
@@ -188,9 +233,42 @@
             'order' : [[5, 'desc']],
             'ajax' : {
                'url' : '/apis/v1/cluster/executors/{{executorId}}',
-               'dataSrc' : executorDataTransformer
+               'dataSrc' : executorDataTransformerForAppInstances
             }
     });
+    var si = $('#service-instances').DataTable({
+        'processing' : true,
+        'paging': true,
+        'dom' : "<'row'<'col-sm-12 col-md-2 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-1 col-sm-3'l>><'row'<'col-sm-12'tr>>",
+        'info' : false,
+        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
+        'columns' : [
+                { 'data' : 'instanceId' },
+                { 'data' : 'serviceId',
+                    'render' : function(data, type, row, meta) {
+                        return '<a href="/localservices/' + data + '">' + data + '</a>';
+                    }
+                },
+                { 'data' : 'ports' },
+                { 'data' : 'usedCores' },
+                { 'data' : 'usedMemory', 'render' : formatBytes },
+                { 'data' : 'created', 'render' : timeSince },
+                { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+                { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
+                { 'data' : 'state', 'render' : renderInstanceState },
+                { 'data' : 'logStream',
+                  'render' : function(data, type, row, meta) {
+                    return '<a href="/localservices/' + row['appId'] + '/instances/' + row['instanceId'] + '">Details</a>';
+                  }
+                }
+            ],
+            'order' : [[5, 'desc']],
+            'ajax' : {
+               'url' : '/apis/v1/cluster/executors/{{executorId}}',
+               'dataSrc' : executorDataTransformerForServiceInstances
+            }
+    });
+
     var ti = $('#tasks').DataTable({
         'processing' : true,
         'paging': true,

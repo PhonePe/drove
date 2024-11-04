@@ -7,8 +7,9 @@
                     <tr>
                         <th class="text-wrap">ID</th>
                         <th class="text-wrap">Name</th>
-                        <th class="text-wrap">Expected Instances</th>
-                        <th class="text-wrap">Healthy Instances</th>
+                        <th class="text-wrap">Instances Per Host</th>
+<!--                        <th class="text-wrap">Expected Instances</th>
+                        <th class="text-wrap">Healthy Instances</th>-->
                         <th class="text-wrap">CPU</th>
                         <th class="text-wrap">Memory</th>
                         <th class="text-wrap">State</th>
@@ -117,7 +118,8 @@
         'info' : false,
         'columnDefs': [
             {
-                'targets': 7,
+                //'targets': 7,
+                'targets': 6,
                 'data': null,
                 'defaultContent': '<button type="button" class="btn btn-small btn-primary" data-toggle="modal" data-target="#appSpec">Spec</button>'
             },
@@ -126,8 +128,9 @@
         'columns' : [
             { 'data' : 'id' },
             { 'data' : 'name' },
-            { 'data' : 'requiredInstances' },
-            { 'data' : 'healthyInstances' },
+            { 'data' : 'instancesPerHost' },
+            /*{ 'data' : 'knownInstances' },
+            { 'data' : 'healthyInstances' },*/
             { 'data' : 'totalCPUs' },
             { 'data' : 'totalMemory', 'render' : formatBytes },
             { 'data' : 'state', 'render' : renderLocalServiceState }

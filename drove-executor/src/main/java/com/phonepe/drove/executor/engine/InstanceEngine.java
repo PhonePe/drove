@@ -150,7 +150,7 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                     @Override
                     public Void visit(LocalServiceInstanceSpec localServiceInstanceSpec) {
                         MDC.put(LOG_ID,
-                                localServiceInstanceSpec.getServiceName() + ":" + localServiceInstanceSpec.getInstanceId());
+                                localServiceInstanceSpec.getServiceId() + ":" + localServiceInstanceSpec.getInstanceId());
                         return null;
                     }
                 });

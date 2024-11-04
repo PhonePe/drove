@@ -220,7 +220,7 @@ public class CachingProxyLocalServiceStateDB implements LocalServiceStateDB {
     }
 
     private void loadServices() {
-        log.info("Loading app info for all apps");
+        log.info("Loading app info for all local services");
         stateCache.clear();
         stateCache.putAll(root.services(0, Integer.MAX_VALUE)
                                   .stream()

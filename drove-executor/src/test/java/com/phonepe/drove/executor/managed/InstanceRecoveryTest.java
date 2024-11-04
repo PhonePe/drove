@@ -54,6 +54,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
+                                      localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
                                       clusterClient,
@@ -78,6 +79,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
+                                      localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
                                       clusterClient,
@@ -103,6 +105,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
+                                      localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
                                       clusterClient,
@@ -133,6 +136,7 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
 
             val ir = new InstanceRecovery(applicationInstanceEngine,
                                           taskInstanceEngine,
+                                          localServiceInstanceEngine,
                                           AbstractTestBase.MAPPER,
                                           ExecutorTestingUtils.DOCKER_CLIENT,
                                           clusterClient,

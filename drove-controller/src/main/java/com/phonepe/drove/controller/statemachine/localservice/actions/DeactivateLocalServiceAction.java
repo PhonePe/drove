@@ -59,6 +59,8 @@ public class DeactivateLocalServiceAction extends OperationDrivenLocalServiceAct
             }
         };
 
-        return StateData.from(currentState, toState);
+        return StateData.create(toState,
+                                stateDB.service(context.getServiceId())
+                                        .orElse(currentState.getData().withState(ActivationState.INACTIVE)));
     }
 }

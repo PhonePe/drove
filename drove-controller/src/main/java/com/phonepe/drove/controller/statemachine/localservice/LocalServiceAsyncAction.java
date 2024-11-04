@@ -41,13 +41,20 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
     protected StateData<LocalServiceState, LocalServiceInfo> handleEmptyTopology(
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState) {
-        return StateData.from(currentState, LocalServiceState.ACTIVE);
+        return StateData.from(currentState, determineState(currentState));
     }
 
     @Override
     protected StateData<LocalServiceState, LocalServiceInfo> errorState(
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             String message) {
-        return StateData.errorFrom(currentState, LocalServiceState.ACTIVE, message);
+        return StateData.errorFrom(currentState, determineState(currentState), message);
+    }
+
+    private static LocalServiceState determineState(StateData<LocalServiceState, LocalServiceInfo> currentState) {
+        return switch (currentState.getData().getState()) {
+            case ACTIVE -> LocalServiceState.ACTIVE;
+            case INACTIVE, UNKNOWN -> LocalServiceState.INACTIVE;
+        };
     }
 }

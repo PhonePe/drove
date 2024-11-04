@@ -18,10 +18,7 @@ package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.controller.ControllerMessageVisitor;
-import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
-import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
-import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
+import com.phonepe.drove.common.model.controller.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -60,6 +57,16 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
                 taskStateReportMessage.getHeader(),
                 stateUpdater.updateSingle(taskStateReportMessage.getResourceSnapshot(),
                                           taskStateReportMessage.getInstanceInfo())
+                ? MessageDeliveryStatus.ACCEPTED
+                : MessageDeliveryStatus.FAILED);
+    }
+
+    @Override
+    public MessageResponse visit(LocalServiceInstanceStateReportMessage localServiceStateReportMessage) {
+        return new MessageResponse(
+                localServiceStateReportMessage.getHeader(),
+                stateUpdater.updateSingle(localServiceStateReportMessage.getResourceSnapshot(),
+                                          localServiceStateReportMessage.getInstanceInfo())
                 ? MessageDeliveryStatus.ACCEPTED
                 : MessageDeliveryStatus.FAILED);
     }

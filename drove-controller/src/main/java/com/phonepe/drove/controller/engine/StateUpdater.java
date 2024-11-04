@@ -172,12 +172,19 @@ public class StateUpdater {
                 val instances = node.getInstances();
                 if (instances != null && !instances.isEmpty()) {
                     hasAnyData = true;
-                    anyDataUpdated = updateAllInstances(anyDataUpdated, instances);
+                    anyDataUpdated = updateAllAppInstances(anyDataUpdated, instances);
                 }
+
                 val tasks = node.getTasks();
                 if (tasks != null && !tasks.isEmpty()) {
                     hasAnyData = true;
                     anyDataUpdated = updateAllTasks(anyDataUpdated, tasks);
+                }
+
+                val serviceInstances = node.getServiceInstances();
+                if (serviceInstances != null && !serviceInstances.isEmpty()) {
+                    hasAnyData = true;
+                    anyDataUpdated = updateAllServiceInstances(anyDataUpdated, serviceInstances);
                 }
             }
             if (!hasAnyData || anyDataUpdated) {
@@ -263,7 +270,16 @@ public class StateUpdater {
             return anyDataUpdated;
         }
 
-        private boolean updateAllInstances(boolean anyDataUpdated, List<InstanceInfo> instances) {
+        private boolean updateAllAppInstances(boolean anyDataUpdated, List<InstanceInfo> instances) {
+            for (val instanceInfo : instances) {
+                if (updateInstanceInfo(instanceInfo)) {
+                    anyDataUpdated = true;
+                }
+            }
+            return anyDataUpdated;
+        }
+
+        private boolean updateAllServiceInstances(boolean anyDataUpdated, List<LocalServiceInstanceInfo> instances) {
             for (val instanceInfo : instances) {
                 if (updateInstanceInfo(instanceInfo)) {
                     anyDataUpdated = true;
@@ -356,6 +372,10 @@ public class StateUpdater {
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final TaskInfo instanceInfo) {
+        return updates.add(new InstanceUpdateData(snapshot, instanceInfo));
+    }
+
+    public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final LocalServiceInstanceInfo instanceInfo) {
         return updates.add(new InstanceUpdateData(snapshot, instanceInfo));
     }
 }

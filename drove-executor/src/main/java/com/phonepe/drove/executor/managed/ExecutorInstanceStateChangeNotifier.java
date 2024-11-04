@@ -19,13 +19,16 @@ package com.phonepe.drove.executor.managed;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
+import com.phonepe.drove.common.model.controller.LocalServiceInstanceStateReportMessage;
 import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.ExecutorCommunicator;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
@@ -45,17 +48,38 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
     private static final String STATE_CHANGE_HANDLER_NAME = "state-change-notifier";
     private final ResourceManager resourceDB;
     private final ExecutorCommunicator communicator;
-    private final ApplicationInstanceEngine engine;
-    private final TaskInstanceEngine taskEngine;
+    private final ApplicationInstanceEngine applicationInstanceEngine;
+    private final TaskInstanceEngine taskInstanceEngine;
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
 
     @Inject
     public ExecutorInstanceStateChangeNotifier(
-            ResourceManager resourceDB, ExecutorCommunicator communicator, ApplicationInstanceEngine engine,
-            TaskInstanceEngine taskEngine) {
+            ResourceManager resourceDB,
+            ExecutorCommunicator communicator,
+            ApplicationInstanceEngine applicationInstanceEngine,
+            TaskInstanceEngine taskInstanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine) {
         this.resourceDB = resourceDB;
         this.communicator = communicator;
-        this.engine = engine;
-        this.taskEngine = taskEngine;
+        this.applicationInstanceEngine = applicationInstanceEngine;
+        this.taskInstanceEngine = taskInstanceEngine;
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
+    }
+
+    @Override
+    public void start() throws Exception {
+        applicationInstanceEngine.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, this::handleStateChange);
+        taskInstanceEngine.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, this::handleStateChange);
+        localServiceInstanceEngine.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, this::handleStateChange);
+        log.info("State updater started");
+    }
+
+    @Override
+    public void stop() throws Exception {
+        applicationInstanceEngine.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
+        taskInstanceEngine.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
+        localServiceInstanceEngine.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
+        log.info("State updater stopped");
     }
 
     private void handleStateChange(final InstanceInfo instanceInfo) {
@@ -69,6 +93,7 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
             log.info("Sending message to controller failed with status: {}.", resp);
         }
     }
+
     private void handleStateChange(final TaskInfo task) {
         log.debug("Received task state change notification: {}", task);
         val executorId = task.getExecutorId();
@@ -81,17 +106,17 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
         }
     }
 
-    @Override
-    public void start() throws Exception {
-        engine.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, this::handleStateChange);
-        taskEngine.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, this::handleStateChange);
-        log.info("State updater started");
+    private void handleStateChange(LocalServiceInstanceInfo localServiceInstanceInfo) {
+        log.debug("Received local service instance state change notification: {}", localServiceInstanceInfo);
+        val executorId = localServiceInstanceInfo.getExecutorId();
+        val snapshot = ExecutorUtils.executorSnapshot(resourceDB.currentState(), executorId);
+        val resp = communicator.send(new LocalServiceInstanceStateReportMessage(
+                MessageHeader.executorRequest(),
+                snapshot,
+                localServiceInstanceInfo)).getStatus();
+        if (!resp.equals(MessageDeliveryStatus.ACCEPTED)) {
+            log.info("Sending message to controller failed with status: {}.", resp);
+        }
     }
 
-    @Override
-    public void stop() throws Exception {
-        engine.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
-        taskEngine.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
-        log.info("State updater stopped");
-    }
 }

@@ -47,6 +47,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
@@ -110,7 +111,7 @@ public class ControllerUtils {
             ClusterOpSpec clusterOpSpec,
             String serviceId,
             String instanceId,
-            InstanceState required,
+            LocalServiceInstanceState required,
             ControllerRetrySpecFactory retrySpecFactory) {
         val retryPolicy =
                 CommonUtils.<StateCheckStatus>policy(

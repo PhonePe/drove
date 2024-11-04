@@ -20,7 +20,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
-import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopLocalServiceInstanceMessage;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -29,7 +29,7 @@ import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
-import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import dev.failsafe.TimeoutExceededException;
@@ -120,12 +120,12 @@ public class StopSingleLocalServiceInstanceJob implements Job<Boolean> {
             log.warn("No node found in the cluster with ID {}.", executorId);
             return false;
         }
-        val stopMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                   new ExecutorAddress(executorId,
+        val stopMessage = new StopLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                              new ExecutorAddress(executorId,
                                                                        instanceInfo.getLocalInfo().getHostname(),
                                                                        node.getPort(),
                                                                        node.getTransportType()),
-                                                   instanceId);
+                                                              instanceId);
         val response = communicator.send(stopMessage);
         log.trace("Sent message to stop instance: {}/{}. Message: {}", serviceId, instanceId, stopMessage);
         if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
@@ -133,7 +133,7 @@ public class StopSingleLocalServiceInstanceJob implements Job<Boolean> {
             return false;
         }
         return ensureInstanceState(instanceInfoDB, clusterOpSpec,
-                                   serviceId, instanceId, InstanceState.STOPPED, retrySpecFactory);
+                                   serviceId, instanceId, LocalServiceInstanceState.STOPPED, retrySpecFactory);
     }
 
 }
