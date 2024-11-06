@@ -24,12 +24,19 @@ import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
+import java.util.Objects;
+
+import static com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE;
+import static com.phonepe.drove.models.localservice.LocalServiceState.INACTIVE;
 
 /**
  *
  */
 @Slf4j
-public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation> {
+public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceInfo, LocalServiceState,
+        LocalServiceActionContext, LocalServiceOperation> {
     protected final LocalServiceStateDB stateDB;
 
     protected LocalServiceAsyncAction(JobExecutor<Boolean> jobExecutor, LocalServiceStateDB stateDB) {
@@ -41,20 +48,24 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
     protected StateData<LocalServiceState, LocalServiceInfo> handleEmptyTopology(
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState) {
-        return StateData.from(currentState, determineState(currentState));
+        return determineState(currentState, null);
     }
 
     @Override
     protected StateData<LocalServiceState, LocalServiceInfo> errorState(
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             String message) {
-        return StateData.errorFrom(currentState, determineState(currentState), message);
+        return determineState(currentState, message);
     }
 
-    private static LocalServiceState determineState(StateData<LocalServiceState, LocalServiceInfo> currentState) {
-        return switch (currentState.getData().getState()) {
-            case ACTIVE -> LocalServiceState.ACTIVE;
-            case INACTIVE, UNKNOWN -> LocalServiceState.INACTIVE;
+    protected StateData<LocalServiceState, LocalServiceInfo> determineState(
+            StateData<LocalServiceState, LocalServiceInfo> currentState,
+            String errorMessage) {
+        val service = Objects.requireNonNull(stateDB.service(currentState.getData().getServiceId()).orElse(null));
+        val state = switch (service.getState()) {
+            case ACTIVE -> ACTIVE;
+            case INACTIVE, UNKNOWN -> INACTIVE;
         };
+        return StateData.create(state, service, errorMessage) ;
     }
 }

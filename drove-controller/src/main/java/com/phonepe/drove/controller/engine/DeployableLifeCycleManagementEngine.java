@@ -86,12 +86,12 @@ public abstract class DeployableLifeCycleManagementEngine<T, D, S extends Enum<S
                             retrySpecFactory,
                             (stateMachine, context) -> stateMachine
                                     .onStateChange()
-                                    .connect(newState -> handleAppStateUpdate(deployableObjectId,
-                                                                              context,
-                                                                              newState,
-                                                                              stateMachines,
-                                                                              defaultClusterOpSpec,
-                                                                              droveEventBus)));
+                                    .connect(newState -> handleStateUpdate(deployableObjectId,
+                                                                           context,
+                                                                           newState,
+                                                                           stateMachines,
+                                                                           defaultClusterOpSpec,
+                                                                           droveEventBus)));
 
                 }
                 if (!monitor.notifyUpdate(translateOp(operation, defaultClusterOpSpec))) {
@@ -150,7 +150,7 @@ public abstract class DeployableLifeCycleManagementEngine<T, D, S extends Enum<S
             ControllerRetrySpecFactory retrySpecFactory,
             BiConsumer<StateMachine<T, D, S, C, A>, C> signalConnector);
 
-    protected abstract void handleAppStateUpdate(
+    protected abstract void handleStateUpdate(
             String deployableId,
             C context,
             StateData<S, T> newState,

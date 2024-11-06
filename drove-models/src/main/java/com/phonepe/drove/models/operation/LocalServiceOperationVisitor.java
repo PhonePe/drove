@@ -35,4 +35,6 @@ public interface LocalServiceOperationVisitor<T> {
     T visit(LocalServiceDestroyOperation localServiceDestroyOperation);
 
     T visit(LocalServiceActivateOperation localServiceActivateOperation);
+
+    T visit(LocalServiceReplaceInstancesOperation localServiceReplaceInstancesOperation);
 }

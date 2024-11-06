@@ -51,6 +51,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
+
 /**
  *
  */
@@ -91,7 +93,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation) {
-        val serviceId = ((LocalServiceScaleOperation) operation).getServiceId();
+        val serviceId = safeCast(operation, LocalServiceScaleOperation.class).getServiceId();
         val instancesByExecutor = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
                 .stream()
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
@@ -156,7 +158,9 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
                                                 .map(instanceId -> new StopSingleLocalServiceInstanceJob(
                                                         currInfo.getServiceId(),
                                                         instanceId,
-                                                                ClusterOpSpec.DEFAULT,
+                                                        ClusterOpSpec.DEFAULT,
+                                                        scheduler,
+                                                        null,
                                                         stateDB,
                                                         clusterResourcesDB,
                                                         communicator,

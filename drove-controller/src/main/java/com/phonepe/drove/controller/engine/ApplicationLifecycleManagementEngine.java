@@ -151,7 +151,7 @@ public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleMan
     }
 
     @Override
-    protected void handleAppStateUpdate(
+    protected void handleStateUpdate(
             String appId,
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> newState,

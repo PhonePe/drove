@@ -254,6 +254,18 @@ public class ControllerUtils {
         return obj;
     }
 
+    public static <O extends LocalServiceOperation> O safeCast(
+            final LocalServiceOperation operation,
+            final Class<O> clazz) {
+        val obj = operation.getClass().equals(clazz)
+                  ? clazz.cast(operation)
+                  : null;
+        Objects.requireNonNull(obj,
+                               "Cannot cast op " + operation.getClass()
+                                       .getSimpleName() + " to " + clazz.getSimpleName());
+        return obj;
+    }
+
     public static <O extends TaskOperation> O safeCast(
             final TaskOperation taskOperation,
             final Class<O> clazz) {
@@ -722,7 +734,7 @@ public class ControllerUtils {
     }
 
     public static String deployableObjectId(LocalServiceOperation operation) {
-        return operation.accept(new LocalServiceOperationVisitor<String>() {
+        return operation.accept(new LocalServiceOperationVisitor<>() {
             @Override
             public String visit(LocalServiceCreateOperation localServiceCreateOperation) {
                 return ControllerUtils.deployableObjectId(localServiceCreateOperation.getSpec());
@@ -756,6 +768,11 @@ public class ControllerUtils {
             @Override
             public String visit(LocalServiceActivateOperation localServiceActivateOperation) {
                 return localServiceActivateOperation.getServiceId();
+            }
+
+            @Override
+            public String visit(LocalServiceReplaceInstancesOperation localServiceReplaceInstancesOperation) {
+                return localServiceReplaceInstancesOperation.getServiceId();
             }
         });
     }

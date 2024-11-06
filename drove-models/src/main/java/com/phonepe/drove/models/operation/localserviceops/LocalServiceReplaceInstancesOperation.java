@@ -16,43 +16,45 @@
 
 package com.phonepe.drove.models.operation.localserviceops;
 
-import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.LocalServiceOperation;
-import com.phonepe.drove.models.operation.LocalServiceOperationType;
-import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import com.phonepe.drove.models.operation.*;
+import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.Collections;
+import java.util.Set;
 
 /**
- * Restart a service on executor nodes
+ *
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceRestartOperation extends LocalServiceOperation {
+@With
+public class LocalServiceReplaceInstancesOperation extends LocalServiceOperation {
     @NotEmpty
     String serviceId;
 
+    Set<String> instanceIds;
+
     boolean stopFirst;
 
+    @NotNull
     @Valid
-    ClusterOpSpec clusterOpSpec;
-    public LocalServiceRestartOperation(
-            String serviceId,
-            boolean stopFirst,
-            ClusterOpSpec clusterOpSpec) {
-        super(LocalServiceOperationType.RESTART);
+    ClusterOpSpec opSpec;
+
+    public LocalServiceReplaceInstancesOperation(String serviceId, Set<String> instanceIds,
+                                                 boolean stopFirst,
+                                                 ClusterOpSpec opSpec) {
+        super(LocalServiceOperationType.REPLACE_INSTANCES);
         this.serviceId = serviceId;
+        this.instanceIds = instanceIds == null ? Collections.emptySet() : instanceIds;
         this.stopFirst = stopFirst;
-        this.clusterOpSpec = clusterOpSpec;
+        this.opSpec = opSpec;
     }
 
     @Override

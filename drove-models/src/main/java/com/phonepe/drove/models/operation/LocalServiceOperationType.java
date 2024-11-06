@@ -23,6 +23,7 @@ public enum LocalServiceOperationType {
     START,
     SCALE,
     DEACTIVATE,
+    REPLACE_INSTANCES,
     RESTART,
     UPDATE,
     ACTIVATE, DESTROY

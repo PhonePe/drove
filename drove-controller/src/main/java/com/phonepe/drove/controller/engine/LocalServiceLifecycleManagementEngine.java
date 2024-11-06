@@ -30,6 +30,8 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceCreateOperation;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceReplaceInstancesOperation;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceRestartOperation;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import com.phonepe.drove.statemachine.StateData;
@@ -42,6 +44,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 
@@ -57,6 +60,7 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
         LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
 
     private final LocalServiceStateDB stateDB;
+    private final ClusterResourcesDB clusterResourcesDB;
 
     @Inject
     public LocalServiceLifecycleManagementEngine(
@@ -76,6 +80,7 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
               monitorExecutor,
               defaultClusterOpSpec);
         this.stateDB = stateDB;
+        this.clusterResourcesDB = clusterResourcesDB;
     }
 
     @Override
@@ -87,7 +92,15 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
     protected LocalServiceOperation translateOp(
             LocalServiceOperation original,
             ClusterOpSpec defaultClusterOpSpec) {
-        return original; //TODO::LOCAL_SERVICE IF NEEDED
+        return original.accept(new LocalServiceOperationVisitorAdapter<>(original) {
+            @Override
+            public LocalServiceOperation visit(LocalServiceRestartOperation localServiceRestartOperation) {
+                return new LocalServiceReplaceInstancesOperation(localServiceRestartOperation.getServiceId(),
+                                                                 Set.of(),
+                                                                 localServiceRestartOperation.isStopFirst(),
+                                                                 localServiceRestartOperation.getClusterOpSpec());
+            }
+        });
     }
 
     @Override
@@ -138,7 +151,7 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
     }
 
     @Override
-    protected void handleAppStateUpdate(
+    protected void handleStateUpdate(
             String serviceId,
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> newState,
@@ -148,7 +161,7 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
             ClusterOpSpec defaultClusterOpSpec, DroveEventBus droveEventBus) {
         val state = newState.getState();
         log.info("Local Service state: {}", state);
-        if(/*state.equals(LocalServiceState.ACTIVE) || */state.equals(LocalServiceState.INACTIVE)) {
+        if (/*state.equals(LocalServiceState.ACTIVE) || */state.equals(LocalServiceState.INACTIVE)) {
 /*            val res = handleOperation(new LocalServiceScaleOperation(serviceId));
             if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                 log.error("Error sending command to state machine. Error: " + res.getMessages());
@@ -189,7 +202,9 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
             });
         }
 //        }
-        droveEventBus.publish(new DroveLocalServiceStateChangeEvent(localServiceMetadata(serviceId, context.getLocalServiceSpec(), newState)));
+        droveEventBus.publish(new DroveLocalServiceStateChangeEvent(localServiceMetadata(serviceId,
+                                                                                         context.getLocalServiceSpec(),
+                                                                                         newState)));
 
 
     }

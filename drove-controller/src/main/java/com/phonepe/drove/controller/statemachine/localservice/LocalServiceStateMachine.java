@@ -69,6 +69,11 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
                                  ScaleLocalServiceAction.class,
                                  ACTIVE,
                                  INACTIVE),
+                new Transition<>(RESTARTING,
+                                 ReplaceInstancesLocalServiceAction.class,
+                                 RESTARTING,
+                                 ACTIVE,
+                                 INACTIVE),
                 new Transition<>(DESTROY_REQUESTED,
                                  DestroyLocalServiceAction.class,
                                  DESTROYED));

@@ -62,4 +62,9 @@ public abstract class LocalServiceOperationVisitorAdapter<T> implements LocalSer
     public T visit(LocalServiceActivateOperation localServiceActivateOperation) {
         return defaultValue;
     }
+
+    @Override
+    public T visit(LocalServiceReplaceInstancesOperation localServiceReplaceInstancesOperation) {
+        return defaultValue;
+    }
 }
