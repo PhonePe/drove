@@ -97,6 +97,11 @@ public class RoutingLocalServiceAction extends LocalServiceAction {
             public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceReplaceInstancesOperation localServiceReplaceInstancesOperation) {
                 return Optional.of(StateData.from(currentState, LocalServiceState.RESTARTING));
             }
+
+            @Override
+            public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceStopInstancesOperation localServiceStopInstancesOperation) {
+                return Optional.of(StateData.from(currentState, LocalServiceState.STOP_INSTANCES_REQUESTED));
+            }
         });
     }
 }

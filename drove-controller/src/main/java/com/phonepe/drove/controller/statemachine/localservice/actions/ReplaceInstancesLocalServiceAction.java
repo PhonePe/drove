@@ -70,6 +70,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
     private final ThreadFactory threadFactory;
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
+    private final ClusterOpSpec defaultClusterOpSpec;
 
     @Inject
     public ReplaceInstancesLocalServiceAction(
@@ -82,7 +83,8 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
-            HttpCaller httpCaller) {
+            HttpCaller httpCaller,
+            ClusterOpSpec defaultClusterOpSpec) {
         super(jobExecutor, localServiceStateDB);
         this.localServiceStateDB = localServiceStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
@@ -93,6 +95,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
         this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
     }
 
 
@@ -155,7 +158,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
             log.info("Nothing done to replace instances for {}. No relevant instances found.", serviceId);
             return Optional.empty();
         }
-        val clusterOpSpec = Objects.requireNonNullElse(restartOp.getOpSpec(), ClusterOpSpec.DEFAULT);
+        val clusterOpSpec = Objects.requireNonNullElse(restartOp.getOpSpec(), defaultClusterOpSpec);
         val serviceInfo = localServiceStateDB.service(serviceId).orElse(null);
         if (null == serviceInfo) {
             return Optional.empty();

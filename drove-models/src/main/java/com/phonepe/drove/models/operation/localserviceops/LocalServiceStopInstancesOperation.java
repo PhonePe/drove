@@ -20,34 +20,40 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
+import java.util.Collections;
+import java.util.Set;
 
 /**
- * Scale number of service instances on executors
+ *
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceScaleOperation extends LocalServiceOperation {
+@With
+public class LocalServiceStopInstancesOperation extends LocalServiceOperation {
     @NotEmpty
     String serviceId;
+
+    @NotEmpty
+    Set<String> instanceIds;
 
     @Valid
     ClusterOpSpec opSpec;
 
-    public LocalServiceScaleOperation(
-            String serviceId, ClusterOpSpec opSpec) {
-        super(LocalServiceOperationType.SCALE);
+    public LocalServiceStopInstancesOperation(
+            String serviceId,
+            Set<String> instanceIds,
+            ClusterOpSpec opSpec) {
+        super(LocalServiceOperationType.STOP_INSTANCES);
         this.serviceId = serviceId;
+        this.instanceIds = instanceIds == null ? Collections.emptySet() : instanceIds;
         this.opSpec = opSpec;
     }
 

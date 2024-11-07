@@ -32,6 +32,7 @@ public enum LocalServiceState {
     ACTIVE(false),
     SCALING(false),
     RESTARTING(false),
+    STOP_INSTANCES_REQUESTED(false),
     DESTROY_REQUESTED(false),
     DESTROYED(true);
 

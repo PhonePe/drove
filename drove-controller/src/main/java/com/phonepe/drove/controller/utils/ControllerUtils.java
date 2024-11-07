@@ -774,6 +774,11 @@ public class ControllerUtils {
             public String visit(LocalServiceReplaceInstancesOperation localServiceReplaceInstancesOperation) {
                 return localServiceReplaceInstancesOperation.getServiceId();
             }
+
+            @Override
+            public String visit(LocalServiceStopInstancesOperation localServiceStopInstancesOperation) {
+                return localServiceStopInstancesOperation.getServiceId();
+            }
         });
     }
 }

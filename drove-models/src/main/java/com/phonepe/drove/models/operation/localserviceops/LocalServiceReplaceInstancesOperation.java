@@ -16,13 +16,15 @@
 
 package com.phonepe.drove.models.operation.localserviceops;
 
-import com.phonepe.drove.models.operation.*;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
+import com.phonepe.drove.models.operation.LocalServiceOperationType;
+import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.Set;
 
@@ -43,13 +45,14 @@ public class LocalServiceReplaceInstancesOperation extends LocalServiceOperation
 
     boolean stopFirst;
 
-    @NotNull
     @Valid
     ClusterOpSpec opSpec;
 
-    public LocalServiceReplaceInstancesOperation(String serviceId, Set<String> instanceIds,
-                                                 boolean stopFirst,
-                                                 ClusterOpSpec opSpec) {
+    public LocalServiceReplaceInstancesOperation(
+            String serviceId,
+            Set<String> instanceIds,
+            boolean stopFirst,
+            ClusterOpSpec opSpec) {
         super(LocalServiceOperationType.REPLACE_INSTANCES);
         this.serviceId = serviceId;
         this.instanceIds = instanceIds == null ? Collections.emptySet() : instanceIds;

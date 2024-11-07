@@ -46,6 +46,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -66,6 +67,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
     private final InstanceIdGenerator instanceIdGenerator;
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
+    private final ClusterOpSpec defaultClusterOpSpec;
 
     @Inject
     public ScaleLocalServiceAction(
@@ -77,7 +79,8 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ApplicationInstanceTokenManager tokenManager,
-            HttpCaller httpCaller) {
+            HttpCaller httpCaller,
+            ClusterOpSpec defaultClusterOpSpec) {
         super(jobExecutor, stateDB);
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -86,6 +89,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
         this.instanceIdGenerator = instanceIdGenerator;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
+        this.defaultClusterOpSpec = defaultClusterOpSpec;
     }
 
     @Override
@@ -93,13 +97,15 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation) {
-        val serviceId = safeCast(operation, LocalServiceScaleOperation.class).getServiceId();
+        val scaleOp = safeCast(operation, LocalServiceScaleOperation.class);
+        val serviceId = scaleOp.getServiceId();
         val instancesByExecutor = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
                 .stream()
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
         val currInfo = currentState.getData();
         val instancesPerHost = currInfo.getInstancesPerHost();
         val executors = clusterResourcesDB.currentSnapshot(true);
+        val clusterOpSpec = Objects.requireNonNullElse(scaleOp.getOpSpec(), defaultClusterOpSpec);
         return switch (currInfo.getState()) {
             case ACTIVE -> {
                 val newInstancesPerExecutor = executors.stream()
@@ -125,7 +131,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
                                                     return IntStream.range(0, entry.getValue())
                                                             .mapToObj(i -> new StartSingleLocalServiceInstanceJob(
                                                                     currInfo,
-                                                                    ClusterOpSpec.DEFAULT,
+                                                                    clusterOpSpec,
                                                                     scheduler,
                                                                     stateDB,
                                                                     communicator,
@@ -158,7 +164,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
                                                 .map(instanceId -> new StopSingleLocalServiceInstanceJob(
                                                         currInfo.getServiceId(),
                                                         instanceId,
-                                                        ClusterOpSpec.DEFAULT,
+                                                        clusterOpSpec,
                                                         scheduler,
                                                         null,
                                                         stateDB,
