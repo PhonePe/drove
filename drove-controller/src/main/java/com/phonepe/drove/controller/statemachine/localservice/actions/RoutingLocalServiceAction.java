@@ -64,8 +64,8 @@ public class RoutingLocalServiceAction extends LocalServiceAction {
             }
 
             @Override
-            public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceScaleOperation localServiceScaleOperation) {
-                return Optional.of(StateData.from(currentState, LocalServiceState.SCALING));
+            public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceAdjustInstancesOperation localServiceAdjustInstancesOperation) {
+                return Optional.of(StateData.from(currentState, LocalServiceState.ADJUSTING_INSTANCES));
             }
 
             @Override
@@ -75,7 +75,7 @@ public class RoutingLocalServiceAction extends LocalServiceAction {
 
             @Override
             public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceRestartOperation localServiceRestartOperation) {
-                return Optional.of(StateData.from(currentState, LocalServiceState.RESTARTING));
+                return Optional.of(StateData.from(currentState, LocalServiceState.REPLACING_INSTANCES));
             }
 
             @Override
@@ -95,12 +95,12 @@ public class RoutingLocalServiceAction extends LocalServiceAction {
 
             @Override
             public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceReplaceInstancesOperation localServiceReplaceInstancesOperation) {
-                return Optional.of(StateData.from(currentState, LocalServiceState.RESTARTING));
+                return Optional.of(StateData.from(currentState, LocalServiceState.REPLACING_INSTANCES));
             }
 
             @Override
             public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceStopInstancesOperation localServiceStopInstancesOperation) {
-                return Optional.of(StateData.from(currentState, LocalServiceState.STOP_INSTANCES_REQUESTED));
+                return Optional.of(StateData.from(currentState, LocalServiceState.STOPPING_INSTANCES));
             }
         });
     }

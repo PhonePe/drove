@@ -21,7 +21,7 @@ package com.phonepe.drove.models.operation;
  */
 public enum LocalServiceOperationType {
     START,
-    SCALE,
+    ADJUST_INSTANCES,
     DEACTIVATE,
     REPLACE_INSTANCES,
     RESTART,

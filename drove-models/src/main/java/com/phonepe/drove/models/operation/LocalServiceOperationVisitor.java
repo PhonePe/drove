@@ -24,7 +24,7 @@ import com.phonepe.drove.models.operation.localserviceops.*;
 public interface LocalServiceOperationVisitor<T> {
     T visit(LocalServiceCreateOperation localServiceCreateOperation);
 
-    T visit(LocalServiceScaleOperation localServiceScaleOperation);
+    T visit(LocalServiceAdjustInstancesOperation localServiceAdjustInstancesOperation);
 
     T visit(LocalServiceDeactivateOperation localServiceDeactivateOperation);
 

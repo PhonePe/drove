@@ -741,8 +741,8 @@ public class ControllerUtils {
             }
 
             @Override
-            public String visit(LocalServiceScaleOperation localServiceScaleOperation) {
-                return localServiceScaleOperation.getServiceId();
+            public String visit(LocalServiceAdjustInstancesOperation localServiceAdjustInstancesOperation) {
+                return localServiceAdjustInstancesOperation.getServiceId();
             }
 
             @Override

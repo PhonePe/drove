@@ -162,7 +162,7 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
         val state = newState.getState();
         log.info("Local Service state: {}", state);
         if (/*state.equals(LocalServiceState.ACTIVE) || */state.equals(LocalServiceState.INACTIVE)) {
-/*            val res = handleOperation(new LocalServiceScaleOperation(serviceId));
+/*            val res = handleOperation(new LocalServiceAdjustInstancesOperation(serviceId));
             if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
                 log.error("Error sending command to state machine. Error: " + res.getMessages());
             }*/

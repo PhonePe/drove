@@ -37,16 +37,16 @@ import javax.validation.constraints.NotEmpty;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceScaleOperation extends LocalServiceOperation {
+public class LocalServiceAdjustInstancesOperation extends LocalServiceOperation {
     @NotEmpty
     String serviceId;
 
     @Valid
     ClusterOpSpec opSpec;
 
-    public LocalServiceScaleOperation(
+    public LocalServiceAdjustInstancesOperation(
             String serviceId, ClusterOpSpec opSpec) {
-        super(LocalServiceOperationType.SCALE);
+        super(LocalServiceOperationType.ADJUST_INSTANCES);
         this.serviceId = serviceId;
         this.opSpec = opSpec;
     }

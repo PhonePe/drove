@@ -58,7 +58,7 @@ public class ApplicationMonitor implements Managed {
 
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
-    private ClusterStateDB clusterStateDB;
+    private final ClusterStateDB clusterStateDB;
     private final ApplicationLifecycleManagementEngine engine;
     private final LeadershipEnsurer leadershipEnsurer;
 

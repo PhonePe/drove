@@ -34,7 +34,7 @@ public abstract class LocalServiceOperationVisitorAdapter<T> implements LocalSer
     }
 
     @Override
-    public T visit(LocalServiceScaleOperation localServiceScaleOperation) {
+    public T visit(LocalServiceAdjustInstancesOperation localServiceAdjustInstancesOperation) {
         return defaultValue;
     }
 

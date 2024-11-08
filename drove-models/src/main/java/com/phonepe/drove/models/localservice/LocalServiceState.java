@@ -30,9 +30,9 @@ public enum LocalServiceState {
     DEACTIVATION_REQUESTED(false),
     INACTIVE(false),
     ACTIVE(false),
-    SCALING(false),
-    RESTARTING(false),
-    STOP_INSTANCES_REQUESTED(false),
+    ADJUSTING_INSTANCES(false),
+    REPLACING_INSTANCES(false),
+    STOPPING_INSTANCES(false),
     DESTROY_REQUESTED(false),
     DESTROYED(true);
 

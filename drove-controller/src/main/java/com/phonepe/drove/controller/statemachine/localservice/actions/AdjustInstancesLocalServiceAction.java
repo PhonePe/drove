@@ -39,7 +39,7 @@ import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
-import com.phonepe.drove.models.operation.localserviceops.LocalServiceScaleOperation;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceAdjustInstancesOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -58,7 +58,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
  *
  */
 @Slf4j
-public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
+public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
 
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
@@ -70,7 +70,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
     private final ClusterOpSpec defaultClusterOpSpec;
 
     @Inject
-    public ScaleLocalServiceAction(
+    public AdjustInstancesLocalServiceAction(
             JobExecutor<Boolean> jobExecutor,
             LocalServiceStateDB stateDB,
             ClusterResourcesDB clusterResourcesDB,
@@ -97,18 +97,18 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation) {
-        val scaleOp = safeCast(operation, LocalServiceScaleOperation.class);
+        val scaleOp = safeCast(operation, LocalServiceAdjustInstancesOperation.class);
         val serviceId = scaleOp.getServiceId();
         val instancesByExecutor = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
                 .stream()
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
         val currInfo = currentState.getData();
         val instancesPerHost = currInfo.getInstancesPerHost();
-        val executors = clusterResourcesDB.currentSnapshot(true);
+        val liveExecutors = clusterResourcesDB.currentSnapshot(true);
         val clusterOpSpec = Objects.requireNonNullElse(scaleOp.getOpSpec(), defaultClusterOpSpec);
         return switch (currInfo.getState()) {
             case ACTIVE -> {
-                val newInstancesPerExecutor = executors.stream()
+                val newInstancesPerExecutor = liveExecutors.stream()
                         .map(executorHostInfo -> Pair.of(executorHostInfo.getExecutorId(),
                                                          Math.max(0,
                                                                   instancesPerHost - instancesByExecutor.getOrDefault(
@@ -148,7 +148,7 @@ public class ScaleLocalServiceAction extends LocalServiceAsyncAction {
                                 .build());
             }
             case INACTIVE, UNKNOWN -> {
-                val extraInstances = executors.stream()
+                val extraInstances = liveExecutors.stream()
                         .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
                         .filter(serviceInstance -> LocalServiceInstanceState.RUNNING_STATES.contains(serviceInstance.getState()))
                         .map(LocalServiceInstanceInfo::getInstanceId)
