@@ -17,9 +17,12 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  *
@@ -30,11 +33,24 @@ public interface InstanceScheduler {
             final String instanceId,
             final DeploymentSpec applicationSpec);
 
+    default Optional<AllocatedExecutorNode> schedule(
+            final String schedulingSessionId,
+            final String instanceId,
+            final DeploymentSpec deploymentSpec,
+            final PlacementPolicy placementPolicy) {
+        return schedule(schedulingSessionId,
+                        instanceId,
+                        deploymentSpec,
+                        placementPolicy,
+                        EnumSet.of(ExecutorState.ACTIVE));
+    }
+
     Optional<AllocatedExecutorNode> schedule(
             final String schedulingSessionId,
             final String instanceId,
             final DeploymentSpec applicationSpec,
-            final PlacementPolicy placementPolicy);
+            final PlacementPolicy placementPolicy,
+            final Set<ExecutorState> allowedStates);
 
     void finaliseSession(String schedulingSessionId);
 

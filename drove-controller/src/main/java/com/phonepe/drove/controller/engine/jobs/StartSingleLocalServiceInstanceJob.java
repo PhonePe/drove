@@ -37,6 +37,7 @@ import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
@@ -47,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.List;
 
 import static com.phonepe.drove.common.CommonUtils.waitForAction;
@@ -145,7 +147,8 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         val instanceId = instanceIdGenerator.generate(localServiceSpec);
         val node = scheduler.schedule(
                         schedulingSessionId, instanceId, localServiceSpec,
-                        new MatchTagPlacementPolicy(executor.getNodeData().getHostname()))
+                        new MatchTagPlacementPolicy(executor.getNodeData().getHostname()),
+                        EnumSet.of(ExecutorState.ACTIVE, ExecutorState.UNREADY))
                 .orElse(null);
         if (null == node) {
             log.warn("No node found in the cluster that can provide required resources" +

@@ -27,6 +27,7 @@ import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.application.requirements.ResourceType;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -120,17 +121,21 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, String instanceId, DeploymentSpec applicationSpec,
-            final PlacementPolicy placementPolicy) {
+            String schedulingSessionId, String instanceId,
+            DeploymentSpec deploymentSpec,
+            final PlacementPolicy placementPolicy,
+            final Set<ExecutorState> allowedStates) {
 
 
         val sessionData = schedulingSessionData.computeIfAbsent(
                 schedulingSessionId,
-                id -> clusterSnapshot(applicationSpec));
+                id -> clusterSnapshot(deploymentSpec));
         val finalPlacementPolicy = placementPolicy;
         val selectedNode = clusterResourcesDB.selectNodes(
-                applicationSpec.getResources(),
-                allocatedNode -> validateNode(finalPlacementPolicy, sessionData, allocatedNode));
+                deploymentSpec.getResources(),
+                allowedStates,
+                allocatedNode -> validateNode(finalPlacementPolicy, sessionData, allocatedNode)
+                                                         );
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration

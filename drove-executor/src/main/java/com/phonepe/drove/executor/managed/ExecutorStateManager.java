@@ -17,9 +17,9 @@
 package com.phonepe.drove.executor.managed;
 
 import com.phonepe.drove.executor.discovery.ClusterClient;
-import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
-import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeException;
 import dev.failsafe.RetryPolicy;
@@ -46,13 +46,13 @@ public class ExecutorStateManager implements Managed {
     private final ConsumingFireForgetSignal<ExecutorState> stateChanged = new ConsumingFireForgetSignal<>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-    private final ApplicationInstanceEngine applicationInstanceEngine;
+    private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ClusterClient clusterClient;
 
     @Inject
-    public ExecutorStateManager(ApplicationInstanceEngine applicationInstanceEngine,
+    public ExecutorStateManager(LocalServiceInstanceEngine localServiceInstanceEngine,
                                 ClusterClient clusterClient) {
-        this.applicationInstanceEngine = applicationInstanceEngine;
+        this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.clusterClient = clusterClient;
     }
 
@@ -120,9 +120,9 @@ public class ExecutorStateManager implements Managed {
         try {
             Failsafe.with(retryPolicy)
                     .get(() -> {
-                        val currCounts = applicationInstanceEngine.currentState()
+                        val currCounts = localServiceInstanceEngine.currentState()
                                 .stream()
-                                .collect(Collectors.groupingBy(InstanceInfo::getAppId, Collectors.counting()));
+                                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId, Collectors.counting()));
                         return requiredResources.getRequiredInstances()
                                 .entrySet()
                                 .stream()
@@ -133,7 +133,7 @@ public class ExecutorStateManager implements Managed {
         catch (FailsafeException e) {
             log.error("Error determining state: ", e);
         }
-        log.info("All required app instances present. Activating executor");
+        log.info("All required local service instances present. Activating executor");
         updateState(ExecutorState.ACTIVE);
     }
 }

@@ -194,14 +194,17 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     @SneakyThrows
     @MonitoredFunction
     public Optional<AllocatedExecutorNode> selectNodes(
-            List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter) {
+            List<ResourceRequirement> requirements,
+            Set<ExecutorState> allowedExecutorState,
+            Predicate<AllocatedExecutorNode> filter) {
         val stamp = lock.writeLock();
         try {
             val rawNodes = new ArrayList<>(nodes.values());
             Collections.shuffle(rawNodes);
             return rawNodes
                     .stream()
-                    .filter(node -> !isBlackListedInternal(node.executorId))
+                    .filter(node -> inRequiredState(node.executorId, allowedExecutorState))
+//                    .filter(node -> !isBlackListedInternal(node.executorId))
                     .map(node -> ensureResource(node, requirements))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -308,6 +311,13 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                 .map(node -> ExecutorState.BLACKLISTED.equals(node.getNodeData().getExecutorState()))
                 .orElse(false)
                 || blackListedNodes.getOrDefault(executorId, false);
+    }
+
+    private boolean inRequiredState(String executorId, Set<ExecutorState> allowedStates) {
+        return (!allowedStates.contains(ExecutorState.BLACKLISTED) && blackListedNodes.getOrDefault(executorId, false))
+            || Optional.ofNullable(nodes.get(executorId))
+                .map(node -> allowedStates.contains(node.nodeData.getExecutorState()))
+                .orElse(false);
     }
 
     private boolean isActiveInternal(String executorId) {

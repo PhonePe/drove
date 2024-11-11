@@ -22,12 +22,14 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -104,7 +106,10 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
-        val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)), node -> true)
+        val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                           EnumSet.of(ExecutorState.ACTIVE),
+                                           node -> true
+                                          )
                 .orElse(null);
         assertNotNull(allocatedNode);
         //Ensure nodes are allocated correctly
@@ -169,11 +174,17 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                  .map(Map.Entry::getKey)
                                  .collect(Collectors.toSet()));
         }
-        assertNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)), node -> true)
+        assertNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
+                                  EnumSet.of(ExecutorState.ACTIVE),
+                                  node -> true
+                                 )
                            .orElse(null));
         db.deselectNode(allocatedNode.getExecutorId(), allocatedNode.getCpu(), allocatedNode.getMemory()); // Free up cores
         //Now it should be available
-        assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)), node -> true)
+        assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
+                                     EnumSet.of(ExecutorState.ACTIVE),
+                                     node -> true
+                                    )
                               .orElse(null));
     }
 

@@ -20,6 +20,7 @@ import com.phonepe.drove.controller.managed.ExecutorTopologyChanges;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -73,7 +74,8 @@ public abstract class ClusterResourcesDB {
     public abstract void update(ExecutorResourceSnapshot snapshot);
 
     public abstract Optional<AllocatedExecutorNode> selectNodes(
-            List<ResourceRequirement> requirements, Predicate<AllocatedExecutorNode> filter);
+            List<ResourceRequirement> requirements,
+            Set<ExecutorState> allowedExecutorState, Predicate<AllocatedExecutorNode> filter);
 
     public abstract void deselectNode(String executorId,
                                              CPUAllocation cpuAllocation,
