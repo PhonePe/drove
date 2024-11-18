@@ -183,16 +183,14 @@ public class ResponseEngine {
         val services = localServiceStateDB.services(from, size);
         return success(services.stream()
                                .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
-                                                                     info -> toLocalServiceSummary(info, Map.of()))));
-//                                                                     info -> toLocalServiceSummary(info, instancesForService(info.getServiceId())))));
+                                                                     info -> toLocalServiceSummary(info, instancesForService(info.getServiceId())))));
     }
 
     public ApiResponse<LocalServiceSummary> localService(final String serviceId) {
         return localServiceStateDB.service(serviceId)
                 .map(appInfo -> success(toLocalServiceSummary(
                         appInfo,
-                        Map.of())))
-//                        instancesForService(serviceId))))
+                        instancesForService(serviceId))))
                 .orElse(failure("Local service " + serviceId + " not found"));
     }
 
@@ -202,8 +200,7 @@ public class ResponseEngine {
                         EnumSet.allOf(LocalServiceInstanceState.class),
                         true)
                 .stream()
-                .collect(Collectors.groupingBy(
-                        LocalServiceInstanceInfo::getExecutorId));
+                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
     }
 
     public ApiResponse<LocalServiceSpec> localServiceSpec(final String serviceId) {
@@ -465,8 +462,7 @@ public class ResponseEngine {
         return new LocalServiceSummary(info.getServiceId(),
                                        spec.getName(),
                                        info.getInstancesPerHost(),
-/*                                       knownInstances,
-                                       healthyInstances,*/
+                                       healthyInstances,
                                        cpus,
                                        memory,
                                        spec.getTags(),

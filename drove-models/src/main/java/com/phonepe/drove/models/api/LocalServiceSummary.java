@@ -31,8 +31,7 @@ public class LocalServiceSummary {
     String id;
     String name;
     long instancesPerHost;
-/*    long knownInstances;
-    long healthyInstances;*/
+    long healthyInstances;
     long totalCPUs;
     long totalMemory;
     Map<String, String> tags;
