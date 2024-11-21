@@ -41,7 +41,6 @@ import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -168,7 +167,6 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         return true;
     }
 
-    @Nullable
     private static String executorId(
             String instanceId,
             AllocatedExecutorNode node,
