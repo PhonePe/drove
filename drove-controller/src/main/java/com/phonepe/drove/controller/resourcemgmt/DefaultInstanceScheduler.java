@@ -130,12 +130,10 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         val sessionData = schedulingSessionData.computeIfAbsent(
                 schedulingSessionId,
                 id -> clusterSnapshot(deploymentSpec));
-        val finalPlacementPolicy = placementPolicy;
         val selectedNode = clusterResourcesDB.selectNodes(
                 deploymentSpec.getResources(),
                 allowedStates,
-                allocatedNode -> validateNode(finalPlacementPolicy, sessionData, allocatedNode)
-                                                         );
+                allocatedNode -> validateNode(placementPolicy, sessionData, allocatedNode));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration
@@ -289,12 +287,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
             final AllocatedExecutorNode executorNode) {
         val allocatedExecutorId = executorNode.getExecutorId();
-/*        if (!executorNode.getExecutorState().equals(ExecutorState.ACTIVE)
-                && !placementPolicy.getType().equals(PlacementPolicyType.ALL)) {
-            log.debug("Cannot spin up app of type {} on executor {} in state {}",
-                      placementPolicy.getType(), executorNode.getExecutorId(), executorNode.getExecutorState());
-            return false;
-        }*/
+
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {

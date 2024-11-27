@@ -17,7 +17,6 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceStateMachine;
@@ -51,7 +50,7 @@ import java.util.function.BiConsumer;
 import static com.phonepe.drove.controller.utils.EventUtils.localServiceMetadata;
 
 /**
- * Manages application lifecycle
+ * Manages local service lifecycle
  */
 @Singleton
 @Slf4j
@@ -60,14 +59,12 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
         LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
 
     private final LocalServiceStateDB stateDB;
-    private final ClusterResourcesDB clusterResourcesDB;
 
     @Inject
     public LocalServiceLifecycleManagementEngine(
             ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext,
                     Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> factory,
             LocalServiceStateDB stateDB,
-            ClusterResourcesDB clusterResourcesDB,
             LocalServiceCommandValidator localServiceCommandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
@@ -80,7 +77,6 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
               monitorExecutor,
               defaultClusterOpSpec);
         this.stateDB = stateDB;
-        this.clusterResourcesDB = clusterResourcesDB;
     }
 
     @Override

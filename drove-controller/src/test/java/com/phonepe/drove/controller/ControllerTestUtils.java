@@ -28,6 +28,7 @@ import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.HTTPVerb;
@@ -46,6 +47,7 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.task.TaskSpec;
@@ -153,6 +155,56 @@ public class ControllerTestUtils {
                             Collections.emptyMap(),
                             null,
                             Collections.emptyList());
+    }
+
+    public static LocalServiceSpec localServiceSpec() {
+        return localServiceSpec(1);
+    }
+
+    public static LocalServiceSpec localServiceSpec(int version) {
+        return localServiceSpec("TEST_SPEC", version);
+    }
+
+    public static LocalServiceSpec localServiceSpec(final String name, final int version) {
+        return new LocalServiceSpec(name,
+                                   String.format("%05d", version),
+                                   new DockerCoordinates(CommonTestUtils.LOCAL_SERVICE_IMAGE_NAME, Duration.seconds(100)),
+                                   List.of(new PortSpec("main", 8000, PortType.HTTP)),
+                                   List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                                   List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
+                                   JobType.LOCAL_SERVICE,
+                                   LocalLoggingSpec.DEFAULT,
+                                   List.of(new CPURequirement(1), new MemoryRequirement(512)),
+                                   new LocalPlacementPolicy(false),
+                                   new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                                                       "main",
+                                                                       "/",
+                                                                       HTTPVerb.GET,
+                                                                       Collections.singleton(200),
+                                                                       "",
+                                                                       Duration.seconds(1),
+                                                                       false),
+                                                 Duration.seconds(1),
+                                                 Duration.seconds(3),
+                                                 3,
+                                                 Duration.seconds(0)),
+                                   new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                                                       "main",
+                                                                       "/",
+                                                                       HTTPVerb.GET,
+                                                                       Collections.singleton(200),
+                                                                       "",
+                                                                       Duration.seconds(1),
+                                                                       false),
+                                                 Duration.seconds(1),
+                                                 Duration.seconds(3),
+                                                 3,
+                                                 Duration.seconds(1)),
+                                   Collections.emptyMap(),
+                                   Collections.emptyMap(),
+                                   null,
+                                   Collections.emptyList(),
+                                   null);
     }
 
     public static AllocatedExecutorNode allocatedExecutorNode(int port) {

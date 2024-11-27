@@ -262,7 +262,7 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
         val instanceId = getSingleInstanceId(appId);
         assertNotNull(instanceId);
         instanceInfoDB.deleteInstanceState(appId, instanceId);
-        executor.dropInstance(instanceId);
+        executor.dropAppInstance(instanceId);
         sendCommand(appId, new ApplicationRecoverOperation(appId), RUNNING);
         suspendApp(appId);
         destroyApp(appId);

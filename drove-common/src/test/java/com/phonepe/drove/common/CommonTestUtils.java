@@ -42,6 +42,7 @@ import static org.awaitility.Awaitility.await;
 public class CommonTestUtils {
     public static final String APP_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server-httplib:releases-0.2";
     public static final String TASK_IMAGE_NAME = dockerRepoPrefix() + "/test-task:releases-0.1";
+    public static final String LOCAL_SERVICE_IMAGE_NAME = dockerRepoPrefix() + "/perf-test-server-httplib:releases-0.2";
 
     private static String dockerRepoPrefix() {
         val prefix = System.getProperty("DOCKER_REPO_PREFIX");

@@ -26,10 +26,7 @@ import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.google.common.collect.ImmutableList;
 import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.common.model.ApplicationInstanceSpec;
-import com.phonepe.drove.common.model.MessageDeliveryStatus;
-import com.phonepe.drove.common.model.MessageHeader;
-import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
@@ -193,6 +190,82 @@ public class ExecutorTestingUtils {
                                     List.of(DirectDeviceSpec.builder()
                                                     .pathOnHost("/dev/random")
                                                     .build()));
+    }
+
+    public static LocalServiceInstanceSpec testLocalServiceInstanceSpec() {
+        return testLocalServiceInstanceSpec(CommonTestUtils.LOCAL_SERVICE_IMAGE_NAME);
+    }
+
+    public static LocalServiceInstanceSpec testLocalServiceInstanceSpec(final String imageName) {
+        return testLocalServiceInstanceSpec(imageName, 3);
+    }
+
+    public static LocalServiceInstanceSpec testLocalServiceInstanceSpec(final String imageName, int attempt) {
+        return testLocalServiceInstanceSpec(imageName, attempt, false);
+    }
+
+    public static LocalServiceInstanceSpec testLocalServiceInstanceSpec(final String imageName, int attempt, boolean useHttps) {
+        val protocol = useHttps ? Protocol.HTTPS : Protocol.HTTP;
+        val portType = useHttps ? PortType.HTTPS : PortType.HTTP;
+        return new LocalServiceInstanceSpec("T001",
+                                           "TEST_SPEC",
+                                           UUID.randomUUID().toString(),
+                                           new DockerCoordinates(imageName, Duration.seconds(100)),
+                                           ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                       Set.of(2, 3))),
+                                                            new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                           Collections.singletonList(new PortSpec("main", 8000, portType)),
+                                           List.of(new MountedVolume("/tmp",
+                                                                     "/tmp",
+                                                                     MountedVolume.MountMode.READ_ONLY)),
+                                           List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
+                                           new CheckSpec(new HTTPCheckModeSpec(protocol,
+                                                                               "main",
+                                                                               "/",
+                                                                               HTTPVerb.GET,
+                                                                               Collections.singleton(200),
+                                                                               "",
+                                                                               Duration.seconds(1),
+                                                                               useHttps),
+                                                         Duration.seconds(1),
+                                                         Duration.seconds(3),
+                                                         attempt,
+                                                         Duration.seconds(0)),
+                                           new CheckSpec(new HTTPCheckModeSpec(protocol,
+                                                                               "main",
+                                                                               "/",
+                                                                               HTTPVerb.GET,
+                                                                               Collections.singleton(200),
+                                                                               "",
+                                                                               Duration.seconds(1),
+                                                                               useHttps),
+                                                         Duration.seconds(1),
+                                                         Duration.seconds(3),
+                                                         attempt,
+                                                         Duration.seconds(1)),
+                                           LocalLoggingSpec.DEFAULT,
+                                           Collections.emptyMap(),
+                                           imageName.equals(CommonTestUtils.APP_IMAGE_NAME)
+                                           ? List.of("./entrypoint.sh", "arg1", "arg2")
+                                           : null,
+                                           List.of(DirectDeviceSpec.builder()
+                                                           .pathOnHost("/dev/random")
+                                                           .pathInContainer("/dev/random")
+                                                           .permissions(DirectDeviceSpec.DirectDevicePermissions.ALL)
+                                                           .build()),
+                                           new PreShutdownSpec(List.of(new HTTPCheckModeSpec(protocol,
+                                                                                             "main",
+                                                                                             "/",
+                                                                                             HTTPVerb.GET,
+                                                                                             Collections.singleton(200),
+                                                                                             "",
+                                                                                             Duration.seconds(1),
+                                                                                             useHttps),
+                                                                       new CmdCheckModeSpec("echo -n 1"),
+                                                                       new CmdCheckModeSpec("SomeWrongCommand")
+                                                                      ),
+                                                               Duration.seconds(1)),
+                                           "TestToken");
     }
 
     public static ExecutorAddress localAddress() {

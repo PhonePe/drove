@@ -24,6 +24,7 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 
 import java.util.Date;
@@ -37,6 +38,7 @@ import java.util.Map;
 @Jacksonized
 @Builder
 @AllArgsConstructor
+@With
 public class LocalServiceInstanceInfo implements DeployedInstanceInfo {
     String serviceId;
     String serviceName;
