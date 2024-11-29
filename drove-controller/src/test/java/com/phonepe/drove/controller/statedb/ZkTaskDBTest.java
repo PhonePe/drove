@@ -16,15 +16,16 @@
 
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.apache.curator.test.TestingCluster;
+import org.apache.curator.framework.CuratorFramework;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -33,46 +34,40 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.common.CommonUtils.buildCurator;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
  */
+@ExtendWith(ZookeeperTestExtension.class)
 class ZkTaskDBTest extends ControllerTestBase {
 
     @Test
     @SneakyThrows
-    void testDB() {
-        try(val cluster = new TestingCluster(1)) {
-            cluster.start();
-            try (val curator = buildCurator(new ZkConfig().setConnectionString(cluster.getConnectString())
-                                                     .setNameSpace("DTEST"))) {
-                curator.start();
-                val tdb = new ZkTaskDB(curator, MAPPER);
-                val sourceAppIds = new HashSet<String>();
-                val genData = IntStream.rangeClosed(1, 10)
-                        .mapToObj(i -> "TS_" + i)
-                        .peek(appName -> sourceAppIds.add(appName))
-                        .flatMap(appName -> IntStream.rangeClosed(1, 100).mapToObj(j -> {
-                            val ts = ControllerTestUtils.taskSpec(appName, "TID-" + j);
-                            return ControllerTestUtils.generateTaskInfo(ts, j);
-                        }))
-                        .peek(taskInfo -> tdb.updateTask(taskInfo.getSourceAppName(), taskInfo.getTaskId(), taskInfo))
-                        .collect(Collectors.groupingBy(TaskInfo::getSourceAppName));
-                val r = tdb.tasks(sourceAppIds, EnumSet.allOf(TaskState.class), false);
-                genData.forEach((appName, tasks) -> {
-                    final var expected = new TreeSet<TaskInfo>(Comparator.comparing(TaskInfo::getTaskId));
-                    expected.addAll(tasks);
-                    assertTrue(expected.containsAll(r.get(appName)));
-                    tasks.forEach(taskInfo -> {
-                        assertEquals(taskInfo, tdb.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).orElse(null));
-                        assertTrue(tdb.deleteTask(taskInfo.getSourceAppName(), taskInfo.getTaskId()));
-                        assertTrue(tdb.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).isEmpty());
-                    });
-                });
-            }
-        }
+    void testDB(final CuratorFramework curator) {
+        val tdb = new ZkTaskDB(curator, MAPPER);
+        val sourceAppIds = new HashSet<String>();
+        val genData = IntStream.rangeClosed(1, 10)
+                .mapToObj(i -> "TS_" + i)
+                .peek(sourceAppIds::add)
+                .flatMap(appName -> IntStream.rangeClosed(1, 100).mapToObj(j -> {
+                    val ts = ControllerTestUtils.taskSpec(appName, "TID-" + j);
+                    return ControllerTestUtils.generateTaskInfo(ts, j);
+                }))
+                .peek(taskInfo -> tdb.updateTask(taskInfo.getSourceAppName(), taskInfo.getTaskId(), taskInfo))
+                .collect(Collectors.groupingBy(TaskInfo::getSourceAppName));
+        val r = tdb.tasks(sourceAppIds, EnumSet.allOf(TaskState.class), false);
+        genData.forEach((appName, tasks) -> {
+            final var expected = new TreeSet<TaskInfo>(Comparator.comparing(TaskInfo::getTaskId));
+            expected.addAll(tasks);
+            assertTrue(expected.containsAll(r.get(appName)));
+            tasks.forEach(taskInfo -> {
+                assertEquals(taskInfo, tdb.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).orElse(null));
+                assertTrue(tdb.deleteTask(taskInfo.getSourceAppName(), taskInfo.getTaskId()));
+                assertTrue(tdb.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).isEmpty());
+            });
+        });
     }
 
 }
