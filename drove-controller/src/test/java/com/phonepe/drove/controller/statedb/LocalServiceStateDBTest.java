@@ -19,12 +19,14 @@ package com.phonepe.drove.controller.statedb;
 import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -39,16 +41,24 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests {@link ZKLocalServiceStateDB}
  */
 @ExtendWith(ZookeeperTestExtension.class)
-class ZKLocalServiceStateDBTest extends ControllerTestBase {
+class LocalServiceStateDBTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testServiceManagement(CuratorFramework curator) {
-        val db = new ZKLocalServiceStateDB(curator, MAPPER);
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val s = new ConsumingSyncSignal<Boolean>();
+        when(le.onLeadershipStateChanged()).thenReturn(s);
+        val db = new CachingProxyLocalServiceStateDB(new ZKLocalServiceStateDB(curator, MAPPER), le);
+        le.onLeadershipStateChanged().dispatch(true);
+
         {
             val spec = ControllerTestUtils.localServiceSpec();
             val serviceId = ControllerUtils.deployableObjectId(spec);
@@ -80,7 +90,13 @@ class ZKLocalServiceStateDBTest extends ControllerTestBase {
 
     @Test
     void testInstanceManagement(CuratorFramework curator) {
-        val db = new ZKLocalServiceStateDB(curator, MAPPER);
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val s = new ConsumingSyncSignal<Boolean>();
+        when(le.onLeadershipStateChanged()).thenReturn(s);
+        val db = new CachingProxyLocalServiceStateDB(new ZKLocalServiceStateDB(curator, MAPPER), le);
+        le.onLeadershipStateChanged().dispatch(true);
+
         val spec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(spec);
 
