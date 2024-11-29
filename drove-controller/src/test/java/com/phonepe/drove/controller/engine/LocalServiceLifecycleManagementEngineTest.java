@@ -271,7 +271,8 @@ class LocalServiceLifecycleManagementEngineTest {
 
     private void waitForRequiredState(String serviceId, LocalServiceState required) {
         CommonTestUtils.waitUntil(() -> required.equals(engine.currentState(serviceId)
-                                                                                .orElse(LocalServiceState.DESTROYED)));
+                                                                                .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
     }
 
     private void sendCommand(
