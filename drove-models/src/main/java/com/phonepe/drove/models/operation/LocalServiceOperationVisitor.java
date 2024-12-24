@@ -30,7 +30,7 @@ public interface LocalServiceOperationVisitor<T> {
 
     T visit(LocalServiceRestartOperation localServiceRestartOperation);
 
-    T visit(LocalServiceUpdateOperation localServiceUpdateOperation);
+    T visit(LocalServiceUpdateInstanceCountOperation localServiceUpdateInstanceCountOperation);
 
     T visit(LocalServiceDestroyOperation localServiceDestroyOperation);
 

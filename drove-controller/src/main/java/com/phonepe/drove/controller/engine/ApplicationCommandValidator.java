@@ -28,10 +28,6 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.PortSpec;
-import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
-import com.phonepe.drove.models.application.checks.CheckSpec;
-import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
-import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -48,11 +44,14 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.*;
 import static com.phonepe.drove.models.application.ApplicationState.*;
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
@@ -153,10 +152,10 @@ public class ApplicationCommandValidator implements CommandValidator<Application
                 errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
                                  + " is undefined. Defined port names: " + ports.keySet());
             }
-            errs.addAll(ControllerUtils.ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
-            errs.addAll(ControllerUtils.ensureCmdlArgs(spec.getArgs(), controllerOptions));
-            errs.addAll(ControllerUtils.checkDeviceDisabled(spec.getDevices(), controllerOptions));
-            if(ControllerUtils.hasLocalPolicy(spec.getPlacementPolicy())) {
+            errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
+            errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
+            errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
+            if(hasLocalPolicy(spec.getPlacementPolicy())) {
                 errs.add("Local service placement is not allowed for apps");
             }
             return errs.isEmpty()
@@ -242,24 +241,6 @@ public class ApplicationCommandValidator implements CommandValidator<Application
                 return ValidationResult.failure(errs);
             }
             return ValidationResult.success();
-        }
-
-        private static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
-            return spec.getMode()
-                    .accept(new CheckModeSpecVisitor<>() {
-                        @Override
-                        public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
-                            return ports.containsKey(httpCheck.getPortName())
-                                   ? Optional.empty()
-                                   : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
-                                                         + ". Available ports: " + ports.keySet());
-                        }
-
-                        @Override
-                        public Optional<String> visit(CmdCheckModeSpec cmdCheck) {
-                            return Optional.empty();
-                        }
-                    });
         }
 
     }

@@ -30,6 +30,11 @@ import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
+import com.phonepe.drove.models.application.checks.CheckSpec;
+import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
+import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
@@ -703,7 +708,7 @@ public class ControllerUtils {
             public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
                 return compositePlacementPolicy.getPolicies()
                         .stream()
-                        .anyMatch(policy -> hasLocalPolicy(policy));
+                        .anyMatch(ControllerUtils::hasLocalPolicy);
             }
 
             @Override
@@ -788,8 +793,8 @@ public class ControllerUtils {
             }
 
             @Override
-            public String visit(LocalServiceUpdateOperation localServiceUpdateOperation) {
-                return localServiceUpdateOperation.getServiceId();
+            public String visit(LocalServiceUpdateInstanceCountOperation localServiceUpdateInstanceCountOperation) {
+                return localServiceUpdateInstanceCountOperation.getServiceId();
             }
 
             @Override
@@ -812,5 +817,23 @@ public class ControllerUtils {
                 return localServiceStopInstancesOperation.getServiceId();
             }
         });
+    }
+
+    public static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
+        return spec.getMode()
+                .accept(new CheckModeSpecVisitor<>() {
+                    @Override
+                    public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
+                        return ports.containsKey(httpCheck.getPortName())
+                               ? Optional.empty()
+                               : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
+                                                     + ". Available ports: " + ports.keySet());
+                    }
+
+                    @Override
+                    public Optional<String> visit(CmdCheckModeSpec cmdCheck) {
+                        return Optional.empty();
+                    }
+                });
     }
 }

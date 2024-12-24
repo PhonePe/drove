@@ -16,23 +16,18 @@
 
 package com.phonepe.drove.controller.engine;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.models.application.PortSpec;
-import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
-import com.phonepe.drove.models.application.checks.CheckSpec;
-import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
-import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceType;
-import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
-import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
@@ -43,7 +38,6 @@ import io.appform.functionmetrics.MonitoredFunction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -70,21 +64,26 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
     private static final Map<LocalServiceState, Set<LocalServiceOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<LocalServiceState, Set<LocalServiceOperationType>>builder()
             .put(LocalServiceState.INIT, Set.of())
-            .put(LocalServiceState.INACTIVE, Set.of(ACTIVATE, ADJUST_INSTANCES, DESTROY))
             .put(LocalServiceState.ACTIVATION_REQUESTED, Set.of())
             .put(LocalServiceState.DESTROY_REQUESTED, Set.of())
-            .put(LocalServiceState.ACTIVE,
-                 Set.of(DEACTIVATE, ADJUST_INSTANCES, REPLACE_INSTANCES, RESTART, STOP_INSTANCES, UPDATE))
             .put(LocalServiceState.DEACTIVATION_REQUESTED, Set.of())
             .put(LocalServiceState.ADJUSTING_INSTANCES, Set.of())
             .put(LocalServiceState.REPLACING_INSTANCES, Set.of())
             .put(LocalServiceState.STOPPING_INSTANCES, Set.of())
             .put(LocalServiceState.DESTROYED, Set.of())
+            .put(LocalServiceState.INACTIVE, Set.of(ACTIVATE, ADJUST_INSTANCES, DESTROY, UPDATE_INSTANCE_COUNT))
+            .put(LocalServiceState.ACTIVE,
+                 Set.of(DEACTIVATE, ADJUST_INSTANCES, REPLACE_INSTANCES, RESTART, STOP_INSTANCES))
             .build();
 
     private final LocalServiceStateDB localServiceStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerOptions controllerOptions;
+
+    @VisibleForTesting
+    static List<LocalServiceOperationType> validOpsForState(final LocalServiceState state) {
+        return VALID_OPS_TABLE.getOrDefault(state, Set.of()).stream().sorted(Comparator.comparing(Enum::name)).toList();
+    }
 
     @Override
     @MonitoredFunction
@@ -97,7 +96,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
         val serviceId = deployableObjectId(operation);
 
         if (Strings.isNullOrEmpty(serviceId)) {
-            return ValidationResult.failure("no app id found in operation");
+            return ValidationResult.failure("No local service id found in operation");
         }
         if (!operation.getType().equals(START)) {
             val currState = engine.currentState(serviceId).orElse(null);
@@ -113,7 +112,8 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
                 else {
                     return ValidationResult.failure(
                             "Only " + allowedOpTypes.stream().sorted(Comparator.comparing(Enum::name)).toList()
-                                    + " allowed for local service " + serviceId + " as it is in " + currState + " state");
+                                    + " allowed for local service " + serviceId + " as it is in " + currState + " " +
+                                    "state");
                 }
             }
         }
@@ -133,47 +133,10 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
                 LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
                 LocalServiceOperation>> engine;
 
-/*        private ValidationResult ensureResources(
-                final LocalServiceOperation operation,
-                long requiredNewInstances) {
-            val executorCount = clusterResourcesDB.executorCount(true);
-            if (executorCount == 0) {
-                return ValidationResult.failure("No executors on cluster");
-            }
-            val spec = localServiceStateDB.service(serviceId).map(LocalServiceInfo::getSpec).orElse(null);
-            if (null == spec) {
-                return ValidationResult.failure("No spec found for local service " + serviceId);
-            }
-            val errs = new ArrayList<String>();
-            checkResources(clusterResourcesDB, spec, requiredNewInstances, errs);
-            if (!errs.isEmpty()) {
-                return ValidationResult.failure(errs);
-            }
-            return ValidationResult.success();
-        }*/
-
-        private static Optional<String> validateCheckSpec(CheckSpec spec, Map<String, PortSpec> ports) {
-            return spec.getMode()
-                    .accept(new CheckModeSpecVisitor<>() {
-                        @Override
-                        public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
-                            return ports.containsKey(httpCheck.getPortName())
-                                   ? Optional.empty()
-                                   : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
-                                                         + ". Available ports: " + ports.keySet());
-                        }
-
-                        @Override
-                        public Optional<String> visit(CmdCheckModeSpec cmdCheck) {
-                            return Optional.empty();
-                        }
-                    });
-        }
-
         @Override
         public ValidationResult visit(LocalServiceCreateOperation createOperation) {
             if (engine.exists(serviceId)) {
-                return ValidationResult.failure("App " + serviceId + " already exists");
+                return ValidationResult.failure("Local service " + serviceId + " already exists");
             }
             val errs = new ArrayList<String>();
             val spec = createOperation.getSpec();
@@ -193,9 +156,9 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
             errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
             errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
-            /*if (hasLocalPolicy(spec.getPlacementPolicy())) {
-                errs.add("Local service placement is not allowed for apps");
-            }*/
+            if (!hasLocalPolicy(spec.getPlacementPolicy())) {
+                errs.add("Only local placement is allowed for local services");
+            }
             return errs.isEmpty()
                    ? ValidationResult.success()
                    : ValidationResult.failure(errs);
@@ -217,8 +180,15 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
         }
 
         @Override
-        public ValidationResult visit(LocalServiceUpdateOperation localServiceUpdateOperation) {
-            return null; //TODO
+        public ValidationResult visit(LocalServiceUpdateInstanceCountOperation localServiceUpdateInstanceCountOperation) {
+            return localServiceStateDB.service(localServiceUpdateInstanceCountOperation.getServiceId())
+                    .filter(service -> {
+                        val policy = (LocalPlacementPolicy) service.getSpec().getPlacementPolicy();
+                        return !policy.isHostLevel();
+                    })
+                    .map(s -> ValidationResult.success())
+                    .orElse(ValidationResult.failure(
+                            "Update is allowed for services that do not have Host Level option set"));
         }
 
         @Override
@@ -233,32 +203,30 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
 
         @Override
         public ValidationResult visit(LocalServiceReplaceInstancesOperation replaceInstancesOperation) {
-            val instancesToBeReplaced = replaceInstancesOperation.getInstanceIds();
-            if (instancesToBeReplaced != null && !instancesToBeReplaced.isEmpty()) {
-                val unknownInstances = instancesToBeReplaced.stream()
-                        .filter(instanceId -> localServiceStateDB.instance(serviceId, instanceId)
-                                .filter(instance -> instance.getState().equals(HEALTHY))
-                                .isEmpty())
-                        .toList();
-                if (!unknownInstances.isEmpty()) {
-                    return ValidationResult.failure("There are no replaceable healthy instances with ids: " + unknownInstances);
-                }
+            val unknownInstances = filterInvalidIds(replaceInstancesOperation.getInstanceIds());
+            if (!unknownInstances.isEmpty()) {
+                return ValidationResult.failure("There are no replaceable healthy instances with ids: " + unknownInstances);
             }
             return ValidationResult.success();
         }
 
         @Override
         public ValidationResult visit(LocalServiceStopInstancesOperation stopInstancesOperation) {
-            val validIds = localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
+            val unknownInstances = filterInvalidIds(stopInstancesOperation.getInstanceIds());
+            if (!unknownInstances.isEmpty()) {
+                return ValidationResult.failure("There are no healthy instances with ids: " + unknownInstances);
+            }
+            return ValidationResult.success();
+
+        }
+
+        private List<String> filterInvalidIds(Collection<String> instances) {
+            return Objects.requireNonNullElse(instances, List.<String>of())
                     .stream()
-                    .map(LocalServiceInstanceInfo::getInstanceId)
-                    .collect(Collectors.toUnmodifiableSet());
-            val invalidIds = Sets.difference(Set.copyOf(stopInstancesOperation.getInstanceIds()), validIds);
-            return invalidIds.isEmpty()
-                   ? ValidationResult.success()
-                   : ValidationResult.failure(
-                           "Local service " + serviceId + " does not have any instances with the following ids: "
-                                   + StringUtils.join(invalidIds, ','));
+                    .filter(instanceId -> localServiceStateDB.instance(serviceId, instanceId)
+                            .filter(instance -> instance.getState().equals(HEALTHY))
+                            .isEmpty())
+                    .toList();
         }
     }
 

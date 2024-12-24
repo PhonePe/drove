@@ -79,7 +79,8 @@ public class RoutingLocalServiceAction extends LocalServiceAction {
             }
 
             @Override
-            public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(LocalServiceUpdateOperation localServiceUpdateOperation) {
+            public Optional<StateData<LocalServiceState, LocalServiceInfo>> visit(
+                    LocalServiceUpdateInstanceCountOperation localServiceUpdateInstanceCountOperation) {
                 return Optional.empty(); //TODO
             }
 

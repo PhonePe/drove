@@ -49,7 +49,7 @@ public abstract class LocalServiceOperationVisitorAdapter<T> implements LocalSer
     }
 
     @Override
-    public T visit(LocalServiceUpdateOperation localServiceUpdateOperation) {
+    public T visit(LocalServiceUpdateInstanceCountOperation localServiceUpdateInstanceCountOperation) {
         return defaultValue;
     }
 

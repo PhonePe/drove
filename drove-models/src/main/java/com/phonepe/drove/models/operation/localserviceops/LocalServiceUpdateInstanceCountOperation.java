@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.models.operation.localserviceops;
 
-import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
@@ -25,32 +24,29 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import org.hibernate.validator.constraints.Range;
 
-import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 
 /**
- * Update a service on all executor nodes
+ * Update a service to change instances count per executor
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceUpdateOperation extends LocalServiceOperation { //TODO::LOCAL_SERVICE IMPLEMENT
+public class LocalServiceUpdateInstanceCountOperation extends LocalServiceOperation { //TODO::LOCAL_SERVICE IMPLEMENT
     @NotEmpty
     String serviceId;
 
-    @Valid
-    @NotNull
-    LocalServiceSpec spec;
+    @Range(min = 1, max = 256)
+    int instancesPerHost;
 
-    public LocalServiceUpdateOperation(
-            String serviceId, LocalServiceSpec spec) {
-        super(LocalServiceOperationType.UPDATE);
+    public LocalServiceUpdateInstanceCountOperation(String serviceId, int instancesPerHost) {
+        super(LocalServiceOperationType.UPDATE_INSTANCE_COUNT);
         this.serviceId = serviceId;
-        this.spec = spec;
+        this.instancesPerHost = instancesPerHost;
     }
 
     @Override
