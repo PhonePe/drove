@@ -26,6 +26,7 @@ import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.internal.KnownInstancesData;
 import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
@@ -109,70 +110,72 @@ public class InternalApis {
             Supplier<Optional<ExecutorHostInfo>> hostInfoGenerator) {
         return hostInfoGenerator.get()
                 .map(ExecutorHostInfo::getNodeData)
-                .map(executorNodeData -> {
-                    val appInstances = new HashSet<String>();
-                    val staleAppInstances = new HashSet<String>();
-                    val taskInstances = new HashSet<String>();
-                    val staleTaskInstances = new HashSet<String>();
-                    val lsInstances = new HashSet<String>();
-                    val staleLSInstances = new HashSet<String>();
-                    for (val instanceInfo : Objects.requireNonNullElse(executorNodeData.getInstances(),
-                                                                       List.<InstanceInfo>of())) {
-                        if (applicationStateDB.application(instanceInfo.getAppId())
-                                .filter(applicationInfo -> applicationInfo.getInstances() > 0)
-                                .isPresent()) {
-                            appInstances.add(instanceInfo.getInstanceId());
-                        }
-                        else {
-                            staleAppInstances.add(instanceInfo.getInstanceId());
-                        }
-                    }
-                    for (val taskInfo : Objects.requireNonNullElse(executorNodeData.getTasks(), List.<TaskInfo>of())) {
-                        if (taskDB.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).isPresent()) {
-                            taskInstances.add(taskInfo.getInstanceId());
-                        }
-                        else {
-                            staleTaskInstances.add(taskInfo.getInstanceId());
-                        }
-                    }
-                    val instancesByService = Objects.requireNonNullElse(executorNodeData.getServiceInstances(),
-                                                                        List.<LocalServiceInstanceInfo>of())
-                            .stream()
-                            .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
-                                                           Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
-                                                                              Collectors.toUnmodifiableList())));
-                    instancesByService.forEach((serviceId, instances) -> {
-                        val service = localServiceStateDB.service(serviceId);
-                        if (service.isPresent()) {
-                            val extraInstances = service
-                                    .filter(serviceInfo -> serviceInfo.getInstancesPerHost() < instances.size())
-                                    .map(serviceInfo -> CommonUtils.sublist(instances,
-                                                                            serviceInfo.getInstancesPerHost(),
-                                                                            instances.size()))
-                                    .orElse(List.of());
-                            if (extraInstances.isEmpty()) {
-                                lsInstances.addAll(instances);
-                            }
-                            else {
-                                lsInstances.addAll(CommonUtils.sublist(instances,
-                                                                       0,
-                                                                       service.get().getInstancesPerHost()));
-                                staleLSInstances.addAll(extraInstances);
-                            }
-                        }
-                        else {
-                            staleLSInstances.addAll(instances);
-                        }
-                    });
-
-                    return new KnownInstancesData(appInstances,
-                                                  staleAppInstances,
-                                                  taskInstances,
-                                                  staleTaskInstances,
-                                                  lsInstances,
-                                                  staleLSInstances);
-                })
+                .map(this::buildKnownInstanceData)
                 .map(ApiResponse::success)
                 .orElse(ApiResponse.failure("No data found for executor " + executorId));
+    }
+
+    private KnownInstancesData buildKnownInstanceData(ExecutorNodeData executorNodeData) {
+        val appInstances = new HashSet<String>();
+        val staleAppInstances = new HashSet<String>();
+        val taskInstances = new HashSet<String>();
+        val staleTaskInstances = new HashSet<String>();
+        val lsInstances = new HashSet<String>();
+        val staleLSInstances = new HashSet<String>();
+        for (val instanceInfo : Objects.requireNonNullElse(executorNodeData.getInstances(),
+                                                           List.<InstanceInfo>of())) {
+            if (applicationStateDB.application(instanceInfo.getAppId())
+                    .filter(applicationInfo -> applicationInfo.getInstances() > 0)
+                    .isPresent()) {
+                appInstances.add(instanceInfo.getInstanceId());
+            }
+            else {
+                staleAppInstances.add(instanceInfo.getInstanceId());
+            }
+        }
+        for (val taskInfo : Objects.requireNonNullElse(executorNodeData.getTasks(), List.<TaskInfo>of())) {
+            if (taskDB.task(taskInfo.getSourceAppName(), taskInfo.getTaskId()).isPresent()) {
+                taskInstances.add(taskInfo.getInstanceId());
+            }
+            else {
+                staleTaskInstances.add(taskInfo.getInstanceId());
+            }
+        }
+        val instancesByService = Objects.requireNonNullElse(executorNodeData.getServiceInstances(),
+                                                            List.<LocalServiceInstanceInfo>of())
+                .stream()
+                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
+                                               Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
+                                                                  Collectors.toUnmodifiableList())));
+        instancesByService.forEach((serviceId, instances) -> {
+            val service = localServiceStateDB.service(serviceId);
+            if (service.isPresent()) {
+                val extraInstances = service
+                        .filter(serviceInfo -> serviceInfo.getInstancesPerHost() < instances.size())
+                        .map(serviceInfo -> CommonUtils.sublist(instances,
+                                                                serviceInfo.getInstancesPerHost(),
+                                                                instances.size()))
+                        .orElse(List.of());
+                if (extraInstances.isEmpty()) {
+                    lsInstances.addAll(instances);
+                }
+                else {
+                    lsInstances.addAll(CommonUtils.sublist(instances,
+                                                           0,
+                                                           service.get().getInstancesPerHost()));
+                    staleLSInstances.addAll(extraInstances);
+                }
+            }
+            else {
+                staleLSInstances.addAll(instances);
+            }
+        });
+
+        return new KnownInstancesData(appInstances,
+                                      staleAppInstances,
+                                      taskInstances,
+                                      staleTaskInstances,
+                                      lsInstances,
+                                      staleLSInstances);
     }
 }

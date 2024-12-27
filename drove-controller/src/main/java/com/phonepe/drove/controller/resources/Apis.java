@@ -125,7 +125,7 @@ public class Apis {
             @Auth final DroveUser user,
             @NotNull @Valid final ApplicationOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
+            return maintenanceModeError();
         }
         val res = applicationEngine.handleOperation(operation);
         log.info("ACCESS_AUDIT: Application Operation {} received from user: {}. Validation result: {}",
@@ -211,7 +211,7 @@ public class Apis {
             @Auth final DroveUser user,
             @NotNull @Valid final LocalServiceOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
+            return maintenanceModeError();
         }
         val res = localServiceEngine.handleOperation(operation);
         log.info("ACCESS_AUDIT: Local Service Operation {} received from user: {}. Validation result: {}",
@@ -295,7 +295,7 @@ public class Apis {
             @Auth final DroveUser user,
             @NotNull @Valid final TaskOperation operation) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
+            return maintenanceModeError();
         }
         val res = taskEngine.handleTaskOp(operation);
         log.info("ACCESS_AUDIT: Task Operation {} received from user: {}. Validation result: {}",
@@ -473,6 +473,10 @@ public class Apis {
     @Timed
     public ApiResponse<String> ping() {
         return success("pong");
+    }
+
+    private static Response maintenanceModeError() {
+        return ControllerUtils.commandValidationFailure("Cluster is in maintenance mode");
     }
 
 }

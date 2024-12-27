@@ -152,13 +152,12 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
                             log.info("Recovery status for application instance {}: {}", id, status);
                         }
                         catch (JsonProcessingException e) {
-                            log.error("Error recovering state for container: " + container.getId(), e);
+                            log.error("Error recovering state for app instance container: " + container.getId(), e);
                         }
                     }
                     else {
                         log.warn(
-                                "Unknown application instance {} found to be running. Ignoring it. This will get " +
-                                        "reaped by the zombie reaper later on",
+                                "Unknown application instance {} found to be running. Ignoring it. This will get reaped by the zombie reaper later on",
                                 id);
                     }
                 });
@@ -190,8 +189,7 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
                     }
                     else {
                         log.warn(
-                                "Unknown task instance {} found to be running. Ignoring it. This will get " +
-                                        "reaped by the zombie reaper later on",
+                                "Unknown task instance {} found to be running. Ignoring it. This will get reaped by the zombie reaper later on",
                                 id);
                     }
                 });
@@ -224,8 +222,7 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
                     }
                     else {
                         log.warn(
-                                "Unknown local service instance {} found to be running. Ignoring it. This will get " +
-                                        "reaped by the zombie reaper later on",
+                                "Unknown local service instance {} found to be running. Ignoring it. This will get reaped by the zombie reaper later on",
                                 id);
                     }
                 });

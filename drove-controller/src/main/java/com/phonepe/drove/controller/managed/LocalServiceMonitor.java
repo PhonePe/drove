@@ -42,6 +42,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -125,6 +126,23 @@ public class LocalServiceMonitor implements Managed {
             }
         });
 
+        handleServiceInstances(services, liveExecutors);
+
+        //Now kill all service instances running on blacklisted executors
+        //This _could_ be done in adjust instances, it is more efficient to generate commands here in a single shot
+        val instancesToBeStopped = blacklistedExecutors.stream()
+                .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
+                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
+                                               Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
+                                                                  Collectors.toSet())));
+        instancesToBeStopped.forEach((serviceId, instances) -> {
+            log.info("Requesting to stop {} instances for service {}", instances.size(), serviceId);
+            notifyOperation(new LocalServiceStopInstancesOperation(serviceId, instances, null));
+        });
+    }
+
+    @SuppressWarnings("java:S1301")
+    private void handleServiceInstances(Map<String, LocalServiceInfo> services, ArrayList<ExecutorHostInfo> liveExecutors) {
         services.forEach((serviceId, serviceInfo) -> {
             val currInstances = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false);
             switch (serviceInfo.getState()) {
@@ -143,18 +161,6 @@ public class LocalServiceMonitor implements Managed {
                     }
                 }
             }
-        });
-
-        //Now kill all service instances running on blacklisted executors
-        //This _could_ be done in adjust instances, it is more efficient to generate commands here in a single shot
-        val instancesToBeStopped = blacklistedExecutors.stream()
-                .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
-                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
-                                               Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
-                                                                  Collectors.toSet())));
-        instancesToBeStopped.forEach((serviceId, instances) -> {
-            log.info("Requesting to stop {} instances for service {}", instances.size(), serviceId);
-            notifyOperation(new LocalServiceStopInstancesOperation(serviceId, instances, null));
         });
     }
 

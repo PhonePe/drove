@@ -138,13 +138,13 @@ public class ResponseEngine {
     public ApiResponse<AppSummary> application(final String appId) {
         return applicationStateDB.application(appId)
                 .map(appInfo -> success(toAppSummary(appInfo, instanceInfoDB.instanceCount(Set.of(appId), HEALTHY))))
-                .orElse(failure("App " + appId + " not found"));
+                .orElse(noAppFoundFailure(appId));
     }
 
     public ApiResponse<ApplicationSpec> applicationSpec(final String appId) {
         return applicationStateDB.application(appId)
                 .map(appInfo -> success(appInfo.getSpec()))
-                .orElse(failure("App " + appId + " not found"));
+                .orElse(noAppFoundFailure(appId));
     }
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
@@ -191,7 +191,7 @@ public class ResponseEngine {
                 .map(appInfo -> success(toLocalServiceSummary(
                         appInfo,
                         instancesForService(serviceId))))
-                .orElse(failure("Local service " + serviceId + " not found"));
+                .orElse(localServiceNotFoundFailure(serviceId));
     }
 
     private Map<String, List<LocalServiceInstanceInfo>> instancesForService(String serviceId) {
@@ -206,7 +206,7 @@ public class ResponseEngine {
     public ApiResponse<LocalServiceSpec> localServiceSpec(final String serviceId) {
         return localServiceStateDB.service(serviceId)
                 .map(info -> success(info.getSpec()))
-                .orElse(failure("Local Service " + serviceId + " not found"));
+                .orElse(localServiceNotFoundFailure(serviceId));
     }
 
     public ApiResponse<List<LocalServiceInstanceInfo>> localServiceInstances(final String serviceId, final Set<LocalServiceInstanceState> state) {
@@ -400,6 +400,14 @@ public class ResponseEngine {
 
     public ApiResponse<DroveEventsSummary> summarize(long lastSyncTime) {
         return ApiResponse.success(eventStore.summarize(lastSyncTime));
+    }
+
+    private static <T> ApiResponse<T> noAppFoundFailure(String appId) {
+        return failure("App " + appId + " not found");
+    }
+
+    private static <T> ApiResponse<T> localServiceNotFoundFailure(String serviceId) {
+        return failure("Local service " + serviceId + " not found");
     }
 
     @IgnoreInJacocoGeneratedReport

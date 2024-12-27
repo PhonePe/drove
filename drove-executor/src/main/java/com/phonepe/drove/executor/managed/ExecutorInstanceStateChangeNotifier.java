@@ -89,9 +89,7 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
         val resp = communicator.send(new InstanceStateReportMessage(MessageHeader.executorRequest(),
                                                                     snapshot,
                                                                     instanceInfo)).getStatus();
-        if (!resp.equals(MessageDeliveryStatus.ACCEPTED)) {
-            log.info("Sending message to controller failed with status: {}.", resp);
-        }
+        handleResponse(resp);
     }
 
     private void handleStateChange(final TaskInfo task) {
@@ -101,9 +99,7 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
         val resp = communicator.send(new TaskStateReportMessage(MessageHeader.executorRequest(),
                                                                 snapshot,
                                                                 task)).getStatus();
-        if (!resp.equals(MessageDeliveryStatus.ACCEPTED)) {
-            log.info("Sending message to controller failed with status: {}.", resp);
-        }
+        handleResponse(resp);
     }
 
     private void handleStateChange(LocalServiceInstanceInfo localServiceInstanceInfo) {
@@ -114,9 +110,12 @@ public class ExecutorInstanceStateChangeNotifier implements Managed {
                 MessageHeader.executorRequest(),
                 snapshot,
                 localServiceInstanceInfo)).getStatus();
+        handleResponse(resp);
+    }
+
+    private static void handleResponse(MessageDeliveryStatus resp) {
         if (!resp.equals(MessageDeliveryStatus.ACCEPTED)) {
             log.info("Sending message to controller failed with status: {}.", resp);
         }
     }
-
 }

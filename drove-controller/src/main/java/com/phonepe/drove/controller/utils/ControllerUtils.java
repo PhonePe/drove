@@ -132,15 +132,15 @@ public class ControllerUtils {
             else {
                 val curr = currentInstanceInfo(instanceInfoDB, serviceId, instanceId);
                 if (null == curr) {
-                    log.error("No instance info found at all for: {}/{}", serviceId, instanceId);
+                    log.error("No instance info found for local service at all for: {}/{}", serviceId, instanceId);
                 }
                 else {
                     if (status.equals(MISMATCH)) {
-                        log.error("Looks like app instance {}/{} is stuck in state: {}. Detailed instance data: {}}",
+                        log.error("Looks like local service instance {}/{} is stuck in state: {}. Detailed instance data: {}}",
                                   serviceId, instanceId, curr.getState(), curr);
                     }
                     else {
-                        log.error("Looks like app instance {}/{} has failed permanently and reached state: {}." +
+                        log.error("Looks like local service instance {}/{} has failed permanently and reached state: {}." +
                                           " Detailed instance data: {}}",
                                   serviceId,
                                   instanceId,
@@ -151,7 +151,7 @@ public class ControllerUtils {
             }
         }
         catch (Exception e) {
-            log.error("Error starting instance: " + serviceId + "/" + instanceId, e);
+            log.error("Error starting local service instance: " + serviceId + "/" + instanceId, e);
         }
         return false;
     }
@@ -177,7 +177,7 @@ public class ControllerUtils {
             else {
                 val curr = currentInstanceInfo(instanceInfoDB, appId, instanceId);
                 if (null == curr) {
-                    log.error("No instance info found at all for: {}/{}", appId, instanceId);
+                    log.error("No instance info found app instance at all for: {}/{}", appId, instanceId);
                 }
                 else {
                     if (status.equals(MISMATCH)) {
@@ -196,7 +196,7 @@ public class ControllerUtils {
             }
         }
         catch (Exception e) {
-            log.error("Error starting instance: " + appId + "/" + instanceId, e);
+            log.error("Error starting app instance: " + appId + "/" + instanceId, e);
         }
         return false;
     }
@@ -221,7 +221,7 @@ public class ControllerUtils {
             else {
                 val curr = currentTaskInfo(taskDB, sourceAppName, taskId);
                 if (null == curr) {
-                    log.error("No instance info found at all for: {}/{}", sourceAppName, taskId);
+                    log.error("No instance info found task at all for: {}/{}", sourceAppName, taskId);
                 }
                 else {
                     if (status.equals(MISMATCH)) {
@@ -242,7 +242,7 @@ public class ControllerUtils {
             }
         }
         catch (Exception e) {
-            log.error("Error starting instance: " + sourceAppName + "/" + taskId, e);
+            log.error("Error starting task instance: " + sourceAppName + "/" + taskId, e);
         }
         return false;
     }
@@ -253,11 +253,10 @@ public class ControllerUtils {
         val obj = applicationOperation.getClass().equals(clazz)
                   ? clazz.cast(applicationOperation)
                   : null;
-        Objects.requireNonNull(obj,
-                               "Cannot cast op " + applicationOperation.getClass()
-                                       .getSimpleName() + " to " + clazz.getSimpleName());
+        Objects.requireNonNull(obj, castFailure(applicationOperation.getClass(), clazz));
         return obj;
     }
+
 
     public static <O extends LocalServiceOperation> O safeCast(
             final LocalServiceOperation operation,
@@ -265,9 +264,7 @@ public class ControllerUtils {
         val obj = operation.getClass().equals(clazz)
                   ? clazz.cast(operation)
                   : null;
-        Objects.requireNonNull(obj,
-                               "Cannot cast op " + operation.getClass()
-                                       .getSimpleName() + " to " + clazz.getSimpleName());
+        Objects.requireNonNull(obj, castFailure(operation.getClass(), clazz));
         return obj;
     }
 
@@ -277,9 +274,7 @@ public class ControllerUtils {
         val obj = taskOperation.getClass().equals(clazz)
                   ? clazz.cast(taskOperation)
                   : null;
-        Objects.requireNonNull(obj,
-                               "Cannot cast op " + taskOperation.getClass()
-                                       .getSimpleName() + " to " + clazz.getSimpleName());
+        Objects.requireNonNull(obj, castFailure(taskOperation.getClass(), clazz));
         return obj;
     }
 
@@ -835,5 +830,10 @@ public class ControllerUtils {
                         return Optional.empty();
                     }
                 });
+    }
+
+
+    private static String castFailure(Class<?> from, Class<?> to) {
+        return "Cannot cast op from %s to %s".formatted(from.getSimpleName(), to.getSimpleName());
     }
 }

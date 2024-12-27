@@ -65,7 +65,15 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 })
 @Slf4j
 @Produces(MediaType.APPLICATION_JSON)
+@SuppressWarnings("java:S1075")
 public class ExecutorLogFileApis {
+    private static final String LIST_API_PATH = "/list";
+    private static final String READ_API_PATH = "/read/";
+    private static final String DOWNLOAD_API_PATH = "/download/";
+
+    private static final String OFFSET_PARAM = "offset";
+    private static final String LENGTH_PARAM = "length";
+
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
     private final LocalServiceStateDB localServiceStateDB;
@@ -102,7 +110,7 @@ public class ExecutorLogFileApis {
             @PathParam("instanceId") final String instanceId) {
         return callUpstreamForAppLogs(appId,
                                       instanceId,
-                                      "/list",
+                                      LIST_API_PATH,
                                       Map.of(),
                                       Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
@@ -114,12 +122,12 @@ public class ExecutorLogFileApis {
             @PathParam("appId") @NotEmpty final String appId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
-            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForAppLogs(appId,
                                       instanceId,
-                                      "/read/" + fileName,
-                                      Map.of("offset", offset, "length", length),
+                                      READ_API_PATH + fileName,
+                                      Map.of(OFFSET_PARAM, offset, LENGTH_PARAM, length),
                                       Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
@@ -133,13 +141,11 @@ public class ExecutorLogFileApis {
             @PathParam("fileName") @NotEmpty final String fileName) {
         return callUpstreamForAppLogs(appId,
                                       instanceId,
-                                      "/download/" + fileName,
+                                      DOWNLOAD_API_PATH + fileName,
                                       Map.of(),
-                                      Map.of(HttpHeaders.CONTENT_TYPE,
-                                             MediaType.TEXT_PLAIN,
-                                             HttpHeaders.CONTENT_DISPOSITION,
-                                             "attachment; filename=" + fileName));
+                                      fileDownloadHeaders(fileName));
     }
+
 
     @GET
     @Path("/tasks/{sourceAppName}/{taskId}/list")
@@ -148,7 +154,7 @@ public class ExecutorLogFileApis {
             @PathParam("taskId") final String taskId) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
-                                       "/list",
+                                       LIST_API_PATH,
                                        Map.of(),
                                        Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
@@ -160,12 +166,12 @@ public class ExecutorLogFileApis {
             @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
             @PathParam("taskId") @NotEmpty final String taskId,
             @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
-            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
-                                       "/read/" + fileName,
-                                       Map.of("offset", offset, "length", length),
+                                       READ_API_PATH + fileName,
+                                       Map.of(OFFSET_PARAM, offset, LENGTH_PARAM, length),
                                        Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
@@ -179,12 +185,9 @@ public class ExecutorLogFileApis {
             @PathParam("fileName") @NotEmpty final String fileName) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
-                                       "/download/" + fileName,
+                                       DOWNLOAD_API_PATH + fileName,
                                        Map.of(),
-                                       Map.of(HttpHeaders.CONTENT_TYPE,
-                                              MediaType.TEXT_PLAIN,
-                                              HttpHeaders.CONTENT_DISPOSITION,
-                                              "attachment; filename=" + fileName));
+                                       fileDownloadHeaders(fileName));
     }
 
     @GET
@@ -194,7 +197,7 @@ public class ExecutorLogFileApis {
             @PathParam("instanceId") final String instanceId) {
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
-                                               "/list",
+                                               LIST_API_PATH,
                                                Map.of(),
                                                Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
@@ -206,12 +209,12 @@ public class ExecutorLogFileApis {
             @PathParam("serviceId") @NotEmpty final String serviceId,
             @PathParam("instanceId") @NotEmpty final String instanceId,
             @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam("offset") @Min(-1) @DefaultValue("-1") final long offset,
-            @QueryParam("length") @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
+            @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
-                                               "/read/" + fileName,
-                                               Map.of("offset", offset, "length", length),
+                                               READ_API_PATH + fileName,
+                                               Map.of(OFFSET_PARAM, offset, LENGTH_PARAM, length),
                                                Map.of(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON));
     }
 
@@ -225,12 +228,9 @@ public class ExecutorLogFileApis {
             @PathParam("fileName") @NotEmpty final String fileName) {
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
-                                               "/download/" + fileName,
+                                               DOWNLOAD_API_PATH + fileName,
                                                Map.of(),
-                                               Map.of(HttpHeaders.CONTENT_TYPE,
-                                                      MediaType.TEXT_PLAIN,
-                                                      HttpHeaders.CONTENT_DISPOSITION,
-                                                      "attachment; filename=" + fileName));
+                                               fileDownloadHeaders(fileName));
     }
 
     private Response callUpstreamForAppLogs(
@@ -352,5 +352,12 @@ public class ExecutorLogFileApis {
         Objects.<Map<String, String>>requireNonNullElse(responseHeaders, Map.of())
                 .forEach(responseBuilder::header);
         return responseBuilder.build();
+    }
+
+    private static Map<String, String> fileDownloadHeaders(String fileName) {
+        return Map.of(HttpHeaders.CONTENT_TYPE,
+                      MediaType.TEXT_PLAIN,
+                      HttpHeaders.CONTENT_DISPOSITION,
+                      "attachment; filename=" + fileName);
     }
 }

@@ -57,6 +57,7 @@ public class StopSingleLocalServiceInstanceJob implements Job<Boolean> {
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
+    @SuppressWarnings("java:S107")
     public StopSingleLocalServiceInstanceJob(
             String serviceId,
             String instanceId,

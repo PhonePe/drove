@@ -48,6 +48,7 @@ public class DroveIgniteInstanceHelper implements Closeable {
 
     private static final String SPLIT_DELIMITER = ",";
 
+    @SuppressWarnings("java:S1075")
     private static final String API_PATH = "/apis/v1/internal/instances";
 
     private final boolean useAppNameForClustering;

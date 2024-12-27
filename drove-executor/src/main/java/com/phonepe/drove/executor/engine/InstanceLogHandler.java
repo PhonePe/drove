@@ -89,6 +89,7 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
         });
     }
 
+    @SuppressWarnings("java:S1192")
     private static String metricNameForTasks(final ExecutorTaskInfo instanceInfo, String name) {
         return name("com",
                     "phonepe",
@@ -99,6 +100,7 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
                     name);
     }
 
+    @SuppressWarnings("java:S1192")
     private static String metricNameForApp(final ExecutorInstanceInfo instanceInfo, String name) {
         return name("com",
                     "phonepe",
@@ -111,6 +113,7 @@ public class InstanceLogHandler extends ResultCallback.Adapter<Frame> {
                     name);
     }
 
+    @SuppressWarnings("java:S1192")
     private static String metricNameForLocalService(final ExecutorLocalServiceInstanceInfo instanceInfo, String name) {
         return name("com",
                     "phonepe",
