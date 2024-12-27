@@ -91,6 +91,34 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         ir.stop();
     }
 
+
+    @Test
+    @SneakyThrows
+    void testRecoverLocalServiceContainers() {
+        val appSpec = ExecutorTestingUtils.testLocalServiceInstanceSpec();
+        val appInstanceData = ExecutorTestingUtils.createExecutorLocaLServiceInstanceInfo(appSpec, 8080);
+        ExecutorTestingUtils.startTestLocalServiceContainer(appSpec, appInstanceData, MAPPER);
+        val clusterClient = mock(ClusterClient.class);
+        when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val env = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(env.lifecycle()).thenReturn(lifecycle);
+
+        val ir = new InstanceRecovery(applicationInstanceEngine,
+                                      taskInstanceEngine,
+                                      localServiceInstanceEngine,
+                                      AbstractTestBase.MAPPER,
+                                      ExecutorTestingUtils.DOCKER_CLIENT,
+                                      clusterClient,
+                                      env);
+        ir.start();
+        ir.serverStarted(null);
+        assertEquals(0, applicationInstanceEngine.currentState().size());
+        assertEquals(1, localServiceInstanceEngine.currentState().size());
+        assertEquals(0, taskInstanceEngine.currentState().size());
+        ir.stop();
+    }
+
     @Test
     @SneakyThrows
     void testRecoverTaskContainers() {

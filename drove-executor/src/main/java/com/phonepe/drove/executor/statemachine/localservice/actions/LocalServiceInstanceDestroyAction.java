@@ -24,7 +24,7 @@ import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.statemachine.StateData;
 
 /**
- *
+ * Destroys a local service instance
  */
 public class LocalServiceInstanceDestroyAction
         extends CommonContainerCleanupAction<ExecutorLocalServiceInstanceInfo,

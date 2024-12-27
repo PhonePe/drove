@@ -32,6 +32,7 @@ import com.phonepe.drove.common.model.executor.StartInstanceMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.engine.*;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
+import com.phonepe.drove.executor.model.ExecutorLocalServiceInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -300,6 +301,28 @@ public class ExecutorTestingUtils {
                                         new Date());
     }
 
+    public static ExecutorLocalServiceInstanceInfo createExecutorLocaLServiceInstanceInfo(LocalServiceInstanceSpec spec, WireMockRuntimeInfo wm)  {
+        return createExecutorLocaLServiceInstanceInfo(spec, wm.getHttpPort());
+    }
+
+    public static ExecutorLocalServiceInstanceInfo createExecutorLocaLServiceInstanceInfo(LocalServiceInstanceSpec spec, int port) {
+        return new ExecutorLocalServiceInstanceInfo(spec.getServiceId(),
+                                        spec.getServiceName(),
+                                        spec.getInstanceId(),
+                                        EXECUTOR_ID,
+                                        new LocalInstanceInfo("localhost",
+                                                              Collections.singletonMap(
+                                                                      "main",
+                                                                      new InstancePort(
+                                                                              8080,
+                                                                              port,
+                                                                              PortType.HTTP))),
+                                        spec.getResources(),
+                                        spec.getEnv(),
+                                        new Date(),
+                                        new Date());
+    }
+
     public static ExecutorTaskInfo createExecutorTaskInfo(TaskInstanceSpec spec) {
         return new ExecutorTaskInfo(spec.getTaskId(),
                                     spec.getSourceAppName(),
@@ -439,6 +462,34 @@ public class ExecutorTestingUtils {
                             JobType.COMPUTATION.name(),
                             DockerLabels.DROVE_INSTANCE_ID_LABEL,
                             spec.getTaskId(),
+                            DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
+                            mapper.writeValueAsString(spec),
+                            DockerLabels.DROVE_INSTANCE_DATA_LABEL,
+                            mapper.writeValueAsString(instanceData)))
+                    .withHostConfig(new HostConfig().withAutoRemove(true))
+                    .exec();
+            containerId = createContainerResponse.getId();
+            try (val start = DOCKER_CLIENT.startContainerCmd(containerId)) {
+                start.exec();
+                return containerId;
+            }
+        }
+    }
+
+    @SneakyThrows
+    public static String startTestLocalServiceContainer(
+            LocalServiceInstanceSpec spec,
+            ExecutorLocalServiceInstanceInfo instanceData,
+            ObjectMapper mapper) {
+        String containerId;
+        try (val create = DOCKER_CLIENT.createContainerCmd(CommonTestUtils.LOCAL_SERVICE_IMAGE_NAME)) {
+            val createContainerResponse = create
+                    .withName("AppRecoveryTest")
+                    .withLabels(Map.of(
+                            DockerLabels.DROVE_JOB_TYPE_LABEL,
+                            JobType.LOCAL_SERVICE.name(),
+                            DockerLabels.DROVE_INSTANCE_ID_LABEL,
+                            spec.getInstanceId(),
                             DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
                             mapper.writeValueAsString(spec),
                             DockerLabels.DROVE_INSTANCE_DATA_LABEL,

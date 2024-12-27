@@ -25,7 +25,7 @@ import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
 
 /**
- *
+ * Validates spec. For now does nothing
  */
 public class LocalServiceInstanceSpecValidator extends LocalServiceInstanceAction {
 

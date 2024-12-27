@@ -106,6 +106,33 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
 
     @Test
     @SneakyThrows
+    void testPruneLocalServiceInstancesWithoutDocker() {
+        val ids = new LinkedHashSet<String>();
+        IntStream.rangeClosed(0, 100).forEach(i -> ids.add("SI" + i));
+        val ae = mock(ApplicationInstanceEngine.class);
+
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+        val te = mock(TaskInstanceEngine.class);
+        val lsie = mock(LocalServiceInstanceEngine.class);
+        when(lsie.instanceIds(any())).thenReturn(ids);
+        when(lsie.stopInstance(anyString())).thenAnswer(invocationOnMock -> ids.remove(invocationOnMock.getArgument(0,
+                                                                                                                  String.class)));
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT,
+                                          ae,
+                                          te,
+                                          lsie,
+                                          Duration.ofSeconds(1),
+                                          cc,
+                                          ExecutorOptions.DEFAULT);
+        zr.start();
+        CommonTestUtils.waitUntil(ids::isEmpty);
+        assertTrue(ids.isEmpty());
+        zr.stop();
+    }
+
+    @Test
+    @SneakyThrows
     void testPruneUnknownAppDocker() {
         val appSpec = ExecutorTestingUtils.testAppInstanceSpec();
         val appInstanceData = ExecutorTestingUtils.createExecutorAppInstanceInfo(appSpec, 8080);
@@ -250,6 +277,43 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
                                                                            Set.of()));
         val te = mock(TaskInstanceEngine.class);
         val lsie = mock(LocalServiceInstanceEngine.class);
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT,
+                                          ae,
+                                          te,
+                                          lsie,
+                                          Duration.ofSeconds(1),
+                                          cc,
+                                          ExecutorOptions.DEFAULT);
+        zr.start();
+        CommonTestUtils.waitUntil(() -> Sets.intersection(ids, killedIds).isEmpty());
+        assertTrue(Sets.intersection(ids, killedIds).isEmpty());
+        zr.stop();
+    }
+
+    @Test
+    @SneakyThrows
+    void testKillLocalServiceLessInstance() {
+        val ids = new LinkedHashSet<String>();
+        IntStream.rangeClosed(0, 100).forEach(i -> ids.add("SI" + i));
+        val killedIds = ids.stream().limit(10).collect(Collectors.toSet()); //Kill 10
+        val ae = mock(ApplicationInstanceEngine.class);
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(new KnownInstancesData(Set.copyOf(Sets.difference(ids, killedIds)),
+                                                                           killedIds,
+                                                                           Set.of(),
+                                                                           Set.of(),
+                                                                           Set.of(),
+                                                                           Set.of()));
+        val te = mock(TaskInstanceEngine.class);
+        val lsie = mock(LocalServiceInstanceEngine.class);
+        when(lsie.instanceIds(any())).thenReturn(ids);
+        when(lsie.stopInstance(anyString())).thenAnswer(invocationOnMock -> {
+            val id = invocationOnMock.getArgument(0, String.class);
+            if (killedIds.contains(id)) {
+                ids.remove(id);
+            }
+            return true;
+        });
         val zr = new ZombieInstanceReaper(DOCKER_CLIENT,
                                           ae,
                                           te,

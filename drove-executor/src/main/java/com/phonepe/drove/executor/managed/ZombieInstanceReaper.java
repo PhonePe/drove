@@ -146,6 +146,7 @@ public class ZombieInstanceReaper implements Managed {
         val knownInstances = clusterClient.currentKnownInstances();
         val appInstances = applicationInstanceEngine.instanceIds(EXPECTED_APP_DOCKER_RUNNING_STATES);
         val taskInstanceIds = taskInstanceEngine.instanceIds(EXPECTED_TASK_DOCKER_RUNNING_STATES);
+        val localServiceInstances = localServiceInstanceEngine.instanceIds(EXPECTED_LOCAL_SERVICE_DOCKER_RUNNING_STATES);
 
         // Kill all app instances that do not have a parent app
         pruneHeadlessInstances(applicationInstanceEngine,
@@ -156,7 +157,7 @@ public class ZombieInstanceReaper implements Managed {
         pruneHeadlessInstances(applicationInstanceEngine,
                                JobType.LOCAL_SERVICE,
                                knownInstances.getStaleAppInstanceIds(),
-                               appInstances);
+                               localServiceInstances);
 
         //Remove all instance ids that are marked as stale by containers
         pruneInstanceIds(containers,
@@ -169,7 +170,7 @@ public class ZombieInstanceReaper implements Managed {
                          JobType.COMPUTATION);
         pruneInstanceIds(containers,
                          localServiceInstanceEngine,
-                         taskInstanceIds,
+                         localServiceInstances,
                          JobType.LOCAL_SERVICE);
 
         pruneZombieContainers(containers,

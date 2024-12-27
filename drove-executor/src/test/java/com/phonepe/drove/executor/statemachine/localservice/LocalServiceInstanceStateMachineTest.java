@@ -14,20 +14,19 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.executor.statemachine.application;
+package com.phonepe.drove.executor.statemachine.localservice;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.Stage;
-import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
-import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
-import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
-import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.executor.InjectingLocalServiceInstanceActionFactory;
+import com.phonepe.drove.executor.model.ExecutorLocalServiceInstanceInfo;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -39,32 +38,33 @@ import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.Executors;
 
-import static com.phonepe.drove.models.instance.InstanceState.*;
+import static com.phonepe.drove.models.instance.LocalServiceInstanceState.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests {@link ApplicationInstanceStateMachine}
+ * Tests {@link LocalServiceInstanceStateMachine}
  */
 @Slf4j
-class ApplicationInstanceStateMachineTest extends AbstractTestBase {
+class LocalServiceInstanceStateMachineTest {
     @Test
     void test() {
-        val instanceSpec = ExecutorTestingUtils.testAppInstanceSpec();
-        val sm = new ApplicationInstanceStateMachine(UUID.randomUUID().toString(),
+        val instanceSpec = ExecutorTestingUtils.testLocalServiceInstanceSpec();
+        val executorId = "EX1";
+        val sm = new LocalServiceInstanceStateMachine(UUID.randomUUID().toString(),
                                                      instanceSpec,
-                                                     StateData.create(InstanceState.PROVISIONING,
-                                                                      new ExecutorInstanceInfo(instanceSpec.getAppId(),
-                                                                                               instanceSpec.getAppName(),
-                                                                                               instanceSpec.getInstanceId(),
-                                                                                               instanceSpec.getAppId(),
-                                                                                               new LocalInstanceInfo(
+                                                     StateData.create(LocalServiceInstanceState.PROVISIONING,
+                                                                      new ExecutorLocalServiceInstanceInfo(instanceSpec.getServiceId(),
+                                                                                                           instanceSpec.getServiceName(),
+                                                                                                           instanceSpec.getInstanceId(),
+                                                                                                           executorId,
+                                                                                                           new LocalInstanceInfo(
                                                                                                        "localhost",
                                                                                                        Map.of()),
-                                                                                               List.of(),
-                                                                                               Map.of(),
-                                                                                               new Date(),
-                                                                                               new Date())),
-                                                     new InjectingApplicationInstanceActionFactory(Guice.createInjector(
+                                                                                                           List.of(),
+                                                                                                           Map.of(),
+                                                                                                           new Date(),
+                                                                                                           new Date())),
+                                                     new InjectingLocalServiceInstanceActionFactory(Guice.createInjector(
                                                              Stage.DEVELOPMENT, new AbstractModule() {
                                                                  @Provides
                                                                  @Singleton
@@ -99,5 +99,4 @@ class ApplicationInstanceStateMachineTest extends AbstractTestBase {
         CommonTestUtils.waitUntil(() -> stateChanges.contains(STOPPED));
         assertEquals(EnumSet.of(STOPPED, STOPPING, STARTING, READY, DEPROVISIONING, HEALTHY, UNREADY), stateChanges);
     }
-
 }

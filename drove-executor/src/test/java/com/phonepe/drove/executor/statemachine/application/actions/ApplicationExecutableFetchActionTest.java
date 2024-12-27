@@ -86,4 +86,27 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
                                       StateData.create(PENDING, ExecutorTestingUtils.createExecutorAppInstanceInfo(spec, 8080)));
         assertEquals(PROVISIONING_FAILED, response.getState());
     }
+
+    @Test
+    void testStop() {
+        val action = new ApplicationExecutableFetchAction(null);
+        val spec = ExecutorTestingUtils.testAppInstanceSpec("hello-world");
+        val ctx = new InstanceActionContext<>(ExecutorTestingUtils.EXECUTOR_ID,
+                                              spec,
+                                              ExecutorTestingUtils.DOCKER_CLIENT,
+                                              false);
+        ctx.getAlreadyStopped().set(true);
+
+        try {
+            val response = action.execute(ctx,
+                                          StateData.create(PENDING,
+                                                           ExecutorTestingUtils.createExecutorAppInstanceInfo(
+                                                                   spec,
+                                                                   8080)));
+            assertEquals(STOPPED, response.getState(), "Error:" + response.getError());
+        }
+        finally {
+            action.stop();
+        }
+    }
 }
