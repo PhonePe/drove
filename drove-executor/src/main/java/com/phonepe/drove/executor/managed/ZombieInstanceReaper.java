@@ -55,7 +55,7 @@ import static com.phonepe.drove.models.instance.InstanceState.*;
  */
 @Singleton
 @Slf4j
-@Order(80)
+@Order(90)
 public class ZombieInstanceReaper implements Managed {
 
     private static final Set<InstanceState> EXPECTED_APP_DOCKER_RUNNING_STATES = Set.of(PROVISIONING,
@@ -156,7 +156,7 @@ public class ZombieInstanceReaper implements Managed {
         // Kill all local service instances that do not have a parent service
         pruneHeadlessInstances(applicationInstanceEngine,
                                JobType.LOCAL_SERVICE,
-                               knownInstances.getStaleAppInstanceIds(),
+                               knownInstances.getStaleLocalServiceInstanceIds(),
                                localServiceInstances);
 
         //Remove all instance ids that are marked as stale by containers

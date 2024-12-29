@@ -107,7 +107,7 @@ public class LocalServiceInstanceEngine extends InstanceEngine<ExecutorLocalServ
 
     @Override
     protected LocalServiceInstanceInfo convertStateToInstanceInfo(StateData<LocalServiceInstanceState, ExecutorLocalServiceInstanceInfo> currentState) {
-        return ExecutorUtils.convert(currentState);
+        return ExecutorUtils.convertToLocalServiceInstance(currentState);
     }
 
 }

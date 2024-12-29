@@ -96,8 +96,15 @@ public class ExecutorUtils {
                 new Date());
     }
 
-    public static LocalServiceInstanceInfo convert(final StateData<LocalServiceInstanceState, ExecutorLocalServiceInstanceInfo> state) {
+    public static LocalServiceInstanceInfo convertToLocalServiceInstance(final StateData<LocalServiceInstanceState, ExecutorLocalServiceInstanceInfo> state) {
         val data = state.getData();
+        return convertToLocalServiceInstance(data, state.getState(), state.getError());
+    }
+
+    public static LocalServiceInstanceInfo convertToLocalServiceInstance(
+            ExecutorLocalServiceInstanceInfo data,
+            LocalServiceInstanceState state,
+            String error) {
         return new LocalServiceInstanceInfo(
                 data.getServiceId(),
                 data.getServiceName(),
@@ -105,9 +112,9 @@ public class ExecutorUtils {
                 data.getExecutorId(),
                 data.getLocalInfo(),
                 data.getResources(),
-                state.getState(),
+                state,
                 data.getMetadata(),
-                state.getError(),
+                error,
                 data.getCreated(),
                 new Date());
     }

@@ -43,10 +43,8 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.instance.InstancePort;
-import com.phonepe.drove.models.instance.InstanceState;
-import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.instance.*;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
@@ -343,6 +341,40 @@ public class ControllerTestUtils {
         return new InstanceInfo(appId,
                                 spec.getName(),
                                 String.format("AI-%05d", idx),
+                                EXECUTOR_ID,
+                                new LocalInstanceInfo("localhost",
+                                                      Collections.singletonMap("main",
+                                                                               new InstancePort(
+                                                                                       8000,
+                                                                                       32000,
+                                                                                       PortType.HTTP))),
+                                List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
+                                        new MemoryAllocation(Map.of(0, 512L))),
+                                state,
+                                Collections.emptyMap(),
+                                errorMessage,
+                                date,
+                                date);
+    }
+
+    public static LocalServiceInstanceInfo generateInstanceInfo(
+            final String serviceId,
+            final LocalServiceSpec spec,
+            int idx,
+            LocalServiceInstanceState state) {
+        return generateInstanceInfo(serviceId, spec, idx, state, new Date(), null);
+    }
+
+    public static LocalServiceInstanceInfo generateInstanceInfo(
+            final String serviceId,
+            final LocalServiceSpec spec,
+            int idx,
+            LocalServiceInstanceState state,
+            Date date,
+            String errorMessage) {
+        return new LocalServiceInstanceInfo(serviceId,
+                                spec.getName(),
+                                String.format("SI-%05d", idx),
                                 EXECUTOR_ID,
                                 new LocalInstanceInfo("localhost",
                                                       Collections.singletonMap("main",

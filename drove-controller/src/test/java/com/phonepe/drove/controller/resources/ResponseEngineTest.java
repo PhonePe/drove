@@ -18,6 +18,7 @@ package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -47,8 +48,12 @@ import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEven
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.val;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -74,21 +79,53 @@ import static org.mockito.Mockito.*;
  */
 class ResponseEngineTest {
 
+    private final LeadershipObserver leadershipObserver = mock(LeadershipObserver.class);
+    private final ApplicationLifecycleManagementEngine appEngine = mock(ApplicationLifecycleManagementEngine.class);
+    private final ApplicationStateDB applicationStateDB = mock(ApplicationStateDB.class);
+    private final ApplicationInstanceInfoDB instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+    private final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
+    private final ClusterResourcesDB clusterResourcesDB = mock(ClusterResourcesDB.class);
+    private final TaskDB taskDB = mock(TaskDB.class);
+    private final LocalServiceLifecycleManagementEngine lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
+    private final LocalServiceStateDB localServiceStateDB = mock(LocalServiceStateDB.class);
+    private final EventStore eventStore = mock(EventStore.class);
+    private final ControllerCommunicator communicator = mock(ControllerCommunicator.class);
+    private final DroveEventBus eventBus = mock(DroveEventBus.class);
+    private final BlacklistingAppMovementManager blacklistingAppMovementManager =
+            mock(BlacklistingAppMovementManager.class);
+    private final ResponseEngine re = new ResponseEngine(leadershipObserver,
+                                                         appEngine,
+                                                         applicationStateDB,
+                                                         instanceInfoDB,
+                                                         taskDB,
+                                                         lsEngine,
+                                                         localServiceStateDB,
+                                                         clusterStateDB,
+                                                         clusterResourcesDB,
+                                                         eventStore,
+                                                         communicator,
+                                                         eventBus,
+                                                         blacklistingAppMovementManager);
+
+    @AfterEach
+    void resetMocks() {
+        reset(leadershipObserver,
+              appEngine,
+              applicationStateDB,
+              instanceInfoDB,
+              clusterResourcesDB,
+              clusterResourcesDB,
+              taskDB,
+              lsEngine,
+              localServiceStateDB,
+              eventBus,
+              communicator,
+              eventBus,
+              blacklistingAppMovementManager);
+    }
+
     @Test
     void testApplications() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
 
         val re = new ResponseEngine(leadershipObserver,
                                     appEngine,
@@ -119,33 +156,6 @@ class ResponseEngineTest {
 
     @Test
     void testApplication() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
-
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
 
@@ -161,34 +171,6 @@ class ResponseEngineTest {
 
     @Test
     void testApplicationSpec() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
-
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
 
@@ -206,33 +188,6 @@ class ResponseEngineTest {
 
     @Test
     void testApplicationInstances() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -252,33 +207,6 @@ class ResponseEngineTest {
 
     @Test
     void testInstanceDetails() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instance = generateInstanceInfo(appId, spec, 1, InstanceState.STARTING);
@@ -302,33 +230,6 @@ class ResponseEngineTest {
 
     @Test
     void testApplicationOldInstances() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         val spec = appSpec();
         val appId = ControllerUtils.deployableObjectId(spec);
         val instances = IntStream.rangeClosed(1, 100)
@@ -346,33 +247,6 @@ class ResponseEngineTest {
 
     @Test
     void testTaskDetails() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         when(taskDB.task(eq("WRONG_APP"), anyString())).thenReturn(Optional.empty());
         val spec = taskSpec();
         when(taskDB.task(spec.getSourceAppName(), spec.getTaskId()))
@@ -389,33 +263,6 @@ class ResponseEngineTest {
 
     @Test
     void testTaskDelete() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         when(taskDB.deleteTask(eq("WRONG_APP"), anyString())).thenReturn(false);
         val spec = taskSpec();
         when(taskDB.deleteTask(spec.getSourceAppName(), spec.getTaskId())).thenReturn(true);
@@ -430,34 +277,119 @@ class ResponseEngineTest {
     }
 
     @Test
-    void testCluster() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
+    void testLocalServices() {
+        val rng = new SecureRandom();
+        when(localServiceStateDB.services(0, Integer.MAX_VALUE))
+                .thenReturn(IntStream.range(0, 100)
+                                    .mapToObj(i -> {
+                                        return createLocalService(i, rng.nextInt(100));
+                                    })
+                                    .toList());
 
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
+        val res = re.localServices(0, Integer.MAX_VALUE);
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertEquals(100, res.getData().size());
+    }
+
+    @Test
+    void testLocalService() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+
+        val localServiceInfo = new LocalServiceInfo(serviceId, spec, 5, ActivationState.ACTIVE, new Date(), new Date());
+        when(localServiceStateDB.service(serviceId))
+                .thenReturn(Optional.of(localServiceInfo));
+
+        val res = re.localService(serviceId);
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertNotNull(res.getData());
+    }
+
+    @Test
+    void testLocalServiceSpec() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+
+        val localServiceInfo = new LocalServiceInfo(serviceId, spec, 5, ActivationState.ACTIVE, new Date(), new Date());
+        when(localServiceStateDB.service(serviceId))
+                .thenReturn(Optional.of(localServiceInfo));
+
+        val res = re.localServiceSpec(serviceId);
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertNotNull(res.getData());
+        assertEquals(spec, res.getData());
+    }
+
+    @Test
+    void testLocalServiceInstances() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val instances = IntStream.rangeClosed(1, 100)
+                .mapToObj(i -> generateInstanceInfo(serviceId, spec, i, LocalServiceInstanceState.STARTING))
+                .toList();
+
+        when(localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false))
+                .thenReturn(instances);
+
+        val res = re.localServiceInstances(serviceId, Set.of());
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertEquals(100, res.getData().size());
+        assertEquals(instances, res.getData());
+        assertTrue(re.localServiceInstances(serviceId, Set.of(LocalServiceInstanceState.HEALTHY)).getData().isEmpty());
+        assertEquals(instances,
+                     re.localServiceInstances(serviceId, Set.of(LocalServiceInstanceState.STARTING)).getData());
+    }
+
+    @Test
+    void testLocalServiceInstanceDetails() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val instance = generateInstanceInfo(serviceId, spec, 1, LocalServiceInstanceState.STARTING);
+
+        final var instanceId = instance.getInstanceId();
+        when(localServiceStateDB.instance(serviceId, instanceId)).thenReturn(Optional.of(instance));
+
+        {
+            val res = re.localServiceInstanceDetails(serviceId, instanceId);
+            assertEquals(SUCCESS, res.getStatus());
+            assertEquals("success", res.getMessage());
+            assertEquals(instance, res.getData());
+        }
+        {
+            val res = re.localServiceInstanceDetails(serviceId, "blah");
+            assertEquals(FAILED, res.getStatus());
+            assertEquals("No such local service instance " + serviceId + "/blah", res.getMessage());
+            assertNull(res.getData());
+        }
+    }
+
+    @Test
+    void testLocalServiceOldInstances() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val instances = IntStream.rangeClosed(1, 100)
+                .mapToObj(i -> generateInstanceInfo(serviceId, spec, i, LocalServiceInstanceState.STOPPED))
+                .toList();
+
+        when(localServiceStateDB.instances(serviceId,
+                                           Sets.difference(EnumSet.allOf(LocalServiceInstanceState.class),
+                                                           LocalServiceInstanceState.ACTIVE_STATES),
+                                           true))
+                .thenReturn(instances);
+
+        val res = re.localServiceOldInstances(serviceId);
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertEquals(100, res.getData().size());
+        assertEquals(instances, res.getData());
+    }
+
+    @Test
+    void testCluster() {
         when(leadershipObserver.leader()).thenReturn(Optional.of(new ControllerNodeData("test-controller",
                                                                                         8080,
                                                                                         HTTP,
@@ -471,7 +403,7 @@ class ResponseEngineTest {
                 .thenReturn(IntStream.rangeClosed(1, 100)
                                     .mapToObj(i -> createApp(i, 10))
                                     .toList());
-        when(engine.currentState(anyString())).thenAnswer(new Answer<Optional<ApplicationState>>() {
+        when(appEngine.currentState(anyString())).thenAnswer(new Answer<Optional<ApplicationState>>() {
             int count = 0;
 
             @Override
@@ -521,33 +453,6 @@ class ResponseEngineTest {
 
     @Test
     void testNodes() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         when(clusterResourcesDB.currentSnapshot(false))
                 .thenReturn(IntStream.rangeClosed(1, 10)
                                     .mapToObj(ControllerTestUtils::executorHost)
@@ -562,34 +467,6 @@ class ResponseEngineTest {
 
     @Test
     void testExecutorDetails() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
-
         val instanceData = executorHost(8080);
 
         val executorId = instanceData.getExecutorId();
@@ -610,39 +487,12 @@ class ResponseEngineTest {
 
     @Test
     void testEndpoints() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
 
         val apps = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> createApp(i, 10))
                 .toList();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE)).thenReturn(apps);
-        when(engine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
         val instances = apps.stream()
                 .flatMap(applicationInfo -> LongStream.rangeClosed(1, applicationInfo.getInstances())
                         .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(),
@@ -663,39 +513,11 @@ class ResponseEngineTest {
 
     @Test
     void testEndpointsForApp() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
-
         val apps = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> createApp(i, 10))
                 .toList();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE)).thenReturn(apps);
-        when(engine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
         val instances = apps.stream()
                 .flatMap(applicationInfo -> LongStream.rangeClosed(1, applicationInfo.getInstances())
                         .mapToObj(i -> generateInstanceInfo(applicationInfo.getAppId(),
@@ -746,28 +568,14 @@ class ResponseEngineTest {
 
     @Test
     void testEvents() {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
         val eventStore = new InMemoryEventStore(leadershipEnsurer, ControllerOptions.DEFAULT,
                                                 new ClusterMetricsRegistry(SharedMetricRegistries.getOrCreate("test")));
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-
         val event = new DroveClusterMaintenanceModeSetEvent(EventUtils.controllerMetadata());
         eventStore.recordEvent(event);
         val re = new ResponseEngine(leadershipObserver,
-                                    engine,
+                                    appEngine,
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB,
@@ -789,33 +597,6 @@ class ResponseEngineTest {
 
     private void testBlacklistingMultiFunctionality(
             final BiFunction<ResponseEngine, Set<String>, ApiResponse<Map<String, Set<String>>>> func) {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         val executors = IntStream.rangeClosed(1, 10)
                 .mapToObj(i -> executorHost(i, 8080, List.of(), List.of()))
                 .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, Function.identity()));
@@ -849,33 +630,6 @@ class ResponseEngineTest {
     private void testBlacklistingFunctionality(
             final BiFunction<ResponseEngine, String, ApiResponse<Map<String,
                     String>>> func) {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
-
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         val executor = executorHost(8080);
         when(clusterResourcesDB.currentSnapshot(executor.getExecutorId())).thenReturn(Optional.of(executor));
 
@@ -956,6 +710,12 @@ class ResponseEngineTest {
         val appSpec = appSpec("TEST_APP_" + i, 1);
         val appId = ControllerUtils.deployableObjectId(appSpec);
         return new ApplicationInfo(appId, appSpec, instances, new Date(), new Date());
+    }
+
+    private LocalServiceInfo createLocalService(int i, int instances) {
+        val serviceSpec = localServiceSpec("TEST_SERVICE_" + i, 1);
+        val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
+        return new LocalServiceInfo(serviceId, serviceSpec, instances, ActivationState.ACTIVE, new Date(), new Date());
     }
 
 

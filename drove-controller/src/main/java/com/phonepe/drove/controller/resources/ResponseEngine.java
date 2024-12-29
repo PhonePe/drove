@@ -194,14 +194,6 @@ public class ResponseEngine {
                 .orElse(localServiceNotFoundFailure(serviceId));
     }
 
-    private Map<String, List<LocalServiceInstanceInfo>> instancesForService(String serviceId) {
-        return localServiceStateDB.instances(
-                        serviceId,
-                        EnumSet.allOf(LocalServiceInstanceState.class),
-                        true)
-                .stream()
-                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
-    }
 
     public ApiResponse<LocalServiceSpec> localServiceSpec(final String serviceId) {
         return localServiceStateDB.service(serviceId)
@@ -578,5 +570,14 @@ public class ResponseEngine {
             log.info("App movement manager acceptance status for executors {} is {}", successfullyBlacklisted, status);
         }
         return successfullyBlacklisted;
+    }
+
+    private Map<String, List<LocalServiceInstanceInfo>> instancesForService(String serviceId) {
+        return localServiceStateDB.instances(
+                        serviceId,
+                        EnumSet.allOf(LocalServiceInstanceState.class),
+                        true)
+                .stream()
+                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
     }
 }

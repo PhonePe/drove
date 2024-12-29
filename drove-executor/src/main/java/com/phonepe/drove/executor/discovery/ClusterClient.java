@@ -76,11 +76,10 @@ public class ClusterClient {
         return readSnapshot("current");
     }
 
-    public LocalServiceInstanceResources reservedResources() {
+    public LocalServiceInstanceResources reservedResources() throws ControllerCommunicationError {
         val leader = leadershipObserver.leader().orElse(null);
         if (null == leader) {
-            log.info("Leader not found for cluster. Cannot fetch last state data from controller.");
-            return LocalServiceInstanceResources.EMPTY;
+            throw ControllerCommunicationError.noLeader();
         }
         try {
             val uri = String.format("%s://%s:%d/apis/v1/internal/cluster/resources/reserved",
@@ -97,23 +96,23 @@ public class ClusterClient {
                             return mapper.readValue(EntityUtils.toByteArray(response1.getEntity()),
                                                     new TypeReference<>() {});
                         }
-                        log.error("Error fetching resources for local service instances. Received response: [{}] {}",
+                        throw ControllerCommunicationError.commError(
                                   response1.getStatusLine().getStatusCode(), EntityUtils.toString(response1.getEntity()));
-                        return null;
                     });
-            if (null == response || null == response.getData()) {
+            if (null == response.getData()) {
                 return LocalServiceInstanceResources.EMPTY;
             }
             return response.getData();
-
+        }
+        catch (ControllerCommunicationError e) {
+            throw e;
         }
         catch (Exception e) {
-            log.error("Could not fetch all placed apps data. Error " + e.getMessage(), e);
+            throw ControllerCommunicationError.commError(e);
         }
-        return LocalServiceInstanceResources.EMPTY;
     }
 
-    private KnownInstancesData readSnapshot(String from) {
+    private KnownInstancesData readSnapshot(String from) throws ControllerCommunicationError {
         val executorId = executorIdManager.executorId().orElse(null);
         if (null == executorId) {
             log.info("Executor Id not yet available. Cannot fetch last state data from controller.");
@@ -150,6 +149,9 @@ public class ClusterClient {
             }
             return response.getData();
 
+        }
+        catch (ControllerCommunicationError e) {
+            throw e;
         }
         catch (Exception e) {
             log.error("Could not fetch last known instances data. Error " + e.getMessage(), e);

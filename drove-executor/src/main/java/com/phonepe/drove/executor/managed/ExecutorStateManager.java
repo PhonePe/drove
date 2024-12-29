@@ -19,6 +19,8 @@ package com.phonepe.drove.executor.managed;
 import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeException;
@@ -27,6 +29,7 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,10 +40,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Manages executor state during startup.
+ * An executor starts in unready state and gets to active state once,
+ * it required local instances information from controller and waits to change state till required instances are
+ * spun up. Executor will remain in unready state till all instances are spun up and healthy.
+ * In case of fresh executors this will be stuck till controller spins up required instances on it. In case of
+ * executor restart or unblacklisting, {@link InstanceRecovery} will run before this and ensure all instances are ready for reference
+ * before this is invoked. If something has stopped during restart, this will wait till controller spins them up.
  */
 @Slf4j
 @Singleton
+@Order(80)
 public class ExecutorStateManager implements Managed {
     private final AtomicReference<ExecutorState> currentState = new AtomicReference<>(ExecutorState.ACTIVE);
     private final ConsumingFireForgetSignal<ExecutorState> stateChanged = new ConsumingFireForgetSignal<>();
@@ -50,8 +60,9 @@ public class ExecutorStateManager implements Managed {
     private final ClusterClient clusterClient;
 
     @Inject
-    public ExecutorStateManager(LocalServiceInstanceEngine localServiceInstanceEngine,
-                                ClusterClient clusterClient) {
+    public ExecutorStateManager(
+            LocalServiceInstanceEngine localServiceInstanceEngine,
+            ClusterClient clusterClient) {
         this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.clusterClient = clusterClient;
     }
@@ -68,10 +79,6 @@ public class ExecutorStateManager implements Managed {
         return currentState.get();
     }
 
-    public boolean isBlacklisted() {
-        return ExecutorState.BLACKLISTED.equals(currentState.get());
-    }
-
     public ConsumingFireForgetSignal<ExecutorState> onStateChange() {
         return stateChanged;
     }
@@ -79,7 +86,7 @@ public class ExecutorStateManager implements Managed {
     @Override
     public void start() throws Exception {
         stateChanged.connect(state -> {
-            if(state.equals(ExecutorState.UNREADY)) {
+            if (state.equals(ExecutorState.UNREADY)) {
                 log.info("Executor entered unready state, will check and activate");
                 executorService.submit(this::ensureActive);
             }
@@ -100,13 +107,13 @@ public class ExecutorStateManager implements Managed {
     }
 
     private void ensureActive() {
-        val requiredResources = clusterClient.reservedResources();
+        val requiredResources = findRequiredResources();
 
         val retryPolicy = RetryPolicy.<Boolean>builder()
                 .withDelay(Duration.ofSeconds(1))
                 .withMaxAttempts(-1)
                 .onFailedAttempt(event -> {
-                    if(event.getLastException() != null) {
+                    if (event.getLastException() != null) {
                         log.error("Attempt: {} : Local service instances check failed with error: {}",
                                   event.getAttemptCount(), event.getLastException().getMessage());
                     }
@@ -122,7 +129,9 @@ public class ExecutorStateManager implements Managed {
                     .get(() -> {
                         val currCounts = localServiceInstanceEngine.currentState()
                                 .stream()
-                                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId, Collectors.counting()));
+                                .filter(instance -> instance.getState().equals(LocalServiceInstanceState.HEALTHY))
+                                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
+                                                               Collectors.counting()));
                         return requiredResources.getRequiredInstances()
                                 .entrySet()
                                 .stream()
@@ -135,5 +144,20 @@ public class ExecutorStateManager implements Managed {
         }
         log.info("All required local service instances present. Activating executor");
         updateState(ExecutorState.ACTIVE);
+    }
+
+    private LocalServiceInstanceResources findRequiredResources() {
+        val retryPolicy = RetryPolicy.<LocalServiceInstanceResources>builder()
+                .withDelay(Duration.ofSeconds(1))
+                .withMaxAttempts(-1)
+                .onFailedAttempt(event -> {
+                    if (event.getLastException() != null) {
+                        log.error("Attempt: {} : Finding Local service instance information failed with error: {}",
+                                  event.getAttemptCount(), event.getLastException().getMessage());
+                    }
+                })
+                .build();
+        return Failsafe.with(retryPolicy)
+                .get(clusterClient::reservedResources);
     }
 }

@@ -68,9 +68,9 @@ import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
 /**
  *
  */
-@Order(60)
 @Slf4j
 @Singleton
+@Order(60)
 public class ContainerStatsObserver implements Managed {
     private static final String STATS_OBSERVER_HANDLER_NAME = "stats-observer";
     private static final String REPORTER_HANDLER_NAME = "timed-reporter";
