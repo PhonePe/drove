@@ -20,10 +20,13 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.controller.ExecutorSnapshotMessage;
 import com.phonepe.drove.common.model.controller.InstanceStateReportMessage;
+import com.phonepe.drove.common.model.controller.LocalServiceInstanceStateReportMessage;
 import com.phonepe.drove.common.model.controller.TaskStateReportMessage;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.val;
@@ -154,6 +157,56 @@ class ControllerMessageHandlerTest {
         }).when(su).updateSingle(isNull(), any(TaskInfo.class));
 
         val r = new TaskStateReportMessage(MessageHeader.executorRequest(), null, instance)
+                .accept(cmh);
+        assertEquals(1, ctr.get());
+        assertEquals(MessageDeliveryStatus.FAILED, r.getStatus());
+    }
+
+    @Test
+    void testLocalServiceInstanceStateReportMessageSuccess() {
+        val su = mock(StateUpdater.class);
+        val cmh = new ControllerMessageHandler(su);
+
+        val spec = localServiceSpec();
+        val aid = ControllerUtils.deployableObjectId(spec);
+        val instance = generateLocalServiceInstanceInfo(aid,
+                                                        spec,
+                                                        1,
+                                                        LocalServiceInstanceState.HEALTHY,
+                                                        new Date(),
+                                                        "Test Error");
+        val ctr = new AtomicInteger();
+        doAnswer(invocationOnMock -> {
+            ctr.incrementAndGet();
+            return true;
+        }).when(su).updateSingle(isNull(), any(LocalServiceInstanceInfo.class));
+
+        val r = new LocalServiceInstanceStateReportMessage(MessageHeader.executorRequest(), null, instance)
+                .accept(cmh);
+        assertEquals(1, ctr.get());
+        assertEquals(MessageDeliveryStatus.ACCEPTED, r.getStatus());
+    }
+
+    @Test
+    void testLocalServiceInstanceStateReportMessageFailure() {
+        val su = mock(StateUpdater.class);
+        val cmh = new ControllerMessageHandler(su);
+
+        val spec = localServiceSpec();
+        val aid = ControllerUtils.deployableObjectId(spec);
+        val instance = generateLocalServiceInstanceInfo(aid,
+                                                        spec,
+                                                        1,
+                                                        LocalServiceInstanceState.HEALTHY,
+                                                        new Date(),
+                                                        "Test Error");
+        val ctr = new AtomicInteger();
+        doAnswer(invocationOnMock -> {
+            ctr.incrementAndGet();
+            return false;
+        }).when(su).updateSingle(isNull(), any(LocalServiceInstanceInfo.class));
+
+        val r = new LocalServiceInstanceStateReportMessage(MessageHeader.executorRequest(), null, instance)
                 .accept(cmh);
         assertEquals(1, ctr.get());
         assertEquals(MessageDeliveryStatus.FAILED, r.getStatus());

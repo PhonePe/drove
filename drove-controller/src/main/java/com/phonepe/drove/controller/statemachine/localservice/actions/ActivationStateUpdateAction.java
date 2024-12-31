@@ -24,46 +24,40 @@ import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.statemachine.StateData;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
-import javax.inject.Inject;
+import static com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE;
+import static com.phonepe.drove.models.localservice.LocalServiceState.DESTROYED;
+import static com.phonepe.drove.models.localservice.LocalServiceState.INACTIVE;
 
 /**
  *
  */
-@Slf4j
-public class CreateLocalServiceAction extends OperationDrivenLocalServiceAction {
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class ActivationStateUpdateAction extends OperationDrivenLocalServiceAction {
     private final LocalServiceStateDB stateDB;
 
-    @Inject
-    public CreateLocalServiceAction(LocalServiceStateDB stateDB) {
-        this.stateDB = stateDB;
-    }
-
     @Override
-    public StateData<LocalServiceState, LocalServiceInfo> commandReceived(
+    protected StateData<LocalServiceState, LocalServiceInfo> commandReceived(
             LocalServiceActionContext context,
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation) {
-        val existing = stateDB.service(context.getServiceId())
-                .orElse(null);
-        if(null == existing) { //Hit in create path
-            if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.INACTIVE))) {
-                val updated = stateDB.service(context.getServiceId()).orElse(null);
-                if(null != updated) {
-                    return StateData.create(LocalServiceState.INACTIVE, updated);
-                }
-            }
-        }
-        else { //Will be hit in recovery path
-            val toState = switch (existing.getState()) {
-                case ACTIVE -> LocalServiceState.ACTIVE;
-                case INACTIVE -> LocalServiceState.INACTIVE;
-            };
-            return StateData.create(toState, existing);
-        }
-        //Should not ever happen
-        return StateData.from(currentState, LocalServiceState.DESTROYED);
+        return stateDB.service(context.getServiceId())
+                .map(existing -> {
+                    if (stateDB.updateService(context.getServiceId(),
+                                              existing.withState(stateToBeSet()))) {
+                        return stateDB.service(context.getServiceId()).orElse(existing);
+                    }
+                    return existing;
+                })
+                .map(service -> switch (service.getState()) {
+                    case ACTIVE -> StateData.create(ACTIVE, service);
+                    case INACTIVE -> StateData.create(INACTIVE, service);
+                })
+                .orElse(StateData.from(currentState, DESTROYED));
+
     }
+
+    protected abstract ActivationState stateToBeSet();
 }

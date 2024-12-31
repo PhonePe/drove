@@ -17,15 +17,8 @@
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
-import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
-import com.phonepe.drove.controller.statemachine.localservice.OperationDrivenLocalServiceAction;
 import com.phonepe.drove.models.localservice.ActivationState;
-import com.phonepe.drove.models.localservice.LocalServiceInfo;
-import com.phonepe.drove.models.localservice.LocalServiceState;
-import com.phonepe.drove.models.operation.LocalServiceOperation;
-import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 import javax.inject.Inject;
 
@@ -33,34 +26,16 @@ import javax.inject.Inject;
  *
  */
 @Slf4j
-public class DeactivateLocalServiceAction extends OperationDrivenLocalServiceAction {
-    private final LocalServiceStateDB stateDB;
+public class DeactivateLocalServiceAction extends ActivationStateUpdateAction {
 
     @Inject
     public DeactivateLocalServiceAction(LocalServiceStateDB stateDB) {
-        this.stateDB = stateDB;
+        super(stateDB);
     }
 
-    @Override
-    protected StateData<LocalServiceState, LocalServiceInfo> commandReceived(
-            LocalServiceActionContext context,
-            StateData<LocalServiceState, LocalServiceInfo> currentState,
-            LocalServiceOperation operation) {
-        val activationState = stateDB.service(context.getServiceId())
-                .map(LocalServiceInfo::getState)
-                .orElse(ActivationState.UNKNOWN);
-        val toState = switch (activationState) {
-            case INACTIVE -> LocalServiceState.INACTIVE;
-            case ACTIVE, UNKNOWN -> {
-                if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.INACTIVE))) {
-                    yield LocalServiceState.INACTIVE;
-                }
-                yield LocalServiceState.DESTROYED;
-            }
-        };
 
-        return StateData.create(toState,
-                                stateDB.service(context.getServiceId())
-                                        .orElse(currentState.getData().withState(ActivationState.INACTIVE)));
+    @Override
+    protected ActivationState stateToBeSet() {
+        return ActivationState.INACTIVE;
     }
 }

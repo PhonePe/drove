@@ -110,7 +110,7 @@ public class AppRecovery implements Managed {
                                                                applicationInfo.getInstances(),
                                                                defaultClusterOpSpec));
                         if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
-                            log.error("Error sending command to state machine. Error: " + res.getMessages());
+                            log.error("Error sending command to application state machine. Error: " + res.getMessages());
                         }
                     }
                     catch (Exception e) {
@@ -153,7 +153,7 @@ public class AppRecovery implements Managed {
                                 new LocalServiceCreateOperation(serviceInfo.getSpec(),
                                                                 serviceInfo.getInstancesPerHost()));
                         if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
-                            log.error("Error sending command to state machine. Error: " + res.getMessages());
+                            log.error("Error sending command to local service state machine. Error: " + res.getMessages());
                         }
                     }
                     catch (Exception e) {

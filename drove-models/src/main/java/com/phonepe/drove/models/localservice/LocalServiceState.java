@@ -18,8 +18,6 @@ package com.phonepe.drove.models.localservice;
 
 import lombok.Getter;
 
-import java.util.Set;
-
 /**
  * State of a service running on executor
  */
@@ -35,8 +33,6 @@ public enum LocalServiceState {
     STOPPING_INSTANCES(false),
     DESTROY_REQUESTED(false),
     DESTROYED(true);
-
-    public static final Set<LocalServiceState> ACTIVE_STATES = Set.of(ACTIVE);
 
     private final boolean terminal;
 

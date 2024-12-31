@@ -30,6 +30,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.internal.KnownInstancesData;
 import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
+import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
@@ -92,10 +93,10 @@ public class InternalApis {
         var requiredMemory = 0L;
         val requiredApps = new HashMap<String, Integer>();
         for(val localServiceInfo : localServiceStateDB.services(0, Integer.MAX_VALUE)) {
-            val currState = localServiceEngine.currentState(localServiceInfo.getServiceId()).orElse(
-                    LocalServiceState.DESTROYED);
+            val currState = localServiceEngine.currentState(localServiceInfo.getServiceId())
+                    .orElse(LocalServiceState.DESTROYED);
             val spec = localServiceInfo.getSpec();
-            if(LocalServiceState.ACTIVE_STATES.contains(currState)) {
+            if(LocalServiceState.ACTIVE.equals(currState)) {
                 val instancesPerNode = localServiceInfo.getInstancesPerHost();
                 requiredCPU += ControllerUtils.totalCPU(spec, instancesPerNode);
                 requiredMemory+= ControllerUtils.totalMemory(spec, instancesPerNode);
@@ -147,29 +148,7 @@ public class InternalApis {
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
                                                Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
                                                                   Collectors.toUnmodifiableList())));
-        instancesByService.forEach((serviceId, instances) -> {
-            val service = localServiceStateDB.service(serviceId);
-            if (service.isPresent()) {
-                val extraInstances = service
-                        .filter(serviceInfo -> serviceInfo.getInstancesPerHost() < instances.size())
-                        .map(serviceInfo -> CommonUtils.sublist(instances,
-                                                                serviceInfo.getInstancesPerHost(),
-                                                                instances.size()))
-                        .orElse(List.of());
-                if (extraInstances.isEmpty()) {
-                    lsInstances.addAll(instances);
-                }
-                else {
-                    lsInstances.addAll(CommonUtils.sublist(instances,
-                                                           0,
-                                                           service.get().getInstancesPerHost()));
-                    staleLSInstances.addAll(extraInstances);
-                }
-            }
-            else {
-                staleLSInstances.addAll(instances);
-            }
-        });
+        instancesByService.forEach((serviceId, instances) -> populateServiceInstances(serviceId, instances, lsInstances, staleLSInstances));
 
         return new KnownInstancesData(appInstances,
                                       staleAppInstances,
@@ -177,5 +156,33 @@ public class InternalApis {
                                       staleTaskInstances,
                                       lsInstances,
                                       staleLSInstances);
+    }
+
+    private void populateServiceInstances(
+            String serviceId,
+            List<String> instances,
+            Set<String> lsInstances,
+            Set<String> staleLSInstances) {
+        val service = localServiceStateDB.service(serviceId);
+        if (service.isPresent() && service.get().getState() == ActivationState.ACTIVE) {
+            val extraInstances = service
+                    .filter(serviceInfo -> serviceInfo.getInstancesPerHost() < instances.size())
+                    .map(serviceInfo -> CommonUtils.sublist(instances,
+                                                            serviceInfo.getInstancesPerHost(),
+                                                            instances.size()))
+                    .orElse(List.of());
+            if (extraInstances.isEmpty()) {
+                lsInstances.addAll(instances);
+            }
+            else {
+                lsInstances.addAll(CommonUtils.sublist(instances,
+                                                       0,
+                                                       service.get().getInstancesPerHost()));
+                staleLSInstances.addAll(extraInstances);
+            }
+        }
+        else {
+            staleLSInstances.addAll(instances);
+        }
     }
 }

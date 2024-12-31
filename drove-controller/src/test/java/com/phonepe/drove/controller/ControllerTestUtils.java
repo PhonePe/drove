@@ -20,6 +20,7 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
@@ -165,44 +166,45 @@ public class ControllerTestUtils {
 
     public static LocalServiceSpec localServiceSpec(final String name, final int version) {
         return new LocalServiceSpec(name,
-                                   String.format("%05d", version),
-                                   new DockerCoordinates(CommonTestUtils.LOCAL_SERVICE_IMAGE_NAME, Duration.seconds(100)),
-                                   List.of(new PortSpec("main", 8000, PortType.HTTP)),
-                                   List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
-                                   List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
-                                   JobType.LOCAL_SERVICE,
-                                   LocalLoggingSpec.DEFAULT,
-                                   List.of(new CPURequirement(1), new MemoryRequirement(512)),
-                                   new LocalPlacementPolicy(false),
-                                   new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
-                                                                       "main",
-                                                                       "/",
-                                                                       HTTPVerb.GET,
-                                                                       Collections.singleton(200),
-                                                                       "",
-                                                                       Duration.seconds(1),
-                                                                       false),
-                                                 Duration.seconds(1),
-                                                 Duration.seconds(3),
-                                                 3,
-                                                 Duration.seconds(0)),
-                                   new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
-                                                                       "main",
-                                                                       "/",
-                                                                       HTTPVerb.GET,
-                                                                       Collections.singleton(200),
-                                                                       "",
-                                                                       Duration.seconds(1),
-                                                                       false),
-                                                 Duration.seconds(1),
-                                                 Duration.seconds(3),
-                                                 3,
-                                                 Duration.seconds(1)),
-                                   Collections.emptyMap(),
-                                   Collections.emptyMap(),
-                                   null,
-                                   Collections.emptyList(),
-                                   null);
+                                    String.format("%05d", version),
+                                    new DockerCoordinates(CommonTestUtils.LOCAL_SERVICE_IMAGE_NAME,
+                                                          Duration.seconds(100)),
+                                    List.of(new PortSpec("main", 8000, PortType.HTTP)),
+                                    List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
+                                    List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
+                                    JobType.LOCAL_SERVICE,
+                                    LocalLoggingSpec.DEFAULT,
+                                    List.of(new CPURequirement(1), new MemoryRequirement(512)),
+                                    new LocalPlacementPolicy(false),
+                                    new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                                                        "main",
+                                                                        "/",
+                                                                        HTTPVerb.GET,
+                                                                        Collections.singleton(200),
+                                                                        "",
+                                                                        Duration.seconds(1),
+                                                                        false),
+                                                  Duration.seconds(1),
+                                                  Duration.seconds(3),
+                                                  3,
+                                                  Duration.seconds(0)),
+                                    new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
+                                                                        "main",
+                                                                        "/",
+                                                                        HTTPVerb.GET,
+                                                                        Collections.singleton(200),
+                                                                        "",
+                                                                        Duration.seconds(1),
+                                                                        false),
+                                                  Duration.seconds(1),
+                                                  Duration.seconds(3),
+                                                  3,
+                                                  Duration.seconds(1)),
+                                    Collections.emptyMap(),
+                                    Collections.emptyMap(),
+                                    null,
+                                    Collections.emptyList(),
+                                    null);
     }
 
     public static AllocatedExecutorNode allocatedExecutorNode(int port) {
@@ -217,22 +219,15 @@ public class ControllerTestUtils {
     }
 
     public static ExecutorHostInfo executorHost(final int port) {
-        return executorHost(port, List.of(), List.of());
+        return executorHost(port, List.of(), List.of(), List.of());
     }
 
     public static ExecutorHostInfo executorHost(
             final int port,
             final List<InstanceInfo> appInstances,
-            final List<TaskInfo> taskInstances) {
-        return executorHost(1, port, appInstances, taskInstances);
-    }
-
-    public static ExecutorHostInfo executorHost(
-            final int index,
-            final int port,
-            final List<InstanceInfo> appInstances,
-            final List<TaskInfo> taskInstances) {
-        return executorHost(index, port, appInstances, taskInstances, false);
+            final List<TaskInfo> taskInstances,
+            final List<LocalServiceInstanceInfo> serviceInstances) {
+        return executorHost(1, port, appInstances, taskInstances, serviceInstances);
     }
 
     public static ExecutorHostInfo executorHost(
@@ -240,8 +235,24 @@ public class ControllerTestUtils {
             final int port,
             final List<InstanceInfo> appInstances,
             final List<TaskInfo> taskInstances,
+            final List<LocalServiceInstanceInfo> serviceInstances) {
+        return executorHost(index, port, appInstances, taskInstances, serviceInstances, false);
+    }
+
+    public static ExecutorHostInfo executorHost(
+            final int index,
+            final int port,
+            final List<InstanceInfo> appInstances,
+            final List<TaskInfo> taskInstances,
+            final List<LocalServiceInstanceInfo> serviceInstances,
             boolean blacklisted) {
-        return executorHost("Ex" + index, index, port, appInstances, taskInstances, blacklisted);
+        return executorHost("Ex" + index,
+                            index,
+                            port,
+                            appInstances,
+                            taskInstances,
+                            serviceInstances,
+                            blacklisted);
     }
 
     public static ExecutorHostInfo executorHost(
@@ -250,6 +261,7 @@ public class ControllerTestUtils {
             final int port,
             final List<InstanceInfo> appInstances,
             final List<TaskInfo> taskInstances,
+            List<LocalServiceInstanceInfo> serviceInstances,
             boolean blacklisted) {
         return new ExecutorHostInfo(
                 "Ex" + index,
@@ -273,7 +285,7 @@ public class ControllerTestUtils {
                                                                                             4 * 128 * (2L ^ 20)))),
                                      appInstances,
                                      taskInstances,
-                                     List.of(),
+                                     serviceInstances,
                                      Set.of(),
                                      blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
@@ -357,6 +369,41 @@ public class ControllerTestUtils {
                                 date);
     }
 
+    public static LocalServiceInstanceInfo generateLocalServiceInstanceInfo(LocalServiceSpec spec) {
+        return generateLocalServiceInstanceInfo(ControllerUtils.deployableObjectId(spec),
+                                                spec,
+                                                1,
+                                                LocalServiceInstanceState.HEALTHY,
+                                                new Date(),
+                                                "");
+    }
+
+    public static LocalServiceInstanceInfo generateLocalServiceInstanceInfo(
+            final String serviceId,
+            final LocalServiceSpec spec,
+            int idx,
+            LocalServiceInstanceState state,
+            Date date,
+            String errorMessage) {
+        return new LocalServiceInstanceInfo(serviceId,
+                                            spec.getName(),
+                                            String.format("SI-%s-%05d", serviceId, idx),
+                                            EXECUTOR_ID,
+                                            new LocalInstanceInfo("localhost",
+                                                                  Collections.singletonMap("main",
+                                                                                           new InstancePort(
+                                                                                                   8000,
+                                                                                                   32000,
+                                                                                                   PortType.HTTP))),
+                                            List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
+                                                    new MemoryAllocation(Map.of(0, 512L))),
+                                            state,
+                                            Collections.emptyMap(),
+                                            errorMessage,
+                                            date,
+                                            date);
+    }
+
     public static LocalServiceInstanceInfo generateInstanceInfo(
             final String serviceId,
             final LocalServiceSpec spec,
@@ -373,22 +420,22 @@ public class ControllerTestUtils {
             Date date,
             String errorMessage) {
         return new LocalServiceInstanceInfo(serviceId,
-                                spec.getName(),
-                                String.format("SI-%05d", idx),
-                                EXECUTOR_ID,
-                                new LocalInstanceInfo("localhost",
-                                                      Collections.singletonMap("main",
-                                                                               new InstancePort(
-                                                                                       8000,
-                                                                                       32000,
-                                                                                       PortType.HTTP))),
-                                List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
-                                        new MemoryAllocation(Map.of(0, 512L))),
-                                state,
-                                Collections.emptyMap(),
-                                errorMessage,
-                                date,
-                                date);
+                                            spec.getName(),
+                                            String.format("SI-%05d", idx),
+                                            EXECUTOR_ID,
+                                            new LocalInstanceInfo("localhost",
+                                                                  Collections.singletonMap("main",
+                                                                                           new InstancePort(
+                                                                                                   8000,
+                                                                                                   32000,
+                                                                                                   PortType.HTTP))),
+                                            List.of(new CPUAllocation(Map.of(0, Set.of(idx))),
+                                                    new MemoryAllocation(Map.of(0, 512L))),
+                                            state,
+                                            Collections.emptyMap(),
+                                            errorMessage,
+                                            date,
+                                            date);
     }
 
     public static TaskInfo generateTaskInfo(final TaskSpec spec, int idx) {

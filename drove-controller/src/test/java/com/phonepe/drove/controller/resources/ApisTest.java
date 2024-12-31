@@ -37,8 +37,15 @@ import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceDestroyOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
@@ -105,7 +112,7 @@ class ApisTest {
     }
 
     @Test
-    void acceptOperation() {
+    void acceptAppsOperation() {
 
         val maintenance = new AtomicBoolean();
         when(clusterStateDB.currentState())
@@ -167,7 +174,7 @@ class ApisTest {
 
 
     @Test
-    void cancelJobForCurrentOp() {
+    void cancelJobForCurrentAppOp() {
         val success = new AtomicBoolean();
         when(applicationEngine.cancelCurrentJob(anyString()))
                 .thenAnswer(invocationOnMock -> success.get());
@@ -366,6 +373,260 @@ class ApisTest {
             val r = EXT.target("/v1/applications/" + appId + "/instances/old")
                     .request()
                     .get(new GenericType<ApiResponse<List<InstanceInfo>>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(instances, r.getData());
+        }
+    }
+
+    @Test
+    void acceptLocalServiceOperation() {
+
+        val maintenance = new AtomicBoolean();
+        when(clusterStateDB.currentState())
+                .thenAnswer(invocationOnMock
+                                    -> maintenance.get()
+                                       ? Optional.of(new ClusterStateData(ClusterState.MAINTENANCE, new Date()))
+                                       : Optional.empty());
+        val success = new AtomicBoolean();
+        when(localServiceEngine.handleOperation(any(LocalServiceOperation.class)))
+                .thenAnswer(invocationOnMock ->
+                                    success.get()
+                                    ? success()
+                                    : failure("Test Failure"));
+        { // Set maintenance mode .. so request will fail
+            maintenance.set(true);
+            try (val r = EXT.target("/v1/localservices/operations")
+                    .request()
+                    .post(Entity.entity(new LocalServiceDestroyOperation("TEST_SERVICE_1"),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {  //Force a failure by sending null entity
+            maintenance.set(false);
+            success.set(false);
+            try (val r = EXT.target("/v1/localservices/operations")
+                    .request()
+                    .post(Entity.json(null))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+
+        { //Force a failure empty data
+            try (val r = EXT.target("/v1/localservices/operations")
+                    .request()
+                    .post(Entity.json(Map.of()))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        { //Force a failure
+            try (val r = EXT.target("/v1/localservices/operations")
+                    .request()
+                    .post(Entity.entity(new LocalServiceDestroyOperation("TEST_APP_1"),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            success.set(true);
+            val r = EXT.target("/v1/localservices/operations")
+                    .request()
+                    .post(Entity.entity(new LocalServiceDestroyOperation("TEST_SERVICE_1"),
+                                        MediaType.APPLICATION_JSON_TYPE),
+                          new GenericType<ApiResponse<Map<String, String>>>() {
+                          });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+    }
+
+    @Test
+    void cancelJobForCurrentLocalServiceOp() {
+        val success = new AtomicBoolean();
+        when(localServiceEngine.cancelCurrentJob(anyString()))
+                .thenAnswer(invocationOnMock -> success.get());
+        { // Force a app level failure
+            try (val r = EXT.target("/v1/localservices/operations/TEST_SERVICE_1/cancel")
+                    .request()
+                    .post(Entity.json(null))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            success.set(true);
+            val r = EXT.target("/v1/localservices/operations/TEST_SERVICE_1/cancel")
+                    .request()
+                    .post(Entity.json(null), new GenericType<ApiResponse<Void>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+    }
+
+    @Test
+    void localServices() {
+        when(responseEngine.localServices(0, Apis.MAX_ELEMENTS)).thenReturn(ApiResponse.success(null));
+        when(responseEngine.localServices(0, 1024)).thenReturn(ApiResponse.success(null));
+
+        {
+            try (val r = EXT.target("/v1/localservices")
+                    .queryParam("from", -1)
+                    .queryParam("size", 1024)
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            try (val r = EXT.target("/v1/localservices")
+                    .queryParam("from", 0)
+                    .queryParam("size", Integer.MAX_VALUE)
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            val r = EXT.target("/v1/localservices")
+                    .request()
+                    .get(new GenericType<ApiResponse<Map<String, AppSummary>>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+    }
+
+    @Test
+    void localService() {
+        val spec = localServiceSpec();
+        val localServiceSummary = new LocalServiceSummary(ControllerUtils.deployableObjectId(spec),
+                                                          spec.getName(),
+                                                          10,
+                                                          10,
+                                                          100,
+                                                          512,
+                                                          spec.getTags(),
+                                                          ActivationState.ACTIVE,
+                                                          LocalServiceState.ACTIVE,
+                                                          new Date(),
+                                                          new Date());
+        when(responseEngine.localService("TEST_SERVICE_1"))
+                .thenReturn(ApiResponse.success(localServiceSummary));
+        {
+            val r = EXT.target("/v1/localservices/TEST_SERVICE_1")
+                    .request()
+                    .get(new GenericType<ApiResponse<LocalServiceSummary>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(localServiceSummary, r.getData());
+        }
+    }
+
+    @Test
+    void testLocalServiceSpec() {
+        val spec = localServiceSpec();
+
+        when(responseEngine.localServiceSpec("TEST_SERVICE_1"))
+                .thenReturn(ApiResponse.success(spec));
+        {
+            val r = EXT.target("/v1/localservices/TEST_SERVICE_1/spec")
+                    .request()
+                    .get(new GenericType<ApiResponse<LocalServiceSpec>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(spec, r.getData());
+        }
+    }
+
+    @Test
+    void localServiceInstances() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        {
+            val instances = IntStream.rangeClosed(1, 100)
+                    .mapToObj(i -> ControllerTestUtils.generateLocalServiceInstanceInfo(ControllerUtils.deployableObjectId(
+                                                                                                spec),
+                                                                                        spec,
+                                                                                        i,
+                                                                                        LocalServiceInstanceState.HEALTHY,
+                                                                                        new Date(),
+                                                                                        ""))
+                    .toList();
+            when(responseEngine.localServiceInstances(serviceId, EnumSet.of(LocalServiceInstanceState.HEALTHY)))
+                    .thenReturn(ApiResponse.success(instances));
+
+            val r = EXT.target("/v1/localservices/" + serviceId + "/instances")
+                    .queryParam("state", InstanceState.HEALTHY.name())
+                    .request()
+                    .get(new GenericType<ApiResponse<List<LocalServiceInstanceInfo>>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(instances, r.getData());
+        }
+        {
+            reset(responseEngine);
+            val instances = IntStream.rangeClosed(1, 100)
+                    .mapToObj(i -> ControllerTestUtils.generateLocalServiceInstanceInfo(ControllerUtils.deployableObjectId(
+                                                                                                spec),
+                                                                                        spec,
+                                                                                        i,
+                                                                                        LocalServiceInstanceState.HEALTHY,
+                                                                                        new Date(),
+                                                                                        ""))
+                    .toList();
+            when(responseEngine.localServiceInstances(eq(serviceId), any())).thenReturn(ApiResponse.success(instances));
+
+            val r = EXT.target("/v1/localservices/" + serviceId + "/instances")
+                    .request()
+                    .get(new GenericType<ApiResponse<List<LocalServiceInstanceInfo>>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(instances, r.getData());
+        }
+    }
+
+    @Test
+    void localServiceInstance() {
+        val spec = localServiceSpec();
+
+        val instance = ControllerTestUtils.generateLocalServiceInstanceInfo(
+                ControllerUtils.deployableObjectId(spec),
+                spec,
+                1,
+                LocalServiceInstanceState.HEALTHY,
+                new Date(),
+                "");
+        when(responseEngine.localServiceInstanceDetails("TEST_SERVICE_1", instance.getInstanceId()))
+                .thenReturn(ApiResponse.success(instance));
+        {
+            val r = EXT.target("/v1/localservices/TEST_SERVICE_1/instances/" + instance.getInstanceId())
+                    .request()
+                    .get(new GenericType<ApiResponse<LocalServiceInstanceInfo>>() {
+                    });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+            assertEquals(instance, r.getData());
+        }
+    }
+
+    @Test
+    void localServiceOldInstances() {
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+
+        val instances = IntStream.rangeClosed(1, 100)
+                .mapToObj(i -> ControllerTestUtils.generateLocalServiceInstanceInfo(
+                        ControllerUtils.deployableObjectId(spec),
+                        spec,
+                        i,
+                        LocalServiceInstanceState.HEALTHY,
+                        new Date(),
+                        ""))
+                .toList();
+        when(responseEngine.localServiceOldInstances(serviceId))
+                .thenReturn(ApiResponse.success(instances));
+
+        {
+            val r = EXT.target("/v1/localservices/" + serviceId + "/instances/old")
+                    .request()
+                    .get(new GenericType<ApiResponse<List<LocalServiceInstanceInfo>>>() {
                     });
             assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
             assertEquals(instances, r.getData());

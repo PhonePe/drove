@@ -598,7 +598,7 @@ class ResponseEngineTest {
     private void testBlacklistingMultiFunctionality(
             final BiFunction<ResponseEngine, Set<String>, ApiResponse<Map<String, Set<String>>>> func) {
         val executors = IntStream.rangeClosed(1, 10)
-                .mapToObj(i -> executorHost(i, 8080, List.of(), List.of()))
+                .mapToObj(i -> executorHost(i, 8080, List.of(), List.of(), List.of()))
                 .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, Function.identity()));
         when(clusterResourcesDB.currentSnapshot(false)).thenReturn(List.copyOf(executors.values()));
         when(clusterResourcesDB.currentSnapshot(anyString()))

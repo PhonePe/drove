@@ -21,6 +21,5 @@ package com.phonepe.drove.models.localservice;
  */
 public enum ActivationState {
     ACTIVE,
-    INACTIVE,
-    UNKNOWN
+    INACTIVE
 }

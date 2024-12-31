@@ -427,7 +427,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.executorCount(true)).thenReturn(4L);
         when(crDB.currentSnapshot(true))
                 .thenReturn(IntStream.range(0, 3)
-                                    .mapToObj(i -> ControllerTestUtils.executorHost(i, 8000, List.of(), List.of()))
+                                    .mapToObj(i -> ControllerTestUtils.executorHost(i, 8000, List.of(), List.of(),
+                                                                                    List.of()))
                                     .toList());
 
         ensureFailure(validator.validate(

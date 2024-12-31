@@ -16,7 +16,9 @@
 
 package com.phonepe.drove.controller.managed;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -54,10 +56,7 @@ import java.util.stream.Collectors;
 @Singleton
 public class LocalServiceMonitor implements Managed {
     private static final String HANDLER_NAME = "LOCAL_SERVICE_CHECK_MONITOR";
-    private final ScheduledSignal refreshSignal = ScheduledSignal.builder()
-            .initialDelay(Duration.ofSeconds(5))
-            .interval(Duration.ofSeconds(30))
-            .build();
+    private final ScheduledSignal refreshSignal;
 
     private final ClusterResourcesDB clusterResourcesDB;
     private final ClusterStateDB clusterStateDB;
@@ -66,17 +65,38 @@ public class LocalServiceMonitor implements Managed {
     private final LeadershipEnsurer leadershipEnsurer;
 
     @Inject
+    @IgnoreInJacocoGeneratedReport
     public LocalServiceMonitor(
             ClusterResourcesDB clusterResourcesDB,
             ClusterStateDB clusterStateDB,
             LocalServiceStateDB stateDB,
             LocalServiceLifecycleManagementEngine localServiceEngine,
             LeadershipEnsurer leadershipEnsurer) {
+        this(clusterResourcesDB,
+             clusterStateDB,
+             stateDB,
+             localServiceEngine,
+             leadershipEnsurer,
+             ScheduledSignal.builder()
+                .initialDelay(Duration.ofSeconds(5))
+                .interval(Duration.ofSeconds(30))
+                .build());
+    }
+
+    @VisibleForTesting
+    LocalServiceMonitor(
+            ClusterResourcesDB clusterResourcesDB,
+            ClusterStateDB clusterStateDB,
+            LocalServiceStateDB stateDB,
+            LocalServiceLifecycleManagementEngine localServiceEngine,
+            LeadershipEnsurer leadershipEnsurer,
+            ScheduledSignal refreshSignal) {
         this.clusterResourcesDB = clusterResourcesDB;
         this.clusterStateDB = clusterStateDB;
         this.stateDB = stateDB;
         this.localServiceEngine = localServiceEngine;
         this.leadershipEnsurer = leadershipEnsurer;
+        this.refreshSignal = refreshSignal;
     }
 
     @Override
@@ -154,7 +174,7 @@ public class LocalServiceMonitor implements Managed {
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
                     }
                 }
-                case INACTIVE, UNKNOWN -> {
+                case INACTIVE -> {
                     if (!currInstances.isEmpty()) {
                         log.info("Instances found for inactive service: {}. Need to be scaled", serviceId);
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));

@@ -99,6 +99,8 @@ class LocalServiceLifecycleManagementEngineTest {
     @Inject
     DummyExecutor executor;
 
+    private final Set<LocalServiceState> states = new HashSet<>();
+
     @BeforeAll
     public static void setupClass() {
         FunctionMetricsManager.initialize("com.phonepe.drove", SharedMetricRegistries.getOrCreate("test"));
@@ -198,6 +200,7 @@ class LocalServiceLifecycleManagementEngineTest {
 
     @AfterEach
     public void destroy() {
+        states.clear();
         executor.stop();
     }
 
@@ -207,7 +210,6 @@ class LocalServiceLifecycleManagementEngineTest {
         val spec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(spec);
 
-        val states = new HashSet<LocalServiceState>();
 
         setupStateRecorder(serviceId, states);
         createService(spec, serviceId);
@@ -217,17 +219,25 @@ class LocalServiceLifecycleManagementEngineTest {
                     new LocalServiceAdjustInstancesOperation(serviceId, null),
                     LocalServiceState.ADJUSTING_INSTANCES);
         waitForRequiredState(serviceId, LocalServiceState.ACTIVE);
-
+        CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
+                                                                .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
         sendCommand(serviceId,
                     new LocalServiceRestartOperation(serviceId, false, null),
                     LocalServiceState.REPLACING_INSTANCES);
         waitForRequiredState(serviceId, LocalServiceState.ACTIVE);
+        CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
+                                                                                .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
         deactivateService(serviceId);
 
         sendCommand(serviceId,
                     new LocalServiceAdjustInstancesOperation(serviceId, null),
                     LocalServiceState.ADJUSTING_INSTANCES);
         waitForRequiredState(serviceId, LocalServiceState.INACTIVE);
+        CommonTestUtils.waitUntil(() -> LocalServiceState.INACTIVE.equals(engine.currentState(serviceId)
+                                                                                .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
         destroyService(serviceId);
         assertEquals(EnumSet.of(LocalServiceState.INACTIVE,
                                 LocalServiceState.DEACTIVATION_REQUESTED,
@@ -270,9 +280,7 @@ class LocalServiceLifecycleManagementEngineTest {
     }
 
     private void waitForRequiredState(String serviceId, LocalServiceState required) {
-        CommonTestUtils.waitUntil(() -> required.equals(engine.currentState(serviceId)
-                                                                                .orElse(LocalServiceState.DESTROYED)),
-                                  Duration.ofSeconds(35));
+        CommonTestUtils.waitUntil(() -> states.contains(required), Duration.ofSeconds(35));
     }
 
     private void sendCommand(
@@ -281,6 +289,6 @@ class LocalServiceLifecycleManagementEngineTest {
             LocalServiceState requiredState) {
         val res = engine.handleOperation(operation);
         assertEquals(SUCCESS, res.getStatus(), Joiner.on(",").join(res.getMessages()));
-       waitForRequiredState(serviceId, requiredState);
+        waitForRequiredState(serviceId, requiredState);
     }
 }

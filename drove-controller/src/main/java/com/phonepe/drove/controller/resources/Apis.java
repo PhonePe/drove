@@ -281,9 +281,7 @@ public class Apis {
     @Path("/localservices/{serviceId}/instances/old")
     @Timed
     public ApiResponse<List<LocalServiceInstanceInfo>> localServiceOldInstances(
-            @PathParam("serviceId") @NotEmpty final String serviceId,
-            @QueryParam("start") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue("0") int start,
-            @QueryParam("size") @Min(0) @Max(MAX_ELEMENTS) @DefaultValue(MAX_ELEMENTS_TEXT) int size) {
+            @PathParam("serviceId") @NotEmpty final String serviceId) {
         return responseEngine.localServiceOldInstances(serviceId);
     }
 

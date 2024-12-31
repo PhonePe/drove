@@ -25,6 +25,8 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import lombok.val;
@@ -184,5 +186,66 @@ class UITest {
         assertNotNull(resource.executorDetails("TestExec"));
     }
 
+    @Test
+    void testLocalServiceDetails() {
+        when(localServiceStateDB.service("TEST_SERVICE"))
+                .thenReturn(Optional.of(new LocalServiceInfo("TEST_SERVICE",
+                                                             ControllerTestUtils.localServiceSpec(),
+                                                             1,
+                                                             ActivationState.ACTIVE,
+                                                             new Date(),
+                                                             new Date())));
+        assertThrows(WebApplicationException.class,
+                     () -> resource.localserviceDetails(null));
+        assertThrows(WebApplicationException.class,
+                     () ->resource.localserviceDetails("WrongApp"));
+        assertNotNull(resource.localserviceDetails("TEST_SERVICE"));
+    }
+
+    @Test
+    void testLocalServiceInstanceDetailsPage() {
+
+
+        when(localServiceStateDB.service("TEST_SERVICE"))
+                .thenReturn(Optional.of(new LocalServiceInfo("TEST_SERVICE",
+                                                             ControllerTestUtils.localServiceSpec(),
+                                                             1,
+                                                             ActivationState.ACTIVE,
+                                                             new Date(),
+                                                             new Date())));
+        assertThrows(WebApplicationException.class,
+                     () -> resource.localServiceInstanceDetailsPage(null,
+                                                                   null,
+                                                                   null));
+        assertThrows(WebApplicationException.class,
+                     () -> resource.localServiceInstanceDetailsPage(null,
+                                                                   "WrongApp",
+                                                                   null));
+        assertNotNull(resource.localServiceInstanceDetailsPage(new DroveExternalUser("BLAH", DroveUserRole.EXTERNAL_READ_ONLY, null),
+                                                              "TEST_SERVICE",
+                                                              null));
+    }
+
+    @Test
+    void testLocalsServiceLogPailerPage() {
+        when(localServiceStateDB.service("TEST_SERVICE"))
+                .thenReturn(Optional.of(new LocalServiceInfo("TEST_SERVICE",
+                                                             ControllerTestUtils.localServiceSpec(),
+                                                             1,
+                                                             ActivationState.ACTIVE,
+                                                             new Date(),
+                                                             new Date())));
+        assertThrows(WebApplicationException.class,
+                     () -> resource.localServiceLogPailerPage(null,
+                                                     null,
+                                                     null));
+        assertThrows(WebApplicationException.class,
+                     () -> resource.localServiceLogPailerPage("WrongApp",
+                                                     null,
+                                                     null));
+        assertNotNull(resource.localServiceLogPailerPage("TEST_SERVICE",
+                                                "TI",
+                                                "test.log"));
+    }
 
 }

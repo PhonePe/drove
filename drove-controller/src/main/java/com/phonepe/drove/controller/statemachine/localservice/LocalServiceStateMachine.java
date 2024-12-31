@@ -62,9 +62,11 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
                 new Transition<>(ACTIVATION_REQUESTED,
                                  ActivateLocalServiceAction.class,
                                  ACTIVE,
+                                 INACTIVE, //In case update fails
                                  DESTROYED),
                 new Transition<>(DEACTIVATION_REQUESTED,
                                  DeactivateLocalServiceAction.class,
+                                 ACTIVE, //In case update fails
                                  INACTIVE,
                                  DESTROYED),
                 new Transition<>(ADJUSTING_INSTANCES,

@@ -197,7 +197,6 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
                 return null;
             });
         }
-//        }
         droveEventBus.publish(new DroveLocalServiceStateChangeEvent(localServiceMetadata(serviceId,
                                                                                          context.getLocalServiceSpec(),
                                                                                          newState)));

@@ -147,7 +147,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                                                 .toList())
                                 .build());
             }
-            case INACTIVE, UNKNOWN -> {
+            case INACTIVE -> {
                 val extraInstances = liveExecutors.stream()
                         .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
                         .filter(serviceInstance -> LocalServiceInstanceState.RUNNING_STATES.contains(serviceInstance.getState()))
@@ -188,7 +188,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         log.info("Execution result: {}", executionResult);
         return StateData.from(currentState, switch (currentState.getData().getState()) {
             case ACTIVE -> LocalServiceState.ACTIVE;
-            case INACTIVE, UNKNOWN -> LocalServiceState.INACTIVE;
+            case INACTIVE -> LocalServiceState.INACTIVE;
         });
     }
 }

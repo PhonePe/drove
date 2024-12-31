@@ -64,7 +64,7 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
         val service = Objects.requireNonNull(stateDB.service(currentState.getData().getServiceId()).orElse(null));
         val state = switch (service.getState()) {
             case ACTIVE -> ACTIVE;
-            case INACTIVE, UNKNOWN -> INACTIVE;
+            case INACTIVE -> INACTIVE;
         };
         return StateData.create(state, service, errorMessage) ;
     }

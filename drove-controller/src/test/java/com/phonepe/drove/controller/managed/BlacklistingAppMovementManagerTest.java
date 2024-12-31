@@ -54,7 +54,7 @@ class BlacklistingAppMovementManagerTest {
     void testBasicFlow() {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val executor = executorHost(8080, List.of(instance), List.of());
+        val executor = executorHost(8080, List.of(instance), List.of(), List.of());
         val noInstanceEx = executorHost(8080);
         val called = new AtomicBoolean();
 
@@ -92,8 +92,8 @@ class BlacklistingAppMovementManagerTest {
     void testLeadershipChanged() {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val executor = executorHost(1, 8080, List.of(instance), List.of(), true);
-        val noInstanceEx = executorHost(1, 8080, List.of(), List.of(), true);
+        val executor = executorHost(1, 8080, List.of(instance), List.of(), List.of(), true);
+        val noInstanceEx = executorHost(1, 8080, List.of(), List.of(), List.of(), true);
         val called = new AtomicBoolean();
 
         val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
@@ -140,7 +140,7 @@ class BlacklistingAppMovementManagerTest {
     void testCompletionWait() {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val executor = executorHost(8080, List.of(instance), List.of());
+        val executor = executorHost(8080, List.of(instance), List.of(), List.of());
         val noInstanceEx = executorHost(8080);
         val called = new AtomicInteger();
 
@@ -186,7 +186,7 @@ class BlacklistingAppMovementManagerTest {
     void testCompletionWaitFail() {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val executor = executorHost(8080, List.of(instance), List.of());
+        val executor = executorHost(8080, List.of(instance), List.of(), List.of());
         val called = new AtomicInteger();
 
         val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
@@ -233,7 +233,7 @@ class BlacklistingAppMovementManagerTest {
     void testCommandRetry() {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val executor = executorHost(8080, List.of(instance), List.of());
+        val executor = executorHost(8080, List.of(instance), List.of(), List.of());
         val noInstanceEx = executorHost(8080);
         val called = new AtomicBoolean();
         val count = new AtomicInteger();

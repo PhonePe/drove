@@ -299,7 +299,7 @@ public class StateUpdater {
                 return false;
             }
             val accepted = instanceInfoDB.updateInstanceState(appId, instanceId, instanceInfo);
-            if (accepted && (null == existing || !existing.getState().equals(instanceInfo.getState()))) {
+            if (accepted) {
                 droveEventBus.publish(new DroveInstanceStateChangeEvent(instanceMetadata(instanceInfo)));
             }
             return accepted;
