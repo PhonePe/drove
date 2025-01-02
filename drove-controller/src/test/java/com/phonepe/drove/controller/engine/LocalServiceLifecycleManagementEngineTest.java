@@ -47,7 +47,9 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.events.events.DroveLocalServiceStateChangeEvent;
 import com.phonepe.drove.models.events.events.datatags.LocalServiceEventDataTag;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -74,6 +76,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.engine.ValidationStatus.SUCCESS;
 import static org.awaitility.Awaitility.await;
@@ -229,6 +232,19 @@ class LocalServiceLifecycleManagementEngineTest {
         CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
                                                                                 .orElse(LocalServiceState.DESTROYED)),
                                   Duration.ofSeconds(35));
+
+        val instanceIds = localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
+                .stream()
+                .map(LocalServiceInstanceInfo::getInstanceId)
+                .collect(Collectors.toUnmodifiableSet());
+        sendCommand(serviceId,
+                    new LocalServiceStopInstancesOperation(serviceId, instanceIds, ClusterOpSpec.DEFAULT),
+                    LocalServiceState.REPLACING_INSTANCES);
+        waitForRequiredState(serviceId, LocalServiceState.STOPPING_INSTANCES);
+        CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
+                                                                                .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
+
         deactivateService(serviceId);
 
         sendCommand(serviceId,
@@ -238,6 +254,11 @@ class LocalServiceLifecycleManagementEngineTest {
         CommonTestUtils.waitUntil(() -> LocalServiceState.INACTIVE.equals(engine.currentState(serviceId)
                                                                                 .orElse(LocalServiceState.DESTROYED)),
                                   Duration.ofSeconds(35));
+
+        CommonTestUtils.waitUntil(() -> LocalServiceState.INACTIVE.equals(engine.currentState(serviceId)
+                                                                                  .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
+
         destroyService(serviceId);
         assertEquals(EnumSet.of(LocalServiceState.INACTIVE,
                                 LocalServiceState.DEACTIVATION_REQUESTED,
@@ -245,6 +266,7 @@ class LocalServiceLifecycleManagementEngineTest {
                                 LocalServiceState.ACTIVE,
                                 LocalServiceState.ADJUSTING_INSTANCES,
                                 LocalServiceState.REPLACING_INSTANCES,
+                                LocalServiceState.STOPPING_INSTANCES,
                                 LocalServiceState.DESTROY_REQUESTED,
                                 LocalServiceState.DESTROYED), states);
     }

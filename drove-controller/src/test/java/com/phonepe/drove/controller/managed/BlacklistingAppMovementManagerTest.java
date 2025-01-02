@@ -22,6 +22,8 @@ import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
@@ -265,8 +267,15 @@ class BlacklistingAppMovementManagerTest {
                                                              .withMaxAttempts(10)
                                                              .withDelay(Duration.ofMillis(100))
                                                              .build(),
-                                                     BlacklistingAppMovementManager.DEFAULT_COMPLETION_POLICY,
-                                                     DEFAULT_CLUSTER_OP,
+                                                     RetryPolicy.<Boolean>builder()
+                                                             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
+                                                             .handleResult(false)
+                                                             .withMaxAttempts(-1)
+                                                             .withDelay(Duration.ofMillis(100))
+                                                             .withMaxDuration(Duration.ofMinutes(3))
+                                                             .withDelay(10, 30, ChronoUnit.SECONDS)
+                                                             .build(),
+                                                     new ClusterOpSpec(io.dropwizard.util.Duration.milliseconds(100), 1, FailureStrategy.STOP),
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
         bmm.start();
