@@ -157,38 +157,6 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
             ClusterOpSpec defaultClusterOpSpec, DroveEventBus droveEventBus) {
         val state = newState.getState();
         log.info("Local Service state: {}", state);
-        if (/*state.equals(LocalServiceState.ACTIVE) || */state.equals(LocalServiceState.INACTIVE)) {
-/*            val res = handleOperation(new LocalServiceAdjustInstancesOperation(serviceId));
-            if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
-                log.error("Error sending command to state machine. Error: " + res.getMessages());
-            }*/
-        }
-/*        if (state.equals(ApplicationState.SCALING_REQUESTED)) { //TODO::LOCAL_SERVICE
-            val scalingOperation = context.getUpdate()
-                    .filter(op -> op.getType().equals(ApplicationOperationType.SCALE_INSTANCES))
-                    .map(op -> {
-                        val scaleOp = (ApplicationScaleOperation) op;
-                        stateDB.updateInstanceCount(scaleOp.getAppId(), scaleOp.getRequiredInstances());
-                        log.info("App instances updated to: {}", scaleOp.getRequiredInstances());
-                        return op;
-                    })
-                    .orElseGet(() -> {
-                        val expectedInstances = stateDB.application(serviceId)
-                                .map(ApplicationInfo::getInstances)
-                                .orElse(0L);
-                        log.info("App is in scaling requested state. Setting appropriate operation to scale app to: {}",
-                                 expectedInstances);
-                        return new ApplicationScaleOperation(context.getAppId(),
-                                                             expectedInstances,
-                                                             defaultClusterOpSpec);
-                    });
-            log.debug("Scaling operation: {}", scalingOperation);
-            val res = handleOperation(scalingOperation);
-            if (!res.getStatus().equals(ValidationStatus.SUCCESS)) {
-                log.error("Error sending command to state machine. Error: " + res.getMessages());
-            }
-        }
-        else {*/
         if (state.equals(LocalServiceState.DESTROYED)) {
             stateMachines.computeIfPresent(serviceId, (id, sm) -> {
                 stateDB.removeService(serviceId);
@@ -197,11 +165,8 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
                 return null;
             });
         }
-        droveEventBus.publish(new DroveLocalServiceStateChangeEvent(localServiceMetadata(serviceId,
-                                                                                         context.getLocalServiceSpec(),
-                                                                                         newState)));
-
-
+        droveEventBus.publish(new DroveLocalServiceStateChangeEvent(
+                localServiceMetadata(serviceId, context.getLocalServiceSpec(), newState)));
     }
 
 
