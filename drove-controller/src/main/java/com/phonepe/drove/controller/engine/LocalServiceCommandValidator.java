@@ -98,7 +98,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
         if (Strings.isNullOrEmpty(serviceId)) {
             return ValidationResult.failure("No local service id found in operation");
         }
-        if (!operation.getType().equals(START)) {
+        if (!operation.getType().equals(CREATE)) {
             val currState = engine.currentState(serviceId).orElse(null);
             if (null == currState) {
                 return ValidationResult.failure("No state found for local service: " + serviceId);

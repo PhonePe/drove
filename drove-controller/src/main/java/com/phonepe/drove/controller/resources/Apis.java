@@ -217,7 +217,7 @@ public class Apis {
         log.info("ACCESS_AUDIT: Local Service Operation {} received from user: {}. Validation result: {}",
                  operation, user.getName(), res);
         if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
-            return ControllerUtils.ok(Map.of("appId", ControllerUtils.deployableObjectId(operation)));
+            return ControllerUtils.ok(Map.of("serviceId", ControllerUtils.deployableObjectId(operation)));
         }
         return ControllerUtils.commandValidationFailure(res.getMessages());
     }

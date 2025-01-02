@@ -45,7 +45,7 @@ public enum TaskState {
             RUN_COMPLETED,
             DEPROVISIONING);
 
-    public static final Set<TaskState> ALL = EnumSet.allOf(TaskState.class);
+    public static final Set<TaskState> ALL = Set.copyOf(EnumSet.allOf(TaskState.class));
 
     private final boolean terminal;
     private final boolean error;

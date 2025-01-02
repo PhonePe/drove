@@ -49,7 +49,7 @@ public class LocalServiceCreateOperation extends LocalServiceOperation {
     public LocalServiceCreateOperation(
             LocalServiceSpec spec,
             int instancesPerHost) {
-        super(LocalServiceOperationType.START);
+        super(LocalServiceOperationType.CREATE);
         this.spec = spec;
         this.instancesPerHost = instancesPerHost;
     }
