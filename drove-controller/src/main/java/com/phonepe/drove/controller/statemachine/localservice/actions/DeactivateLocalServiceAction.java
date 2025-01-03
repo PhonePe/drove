@@ -17,7 +17,12 @@
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceState;
+import com.phonepe.drove.models.operation.LocalServiceOperation;
+import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -26,16 +31,19 @@ import javax.inject.Inject;
  *
  */
 @Slf4j
-public class DeactivateLocalServiceAction extends ActivationStateUpdateAction {
+public class DeactivateLocalServiceAction extends UpdatingLocalServiceAction {
 
     @Inject
     public DeactivateLocalServiceAction(LocalServiceStateDB stateDB) {
         super(stateDB);
     }
 
-
     @Override
-    protected ActivationState stateToBeSet() {
-        return ActivationState.INACTIVE;
+    protected LocalServiceInfo update(
+            LocalServiceActionContext context,
+            StateData<LocalServiceState, LocalServiceInfo> currentState,
+            LocalServiceOperation operation,
+            LocalServiceInfo existing) {
+        return existing.withActivationState(ActivationState.INACTIVE);
     }
 }

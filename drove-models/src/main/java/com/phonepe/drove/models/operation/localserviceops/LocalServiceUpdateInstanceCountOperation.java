@@ -36,7 +36,7 @@ import javax.validation.constraints.NotEmpty;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class LocalServiceUpdateInstanceCountOperation extends LocalServiceOperation { //TODO::LOCAL_SERVICE IMPLEMENT
+public class LocalServiceUpdateInstanceCountOperation extends LocalServiceOperation {
     @NotEmpty
     String serviceId;
 

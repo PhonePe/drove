@@ -49,7 +49,7 @@ public class CreateLocalServiceAction extends OperationDrivenLocalServiceAction 
         val existing = stateDB.service(context.getServiceId())
                 .orElse(null);
         if(null == existing) { //Hit in create path
-            if(stateDB.updateService(context.getServiceId(), currentState.getData().withState(ActivationState.INACTIVE))) {
+            if(stateDB.updateService(context.getServiceId(), currentState.getData().withActivationState(ActivationState.INACTIVE))) {
                 val updated = stateDB.service(context.getServiceId()).orElse(null);
                 if(null != updated) {
                     return StateData.create(LocalServiceState.INACTIVE, updated);
@@ -57,7 +57,7 @@ public class CreateLocalServiceAction extends OperationDrivenLocalServiceAction 
             }
         }
         else { //Will be hit in recovery path
-            val toState = switch (existing.getState()) {
+            val toState = switch (existing.getActivationState()) {
                 case ACTIVE -> LocalServiceState.ACTIVE;
                 case INACTIVE -> LocalServiceState.INACTIVE;
             };

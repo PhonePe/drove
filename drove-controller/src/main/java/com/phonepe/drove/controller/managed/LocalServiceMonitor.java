@@ -165,10 +165,10 @@ public class LocalServiceMonitor implements Managed {
     private void handleServiceInstances(Map<String, LocalServiceInfo> services, ArrayList<ExecutorHostInfo> liveExecutors) {
         services.forEach((serviceId, serviceInfo) -> {
             val currInstances = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false);
-            switch (serviceInfo.getState()) {
+            switch (serviceInfo.getActivationState()) {
                 case ACTIVE -> {
                     val requiredInstances = serviceInfo.getInstancesPerHost() * liveExecutors.size();
-                    if (currInstances.size() < requiredInstances) {
+                    if (currInstances.size() != requiredInstances) {
                         log.info("Discrepancy found in the instance count for service {}. Required: {} Actual: {}",
                                  serviceId, requiredInstances, currInstances.size());
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));

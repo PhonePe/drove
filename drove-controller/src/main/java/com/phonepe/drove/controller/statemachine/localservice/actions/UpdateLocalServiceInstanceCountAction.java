@@ -18,23 +18,26 @@ package com.phonepe.drove.controller.statemachine.localservice.actions;
 
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
-import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceUpdateInstanceCountOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import javax.inject.Inject;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
+
 /**
- * Activates a local service
+ * Update counts for a local service
  */
 @Slf4j
-public class ActivateLocalServiceAction extends UpdatingLocalServiceAction {
+public class UpdateLocalServiceInstanceCountAction extends UpdatingLocalServiceAction {
 
     @Inject
-    public ActivateLocalServiceAction(LocalServiceStateDB stateDB) {
+    public UpdateLocalServiceInstanceCountAction(LocalServiceStateDB stateDB) {
         super(stateDB);
     }
 
@@ -44,6 +47,7 @@ public class ActivateLocalServiceAction extends UpdatingLocalServiceAction {
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation,
             LocalServiceInfo existing) {
-        return existing.withActivationState(ActivationState.ACTIVE);
+        val op = safeCast(operation, LocalServiceUpdateInstanceCountOperation.class);
+        return existing.withInstancesPerHost(op.getInstancesPerHost());
     }
 }

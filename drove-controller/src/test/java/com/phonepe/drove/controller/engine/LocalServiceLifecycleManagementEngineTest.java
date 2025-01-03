@@ -79,7 +79,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.engine.ValidationStatus.SUCCESS;
-import static org.awaitility.Awaitility.await;
+import static com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -221,17 +221,11 @@ class LocalServiceLifecycleManagementEngineTest {
         sendCommand(serviceId,
                     new LocalServiceAdjustInstancesOperation(serviceId, null),
                     LocalServiceState.ADJUSTING_INSTANCES);
-        waitForRequiredState(serviceId, LocalServiceState.ACTIVE);
-        CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
-                                                                .orElse(LocalServiceState.DESTROYED)),
-                                  Duration.ofSeconds(35));
+        ensureCurrentState(serviceId, ACTIVE);
         sendCommand(serviceId,
                     new LocalServiceRestartOperation(serviceId, false, null),
                     LocalServiceState.REPLACING_INSTANCES);
-        waitForRequiredState(serviceId, LocalServiceState.ACTIVE);
-        CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
-                                                                                .orElse(LocalServiceState.DESTROYED)),
-                                  Duration.ofSeconds(35));
+        ensureCurrentState(serviceId, ACTIVE);
 
         val instanceIds = localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
                 .stream()
@@ -239,18 +233,21 @@ class LocalServiceLifecycleManagementEngineTest {
                 .collect(Collectors.toUnmodifiableSet());
         sendCommand(serviceId,
                     new LocalServiceStopInstancesOperation(serviceId, instanceIds, ClusterOpSpec.DEFAULT),
-                    LocalServiceState.REPLACING_INSTANCES);
-        waitForRequiredState(serviceId, LocalServiceState.STOPPING_INSTANCES);
-        CommonTestUtils.waitUntil(() -> LocalServiceState.ACTIVE.equals(engine.currentState(serviceId)
-                                                                                .orElse(LocalServiceState.DESTROYED)),
-                                  Duration.ofSeconds(35));
+                    LocalServiceState.STOPPING_INSTANCES);
+        ensureCurrentState(serviceId, ACTIVE);
+
+        //Increase count per host
+        updateInstancesCount(serviceId, 2);
+
+        //Reduce count per host
+        updateInstancesCount(serviceId, 1);
 
         deactivateService(serviceId);
 
         sendCommand(serviceId,
                     new LocalServiceAdjustInstancesOperation(serviceId, null),
                     LocalServiceState.ADJUSTING_INSTANCES);
-        waitForRequiredState(serviceId, LocalServiceState.INACTIVE);
+        ensureCurrentState(serviceId, LocalServiceState.INACTIVE);
         CommonTestUtils.waitUntil(() -> LocalServiceState.INACTIVE.equals(engine.currentState(serviceId)
                                                                                 .orElse(LocalServiceState.DESTROYED)),
                                   Duration.ofSeconds(35));
@@ -263,12 +260,36 @@ class LocalServiceLifecycleManagementEngineTest {
         assertEquals(EnumSet.of(LocalServiceState.INACTIVE,
                                 LocalServiceState.DEACTIVATION_REQUESTED,
                                 LocalServiceState.ACTIVATION_REQUESTED,
-                                LocalServiceState.ACTIVE,
+                                ACTIVE,
                                 LocalServiceState.ADJUSTING_INSTANCES,
                                 LocalServiceState.REPLACING_INSTANCES,
                                 LocalServiceState.STOPPING_INSTANCES,
+                                LocalServiceState.UPDATING_INSTANCES_COUNT,
                                 LocalServiceState.DESTROY_REQUESTED,
                                 LocalServiceState.DESTROYED), states);
+    }
+
+    private void updateInstancesCount(String serviceId, int instancesPerHost) {
+        log.info("Setting instances count to {}", instancesPerHost);
+        sendCommand(serviceId,
+                    new LocalServiceUpdateInstanceCountOperation(serviceId, instancesPerHost),
+                    LocalServiceState.UPDATING_INSTANCES_COUNT);
+        ensureCurrentState(serviceId, ACTIVE);
+        sendCommand(serviceId,
+                    new LocalServiceAdjustInstancesOperation(serviceId, null),
+                    LocalServiceState.ADJUSTING_INSTANCES);
+        ensureCurrentState(serviceId, ACTIVE);
+        assertEquals(instancesPerHost, activeInstancesCount(serviceId));
+    }
+
+    private int activeInstancesCount(String serviceId) {
+        return localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false).size();
+    }
+
+    private void ensureCurrentState(String serviceId, LocalServiceState state) {
+        CommonTestUtils.waitUntil(() -> state.equals(engine.currentState(serviceId)
+                                                                                .orElse(LocalServiceState.DESTROYED)),
+                                  Duration.ofSeconds(35));
     }
 
     private void setupStateRecorder(String appId, Set<LocalServiceState> states) {
@@ -288,7 +309,7 @@ class LocalServiceLifecycleManagementEngineTest {
     }
 
     private void activateService(String serviceId) {
-        sendCommand(serviceId, new LocalServiceActivateOperation(serviceId), LocalServiceState.ACTIVE);
+        sendCommand(serviceId, new LocalServiceActivateOperation(serviceId), ACTIVE);
     }
 
     private void deactivateService(String serviceId) {
@@ -298,11 +319,7 @@ class LocalServiceLifecycleManagementEngineTest {
     private void destroyService(String serviceId) {
         val res = engine.handleOperation(new LocalServiceDestroyOperation(serviceId));
         assertEquals(SUCCESS, res.getStatus(), Joiner.on(",").join(res.getMessages()));
-        await().atMost(Duration.ofSeconds(30)).until(() -> !engine.exists(serviceId));
-    }
-
-    private void waitForRequiredState(String serviceId, LocalServiceState required) {
-        CommonTestUtils.waitUntil(() -> states.contains(required), Duration.ofSeconds(35));
+        CommonTestUtils.waitUntil(() -> !engine.exists(serviceId));
     }
 
     private void sendCommand(
@@ -311,6 +328,5 @@ class LocalServiceLifecycleManagementEngineTest {
             LocalServiceState requiredState) {
         val res = engine.handleOperation(operation);
         assertEquals(SUCCESS, res.getStatus(), Joiner.on(",").join(res.getMessages()));
-        waitForRequiredState(serviceId, requiredState);
-    }
+        CommonTestUtils.waitUntil(() -> states.contains(requiredState), Duration.ofSeconds(35));    }
 }

@@ -67,12 +67,12 @@ class LocalServiceStateDBTest extends ControllerTestBase {
             assertTrue(db.updateService(serviceId, info));
             val created = db.service(serviceId).orElse(null);
             assertNotNull(created);
-            assertEquals(ActivationState.INACTIVE, created.getState());
+            assertEquals(ActivationState.INACTIVE, created.getActivationState());
 
-            assertTrue(db.updateService(serviceId, created.withState(ActivationState.ACTIVE)));
+            assertTrue(db.updateService(serviceId, created.withActivationState(ActivationState.ACTIVE)));
             val updated = db.service(serviceId).orElse(null);
             assertNotNull(updated);
-            assertEquals(ActivationState.ACTIVE, updated.getState());
+            assertEquals(ActivationState.ACTIVE, updated.getActivationState());
 
             assertTrue(db.removeService(serviceId));
             assertTrue(db.service(serviceId).isEmpty());

@@ -25,11 +25,12 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
+import dev.failsafe.RetryPolicy;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import dev.failsafe.RetryPolicy;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -79,8 +80,11 @@ class BlacklistingAppMovementManagerTest {
         val bmm = new BlacklistingAppMovementManager(le,
                                                      applicationEngine,
                                                      clusterResourcesDB,
-                                                     DEFAULT_CLUSTER_OP,
-                                                     Executors.newSingleThreadExecutor());
+                                                     opSubmissionPolicy(),
+                                                     checkPolicy(),
+                                                     clusterOpSpec(),
+                                                     Executors.newSingleThreadExecutor(),
+                                                     100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -118,15 +122,9 @@ class BlacklistingAppMovementManagerTest {
         val bmm = new BlacklistingAppMovementManager(le,
                                                      applicationEngine,
                                                      clusterResourcesDB,
-                                                     BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
-                                                     RetryPolicy.<Boolean>builder()
-                                                             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
-                                                             .handleResult(false)
-                                                             .withMaxAttempts(-1)
-                                                             .withMaxDuration(Duration.ofSeconds(60))
-                                                             .withDelay(1, 5, ChronoUnit.SECONDS)
-                                                             .build(),
-                                                     DEFAULT_CLUSTER_OP,
+                                                     opSubmissionPolicy(),
+                                                     checkPolicy(),
+                                                     clusterOpSpec(),
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
         bmm.start();
@@ -162,17 +160,9 @@ class BlacklistingAppMovementManagerTest {
         val bmm = new BlacklistingAppMovementManager(le,
                                                      applicationEngine,
                                                      clusterResourcesDB,
-                                                     BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
-                                                     RetryPolicy.<Boolean>builder()
-                                                             .onFailedAttempt(event -> log.warn(
-                                                                     "Executor check attempt: {}",
-                                                                     event.getAttemptCount()))
-                                                             .handleResult(false)
-                                                             .withMaxAttempts(5)
-                                                             .withDelay(Duration.ofMillis(100))
-                                                             .withMaxDuration(Duration.ofSeconds(1))
-                                                             .build(),
-                                                     DEFAULT_CLUSTER_OP,
+                                                     opSubmissionPolicy(),
+                                                     checkPolicy(),
+                                                     clusterOpSpec(),
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
         bmm.start();
@@ -209,17 +199,9 @@ class BlacklistingAppMovementManagerTest {
         val bmm = new BlacklistingAppMovementManager(le,
                                                      applicationEngine,
                                                      clusterResourcesDB,
-                                                     BlacklistingAppMovementManager.DEFAULT_COMMAND_POLICY,
-                                                     RetryPolicy.<Boolean>builder()
-                                                             .onFailedAttempt(event -> log.warn(
-                                                                     "Executor check attempt: {}",
-                                                                     event.getAttemptCount()))
-                                                             .handleResult(false)
-                                                             .withMaxAttempts(2)
-                                                             .withDelay(Duration.ofMillis(100))
-                                                             .withMaxDuration(Duration.ofSeconds(1))
-                                                             .build(),
-                                                     DEFAULT_CLUSTER_OP,
+                                                     opSubmissionPolicy(),
+                                                     checkPolicy(),
+                                                     clusterOpSpec(),
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
         bmm.start();
@@ -258,24 +240,12 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le, applicationEngine, clusterResourcesDB,
-                                                     RetryPolicy.<ValidationStatus>builder()
-                                                             .onFailedAttempt(event -> log.warn(
-                                                                     "Command submission attempt: {}",
-                                                                     event.getAttemptCount()))
-                                                             .handleResult(ValidationStatus.FAILURE)
-                                                             .withMaxAttempts(10)
-                                                             .withDelay(Duration.ofMillis(100))
-                                                             .build(),
-                                                     RetryPolicy.<Boolean>builder()
-                                                             .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
-                                                             .handleResult(false)
-                                                             .withMaxAttempts(-1)
-                                                             .withDelay(Duration.ofMillis(100))
-                                                             .withMaxDuration(Duration.ofMinutes(3))
-                                                             .withDelay(10, 30, ChronoUnit.SECONDS)
-                                                             .build(),
-                                                     new ClusterOpSpec(io.dropwizard.util.Duration.milliseconds(100), 1, FailureStrategy.STOP),
+        val bmm = new BlacklistingAppMovementManager(le,
+                                                     applicationEngine,
+                                                     clusterResourcesDB,
+                                                     opSubmissionPolicy(),
+                                                     checkPolicy(),
+                                                     clusterOpSpec(),
                                                      Executors.newSingleThreadExecutor(),
                                                      100);
         bmm.start();
@@ -284,5 +254,32 @@ class BlacklistingAppMovementManagerTest {
 
         CommonTestUtils.waitUntil(called::get);
         bmm.stop();
+    }
+
+    @NotNull
+    private static ClusterOpSpec clusterOpSpec() {
+        return new ClusterOpSpec(io.dropwizard.util.Duration.milliseconds(100), 1, FailureStrategy.STOP);
+    }
+
+    private static RetryPolicy<Boolean> checkPolicy() {
+        return RetryPolicy.<Boolean>builder()
+                .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
+                .handleResult(false)
+                .withMaxAttempts(-1)
+                .withDelay(Duration.ofMillis(100))
+                .withMaxDuration(Duration.ofMinutes(3))
+                .withDelay(10, 30, ChronoUnit.SECONDS)
+                .build();
+    }
+
+    private static RetryPolicy<ValidationStatus> opSubmissionPolicy() {
+        return RetryPolicy.<ValidationStatus>builder()
+                .onFailedAttempt(event -> log.warn(
+                        "Command submission attempt: {}",
+                        event.getAttemptCount()))
+                .handleResult(ValidationStatus.FAILURE)
+                .withMaxAttempts(10)
+                .withDelay(Duration.ofMillis(100))
+                .build();
     }
 }

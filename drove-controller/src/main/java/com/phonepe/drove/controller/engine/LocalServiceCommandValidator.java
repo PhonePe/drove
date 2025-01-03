@@ -73,7 +73,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             .put(LocalServiceState.DESTROYED, Set.of())
             .put(LocalServiceState.INACTIVE, Set.of(ACTIVATE, ADJUST_INSTANCES, DESTROY, UPDATE_INSTANCE_COUNT))
             .put(LocalServiceState.ACTIVE,
-                 Set.of(DEACTIVATE, ADJUST_INSTANCES, REPLACE_INSTANCES, RESTART, STOP_INSTANCES))
+                 Set.of(DEACTIVATE, UPDATE_INSTANCE_COUNT, ADJUST_INSTANCES, REPLACE_INSTANCES, RESTART, STOP_INSTANCES))
             .build();
 
     private final LocalServiceStateDB localServiceStateDB;

@@ -31,6 +31,7 @@ public enum LocalServiceState {
     ADJUSTING_INSTANCES(false),
     REPLACING_INSTANCES(false),
     STOPPING_INSTANCES(false),
+    UPDATING_INSTANCES_COUNT(false),
     DESTROY_REQUESTED(false),
     DESTROYED(true);
 

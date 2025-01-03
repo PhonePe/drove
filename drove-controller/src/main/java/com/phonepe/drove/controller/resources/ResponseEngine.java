@@ -466,7 +466,7 @@ public class ResponseEngine {
                                        cpus,
                                        memory,
                                        spec.getTags(),
-                                       info.getState(),
+                                       info.getActivationState(),
                                        localServiceEngine.currentState(info.getServiceId()).orElse(null),
                                        info.getCreated(),
                                        info.getUpdated());
