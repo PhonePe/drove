@@ -668,7 +668,7 @@ public class ControllerUtils {
 
 
     public static boolean hasLocalPolicy(final PlacementPolicy policy) {
-        return policy.accept(new PlacementPolicyVisitor<Boolean>() {
+        return policy.accept(new PlacementPolicyVisitor<>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
                 return false;
@@ -681,7 +681,7 @@ public class ControllerUtils {
 
             @Override
             public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                return true;
+                return false;
             }
 
             @Override
