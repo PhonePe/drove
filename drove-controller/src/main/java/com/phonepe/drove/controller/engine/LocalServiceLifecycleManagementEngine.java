@@ -29,6 +29,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitorAdapter;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceCreateOperation;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceDeactivateOperation;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceReplaceInstancesOperation;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceRestartOperation;
 import com.phonepe.drove.statemachine.Action;
@@ -157,6 +158,15 @@ public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleMa
             ClusterOpSpec defaultClusterOpSpec, DroveEventBus droveEventBus) {
         val state = newState.getState();
         log.info("Local Service state: {}", state);
+        if(state.equals(LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED)) {
+            val result = handleOperation(new LocalServiceDeactivateOperation(serviceId));
+            if(result.getStatus().equals(ValidationStatus.SUCCESS)) {
+                log.info("Deactivation command submitted for: {}", serviceId);
+            }
+            else {
+                log.warn("Could not send deactivation command. Validation failures: {}", result.getMessages());
+            }
+        }
         if (state.equals(LocalServiceState.DESTROYED)) {
             stateMachines.computeIfPresent(serviceId, (id, sm) -> {
                 stateDB.removeService(serviceId);

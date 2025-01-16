@@ -26,6 +26,7 @@ public enum LocalServiceState {
     INIT(false),
     ACTIVATION_REQUESTED(false),
     DEACTIVATION_REQUESTED(false),
+    EMERGENCY_DEACTIVATION_REQUESTED(false),
     INACTIVE(false),
     ACTIVE(false),
     ADJUSTING_INSTANCES(false),

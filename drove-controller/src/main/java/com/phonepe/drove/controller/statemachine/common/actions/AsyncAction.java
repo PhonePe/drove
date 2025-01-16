@@ -18,7 +18,6 @@ package com.phonepe.drove.controller.statemachine.common.actions;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.controller.engine.jobs.BooleanResponseCombiner;
-import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
@@ -77,7 +76,7 @@ public abstract class AsyncAction<T, S extends Enum<S>, C extends JobEnabledCont
 
     protected abstract StateData<S,T> handleEmptyTopology(C context, StateData<S, T> currentState);
 
-    protected boolean cancelCurrentJobs(final AppActionContext context) {
+    protected boolean cancelCurrentJobs(final C context) {
         if(Strings.isNullOrEmpty(context.getJobId())) {
             return false;
         }

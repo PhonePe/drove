@@ -34,6 +34,7 @@ import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
@@ -182,6 +183,11 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
 
     }
 
+    @Override
+    public boolean cancel(LocalServiceActionContext context) {
+        return cancelCurrentJobs(context);
+    }
+
     private static boolean isInRunningState(LocalServiceInstanceInfo serviceInstance) {
         return LocalServiceInstanceState.RUNNING_STATES.contains(serviceInstance.getState());
     }
@@ -241,8 +247,15 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        log.info("Execution result: {}", executionResult);
-        return StateData.from(currentState, switch (currentState.getData().getActivationState()) {
+        log.debug("Execution result: {}", executionResult);
+        val activationState = currentState.getData().getActivationState();
+        if (executionResult.isCancelled()) {
+            if(activationState.equals(ActivationState.ACTIVE)) {
+                log.info("Job has been cancelled for some reason. Will request deactivation for safety");
+                return StateData.from(currentState, LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED);
+            }
+        }
+        return StateData.from(currentState, switch (activationState) {
             case ACTIVE -> LocalServiceState.ACTIVE;
             case INACTIVE -> LocalServiceState.INACTIVE;
         });
