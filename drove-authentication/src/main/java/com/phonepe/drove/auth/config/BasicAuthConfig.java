@@ -35,7 +35,7 @@ public class BasicAuthConfig {
             false,
             List.of(new DroveExternalUserInfo("default-user",
                                               "default-password",
-                                              DroveUserRole.EXTERNAL_READ_WRITE)),
+                                              DroveUserRole.EXTERNAL_ROOT)),
             AuthEncoding.PLAIN,
             DEFAULT_CACHE_POLICY);
     public enum AuthEncoding {

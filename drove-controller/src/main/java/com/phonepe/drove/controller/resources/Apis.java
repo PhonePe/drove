@@ -102,7 +102,7 @@ public class Apis {
     @POST
     @Path("/operations")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response acceptOperation(
             @Auth final DroveUser user,
             @NotNull @Valid final ApplicationOperation operation) {
@@ -112,7 +112,7 @@ public class Apis {
     @POST
     @Path("/operations/{appId}/cancel")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response cancelJobForCurrentOp(@PathParam("appId") @NotEmpty final String appId) {
         return cancelJobForCurrentAppOp(appId);
     }
@@ -120,7 +120,7 @@ public class Apis {
     @POST
     @Path("/applications/operations")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response acceptAppOperation(
             @Auth final DroveUser user,
             @NotNull @Valid final ApplicationOperation operation) {
@@ -139,7 +139,7 @@ public class Apis {
     @POST
     @Path("/applications/operations/{appId}/cancel")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response cancelJobForCurrentAppOp(@PathParam("appId") @NotEmpty final String appId) {
         return applicationEngine.cancelCurrentJob(appId)
                ? ControllerUtils.ok(null)
@@ -288,7 +288,7 @@ public class Apis {
     @POST
     @Path("/tasks/operations")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response acceptTaskOperation(
             @Auth final DroveUser user,
             @NotNull @Valid final TaskOperation operation) {
@@ -370,7 +370,7 @@ public class Apis {
     @POST
     @Path("/cluster/executors/{id}/blacklist")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public ApiResponse<Map<String, Set<String>>> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.blacklistExecutors(Set.of(executorId));
     }
@@ -378,7 +378,7 @@ public class Apis {
     @POST
     @Path("/cluster/executors/blacklist")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public ApiResponse<Map<String, Set<String>>> blacklistExecutors(
             @QueryParam("id") @NotEmpty final Set<String> executorIds) {
         return responseEngine.blacklistExecutors(executorIds);
@@ -387,7 +387,7 @@ public class Apis {
     @POST
     @Path("/cluster/executors/{id}/unblacklist")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public ApiResponse<Map<String, Set<String>>> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.unblacklistExecutors(Set.of(executorId));
     }
@@ -395,7 +395,7 @@ public class Apis {
     @POST
     @Path("/cluster/executors/unblacklist")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(
             @QueryParam("id") @NotEmpty final Set<String> executorIds) {
         return responseEngine.unblacklistExecutors(executorIds);
@@ -404,7 +404,7 @@ public class Apis {
     @POST
     @Path("/cluster/maintenance/set")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
         return responseEngine.setClusterMaintenanceMode();
     }
@@ -412,7 +412,7 @@ public class Apis {
     @POST
     @Path("/cluster/maintenance/unset")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public ApiResponse<ClusterStateData> unsetClusterMaintenanceMode() {
         return responseEngine.unsetClusterMaintenanceMode();
     }

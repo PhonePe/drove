@@ -40,6 +40,8 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.phonepe.drove.auth.model.DroveUserRole.*;
+
 /**
  *
  */
@@ -50,8 +52,10 @@ import java.util.Set;
 @PermitAll
 public class UI {
 
-    private static final Set<DroveUserRole> READ_ALLOWED_ROLES = EnumSet.of(DroveUserRole.EXTERNAL_READ_WRITE,
-                                                                            DroveUserRole.EXTERNAL_READ_ONLY);
+    private static final Set<DroveUserRole> READ_ALLOWED_ROLES = EnumSet.of(EXTERNAL_ROOT,
+                                                                            EXTERNAL_READ_WRITE,
+                                                                            EXTERNAL_READ_ONLY,
+                                                                            DROVE_EXTERNAL_MAINTENANCE);
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;

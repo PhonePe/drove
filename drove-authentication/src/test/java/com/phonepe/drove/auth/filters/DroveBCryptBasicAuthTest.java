@@ -58,7 +58,7 @@ class DroveBCryptBasicAuthTest extends AbstractAuthTestBase {
                                             true,
                                             List.of(new DroveExternalUserInfo("test-user",
                                                                               BCrypt.withDefaults().hashToString(10, "test-password".toCharArray()),
-                                                                              DroveUserRole.EXTERNAL_READ_WRITE)),
+                                                                              DroveUserRole.EXTERNAL_ROOT)),
                                             BasicAuthConfig.AuthEncoding.CRYPT,
                                             "")))
                             .setAuthorizer(new DroveAuthorizer())

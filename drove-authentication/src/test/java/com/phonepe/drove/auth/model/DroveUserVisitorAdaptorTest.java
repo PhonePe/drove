@@ -32,7 +32,7 @@ class DroveUserVisitorAdaptorTest {
         val visitor = new DroveUserVisitorAdaptor<>(false) {};
         assertFalse(new DroveClusterNode("test", NodeType.EXECUTOR).accept(visitor));
         assertFalse(new DroveApplicationInstance("test", null).accept(visitor));
-        assertFalse(new DroveExternalUser("test", DroveUserRole.EXTERNAL_READ_WRITE, null).accept(visitor));
+        assertFalse(new DroveExternalUser("test", DroveUserRole.EXTERNAL_ROOT, null).accept(visitor));
     }
 
 }

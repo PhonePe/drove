@@ -40,7 +40,7 @@ class DroveExternalAuthenticatorTest {
                                                                                List.of(new DroveExternalUserInfo(
                                                                                        "test-user",
                                                                                        "test-password",
-                                                                                       DroveUserRole.EXTERNAL_READ_WRITE)),
+                                                                                       DroveUserRole.EXTERNAL_ROOT)),
                                                                                BasicAuthConfig.AuthEncoding.PLAIN,
                                                                                null));
         assertEquals("test-user", authenticator.authenticate(new BasicCredentials("test-user", "test-password"))

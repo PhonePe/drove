@@ -49,7 +49,7 @@ class MessagingTest {
                                                                                                                ExecutorMessage.class)
                                                                                           .getHeader(),
                                                                                   MessageDeliveryStatus.ACCEPTED));
-        val res = r.receiveCommand(new DroveExternalUser("test", DroveUserRole.EXTERNAL_READ_WRITE, null),
+        val res = r.receiveCommand(new DroveExternalUser("test", DroveUserRole.EXTERNAL_ROOT, null),
                          new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                       new ExecutorAddress("E1",
                                                                           "localhost",

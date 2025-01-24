@@ -60,6 +60,7 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
  */
 @Path("/v1/logfiles")
 @RolesAllowed({
+        DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE,
         DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE,
         DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE,
 })
