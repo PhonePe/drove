@@ -206,7 +206,7 @@ public class Apis {
     @POST
     @Path("/localservices/operations")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response acceptLocalServiceOperation(
             @Auth final DroveUser user,
             @NotNull @Valid final LocalServiceOperation operation) {
@@ -225,7 +225,7 @@ public class Apis {
     @POST
     @Path("/localservices/operations/{serviceId}/cancel")
     @Timed
-    @RolesAllowed(DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE)
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     public Response cancelJobForCurrentLocalServiceOp(@PathParam("serviceId") @NotEmpty final String serviceId) {
         return localServiceEngine.cancelCurrentJob(serviceId)
                ? ControllerUtils.ok(null)
