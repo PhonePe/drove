@@ -26,6 +26,7 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
@@ -62,7 +63,7 @@ import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
 @Singleton
 @Slf4j
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
-public class ApplicationCommandValidator implements CommandValidator<ApplicationOperation, DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
+public class ApplicationCommandValidator implements CommandValidator<ApplicationOperation, ApplicationSpec, DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationSpec, ApplicationOperation,
         ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
         ApplicationOperation>>> {
     private static final Map<ApplicationState, Set<ApplicationOperationType>> VALID_OPS_TABLE
@@ -85,8 +86,39 @@ public class ApplicationCommandValidator implements CommandValidator<Application
     private final ControllerOptions controllerOptions;
 
     @Override
+    public ValidationResult validateSpec(ApplicationSpec spec)  {
+        val errs = new ArrayList<String>();
+        val ports = spec.getExposedPorts()
+                .stream()
+                .collect(Collectors.toMap(PortSpec::getName, Function.identity()));
+        validateCheckSpec(spec.getHealthcheck(), ports).ifPresent(errs::add);
+        validateCheckSpec(spec.getReadiness(), ports).ifPresent(errs::add);
+        val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType,
+                                                                              Collectors.counting()));
+        if (!reqs.containsKey(ResourceType.CPU)) {
+            errs.add("Cpu requirements are mandatory");
+        }
+        if (!reqs.containsKey(ResourceType.MEMORY)) {
+            errs.add("Memory requirements are mandatory");
+        }
+        if (null != spec.getExposureSpec() && !ports.containsKey(spec.getExposureSpec().getPortName())) {
+            errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
+                             + " is undefined. Defined port names: " + ports.keySet());
+        }
+        errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
+        errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
+        errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
+        if(hasLocalPolicy(spec.getPlacementPolicy())) {
+            errs.add("Local service placement is not allowed for apps");
+        }
+        return errs.isEmpty()
+               ? ValidationResult.success()
+               : ValidationResult.failure(errs);
+    }
+
+    @Override
     @MonitoredFunction
-    public ValidationResult validate(final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
+    public ValidationResult validateOperation(final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationSpec, ApplicationOperation,
             ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
             ApplicationOperation>> engine, final ApplicationOperation operation) {
         val appId = deployableObjectId(operation);
@@ -112,7 +144,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             }
         }
         return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB,
-                                                        instanceInfoStore, controllerOptions, engine));
+                                                        instanceInfoStore, this, engine));
     }
 
     @RequiredArgsConstructor
@@ -122,9 +154,9 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         private final ApplicationStateDB applicationStateDB;
         private final ClusterResourcesDB clusterResourcesDB;
         private final ApplicationInstanceInfoDB instancesDB;
-        private final ControllerOptions controllerOptions;
+        private final ApplicationCommandValidator validator;
 
-        private final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
+        private final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationSpec, ApplicationOperation,
                 ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
                 ApplicationOperation>> engine;
 
@@ -133,34 +165,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             if (engine.exists(appId)) {
                 return ValidationResult.failure("App " + appId + " already exists");
             }
-            val errs = new ArrayList<String>();
-            val spec = create.getSpec();
-            val ports = spec.getExposedPorts()
-                    .stream()
-                    .collect(Collectors.toMap(PortSpec::getName, Function.identity()));
-            validateCheckSpec(spec.getHealthcheck(), ports).ifPresent(errs::add);
-            validateCheckSpec(spec.getReadiness(), ports).ifPresent(errs::add);
-            val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType,
-                                                                                  Collectors.counting()));
-            if (!reqs.containsKey(ResourceType.CPU)) {
-                errs.add("Cpu requirements are mandatory");
-            }
-            if (!reqs.containsKey(ResourceType.MEMORY)) {
-                errs.add("Memory requirements are mandatory");
-            }
-            if (null != spec.getExposureSpec() && !ports.containsKey(spec.getExposureSpec().getPortName())) {
-                errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
-                                 + " is undefined. Defined port names: " + ports.keySet());
-            }
-            errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
-            errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
-            errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
-            if(hasLocalPolicy(spec.getPlacementPolicy())) {
-                errs.add("Local service placement is not allowed for apps");
-            }
-            return errs.isEmpty()
-                   ? ValidationResult.success()
-                   : ValidationResult.failure(errs);
+            return validator.validateSpec(create.getSpec());
         }
 
         @Override

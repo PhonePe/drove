@@ -24,6 +24,7 @@ import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -58,7 +59,7 @@ import static com.phonepe.drove.controller.utils.EventUtils.appMetadata;
  */
 @Singleton
 @Slf4j
-public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationOperation,
+public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationSpec, ApplicationOperation,
         ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
         ApplicationOperation>> {
 

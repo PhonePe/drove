@@ -24,6 +24,7 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.events.events.DroveLocalServiceStateChangeEvent;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
@@ -56,7 +57,7 @@ import static com.phonepe.drove.controller.utils.EventUtils.localServiceMetadata
 @Singleton
 @Slf4j
 public class LocalServiceLifecycleManagementEngine extends DeployableLifeCycleManagementEngine<LocalServiceInfo,
-        LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo,
+        LocalServiceSpec, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo,
         LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
 
     private final LocalServiceStateDB stateDB;

@@ -48,6 +48,7 @@ import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceDestroyOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
@@ -109,6 +110,67 @@ class ApisTest {
         reset(taskEngine);
         reset(responseEngine);
         reset(clusterStateDB);
+    }
+
+    @Test
+    void validateAppSpec() {
+
+        val maintenance = new AtomicBoolean();
+        when(clusterStateDB.currentState())
+                .thenAnswer(invocationOnMock
+                                    -> maintenance.get()
+                                       ? Optional.of(new ClusterStateData(ClusterState.MAINTENANCE, new Date()))
+                                       : Optional.empty());
+        val success = new AtomicBoolean();
+        when(applicationEngine.validateSpec(any(ApplicationSpec.class)))
+                .thenAnswer(invocationOnMock ->
+                                    success.get()
+                                    ? success()
+                                    : failure("Test Failure"));
+        { // Set maintenance mode .. so request will fail
+            maintenance.set(true);
+            try (val r = EXT.target("/v1/applications/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.appSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {  //Force a failure by sending null entity
+            maintenance.set(false);
+            success.set(false);
+            try (val r = EXT.target("/v1/applications/validate/spec")
+                    .request()
+                    .post(Entity.json(null))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+
+        { //Force a failure empty data
+            try (val r = EXT.target("/v1/applications/validate/spec")
+                    .request()
+                    .post(Entity.json(Map.of()))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+        { //Force a app level failure
+            try (val r = EXT.target("/v1/applications/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.appSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            success.set(true);
+            val r = EXT.target("/v1/applications/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.appSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE),
+                          new GenericType<ApiResponse<Map<String, String>>>() {
+                          });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
     }
 
     @Test
@@ -441,6 +503,68 @@ class ApisTest {
     }
 
     @Test
+    void validateLocalServiceSpec() {
+
+        val maintenance = new AtomicBoolean();
+        when(clusterStateDB.currentState())
+                .thenAnswer(invocationOnMock
+                                    -> maintenance.get()
+                                       ? Optional.of(new ClusterStateData(ClusterState.MAINTENANCE, new Date()))
+                                       : Optional.empty());
+        val success = new AtomicBoolean();
+        when(localServiceEngine.validateSpec(any(LocalServiceSpec.class)))
+                .thenAnswer(invocationOnMock ->
+                                    success.get()
+                                    ? success()
+                                    : failure("Test Failure"));
+        { // Set maintenance mode .. so request will fail
+            maintenance.set(true);
+            try (val r = EXT.target("/v1/localservices/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.localServiceSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {  //Force a failure by sending null entity
+            maintenance.set(false);
+            success.set(false);
+            try (val r = EXT.target("/v1/localservices/validate/spec")
+                    .request()
+                    .post(Entity.json(null))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+
+        { //Force a failure empty data
+            try (val r = EXT.target("/v1/localservices/validate/spec")
+                    .request()
+                    .post(Entity.json(Map.of()))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+        { //Force a failure
+            try (val r = EXT.target("/v1/localservices/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.localServiceSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            success.set(true);
+            val r = EXT.target("/v1/localservices/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.localServiceSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE),
+                          new GenericType<ApiResponse<Map<String, String>>>() {
+                          });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+    }
+
+
+    @Test
     void cancelJobForCurrentLocalServiceOp() {
         val success = new AtomicBoolean();
         when(localServiceEngine.cancelCurrentJob(anyString()))
@@ -687,6 +811,67 @@ class ApisTest {
             val r = EXT.target("/v1/tasks/operations")
                     .request()
                     .post(Entity.entity(new TaskKillOperation("TEST_APP_1", "T001", DEFAULT_CLUSTER_OP),
+                                        MediaType.APPLICATION_JSON_TYPE),
+                          new GenericType<ApiResponse<Map<String, String>>>() {
+                          });
+            assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        }
+    }
+
+    @Test
+    void validateTaskSpec() {
+
+        val maintenance = new AtomicBoolean();
+        when(clusterStateDB.currentState())
+                .thenAnswer(invocationOnMock
+                                    -> maintenance.get()
+                                       ? Optional.of(new ClusterStateData(ClusterState.MAINTENANCE, new Date()))
+                                       : Optional.empty());
+        val success = new AtomicBoolean();
+        when(taskEngine.validateSpec(any(TaskSpec.class)))
+                .thenAnswer(invocationOnMock ->
+                                    success.get()
+                                    ? success()
+                                    : failure("Test Failure"));
+        { // Set maintenance mode .. so request will fail
+            maintenance.set(true);
+            try (val r = EXT.target("/v1/tasks/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.taskSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {  //Force a failure by sending null entity
+            maintenance.set(false);
+            success.set(false);
+            try (val r = EXT.target("/v1/tasks/validate/spec")
+                    .request()
+                    .post(Entity.json(null))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+
+        { //Force a failure empty data
+            try (val r = EXT.target("/v1/tasks/validate/spec")
+                    .request()
+                    .post(Entity.json(Map.of()))) {
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+            }
+        }
+        { //Force a app level failure
+            try (val r = EXT.target("/v1/tasks/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.taskSpec(),
+                                        MediaType.APPLICATION_JSON_TYPE))) {
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+            }
+        }
+        {
+            success.set(true);
+            val r = EXT.target("/v1/tasks/validate/spec")
+                    .request()
+                    .post(Entity.entity(ControllerTestUtils.taskSpec(),
                                         MediaType.APPLICATION_JSON_TYPE),
                           new GenericType<ApiResponse<Map<String, String>>>() {
                           });

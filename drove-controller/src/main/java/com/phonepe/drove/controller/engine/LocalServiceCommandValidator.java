@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.controller.config.ControllerOptions;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.models.application.PortSpec;
@@ -28,6 +27,7 @@ import com.phonepe.drove.models.application.placement.policies.LocalPlacementPol
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
@@ -57,9 +57,10 @@ import static com.phonepe.drove.models.operation.LocalServiceOperationType.*;
 @Slf4j
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
 public class LocalServiceCommandValidator implements CommandValidator<LocalServiceOperation,
-        DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+        LocalServiceSpec, DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceSpec, LocalServiceOperation, LocalServiceState,
                 LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
-                LocalServiceOperation>>> {
+                LocalServiceOperation>>
+        > {
 
     private static final Map<LocalServiceState, Set<LocalServiceOperationType>> VALID_OPS_TABLE
             = ImmutableMap.<LocalServiceState, Set<LocalServiceOperationType>>builder()
@@ -74,11 +75,15 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             .put(LocalServiceState.DESTROYED, Set.of())
             .put(LocalServiceState.INACTIVE, Set.of(ACTIVATE, ADJUST_INSTANCES, DESTROY, UPDATE_INSTANCE_COUNT))
             .put(LocalServiceState.ACTIVE,
-                 Set.of(DEACTIVATE, UPDATE_INSTANCE_COUNT, ADJUST_INSTANCES, REPLACE_INSTANCES, RESTART, STOP_INSTANCES))
+                 Set.of(DEACTIVATE,
+                        UPDATE_INSTANCE_COUNT,
+                        ADJUST_INSTANCES,
+                        REPLACE_INSTANCES,
+                        RESTART,
+                        STOP_INSTANCES))
             .build();
 
     private final LocalServiceStateDB localServiceStateDB;
-    private final ClusterResourcesDB clusterResourcesDB;
     private final ControllerOptions controllerOptions;
 
     @VisibleForTesting
@@ -87,15 +92,41 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
     }
 
     @Override
+    public ValidationResult validateSpec(LocalServiceSpec spec) {
+        val errs = new ArrayList<String>();
+        val ports = spec.getExposedPorts()
+                .stream()
+                .collect(Collectors.toMap(PortSpec::getName, Function.identity()));
+        validateCheckSpec(spec.getHealthcheck(), ports).ifPresent(errs::add);
+        validateCheckSpec(spec.getReadiness(), ports).ifPresent(errs::add);
+        val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType,
+                                                                              Collectors.counting()));
+        if (!reqs.containsKey(ResourceType.CPU)) {
+            errs.add("Cpu requirements are mandatory");
+        }
+        if (!reqs.containsKey(ResourceType.MEMORY)) {
+            errs.add("Memory requirements are mandatory");
+        }
+        errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
+        errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
+        errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
+        if (!hasLocalPolicy(spec.getPlacementPolicy())) {
+            errs.add("Only local placement is allowed for local services");
+        }
+        return errs.isEmpty()
+               ? ValidationResult.success()
+               : ValidationResult.failure(errs);
+    }
+
+    @Override
     @MonitoredFunction
-    public ValidationResult validate(
-            DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+    public ValidationResult validateOperation(
+            DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceSpec, LocalServiceOperation, LocalServiceState,
                     LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
                     LocalServiceOperation>> engine,
             LocalServiceOperation operation) {
 
         val serviceId = deployableObjectId(operation);
-
         if (Strings.isNullOrEmpty(serviceId)) {
             return ValidationResult.failure("No local service id found in operation");
         }
@@ -118,8 +149,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
                 }
             }
         }
-        return operation.accept(new OpValidationVisitor(serviceId, localServiceStateDB, clusterResourcesDB,
-                                                        controllerOptions, engine));
+        return operation.accept(new OpValidationVisitor(serviceId, localServiceStateDB, this, engine));
     }
 
     @RequiredArgsConstructor
@@ -127,10 +157,9 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
 
         private final String serviceId;
         private final LocalServiceStateDB localServiceStateDB;
-        private final ClusterResourcesDB clusterResourcesDB;
-        private final ControllerOptions controllerOptions;
+        private final LocalServiceCommandValidator validator;
 
-        private final DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+        private final DeployableLifeCycleManagementEngine<LocalServiceInfo, LocalServiceSpec, LocalServiceOperation, LocalServiceState,
                 LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
                 LocalServiceOperation>> engine;
 
@@ -139,30 +168,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             if (engine.exists(serviceId)) {
                 return ValidationResult.failure("Local service " + serviceId + " already exists");
             }
-            val errs = new ArrayList<String>();
-            val spec = createOperation.getSpec();
-            val ports = spec.getExposedPorts()
-                    .stream()
-                    .collect(Collectors.toMap(PortSpec::getName, Function.identity()));
-            validateCheckSpec(spec.getHealthcheck(), ports).ifPresent(errs::add);
-            validateCheckSpec(spec.getReadiness(), ports).ifPresent(errs::add);
-            val reqs = spec.getResources().stream().collect(Collectors.groupingBy(ResourceRequirement::getType,
-                                                                                  Collectors.counting()));
-            if (!reqs.containsKey(ResourceType.CPU)) {
-                errs.add("Cpu requirements are mandatory");
-            }
-            if (!reqs.containsKey(ResourceType.MEMORY)) {
-                errs.add("Memory requirements are mandatory");
-            }
-            errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
-            errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
-            errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
-            if (!hasLocalPolicy(spec.getPlacementPolicy())) {
-                errs.add("Only local placement is allowed for local services");
-            }
-            return errs.isEmpty()
-                   ? ValidationResult.success()
-                   : ValidationResult.failure(errs);
+            return validator.validateSpec(createOperation.getSpec());
         }
 
         @Override

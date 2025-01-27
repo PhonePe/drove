@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.engine;
 /**
  *
  */
-public interface CommandValidator<C, E> {
-    ValidationResult validate(final E engine, final C command);
+public interface CommandValidator<C, S, E> {
+    ValidationResult validateSpec(final S spec);
+    ValidationResult validateOperation(final E engine, final C command);
 }

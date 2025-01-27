@@ -39,6 +39,7 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -139,20 +140,20 @@ public class TaskEngine {
         });
     }
 
+    public ValidationResult validateSpec(final TaskSpec spec) {
+        final var errors = validateTaskSpec(spec);
+        if (!errors.isEmpty()) {
+            return ValidationResult.failure(errors);
+        }
+        return ValidationResult.success();
+    }
+
     public ValidationResult handleTaskOp(final TaskOperation operation) {
         return operation.accept(new TaskOperationVisitor<>() {
             @Override
             public ValidationResult visit(TaskCreateOperation create) {
-
                 val taskSpec = create.getSpec();
-                val errors = new ArrayList<String>();
-                errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));
-                errors.addAll(ControllerUtils.ensureCmdlArgs(taskSpec.getArgs(), controllerOptions));
-                errors.addAll(ControllerUtils.checkDeviceDisabled(taskSpec.getDevices(), controllerOptions));
-                errors.addAll(resourceCheck(taskSpec));
-                if(ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
-                    errors.add("Local service placement is not allowed for tasks");
-                }
+                final var errors = validateTaskSpec(taskSpec);
                 if (!errors.isEmpty()) {
                     return ValidationResult.failure(errors);
                 }
@@ -186,6 +187,19 @@ public class TaskEngine {
                        : ValidationResult.failure("Could not schedule job to stop the task.");
             }
         });
+    }
+
+    @NotNull
+    private ArrayList<String> validateTaskSpec(TaskSpec taskSpec) {
+        val errors = new ArrayList<String>();
+        errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));
+        errors.addAll(ControllerUtils.ensureCmdlArgs(taskSpec.getArgs(), controllerOptions));
+        errors.addAll(ControllerUtils.checkDeviceDisabled(taskSpec.getDevices(), controllerOptions));
+        errors.addAll(resourceCheck(taskSpec));
+        if(ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
+            errors.add("Local service placement is not allowed for tasks");
+        }
+        return errors;
     }
 
     public TaskRunner registerTaskRunner(String sourceAppName, String taskId) {

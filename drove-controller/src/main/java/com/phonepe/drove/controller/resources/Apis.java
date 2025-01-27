@@ -40,6 +40,7 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
+import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.Auth;
 import lombok.SneakyThrows;
@@ -97,6 +98,24 @@ public class Apis {
         this.localServiceEngine = localServiceEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
+    }
+
+    @POST
+    @Path("/applications/validate/spec")
+    @Timed
+    public Response validateAppSpec(
+            @Auth final DroveUser user,
+            @NotNull @Valid final ApplicationSpec spec) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return maintenanceModeError();
+        }
+        val res = applicationEngine.validateSpec(spec);
+        log.info("ACCESS_AUDIT: Application Spec {} received from user: {}. Validation result: {}",
+                 spec.getName(), user.getName(), res);
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
+            return ControllerUtils.ok(Map.of("valid", true));
+        }
+        return ControllerUtils.commandValidationFailure(res.getMessages());
     }
 
     @POST
@@ -202,6 +221,23 @@ public class Apis {
         return responseEngine.applicationOldInstances(appId, start, size);
     }
 
+    @POST
+    @Path("/localservices/validate/spec")
+    @Timed
+    public Response validateLocalServiceSpec(
+            @Auth final DroveUser user,
+            @NotNull @Valid final LocalServiceSpec spec) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return maintenanceModeError();
+        }
+        val res = localServiceEngine.validateSpec(spec);
+        log.info("ACCESS_AUDIT: Local Service Spec {} received from user: {}. Validation result: {}",
+                 spec.getName(), user.getName(), res);
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
+            return ControllerUtils.ok(Map.of("valid", true));
+        }
+        return ControllerUtils.commandValidationFailure(res.getMessages());
+    }
 
     @POST
     @Path("/localservices/operations")
@@ -283,6 +319,24 @@ public class Apis {
     public ApiResponse<List<LocalServiceInstanceInfo>> localServiceOldInstances(
             @PathParam("serviceId") @NotEmpty final String serviceId) {
         return responseEngine.localServiceOldInstances(serviceId);
+    }
+
+    @POST
+    @Path("/tasks/validate/spec")
+    @Timed
+    public Response validateTaskSpec(
+            @Auth final DroveUser user,
+            @NotNull @Valid final TaskSpec taskSpec) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return maintenanceModeError();
+        }
+        val res = taskEngine.validateSpec(taskSpec);
+        log.info("ACCESS_AUDIT: Task Operation {}/{} received from user: {}. Validation result: {}",
+                 taskSpec.getSourceAppName(), taskSpec.getTaskId(), user.getName(), res);
+        if (res.getStatus().equals(ValidationStatus.SUCCESS)) {
+            return ControllerUtils.ok(null);
+        }
+        return ControllerUtils.commandValidationFailure(res.getMessages());
     }
 
     @POST

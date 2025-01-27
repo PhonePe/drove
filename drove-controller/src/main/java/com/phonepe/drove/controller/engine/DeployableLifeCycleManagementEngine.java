@@ -37,13 +37,13 @@ import java.util.function.BiConsumer;
  * Base class to manage the lifecycle for application and local service lifecycles
  */
 @Slf4j
-public abstract class DeployableLifeCycleManagementEngine<T, D, S extends Enum<S>, C extends ActionContext<D>,
+public abstract class DeployableLifeCycleManagementEngine<T, V, D, S extends Enum<S>, C extends ActionContext<D>,
         A extends Action<T, S, C, D>> {
 
     private final Map<String, StateMachineExecutor<T, D, S, C, A>> stateMachines = new ConcurrentHashMap<>();
     private final ActionFactory<T, D, S, C, A> factory;
 
-    private final CommandValidator<D, DeployableLifeCycleManagementEngine<T, D, S, C, A>> commandValidator;
+    private final CommandValidator<D, V, DeployableLifeCycleManagementEngine<T, V, D, S, C, A>> commandValidator;
     private final DroveEventBus droveEventBus;
     private final ControllerRetrySpecFactory retrySpecFactory;
 
@@ -54,7 +54,7 @@ public abstract class DeployableLifeCycleManagementEngine<T, D, S extends Enum<S
 
     protected DeployableLifeCycleManagementEngine(
             ActionFactory<T, D, S, C, A> factory,
-            CommandValidator<D, DeployableLifeCycleManagementEngine<T, D, S, C, A>> commandValidator,
+            CommandValidator<D, V, DeployableLifeCycleManagementEngine<T, V, D, S, C, A>> commandValidator,
             DroveEventBus droveEventBus,
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("MonitorThreadPool") ExecutorService monitorExecutor,
@@ -69,6 +69,11 @@ public abstract class DeployableLifeCycleManagementEngine<T, D, S extends Enum<S
             stoppedExecutor.stop();
             log.info("State machine executor is done for {}", stoppedExecutor.getDeployableId());
         });
+    }
+
+    @MonitoredFunction
+    public ValidationResult validateSpec(final V spec) {
+        return commandValidator.validateSpec(spec);
     }
 
     @MonitoredFunction
@@ -138,7 +143,7 @@ public abstract class DeployableLifeCycleManagementEngine<T, D, S extends Enum<S
 
     private ValidationResult validateOp(final D operation) {
         Objects.requireNonNull(operation, "Operation cannot be null");
-        return commandValidator.validate(this, operation);
+        return commandValidator.validateOperation(this, operation);
     }
 
     protected abstract D translateOp(final D original, ClusterOpSpec defaultClusterOpSpec);

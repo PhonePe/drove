@@ -85,8 +85,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.empty());
-        val res = validator.validate(engine,
-                                     new ApplicationDestroyOperation(appId,
+        val res = validator.validateOperation(engine,
+                                              new ApplicationDestroyOperation(appId,
                                                                      ClusterOpSpec.DEFAULT));
         ensureFailure(res,
                       "No state found for app: SomeAppId"
@@ -98,8 +98,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.INIT));
-        val res = validator.validate(engine,
-                                     new ApplicationDestroyOperation(appId,
+        val res = validator.validateOperation(engine,
+                                              new ApplicationDestroyOperation(appId,
                                                                      ClusterOpSpec.DEFAULT));
         ensureFailure(res,
                       "No operations allowed for SomeAppId as it is in INIT state"
@@ -125,8 +125,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null,
                                                                                  null)));
         ensureFailure(
-                validator.validate(engine,
-                                   new ApplicationDestroyOperation(appId, ClusterOpSpec.DEFAULT)),
+                validator.validateOperation(engine,
+                                            new ApplicationDestroyOperation(appId, ClusterOpSpec.DEFAULT)),
                 "Only [RECOVER, REPLACE_INSTANCES, SCALE_INSTANCES, START_INSTANCES, STOP_INSTANCES, SUSPEND] allowed" +
                         " for app SomeAppId as it is in RUNNING state");
     }
@@ -148,8 +148,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null,
                                                                                  null)));
         ensureFailure(
-                validator.validate(engine,
-                                   new ApplicationDestroyOperation(appId, ClusterOpSpec.DEFAULT)),
+                validator.validateOperation(engine,
+                                            new ApplicationDestroyOperation(appId, ClusterOpSpec.DEFAULT)),
                 "Only [SCALE_INSTANCES] allowed for app SomeAppId as it is in SCALING_REQUESTED state");
     }
 
@@ -188,8 +188,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     @Test
     void testCreateSuccess() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(ControllerTestUtils.appSpec(1),
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(ControllerTestUtils.appSpec(1),
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureSuccess(res);
@@ -198,8 +198,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     @Test
     void testCreateNoAppId() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(
                                              ControllerTestUtils.appSpec(1)
                                                      .withName(null)
                                                      .withVersion(null),
@@ -212,8 +212,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     void testCreateForExitingAppId() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         when(engine.exists(anyString())).thenReturn(true);
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(ControllerTestUtils.appSpec(1),
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(ControllerTestUtils.appSpec(1),
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res, "App TEST_SPEC-00001 already exists");
@@ -235,8 +235,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                Duration.seconds(1),
                                                3,
                                                Duration.seconds(1)));
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(spec,
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res, "Invalid port name for health check: Invalid. Available ports: [main]");
@@ -258,8 +258,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                              Duration.seconds(1),
                                              3,
                                              Duration.seconds(1)));
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(spec,
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res, "Invalid port name for health check: Invalid. Available ports: [main]");
@@ -270,8 +270,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val spec = ControllerTestUtils.appSpec(1)
                 .withResources(List.of());
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(spec,
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res,
@@ -285,8 +285,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val spec = ControllerTestUtils.appSpec(1)
                 .withExposureSpec(new ExposureSpec("blah", "Invalid", ExposureMode.ALL));
-        val res = validator.validate(engine,
-                                     new ApplicationCreateOperation(spec,
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res,
@@ -304,8 +304,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                     .withVolumes(List.of(new MountedVolume("/var/log",
                                                            "/var/log",
                                                            MountedVolume.MountMode.READ_WRITE)));
-            val res = validator.validate(engine,
-                                         new ApplicationCreateOperation(spec,
+            val res = validator.validateOperation(engine,
+                                                  new ApplicationCreateOperation(spec,
                                                                         1,
                                                                         ClusterOpSpec.DEFAULT));
             ensureFailure(res,
@@ -317,8 +317,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                     .withVolumes(List.of(new MountedVolume("/var/log",
                                                            "/tmp/log",
                                                            MountedVolume.MountMode.READ_WRITE)));
-            val res = validator.validate(engine,
-                                         new ApplicationCreateOperation(spec,
+            val res = validator.validateOperation(engine,
+                                                  new ApplicationCreateOperation(spec,
                                                                         1,
                                                                         ClusterOpSpec.DEFAULT));
             ensureSuccess(res);
@@ -334,8 +334,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                     .withDisableCmdlArgs(true));
             val spec = ControllerTestUtils.appSpec(1)
                     .withArgs(List.of("random"));
-            val res = validator.validate(engine,
-                                         new ApplicationCreateOperation(spec,
+            val res = validator.validateOperation(engine,
+                                                  new ApplicationCreateOperation(spec,
                                                                         1,
                                                                         ClusterOpSpec.DEFAULT));
             ensureFailure(res, "Passing command line to containers is disabled on this cluster");
@@ -344,8 +344,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
             val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
             val spec = ControllerTestUtils.appSpec(1)
                     .withArgs(Collections.nCopies(1024, "0123456789"));
-            val res = validator.validate(engine,
-                                         new ApplicationCreateOperation(spec,
+            val res = validator.validateOperation(engine,
+                                                  new ApplicationCreateOperation(spec,
                                                                         1,
                                                                         ClusterOpSpec.DEFAULT));
             ensureFailure(res, "Maximum combined length of command line arguments can be 2048");
@@ -360,8 +360,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                     .withDevices(List.of(DirectDeviceSpec.builder()
                                                  .pathOnHost("/dev/random")
                                                  .build()));
-            val res = validator.validate(engine,
-                                         new ApplicationCreateOperation(spec,
+            val res = validator.validateOperation(engine,
+                                                  new ApplicationCreateOperation(spec,
                                                                         1,
                                                                         ClusterOpSpec.DEFAULT));
             ensureFailure(res, "Device access is disabled. To enable, set enableRawDeviceAccess: true " +
@@ -386,7 +386,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine, new ApplicationStartInstancesOperation(appId, 1, ClusterOpSpec.DEFAULT)));
     }
 
@@ -405,14 +405,14 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureFailure(validator.validate(
+        ensureFailure(validator.validateOperation(
                               engine, new ApplicationStartInstancesOperation(appId, 100, ClusterOpSpec.DEFAULT)),
                       "Cluster does not have enough CPU. Required: 100 Available: 3",
                       "Cluster does not have enough Memory. Required: 51200 Available: 8448");
     }
 
     @Test
-    void testStartInstValidateMaxCorePerNode() {
+    void testStartInstValidateOperationMaxCorePerNode() {
         val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
@@ -431,7 +431,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                     List.of()))
                                     .toList());
 
-        ensureFailure(validator.validate(
+        ensureFailure(validator.validateOperation(
                               engine, new ApplicationStartInstancesOperation(appId, 1, ClusterOpSpec.DEFAULT)),
                       "Required cores exceeds the maximum core available on a single NUMA node in the cluster. " +
                               "Required: 6 Max: 5");
@@ -452,7 +452,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine, new ApplicationScaleOperation(appId, 1, ClusterOpSpec.DEFAULT)));
     }
 
@@ -466,7 +466,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureFailure(validator.validate(
+        ensureFailure(validator.validateOperation(
                               engine, new ApplicationScaleOperation(appId, 1, ClusterOpSpec.DEFAULT)),
                       "No spec found for app SomeAppId");
     }
@@ -485,7 +485,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureFailure(validator.validate(
+        ensureFailure(validator.validateOperation(
                               engine, new ApplicationScaleOperation(appId, 100, ClusterOpSpec.DEFAULT)),
                       "Cluster does not have enough CPU. Required: 100 Available: 3",
                       "Cluster does not have enough Memory. Required: 51200 Available: 8448");
@@ -508,7 +508,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine,
                 new ApplicationStopInstancesOperation(appId, List.of("AI-00001"), false, ClusterOpSpec.DEFAULT)));
     }
@@ -530,7 +530,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureFailure(validator.validate(
+        ensureFailure(validator.validateOperation(
                               engine,
                               new ApplicationStopInstancesOperation(appId, List.of("Invalid"), false,
                                                                     ClusterOpSpec.DEFAULT)),
@@ -553,7 +553,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine,
                 new ApplicationReplaceInstancesOperation(appId, Set.of("AI-00001"), false, ClusterOpSpec.DEFAULT)));
     }
@@ -572,7 +572,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(crDB.currentSnapshot(true))
                 .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
 
-        ensureFailure(validator.validate(
+        ensureFailure(validator.validateOperation(
                               engine,
                               new ApplicationReplaceInstancesOperation(appId, Set.of("Invalid"),
                                                                        false,
@@ -591,7 +591,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  1,
                                                                                  null,
                                                                                  null)));
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine,
                 new ApplicationDestroyOperation(appId, ClusterOpSpec.DEFAULT)));
     }
@@ -607,7 +607,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  1,
                                                                                  null,
                                                                                  null)));
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine,
                 new ApplicationSuspendOperation(appId, ClusterOpSpec.DEFAULT)));
     }
@@ -623,7 +623,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  1,
                                                                                  null,
                                                                                  null)));
-        ensureSuccess(validator.validate(
+        ensureSuccess(validator.validateOperation(
                 engine,
                 new ApplicationRecoverOperation(appId)));
     }
@@ -638,8 +638,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null,
                                                                                  null)));
         ensureFailure(
-                validator.validate(engine,
-                                   new ApplicationStopInstancesOperation(appId,
+                validator.validateOperation(engine,
+                                            new ApplicationStopInstancesOperation(appId,
                                                                          List.of(),
                                                                          true,
                                                                          ClusterOpSpec.DEFAULT)),
