@@ -35,6 +35,8 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 public class DockerCoordinates extends ExecutableCoordinates {
+    public static final Duration DEFAULT_PULL_TIMEOUT = Duration.minutes(15);
+
     @NotEmpty(message = "- Specify url for container")
     String url;
 

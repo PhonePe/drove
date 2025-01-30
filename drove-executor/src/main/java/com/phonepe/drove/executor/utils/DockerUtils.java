@@ -58,6 +58,7 @@ import org.slf4j.MDC;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -75,6 +76,10 @@ public class DockerUtils {
             final DeploymentUnitSpec unitSpec,
             final Function<String, T> responseHandler) throws InterruptedException {
         val image = unitSpec.getExecutable().accept(DockerCoordinates::getUrl);
+        val timeout = unitSpec.getExecutable()
+                .accept(dockerCoordinates -> Objects.requireNonNullElse(dockerCoordinates.getDockerPullTimeout(),
+                                                                        DockerCoordinates.DEFAULT_PULL_TIMEOUT))
+                        .toMilliseconds();
         log.info("Pulling docker image: {}", image);
         val pullImageCmd = client.pullImageCmd(image);
         if (null == dockerAuthConfig) {
@@ -83,7 +88,8 @@ public class DockerUtils {
         else {
             populateDockerRegistryAuth(dockerAuthConfig, pullImageCmd);
         }
-        pullImageCmd.exec(new ImagePullProgressHandler(MDC.getCopyOfContextMap(), image)).awaitCompletion();
+        pullImageCmd.exec(new ImagePullProgressHandler(MDC.getCopyOfContextMap(), image))
+                .awaitCompletion(timeout, TimeUnit.MILLISECONDS);
         val imageId = client.inspectImageCmd(image).exec().getId();
         log.info("Pulled image {} with image ID: {}", image, imageId);
         return responseHandler.apply(imageId);
