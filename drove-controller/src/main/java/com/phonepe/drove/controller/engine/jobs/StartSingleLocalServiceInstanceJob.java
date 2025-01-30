@@ -113,19 +113,23 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
-                                                      instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
-        val serviceId = ControllerUtils.deployableObjectId(localServiceInfo.getSpec());
+        final var spec = localServiceInfo.getSpec();
+        val retryPolicy = CommonUtils.<Boolean>policy(
+                retrySpecFactory.jobRetrySpec(ControllerUtils.maxStartTimeout(spec)),
+                instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
+        val serviceId = ControllerUtils.deployableObjectId(spec);
         try {
             val status = waitForAction(retryPolicy,
-                                       () -> startInstance(localServiceInfo.getSpec(), clusterOpSpec),
+                                       () -> startInstance(spec, clusterOpSpec),
                                        event -> {
                                            val failure = event.getException();
                                            if (null != failure) {
                                                log.error("Error setting up instance for " + serviceId, failure);
                                            }
                                            else {
-                                               log.error("Error setting up instance for {}. Event: {}", serviceId, event);
+                                               log.error("Error setting up instance for {}. Event: {}",
+                                                         serviceId,
+                                                         event);
                                            }
                                        });
             if (context.isStopped() || context.isCancelled()) {

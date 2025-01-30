@@ -26,6 +26,8 @@ import java.util.List;
  */
 public interface ControllerRetrySpecFactory {
 
+    RetrySpec jobRetrySpec(Duration maxTimeout);
+
     RetrySpec jobRetrySpec();
 
     RetrySpec instanceStateCheckRetrySpec(long timeoutMillis);

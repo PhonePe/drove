@@ -43,6 +43,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -97,7 +98,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                                         new Date(),
                                                         new Date())));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(any(Duration.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(APP_SPEC,
                                              ControllerTestUtils.DEFAULT_CLUSTER_OP,
@@ -127,7 +128,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
         when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
                 .thenReturn(Optional.empty());
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(any(Duration.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
                                              ControllerTestUtils.DEFAULT_CLUSTER_OP,
@@ -177,7 +178,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                                         new Date(),
                                                         new Date())));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(any(Duration.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
                                              ControllerTestUtils.DEFAULT_CLUSTER_OP,
@@ -208,7 +209,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                                MessageDeliveryStatus.REJECTED));
         val appId = ControllerUtils.deployableObjectId(appSpec);
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(any(Duration.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
                                              ControllerTestUtils.DEFAULT_CLUSTER_OP,
@@ -256,7 +257,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                                         new Date(),
                                                         new Date())));
         val rf = mock(ControllerRetrySpecFactory.class);
-        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.jobRetrySpec(any(Duration.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
         val job = new StartSingleInstanceJob(appSpec,
                                              ControllerTestUtils.DEFAULT_CLUSTER_OP,

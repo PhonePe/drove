@@ -36,6 +36,7 @@ import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
+import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
@@ -75,6 +76,7 @@ import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 
 import javax.ws.rs.core.Response;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -136,16 +138,23 @@ public class ControllerUtils {
                 }
                 else {
                     if (status.equals(MISMATCH)) {
-                        log.error("Looks like local service instance {}/{} is stuck in state: {}. Detailed instance data: {}}",
-                                  serviceId, instanceId, curr.getState(), curr);
+                        log.error(
+                                "Looks like local service instance {}/{} is stuck in state: {}. Detailed instance " +
+                                        "data: {}}",
+                                serviceId,
+                                instanceId,
+                                curr.getState(),
+                                curr);
                     }
                     else {
-                        log.error("Looks like local service instance {}/{} has failed permanently and reached state: {}." +
-                                          " Detailed instance data: {}}",
-                                  serviceId,
-                                  instanceId,
-                                  curr.getState(),
-                                  curr);
+                        log.error(
+                                "Looks like local service instance {}/{} has failed permanently and reached state: {}" +
+                                        "." +
+                                        " Detailed instance data: {}}",
+                                serviceId,
+                                instanceId,
+                                curr.getState(),
+                                curr);
                     }
                 }
             }
@@ -299,7 +308,7 @@ public class ControllerUtils {
         return taskDB.task(sourceAppName, taskId).orElse(null);
     }
 
-    private static<T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
+    private static <T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
             final LocalServiceInstanceInfo instanceInfo,
             final T instanceState) {
         if (null != instanceInfo) {
@@ -320,7 +329,7 @@ public class ControllerUtils {
         return MISMATCH;
     }
 
-    private static<T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
+    private static <T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
             final InstanceInfo instanceInfo,
             final T instanceState) {
         if (null != instanceInfo) {
@@ -832,6 +841,40 @@ public class ControllerUtils {
                 });
     }
 
+    public static Duration maxStartTimeout(final DeploymentSpec spec) {
+        var timeoutMS = spec.getExecutable()
+                .accept(dockerCoordinates -> Objects.requireNonNullElse(dockerCoordinates.getDockerPullTimeout(),
+                                                                        DockerCoordinates.DEFAULT_PULL_TIMEOUT))
+                .toMilliseconds();
+        //Apps and LS become healthy once readiness check passes and one healthcheck passes
+        timeoutMS += spec.accept(new DeploymentSpecVisitor<Long>() {
+            @Override
+            public Long visit(ApplicationSpec applicationSpec) {
+                return timeoutMS(applicationSpec.getHealthcheck())
+                        + timeoutMS(applicationSpec.getReadiness());
+            }
+
+            @Override
+            public Long visit(TaskSpec taskSpec) {
+                return 0L;
+            }
+
+            @Override
+            public Long visit(LocalServiceSpec localServiceSpec) {
+                return timeoutMS(localServiceSpec.getHealthcheck())
+                        + timeoutMS(localServiceSpec.getReadiness());
+            }
+        });
+        return Duration.ofMillis(timeoutMS).plus(Duration.ofSeconds(30)); //Add some delta for overhead
+    }
+
+    public static long timeoutMS(final CheckSpec checkSpec) {
+        return checkSpec.getInitialDelay().toMilliseconds()
+                + (checkSpec.getAttempts()
+                * (checkSpec.getTimeout().toMilliseconds()
+                + checkSpec.getInterval().toMilliseconds()));
+
+    }
 
     private static String castFailure(Class<?> from, Class<?> to) {
         return "Cannot cast op from %s to %s".formatted(from.getSimpleName(), to.getSimpleName());

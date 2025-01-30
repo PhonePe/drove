@@ -50,6 +50,14 @@ public class DefaultControllerRetrySpecFactory implements ControllerRetrySpecFac
     }
 
     @Override
+    public RetrySpec jobRetrySpec(Duration maxTimeout) {
+        return new CompositeRetrySpec(
+                List.of(new RetryOnAllExceptionsSpec(),
+                        new MaxDurationRetrySpec(maxTimeout),
+                        new IntervalRetrySpec(intervalBetweenJobRetry)));
+    }
+
+    @Override
     public RetrySpec jobRetrySpec() {
         return new CompositeRetrySpec(
                 List.of(new RetryOnAllExceptionsSpec(),

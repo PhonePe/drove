@@ -38,10 +38,10 @@ import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import dev.failsafe.TimeoutExceededException;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import dev.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
@@ -105,8 +105,9 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
-                                                      instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
+        val retryPolicy = CommonUtils.<Boolean>policy(
+                retrySpecFactory.jobRetrySpec(ControllerUtils.maxStartTimeout(applicationSpec)),
+                instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {
             val status = waitForAction(retryPolicy,
