@@ -100,8 +100,10 @@ public class StartTaskJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val sourceApp = taskSpec.getSourceAppName();
         val taskId = taskSpec.getTaskId();
+        final var computedTime = ControllerUtils.maxStartTimeout(taskSpec);
+        log.info("Estimated time to complete task startup: {} ms", computedTime.toMillis());
         val retryPolicy = CommonUtils.<Boolean>policy(
-                retrySpecFactory.jobRetrySpec(ControllerUtils.maxStartTimeout(taskSpec)),
+                retrySpecFactory.jobRetrySpec(computedTime),
                 instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val instanceId = instanceIdGenerator.generate(this.taskSpec);
 

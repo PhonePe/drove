@@ -114,8 +114,10 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         final var spec = localServiceInfo.getSpec();
+        final var estimatedCompletionTime = ControllerUtils.maxStartTimeout(spec);
+        log.info("Estimated time to complete local service instance startup: {} ms", estimatedCompletionTime.toMillis());
         val retryPolicy = CommonUtils.<Boolean>policy(
-                retrySpecFactory.jobRetrySpec(ControllerUtils.maxStartTimeout(spec)),
+                retrySpecFactory.jobRetrySpec(estimatedCompletionTime),
                 instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val serviceId = ControllerUtils.deployableObjectId(spec);
         try {

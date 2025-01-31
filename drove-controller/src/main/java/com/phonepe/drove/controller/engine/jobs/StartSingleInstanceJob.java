@@ -105,8 +105,11 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
+        final var estimatedTime = ControllerUtils.maxStartTimeout(applicationSpec);
+        log.info("Estimated time to complete application instance startup: {} ms", estimatedTime.toMillis());
+
         val retryPolicy = CommonUtils.<Boolean>policy(
-                retrySpecFactory.jobRetrySpec(ControllerUtils.maxStartTimeout(applicationSpec)),
+                retrySpecFactory.jobRetrySpec(estimatedTime),
                 instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {
