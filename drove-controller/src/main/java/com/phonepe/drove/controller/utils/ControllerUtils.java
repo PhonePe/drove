@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.utils;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
@@ -115,14 +116,15 @@ public class ControllerUtils {
 
     public static boolean ensureInstanceState(
             final LocalServiceStateDB instanceInfoDB,
-            ClusterOpSpec clusterOpSpec,
+            long timeout,
             String serviceId,
             String instanceId,
             LocalServiceInstanceState required,
             ControllerRetrySpecFactory retrySpecFactory) {
+
         val retryPolicy =
                 CommonUtils.<StateCheckStatus>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        retrySpecFactory.instanceStateCheckRetrySpec(timeout),
                         MISMATCH::equals);
         try {
             val status = waitForState(
@@ -167,14 +169,14 @@ public class ControllerUtils {
 
     public static boolean ensureInstanceState(
             final ApplicationInstanceInfoDB instanceInfoDB,
-            ClusterOpSpec clusterOpSpec,
+            long timeout,
             String appId,
             String instanceId,
             InstanceState required,
             ControllerRetrySpecFactory retrySpecFactory) {
         val retryPolicy =
                 CommonUtils.<StateCheckStatus>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        retrySpecFactory.instanceStateCheckRetrySpec(timeout),
                         MISMATCH::equals);
         try {
             val status = waitForState(
@@ -212,14 +214,14 @@ public class ControllerUtils {
 
     public static boolean ensureTaskState(
             final TaskDB taskDB,
-            ClusterOpSpec clusterOpSpec,
+            long timeout,
             String sourceAppName,
             String taskId,
             TaskState required,
             ControllerRetrySpecFactory retrySpecFactory) {
         val retryPolicy =
                 CommonUtils.<StateCheckStatus>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        retrySpecFactory.instanceStateCheckRetrySpec(timeout),
                         MISMATCH::equals);
         try {
             val status = waitForState(
@@ -841,31 +843,31 @@ public class ControllerUtils {
                 });
     }
 
-    public static Duration maxStartTimeout(final DeploymentSpec spec) {
+    public static long maxStartTimeout(final DeploymentUnitSpec spec) {
         var timeoutMS = spec.getExecutable()
                 .accept(dockerCoordinates -> Objects.requireNonNullElse(dockerCoordinates.getDockerPullTimeout(),
                                                                         DockerCoordinates.DEFAULT_PULL_TIMEOUT))
                 .toMilliseconds();
         //Apps and LS become healthy once readiness check passes and one healthcheck passes
-        timeoutMS += spec.accept(new DeploymentSpecVisitor<Long>() {
+        timeoutMS += spec.accept(new DeploymentUnitSpecVisitor<Long>() {
             @Override
-            public Long visit(ApplicationSpec applicationSpec) {
+            public Long visit(ApplicationInstanceSpec applicationSpec) {
                 return timeoutMS(applicationSpec.getHealthcheck())
                         + timeoutMS(applicationSpec.getReadiness());
             }
 
             @Override
-            public Long visit(TaskSpec taskSpec) {
+            public Long visit(TaskInstanceSpec taskSpec) {
                 return 0L;
             }
 
             @Override
-            public Long visit(LocalServiceSpec localServiceSpec) {
+            public Long visit(LocalServiceInstanceSpec localServiceSpec) {
                 return timeoutMS(localServiceSpec.getHealthcheck())
                         + timeoutMS(localServiceSpec.getReadiness());
             }
         });
-        return Duration.ofMillis(timeoutMS).plus(Duration.ofSeconds(30)); //Add some delta for overhead
+        return timeoutMS;
     }
 
     public static long timeoutMS(final CheckSpec checkSpec) {
@@ -878,5 +880,19 @@ public class ControllerUtils {
 
     private static String castFailure(Class<?> from, Class<?> to) {
         return "Cannot cast op from %s to %s".formatted(from.getSimpleName(), to.getSimpleName());
+    }
+
+    public static long computeTimeout(ClusterOpSpec clusterOpSpec, DeploymentUnitSpec spec) {
+        val maxTimeout = maxStartTimeout(spec);
+        val providedTimeout = clusterOpSpec.getTimeout().toMilliseconds();
+        var actualTimeout = providedTimeout;
+        if (providedTimeout < maxTimeout) {
+            log.warn("Provided state check timeout {} ms is less than the minimum required time for the container to " +
+                            "come up which is computed to {} ms. Will adjust.",
+                    providedTimeout,
+                    maxTimeout);
+            actualTimeout = maxTimeout;
+        }
+        return actualTimeout;
     }
 }

@@ -139,7 +139,7 @@ public class StopSingleLocalServiceInstanceJob implements Job<Boolean> {
             log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
             return false;
         }
-        val stopped = ensureInstanceState(instanceInfoDB, clusterOpSpec,
+        val stopped = ensureInstanceState(instanceInfoDB, clusterOpSpec.getTimeout().toMilliseconds(),
                                           serviceId, instanceId, LocalServiceInstanceState.STOPPED, retrySpecFactory);
         if(stopped && !Strings.isNullOrEmpty(schedulingSessionId)) {
             scheduler.discardAllocation(schedulingSessionId, instanceId, null);

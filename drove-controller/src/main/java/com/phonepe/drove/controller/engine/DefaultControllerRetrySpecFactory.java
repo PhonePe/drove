@@ -50,14 +50,6 @@ public class DefaultControllerRetrySpecFactory implements ControllerRetrySpecFac
     }
 
     @Override
-    public RetrySpec jobRetrySpec(Duration expectedCompletionDuration) {
-        return new CompositeRetrySpec(
-                List.of(new RetryOnAllExceptionsSpec(),
-                        new MaxDurationRetrySpec(Duration.ofMillis(expectedCompletionDuration.toMillis() * numRetriesForJobExecution)),
-                        new IntervalRetrySpec(intervalBetweenJobRetry)));
-    }
-
-    @Override
     public RetrySpec jobRetrySpec() {
         return new CompositeRetrySpec(
                 List.of(new RetryOnAllExceptionsSpec(),

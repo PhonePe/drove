@@ -38,10 +38,10 @@ import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
-import dev.failsafe.TimeoutExceededException;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import dev.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
@@ -105,12 +105,8 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        final var estimatedTime = ControllerUtils.maxStartTimeout(applicationSpec);
-        log.info("Estimated time to complete application instance startup: {} ms", estimatedTime.toMillis());
-
-        val retryPolicy = CommonUtils.<Boolean>policy(
-                retrySpecFactory.jobRetrySpec(estimatedTime),
-                instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
+                                                      instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val appId = ControllerUtils.deployableObjectId(applicationSpec);
         try {
             val status = waitForAction(retryPolicy,
@@ -150,31 +146,32 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                      ControllerUtils.deployableObjectId(applicationSpec));
             return false;
         }
+        val spec = new ApplicationInstanceSpec(appId,
+                                                     applicationSpec.getName(),
+                                                     instanceId,
+                                                     applicationSpec.getExecutable(),
+                                                     List.of(node.getCpu(),
+                                                             node.getMemory()),
+                                                     applicationSpec.getExposedPorts(),
+                                                     applicationSpec.getVolumes(),
+                                                     translateConfigSpecs(applicationSpec.getConfigs(),
+                                                                          httpCaller),
+                                                     applicationSpec.getHealthcheck(),
+                                                     applicationSpec.getReadiness(),
+                                                     applicationSpec.getLogging(),
+                                                     applicationSpec.getEnv(),
+                                                     applicationSpec.getArgs(),
+                                                     applicationSpec.getDevices(),
+                                                     applicationSpec.getPreShutdown(),
+                                                     generateAppInstanceToken(node,
+                                                                              appId,
+                                                                              instanceId));
         val startMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                     new ExecutorAddress(node.getExecutorId(),
                                                                         node.getHostname(),
                                                                         node.getPort(),
                                                                         node.getTransportType()),
-                                                    new ApplicationInstanceSpec(appId,
-                                                                                applicationSpec.getName(),
-                                                                                instanceId,
-                                                                                applicationSpec.getExecutable(),
-                                                                                List.of(node.getCpu(),
-                                                                                        node.getMemory()),
-                                                                                applicationSpec.getExposedPorts(),
-                                                                                applicationSpec.getVolumes(),
-                                                                                translateConfigSpecs(applicationSpec.getConfigs(),
-                                                                                                     httpCaller),
-                                                                                applicationSpec.getHealthcheck(),
-                                                                                applicationSpec.getReadiness(),
-                                                                                applicationSpec.getLogging(),
-                                                                                applicationSpec.getEnv(),
-                                                                                applicationSpec.getArgs(),
-                                                                                applicationSpec.getDevices(),
-                                                                                applicationSpec.getPreShutdown(),
-                                                                                generateAppInstanceToken(node,
-                                                                                                         appId,
-                                                                                                         instanceId)));
+                                                    spec);
         var successful = false;
         try {
             val response = communicator.send(startMessage);
@@ -191,7 +188,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                 log.info("Start message for instance {}/{} accepted by executor {}",
                          appId, instanceId, node.getExecutorId());
                 successful = ensureInstanceState(instanceInfoDB,
-                                                 clusterOpSpec,
+                                                 ControllerUtils.computeTimeout(clusterOpSpec, spec),
                                                  appId,
                                                  instanceId,
                                                  InstanceState.HEALTHY,

@@ -32,12 +32,12 @@ import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
+import dev.failsafe.TimeoutExceededException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import dev.failsafe.TimeoutExceededException;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.ensureTaskState;
 import static com.phonepe.drove.common.CommonUtils.waitForAction;
+import static com.phonepe.drove.controller.utils.ControllerUtils.ensureTaskState;
 
 /**
  *
@@ -83,7 +83,7 @@ public class StopTaskJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(), r -> !r);
         val task = taskDB.task(sourceAppName, taskId).orElse(null);
-        if(null == task) {
+        if (null == task) {
             log.warn("No task found for {}/{}", sourceAppName, taskId);
         }
         try {
@@ -119,16 +119,21 @@ public class StopTaskJob implements Job<Boolean> {
         }
         val stopMessage = new StopTaskMessage(MessageHeader.controllerRequest(),
                                               new ExecutorAddress(executorId,
-                                                                      task.getHostname(),
-                                                                      node.getPort(),
-                                                                      node.getTransportType()),
+                                                                  task.getHostname(),
+                                                                  node.getPort(),
+                                                                  node.getTransportType()),
                                               task.getInstanceId());
         val response = communicator.send(stopMessage);
         log.trace("Sent message to stop task: {}/{}. Message: {}", sourceAppName, taskId, stopMessage);
-        if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+        if (!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
             log.warn("Task {} could not be stopped. Sending message failed: {}", task.getExecutorId(), executorId);
             return false;
         }
-        return ensureTaskState(taskDB, clusterOpSpec, sourceAppName, taskId, TaskState.STOPPED, retrySpecFactory);
+        return ensureTaskState(taskDB,
+                               clusterOpSpec.getTimeout().toMilliseconds(),
+                               sourceAppName,
+                               taskId,
+                               TaskState.STOPPED,
+                               retrySpecFactory);
     }
 }

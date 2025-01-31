@@ -34,13 +34,13 @@ import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import dev.failsafe.TimeoutExceededException;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import dev.failsafe.TimeoutExceededException;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
 import static com.phonepe.drove.common.CommonUtils.waitForAction;
+import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
 
 /**
  * Starts  a single instance by whatever means necessary
@@ -130,19 +130,24 @@ public class StopSingleInstanceJob implements Job<Boolean> {
             return false;
         }
         val stopMessage = new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                   new ExecutorAddress(executorId,
-                                                                       instanceInfo.getLocalInfo().getHostname(),
-                                                                       node.getPort(),
-                                                                       node.getTransportType()),
-                                                   instanceId);
+                                                  new ExecutorAddress(executorId,
+                                                                      instanceInfo.getLocalInfo().getHostname(),
+                                                                      node.getPort(),
+                                                                      node.getTransportType()),
+                                                  instanceId);
         val response = communicator.send(stopMessage);
         log.trace("Sent message to stop instance: {}/{}. Message: {}", appId, instanceId, stopMessage);
-        if(!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+        if (!response.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
             log.warn("Instance {} could not be stopped. Sending message failed: {}", instanceId, executorId);
             return false;
         }
-        val stopped = ensureInstanceState(instanceInfoDB, clusterOpSpec, appId, instanceId, InstanceState.STOPPED, retrySpecFactory);
-        if(stopped && !Strings.isNullOrEmpty(schedulingSessionId)) {
+        val stopped = ensureInstanceState(instanceInfoDB,
+                                          clusterOpSpec.getTimeout().toMilliseconds(),
+                                          appId,
+                                          instanceId,
+                                          InstanceState.STOPPED,
+                                          retrySpecFactory);
+        if (stopped && !Strings.isNullOrEmpty(schedulingSessionId)) {
             scheduler.discardAllocation(schedulingSessionId, instanceId, null);
         }
         return stopped;

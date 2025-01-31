@@ -113,25 +113,19 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     @Override
     @MonitoredFunction
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
-        final var spec = localServiceInfo.getSpec();
-        final var estimatedCompletionTime = ControllerUtils.maxStartTimeout(spec);
-        log.info("Estimated time to complete local service instance startup: {} ms", estimatedCompletionTime.toMillis());
-        val retryPolicy = CommonUtils.<Boolean>policy(
-                retrySpecFactory.jobRetrySpec(estimatedCompletionTime),
-                instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
-        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
+                                                      instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
+        val serviceId = ControllerUtils.deployableObjectId(localServiceInfo.getSpec());
         try {
             val status = waitForAction(retryPolicy,
-                                       () -> startInstance(spec, clusterOpSpec),
+                                       () -> startInstance(localServiceInfo.getSpec(), clusterOpSpec),
                                        event -> {
                                            val failure = event.getException();
                                            if (null != failure) {
                                                log.error("Error setting up instance for " + serviceId, failure);
                                            }
                                            else {
-                                               log.error("Error setting up instance for {}. Event: {}",
-                                                         serviceId,
-                                                         event);
+                                               log.error("Error setting up instance for {}. Event: {}", serviceId, event);
                                            }
                                        });
             if (context.isStopped() || context.isCancelled()) {
@@ -163,33 +157,34 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
             return false;
         }
 
+        val spec = new LocalServiceInstanceSpec(serviceId,
+                                                      localServiceSpec.getName(),
+                                                      instanceId,
+                                                      localServiceSpec.getExecutable(),
+                                                      List.of(node.getCpu(),
+                                                              node.getMemory()),
+                                                      localServiceSpec.getExposedPorts(),
+                                                      localServiceSpec.getVolumes(),
+                                                      translateConfigSpecs(
+                                                              localServiceSpec.getConfigs(),
+                                                              httpCaller),
+                                                      localServiceSpec.getHealthcheck(),
+                                                      localServiceSpec.getReadiness(),
+                                                      localServiceSpec.getLogging(),
+                                                      localServiceSpec.getEnv(),
+                                                      localServiceSpec.getArgs(),
+                                                      localServiceSpec.getDevices(),
+                                                      localServiceSpec.getPreShutdown(),
+                                                      generateAppInstanceToken(
+                                                              node,
+                                                              serviceId,
+                                                              instanceId));
         val startMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                                 new ExecutorAddress(node.getExecutorId(),
                                                                                     node.getHostname(),
                                                                                     node.getPort(),
                                                                                     node.getTransportType()),
-                                                                new LocalServiceInstanceSpec(serviceId,
-                                                                                             localServiceSpec.getName(),
-                                                                                             instanceId,
-                                                                                             localServiceSpec.getExecutable(),
-                                                                                             List.of(node.getCpu(),
-                                                                                                     node.getMemory()),
-                                                                                             localServiceSpec.getExposedPorts(),
-                                                                                             localServiceSpec.getVolumes(),
-                                                                                             translateConfigSpecs(
-                                                                                                     localServiceSpec.getConfigs(),
-                                                                                                     httpCaller),
-                                                                                             localServiceSpec.getHealthcheck(),
-                                                                                             localServiceSpec.getReadiness(),
-                                                                                             localServiceSpec.getLogging(),
-                                                                                             localServiceSpec.getEnv(),
-                                                                                             localServiceSpec.getArgs(),
-                                                                                             localServiceSpec.getDevices(),
-                                                                                             localServiceSpec.getPreShutdown(),
-                                                                                             generateAppInstanceToken(
-                                                                                                     node,
-                                                                                                     serviceId,
-                                                                                                     instanceId)));
+                                                                spec);
         var successful = false;
         try {
             val response = communicator.send(startMessage);
@@ -206,7 +201,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                 log.info("Start message for instance {}/{} accepted by executor {}",
                          serviceId, instanceId, node.getExecutorId());
                 successful = ensureInstanceState(instanceInfoDB,
-                                                 clusterOpSpec,
+                                                 ControllerUtils.computeTimeout(clusterOpSpec, spec),
                                                  serviceId,
                                                  instanceId,
                                                  LocalServiceInstanceState.HEALTHY,

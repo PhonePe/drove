@@ -34,11 +34,11 @@ import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.task.TaskSpec;
-import dev.failsafe.Failsafe;
-import dev.failsafe.TimeoutExceededException;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import dev.failsafe.Failsafe;
+import dev.failsafe.TimeoutExceededException;
 
 import java.util.Date;
 import java.util.List;
@@ -100,11 +100,8 @@ public class StartTaskJob implements Job<Boolean> {
     public Boolean execute(JobContext<Boolean> context, JobResponseCombiner<Boolean> responseCombiner) {
         val sourceApp = taskSpec.getSourceAppName();
         val taskId = taskSpec.getTaskId();
-        final var computedTime = ControllerUtils.maxStartTimeout(taskSpec);
-        log.info("Estimated time to complete task startup: {} ms", computedTime.toMillis());
-        val retryPolicy = CommonUtils.<Boolean>policy(
-                retrySpecFactory.jobRetrySpec(computedTime),
-                instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
+        val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.jobRetrySpec(),
+                                                                    instanceScheduled -> !context.isCancelled() && !context.isStopped() && !instanceScheduled);
         val instanceId = instanceIdGenerator.generate(this.taskSpec);
 
         try {
@@ -113,14 +110,10 @@ public class StartTaskJob implements Job<Boolean> {
                                        event -> {
                                            val failure = event.getException();
                                            if (null != failure) {
-                                               log.error("Error setting up task for " + sourceApp + "/" + taskId,
-                                                         failure);
+                                               log.error("Error setting up task for " + sourceApp + "/" + taskId, failure);
                                            }
                                            else {
-                                               log.error("Error setting up task for {}/{}. Event: {}",
-                                                         sourceApp,
-                                                         taskId,
-                                                         event);
+                                               log.error("Error setting up task for {}/{}. Event: {}", sourceApp, taskId, event);
                                            }
                                        });
 
@@ -139,10 +132,10 @@ public class StartTaskJob implements Job<Boolean> {
     }
 
     @SuppressWarnings("java:S1874")
-    private boolean ensureDataAvailability() {
+    private boolean ensureDataAvailability(TaskInstanceSpec spec) {
         val retryPolicy =
                 CommonUtils.<Boolean>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(clusterOpSpec.getTimeout().toMilliseconds()),
+                        retrySpecFactory.instanceStateCheckRetrySpec(ControllerUtils.computeTimeout(clusterOpSpec, spec)),
                         r -> !r);
         try {
             return Failsafe.with(List.of(retryPolicy))
@@ -166,24 +159,24 @@ public class StartTaskJob implements Job<Boolean> {
             return false;
         }
 
+        final var spec = new TaskInstanceSpec(taskId,
+                                              sourceApp,
+                                              instanceId,
+                                              taskSpec.getExecutable(),
+                                              List.of(node.getCpu(),
+                                                      node.getMemory()),
+                                              taskSpec.getVolumes(),
+                                              translateConfigSpecs(taskSpec.getConfigs(), httpCaller),
+                                              taskSpec.getLogging(),
+                                              taskSpec.getEnv(),
+                                              taskSpec.getArgs(),
+                                              taskSpec.getDevices());
         val startMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
                                                 new ExecutorAddress(node.getExecutorId(),
-                                                                    node.getHostname(),
-                                                                    node.getPort(),
-                                                                    node.getTransportType()),
-                                                new TaskInstanceSpec(taskId,
-                                                                     sourceApp,
-                                                                     instanceId,
-                                                                     taskSpec.getExecutable(),
-                                                                     List.of(node.getCpu(),
-                                                                             node.getMemory()),
-                                                                     taskSpec.getVolumes(),
-                                                                     translateConfigSpecs(taskSpec.getConfigs(),
-                                                                                          httpCaller),
-                                                                     taskSpec.getLogging(),
-                                                                     taskSpec.getEnv(),
-                                                                     taskSpec.getArgs(),
-                                                                     taskSpec.getDevices()));
+                                                                            node.getHostname(),
+                                                                            node.getPort(),
+                                                                            node.getTransportType()),
+                                                spec);
         var successful = false;
         try {
             val response = communicator.send(startMessage);
@@ -199,7 +192,7 @@ public class StartTaskJob implements Job<Boolean> {
             else {
                 log.info("Start message for instance {}/{} accepted by executor {}",
                          sourceApp, taskId, node.getExecutorId());
-                successful = ensureDataAvailability();
+                successful = ensureDataAvailability(spec);
             }
         }
         finally {
