@@ -20,7 +20,6 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
  *
@@ -28,16 +27,17 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class TaskDetailsPage extends TemplateView {
+public class TaskDetailsPage extends BasePageTemplate {
     String sourceAppName;
     String taskId;
     TaskInfo instanceInfo;
 
     public TaskDetailsPage(
+            InstallationMetadata installationMetadata,
             String sourceAppName,
             String taskId,
             TaskInfo instanceInfo) {
-        super("templates/taskdetails.hbs");
+        super("templates/taskdetails.hbs", installationMetadata);
         this.sourceAppName = sourceAppName;
         this.taskId = taskId;
         this.instanceInfo = instanceInfo;

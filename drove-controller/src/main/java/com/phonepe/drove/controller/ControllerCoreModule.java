@@ -44,6 +44,7 @@ import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
+import com.phonepe.drove.controller.ui.views.InstallationMetadata;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -56,6 +57,8 @@ import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
 import io.dropwizard.setup.Environment;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import io.dropwizard.util.Duration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -71,6 +74,7 @@ import java.util.concurrent.ThreadFactory;
  *
  */
 @SuppressWarnings("unused")
+@Slf4j
 public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
@@ -216,4 +220,31 @@ public class ControllerCoreModule extends AbstractModule {
                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM),
                                  FailureStrategy.STOP);
     }
+
+    @Provides
+    @Singleton
+    public InstallationMetadata installationMetadata() {
+        return new InstallationMetadata(loadVersionFromManifest());
+    }
+
+    @SneakyThrows
+    private String loadVersionFromManifest() {
+        val resources = getClass().getClassLoader()
+                .getResources("META-INF/MANIFEST.MF");
+        while (resources.hasMoreElements()) {
+            try {
+                val manifest = new Manifest(resources.nextElement().openStream());
+                val attributes = manifest.getMainAttributes();
+                val title = attributes.getValue("Implementation-Title");
+                if (null != title && title.equals("drove-controller")) {
+                    return attributes.getValue("Implementation-Version");
+                }
+            } catch (IOException e) {
+                log.error("Error reading version from manifest: ", e);
+                throw e;
+            }
+        }
+        return "DEV_VERSION";
+    }
+
 }

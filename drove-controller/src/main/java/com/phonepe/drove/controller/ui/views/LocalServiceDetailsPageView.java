@@ -19,7 +19,6 @@ package com.phonepe.drove.controller.ui.views;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
  * Renders the homepage
@@ -27,11 +26,11 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class LocalServiceDetailsPageView extends TemplateView {
+public class LocalServiceDetailsPageView extends BasePageTemplate {
     String serviceId;
 
-    public LocalServiceDetailsPageView(String serviceId) {
-        super("templates/localservicedetails.hbs");
+    public LocalServiceDetailsPageView(InstallationMetadata installationMetadata, String serviceId) {
+        super("templates/localservicedetails.hbs", installationMetadata);
         this.serviceId = serviceId;
     }
 }

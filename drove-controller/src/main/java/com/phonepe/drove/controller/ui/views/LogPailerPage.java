@@ -19,7 +19,6 @@ package com.phonepe.drove.controller.ui.views;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
  *
@@ -27,14 +26,14 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class LogPailerPage extends TemplateView {
+public class LogPailerPage extends BasePageTemplate {
     String logType;
     String appId;
     String instanceId;
     String logFileName;
 
-    public LogPailerPage(String logType, String appId, String instanceId, String logFileName) {
-        super("templates/logtailer.hbs");
+    public LogPailerPage(InstallationMetadata installationMetadata, String logType, String appId, String instanceId, String logFileName) {
+        super("templates/logtailer.hbs", installationMetadata);
         this.logType = logType;
         this.appId = appId;
         this.instanceId = instanceId;

@@ -24,6 +24,7 @@ import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.ui.views.InstallationMetadata;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
@@ -53,12 +54,15 @@ class UITest {
     private static final ApplicationInstanceInfoDB applicationInstanceInfoDB = mock(ApplicationInstanceInfoDB.class);
     private static final TaskDB taskDB = mock(TaskDB.class);
     private static final LocalServiceStateDB localServiceStateDB = mock(LocalServiceStateDB.class);
+    private static final InstallationMetadata installationMetadata = new InstallationMetadata("TEST");
 
     private static final UI resource = new UI(applicationStateDB,
                                               applicationInstanceInfoDB,
                                               taskDB,
                                               localServiceStateDB,
-                                              ControllerOptions.DEFAULT);
+                                              ControllerOptions.DEFAULT,
+                                              installationMetadata,
+                                              null);
 
     @BeforeAll
     static void initializeTemplate() {

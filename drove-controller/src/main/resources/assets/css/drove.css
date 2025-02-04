@@ -63,6 +63,14 @@ a {
     padding-top: 1rem;
 }
 
+.footer-font {
+  font-size: small !important;
+}
+
+.footer-link {
+  color: white !important;
+}
+
 div.dataTables_wrapper div.dataTables_filter {
     text-align: inherit;
 }

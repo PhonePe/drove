@@ -20,7 +20,6 @@ import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
  *
@@ -28,18 +27,19 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class LocalServiceInstanceDetailsPage extends TemplateView {
+public class LocalServiceInstanceDetailsPage extends BasePageTemplate {
     String serviceId;
     String instanceId;
     LocalServiceInstanceInfo instanceInfo;
     boolean hasReadAccess;
 
     public LocalServiceInstanceDetailsPage(
+            InstallationMetadata installationMetadata,
             String serviceId,
             String instanceId,
             LocalServiceInstanceInfo instanceInfo,
             boolean hasReadAccess) {
-        super("templates/localservice-instancedetails.hbs");
+        super("templates/localservice-instancedetails.hbs", installationMetadata);
         this.serviceId = serviceId;
         this.instanceId = instanceId;
         this.instanceInfo = instanceInfo;

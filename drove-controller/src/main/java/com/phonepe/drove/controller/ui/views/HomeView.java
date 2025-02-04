@@ -19,7 +19,6 @@ package com.phonepe.drove.controller.ui.views;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
  * Renders the homepage
@@ -27,9 +26,9 @@ import ru.vyarus.guicey.gsp.views.template.TemplateView;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class HomeView extends TemplateView {
+public class HomeView extends BasePageTemplate {
 
-    public HomeView() {
-        super("templates/home.hbs");
+    public HomeView(InstallationMetadata installationMetadata) {
+        super("templates/home.hbs", installationMetadata);
     }
 }

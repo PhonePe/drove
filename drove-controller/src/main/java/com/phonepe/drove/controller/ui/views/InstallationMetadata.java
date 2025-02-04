@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ *  Copyright (c) 2025 Original Author(s), PhonePe India Pvt. Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,21 +16,12 @@
 
 package com.phonepe.drove.controller.ui.views;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.Value;
 
 /**
- * Renders the homepage
+ *
  */
 @Value
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
-public class ApplicationDetailsPageView extends BasePageTemplate {
-    String appId;
-
-    public ApplicationDetailsPageView(InstallationMetadata installationMetadata, String appId) {
-        super("templates/applicationdetails.hbs", installationMetadata);
-        this.appId = appId;
-    }
+public class InstallationMetadata {
+    String version;
 }

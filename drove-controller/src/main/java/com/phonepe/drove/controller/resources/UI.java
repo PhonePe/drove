@@ -62,6 +62,7 @@ public class UI {
     private final LocalServiceStateDB localServiceStateDB;
 
     private final ControllerOptions controllerOptions;
+    private final InstallationMetadata installationMetadata;
 
 
     @Inject
@@ -70,12 +71,14 @@ public class UI {
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
             LocalServiceStateDB localServiceStateDB,
-            ControllerOptions controllerOptions) {
+            ControllerOptions controllerOptions,
+            InstallationMetadata installationMetadata) {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.localServiceStateDB = localServiceStateDB;
         this.controllerOptions = controllerOptions;
+        this.installationMetadata = installationMetadata;
     }
 
     @GET
@@ -89,7 +92,7 @@ public class UI {
         if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new ApplicationDetailsPageView(appId);
+        return new ApplicationDetailsPageView(installationMetadata, appId);
     }
 
 
@@ -117,7 +120,7 @@ public class UI {
         if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new LogPailerPage("applications", appId, instanceId, logFileName);
+        return new LogPailerPage(installationMetadata, "applications", appId, instanceId, logFileName);
     }
 
     @GET
@@ -130,7 +133,7 @@ public class UI {
         }
         val task = taskDB.task(sourceAppName, taskId).orElse(null);
 
-        return new TaskDetailsPage(sourceAppName, taskId, task);
+        return new TaskDetailsPage(installationMetadata, sourceAppName, taskId, task);
     }
 
     @GET
@@ -142,7 +145,7 @@ public class UI {
         if (Strings.isNullOrEmpty(appId) || Strings.isNullOrEmpty(instanceId)) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new LogPailerPage("tasks", appId, instanceId, logFileName);
+        return new LogPailerPage(installationMetadata, "tasks", appId, instanceId, logFileName);
     }
 
     @GET
@@ -151,7 +154,7 @@ public class UI {
         if (Strings.isNullOrEmpty(serviceId) || localServiceStateDB.service(serviceId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new LocalServiceDetailsPageView(serviceId);
+        return new LocalServiceDetailsPageView(installationMetadata, serviceId);
     }
 
     @GET
@@ -163,7 +166,8 @@ public class UI {
         if (Strings.isNullOrEmpty(serviceId) || localServiceStateDB.service(serviceId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new LocalServiceInstanceDetailsPage(serviceId,
+        return new LocalServiceInstanceDetailsPage(installationMetadata,
+                                                   serviceId,
                                                   instanceId,
                                                   localServiceStateDB.instance(serviceId, instanceId).orElse(null),
                                                   hasReadAccess(user));
@@ -178,7 +182,7 @@ public class UI {
         if (Strings.isNullOrEmpty(serviceId) || localServiceStateDB.service(serviceId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new LogPailerPage("localservices", serviceId, instanceId, logFileName);
+        return new LogPailerPage(installationMetadata, "localservices", serviceId, instanceId, logFileName);
     }
 
     @GET
@@ -187,7 +191,7 @@ public class UI {
         if (Strings.isNullOrEmpty(executorId)) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new ExecutorDetailsPageView(executorId);
+        return new ExecutorDetailsPageView(installationMetadata, executorId);
     }
 
 
