@@ -140,10 +140,10 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                 }
                 else {
                     log.info("Will create the following instances: {}",
-                              newInstancesPerExecutor.entrySet()
-                                      .stream()
-                                      .map(e -> "%s:%d".formatted(e.getKey(), e.getValue()))
-                                      .toList());
+                             newInstancesPerExecutor.entrySet()
+                                     .stream()
+                                     .map(e -> "%s:%d".formatted(e.getKey(), e.getValue()))
+                                     .toList());
                     jobList.addAll(createNewInstanceJobs(newInstancesPerExecutor,
                                                          currInfo,
                                                          clusterOpSpec,
@@ -166,7 +166,10 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
             }
             case INACTIVE -> {
                 val extraInstances = liveExecutors.stream()
-                        .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
+                        .flatMap(executorHostInfo -> Objects.requireNonNullElse(
+                                        executorHostInfo.getNodeData().getServiceInstances(),
+                                        List.<LocalServiceInstanceInfo>of())
+                                .stream())
                         .filter(AdjustInstancesLocalServiceAction::isInRunningState)
                         .map(LocalServiceInstanceInfo::getInstanceId)
                         .toList();
@@ -250,7 +253,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         log.debug("Execution result: {}", executionResult);
         val activationState = currentState.getData().getActivationState();
         if (executionResult.isCancelled()) {
-            if(activationState.equals(ActivationState.ACTIVE)) {
+            if (activationState.equals(ActivationState.ACTIVE)) {
                 log.info("Job has been cancelled for some reason. Will request deactivation for safety");
                 return StateData.from(currentState, LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED);
             }

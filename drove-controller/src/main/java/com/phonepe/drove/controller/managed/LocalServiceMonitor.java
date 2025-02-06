@@ -41,10 +41,7 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -78,9 +75,9 @@ public class LocalServiceMonitor implements Managed {
              localServiceEngine,
              leadershipEnsurer,
              ScheduledSignal.builder()
-                .initialDelay(Duration.ofSeconds(5))
-                .interval(Duration.ofSeconds(30))
-                .build());
+                     .initialDelay(Duration.ofSeconds(5))
+                     .interval(Duration.ofSeconds(30))
+                     .build());
     }
 
     @VisibleForTesting
@@ -151,7 +148,10 @@ public class LocalServiceMonitor implements Managed {
         //Now kill all service instances running on blacklisted executors
         //This _could_ be done in adjust instances, it is more efficient to generate commands here in a single shot
         val instancesToBeStopped = blacklistedExecutors.stream()
-                .flatMap(executorHostInfo -> executorHostInfo.getNodeData().getServiceInstances().stream())
+                .flatMap(executorHostInfo -> Objects.requireNonNullElse(
+                                executorHostInfo.getNodeData().getServiceInstances(),
+                                List.<LocalServiceInstanceInfo>of())
+                        .stream())
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
                                                Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
                                                                   Collectors.toSet())));
@@ -162,7 +162,9 @@ public class LocalServiceMonitor implements Managed {
     }
 
     @SuppressWarnings("java:S1301")
-    private void handleServiceInstances(Map<String, LocalServiceInfo> services, ArrayList<ExecutorHostInfo> liveExecutors) {
+    private void handleServiceInstances(
+            Map<String, LocalServiceInfo> services,
+            ArrayList<ExecutorHostInfo> liveExecutors) {
         services.forEach((serviceId, serviceInfo) -> {
             val currInstances = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false);
             switch (serviceInfo.getActivationState()) {
