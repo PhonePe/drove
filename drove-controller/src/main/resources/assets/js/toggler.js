@@ -14,11 +14,21 @@
   }
 
   const setTheme = theme => {
-    if (theme === 'auto') {
-      document.documentElement.setAttribute('data-bs-theme', (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))
-    } else {
-      document.documentElement.setAttribute('data-bs-theme', theme)
-    }
+      const selectedTheme = (theme === 'auto')
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : theme
+      document.documentElement.setAttribute('data-bs-theme', selectedTheme)
+      const header = document.querySelector('#topbar')
+      const footer = document.querySelector('footer')
+      header.classList.remove('bg-light', 'bg-dark')
+      header.classList.add('bg-' + selectedTheme)
+      footer.classList.remove('bg-light', 'bg-dark', 'text-light', 'text-dark')
+      if(selectedTheme === 'dark') {
+          footer.classList.add('bg-light', 'text-dark')
+      }
+      else {
+          footer.classList.add('bg-dark', 'text-light')
+      }
   }
 
   setTheme(getPreferredTheme())
@@ -45,7 +55,6 @@
     activeThemeIcon.setAttribute('href', svgOfActiveBtn)
     const themeSwitcherLabel = `${themeSwitcherText.textContent} (${btnToActive.dataset.bsThemeValue})`
     themeSwitcher.setAttribute('aria-label', themeSwitcherLabel)
-
     if (focus) {
       themeSwitcher.focus()
     }
