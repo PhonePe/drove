@@ -14,25 +14,45 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.ui.views;
+package com.phonepe.drove.controller.config;
 
-import com.phonepe.drove.controller.config.ViewOptions;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.URL;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 /**
- *
+ * Some extra details for views
  */
 @Value
-public class InstallationMetadata {
-    public static final InstallationMetadata DEFAULT = new InstallationMetadata("DEV_VERSION",
-                                                                                new ViewOptions.InstallationConfig(
-                                                                                        "local",
-                                                                                        ViewOptions.Criticality.DEVELOPMENT),
-                                                                                Map.of());
-    String version;
-    ViewOptions.InstallationConfig installation;
+@AllArgsConstructor
+@Builder
+@Jacksonized
+public class ViewOptions {
+    public enum Criticality {
+        LOCAL,
+        DEVELOPMENT,
+        INTEGRATION,
+        PRODUCTION
+    }
+
+    @Value
+    public static class InstallationConfig {
+        @Length(min = 0, max = 50)
+        String label;
+        @NotNull
+        ViewOptions.Criticality criticality;
+    }
+
+    @Valid
+    InstallationConfig installation;
+
+    @Valid
     Map<String, @URL String> links;
 }

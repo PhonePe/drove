@@ -17,6 +17,7 @@
 package com.phonepe.drove.controller.ui;
 
 import com.google.common.base.Joiner;
+import com.phonepe.drove.controller.config.ViewOptions;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -61,5 +62,14 @@ public class CustomHelpers {
                                       .toList());
             }
         });
+    }
+
+    public CharSequence badgeColor(final ViewOptions.Criticality criticality) {
+        return switch (criticality) {
+            case LOCAL -> "secondary";
+            case DEVELOPMENT -> "success";
+            case INTEGRATION -> "warning";
+            case PRODUCTION -> "danger";
+        };
     }
 }

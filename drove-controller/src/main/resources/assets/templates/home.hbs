@@ -25,22 +25,33 @@
     <section>
         <div class="row">
             <div class="col-lg-6 col-md-12" id="runnables">
-                <ul class="nav nav-tabs"  role="tablist">
+                <ul class="nav nav-tabs" role="tablist" id="runnables-tabs">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="applicationdetails-tab" data-toggle="tab" data-target="#applicationdetails" type="button" role="tab" aria-controls="applicationdetails" aria-selected="true">Applications</button>
+                        <button class="nav-link active fw-bold" id="applicationdetails-tab" data-bs-toggle="tab"
+                                data-bs-target="#applicationdetails" type="button" role="tab"
+                                aria-controls="applicationdetails" aria-selected="true">Applications
+                        </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="taskdetails-tab" data-toggle="tab" data-target="#taskdetails" type="button" role="tab" aria-controls="taskdetails" aria-selected="false">Tasks</button>
+                        <button class="nav-link fw-bold" id="taskdetails-tab" data-bs-toggle="tab"
+                                data-bs-target="#taskdetails" type="button" role="tab" aria-controls="taskdetails"
+                                aria-selected="false">Tasks
+                        </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="localservicedetails-tab" data-toggle="tab" data-target="#localservicedetails" type="button" role="tab" aria-controls="localservicedetails" aria-selected="false">Local Services</button>
+                        <button class="nav-link fw-bold" id="localservicedetails-tab" data-bs-toggle="tab"
+                                data-bs-target="#localservicedetails" type="button" role="tab"
+                                aria-controls="localservicedetails" aria-selected="false">Local Services
+                        </button>
                     </li>
                 </ul>
-                <div class="tab-content" id="">
-                    <div class="tab-pane fade show active" id="applicationdetails" role="tabpanel" aria-labelledby="applicationdetails-tab">
+                <div class="tab-content" id="runnables-content">
+                    <div class="tab-pane fade show active" id="applicationdetails" role="tabpanel"
+                         aria-labelledby="applicationdetails-tab">
                         <div class="row">
                             <div class="col">
-                                <table class="table table-bordered" id="applications" title="Applications" style="width: 100%">
+                                <table class="table table-bordered data-table" id="applications" title="Applications"
+                                       style="width: 100%">
                                     <thead>
                                     <tr>
                                         <th class="text-wrap">ID</th>
@@ -79,23 +90,29 @@
                         <div class="row" style="padding-top: 1rem;">
                             <div class="col">
                                 <form method="post" action="/apis/v1/tasks/search">
-                                    <div class="form-group row">
+                                    <div class="form-group row mb-2">
                                         <label for="taskSearchAppName" class="col-sm-3">Source App Name</label>
-                                        <input type="text" class="form-control col" id="taskSearchAppName" name="taskSearchAppName" pattern="[a-zA-Z\d\-_]*" required placeholder="Source app name for the task">
+                                        <input type="text" class="form-control col" id="taskSearchAppName"
+                                               name="taskSearchAppName" pattern="[a-zA-Z\d\-_]*" required
+                                               placeholder="Source app name for the task">
                                     </div>
                                     <div class="form-group row">
                                         <label for="taskSearchTaskID" class="col-sm-3">Task ID</label>
-                                        <input type="text" class="form-control col" id="taskSearchTaskID" name="taskSearchTaskID" pattern="[a-zA-Z\d\-_]*" required placeholder="Task ID used to start the task">
+                                        <input type="text" class="form-control col" id="taskSearchTaskID"
+                                               name="taskSearchTaskID" pattern="[a-zA-Z\d\-_]*" required
+                                               placeholder="Task ID used to start the task">
                                     </div>
                                     <button type="submit" class="btn btn-success pull-right">Find</button>
                                 </form>
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="localservicedetails" role="tabpanel" aria-labelledby="localservicedetails-tab">
+                    <div class="tab-pane fade" id="localservicedetails" role="tabpanel"
+                         aria-labelledby="localservicedetails-tab">
                         <div class="row">
                             <div class="col">
-                                <table class="table table-bordered" id="localservices" title="localservices" style="width: 100%">
+                                <table class="table table-bordered" id="localservices" title="localservices"
+                                       style="width: 100%">
                                     <thead>
                                     <tr>
                                         <th class="text-wrap">Name</th>
@@ -116,11 +133,11 @@
             </div>
             <div class="col-lg-6 col-md-12">
                 <div class="row">
-                    <div class="col"><h4>Executors</h4></div>
+                    <div class="col"><h4 class="fw-bold">Executors</h4></div>
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered"  id="executors">
+                        <table class="table table-bordered" id="executors">
                             <thead>
                             <tr>
                                 <th class="text-wrap">ID</th>
@@ -167,9 +184,9 @@
             { 'data' : 'state', 'render' : function(data, type, row, meta) {
                     var tagStr = "";
                     if(data === 'NORMAL') {
-                        return '<span class="badge badge-success">Normal</span> ';
+                        return '<span class="badge fw-bold bg-success">Normal</span> ';
                     }
-                    return '<span class="badge badge-danger">Maintenance</span> ';
+                    return '<span class="badge fw-bold bg-danger">Maintenance</span> ';
                 }
             }
         ]
@@ -183,7 +200,6 @@
             }
         },
         'paging': true,
-        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -195,7 +211,7 @@
             {
                 'data' : 'id' ,
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/' + data + '">' + data + '</a>';
+                    return '<a href="/applications/' + data + '" class="fw-bold">' + data + '</a>';
                 }
             },
             { 'data' : 'name' },
@@ -209,7 +225,6 @@
     var tasks = $('#tasks').DataTable({
         'processing' : true,
         'paging': true,
-        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -226,7 +241,7 @@
             { 'data' : 'state', 'render' : renderTaskState },
             { 'data' : 'logStream',
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '">Details</a>';
+                    return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '" class="fw-bold">Details</a>';
                 }
             }
         ],
@@ -245,7 +260,6 @@
             }
         },
         'paging': true,
-        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -257,7 +271,7 @@
             {
                 'data' : 'name' ,
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/localservices/' + row['id'] + '">' + data + '</a>';
+                    return '<a href="/localservices/' + row['id'] + '"  class="fw-bold">' + data + '</a>';
                 }
             },
             { 'data' : 'instancesPerHost' },
@@ -268,12 +282,11 @@
             { 'data' : 'state', render: renderLocalServiceState }
         ]
     });
- 
+
     var executors = $('#executors').DataTable({
         'processing' : true,
         'ajax': '/apis/v1/cluster/executors',
         'paging': true,
-        'dom' : "<'row'<'col-sm-12 col-md-1 float-left'f><'col-sm-10 col-md-9 float-right'p><'col-md-2 col-sm-3'l>><'row'<'col-sm-12'tr>>",
         'info' : false,
         'columnDefs': [
             {
@@ -290,8 +303,8 @@
                 'data' : 'executorId' ,
                 'render' : function(data, type, row, meta) {
                     return (row.state == 'REMOVED' || row.state == 'BLACKLISTED')
-                        ? '<del><a href="/executors/' + data + '">' + data + '</a></del>'
-                        : '<a href="/executors/' + data + '">' + data + '</a>';
+                        ? '<del><a href="/executors/' + data + '"  class="fw-semibold">' + data + '</a></del>'
+                        : '<a href="/executors/' + data + '"  class="fw-semibold">' + data + '</a>';
                 }
             },
             { 'data' : 'hostname' },
@@ -317,11 +330,11 @@
     });
 
     setInterval(() => {
-        cluster.ajax.reload(null, false);
-        applications.ajax.reload(null, false);
-        tasks.ajax.reload(null, false);
-        localservices.ajax.reload(null, false);
-        executors.ajax.reload(null, false);
+    cluster.ajax.reload(null, false);
+    applications.ajax.reload(null, false);
+    tasks.ajax.reload(null, false);
+    localservices.ajax.reload(null, false);
+    executors.ajax.reload(null, false);
     }, 5000);
 {{/partial}}
 {{> common/base}}

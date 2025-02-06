@@ -34,6 +34,7 @@ import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.config.ViewOptions;
 import com.phonepe.drove.controller.engine.*;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
@@ -65,6 +66,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -223,8 +225,13 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public InstallationMetadata installationMetadata() {
-        return new InstallationMetadata(loadVersionFromManifest());
+    public InstallationMetadata installationMetadata(final AppConfig appConfig) {
+        val view = Objects.requireNonNullElseGet(appConfig.getView(),
+                                                 () -> new ViewOptions(new ViewOptions.InstallationConfig("local", ViewOptions.Criticality.DEVELOPMENT),
+                                                                       Map.of()));
+        return new InstallationMetadata(loadVersionFromManifest(),
+                                        view.getInstallation(),
+                                        view.getLinks());
     }
 
     @SneakyThrows

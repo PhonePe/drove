@@ -54,7 +54,7 @@ class UITest {
     private static final ApplicationInstanceInfoDB applicationInstanceInfoDB = mock(ApplicationInstanceInfoDB.class);
     private static final TaskDB taskDB = mock(TaskDB.class);
     private static final LocalServiceStateDB localServiceStateDB = mock(LocalServiceStateDB.class);
-    private static final InstallationMetadata installationMetadata = new InstallationMetadata("TEST");
+    private static final InstallationMetadata installationMetadata = InstallationMetadata.DEFAULT;
 
     private static final UI resource = new UI(applicationStateDB,
                                               applicationInstanceInfoDB,
