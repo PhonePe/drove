@@ -75,7 +75,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
-
+import io.dropwizard.util.Duration;
 import javax.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.*;
@@ -871,7 +871,7 @@ public class ControllerUtils {
     }
 
     public static long timeoutMS(final CheckSpec checkSpec) {
-        return checkSpec.getInitialDelay().toMilliseconds()
+        return Objects.requireNonNullElse(checkSpec.getInitialDelay(), Duration.seconds(0)).toMilliseconds()
                 + (checkSpec.getAttempts()
                 * (checkSpec.getTimeout().toMilliseconds()
                 + checkSpec.getInterval().toMilliseconds()));
