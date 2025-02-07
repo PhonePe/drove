@@ -293,14 +293,20 @@
         });
       }, false);
     })();
-    DataTable.defaults.processing = false;
-    DataTable.defaults.layout = {
-            'top1' : [
-                'search',
-                'paging',
-                'pageLength'
-            ]
-        };
+
+
+    $.extend( $.fn.DataTable.defaults, {
+            processing: false,
+            responsive: true,
+            layout: {
+                'top1' : [
+                    'search',
+                    'paging',
+                    'pageLength'
+                ]
+            }
+        })
+
 
     $(document).ready(function() {
     {{#block "page_js"}}

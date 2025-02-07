@@ -39,12 +39,12 @@ public class CustomHelpers {
                                       .entrySet()
                                       .stream()
                                       .map(entry -> String.format(
-                                              "<b>NUMA Node: </b> <span class=\"badge badge-info\">%s</span> &nbsp; &nbsp;<b>Allocated Cores:</b> %s",
+                                              "<b>NUMA Node: </b> <span class=\"badge bg-info\">%s</span> &nbsp; &nbsp;<b>Allocated Cores:</b> %s",
                                               entry.getKey(),
                                               Joiner.on("&nbsp;")
                                                       .join(entry.getValue()
                                                                     .stream()
-                                                                    .map(value -> "<span class=\"badge badge-primary\">" + value + "</span>")
+                                                                    .map(value -> "<span class=\"badge bg-primary\">" + value + "</span>")
                                                                     .toList())))
                                       .toList());
             }
@@ -56,7 +56,7 @@ public class CustomHelpers {
                                       .entrySet()
                                       .stream()
                                       .map(e -> String.format(
-                                              "<b>NUMA Node:</b> <span class=\"badge badge-info\">%s</span>  &nbsp; &nbsp;<b>Allocated Memory:</b> %d MB",
+                                              "<b>NUMA Node:</b> <span class=\"badge bg-info\">%s</span>  &nbsp; &nbsp;<b>Allocated Memory:</b> %d MB",
                                               e.getKey(),
                                               e.getValue()))
                                       .toList());

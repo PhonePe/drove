@@ -24,7 +24,7 @@
     </section>
     <section>
         <div class="row">
-            <div class="col-lg-6 col-md-12" id="runnables">
+            <div class="col-lg-6 col-md-12 mb-2" id="runnables">
                 <ul class="nav nav-tabs" role="tablist" id="runnables-tabs">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold" id="applicationdetails-tab" data-bs-toggle="tab"
@@ -148,7 +148,7 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered" id="executors">
+                        <table class="table table-bordered table-responsive" id="executors">
                             <thead>
                             <tr>
                                 <th class="text-wrap">ID</th>
@@ -280,9 +280,9 @@
         ],
         'columns' : [
             {
-                'data' : 'name' ,
+                'data' : 'id' ,
                 'render' : function(data, type, row, meta) {
-                    return '<a href="/localservices/' + row['id'] + '"  class="fw-bold">' + data + '</a>';
+                    return '<a href="/localservices/' + data + '"  class="fw-bold">' + data + '</a>';
                 }
             },
             { 'data' : 'instancesPerHost' },
@@ -306,7 +306,11 @@
             },
             {
                 'className': 'text-wrap',
-                'targets': '_all'
+                'targets': [1,2,3,4,5,6]
+            },
+            {
+                'className': 'text-nowrap',
+                'targets': 0
             }
         ],
         'columns' : [
@@ -331,7 +335,7 @@
                    }
                    data.sort();
                    for(var i = 0; i < data.length; i++) {
-                       tagStr += '<span class="badge badge-secondary text-wrap">' + data[i] + '</span> ';
+                       tagStr += '<span class="badge bg-secondary text-wrap">' + data[i] + '</span> ';
                    }
                    return tagStr;
                 }

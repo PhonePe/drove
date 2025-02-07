@@ -24,23 +24,23 @@
         <div class="row">
             <div class="col">
                 <div class="row">
-                    <div class="col"><h4>Instances</h4></div>
+                    <div class="col"><h4 class="fw-bold">Application Instances</h4></div>
                 </div>
                 <div class="row">
                     <div class="col">
                         <table class="table table-bordered" id="instances">
                             <thead>
                             <tr>
-                                <th class="text-wrap">ID</th>
-                                <th class="text-wrap">App Id</th>
-                                <th class="text-wrap">Port</th>
-                                <th class="text-wrap">Cores</th>
-                                <th class="text-wrap">Memory</th>
-                                <th class="text-wrap">Current Age</th>
-                                <th class="text-wrap">Created</th>
-                                <th class="text-wrap">Last Updated</th>
-                                <th class="text-wrap">State</th>
-                                <th class="text-wrap"></th>
+                                <th>ID</th>
+                                <th>App Id</th>
+                                <th>Port</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>Current Age</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>State</th>
+                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -53,7 +53,7 @@
         <div class="row">
             <div class="col">
                 <div class="row">
-                    <div class="col"><h4>Tasks</h4></div>
+                    <div class="col"><h4 class="fw-bold">Tasks</h4></div>
                 </div>
                 <div class="row">
                     <div class="col">
@@ -82,7 +82,7 @@
         <div class="row">
             <div class="col">
                 <div class="row">
-                    <div class="col"><h4>Local Service Instances</h4></div>
+                    <div class="col"><h4 class="fw-bold">Local Service Instances</h4></div>
                 </div>
                 <div class="row">
                     <div class="col">
@@ -116,7 +116,16 @@
         'searching' : false,
         'ordering' : false,
         'info' : false,
-        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
+        'columnDefs': [
+            {
+                'className': 'text-nowrap',
+                'targets': 0
+            },
+            {
+                'className': 'text-wrap',
+                'targets': [1-8]
+            }
+        ],
 
         'columns' : [
             { 'data' : 'executorId' },
@@ -135,16 +144,17 @@
                     }
                     data.sort();
                     for(var i = 0; i < data.length; i++) {
-                        tagStr += '<span class="badge badge-secondary text-wrap">' + data[i] + '</span> ';
+                        tagStr += '<span class="badge bg-secondary text-wrap">' + data[i] + '</span> ';
                     }
                     return tagStr;
                 }
             },
-            { 'data' : 'blacklisted',
+            {
+                'data' : 'blacklisted',
                 'render' : function(data, type, row, meta) {
                     return data
-                            ? '<span class="badge badge-danger">BLACKLISTED</span>'
-                            : '<span class="badge badge-success">ONLINE</span>';
+                            ? '<span class="badge bg-danger fw-bold">BLACKLISTED</span>'
+                            : '<span class="badge bg-success fw-bold">ONLINE</span>';
                 }
             }
         ]
