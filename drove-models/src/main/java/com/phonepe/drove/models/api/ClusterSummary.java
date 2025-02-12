@@ -29,6 +29,9 @@ public class ClusterSummary {
     int numExecutors;
     int numApplications;
     int numActiveApplications;
+    int numActiveTasks;
+    int numLocalServices;
+    int numActiveLocalServices;
     int freeCores;
     int usedCores;
     int totalCores;

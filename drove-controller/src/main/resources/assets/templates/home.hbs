@@ -5,17 +5,14 @@
                 <table class="table table-bordered" id="clusterSummary">
                     <thead>
                     <tr>
-                        <th class="text-center text-wrap">Leader Controller</th>
-                        <th class="text-center text-wrap">Number of executors</th>
-                        <th class="text-center text-wrap">Number of Applications</th>
-                        <th class="text-center text-wrap">Number of Active Applications</th>
-                        <th class="text-center text-wrap">Free Cores</th>
-                        <th class="text-center text-wrap">Used Cores</th>
-                        <th class="text-center text-wrap">Total Cores</th>
-                        <th class="text-center text-wrap">Free Memory</th>
-                        <th class="text-center text-wrap">Used Memory</th>
-                        <th class="text-center text-wrap">Total Memory</th>
-                        <th class="text-center text-wrap">State</th>
+                        <th class="text-center text-wrap col-1">Cluster State</th>
+                        <th class="text-center text-wrap col-1">Leader</th>
+                        <th class="text-center text-wrap col-1">Executors</th>
+                        <th class="text-center text-wrap col-3">CPU Cores</th>
+                        <th class="text-center text-wrap col-3">Memory</th>
+                        <th class="text-center text-wrap col-1">Applications</th>
+                        <th class="text-center text-wrap col-1">Tasks</th>
+                        <th class="text-center text-wrap col-1">Local Services</th>
                     </tr>
                     </thead>
                 </table>
@@ -182,25 +179,54 @@
         'info' : false,
         'columnDefs': [ {'className': 'text-center text-wrap', 'targets': '_all'} ],
         'columns' : [
-            { 'data' : 'leader' },
-            { 'data' : 'numExecutors' },
-            { 'data' : 'numApplications' },
-            { 'data' : 'numActiveApplications' },
-            { 'data' : 'freeCores' },
-            { 'data' : 'usedCores' },
-            { 'data' : 'totalCores' },
-            { 'data' : 'freeMemory', 'render' : formatBytes },
-            { 'data' : 'usedMemory', 'render' : formatBytes },
-            { 'data' : 'totalMemory', 'render' : formatBytes },
-            { 'data' : 'state', 'render' : function(data, type, row, meta) {
+            {
+                'data' : 'state',
+                'render' : function(data, type, row, meta) {
                     var tagStr = "";
                     if(data === 'NORMAL') {
                         return '<span class="badge fw-bold bg-success">Normal</span> ';
                     }
                     return '<span class="badge fw-bold bg-danger">Maintenance</span> ';
                 }
+            },
+            { 'data' : 'leader' },
+            { 'data' : 'numExecutors' },
+            {
+                'data' : 'freeCores',
+                'render' : function(data, type, row, meta) {
+                    return renderProgressHtml('progress-with-text', row.usedCores, 0, row.totalCores,
+                        "<b>{0} of {1} allocated ({2} free)</b>".format(row.usedCores, row.totalCores, row.freeCores));
+                }
+            },
+            {
+                'data' : 'freeMemory',
+                'render' : function(data, type, row, meta) {
+                    const free = bytesToString(row.freeMemory);
+                    const used = bytesToString(row.usedMemory);
+                    const total = bytesToString(row.totalMemory);
+                    return renderProgressHtml('progress-with-text', row.usedMemory, 0, row.totalMemory,
+                        "{0} of {1} allocated ({2} free)".format(used, total, free));
+                }
+            },
+            {
+                'data' : 'numActiveApplications',
+                'render' : function(data, type, row, meta) {
+                    return '{0} of {1} Active'.format(row.numActiveApplications, row.numApplications);
+                }
+            },
+            {
+                'data' : 'numActiveTasks',
+                'render' : function(data, type, row, meta) {
+                    return '{0} Active'.format(row.numActiveTasks);
+                }
+            },
+            {
+                'data' : 'numActiveLocalServices',
+                'render' : function(data, type, row, meta) {
+                    return '{0} of {1} Active'.format(row.numActiveLocalServices, row.numLocalServices);
+                }
             }
-        ]
+    ]
     });
     var applications = $('#applications').DataTable({
         'processing' : true,

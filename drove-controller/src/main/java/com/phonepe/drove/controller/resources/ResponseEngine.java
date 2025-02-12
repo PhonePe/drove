@@ -28,6 +28,7 @@ import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
@@ -57,7 +58,9 @@ import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -85,6 +88,7 @@ public class ResponseEngine {
     private final ApplicationStateDB applicationStateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
+    private final TaskEngine taskEngine;
     private final LocalServiceLifecycleManagementEngine localServiceEngine;
     private final LocalServiceStateDB localServiceStateDB;
     private final ClusterStateDB clusterStateDB;
@@ -100,7 +104,7 @@ public class ResponseEngine {
             ApplicationLifecycleManagementEngine applicationEngine,
             ApplicationStateDB applicationStateDB,
             ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB,
+            TaskDB taskDB, TaskEngine taskEngine,
             LocalServiceLifecycleManagementEngine localServiceEngine,
             LocalServiceStateDB localServiceStateDB,
             ClusterStateDB clusterStateDB,
@@ -114,6 +118,7 @@ public class ResponseEngine {
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
+        this.taskEngine = taskEngine;
         this.localServiceEngine = localServiceEngine;
         this.localServiceStateDB = localServiceStateDB;
         this.clusterStateDB = clusterStateDB;
@@ -233,6 +238,22 @@ public class ResponseEngine {
                         : 0;
             allApps++;
         }
+        var liveTasks = 0;
+        for (val taskInfo : taskEngine.activeTasks(EnumSet.allOf(TaskState.class))) {
+            liveTasks += TaskState.ACTIVE_STATES.contains(taskInfo.getState())
+                         ? 1
+                         : 0;
+        }
+        var liveLocalServices = 0;
+        var allLocalServices = 0;
+        for (val localServiceInfo : localServiceStateDB.services(0, Integer.MAX_VALUE)) {
+            liveLocalServices += LocalServiceState.ACTIVE
+                                         .equals(localServiceEngine.currentState(localServiceInfo.getServiceId())
+                                                                                         .orElse(LocalServiceState.DESTROYED))
+                                ? 1
+                                : 0;
+            allLocalServices++;
+        }
         val resourceSummary = ControllerUtils.summarizeResources(clusterResourcesDB.currentSnapshot(true));
 
         return success(
@@ -246,6 +267,9 @@ public class ResponseEngine {
                         resourceSummary.getNumExecutors(),
                         allApps,
                         liveApps,
+                        liveTasks,
+                        allLocalServices,
+                        liveLocalServices,
                         resourceSummary.getFreeCores(),
                         resourceSummary.getUsedCores(),
                         resourceSummary.getTotalCores(),

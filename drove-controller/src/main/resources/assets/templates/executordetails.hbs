@@ -1,22 +1,75 @@
 {{#partial "content"}}
     <section>
         <div class="row">
-            <div class="col">
-                <table class="table table-bordered" id="executorSummary">
-                    <thead>
+            <script type="text/template" data-template="executorSummary">
+                <table  class="table table-bordered" >
                     <tr>
                         <th class="text-wrap">ID</th>
-                        <th class="text-wrap">Hostname</th>
-                        <th class="text-wrap">Port</th>
-                        <th class="text-wrap">Used CPU Cores</th>
-                        <th class="text-wrap">Free CPU Cores</th>
-                        <th class="text-wrap">Used Memory</th>
-                        <th class="text-wrap">Free Memory</th>
-                        <th class="text-wrap">Tags</th>
-                        <th class="text-wrap">Status</th>
+                        <td class="fw-bold">${executorId}</td>
                     </tr>
-                    </thead>
+                    <tr>
+                        <th class="text-wrap">Status</th>
+                        <td>${status}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-wrap">Hostname</th>
+                        <td>${hostname}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-wrap">Port</th>
+                        <td>${port}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-wrap">Transport Type</th>
+                        <td>${transportType}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-wrap">CPU</th>
+                        <td>${cpuUsage}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-wrap">Memory</th>
+                        <td>${memoryUsage}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-wrap">Tags</th>
+                        <td>${tags}</td>
+                    </tr>
+
                 </table>
+            </script>
+
+            <script type="text/template" data-template="numaNodeTemplate">
+                <div class="col-12 col-lg-6">
+                    <div class="card me-2 mb-2">
+                        <h6 class="card-title m-2 text-center">
+                            Node ${nodeId}
+                        </h6>
+                        <div class="card-body text-center">
+                            ${cores}
+                        </div>
+                        <div class="card-footer">
+                            ${memory}
+                        </div>
+                    </div>
+                </div>
+            </script>
+
+            <div class="col-12 col-md-4 mb-2" id="executorSummary">
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="row">
+                    <div class="col">
+                        <h5 class="fw-bold">NUMA Node Status</h5>
+                        <small class="mb-1" style="font-size: x-small">
+                            Core status indicator:
+                            <span class="core-display text-danger" style="font-size: x-small">Used</span>
+                            <span class="core-display text-success" style="font-size: x-small">Unused</span>
+                        </small>
+                    </div>
+                </div>
+                <div class="row" id="cpuStatus">
+                </div>
             </div>
         </div>
     </section>
@@ -110,55 +163,8 @@
 {{/partial}}
 
 {{#partial "page_js"}}
-    var summary = $('#executorSummary').DataTable({
-        'processing' : true,
-        'paging': false,
-        'searching' : false,
-        'ordering' : false,
-        'info' : false,
-        'columnDefs': [
-            {
-                'className': 'text-nowrap',
-                'targets': 0
-            },
-            {
-                'className': 'text-wrap',
-                'targets': [1-8]
-            }
-        ],
 
-        'columns' : [
-            { 'data' : 'executorId' },
-            { 'data' : 'hostname' },
-            { 'data' : 'port' },
-            { 'data' : 'usedCores' },
-            { 'data' : 'freeCores' },
-            { 'data' : 'usedMemory', 'render' : formatBytes },
-            { 'data' : 'freeMemory', 'render' : formatBytes },
-            {
-                'data' : 'tags',
-                'render' : function(data, type, row, meta) {
-                    var tagStr = "";
-                    if(!data) {
-                        return tagStr;
-                    }
-                    data.sort();
-                    for(var i = 0; i < data.length; i++) {
-                        tagStr += '<span class="badge bg-secondary text-wrap">' + data[i] + '</span> ';
-                    }
-                    return tagStr;
-                }
-            },
-            {
-                'data' : 'blacklisted',
-                'render' : function(data, type, row, meta) {
-                    return data
-                            ? '<span class="badge bg-danger fw-bold">BLACKLISTED</span>'
-                            : '<span class="badge bg-success fw-bold">ONLINE</span>';
-                }
-            }
-        ]
-    });
+    const summary = $('#executorSummary');
 
     function executorDataTransformerForAppInstances(res, instances) {
         if(!res || !res.data) {
@@ -173,8 +179,47 @@
             console.error("No data");
             return [];
         }
-        return executorDataTransformer(res, res.data.serviceInstances);
+        return executorDataTransformer(res, res.data.serviceInstances || []);
     }
+
+    function transposeCores(cpus) {
+        // Transpose the cores data to be indexed by coreId
+        const result = Object.fromEntries(Object.keys(cpus.freeCores)
+                                            .map(nodeId => [nodeId, {}]));
+
+        Object.entries(cpus.freeCores)
+            .forEach(([nodeId, cores]) => {
+                cores.forEach(coreId => result[nodeId][coreId] = "FREE");
+            });
+
+        Object.entries(cpus.usedCores)
+            .forEach(([nodeId, cores]) => {
+                cores.forEach(coreId => result[nodeId][coreId] = "USED");
+            });
+
+        return result;
+    }
+
+    function transposeMemory(memory) {
+        return Object.fromEntries(Object.entries(memory.freeMemory).map(([nodeId, freeMemory]) => [
+            nodeId, {
+                "TOTAL": freeMemory + (memory.usedMemory[nodeId] || 0),
+                "USED": memory.usedMemory[nodeId] || 0
+        }
+        ]));
+    }
+
+    // Example usage
+    const memory = {
+        "freeMemory": {
+            "0": 17879
+        },
+        "usedMemory": {
+            "0": 1152
+        }
+    };
+
+    console.log(transposeMemory(memory));
 
     function executorDataTransformer(res, instances) {
         if(!res || !res.data) {
@@ -182,27 +227,69 @@
             return [];
         }
         var data = res.data;
-        var esum = {};
-        esum['executorId'] = data.state.executorId;
-        esum['hostname'] = data.hostname;
-        esum['port'] = data.port;
-        esum['port'] = data.port;
-        var uc = data.state.cpus.usedCores;
-        esum['usedCores'] = Object.values(uc).map(v => v.length).reduce((acc, v) => acc + v, 0);
-        var fc = data.state.cpus.freeCores;
-        esum['freeCores'] = Object.values(fc).map(v => v.length).reduce((acc, v) => acc + v, 0);
-        esum['usedMemory'] = Object.values(data.state.memory.usedMemory).reduce((acc, v) => acc + v, 0);
-        esum['freeMemory'] = Object.values(data.state.memory.freeMemory).reduce((acc, v) => acc + v, 0);
-        esum['tags'] = data.tags;
-        esum['blacklisted'] = data.blacklisted;
-        summary.clear();
-        summary.rows.add([esum]).draw();
+        var executorSummary = {};
+        executorSummary['executorId'] = renderCopyableText( data.state.executorId );
+        executorSummary['hostname'] = data.hostname;
+        executorSummary['port'] = data.port;
+        executorSummary['transportType'] = data.transportType;
+        const ucData = data.state.cpus.usedCores;
+        const usedCores = Object.values(ucData).map(v => v.length).reduce((acc, v) => acc + v, 0);
+        const fcData = data.state.cpus.freeCores;
+        const freeCores = Object.values(fcData).map(v => v.length).reduce((acc, v) => acc + v, 0);
+        executorSummary['cpuUsage'] = renderProgressHtml('progress-with-text', usedCores, 0, freeCores + usedCores,
+            '{0} of {1} Cores Used'.format(usedCores, freeCores + usedCores));
+        const usedMemory = Object.values(data.state.memory.usedMemory).reduce((acc, v) => acc + v, 0);
+        const freeMemory = Object.values(data.state.memory.freeMemory).reduce((acc, v) => acc + v, 0);
+        executorSummary['memoryUsage'] = renderProgressHtml('progress-with-text', usedMemory, 0, freeMemory + usedMemory,
+            '{0} of {1} used'.format(bytesToString(usedMemory), bytesToString(freeMemory + usedMemory)));
+        executorSummary['tags'] = renderTags(data.tags);
+        executorSummary['status'] = renderExecutorState(data.executorState)
 
+        renderTemplate('executorSummary', [executorSummary], summary);
+
+        const numaCpuData = transposeCores(data.state.cpus);
+        const numaMemoryData = transposeMemory(data.state.memory);
+
+        const cpuStatus = $('#cpuStatus');
+        cpuStatus.empty();60%
+        Object.entries(numaCpuData)
+            .forEach(([nodeId, coreUsage]) => {
+
+    /*
+    --bs-badge-padding-x: 1rem;
+    --bs-badge-padding-y: 0.35em;
+    --bs-badge-font-size: 0.75em;
+    --bs-badge-font-weight: 300;
+    --bs-badge-color: #fff;
+    --bs-badge-border-radius: var(--bs-border-radius);
+    display: inline-block;
+    padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
+    font-size: var(--bs-badge-font-size);
+    font-weight: var(--bs-badge-font-weight);
+    line-height: 1;
+    color: var(--bs-badge-color);
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: var(--bs-badge-border-radius);
+    */
+            const badges = Object.entries(coreUsage).map(([coreId, status]) =>
+                '<span class="core-display {0} fw-bold">{1}</span>'
+                //'<span class="badge fw-bold {0} m-1 p-2" style="cursor: default; border-radius: 4px; font-size: small">{1}</span>'
+                    .format(status === "FREE" ? "text-success" : "text-danger", coreId)
+            );
+            const cores = badges.join("");
+            const memoryUsage = numaMemoryData[nodeId];
+            const memory = renderProgressHtml('progress-with-text', memoryUsage.USED, 0, memoryUsage.TOTAL,
+                                    '{0} of {1} used'.format(bytesToString(memoryUsage.USED), bytesToString(memoryUsage.TOTAL)));
+
+            cpuStatus.append(renderTemplateHtml('numaNodeTemplate', [{nodeId, cores, memory}]));
+        });
         instances.forEach( (info, i) => {
                 if(info.localInfo) {
                     info['hostname'] = info.localInfo.hostname;
                     info['ports'] = Object.keys(info.localInfo.ports)
-                        .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
+                        .map(key => '<b>{0}:</b> {1}'.format(key, info.localInfo.ports[key].hostPort))
                         .join(",");
             }
             else {
@@ -220,10 +307,14 @@
         'info' : false,
         'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
-                { 'data' : 'instanceId' },
-                { 'data' : 'appId',
+                {
+                    'data' : 'instanceId',
+                    'render' : copyableTableText
+                },
+                {
+                    'data' : 'appId',
                     'render' : function(data, type, row, meta) {
-                        return '<a href="/applications/' + data + '">' + data + '</a>';
+                        return renderCopyableLink(data, '/applications/{0}'.format(data));
                     }
                 },
                 { 'data' : 'ports' },
@@ -235,7 +326,7 @@
                 { 'data' : 'state', 'render' : renderInstanceState },
                 { 'data' : 'logStream',
                   'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/' + row['appId'] + '/instances/' + row['instanceId'] + '">Details</a>';
+                    return '<a href="/applications/{0}/instances/{1}">Details</a>'.format(row.appId, row.instanceId) ;
                   }
                 }
             ],
@@ -251,10 +342,14 @@
         'info' : false,
         'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
-                { 'data' : 'instanceId' },
-                { 'data' : 'serviceId',
+                {
+                    'data' : 'instanceId',
+                    'render' : copyableTableText
+                },
+                {
+                    'data' : 'serviceId',
                     'render' : function(data, type, row, meta) {
-                        return '<a href="/localservices/' + data + '">' + data + '</a>';
+                        return renderCopyableLink(data, '/localservices/{0}'.format(data));
                     }
                 },
                 { 'data' : 'ports' },
@@ -266,7 +361,7 @@
                 { 'data' : 'state', 'render' : renderInstanceState },
                 { 'data' : 'logStream',
                   'render' : function(data, type, row, meta) {
-                    return '<a href="/localservices/' + row['appId'] + '/instances/' + row['instanceId'] + '">Details</a>';
+                    return '<a href="/localservices/' + row['serviceId'] + '/instances/' + row['instanceId'] + '">Details</a>';
                   }
                 }
             ],
@@ -304,6 +399,16 @@
                'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data.tasks)
             }
     });
+
+    function renderTags(tags) {
+        tags = tags || [];
+        var tagStr = "";
+        tags.sort();
+        for(var i = 0; i < tags.length; i++) {
+            tagStr += '<span class="badge bg-secondary text-wrap fw-bold">' + tags[i] + '</span> ';
+        }
+        return tagStr;
+    }
 
     //loadExecutorSnapshot();
 

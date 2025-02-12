@@ -28,6 +28,7 @@ import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
@@ -86,6 +87,7 @@ class ResponseEngineTest {
     private final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
     private final ClusterResourcesDB clusterResourcesDB = mock(ClusterResourcesDB.class);
     private final TaskDB taskDB = mock(TaskDB.class);
+    private final TaskEngine taskEngine = mock(TaskEngine.class);
     private final LocalServiceLifecycleManagementEngine lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
     private final LocalServiceStateDB localServiceStateDB = mock(LocalServiceStateDB.class);
     private final EventStore eventStore = mock(EventStore.class);
@@ -98,6 +100,7 @@ class ResponseEngineTest {
                                                          applicationStateDB,
                                                          instanceInfoDB,
                                                          taskDB,
+                                                         taskEngine,
                                                          lsEngine,
                                                          localServiceStateDB,
                                                          clusterStateDB,
@@ -126,20 +129,6 @@ class ResponseEngineTest {
 
     @Test
     void testApplications() {
-
-        val re = new ResponseEngine(leadershipObserver,
-                                    appEngine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
         val rng = new SecureRandom();
         when(applicationStateDB.applications(0, Integer.MAX_VALUE))
                 .thenReturn(IntStream.range(0, 100)
@@ -579,6 +568,7 @@ class ResponseEngineTest {
                                     applicationStateDB,
                                     instanceInfoDB,
                                     taskDB,
+                                    taskEngine,
                                     lsEngine,
                                     localServiceStateDB,
                                     clusterStateDB,
@@ -660,34 +650,7 @@ class ResponseEngineTest {
     private void testMaintenanceFunctionality(
             final ClusterState state,
             final Function<ResponseEngine, ApiResponse<ClusterStateData>> func) {
-        val leadershipObserver = mock(LeadershipObserver.class);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val applicationStateDB = mock(ApplicationStateDB.class);
-        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        val clusterStateDB = mock(ClusterStateDB.class);
-        val clusterResourcesDB = mock(ClusterResourcesDB.class);
-        val taskDB = mock(TaskDB.class);
-        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
-        val localServiceStateDB = mock(LocalServiceStateDB.class);
 
-        val eventStore = mock(EventStore.class);
-        val communicator = mock(ControllerCommunicator.class);
-        val eventBus = mock(DroveEventBus.class);
-        val blacklistingAppMovementManager = mock(BlacklistingAppMovementManager.class);
-        val re = new ResponseEngine(leadershipObserver,
-                                    engine,
-                                    applicationStateDB,
-                                    instanceInfoDB,
-                                    taskDB,
-                                    lsEngine,
-                                    localServiceStateDB,
-                                    clusterStateDB,
-                                    clusterResourcesDB,
-                                    eventStore,
-                                    communicator,
-                                    eventBus,
-                                    blacklistingAppMovementManager);
-        val executor = executorHost(8080);
         val success = new AtomicBoolean(true);
         when(clusterStateDB.setClusterState(state))
                 .thenAnswer((Answer<Optional<ClusterStateData>>) invocationOnMock ->

@@ -74,3 +74,20 @@ a {
 div.dataTables_wrapper div.dataTables_filter {
     text-align: inherit;
 }
+
+.core-display {
+  display: inline-block !important;
+  cursor: default;
+  border-radius: 4px;
+  font-size: small;
+  border-width: 1px !important;
+  padding-top: .25rem !important;
+  padding-bottom: .25rem !important;
+  padding-left: .5rem !important;
+  padding-right: .5rem !important;
+  margin: .25rem !important;
+  border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+  --bs-border-opacity: 1;
+  border-color: rgba(var(--bs-dark-rgb),var(--bs-border-opacity)) !important;
+
+}

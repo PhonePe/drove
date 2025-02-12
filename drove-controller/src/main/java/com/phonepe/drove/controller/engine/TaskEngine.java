@@ -45,10 +45,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -219,13 +216,17 @@ public class TaskEngine {
     }
 
     public List<TaskInfo> activeTasks() {
+        return activeTasks(TaskState.ACTIVE_STATES);
+    }
+
+    public List<TaskInfo> activeTasks(Set<TaskState> states) {
         return taskDB.tasks(
                 runners.values()
                         .stream()
                         .collect(Collectors.groupingBy(
                                 TaskRunner::getSourceAppName,
                                 Collectors.mapping(TaskRunner::getTaskId, Collectors.toUnmodifiableSet()))),
-                TaskState.ACTIVE_STATES);
+                states);
     }
 
     private void monitorRunners(Date triggerDate) {
