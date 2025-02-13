@@ -223,9 +223,7 @@ public class ResponseEngine {
     }
 
     public ApiResponse<List<LocalServiceInstanceInfo>> localServiceOldInstances(final String serviceId) {
-        return success(localServiceStateDB.instances(serviceId, Sets.difference(EnumSet.allOf(LocalServiceInstanceState.class),
-                                                                                LocalServiceInstanceState.ACTIVE_STATES),
-                                                     true));
+        return success(localServiceStateDB.oldInstances(serviceId));
     }
 
     public ApiResponse<ClusterSummary> cluster() {

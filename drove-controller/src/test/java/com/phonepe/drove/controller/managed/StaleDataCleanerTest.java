@@ -19,13 +19,14 @@ package com.phonepe.drove.controller.managed;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
-import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationStateDB;
+import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -64,17 +65,20 @@ class StaleDataCleanerTest {
     void testStaleAppCleanup() {
         val appStateDB = new InMemoryApplicationStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val lsDB = new InMemoryLocalServiceStateDB();
         val taskDB = mock(TaskDB.class);
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
-        val engine = mock(ApplicationLifecycleManagementEngine.class);
-        val taskEngine = mock(TaskEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
 
         val sdc = new StaleDataCleaner(appStateDB,
                                        instanceDB,
                                        taskDB,
+                                       lsDB,
                                        le,
-                                       engine,
+                                       appEngine,
+                                       localServiceEngine,
                                        ControllerOptions.DEFAULT,
                                        Duration.ofSeconds(1), ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
@@ -84,8 +88,8 @@ class StaleDataCleanerTest {
         appStateDB.updateApplicationState(appId, new ApplicationInfo(appId, spec, 0, oldDate, oldDate));
 
         val testRun = new AtomicBoolean();
-        when(engine.currentState(anyString())).thenReturn(Optional.of(MONITORING));
-        when(engine.handleOperation(any(ApplicationDestroyOperation.class)))
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(MONITORING));
+        when(appEngine.handleOperation(any(ApplicationDestroyOperation.class)))
                 .thenAnswer(invocationOnMock -> {
                     val dId = invocationOnMock.getArgument(0, ApplicationDestroyOperation.class).getAppId();
                     testRun.set(dId.equals(appId));
@@ -104,15 +108,19 @@ class StaleDataCleanerTest {
         val appStateDB = new InMemoryApplicationStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = mock(TaskDB.class);
+        val lsDB = new InMemoryLocalServiceStateDB();
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
 
         val sdc = new StaleDataCleaner(appStateDB,
                                        instanceDB,
                                        taskDB,
+                                       lsDB,
                                        le,
                                        engine,
+                                       localServiceEngine,
                                        ControllerOptions.DEFAULT,
                                        Duration.ofSeconds(1), ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
@@ -153,11 +161,21 @@ class StaleDataCleanerTest {
         val appStateDB = mock(ApplicationStateDB.class);
         val instanceDB = mock(ApplicationInstanceInfoDB.class);
         val taskDB = new InMemoryTaskDB();
+        val lsDB = new InMemoryLocalServiceStateDB();
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, DEFAULT, Duration.ofSeconds(1),
+        val sdc = new StaleDataCleaner(appStateDB,
+                                       instanceDB,
+                                       taskDB,
+                                       lsDB,
+                                       le,
+                                       engine,
+                                       localServiceEngine,
+                                       DEFAULT,
+                                       Duration.ofSeconds(1),
                                        ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val oldDate = Date.from(LocalDate.now().minusDays(32).atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -193,11 +211,21 @@ class StaleDataCleanerTest {
         val appStateDB = new InMemoryApplicationStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val taskDB = mock(TaskDB.class);
+        val lsDB = new InMemoryLocalServiceStateDB();
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
         val engine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
 
-        val sdc = new StaleDataCleaner(appStateDB, instanceDB, taskDB, le, engine, options, Duration.ofSeconds(1),
+        val sdc = new StaleDataCleaner(appStateDB,
+                                       instanceDB,
+                                       taskDB,
+                                       lsDB,
+                                       le,
+                                       engine,
+                                       localServiceEngine,
+                                       options,
+                                       Duration.ofSeconds(1),
                                        ControllerTestUtils.DEFAULT_CLUSTER_OP);
 
         val spec = appSpec();

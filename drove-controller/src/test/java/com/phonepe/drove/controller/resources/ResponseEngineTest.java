@@ -18,7 +18,6 @@ package com.phonepe.drove.controller.resources;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
@@ -364,10 +363,7 @@ class ResponseEngineTest {
                 .mapToObj(i -> generateInstanceInfo(serviceId, spec, i, LocalServiceInstanceState.STOPPED))
                 .toList();
 
-        when(localServiceStateDB.instances(serviceId,
-                                           Sets.difference(EnumSet.allOf(LocalServiceInstanceState.class),
-                                                           LocalServiceInstanceState.ACTIVE_STATES),
-                                           true))
+        when(localServiceStateDB.oldInstances(serviceId))
                 .thenReturn(instances);
 
         val res = re.localServiceOldInstances(serviceId);

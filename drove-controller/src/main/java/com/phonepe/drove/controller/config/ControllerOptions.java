@@ -47,6 +47,7 @@ public class ControllerOptions {
     public static final int DEFAULT_MAX_STALE_INSTANCES_COUNT = 100;
     public static final Duration DEFAULT_STALE_INSTANCE_AGE = Duration.days(7);
     public static final Duration DEFAULT_STALE_TASK_AGE = Duration.days(2);
+    public static final Duration DEFAULT_STALE_SERVICE_AGE = Duration.days(7);
     public static final Duration DEFAULT_MAX_EVENT_STORAGE_DURATION = Duration.minutes(60);
     public static final int DEFAULT_JOB_RETRY_COUNT = 2;
     public static final Duration DEFAULT_JOB_RETRY_INTERVAL = Duration.seconds(1);
@@ -59,6 +60,7 @@ public class ControllerOptions {
                                                                           DEFAULT_MAX_STALE_INSTANCES_COUNT,
                                                                           DEFAULT_STALE_INSTANCE_AGE,
                                                                           DEFAULT_STALE_TASK_AGE,
+                                                                          DEFAULT_STALE_SERVICE_AGE,
                                                                           DEFAULT_MAX_EVENT_STORAGE_DURATION,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
                                                                           ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
@@ -86,6 +88,9 @@ public class ControllerOptions {
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
     Duration staleTaskAge;
+
+    @MinDuration(value = 1, unit = TimeUnit.MINUTES)
+    Duration staleServiceAge;
 
     Duration maxEventsStorageDuration;
 

@@ -16,12 +16,14 @@
 
 package com.phonepe.drove.controller.statedb;
 
+import com.google.common.collect.Sets;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import io.appform.functionmetrics.MonitoredFunction;
 
 import java.time.Duration;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -44,6 +46,12 @@ public interface LocalServiceStateDB {
     Optional<LocalServiceInstanceInfo> instance(String serviceId, String instanceId);
     List<LocalServiceInstanceInfo> instances(String serviceId, Set<LocalServiceInstanceState> states,
                                              boolean skipStaleCheck);
+
+    default List<LocalServiceInstanceInfo> oldInstances(final String serviceId) {
+        return instances(serviceId, Sets.difference(EnumSet.allOf(LocalServiceInstanceState.class),
+                                                    LocalServiceInstanceState.ACTIVE_STATES),
+                         true);
+    }
 
     @MonitoredFunction
     boolean deleteInstanceState(String serviceId, String instanceId);
