@@ -9,8 +9,8 @@
                         <th class="text-wrap">Name</th>
                         <th class="text-wrap">Expected Instances</th>
                         <th class="text-wrap">Healthy Instances</th>
-                        <th class="text-wrap">CPU</th>
-                        <th class="text-wrap">Memory</th>
+                        <th class="text-wrap">Overall Core</th>
+                        <th class="text-wrap">Overall Memory</th>
                         <th class="text-wrap">State</th>
                         <th class="text-wrap"></th>
                     </tr>
@@ -38,7 +38,6 @@
                                 <th class="text-wrap">Memory</th>
                                 <th class="text-wrap">Current Age</th>
                                 <th class="text-wrap">State</th>
-                                <th class="text-wrap"></th>
                             </tr>
                             </thead>
                         </table>
@@ -69,7 +68,6 @@
                                 <th class="text-wrap">Created</th>
                                 <th class="text-wrap">Last Updated</th>
                                 <th class="text-wrap">Error Message</th>
-                                <th class="text-wrap"></th>
                             </tr>
                             </thead>
                         </table>
@@ -79,15 +77,14 @@
         </div>
     </section>
 
-    <div class="modal fade bd-example-modal-lg" tabindex="-1" id="appSpec"role="dialog" aria-labelledby="myLargeModalLabel"
-         aria-hidden="true">
+    <div class="modal fade bd-example-modal-lg" tabindex="-1" id="appSpec" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" style="overflow-y: initial !important">
             <div class="modal-content">
                 <div class="modal-body">
                     <pre id="appSpecJson" class="code-display"></pre>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -105,7 +102,7 @@
         }
     });
 
-    var summary = $('#appsummary').DataTable({
+    const summary = $('#appsummary').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/applications/{{appId}}',
@@ -119,18 +116,25 @@
             {
                 'targets': 7,
                 'data': null,
-                'defaultContent': '<button type="button" class="btn btn-small btn-primary" data-toggle="modal" data-target="#appSpec">Spec</button>'
+                'defaultContent': `<button type="button" class="btn btn-sm btn-outline-info" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .60rem; font-weight: bold" data-bs-toggle="modal" data-bs-target="#appSpec">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-braces" viewBox="0 0 16 16">
+                                            <path d="M2.114 8.063V7.9c1.005-.102 1.497-.615 1.497-1.6V4.503c0-1.094.39-1.538 1.354-1.538h.273V2h-.376C3.25 2 2.49 2.759 2.49 4.352v1.524c0 1.094-.376 1.456-1.49 1.456v1.299c1.114 0 1.49.362 1.49 1.456v1.524c0 1.593.759 2.352 2.372 2.352h.376v-.964h-.273c-.964 0-1.354-.444-1.354-1.538V9.663c0-.984-.492-1.497-1.497-1.6M13.886 7.9v.163c-1.005.103-1.497.616-1.497 1.6v1.798c0 1.094-.39 1.538-1.354 1.538h-.273v.964h.376c1.613 0 2.372-.759 2.372-2.352v-1.524c0-1.094.376-1.456 1.49-1.456V7.332c-1.114 0-1.49-.362-1.49-1.456V4.352C13.51 2.759 12.75 2 11.138 2h-.376v.964h.273c.964 0 1.354.444 1.354 1.538V6.3c0 .984.492 1.497 1.497 1.6"/>
+                                        </svg> Specification
+                                    </button>`
             },
             {'className': 'text-wrap', 'targets': '_all'}
         ],
         'columns' : [
-            { 'data' : 'id' },
+            {
+                'data' : 'id',
+                'render' : copyableTableText
+            },
             { 'data' : 'name' },
             { 'data' : 'requiredInstances' },
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory', 'render' : formatBytes },
-            { 'data' : 'state', 'render' : renderAppState }
+            { 'data' : 'totalMemory', 'render' : tableBytesText },
+            { 'data' : 'state', 'render' : tableAppStateText }
         ]
     });
     function instanceDataHandler(res) {
@@ -160,14 +164,7 @@
         return res.data;
     }
 
-    function executorLink(data, type, row, meta) {
-        if(type === "display") {
-            return '<a href="/executors/' + data + '">' + data + '</a>';
-        }
-        return data;
-    }
-
-    var instances = $('#instances').DataTable({
+    const instances = $('#instances').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/applications/{{appId}}/instances',
@@ -177,24 +174,27 @@
         'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
         'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
-            { 'data' : 'instanceId' },
-            { 'data' : 'executorId', 'render' : executorLink },
+            {
+                'data' : 'instanceId',
+                'render' : function(data, type, row, meta) {
+                    if(type === "display") {
+                        return renderCopyableLink(data, '/applications/{{appId}}/instances/{0}'.format(data));
+                    }
+                    return data;
+                }
+            },
+            { 'data' : 'executorId', 'render' : tableExecutorLink },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory', 'render' : formatBytes },
-            { 'data' : 'created', 'render' : timeSince },
-            { 'data' : 'state', 'render' : renderInstanceState },
-            { 'data' : 'details',
-                'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
-                }
-            }
+            { 'data' : 'usedMemory', 'render' : tableBytesText },
+            { 'data' : 'created', 'render' : tableAgeText },
+            { 'data' : 'state', 'render' : tableInstanceStateText },
         ],
         'order' : [[6, 'desc']]
 
     });
-    var oldinstances = $('#oldinstances').DataTable({
+    const oldinstances = $('#oldinstances').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/applications/{{appId}}/instances/old',
@@ -205,17 +205,26 @@
         'info' : false,
         'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
-            { 'data' : 'instanceId' },
-            { 'data' : 'executorId', 'render' : executorLink },
+            {
+                'data' : 'instanceId',
+                'render' : function(data, type, row, meta) {
+                    if(type === "display") {
+                        return renderCopyableLink(data, '/applications/{{appId}}/instances/{0}'.format(data));
+                    }
+                    return data;
+                }
+            },
+            { 'data' : 'executorId', 'render' : tableExecutorLink },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory', 'render' : formatBytes },
-            { 'data' : 'state', 'render': renderInstanceState },
-            { 'data' : 'created', 'render' : lifetime },
-            { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-            { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-            { 'data' : 'errorMessage',
+            { 'data' : 'usedMemory', 'render' : tableBytesText },
+            { 'data' : 'state', 'render': tableInstanceStateText },
+            { 'data' : 'created', 'render' : tableAgeText },
+            { 'data' : 'created', 'render' : tableDateText },
+            { 'data' : 'updated', 'render' : tableDateText },
+            {
+                'data' : 'errorMessage',
                 'render' : function (data, type, full, meta) {
                     if(type === 'display') {
                         if(data) {
@@ -226,11 +235,6 @@
                         }
                     }
                     return data;
-                }
-            },
-            { 'data' : 'details',
-                'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/{{appId}}/instances/' + row['instanceId'] + '">Details</a>';
                 }
             }
         ],

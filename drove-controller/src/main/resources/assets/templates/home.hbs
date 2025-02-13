@@ -47,7 +47,7 @@
                          aria-labelledby="applicationdetails-tab">
                         <div class="row">
                             <div class="col">
-                                <table class="table table-bordered data-table" id="applications" title="Applications"
+                                <table class="table table-bordered" id="applications" title="Applications"
                                        style="width: 100%">
                                     <thead>
                                     <tr>
@@ -167,7 +167,7 @@
 {{/partial}}
 
 {{#partial "page_js"}}
-    var cluster = $('#clusterSummary').DataTable({
+    const cluster = $('#clusterSummary').DataTable({
     'processing' : true,
         'ajax': {
             'url' : '/apis/v1/cluster',
@@ -228,7 +228,7 @@
             }
     ]
     });
-    var applications = $('#applications').DataTable({
+    const applications = $('#applications').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/applications',
@@ -255,11 +255,11 @@
             { 'data' : 'requiredInstances' },
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory', 'render' : formatBytes },
-            { 'data' : 'state', render: renderAppState }
+            { 'data' : 'totalMemory', 'render' : tableBytesText },
+            { 'data' : 'state', render: tableAppStateText }
         ]
     });
-    var tasks = $('#tasks').DataTable({
+    const tasks = $('#tasks').DataTable({
         'processing' : true,
         'paging': true,
         'info' : false,
@@ -273,9 +273,9 @@
             { 'data' : 'sourceAppName' },
             { 'data' : 'taskId' },
             { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory', 'render' : formatBytes },
-            { 'data' : 'created', 'render' : timeSince },
-            { 'data' : 'state', 'render' : renderTaskState },
+            { 'data' : 'usedMemory', 'render' : tableBytesText },
+            { 'data' : 'created', 'render' : tableAgeText },
+            { 'data' : 'state', 'render' : tableTaskStateText },
             { 'data' : 'logStream',
                 'render' : function(data, type, row, meta) {
                     return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '" class="fw-bold">Details</a>';
@@ -288,7 +288,7 @@
             'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data)
         }
     });
-    var localservices = $('#localservices').DataTable({
+    const localservices = $('#localservices').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/localservices',
@@ -314,13 +314,13 @@
             { 'data' : 'instancesPerHost' },
             { 'data' : 'healthyInstances' },
             { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory', 'render' : formatBytes },
+            { 'data' : 'totalMemory', 'render' : tableBytesText },
             { 'data' : 'activationState' },
-            { 'data' : 'state', render: renderLocalServiceState }
+            { 'data' : 'state', render: tableLocalServiceStateText }
         ]
     });
 
-    var executors = $('#executors').DataTable({
+    const executors = $('#executors').DataTable({
         'processing' : true,
         'ajax': '/apis/v1/cluster/executors',
         'paging': true,
@@ -351,8 +351,8 @@
             { 'data' : 'hostname' },
             { 'data' : 'freeCores' },
             { 'data' : 'usedCores' },
-            { 'data' : 'freeMemory', 'render' : formatBytes },
-            { 'data' : 'usedMemory', 'render' : formatBytes },
+            { 'data' : 'freeMemory', 'render' : tableBytesText },
+            { 'data' : 'usedMemory', 'render' : tableBytesText },
             {  'data' : 'tags',
                 'render' : function(data, type, row, meta) {
                    var tagStr = "";
@@ -366,7 +366,7 @@
                    return tagStr;
                 }
             },
-            {  'data' : 'state', 'render' : renderExecutorState }
+            {  'data' : 'state', 'render' : tableExecutorStateText }
         ]
     });
 

@@ -105,10 +105,12 @@ public class UI {
         if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {
             throw new WebApplicationException(Response.seeOther(URI.create("/")).build());
         }
-        return new ApplicationInstanceDetailsPage(appId,
-                                                  instanceId,
-                                                  instanceInfoDB.instance(appId, instanceId).orElse(null),
-                                                  hasReadAccess(user));
+        return new ApplicationInstanceDetailsPage(
+                installationMetadata,
+                appId,
+                instanceId,
+                instanceInfoDB.instance(appId, instanceId).orElse(null),
+                hasReadAccess(user));
     }
 
     @GET
@@ -168,9 +170,9 @@ public class UI {
         }
         return new LocalServiceInstanceDetailsPage(installationMetadata,
                                                    serviceId,
-                                                  instanceId,
-                                                  localServiceStateDB.instance(serviceId, instanceId).orElse(null),
-                                                  hasReadAccess(user));
+                                                   instanceId,
+                                                   localServiceStateDB.instance(serviceId, instanceId).orElse(null),
+                                                   hasReadAccess(user));
     }
 
     @GET

@@ -142,16 +142,16 @@
                         <table class="table table-bordered" id="service-instances">
                             <thead>
                             <tr>
-                                <th class="text-wrap">ID</th>
-                                <th class="text-wrap">Service Id</th>
-                                <th class="text-wrap">Port</th>
-                                <th class="text-wrap">Cores</th>
-                                <th class="text-wrap">Memory</th>
-                                <th class="text-wrap">Current Age</th>
-                                <th class="text-wrap">Created</th>
-                                <th class="text-wrap">Last Updated</th>
-                                <th class="text-wrap">State</th>
-                                <th class="text-wrap"></th>
+                                <th>ID</th>
+                                <th>Service Id</th>
+                                <th>Port</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>Current Age</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>State</th>
+                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -171,7 +171,7 @@
             console.error("No data");
             return [];
         }
-        return executorDataTransformer(res, res.data.instances);
+        return executorDataTransformer(res, res.data.instances || []);
     }
 
     function executorDataTransformerForServiceInstances(res, instances) {
@@ -209,82 +209,70 @@
         ]));
     }
 
-    // Example usage
-    const memory = {
-        "freeMemory": {
-            "0": 17879
-        },
-        "usedMemory": {
-            "0": 1152
-        }
-    };
+    function loadExecutorSnapshot() {
+        $.ajax({
+            url: '/apis/v1/cluster/executors/{{executorId}}',
+            method: 'GET',
+            success: function(res) {
+                if (res && res.data) {
+                    const data = res.data;
+                    const ucData = data.state.cpus.usedCores;
+                    const usedCores = Object.values(ucData).map(v => v.length).reduce((acc, v) => acc + v, 0);
+                    const fcData = data.state.cpus.freeCores;
+                    const freeCores = Object.values(fcData).map(v => v.length).reduce((acc, v) => acc + v, 0);
+                    const usedMemory = Object.values(data.state.memory.usedMemory).reduce((acc, v) => acc + v, 0);
+                    const freeMemory = Object.values(data.state.memory.freeMemory).reduce((acc, v) => acc + v, 0);
+                    const executorSummary = {
+                        executorId: renderCopyableText(data.state.executorId),
+                        hostname: data.hostname,
+                        port: data.port,
+                        transportType: data.transportType,
+                        cpuUsage: renderProgressHtml('progress-with-text', usedCores, 0, freeCores + usedCores,
+                                        '{0} of {1} Cores Used'.format(usedCores, freeCores + usedCores)),
+                        memoryUsage: renderProgressHtml('progress-with-text', usedMemory, 0, freeMemory + usedMemory,
+                                        '{0} of {1} used'.format(bytesToString(usedMemory), bytesToString(freeMemory + usedMemory))),
+                        tags: renderTags(data.tags),
+                        status: executorStateToHtml(data.executorState)
+                    };
 
-    console.log(transposeMemory(memory));
+                    renderTemplate('executorSummary', [executorSummary], $('#executorSummary'));
+
+                    const numaCpuData = transposeCores(data.state.cpus);
+                    const numaMemoryData = transposeMemory(data.state.memory);
+
+                    const cpuStatus = $('#cpuStatus');
+                    cpuStatus.empty();
+                    Object.entries(numaCpuData).forEach(([nodeId, coreUsage]) => {
+                        const badges = Object.entries(coreUsage).map(([coreId, status]) =>
+                            '<span class="core-display {0} fw-bold">{1}</span>'.format(status === "FREE" ? "text-success" : "text-danger", coreId)
+                        );
+                        const cores = badges.join("");
+                        const memoryUsage = numaMemoryData[nodeId];
+                        const memory = renderProgressHtml('progress-with-text', memoryUsage.USED, 0, memoryUsage.TOTAL, '{0} of {1} used'.format(bytesToString(memoryUsage.USED), bytesToString(memoryUsage.TOTAL)));
+
+                        cpuStatus.append(renderTemplateHtml('numaNodeTemplate', [{ nodeId, cores, memory }]));
+                    });
+                    ii.clear();
+                    ii.rows.add(executorDataTransformer(res, res.data.instances || [])).draw();
+                    ti.clear();
+                    ti.rows.add(executorDataTransformer(res, res.data.tasks || [])).draw();
+                    si.clear();
+                    si.rows.add(executorDataTransformer(res, res.data.serviceInstances || [])).draw();
+                } else {
+                    console.error("No data received");
+                }
+            },
+            error: function(err) {
+                console.error("Error fetching executor snapshot", err);
+            }
+        });
+    }
 
     function executorDataTransformer(res, instances) {
         if(!res || !res.data) {
             console.error("No data");
             return [];
         }
-        var data = res.data;
-        var executorSummary = {};
-        executorSummary['executorId'] = renderCopyableText( data.state.executorId );
-        executorSummary['hostname'] = data.hostname;
-        executorSummary['port'] = data.port;
-        executorSummary['transportType'] = data.transportType;
-        const ucData = data.state.cpus.usedCores;
-        const usedCores = Object.values(ucData).map(v => v.length).reduce((acc, v) => acc + v, 0);
-        const fcData = data.state.cpus.freeCores;
-        const freeCores = Object.values(fcData).map(v => v.length).reduce((acc, v) => acc + v, 0);
-        executorSummary['cpuUsage'] = renderProgressHtml('progress-with-text', usedCores, 0, freeCores + usedCores,
-            '{0} of {1} Cores Used'.format(usedCores, freeCores + usedCores));
-        const usedMemory = Object.values(data.state.memory.usedMemory).reduce((acc, v) => acc + v, 0);
-        const freeMemory = Object.values(data.state.memory.freeMemory).reduce((acc, v) => acc + v, 0);
-        executorSummary['memoryUsage'] = renderProgressHtml('progress-with-text', usedMemory, 0, freeMemory + usedMemory,
-            '{0} of {1} used'.format(bytesToString(usedMemory), bytesToString(freeMemory + usedMemory)));
-        executorSummary['tags'] = renderTags(data.tags);
-        executorSummary['status'] = renderExecutorState(data.executorState)
-
-        renderTemplate('executorSummary', [executorSummary], summary);
-
-        const numaCpuData = transposeCores(data.state.cpus);
-        const numaMemoryData = transposeMemory(data.state.memory);
-
-        const cpuStatus = $('#cpuStatus');
-        cpuStatus.empty();60%
-        Object.entries(numaCpuData)
-            .forEach(([nodeId, coreUsage]) => {
-
-    /*
-    --bs-badge-padding-x: 1rem;
-    --bs-badge-padding-y: 0.35em;
-    --bs-badge-font-size: 0.75em;
-    --bs-badge-font-weight: 300;
-    --bs-badge-color: #fff;
-    --bs-badge-border-radius: var(--bs-border-radius);
-    display: inline-block;
-    padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
-    font-size: var(--bs-badge-font-size);
-    font-weight: var(--bs-badge-font-weight);
-    line-height: 1;
-    color: var(--bs-badge-color);
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: var(--bs-badge-border-radius);
-    */
-            const badges = Object.entries(coreUsage).map(([coreId, status]) =>
-                '<span class="core-display {0} fw-bold">{1}</span>'
-                //'<span class="badge fw-bold {0} m-1 p-2" style="cursor: default; border-radius: 4px; font-size: small">{1}</span>'
-                    .format(status === "FREE" ? "text-success" : "text-danger", coreId)
-            );
-            const cores = badges.join("");
-            const memoryUsage = numaMemoryData[nodeId];
-            const memory = renderProgressHtml('progress-with-text', memoryUsage.USED, 0, memoryUsage.TOTAL,
-                                    '{0} of {1} used'.format(bytesToString(memoryUsage.USED), bytesToString(memoryUsage.TOTAL)));
-
-            cpuStatus.append(renderTemplateHtml('numaNodeTemplate', [{nodeId, cores, memory}]));
-        });
         instances.forEach( (info, i) => {
                 if(info.localInfo) {
                     info['hostname'] = info.localInfo.hostname;
@@ -301,7 +289,7 @@
         return instances;
     }
 
-    var ii = $('#instances').DataTable({
+    const ii = $('#instances').DataTable({
         'processing' : true,
         'paging': true,
         'info' : false,
@@ -319,24 +307,22 @@
                 },
                 { 'data' : 'ports' },
                 { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory', 'render' : formatBytes },
-                { 'data' : 'created', 'render' : timeSince },
-                { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'state', 'render' : renderInstanceState },
-                { 'data' : 'logStream',
-                  'render' : function(data, type, row, meta) {
-                    return '<a href="/applications/{0}/instances/{1}">Details</a>'.format(row.appId, row.instanceId) ;
-                  }
+                { 'data' : 'usedMemory', 'render' : tableBytesText },
+                { 'data' : 'created', 'render' : tableAgeText },
+                { 'data' : 'created', 'render' : tableDateText },
+                { 'data' : 'updated', 'render' : tableDateText },
+                { 'data' : 'state', 'render' : tableInstanceStateText },
+                {
+                    'data' : 'logStream',
+                    'render' : function(data, type, row, meta) {
+                        return '<a href="/applications/{0}/instances/{1}">Details</a>'
+                                    .format(row.appId, row.instanceId) ;
+                    }
                 }
             ],
-            'order' : [[5, 'desc']],
-            'ajax' : {
-               'url' : '/apis/v1/cluster/executors/{{executorId}}',
-               'dataSrc' : executorDataTransformerForAppInstances
-            }
+            'order' : [[5, 'desc']]
     });
-    var si = $('#service-instances').DataTable({
+    const si = $('#service-instances').DataTable({
         'processing' : true,
         'paging': true,
         'info' : false,
@@ -354,50 +340,48 @@
                 },
                 { 'data' : 'ports' },
                 { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory', 'render' : formatBytes },
-                { 'data' : 'created', 'render' : timeSince },
-                { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'state', 'render' : renderInstanceState },
-                { 'data' : 'logStream',
-                  'render' : function(data, type, row, meta) {
-                    return '<a href="/localservices/' + row['serviceId'] + '/instances/' + row['instanceId'] + '">Details</a>';
-                  }
+                { 'data' : 'usedMemory', 'render' : tableBytesText },
+                { 'data' : 'created', 'render' : tableAgeText },
+                { 'data' : 'created', 'render' : tableDateText },
+                { 'data' : 'updated', 'render' : tableDateText },
+                { 'data' : 'state', 'render' : tableInstanceStateText },
+                {
+                    'data' : 'logStream',
+                    'render' : function(data, type, row, meta) {
+                        return '<a href="/localservices/{0}/instances/{1}">Details</a>'
+                                .format(row.serviceId, row.instanceId) ;
+                    }
                 }
             ],
-            'order' : [[5, 'desc']],
-            'ajax' : {
-               'url' : '/apis/v1/cluster/executors/{{executorId}}',
-               'dataSrc' : executorDataTransformerForServiceInstances
-            }
+            'order' : [[5, 'desc']]
     });
 
-    var ti = $('#tasks').DataTable({
+    const ti = $('#tasks').DataTable({
         'processing' : true,
         'paging': true,
         'info' : false,
         'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
-                { 'data' : 'instanceId' },
+                {
+                    'data' : 'instanceId',
+                    'render' : copyableTableText
+                },
                 { 'data' : 'sourceAppName' },
                 { 'data' : 'taskId' },
                 { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory', 'render' : formatBytes },
-                { 'data' : 'created', 'render' : timeSince },
-                { 'data' : 'created', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'updated', 'render' : function(data, type, row, meta) { return new Date(data).toLocaleString(); } },
-                { 'data' : 'state', 'render' : renderTaskState },
-                { 'data' : 'logStream',
-                  'render' : function(data, type, row, meta) {
-                    return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '">Details</a>';
-                  }
+                { 'data' : 'usedMemory', 'render' : tableBytesText },
+                { 'data' : 'created', 'render' : tableAgeText },
+                { 'data' : 'created', 'render' : tableDateText },
+                { 'data' : 'updated', 'render' : tableDateText },
+                { 'data' : 'state', 'render' : tableTaskStateText },
+                {
+                    'data' : 'logStream',
+                    'render' : function(data, type, row, meta) {
+                        return '<a href="/tasks/{0}/{1}">Details</a>'.format(row.sourceAppName, row.taskId);
+                    }
                 }
             ],
-            'order' : [[5, 'desc']],
-            'ajax' : {
-               'url' : '/apis/v1/cluster/executors/{{executorId}}',
-               'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data.tasks)
-            }
+            'order' : [[5, 'desc']]
     });
 
     function renderTags(tags) {
@@ -405,18 +389,14 @@
         var tagStr = "";
         tags.sort();
         for(var i = 0; i < tags.length; i++) {
-            tagStr += '<span class="badge bg-secondary text-wrap fw-bold">' + tags[i] + '</span> ';
+            tagStr += '<span class="badge bg-secondary text-wrap fw-bold">{0}</span> '.format(tags[i]);
         }
         return tagStr;
     }
 
-    //loadExecutorSnapshot();
+    loadExecutorSnapshot();
 
-    setInterval(() => {
-        //loadExecutorSnapshot();
-        ii.ajax.reload(null, false);
-        ti.ajax.reload(null, false);
-    }, 3000);
+    setInterval(loadExecutorSnapshot, 3000);
 
 {{/partial}}
 {{> common/base}}

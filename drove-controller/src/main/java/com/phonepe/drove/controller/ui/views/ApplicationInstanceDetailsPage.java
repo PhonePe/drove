@@ -16,29 +16,30 @@
 
 package com.phonepe.drove.controller.ui.views;
 
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
- *
+ * Renders details for {@link InstanceInfo}
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class ApplicationInstanceDetailsPage extends TemplateView {
+public class ApplicationInstanceDetailsPage extends BasePageTemplate {
     String appId;
     String instanceId;
     InstanceInfo instanceInfo;
     boolean hasReadAccess;
 
     public ApplicationInstanceDetailsPage(
+            InstallationMetadata installationMetadata,
             String appId,
             String instanceId,
             InstanceInfo instanceInfo, boolean hasReadAccess) {
-        super("templates/application-instancedetails.hbs");
+        super("templates/application-instancedetails.hbs", installationMetadata);
         this.appId = appId;
         this.instanceId = instanceId;
         this.instanceInfo = instanceInfo;

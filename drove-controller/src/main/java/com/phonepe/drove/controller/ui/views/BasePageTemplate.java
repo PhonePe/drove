@@ -16,11 +16,12 @@
 
 package com.phonepe.drove.controller.ui.views;
 
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import lombok.Getter;
 import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
 /**
- *
+ * Base class for all view templates
  */
 @Getter
 public abstract class BasePageTemplate extends TemplateView {

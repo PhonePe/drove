@@ -1,78 +1,95 @@
 {{#partial "content"}}
+    <script type="text/template" data-template="instance-details">
+        {{#with instanceInfo}}
+        <table class="table table-bordered" >
+            <tbody>
+            <tr>
+                <th scope="row">Application ID</th>
+                <td class="fw-bold">
+                    <a href="/applications/{{appId}}"><span class="copyable">{{appId}}</span></a>
+                    <a class="ms-3 copy-button text-body" data-bs-toggle="tooltip" data-bs-placement="top" title="Copy to clipboard">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+                        </svg>
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Instance ID</th>
+                <td>
+                    <span class="copyable">{{instanceId}}</span>
+                    <a class="ms-3 copy-button text-body" data-bs-toggle="tooltip" data-bs-placement="top" title="Copy to clipboard">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+                        </svg>
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">State</th>
+                <td>${state}</td>
+            </tr>
+            {{#with localInfo}}
+                <tr>
+                    <th scope="row">Host</th>
+                    <td>{{hostname}}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Ports</th>
+                    <td>
+                        <table class="table table-bordered">
+                            <tbody>
+                            {{#each ports}}
+                                <tr>
+                                    <td><b>Port: </b>{{@key}}</td>
+                                    {{#with this}}
+                                        <td><b>Container: </b>{{containerPort}}</td>
+                                        <td><b>Host: </b>{{hostPort}}</td>
+                                        <td><b>Type: </b>{{portType}}</td>
+                                    {{/with}}
+                                </tr>
+                            {{/each}}
+                            </tbody>
+                        </table>
+
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Resources</th>
+                    <td>
+                        <table>
+                            <tbody>
+                            {{#each resources}}
+                                <tr>
+                                    <th scope="row">{{type}}</th>
+                                    <td>{{{resourceRepr this}}}</td>
+                                </tr>
+                            {{/each}}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            {{/with}}
+            <tr>
+                <th scope="row">Created</th>
+                <td>${created}</td>
+            </tr>
+            <tr>
+                <th scope="row">Last Updated</th>
+                <td>${age} ago (${updated})</td>
+            </tr>
+            <tr>
+                <th scope="row">Error Message</th>
+                <td>${errorMessage}</td>
+            </tr>
+            </tbody>
+        </table>
+        {{/with}}
+    </script>
+
     <section>
         <div class="row">
-            <div class="col-sm-12 col-md-6">
-                {{#with instanceInfo}}
-                <table class="table table-bordered" id="instanceDetails">
-                    <tbody>
-                    <tr>
-                        <th scope="row">App</th>
-                        <td class="fw-bold"><a href="/applications/{{appId}}">{{appId}}</a></td>
-                    </tr>
-                    <tr>
-                        <th scope="row">Instance ID</th>
-                        <td>{{instanceId}}</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">State</th>
-                        <td>{{state}}</td>
-                    </tr>
-                    {{#with localInfo}}
-                        <tr>
-                            <th scope="row">Host</th>
-                            <td>{{hostname}}</td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Ports</th>
-                            <td>
-                                <table>
-                                    <tbody>
-                                    {{#each ports}}
-                                        <tr>
-                                            <td><b>Port: </b>{{@key}}</td>
-                                            {{#with this}}
-                                                <td><b>Container: </b>{{containerPort}}</td>
-                                                <td><b>Host: </b>{{hostPort}}</td>
-                                                <td><b>Type: </b>{{portType}}</td>
-                                            {{/with}}
-                                        </tr>
-                                    {{/each}}
-                                    </tbody>
-                                </table>
-
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Resources</th>
-                            <td>
-                                <table>
-                                    <tbody>
-                                    {{#each resources}}
-                                        <tr>
-                                            <th scope="row">{{type}}</th>
-                                            <td>{{{resourceRepr this}}}</td>
-                                        </tr>
-                                    {{/each}}
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    {{/with}}
-                    <tr>
-                        <th scope="row">Error Message</th>
-                        <td>{{errorMessage}}</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">Created</th>
-                        <td>{{created}}</td>
-                    </tr>
-                    <tr>
-                        <th scope="row">Updated</th>
-                        <td>{{updated}}</td>
-                    </tr>
-                    </tbody>
-                </table>
-                {{/with}}
+            <div class="col-sm-12 col-md-6" id="instanceDetailsContainer">
             </div>
             <div class="col-sm-12 col-md-6">
                 {{#if hasReadAccess}}
@@ -95,6 +112,28 @@
 
 {{#partial "page_js"}}
 
+    function loadInstanceInfo() {
+        $.ajax({
+            url: '/apis/v1/applications/{{appId}}/instances/{{instanceId}}',
+            success: function(res) {
+                if(!res || !res.data) {
+                    console.log('No data received for {{appId}}/{{instanceId}}');
+                    return;
+                }
+                const data = res.data;
+                renderTemplate(
+                    'instance-details',
+                    [{
+                        state: instanceStateToHtml(data.state),
+                        errorMessage: data.errorMessage,
+                        created: new Date(data.created).toLocaleString(),
+                        age: ageInWords(data.created),
+                        updated: new Date(data.updated).toLocaleString(),
+                    }],
+                    '#instanceDetailsContainer');
+            }
+        });
+    }
 
     function logListExploder(res) {
         if(!res.files) {
@@ -110,7 +149,7 @@
         return ret;
     }
 
-    var summary = $('#instanceLogs').DataTable({
+    const logList = $('#instanceLogs').DataTable({
         'processing' : true,
         'ajax': {
             'url' : '/apis/v1/logfiles/applications/{{appId}}/{{instanceId}}/list',
@@ -127,10 +166,12 @@
     });
 
 
-    summary.ajax.reload();
+    loadInstanceInfo();
+    logList.ajax.reload();
 
     setInterval(() => {
-        summary.ajax.reload(null, false);
+        loadInstanceInfo();
+        logList.ajax.reload(null, false);
     }, 30000);
 
 {{/partial}}

@@ -14,16 +14,15 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.ui.views;
+package com.phonepe.drove.controller.config;
 
-import com.phonepe.drove.controller.config.ViewOptions;
 import lombok.Value;
 import org.hibernate.validator.constraints.URL;
 
 import java.util.Map;
 
 /**
- *
+ * Installation specific details about the cluster
  */
 @Value
 public class InstallationMetadata {

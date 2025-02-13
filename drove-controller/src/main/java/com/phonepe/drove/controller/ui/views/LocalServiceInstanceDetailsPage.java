@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.ui.views;
 
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

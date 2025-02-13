@@ -16,12 +16,13 @@
 
 package com.phonepe.drove.controller.ui.views;
 
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 
 /**
- *
+ * Renders details about an executor
  */
 @Value
 @EqualsAndHashCode(callSuper = true)

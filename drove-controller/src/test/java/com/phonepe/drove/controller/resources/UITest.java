@@ -24,7 +24,7 @@ import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
-import com.phonepe.drove.controller.ui.views.InstallationMetadata;
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
