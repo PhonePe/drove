@@ -29,7 +29,7 @@
                         <table class="table table-bordered"  id="instances" style="width: 100%">
                             <thead>
                             <tr>
-                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">Instance</th>
                                 <th class="text-wrap">ExecutorId</th>
                                 <th class="text-wrap">Host</th>
                                 <th class="text-wrap">Ports</th>
@@ -56,7 +56,7 @@
                         <table class="table table-bordered"  id="oldinstances">
                             <thead>
                             <tr>
-                                <th class="text-wrap">ID</th>
+                                <th class="text-wrap">Instance</th>
                                 <th class="text-wrap">ExecutorId</th>
                                 <th class="text-wrap">Host</th>
                                 <th class="text-wrap">Ports</th>
@@ -175,6 +175,7 @@
         'columns' : [
             {
                 'data' : 'instanceId',
+                'className' : 'text-nowrap',
                 'render' : function(data, type, row, meta) {
                     if(type === "display") {
                         return renderCopyableLink(data, '/localservices/{{serviceId}}/instances/{0}'.format(data));
@@ -182,7 +183,7 @@
                     return data;
                 }
             },
-            { 'data' : 'executorId', 'render' : tableExecutorLink },
+            { 'data' : 'executorId', 'className' : 'text-nowrap', 'render' : tableExecutorLink },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },
@@ -202,10 +203,10 @@
         'paging': true,
         'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
         'info' : false,
-        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
             {
                 'data' : 'instanceId',
+                'className' : 'text-nowrap',
                 'render' : function(data, type, row, meta) {
                     if(type === "display") {
                         return renderCopyableLink(data, '/localservices/{{serviceId}}/instances/{0}'.format(data));
@@ -213,7 +214,7 @@
                     return data;
                 }
             },
-            { 'data' : 'executorId', 'render' : tableExecutorLink },
+            { 'data' : 'executorId', 'className' : 'text-nowrap', 'render' : tableExecutorLink },
             { 'data' : 'hostname' },
             { 'data' : 'ports' },
             { 'data' : 'usedCores' },

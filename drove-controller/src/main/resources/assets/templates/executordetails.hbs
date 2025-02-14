@@ -4,31 +4,31 @@
             <script type="text/template" data-template="executorSummary">
                 <table  class="table table-bordered" >
                     <tr>
-                        <th class="text-wrap">ID</th>
+                        <th class="text-nowrap">ID</th>
                         <td class="fw-bold">${executorId}</td>
                     </tr>
                     <tr>
-                        <th class="text-wrap">Status</th>
+                        <th class="text-nowrap">Status</th>
                         <td>${status}</td>
                     </tr>
                     <tr>
-                        <th class="text-wrap">Hostname</th>
+                        <th class="text-nowrap">Hostname</th>
                         <td>${hostname}</td>
                     </tr>
                     <tr>
-                        <th class="text-wrap">Port</th>
+                        <th class="text-nowrap">Port</th>
                         <td>${port}</td>
                     </tr>
                     <tr>
-                        <th class="text-wrap">Transport Type</th>
+                        <th class="text-nowrap">Transport Type</th>
                         <td>${transportType}</td>
                     </tr>
                     <tr>
-                        <th class="text-wrap">CPU</th>
+                        <th class="text-nowrap">CPU</th>
                         <td>${cpuUsage}</td>
                     </tr>
                     <tr>
-                        <th class="text-wrap">Memory</th>
+                        <th class="text-nowrap">Memory</th>
                         <td>${memoryUsage}</td>
                     </tr>
                     <tr>
@@ -84,7 +84,7 @@
                         <table class="table table-bordered" id="instances">
                             <thead>
                             <tr>
-                                <th>ID</th>
+                                <th>Instance</th>
                                 <th>App Id</th>
                                 <th>Port</th>
                                 <th>Cores</th>
@@ -93,7 +93,6 @@
                                 <th>Created</th>
                                 <th>Last Updated</th>
                                 <th>State</th>
-                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -113,7 +112,7 @@
                         <table class="table table-bordered" id="tasks">
                             <thead>
                             <tr>
-                                <th>Instance ID</th>
+                                <th>Instance</th>
                                 <th>Source App</th>
                                 <th>Task ID</th>
                                 <th>Cores</th>
@@ -122,7 +121,6 @@
                                 <th>Created</th>
                                 <th>Last Updated</th>
                                 <th>State</th>
-                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -142,7 +140,7 @@
                         <table class="table table-bordered" id="service-instances">
                             <thead>
                             <tr>
-                                <th>ID</th>
+                                <th class="nowrap-contents">Instance</th>
                                 <th>Service Id</th>
                                 <th>Port</th>
                                 <th>Cores</th>
@@ -151,7 +149,6 @@
                                 <th>Created</th>
                                 <th>Last Updated</th>
                                 <th>State</th>
-                                <th></th>
                             </tr>
                             </thead>
                         </table>
@@ -293,11 +290,17 @@
         'processing' : true,
         'paging': true,
         'info' : false,
-        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
                 {
                     'data' : 'instanceId',
-                    'render' : copyableTableText
+                    'className' : 'text-nowrap',
+                    'render' : function(data, type, row, meta) {
+                        if(type === "display") {
+                            return renderCopyableLink(data,
+                                    '/applications/{0}/instances/{1}'.format(row.appId, row.instanceId));
+                        }
+                        return data;
+                    }
                 },
                 {
                     'data' : 'appId',
@@ -311,14 +314,7 @@
                 { 'data' : 'created', 'render' : tableAgeText },
                 { 'data' : 'created', 'render' : tableDateText },
                 { 'data' : 'updated', 'render' : tableDateText },
-                { 'data' : 'state', 'render' : tableInstanceStateText },
-                {
-                    'data' : 'logStream',
-                    'render' : function(data, type, row, meta) {
-                        return '<a href="/applications/{0}/instances/{1}">Details</a>'
-                                    .format(row.appId, row.instanceId) ;
-                    }
-                }
+                { 'data' : 'state', 'render' : tableInstanceStateText }
             ],
             'order' : [[5, 'desc']]
     });
@@ -326,11 +322,17 @@
         'processing' : true,
         'paging': true,
         'info' : false,
-        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
                 {
                     'data' : 'instanceId',
-                    'render' : copyableTableText
+                    'className' : 'text-nowrap',
+                    'render' : function(data, type, row, meta) {
+                        if(type === "display") {
+                            return renderCopyableLink(data,
+                                    '/localservices/{0}/instances/{1}'.format(row.serviceId, row.instanceId));
+                        }
+                            return data;
+                    }
                 },
                 {
                     'data' : 'serviceId',
@@ -344,14 +346,7 @@
                 { 'data' : 'created', 'render' : tableAgeText },
                 { 'data' : 'created', 'render' : tableDateText },
                 { 'data' : 'updated', 'render' : tableDateText },
-                { 'data' : 'state', 'render' : tableInstanceStateText },
-                {
-                    'data' : 'logStream',
-                    'render' : function(data, type, row, meta) {
-                        return '<a href="/localservices/{0}/instances/{1}">Details</a>'
-                                .format(row.serviceId, row.instanceId) ;
-                    }
-                }
+                { 'data' : 'state', 'render' : tableInstanceStateText }
             ],
             'order' : [[5, 'desc']]
     });
@@ -360,11 +355,17 @@
         'processing' : true,
         'paging': true,
         'info' : false,
-        'columnDefs': [ {'className': 'text-wrap', 'targets': '_all'} ],
         'columns' : [
                 {
                     'data' : 'instanceId',
-                    'render' : copyableTableText
+                    'className' : 'text-nowrap',
+                    'render' : function(data, type, row, meta) {
+                        if(type === "display") {
+                            return renderCopyableLink(data,
+                            '/tasks/{0}/{1}'.format(row.sourceAppName, row.taskId));
+                        }
+                        return data;
+                    }
                 },
                 { 'data' : 'sourceAppName' },
                 { 'data' : 'taskId' },
@@ -373,13 +374,7 @@
                 { 'data' : 'created', 'render' : tableAgeText },
                 { 'data' : 'created', 'render' : tableDateText },
                 { 'data' : 'updated', 'render' : tableDateText },
-                { 'data' : 'state', 'render' : tableTaskStateText },
-                {
-                    'data' : 'logStream',
-                    'render' : function(data, type, row, meta) {
-                        return '<a href="/tasks/{0}/{1}">Details</a>'.format(row.sourceAppName, row.taskId);
-                    }
-                }
+                { 'data' : 'state', 'render' : tableTaskStateText }
             ],
             'order' : [[5, 'desc']]
     });

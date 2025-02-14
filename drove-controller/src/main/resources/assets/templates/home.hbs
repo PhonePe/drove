@@ -51,13 +51,13 @@
                                        style="width: 100%">
                                     <thead>
                                     <tr>
-                                        <th class="text-wrap">ID</th>
-                                        <th class="text-wrap">Name</th>
-                                        <th class="text-wrap">Expected Instances</th>
-                                        <th class="text-wrap">Healthy Instances</th>
-                                        <th class="text-wrap">CPU</th>
-                                        <th class="text-wrap">Memory</th>
-                                        <th class="text-wrap">State</th>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Expected Instances</th>
+                                        <th>Healthy Instances</th>
+                                        <th>CPU</th>
+                                        <th>Memory</th>
+                                        <th>State</th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -71,13 +71,13 @@
                                 <table class="table table-bordered" id="tasks" title="Tasks" style="width: 100%">
                                     <thead>
                                     <tr>
-                                        <th class="text-wrap">Source App</th>
-                                        <th class="text-wrap">Task ID</th>
-                                        <th class="text-wrap">Cores</th>
-                                        <th class="text-wrap">Memory</th>
-                                        <th class="text-wrap">Running For</th>
-                                        <th class="text-wrap">State</th>
-                                        <th class="text-wrap"></th>
+                                        <th>Source App</th>
+                                        <th>Task ID</th>
+                                        <th>Cores</th>
+                                        <th>Memory</th>
+                                        <th>Running For</th>
+                                        <th>State</th>
+                                        <th></th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -123,13 +123,13 @@
                                        style="width: 100%">
                                     <thead>
                                     <tr>
-                                        <th class="text-wrap">Name</th>
-                                        <th class="text-wrap">Instances Per Host</th>
-                                        <th class="text-wrap">Healthy Instances</th>
-                                        <th class="text-wrap">CPU</th>
-                                        <th class="text-wrap">Memory</th>
-                                        <th class="text-wrap">Activation State</th>
-                                        <th class="text-wrap">State</th>
+                                        <th>Name</th>
+                                        <th>Instances Per Host</th>
+                                        <th>Healthy Instances</th>
+                                        <th>CPU</th>
+                                        <th>Memory</th>
+                                        <th>Activation State</th>
+                                        <th>State</th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -148,14 +148,14 @@
                         <table class="table table-bordered table-responsive" id="executors">
                             <thead>
                             <tr>
-                                <th class="text-wrap">ID</th>
-                                <th class="text-wrap">Host</th>
-                                <th class="text-wrap">Free Cores</th>
-                                <th class="text-wrap">Used Cores</th>
-                                <th class="text-wrap">Free Memory</th>
-                                <th class="text-wrap">Used Memory</th>
-                                <th class="text-wrap">Tags</th>
-                                <th class="text-wrap">State</th>
+                                <th>ID</th>
+                                <th>Host</th>
+                                <th>Free Cores</th>
+                                <th>Used Cores</th>
+                                <th>Free Memory</th>
+                                <th>Used Memory</th>
+                                <th>Tags</th>
+                                <th>State</th>
                             </tr>
                             </thead>
                         </table>
@@ -177,7 +177,7 @@
         'searching' : false,
         'ordering' : false,
         'info' : false,
-        'columnDefs': [ {'className': 'text-center text-wrap', 'targets': '_all'} ],
+        'columnDefs': [ {'className': 'text-center text-nowrap', 'targets': '_all'} ],
         'columns' : [
             {
                 'data' : 'state',
@@ -329,19 +329,12 @@
             {
                 'className': 'text-center',
                 'targets': [2,3,4,5]
-            },
-            {
-                'className': 'text-wrap',
-                'targets': [1,2,3,4,5,6]
-            },
-            {
-                'className': 'text-nowrap',
-                'targets': 0
             }
         ],
         'columns' : [
             {
                 'data' : 'executorId' ,
+                'className' : 'text-nowrap',
                 'render' : function(data, type, row, meta) {
                     return (row.state == 'REMOVED' || row.state == 'BLACKLISTED')
                         ? '<del><a href="/executors/' + data + '"  class="fw-semibold">' + data + '</a></del>'
