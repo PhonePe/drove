@@ -81,7 +81,7 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered" id="instances">
+                        <table class="table table-bordered" id="instances"  style="width: 100%">
                             <thead>
                             <tr>
                                 <th>Instance</th>
@@ -89,8 +89,7 @@
                                 <th>Port</th>
                                 <th>Cores</th>
                                 <th>Memory</th>
-                                <th>Current Age</th>
-                                <th>Created</th>
+                                <th>Running For</th>
                                 <th>Last Updated</th>
                                 <th>State</th>
                             </tr>
@@ -109,7 +108,7 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered" id="tasks">
+                        <table class="table table-bordered" id="tasks"  style="width: 100%">
                             <thead>
                             <tr>
                                 <th>Instance</th>
@@ -117,8 +116,7 @@
                                 <th>Task ID</th>
                                 <th>Cores</th>
                                 <th>Memory</th>
-                                <th>Current Age</th>
-                                <th>Created</th>
+                                <th>Running For</th>
                                 <th>Last Updated</th>
                                 <th>State</th>
                             </tr>
@@ -137,16 +135,15 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered" id="service-instances">
+                        <table class="table table-bordered" id="service-instances"  style="width: 100%">
                             <thead>
                             <tr>
-                                <th class="nowrap-contents">Instance</th>
+                                <th>Instance</th>
                                 <th>Service Id</th>
                                 <th>Port</th>
                                 <th>Cores</th>
                                 <th>Memory</th>
-                                <th>Current Age</th>
-                                <th>Created</th>
+                                <th>Running For</th>
                                 <th>Last Updated</th>
                                 <th>State</th>
                             </tr>
@@ -287,79 +284,83 @@
     }
 
     const ii = $('#instances').DataTable({
-        'processing' : true,
-        'paging': true,
-        'info' : false,
-        'columns' : [
-                {
-                    'data' : 'instanceId',
-                    'className' : 'text-nowrap',
-                    'render' : function(data, type, row, meta) {
+        processing: true,
+        paging: true,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, `All`]],
+        responsive: true,
+        //scrollX: true,
+        columns: [
+            {
+                data: 'instanceId',
+                className: 'text-nowrap',
+                render: function(data, type, row, meta) {
                         if(type === "display") {
                             return renderCopyableLink(data,
                                     '/applications/{0}/instances/{1}'.format(row.appId, row.instanceId));
                         }
                         return data;
                     }
-                },
-                {
-                    'data' : 'appId',
-                    'render' : function(data, type, row, meta) {
-                        return renderCopyableLink(data, '/applications/{0}'.format(data));
-                    }
-                },
-                { 'data' : 'ports' },
-                { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory', 'render' : tableBytesText },
-                { 'data' : 'created', 'render' : tableAgeText },
-                { 'data' : 'created', 'render' : tableDateText },
-                { 'data' : 'updated', 'render' : tableDateText },
-                { 'data' : 'state', 'render' : tableInstanceStateText }
+            },
+            {
+                data: 'appId',
+                render: function(data, type, row, meta) {
+                    return renderCopyableLink(data, '/applications/{0}'.format(data));
+                }
+            },
+            { data: 'ports' },
+            { data: 'usedCores' },
+            { data: 'usedMemory', render: tableBytesText },
+            { data: 'created', render: tableCreatedAgeText },
+            { data: 'updated', render: tableUpdatedAgeText },
+            { data: 'state', render: tableInstanceStateText }
             ],
-            'order' : [[5, 'desc']]
+        order: [[5, 'desc']]
     });
     const si = $('#service-instances').DataTable({
-        'processing' : true,
-        'paging': true,
-        'info' : false,
-        'columns' : [
+        processing: true,
+        paging: true,
+        info: false,
+        responsive: true,
+        //scrollX: true,
+        columns: [
                 {
-                    'data' : 'instanceId',
-                    'className' : 'text-nowrap',
-                    'render' : function(data, type, row, meta) {
+                data: 'instanceId',
+                className: 'text-nowrap',
+                render: function(data, type, row, meta) {
                         if(type === "display") {
                             return renderCopyableLink(data,
                                     '/localservices/{0}/instances/{1}'.format(row.serviceId, row.instanceId));
                         }
-                            return data;
+                        return data;
                     }
                 },
                 {
-                    'data' : 'serviceId',
-                    'render' : function(data, type, row, meta) {
+                data: 'serviceId',
+                render: function(data, type, row, meta) {
                         return renderCopyableLink(data, '/localservices/{0}'.format(data));
                     }
                 },
-                { 'data' : 'ports' },
-                { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory', 'render' : tableBytesText },
-                { 'data' : 'created', 'render' : tableAgeText },
-                { 'data' : 'created', 'render' : tableDateText },
-                { 'data' : 'updated', 'render' : tableDateText },
-                { 'data' : 'state', 'render' : tableInstanceStateText }
+            { data: 'ports' },
+            { data: 'usedCores' },
+            { data: 'usedMemory', render: tableBytesText },
+            { data: 'created', render: tableCreatedAgeText },
+            { data: 'updated', render: tableUpdatedAgeText },
+            { data: 'state', render: tableInstanceStateText }
             ],
-            'order' : [[5, 'desc']]
+        order: [[5, 'desc']]
     });
 
     const ti = $('#tasks').DataTable({
-        'processing' : true,
-        'paging': true,
-        'info' : false,
-        'columns' : [
+        processing: true,
+        paging: true,
+        info: false,
+        responsive: true,
+        //scrollX: true, - For some reason this is unnecessarily leading to horizontal scrollbar to show up
+        columns: [
                 {
-                    'data' : 'instanceId',
-                    'className' : 'text-nowrap',
-                    'render' : function(data, type, row, meta) {
+                data: 'instanceId',
+                className: 'text-nowrap',
+                render: function(data, type, row, meta) {
                         if(type === "display") {
                             return renderCopyableLink(data,
                             '/tasks/{0}/{1}'.format(row.sourceAppName, row.taskId));
@@ -367,16 +368,15 @@
                         return data;
                     }
                 },
-                { 'data' : 'sourceAppName' },
-                { 'data' : 'taskId' },
-                { 'data' : 'usedCores' },
-                { 'data' : 'usedMemory', 'render' : tableBytesText },
-                { 'data' : 'created', 'render' : tableAgeText },
-                { 'data' : 'created', 'render' : tableDateText },
-                { 'data' : 'updated', 'render' : tableDateText },
-                { 'data' : 'state', 'render' : tableTaskStateText }
+            { data: 'sourceAppName' },
+            { data: 'taskId' },
+            { data: 'usedCores' },
+            { data: 'usedMemory', render: tableBytesText },
+            { data: 'created', render: tableCreatedAgeText },
+            { data: 'updated', render: tableUpdatedAgeText },
+            { data: 'state', render: tableTaskStateText }
             ],
-            'order' : [[5, 'desc']]
+        order: [[5, 'desc']]
     });
 
     function renderTags(tags) {

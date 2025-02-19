@@ -149,18 +149,20 @@
     }
 
     const logList = $('#instanceLogs').DataTable({
-        'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/logfiles/localservices/{{serviceId}}/{{instanceId}}/list',
-            'dataSrc' : logListExploder
+        processing: true,
+        ajax: {
+            url: /apis/v1/logfiles/localservices/{{serviceId}}/{{instanceId}}/list,
+            dataSrc: logListExploder
         },
-        'paging': false,
-        'searching' : false,
-        'ordering' : false,
-        'info' : false,
-        'columns' : [
-            { 'data' : 'fileName' },
-            { 'data' : 'downloadLink' },
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columns: [
+            { data: 'fileName' },
+            { data: 'downloadLink' },
         ]
     });
 

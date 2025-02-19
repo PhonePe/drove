@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
+    <meta name="viewport" content="width=device-width" />
     <!--<link rel="icon" href="favicon.ico">-->
 
     <title>D R O V E</title>
@@ -448,7 +449,20 @@
 
     function tableAgeText(data, type, row, meta) {
         if(type === "sort") return data;
-        return ageInWords(data);
+        return '<span  data-bs-toggle="tooltip" data-bs-placement="top" title="{0}">{1}</span>'
+                .format(new Date(data).toLocaleString(), ageInWords(data));
+    }
+
+    function tableCreatedAgeText(data, type, row, meta) {
+        if(type === "sort") return data;
+        return '<span  data-bs-toggle="tooltip" data-bs-placement="top" title="Created at {0}">{1}</span>'
+                .format(new Date(data).toLocaleString(), ageInWords(data));
+    }
+
+    function tableUpdatedAgeText(data, type, row, meta) {
+        if(type === "sort") return data;
+        return '<span  data-bs-toggle="tooltip" data-bs-placement="top" title="Updated at {0}">{1} ago</span>'
+                .format(new Date(data).toLocaleString(), ageInWords(data));
     }
 
     //Transformers

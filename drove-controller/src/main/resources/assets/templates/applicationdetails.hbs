@@ -30,14 +30,15 @@
                         <table class="table table-bordered"  id="instances" style="width: 100%">
                             <thead>
                             <tr>
-                                <th class="text-wrap">Instance</th>
-                                <th class="text-wrap">ExecutorId</th>
-                                <th class="text-wrap">Host</th>
-                                <th class="text-wrap">Ports</th>
-                                <th class="text-wrap">Cores</th>
-                                <th class="text-wrap">Memory</th>
-                                <th class="text-wrap">Current Age</th>
-                                <th class="text-wrap">State</th>
+                                <th>Instance</th>
+                                <th>ExecutorId</th>
+                                <th>Host</th>
+                                <th>Ports</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>State</th>
+                                <th>Running For</th>
+                                <th>Last Updated</th>
                             </tr>
                             </thead>
                         </table>
@@ -54,20 +55,20 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered"  id="oldinstances">
+                        <table class="table table-bordered"  id="oldinstances"  style="width: 100%">
                             <thead>
                             <tr>
-                                <th class="text-wrap">Instance</th>
-                                <th class="text-wrap">ExecutorId</th>
-                                <th class="text-wrap">Host</th>
-                                <th class="text-wrap">Ports</th>
-                                <th class="text-wrap">Cores</th>
-                                <th class="text-wrap">Memory</th>
-                                <th class="text-wrap">State</th>
-                                <th class="text-wrap">Lifetime</th>
-                                <th class="text-wrap">Created</th>
-                                <th class="text-wrap">Last Updated</th>
-                                <th class="text-wrap">Error Message</th>
+                                <th>Instance</th>
+                                <th>ExecutorId</th>
+                                <th>Host</th>
+                                <th>Ports</th>
+                                <th>Cores</th>
+                                <th>Memory</th>
+                                <th>State</th>
+                                <th>Lifetime</th>
+                                <th>Created</th>
+                                <th>Final Update</th>
+                                <th>Error Message</th>
                             </tr>
                             </thead>
                         </table>
@@ -93,152 +94,157 @@
 
 {{#partial "page_js"}}
     //Preload config as it won't change
-    $.get('/apis/v1/applications/{{appId}}/spec', function(data) {
-        if(data.status === 'SUCCESS') {
-            $('#appSpecJson').html(JSON.stringify(data.data, null, 4));
+    $.get(`/apis/v1/applications/{{appId}}/spec`, function(data) {
+        if(data.status === `SUCCESS`) {
+            $(`#appSpecJson`).html(JSON.stringify(data.data, null, 4));
         }
         else {
-            $('#appSpecJson').html('Could not load config');
+            $(`#appSpecJson`).html(`Could not load config`);
         }
     });
 
-    const summary = $('#appsummary').DataTable({
-        'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/applications/{{appId}}',
-            'dataSrc' : function(res) { return res.data ? [ res.data ] : []; }
+    const summary = $(`#appsummary`).DataTable({
+        processing: true,
+        ajax: {
+            url: `/apis/v1/applications/{{appId}}`,
+            dataSrc: function(res) { return res.data ? [ res.data ] : []; }
         },
-        'paging': false,
-        'searching' : false,
-        'ordering' : false,
-        'info' : false,
-        'columnDefs': [
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
             {
-                'targets': 7,
-                'data': null,
-                'defaultContent': `<button type="button" class="btn btn-sm btn-outline-info" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .60rem; font-weight: bold" data-bs-toggle="modal" data-bs-target="#appSpec">
+                targets: 7,
+                data: null,
+                defaultContent: `<button type="button" class="btn btn-sm btn-outline-info" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .60rem; font-weight: bold" data-bs-toggle="modal" data-bs-target="#appSpec">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-braces" viewBox="0 0 16 16">
                                             <path d="M2.114 8.063V7.9c1.005-.102 1.497-.615 1.497-1.6V4.503c0-1.094.39-1.538 1.354-1.538h.273V2h-.376C3.25 2 2.49 2.759 2.49 4.352v1.524c0 1.094-.376 1.456-1.49 1.456v1.299c1.114 0 1.49.362 1.49 1.456v1.524c0 1.593.759 2.352 2.372 2.352h.376v-.964h-.273c-.964 0-1.354-.444-1.354-1.538V9.663c0-.984-.492-1.497-1.497-1.6M13.886 7.9v.163c-1.005.103-1.497.616-1.497 1.6v1.798c0 1.094-.39 1.538-1.354 1.538h-.273v.964h.376c1.613 0 2.372-.759 2.372-2.352v-1.524c0-1.094.376-1.456 1.49-1.456V7.332c-1.114 0-1.49-.362-1.49-1.456V4.352C13.51 2.759 12.75 2 11.138 2h-.376v.964h.273c.964 0 1.354.444 1.354 1.538V6.3c0 .984.492 1.497 1.497 1.6"/>
                                         </svg> Specification
                                     </button>`
             },
-            {'className': 'text-wrap', 'targets': '_all'}
+            {className: `text-wrap`, targets: `_all`}
         ],
-        'columns' : [
+        columns: [
             {
-                'data' : 'id',
-                'render' : copyableTableText
+                data: `id`,
+                render: copyableTableText
             },
-            { 'data' : 'name' },
-            { 'data' : 'requiredInstances' },
-            { 'data' : 'healthyInstances' },
-            { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory', 'render' : tableBytesText },
-            { 'data' : 'state', 'render' : tableAppStateText }
+            { data: `name` },
+            { data: `requiredInstances` },
+            { data: `healthyInstances` },
+            { data: `totalCPUs` },
+            { data: `totalMemory`, render: tableBytesText },
+            { data: `state`, render: tableAppStateText }
         ]
     });
     function instanceDataHandler(res) {
         if(!res.data) {
-        return [];
+            return [];
         }
         res.data.forEach( (info, i) => {
             if(info.localInfo) {
-                info['hostname'] = info.localInfo.hostname;
-                info['ports'] = Object.keys(info.localInfo.ports)
-                    .map(key => '<b>' + key + ':</b> ' + info.localInfo.ports[key].hostPort)
-                    .join(",");
+                info.hostname = info.localInfo.hostname;
+                info.ports = Object.keys(info.localInfo.ports)
+                    .map(key => `<b>` + key + `:</b> ` + info.localInfo.ports[key].hostPort)
+                    .join(`,`);
             }
             else {
-                info['hostname'] = '';
-                info['ports'] = '';
+                info.hostname = ``;
+                info.ports = ``;
             }
             info.resources.forEach((r,i) => {
-                if(r.type === 'CPU') {
-                    info['usedCores'] = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
+                if(r.type === `CPU`) {
+                    info.usedCores = Object.values(r.cores).map(v => v.length).reduce((s,l) => s + l, 0);
                 }
-                if(r.type === 'MEMORY') {
-                    info['usedMemory'] = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
+                if(r.type === `MEMORY`) {
+                    info.usedMemory = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
                 }
             });
         });
         return res.data;
     }
 
-    const instances = $('#instances').DataTable({
-        'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/applications/{{appId}}/instances',
-            'dataSrc' : instanceDataHandler
+    const instances = $(`#instances`).DataTable({
+        processing: true,
+        ajax: {
+            url: `/apis/v1/applications/{{appId}}/instances`,
+            dataSrc: instanceDataHandler
         },
-        'paging': true,
-        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
-        'columns' : [
+        paging: true,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, `All`]],
+        responsive: false,
+        scrollX: true,
+        columns: [
             {
-                'data' : 'instanceId',
-                'className' : 'text-nowrap',
-                'render' : function(data, type, row, meta) {
-                    if(type === "display") {
-                        return renderCopyableLink(data, '/applications/{{appId}}/instances/{0}'.format(data));
+                data: `instanceId`,
+                className: `text-nowrap`,
+                render: function(data, type, row, meta) {
+                    if(type === `display`) {
+                        return renderCopyableLink(data, `/applications/{{appId}}/instances/{0}`.format(data));
                     }
                     return data;
                 }
             },
-            { 'data' : 'executorId', 'className' : 'text-nowrap', 'render' : tableExecutorLink },
-            { 'data' : 'hostname' },
-            { 'data' : 'ports' },
-            { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory', 'render' : tableBytesText },
-            { 'data' : 'created', 'render' : tableAgeText },
-            { 'data' : 'state', 'render' : tableInstanceStateText },
+            { data: `executorId`, className: `text-nowrap`, render: tableExecutorLink },
+            { data: `hostname` },
+            { data: `ports` },
+            { data: `usedCores` },
+            { data: `usedMemory`, render: tableBytesText },
+            { data: `state`, render: tableInstanceStateText },
+            { data: 'created', render: tableCreatedAgeText },
+            { data: 'updated', render: tableUpdatedAgeText },
         ],
-        'order' : [[6, 'desc']]
+        order: [[6, `desc`]]
 
     });
-    const oldinstances = $('#oldinstances').DataTable({
-        'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/applications/{{appId}}/instances/old',
-            'dataSrc' : instanceDataHandler
+    const oldinstances = $(`#oldinstances`).DataTable({
+        processing: true,
+        ajax: {
+            url: `/apis/v1/applications/{{appId}}/instances/old`,
+            dataSrc: instanceDataHandler
         },
-        'paging': true,
-        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
-        'info' : false,
-        'columns' : [
+        paging: true,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, `All`]],
+        info: false,
+        columns: [
             {
-                'data' : 'instanceId',
-                'className' : 'text-nowrap',
-                'render' : function(data, type, row, meta) {
-                    if(type === "display") {
-                        return renderCopyableLink(data, '/applications/{{appId}}/instances/{0}'.format(data));
+                data: `instanceId`,
+                className: `text-nowrap`,
+                render: function(data, type, row, meta) {
+                    if(type === `display`) {
+                        return renderCopyableLink(data, `/applications/{{appId}}/instances/{0}`.format(data));
                     }
                     return data;
                 }
             },
-            { 'data' : 'executorId', 'className' : 'text-nowrap', 'render' : tableExecutorLink },
-            { 'data' : 'hostname' },
-            { 'data' : 'ports' },
-            { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory', 'render' : tableBytesText },
-            { 'data' : 'state', 'render': tableInstanceStateText },
-            { 'data' : 'created', 'render' : tableAgeText },
-            { 'data' : 'created', 'render' : tableDateText },
-            { 'data' : 'updated', 'render' : tableDateText },
+            { data: `executorId`, className: `text-nowrap`, render: tableExecutorLink },
+            { data: `hostname` },
+            { data: `ports` },
+            { data: `usedCores` },
+            { data: `usedMemory`, render: tableBytesText },
+            { data: `state`, render: tableInstanceStateText },
+            { data: `created`, render: tableAgeText },
+            { data: `created`, render: tableDateText },
+            { data: `updated`, render: tableDateText },
             {
-                'data' : 'errorMessage',
-                'render' : function (data, type, full, meta) {
-                    if(type === 'display') {
+                data: `errorMessage`,
+                render: function (data, type, full, meta) {
+                    if(type === `display`) {
                         if(data) {
-                            return '<div style="white-space:normal; width:200px; word-break: break-word; word-break: break-all; " class="text-danger">' + data + '</div>';
+                            return `<div style="white-space:normal; width:200px; word-break: break-word; word-break: break-all; " class="text-danger">` + data + `</div>`;
                         }
                         else {
-                            return 'No Errors';
+                            return `No Errors`;
                         }
                     }
                     return data;
                 }
             }
         ],
-        'order' : [[9, 'desc']]
+        order: [[9, `desc`]]
     });
     setInterval(() => {
         summary.ajax.reload(null, false);

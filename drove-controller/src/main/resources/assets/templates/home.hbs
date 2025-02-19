@@ -53,11 +53,11 @@
                                     <tr>
                                         <th>ID</th>
                                         <th>Name</th>
+                                        <th>State</th>
                                         <th>Expected Instances</th>
                                         <th>Healthy Instances</th>
                                         <th>CPU</th>
                                         <th>Memory</th>
-                                        <th>State</th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -73,10 +73,10 @@
                                     <tr>
                                         <th>Source App</th>
                                         <th>Task ID</th>
+                                        <th>State</th>
                                         <th>Cores</th>
                                         <th>Memory</th>
                                         <th>Running For</th>
-                                        <th>State</th>
                                         <th></th>
                                     </tr>
                                     </thead>
@@ -124,12 +124,12 @@
                                     <thead>
                                     <tr>
                                         <th>Name</th>
+                                        <th>State</th>
                                         <th>Instances Per Host</th>
                                         <th>Healthy Instances</th>
                                         <th>CPU</th>
                                         <th>Memory</th>
                                         <th>Activation State</th>
-                                        <th>State</th>
                                     </tr>
                                     </thead>
                                 </table>
@@ -145,17 +145,17 @@
                 </div>
                 <div class="row">
                     <div class="col">
-                        <table class="table table-bordered table-responsive" id="executors">
+                        <table class="table table-bordered" id="executors" style="width: 100%">
                             <thead>
                             <tr>
-                                <th>ID</th>
+                                <th data-priority="11000">ID</th>
                                 <th>Host</th>
+                                <th>State</th>
                                 <th>Free Cores</th>
                                 <th>Used Cores</th>
                                 <th>Free Memory</th>
                                 <th>Used Memory</th>
-                                <th>Tags</th>
-                                <th>State</th>
+                                <th data-priority="10500">Tags</th>
                             </tr>
                             </thead>
                         </table>
@@ -168,20 +168,20 @@
 
 {{#partial "page_js"}}
     const cluster = $('#clusterSummary').DataTable({
-    'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/cluster',
-            'dataSrc': function(res) { return res.data ? [ res.data ] : []; }
+        processing: true,
+        ajax: {
+            url: '/apis/v1/cluster',
+            dataSrc: function(res) { return res.data ? [res.data] : []; }
         },
-        'paging': false,
-        'searching' : false,
-        'ordering' : false,
-        'info' : false,
-        'columnDefs': [ {'className': 'text-center text-nowrap', 'targets': '_all'} ],
-        'columns' : [
+        paging: false,
+        searching: false,
+        ordering: false,
+        info: false,
+        columnDefs: [{ className: 'text-center text-nowrap', targets: '_all' }],
+        columns: [
             {
-                'data' : 'state',
-                'render' : function(data, type, row, meta) {
+                data: 'state',
+                render: function(data, type, row, meta) {
                     var tagStr = "";
                     if(data === 'NORMAL') {
                         return '<span class="badge fw-bold bg-success">Normal</span> ';
@@ -189,18 +189,18 @@
                     return '<span class="badge fw-bold bg-danger">Maintenance</span> ';
                 }
             },
-            { 'data' : 'leader' },
-            { 'data' : 'numExecutors' },
+            { data: 'leader' },
+            { data: 'numExecutors' },
             {
-                'data' : 'freeCores',
-                'render' : function(data, type, row, meta) {
+                data: 'freeCores',
+                render: function(data, type, row, meta) {
                     return renderProgressHtml('progress-with-text', row.usedCores, 0, row.totalCores,
                         "<b>{0} of {1} allocated ({2} free)</b>".format(row.usedCores, row.totalCores, row.freeCores));
                 }
             },
             {
-                'data' : 'freeMemory',
-                'render' : function(data, type, row, meta) {
+                data: 'freeMemory',
+                render: function(data, type, row, meta) {
                     const free = bytesToString(row.freeMemory);
                     const used = bytesToString(row.usedMemory);
                     const total = bytesToString(row.totalMemory);
@@ -209,157 +209,176 @@
                 }
             },
             {
-                'data' : 'numActiveApplications',
-                'render' : function(data, type, row, meta) {
+                data: 'numActiveApplications',
+                render: function(data, type, row, meta) {
                     return '{0} of {1} Active'.format(row.numActiveApplications, row.numApplications);
                 }
             },
             {
-                'data' : 'numActiveTasks',
-                'render' : function(data, type, row, meta) {
+                data: 'numActiveTasks',
+                render: function(data, type, row, meta) {
                     return '{0} Active'.format(row.numActiveTasks);
                 }
             },
             {
-                'data' : 'numActiveLocalServices',
-                'render' : function(data, type, row, meta) {
+                data: 'numActiveLocalServices',
+                render: function(data, type, row, meta) {
                     return '{0} of {1} Active'.format(row.numActiveLocalServices, row.numLocalServices);
                 }
             }
     ]
     });
     const applications = $('#applications').DataTable({
-        'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/applications',
-            'dataSrc' : function(res) {
+        processing: true,
+        ajax: {
+            url: '/apis/v1/applications',
+            dataSrc: function(res) {
                 return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
             }
         },
-        'paging': true,
-        'info' : false,
-        'columnDefs': [
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
             {
-                'className': 'text-center text-wrap',
-                'targets': '_all'
+                className: 'text-center text-wrap',
+                targets: '_all'
             }
         ],
-        'columns' : [
+        columns: [
             {
-                'data' : 'id' ,
-                'render' : function(data, type, row, meta) {
+                data: 'id',
+                render: function(data, type, row, meta) {
                     return '<a href="/applications/' + data + '" class="fw-bold">' + data + '</a>';
                 }
             },
-            { 'data' : 'name' },
-            { 'data' : 'requiredInstances' },
-            { 'data' : 'healthyInstances' },
-            { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory', 'render' : tableBytesText },
-            { 'data' : 'state', render: tableAppStateText }
+            { data: 'name' },
+            { data: 'state', render: tableAppStateText },
+            { data: 'requiredInstances' },
+            { data: 'healthyInstances' },
+            { data: 'totalCPUs' },
+            { data: 'totalMemory', render: tableBytesText }
         ]
     });
     const tasks = $('#tasks').DataTable({
-        'processing' : true,
-        'paging': true,
-        'info' : false,
-        'columnDefs': [
+        processing: true,
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
             {
-                'className': 'text-center text-wrap',
-                'targets': '_all'
+                className: 'text-center text-wrap',
+                targets: '_all'
             }
         ],
-        'columns' : [
-            { 'data' : 'sourceAppName' },
-            { 'data' : 'taskId' },
-            { 'data' : 'usedCores' },
-            { 'data' : 'usedMemory', 'render' : tableBytesText },
-            { 'data' : 'created', 'render' : tableAgeText },
-            { 'data' : 'state', 'render' : tableTaskStateText },
-            { 'data' : 'logStream',
-                'render' : function(data, type, row, meta) {
-                    return '<a href="/tasks/' + row['sourceAppName'] + '/' + row['taskId'] + '" class="fw-bold">Details</a>';
+        columns: [
+            { data: 'sourceAppName' },
+            { data: 'taskId' },
+            { data: 'state', render: tableTaskStateText },
+            { data: 'usedCores' },
+            { data: 'usedMemory', render: tableBytesText },
+            { data: 'created', render: tableAgeText },
+            {
+                data: 'logStream',
+                render: function(data, type, row, meta) {
+                    return '<a href="/tasks/' + row.sourceAppName + '/' + row.taskId + '" class="fw-bold">Details</a>';
                 }
             }
         ],
-        'order' : [[5, 'desc']],
-        'ajax' : {
-            'url' : '/apis/v1/tasks',
-            'dataSrc' : res => updateResourceUsage((!res || !res.data) ? [] : res.data)
+        order: [[5, 'desc']],
+        ajax: {
+            url: '/apis/v1/tasks',
+            dataSrc: res => updateResourceUsage((!res || !res.data) ? [] : res.data)
         }
     });
     const localservices = $('#localservices').DataTable({
-        'processing' : true,
-        'ajax': {
-            'url' : '/apis/v1/localservices',
-            'dataSrc' : function(res) {
+        processing: true,
+        ajax: {
+            url: '/apis/v1/localservices',
+            dataSrc: function(res) {
                 return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
             }
         },
-        'paging': true,
-        'info' : false,
-        'columnDefs': [
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
             {
-                'className': 'text-center text-wrap',
-                'targets': '_all'
+                className: 'text-center text-wrap',
+                targets: '_all'
             }
         ],
-        'columns' : [
+        columns: [
             {
-                'data' : 'id' ,
-                'render' : function(data, type, row, meta) {
-                    return '<a href="/localservices/' + data + '"  class="fw-bold">' + data + '</a>';
+                data: 'id',
+                render: function(data, type, row, meta) {
+                    if(type === 'display') {
+                        return '<a href="/localservices/' + data + '"  class="fw-bold">' + data + '</a>';
+                    }
+                    return data;
                 }
             },
-            { 'data' : 'instancesPerHost' },
-            { 'data' : 'healthyInstances' },
-            { 'data' : 'totalCPUs' },
-            { 'data' : 'totalMemory', 'render' : tableBytesText },
-            { 'data' : 'activationState' },
-            { 'data' : 'state', render: tableLocalServiceStateText }
+            { data: 'state', render: tableLocalServiceStateText },
+            { data: 'instancesPerHost' },
+            { data: 'healthyInstances' },
+            { data: 'totalCPUs' },
+            { data: 'totalMemory', render: tableBytesText },
+            { data: 'activationState' }
         ]
     });
 
     const executors = $('#executors').DataTable({
-        'processing' : true,
-        'ajax': '/apis/v1/cluster/executors',
-        'paging': true,
-        'info' : false,
-        'columnDefs': [
+        processing: true,
+        ajax: '/apis/v1/cluster/executors',
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
             {
-                'className': 'text-center',
-                'targets': [2,3,4,5]
+                className: 'text-center',
+                targets: [2, 3, 4, 5]
             }
         ],
-        'columns' : [
+        columns: [
             {
-                'data' : 'executorId' ,
-                'className' : 'text-nowrap',
-                'render' : function(data, type, row, meta) {
-                    return (row.state == 'REMOVED' || row.state == 'BLACKLISTED')
-                        ? '<del><a href="/executors/' + data + '"  class="fw-semibold">' + data + '</a></del>'
-                        : '<a href="/executors/' + data + '"  class="fw-semibold">' + data + '</a>';
+                data: 'executorId',
+                render: function(data, type, row, meta) {
+                    if(type === 'display') {
+                        const link = '<a href="/executors/{0}" class="fw-semibold">{1}</a>'.format(row.executorId, row.executorId);
+                        return (row.state == 'REMOVED' || row.state == 'BLACKLISTED')
+                            ? '<del>{0}</del>'.format(link)
+                            : link;
+                    }
+                    return data;
                 }
             },
-            { 'data' : 'hostname' },
-            { 'data' : 'freeCores' },
-            { 'data' : 'usedCores' },
-            { 'data' : 'freeMemory', 'render' : tableBytesText },
-            { 'data' : 'usedMemory', 'render' : tableBytesText },
-            {  'data' : 'tags',
-                'render' : function(data, type, row, meta) {
-                   var tagStr = "";
-                   if(!data) {
+            { data: 'hostname' },
+            { data: 'state', render: tableExecutorStateText },
+            { data: 'freeCores' },
+            { data: 'usedCores' },
+            { data: 'freeMemory', render: tableBytesText },
+            { data: 'usedMemory', render: tableBytesText },
+            {
+                data: 'tags',
+                render: function(data, type, row, meta) {
+                    if(type === 'sort') {
+                        return data.join(',');
+                    }
+                    var tagStr = "";
+                    if(!data) {
                        return tagStr;
-                   }
-                   data.sort();
-                   for(var i = 0; i < data.length; i++) {
+                    }
+                    data.sort();
+                    for(var i = 0; i < data.length; i++) {
                        tagStr += '<span class="badge bg-secondary text-wrap">' + data[i] + '</span> ';
-                   }
-                   return tagStr;
+                    }
+return tagStr;
                 }
-            },
-            {  'data' : 'state', 'render' : tableExecutorStateText }
+            }
         ]
     });
 
