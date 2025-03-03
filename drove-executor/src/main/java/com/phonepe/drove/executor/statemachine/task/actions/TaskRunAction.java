@@ -133,7 +133,7 @@ public class TaskRunAction extends TaskAction {
 
     @Override
     protected TaskState defaultErrorState() {
-        return TaskState.RUN_COMPLETED;
+        return TaskState.PROVISIONING_FAILED;
     }
 
     private ExecutorTaskInfo instanceInfo(
