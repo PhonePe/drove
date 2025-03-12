@@ -37,7 +37,7 @@
                 <tr>
                     <th scope="row">Ports</th>
                     <td>
-                        <table>
+                        <table class="table table-bordered">
                             <tbody>
                             {{#each ports}}
                                 <tr>
@@ -151,7 +151,7 @@
     const logList = $('#instanceLogs').DataTable({
         processing: true,
         ajax: {
-            url: /apis/v1/logfiles/localservices/{{serviceId}}/{{instanceId}}/list,
+            url: '/apis/v1/logfiles/localservices/{{serviceId}}/{{instanceId}}/list',
             dataSrc: logListExploder
         },
         paging: false,

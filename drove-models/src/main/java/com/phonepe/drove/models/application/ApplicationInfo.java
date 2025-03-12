@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.application;
 
 import lombok.Value;
+import lombok.With;
 
 import java.util.Date;
 
@@ -24,6 +25,7 @@ import java.util.Date;
  *
  */
 @Value
+@With
 public class ApplicationInfo {
     String appId;
     ApplicationSpec spec;

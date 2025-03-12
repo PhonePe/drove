@@ -83,7 +83,7 @@ public class ZKLocalServiceStateDB implements LocalServiceStateDB {
     @Override
     @MonitoredFunction
     public boolean updateService(String serviceId, LocalServiceInfo info) {
-        return setNodeData(curatorFramework, servicePath(serviceId), mapper, info);
+        return setNodeData(curatorFramework, servicePath(serviceId), mapper, info.withUpdated(new Date()));
     }
 
     @Override
