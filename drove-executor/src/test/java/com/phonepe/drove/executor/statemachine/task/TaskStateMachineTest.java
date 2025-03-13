@@ -89,10 +89,10 @@ class TaskStateMachineTest {
     }
 
     @NotNull
-    private TaskStateMachine getSmFromInitialState(TaskInstanceSpec instanceSpec, TaskState starting) {
+    private TaskStateMachine getSmFromInitialState(TaskInstanceSpec instanceSpec, TaskState state) {
         return new TaskStateMachine(UUID.randomUUID().toString(),
                                     instanceSpec,
-                                    StateData.create(starting,
+                                    StateData.create(state,
                                                      new ExecutorTaskInfo(instanceSpec.getTaskId(),
                                                                           instanceSpec.getSourceAppName(),
                                                                           instanceSpec.getInstanceId(),
