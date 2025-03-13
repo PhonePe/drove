@@ -21,6 +21,7 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingTaskActionFactory;
@@ -31,12 +32,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
 import static com.phonepe.drove.models.taskinstance.TaskState.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -47,42 +50,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TaskStateMachineTest {
 
     @Test
-    void test() {
-        val instanceSpec = ExecutorTestingUtils.testTaskInstanceSpec();
-        val sm = new TaskStateMachine(UUID.randomUUID().toString(),
-                                                     instanceSpec,
-                                                     StateData.create(TaskState.PROVISIONING,
-                                                                      new ExecutorTaskInfo(instanceSpec.getTaskId(),
-                                                                                           instanceSpec.getSourceAppName(),
-                                                                                           instanceSpec.getInstanceId(),
-                                                                                           "EX1",
-                                                                                           "localhost",
-                                                                                           instanceSpec.getExecutable(),
-                                                                                           List.of(),
-                                                                                           instanceSpec.getVolumes(),
-                                                                                           instanceSpec.getLoggingSpec(),
-                                                                                           instanceSpec.getEnv(),
-                                                                                           Map.of(),
-                                                                                           null,
-                                                                                           new Date(),
-                                                                                           new Date())),
-                                                     new InjectingTaskActionFactory(Guice.createInjector(
-                                                             Stage.DEVELOPMENT, new AbstractModule() {
-                                                                 @Provides
-                                                                 @Singleton
-                                                                 public CloseableHttpClient httpClient() {
-                                                                     return HttpClients.createDefault();
-                                                                 }
-
-                                                                 @Provides
-                                                                 @Singleton
-                                                                 public ExecutorOptions executorOptions() {
-                                                                     return ExecutorOptions.DEFAULT;
-                                                                 }
-                                                             })),
-                                                     ExecutorTestingUtils.DOCKER_CLIENT);
+    void testRunCompleted() {
+        val instanceSpec = testTaskInstanceSpec();
+        val sm = getSmFromInitialState(instanceSpec, TaskState.PROVISIONING);
         val stateChanges = new HashSet<TaskState>();
         sm.onStateChange().connect(sd -> stateChanges.add(sd.getState()));
+        waitUntilTerminal(sm);
+        CommonTestUtils.waitUntil(() -> stateChanges.contains(TaskState.RUNNING));
+        sm.stop();
+        CommonTestUtils.waitUntil(() -> stateChanges.contains(STOPPED));
+        assertEquals(EnumSet.of(RUNNING, RUN_COMPLETED, STARTING, STOPPED, DEPROVISIONING), stateChanges);
+    }
+
+    @Test
+    void testRunFailed() {
+        val instanceSpec = testTaskInstanceSpec(CommonTestUtils.TASK_IMAGE_NAME + "-invalid", Map.of("ITERATIONS", "3"));
+        val sm = getSmFromInitialState(instanceSpec, STARTING);
+        val stateChanges = new HashSet<TaskState>();
+        sm.onStateChange().connect(sd -> stateChanges.add(sd.getState()));
+        waitUntilTerminal(sm);
+        CommonTestUtils.waitUntil(() -> stateChanges.contains(STOPPED));
+        assertEquals(EnumSet.of(RUN_FAILED, STOPPED, DEPROVISIONING), stateChanges);
+    }
+
+    private void waitUntilTerminal(TaskStateMachine sm) {
         Executors.newSingleThreadExecutor()
                 .submit(() -> {
                     try {
@@ -95,10 +86,42 @@ class TaskStateMachineTest {
                         log.error("Error running SM: ", e);
                     }
                 });
-        CommonTestUtils.waitUntil(() -> stateChanges.contains(TaskState.RUNNING));
-        sm.stop();
-        CommonTestUtils.waitUntil(() -> stateChanges.contains(STOPPED));
-        assertEquals(EnumSet.of(RUNNING, RUN_COMPLETED, STARTING, STOPPED, DEPROVISIONING), stateChanges);
+    }
+
+    @NotNull
+    private TaskStateMachine getSmFromInitialState(TaskInstanceSpec instanceSpec, TaskState starting) {
+        return new TaskStateMachine(UUID.randomUUID().toString(),
+                                    instanceSpec,
+                                    StateData.create(starting,
+                                                     new ExecutorTaskInfo(instanceSpec.getTaskId(),
+                                                                          instanceSpec.getSourceAppName(),
+                                                                          instanceSpec.getInstanceId(),
+                                                                          "EX1",
+                                                                          "localhost",
+                                                                          instanceSpec.getExecutable(),
+                                                                          List.of(),
+                                                                          instanceSpec.getVolumes(),
+                                                                          instanceSpec.getLoggingSpec(),
+                                                                          instanceSpec.getEnv(),
+                                                                          Map.of(),
+                                                                          null,
+                                                                          new Date(),
+                                                                          new Date())),
+                                    new InjectingTaskActionFactory(Guice.createInjector(
+                                            Stage.DEVELOPMENT, new AbstractModule() {
+                                                @Provides
+                                                @Singleton
+                                                public CloseableHttpClient httpClient() {
+                                                    return HttpClients.createDefault();
+                                                }
+
+                                                @Provides
+                                                @Singleton
+                                                public ExecutorOptions executorOptions() {
+                                                    return ExecutorOptions.DEFAULT;
+                                                }
+                                            })),
+                                    ExecutorTestingUtils.DOCKER_CLIENT);
     }
 
 }

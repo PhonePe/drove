@@ -32,6 +32,7 @@ public enum TaskState {
     STARTING(false, false),
     RUNNING(false, false),
     RUN_COMPLETED(false, false),
+    RUN_FAILED(false, true),
     DEPROVISIONING(false, false),
     STOPPED(true, false),
     LOST(true, false),

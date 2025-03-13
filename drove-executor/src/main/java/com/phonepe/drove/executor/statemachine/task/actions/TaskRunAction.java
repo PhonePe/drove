@@ -128,12 +128,12 @@ public class TaskRunAction extends TaskAction {
         catch (Exception e) {
             log.error("Error creating container: ", e);
             return StateData.errorFrom(injectResult(currentState, new TaskResult(TaskResult.Status.FAILED, -1)),
-                                                    TaskState.RUN_COMPLETED, e.getMessage());
+                                                    TaskState.RUN_FAILED, e.getMessage());
         }    }
 
     @Override
     protected TaskState defaultErrorState() {
-        return TaskState.PROVISIONING_FAILED;
+        return TaskState.RUN_FAILED;
     }
 
     private ExecutorTaskInfo instanceInfo(
