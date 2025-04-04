@@ -291,7 +291,7 @@ public class StateUpdater {
         private boolean updateInstanceInfo(InstanceInfo instanceInfo) {
             val appId = instanceInfo.getAppId();
             val instanceId = instanceInfo.getInstanceId();
-            val existing = localServiceStateDB.instance(appId, instanceId).orElse(null);
+            val existing = instanceInfoDB.instance(appId, instanceId).orElse(null);
             val isNewUpdate = null == existing || existing.getUpdated().before(instanceInfo.getUpdated());
             if (!isNewUpdate) {
                 log.trace("Ignoring stale state update for instance {}/{}. Existing: {} Current: {}",
