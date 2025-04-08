@@ -20,14 +20,26 @@
       document.documentElement.setAttribute('data-bs-theme', selectedTheme)
       const header = document.querySelector('#topbar')
       const footer = document.querySelector('footer')
+      const logArea = document.querySelector('.pailer-data')
       header.classList.remove('bg-light', 'bg-dark')
       header.classList.add('bg-' + selectedTheme)
-      footer.classList.remove('bg-light', 'bg-dark', 'text-light', 'text-dark')
-      if(selectedTheme === 'dark') {
-          footer.classList.add('bg-light', 'text-dark')
+      if(footer != null) {
+          footer.classList.remove('bg-light', 'bg-dark', 'text-light', 'text-dark')
+          if(selectedTheme === 'dark') {
+              footer.classList.add('bg-light', 'text-dark')
+          }
+          else {
+              footer.classList.add('bg-dark', 'text-light')
+          }
       }
-      else {
-          footer.classList.add('bg-dark', 'text-light')
+      if(logArea != null) {
+          logArea.classList.remove('pailer-data-light', 'pailer-data-dark')
+          if(selectedTheme === 'dark') {
+              logArea.classList.add('.pailer-data-dark')
+          }
+          else {
+              logArea.classList.add('.pailer-data-light')
+          }
       }
   }
 

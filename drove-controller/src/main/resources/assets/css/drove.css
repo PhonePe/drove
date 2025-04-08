@@ -40,19 +40,19 @@ a {
 }
 
 .pailer-data {
-    color: white;
     font-family: monospace;
-    background: #212222;
     white-space: pre-wrap !important;
     padding: 1rem;
 }
 
-.pailer-syslog-option {
+.pailer-data-dark {
     color: white;
-    background: darkgray;
-    left: 5px;
-    top: 5px;
-    display: block;
+    background: #212222;
+}
+
+.pailer-data-light {
+    color: #212222;
+    background: white;
 }
 
 .pailer-data-container {
