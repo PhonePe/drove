@@ -18,6 +18,7 @@ package com.phonepe.drove.controller.statemachine.localservice;
 
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.common.actions.AsyncAction;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
@@ -27,8 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.Objects;
-
-import static com.phonepe.drove.models.localservice.LocalServiceState.*;
 
 /**
  *
@@ -61,11 +60,8 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             String errorMessage) {
         val service = Objects.requireNonNull(stateDB.service(currentState.getData().getServiceId()).orElse(null));
-        val state = switch (service.getActivationState()) {
-            case ACTIVE -> ACTIVE;
-            case CONFIG_TESTING -> CONFIG_TESTING;
-            case INACTIVE -> INACTIVE;
-        };
+        val state = ControllerUtils.serviceActivationStateToSMState(service.getActivationState());
         return StateData.create(state, service, errorMessage) ;
     }
+
 }

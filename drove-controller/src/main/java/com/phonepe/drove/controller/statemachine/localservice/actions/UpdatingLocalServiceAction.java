@@ -19,12 +19,14 @@ package com.phonepe.drove.controller.statemachine.localservice.actions;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.OperationDrivenLocalServiceAction;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
 
@@ -48,10 +50,9 @@ public abstract class UpdatingLocalServiceAction extends OperationDrivenLocalSer
                     }
                     return existing;
                 })
-                .map(service -> switch (service.getActivationState()) {
-                    case ACTIVE -> StateData.create(ACTIVE, service);
-                    case CONFIG_TESTING -> StateData.create(CONFIG_TESTING, service);
-                    case INACTIVE -> StateData.create(INACTIVE, service);
+                .map(service -> {
+                    val state = ControllerUtils.serviceActivationStateToSMState(service.getActivationState());
+                    return StateData.create(state, service);
                 })
                 .orElse(StateData.from(currentState, DESTROYED));
     }

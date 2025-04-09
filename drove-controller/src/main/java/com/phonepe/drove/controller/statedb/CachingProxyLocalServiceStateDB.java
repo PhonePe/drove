@@ -208,6 +208,21 @@ public class CachingProxyLocalServiceStateDB implements LocalServiceStateDB {
         }
     }
 
+    @Override
+    public long markStaleInstances(String serviceId) {
+        val stamp = lock.writeLock();
+        try {
+            val count = root.markStaleInstances(serviceId);
+            if (count > 0) {
+                reloadInstancesForService(serviceId);
+            }
+            return count;
+        }
+        finally {
+            lock.unlock(stamp);
+        }
+    }
+
     private void purge(boolean leader) {
         val stamp = lock.writeLock();
         try {

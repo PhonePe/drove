@@ -29,6 +29,7 @@ import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAsyncAction;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -274,10 +275,6 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                 return StateData.from(currentState, LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED);
             }
         }
-        return StateData.from(currentState, switch (activationState) {
-            case ACTIVE -> LocalServiceState.ACTIVE;
-            case CONFIG_TESTING -> LocalServiceState.CONFIG_TESTING;
-            case INACTIVE -> LocalServiceState.INACTIVE;
-        });
+        return StateData.from(currentState, ControllerUtils.serviceActivationStateToSMState(activationState));
     }
 }

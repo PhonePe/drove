@@ -59,8 +59,10 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.*;
 import com.phonepe.drove.models.operation.localserviceops.*;
 import com.phonepe.drove.models.operation.ops.*;
@@ -82,6 +84,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
+import static com.phonepe.drove.models.localservice.LocalServiceState.*;
 
 /**
  *
@@ -899,5 +902,13 @@ public class ControllerUtils {
             actualTimeout = maxTimeout;
         }
         return actualTimeout;
+    }
+
+    public static LocalServiceState serviceActivationStateToSMState(ActivationState activationState) {
+        return switch (activationState) {
+            case ACTIVE -> ACTIVE;
+            case CONFIG_TESTING -> CONFIG_TESTING;
+            case INACTIVE -> INACTIVE;
+        };
     }
 }

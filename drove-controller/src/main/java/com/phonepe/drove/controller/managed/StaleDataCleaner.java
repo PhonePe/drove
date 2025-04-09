@@ -245,7 +245,7 @@ public class StaleDataCleaner implements Managed {
                             continue;
                         }
                         val instanceId = instanceInfo.getInstanceId();
-                        if (instanceInfoDB.deleteInstanceState(serviceId, instanceId)) {
+                        if (localServiceStateDB.deleteInstanceState(serviceId, instanceId)) {
                             log.info("Deleted stale service instance info: {}/{}", serviceId, instanceId);
                         }
                         else {

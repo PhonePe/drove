@@ -20,11 +20,9 @@ import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import lombok.val;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -82,5 +80,23 @@ public class InMemoryLocalServiceStateDB implements LocalServiceStateDB {
     public boolean updateInstanceState(String serviceId, String instanceId, LocalServiceInstanceInfo instanceInfo) {
         instances.computeIfAbsent(serviceId, sId -> new ConcurrentHashMap<>()).put(instanceId, instanceInfo);
         return true;
+    }
+
+    @Override
+    public long markStaleInstances(String serviceId) {
+        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        //Find all instances in active states that have not been updated in stipulated time and move them to unknown
+        // state
+        val instances = this.instances.getOrDefault(serviceId, Map.of()).values().stream()
+                .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState())
+                        && instanceInfo.getUpdated().before(validUpdateDate))
+                .toList();
+
+        instances.forEach(instanceInfo -> updateInstanceState(serviceId,
+                                                              instanceInfo.getInstanceId(),
+                                                              instanceInfo.withState(LocalServiceInstanceState.LOST)
+                                                                      .withErrorMessage("Instance lost")
+                                                                      .withUpdated(new Date())));
+        return instances.size();
     }
 }

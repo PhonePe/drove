@@ -188,7 +188,9 @@ public class ResponseEngine {
         val services = localServiceStateDB.services(from, size);
         return success(services.stream()
                                .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
-                                                                     info -> toLocalServiceSummary(info, instancesForService(info.getServiceId())))));
+                                                                     info -> toLocalServiceSummary(info,
+                                                                                                   instancesForService(
+                                                                                                           info.getServiceId())))));
     }
 
     public ApiResponse<LocalServiceSummary> localService(final String serviceId) {
@@ -206,7 +208,9 @@ public class ResponseEngine {
                 .orElse(localServiceNotFoundFailure(serviceId));
     }
 
-    public ApiResponse<List<LocalServiceInstanceInfo>> localServiceInstances(final String serviceId, final Set<LocalServiceInstanceState> state) {
+    public ApiResponse<List<LocalServiceInstanceInfo>> localServiceInstances(
+            final String serviceId,
+            final Set<LocalServiceInstanceState> state) {
         val checkStates = null == state || state.isEmpty()
                           ? LocalServiceInstanceState.ACTIVE_STATES
                           : state;
@@ -216,7 +220,9 @@ public class ResponseEngine {
                                .toList());
     }
 
-    public ApiResponse<LocalServiceInstanceInfo> localServiceInstanceDetails(final String serviceId, final String instanceId) {
+    public ApiResponse<LocalServiceInstanceInfo> localServiceInstanceDetails(
+            final String serviceId,
+            final String instanceId) {
         return localServiceStateDB.instance(serviceId, instanceId)
                 .map(ApiResponse::success)
                 .orElseGet(() -> failure("No such local service instance " + serviceId + "/" + instanceId));
@@ -245,11 +251,11 @@ public class ResponseEngine {
         var liveLocalServices = 0;
         var allLocalServices = 0;
         for (val localServiceInfo : localServiceStateDB.services(0, Integer.MAX_VALUE)) {
-            liveLocalServices += LocalServiceState.ACTIVE
-                                         .equals(localServiceEngine.currentState(localServiceInfo.getServiceId())
-                                                                                         .orElse(LocalServiceState.DESTROYED))
-                                ? 1
-                                : 0;
+            liveLocalServices += LocalServiceState.RESOURCE_USING_STATES
+                                         .contains(localServiceEngine.currentState(localServiceInfo.getServiceId())
+                                                           .orElse(LocalServiceState.DESTROYED))
+                                 ? 1
+                                 : 0;
             allLocalServices++;
         }
         val resourceSummary = ControllerUtils.summarizeResources(clusterResourcesDB.currentSnapshot(true));

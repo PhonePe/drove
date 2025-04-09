@@ -140,6 +140,8 @@ class LocalServiceStateDBTest extends ControllerTestBase {
         assertTrue(db.instances(serviceId, EnumSet.of(LocalServiceInstanceState.HEALTHY), false).isEmpty());
         assertFalse(db.instances(serviceId, EnumSet.of(LocalServiceInstanceState.HEALTHY), true).isEmpty());
 
+        db.markStaleInstances(serviceId);
+        assertTrue(db.instances(serviceId, EnumSet.of(LocalServiceInstanceState.HEALTHY), true).isEmpty());
 
     }
 

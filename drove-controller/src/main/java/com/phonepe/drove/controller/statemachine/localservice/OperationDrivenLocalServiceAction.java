@@ -23,16 +23,24 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.serviceActivationStateToSMState;
+
 /**
  *
  */
 @Slf4j
-public abstract class OperationDrivenLocalServiceAction extends OperationDrivenAction<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation> {
+public abstract class OperationDrivenLocalServiceAction extends OperationDrivenAction<LocalServiceInfo,
+        LocalServiceState, LocalServiceActionContext, LocalServiceOperation> {
 
     @Override
     protected StateData<LocalServiceState, LocalServiceInfo> errorState(
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             String message) {
+        if (currentState.getData() != null) {
+            return StateData.errorFrom(currentState,
+                                       serviceActivationStateToSMState(currentState.getData().getActivationState()),
+                                       message);
+        }
         return StateData.errorFrom(currentState, LocalServiceState.ACTIVE, message);
     }
 

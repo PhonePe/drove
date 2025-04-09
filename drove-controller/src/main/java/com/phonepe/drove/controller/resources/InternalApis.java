@@ -96,7 +96,7 @@ public class InternalApis {
             val currState = localServiceEngine.currentState(localServiceInfo.getServiceId())
                     .orElse(LocalServiceState.DESTROYED);
             val spec = localServiceInfo.getSpec();
-            if(LocalServiceState.ACTIVE.equals(currState)) {
+            if(LocalServiceState.RESOURCE_USING_STATES.contains(currState)) {
                 val instancesPerNode = localServiceInfo.getInstancesPerHost();
                 requiredCPU += ControllerUtils.totalCPU(spec, instancesPerNode);
                 requiredMemory+= ControllerUtils.totalMemory(spec, instancesPerNode);

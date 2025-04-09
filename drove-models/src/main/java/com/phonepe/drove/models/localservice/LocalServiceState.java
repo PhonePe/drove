@@ -18,6 +18,8 @@ package com.phonepe.drove.models.localservice;
 
 import lombok.Getter;
 
+import java.util.Set;
+
 /**
  * State of a service running on executor
  */
@@ -38,6 +40,8 @@ public enum LocalServiceState {
     UPDATING_INSTANCES_COUNT(false),
     DESTROY_REQUESTED(false),
     DESTROYED(true);
+
+    public static final Set<LocalServiceState> RESOURCE_USING_STATES = Set.of(ACTIVE, CONFIG_TESTING);
 
     private final boolean terminal;
 

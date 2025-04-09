@@ -61,4 +61,6 @@ public interface LocalServiceStateDB {
 
     boolean updateInstanceState(String serviceId, String instanceId, LocalServiceInstanceInfo instanceInfo);
 
+    long markStaleInstances(String serviceId);
+
 }

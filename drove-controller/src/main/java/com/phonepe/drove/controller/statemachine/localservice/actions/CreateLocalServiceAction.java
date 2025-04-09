@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.statemachine.localservice.actions;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.OperationDrivenLocalServiceAction;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
@@ -57,11 +58,7 @@ public class CreateLocalServiceAction extends OperationDrivenLocalServiceAction 
             }
         }
         else { //Will be hit in recovery path
-            val toState = switch (existing.getActivationState()) {
-                case ACTIVE -> LocalServiceState.ACTIVE;
-                case CONFIG_TESTING -> LocalServiceState.CONFIG_TESTING;
-                case INACTIVE -> LocalServiceState.INACTIVE;
-            };
+            val toState = ControllerUtils.serviceActivationStateToSMState(existing.getActivationState());
             return StateData.create(toState, existing);
         }
         //Should not ever happen

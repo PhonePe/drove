@@ -28,7 +28,10 @@ import org.apache.curator.framework.CuratorFramework;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
@@ -127,6 +130,29 @@ public class ZKLocalServiceStateDB implements LocalServiceStateDB {
                            instancePath(serviceId, instanceId),
                            mapper,
                            instanceInfo);
+    }
+
+    @Override
+    @SneakyThrows
+    @MonitoredFunction
+    public long markStaleInstances(String serviceId) {
+        val validUpdateDate = new Date(new Date().getTime() - MAX_ACCEPTABLE_UPDATE_INTERVAL.toMillis());
+        //Find all instances in active states that have not been updated in stipulated time and move them to unknown state
+        val instances = listInstances(serviceId,
+                                      0,
+                                      Integer.MAX_VALUE,
+                                      instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState())
+                                              && instanceInfo.getUpdated().before(validUpdateDate));
+        instances.forEach(instanceInfo -> {
+            log.warn("Found stale service instance {}/{}. Current state: {} Last updated at: {}",
+                     serviceId, instanceInfo.getInstanceId(), instanceInfo.getState(), instanceInfo.getUpdated());
+            updateInstanceState(serviceId,
+                                instanceInfo.getInstanceId(),
+                                instanceInfo.withState(LocalServiceInstanceState.LOST)
+                                        .withErrorMessage("Instance lost")
+                                        .withUpdated(new Date()));
+        });
+        return instances.size();
     }
 
     @SneakyThrows

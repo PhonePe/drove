@@ -157,7 +157,15 @@ public class LocalServiceMonitor implements Managed {
         });
 
         handleServiceInstances(services, liveExecutors);
-
+        services.keySet().forEach(serviceId -> {
+            val numStale = stateDB.markStaleInstances(serviceId);
+            if(numStale > 0) {
+                log.info("Marked {} instances stale for service {}", numStale, serviceId);
+            }
+            else {
+                log.debug("No stale instances found for service: {}", serviceId);
+            }
+        });
         //Now kill all service instances running on blacklisted executors
         //This _could_ be done in adjust instances, it is more efficient to generate commands here in a single shot
         val instancesToBeStopped = blacklistedExecutors.stream()
@@ -189,15 +197,15 @@ public class LocalServiceMonitor implements Managed {
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
                     }
                 }
-                case INACTIVE -> {
-                    if (!currInstances.isEmpty()) {
-                        log.info("Instances found for inactive service: {}. Need to be scaled", serviceId);
-                        notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
-                    }
-                }
                 case CONFIG_TESTING -> {
                     if (!liveExecutors.isEmpty() && currInstances.size() != 1) {
                         log.info("Testing instance needs to be spun up for {}.", serviceId);
+                        notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
+                    }
+                }
+                case INACTIVE -> {
+                    if (!currInstances.isEmpty()) {
+                        log.info("Instances found for inactive service: {}. Need to be scaled", serviceId);
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
                     }
                 }
