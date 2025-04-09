@@ -79,7 +79,7 @@ public class DockerUtils {
         val timeout = unitSpec.getExecutable()
                 .accept(dockerCoordinates -> Objects.requireNonNullElse(dockerCoordinates.getDockerPullTimeout(),
                                                                         DockerCoordinates.DEFAULT_PULL_TIMEOUT))
-                        .toMilliseconds();
+                .toMilliseconds();
         log.info("Pulling docker image: {}", image);
         val pullImageCmd = client.pullImageCmd(image);
         if (null == dockerAuthConfig) {
@@ -231,6 +231,18 @@ public class DockerUtils {
             if (!Objects.requireNonNullElse(deploymentUnitSpec.getArgs(), List.<String>of()).isEmpty()) {
                 containerCmd.withCmd(deploymentUnitSpec.getArgs())
                         .withArgsEscaped(true);
+            }
+            val userSpec = null == deploymentUnitSpec.getUserSpec()
+                           ? executorOptions.getDefaultUserSpec()
+                           : deploymentUnitSpec.getUserSpec();
+            if (null != userSpec) {
+                var user = userSpec.getUser();
+                if (!Strings.isNullOrEmpty(userSpec.getGroup())) {
+                    user = user + ":" + userSpec.getGroup();
+                }
+                if (!Strings.isNullOrEmpty(user)) {
+                    containerCmd.withUser(user);
+                }
             }
             val containerId = containerCmd
                     .withHostConfig(hostConfig)

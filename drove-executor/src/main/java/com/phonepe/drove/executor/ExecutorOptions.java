@@ -16,12 +16,16 @@
 
 package com.phonepe.drove.executor;
 
+import com.phonepe.drove.models.application.nonroot.UserSpec;
 import io.dropwizard.util.DataSize;
 import io.dropwizard.util.DataSizeUnit;
 import io.dropwizard.util.Duration;
 import io.dropwizard.validation.DataSizeRange;
 import io.dropwizard.validation.DurationRange;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.Range;
@@ -53,7 +57,8 @@ public class ExecutorOptions {
                                                                       DEFAULT_LOG_CACHE_SIZE,
                                                                       DEFAULT_LOG_CACHE_COUNT,
                                                                       DEFAULT_CONTAINER_COMMAND_TIMEOUT,
-                                                                      DEFAULT_DOCKER_SOCKET_PATH);
+                                                                      DEFAULT_DOCKER_SOCKET_PATH,
+                                                                      null);
 
     @Length(max = 255)
     String hostname;
@@ -76,4 +81,7 @@ public class ExecutorOptions {
     Duration containerCommandTimeout;
 
     String dockerSocketPath;
+
+    UserSpec defaultUserSpec;
+
 }

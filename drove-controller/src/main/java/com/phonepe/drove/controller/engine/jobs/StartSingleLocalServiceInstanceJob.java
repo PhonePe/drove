@@ -175,6 +175,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                       localServiceSpec.getArgs(),
                                                       localServiceSpec.getDevices(),
                                                       localServiceSpec.getPreShutdown(),
+                                                      localServiceSpec.getUserSpec(),
                                                       generateAppInstanceToken(
                                                               node,
                                                               serviceId,

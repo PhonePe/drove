@@ -24,6 +24,7 @@ import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
+import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.config.ConfigSpec;
@@ -100,6 +101,9 @@ public class LocalServiceSpec implements DeploymentSpec {
 
     @Valid
     PreShutdownSpec preShutdown;
+
+    @Valid
+    UserSpec userSpec;
 
     @Override
     public <T> T accept(DeploymentSpecVisitor<T> visitor) {

@@ -20,6 +20,7 @@ import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
+import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 
@@ -38,5 +39,6 @@ public interface DeploymentUnitSpec {
     Map<String, String> getEnv();
     List<String> getArgs();
     List<DeviceSpec> getDevices();
+    UserSpec getUserSpec();
     <T> T accept(final DeploymentUnitSpecVisitor<T> visitor);
 }

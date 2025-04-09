@@ -49,6 +49,11 @@ options:
   cacheFileCount: 3
   # See podman notes to create podman rootless socket
   # dockerSocketPath: /run/user/1000/podman/podman.sock
+  defaultUserSpec:
+    user: 1000
+    group: 1000
+
+#   workingDir: /tmp/
 
 zookeeper:
   connectionString: localhost:2181

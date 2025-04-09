@@ -151,6 +151,7 @@ class LocalServiceInstanceEngineTest extends AbstractExecutorEngineEnabledTestBa
                                                 null,
                                                 Collections.emptyList(),
                                                 null,
+                                                null,
                                                 "TestToken");
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),

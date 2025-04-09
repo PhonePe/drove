@@ -161,6 +161,7 @@ public class ExecutorTestingUtils {
                                                                        new CmdCheckModeSpec("SomeWrongCommand")
                                                                       ),
                                                                Duration.seconds(1)),
+                                           null,
                                            "TestToken");
     }
 
@@ -190,7 +191,8 @@ public class ExecutorTestingUtils {
                                     null,
                                     List.of(DirectDeviceSpec.builder()
                                                     .pathOnHost("/dev/random")
-                                                    .build()));
+                                                    .build()),
+                                    null);
     }
 
     public static LocalServiceInstanceSpec testLocalServiceInstanceSpec() {
@@ -266,6 +268,7 @@ public class ExecutorTestingUtils {
                                                                        new CmdCheckModeSpec("SomeWrongCommand")
                                                                       ),
                                                                Duration.seconds(1)),
+                                           null,
                                            "TestToken");
     }
 

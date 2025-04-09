@@ -126,6 +126,7 @@ public class ControllerTestUtils {
                                    null,
                                    Collections.emptyList(),
                                    new ExposureSpec("test.appform.io", "main", ExposureMode.ALL),
+                                   null,
                                    null);
     }
 
@@ -153,7 +154,8 @@ public class ControllerTestUtils {
                             Collections.emptyMap(),
                             Collections.emptyMap(),
                             null,
-                            Collections.emptyList());
+                            Collections.emptyList(),
+                            null);
     }
 
     public static LocalServiceSpec localServiceSpec() {
@@ -204,6 +206,7 @@ public class ControllerTestUtils {
                                     Collections.emptyMap(),
                                     null,
                                     Collections.emptyList(),
+                                    null,
                                     null);
     }
 

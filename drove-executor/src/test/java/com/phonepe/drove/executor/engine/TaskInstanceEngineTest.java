@@ -294,7 +294,8 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                         LocalLoggingSpec.DEFAULT,
                                         Collections.emptyMap(),
                                         null,
-                                        Collections.emptyList());
+                                        Collections.emptyList(),
+                                        null);
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
                                                         executorAddress,

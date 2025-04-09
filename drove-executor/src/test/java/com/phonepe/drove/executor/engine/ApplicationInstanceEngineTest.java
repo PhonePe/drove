@@ -154,6 +154,7 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                null,
                                                Collections.emptyList(),
                                                null,
+                                               null,
                                                "TestToken");
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),

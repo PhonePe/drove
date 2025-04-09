@@ -161,6 +161,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 null,
                 Collections.emptyList(),
                 null,
+                null,
                 "TestToken");
         val executorId = CommonUtils.executorId(3000, "test-host");
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT, false);

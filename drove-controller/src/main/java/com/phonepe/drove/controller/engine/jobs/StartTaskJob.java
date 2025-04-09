@@ -170,7 +170,8 @@ public class StartTaskJob implements Job<Boolean> {
                                               taskSpec.getLogging(),
                                               taskSpec.getEnv(),
                                               taskSpec.getArgs(),
-                                              taskSpec.getDevices());
+                                              taskSpec.getDevices(),
+                                              taskSpec.getUserSpec());
         val startMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
                                                 new ExecutorAddress(node.getExecutorId(),
                                                                             node.getHostname(),
