@@ -50,6 +50,7 @@ public abstract class UpdatingLocalServiceAction extends OperationDrivenLocalSer
                 })
                 .map(service -> switch (service.getActivationState()) {
                     case ACTIVE -> StateData.create(ACTIVE, service);
+                    case CONFIG_TESTING -> StateData.create(CONFIG_TESTING, service);
                     case INACTIVE -> StateData.create(INACTIVE, service);
                 })
                 .orElse(StateData.from(currentState, DESTROYED));

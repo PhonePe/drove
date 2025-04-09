@@ -141,6 +141,63 @@ class LocalServiceMonitorTest {
 
     @Test
     @SneakyThrows
+    void testConfTestScaleUp() {
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+        when(clusterStateDB.currentState())
+                .thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL,
+                                                             Date.from(Instant.now().minus(1, ChronoUnit.DAYS)))));
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        final var instancesPerHost = 3;
+        when(stateDB.services(0, Integer.MAX_VALUE))
+                .thenReturn(List.of(new LocalServiceInfo(serviceId,
+                                                         spec,
+                                                         instancesPerHost,
+                                                         ActivationState.CONFIG_TESTING,
+                                                         Date.from(Instant.now().minus(1, ChronoUnit.HOURS)),
+                                                         Date.from(Instant.now()))));
+        when(localServiceEngine.currentState(serviceId)).thenReturn(Optional.of(LocalServiceState.CONFIG_TESTING));
+        val numExecutors = 5;
+        val liveExecutors = IntStream.range(0, numExecutors)
+                .mapToObj(i -> ControllerTestUtils.executorHost(8000 + i))
+                .toList();
+        when(clusterResourcesDB.currentSnapshot(false)).thenReturn(liveExecutors);
+        when(clusterResourcesDB.isBlacklisted(anyString())).thenReturn(false);
+        val adjustCalled = new AtomicInteger(0);
+        val instances = List.of(ControllerTestUtils.generateInstanceInfo(
+                serviceId,
+                spec,
+                1, LocalServiceInstanceState.HEALTHY));
+        //Return no instances at start, then correct instances when called again
+        when(stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false))
+                .thenAnswer(invocationOnMock -> switch (adjustCalled.get()) {
+                    case 0 -> List.of();
+                    case 1 -> instances;
+                    default -> throw new IllegalStateException("Adjust called more than once: " + adjustCalled.get());
+                });
+        when(localServiceEngine.handleOperation(any(LocalServiceOperation.class)))
+                .thenAnswer(invocationOnMock -> {
+                    val op = (LocalServiceOperation) invocationOnMock.getArgument(0);
+                    if (op.getType() == LocalServiceOperationType.ADJUST_INSTANCES) {
+                        if(adjustCalled.getAndIncrement() == 0) {
+                            return ValidationResult.failure("Test failure");
+                        }
+                        return ValidationResult.success();
+                    }
+                    throw new IllegalStateException("Unexpected operation of type: " + op.getType());
+                });
+        try {
+            monitor.start();
+            CommonTestUtils.delay(Duration.ofSeconds(1)); //Wait enough time for checks to be hit more than once
+            assertEquals(1, adjustCalled.get()); //ensure adjust is called only once
+        }
+        finally {
+            monitor.stop();
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void testInactiveScaleDown() {
         when(leadershipEnsurer.isLeader()).thenReturn(true);
         when(clusterStateDB.currentState())

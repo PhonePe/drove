@@ -28,8 +28,7 @@ import lombok.val;
 
 import java.util.Objects;
 
-import static com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE;
-import static com.phonepe.drove.models.localservice.LocalServiceState.INACTIVE;
+import static com.phonepe.drove.models.localservice.LocalServiceState.*;
 
 /**
  *
@@ -64,6 +63,7 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
         val service = Objects.requireNonNull(stateDB.service(currentState.getData().getServiceId()).orElse(null));
         val state = switch (service.getActivationState()) {
             case ACTIVE -> ACTIVE;
+            case CONFIG_TESTING -> CONFIG_TESTING;
             case INACTIVE -> INACTIVE;
         };
         return StateData.create(state, service, errorMessage) ;

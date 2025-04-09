@@ -22,6 +22,7 @@ package com.phonepe.drove.models.operation;
 public enum LocalServiceOperationType {
     CREATE,
     ADJUST_INSTANCES,
+    DEPLOY_TEST_INSTANCE,
     DEACTIVATE,
     REPLACE_INSTANCES,
     RESTART,

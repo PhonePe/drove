@@ -164,6 +164,22 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                                           .addJob(jobList)
                                           .build());
             }
+            case CONFIG_TESTING -> {
+                Collections.shuffle(liveExecutors);
+                val executor = liveExecutors.stream().findAny().orElse(null);
+                if(executor == null) {
+                    log.info("There are no executors on the cluster. Will not create any instances");
+                    yield Optional.empty();
+                }
+                log.info("Will spin up test instance on {}", executor.getExecutorId());
+                val schedulingSessionId = UUID.randomUUID().toString();
+                yield Optional.of(JobTopology.<Boolean>builder()
+                                          .addJob(createNewInstanceJobs(Map.of(executor.getExecutorId(), 1),
+                                                                        currInfo,
+                                                                        clusterOpSpec,
+                                                                        schedulingSessionId))
+                                          .build());
+            }
             case INACTIVE -> {
                 val extraInstances = liveExecutors.stream()
                         .flatMap(executorHostInfo -> Objects.requireNonNullElse(
@@ -218,7 +234,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
 
     @NotNull
     private List<Job<Boolean>> createNewInstanceJobs(
-            HashMap<String, Integer> newInstancesPerExecutor,
+            Map<String, Integer> newInstancesPerExecutor,
             LocalServiceInfo currInfo,
             ClusterOpSpec clusterOpSpec,
             String schedulingSessionId) {
@@ -253,13 +269,14 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         log.debug("Execution result: {}", executionResult);
         val activationState = currentState.getData().getActivationState();
         if (executionResult.isCancelled()) {
-            if (activationState.equals(ActivationState.ACTIVE)) {
+            if (activationState.equals(ActivationState.ACTIVE) || activationState.equals(ActivationState.CONFIG_TESTING)) {
                 log.info("Job has been cancelled for some reason. Will request deactivation for safety");
                 return StateData.from(currentState, LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED);
             }
         }
         return StateData.from(currentState, switch (activationState) {
             case ACTIVE -> LocalServiceState.ACTIVE;
+            case CONFIG_TESTING -> LocalServiceState.CONFIG_TESTING;
             case INACTIVE -> LocalServiceState.INACTIVE;
         });
     }

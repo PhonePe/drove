@@ -30,17 +30,32 @@ import static com.phonepe.drove.models.localservice.LocalServiceState.*;
 /**
  *
  */
-public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
-    private static final List<Transition<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>>> TRANSITIONS;
+public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, LocalServiceOperation, LocalServiceState
+        , LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+        LocalServiceOperation>> {
+    private static final List<Transition<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+            LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+            LocalServiceOperation>>> TRANSITIONS;
 
     static {
         TRANSITIONS = List.of(
                 new Transition<>(INIT,
                                  CreateLocalServiceAction.class,
                                  INACTIVE,
+                                 CONFIG_TESTING,
                                  ACTIVE,
                                  DESTROYED),
                 new Transition<>(ACTIVE,
+                                 RoutingLocalServiceAction.class,
+                                 ACTIVATION_REQUESTED,
+                                 DEACTIVATION_REQUESTED,
+                                 ADJUSTING_INSTANCES,
+                                 REPLACING_INSTANCES,
+                                 UPDATING_INSTANCES_COUNT,
+                                 STOPPING_INSTANCES,
+                                 DESTROY_REQUESTED,
+                                 DESTROYED),
+                new Transition<>(CONFIG_TESTING,
                                  RoutingLocalServiceAction.class,
                                  ACTIVATION_REQUESTED,
                                  DEACTIVATION_REQUESTED,
@@ -54,6 +69,7 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
                                  RoutingLocalServiceAction.class,
                                  INACTIVE,
                                  ACTIVATION_REQUESTED,
+                                 CONFIG_TESTING_REQUESTED,
                                  DEACTIVATION_REQUESTED,
                                  DESTROY_REQUESTED,
                                  ADJUSTING_INSTANCES,
@@ -64,36 +80,48 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
                 new Transition<>(ACTIVATION_REQUESTED,
                                  ActivateLocalServiceAction.class,
                                  ACTIVE,
+                                 CONFIG_TESTING,
                                  INACTIVE, //In case update fails
                                  DESTROYED),
                 new Transition<>(EMERGENCY_DEACTIVATION_REQUESTED,
                                  EmergencyDeactivationAction.class,
                                  DEACTIVATION_REQUESTED,
                                  EMERGENCY_DEACTIVATION_REQUESTED),
+                new Transition<>(CONFIG_TESTING_REQUESTED,
+                                 ConfigTestingLocalServiceAction.class,
+                                 ACTIVE, //In case update fails
+                                 CONFIG_TESTING,
+                                 INACTIVE,
+                                 DESTROYED),
                 new Transition<>(DEACTIVATION_REQUESTED,
                                  DeactivateLocalServiceAction.class,
                                  ACTIVE, //In case update fails
+                                 CONFIG_TESTING,
                                  INACTIVE,
                                  DESTROYED),
                 new Transition<>(ADJUSTING_INSTANCES,
                                  AdjustInstancesLocalServiceAction.class,
                                  ACTIVE,
+                                 CONFIG_TESTING,
                                  INACTIVE,
                                  EMERGENCY_DEACTIVATION_REQUESTED),
                 new Transition<>(REPLACING_INSTANCES,
                                  ReplaceInstancesLocalServiceAction.class,
                                  REPLACING_INSTANCES,
                                  ACTIVE,
+                                 CONFIG_TESTING,
                                  INACTIVE,
                                  EMERGENCY_DEACTIVATION_REQUESTED),
                 new Transition<>(STOPPING_INSTANCES,
                                  StopInstancesLocalServiceAction.class,
                                  REPLACING_INSTANCES,
                                  ACTIVE,
+                                 CONFIG_TESTING,
                                  INACTIVE),
                 new Transition<>(UPDATING_INSTANCES_COUNT,
                                  UpdateLocalServiceInstanceCountAction.class,
                                  ACTIVE,
+                                 CONFIG_TESTING,
                                  INACTIVE),
                 new Transition<>(DESTROY_REQUESTED,
                                  DestroyLocalServiceAction.class,
@@ -103,7 +131,8 @@ public class LocalServiceStateMachine extends StateMachine<LocalServiceInfo, Loc
     public LocalServiceStateMachine(
             @NonNull StateData<LocalServiceState, LocalServiceInfo> initalState,
             LocalServiceActionContext context,
-            ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> actionFactory) {
+            ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext,
+                    Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> actionFactory) {
         super(initalState, context, actionFactory, TRANSITIONS);
     }
 

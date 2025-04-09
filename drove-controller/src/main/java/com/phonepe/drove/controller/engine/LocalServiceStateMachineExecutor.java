@@ -34,15 +34,21 @@ import java.util.concurrent.ExecutorService;
  *
  */
 @Slf4j
-public class LocalServiceStateMachineExecutor extends StateMachineExecutor<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>> {
-    private static final Set<LocalServiceState> PAUSED_STATES = EnumSet.of(LocalServiceState.ACTIVE, LocalServiceState.INACTIVE);
+public class LocalServiceStateMachineExecutor extends StateMachineExecutor<LocalServiceInfo, LocalServiceOperation,
+        LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState,
+        LocalServiceActionContext, LocalServiceOperation>> {
+    private static final Set<LocalServiceState> PAUSED_STATES = EnumSet.of(LocalServiceState.ACTIVE,
+                                                                           LocalServiceState.CONFIG_TESTING,
+                                                                           LocalServiceState.INACTIVE);
 
     public LocalServiceStateMachineExecutor(
             String appId,
             LocalServiceStateMachine stateMachine,
             ExecutorService executorService,
             ControllerRetrySpecFactory retrySpecFactory,
-            ConsumingFireForgetSignal<StateMachineExecutor<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>>> stateMachineCompleted) {
+            ConsumingFireForgetSignal<StateMachineExecutor<LocalServiceInfo, LocalServiceOperation, LocalServiceState
+                    , LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState,
+                    LocalServiceActionContext, LocalServiceOperation>>> stateMachineCompleted) {
         super(JobType.LOCAL_SERVICE, appId, stateMachine, executorService, retrySpecFactory, stateMachineCompleted);
     }
 

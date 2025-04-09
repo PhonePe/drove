@@ -164,7 +164,9 @@ public class InternalApis {
             Set<String> lsInstances,
             Set<String> staleLSInstances) {
         val service = localServiceStateDB.service(serviceId);
-        if (service.isPresent() && service.get().getActivationState() == ActivationState.ACTIVE) {
+        if (service.isPresent()
+                && (service.get().getActivationState() == ActivationState.ACTIVE
+                || service.get().getActivationState() == ActivationState.CONFIG_TESTING)) {
             val extraInstances = service
                     .filter(serviceInfo -> serviceInfo.getInstancesPerHost() < instances.size())
                     .map(serviceInfo -> CommonUtils.sublist(instances,

@@ -59,6 +59,7 @@ public class CreateLocalServiceAction extends OperationDrivenLocalServiceAction 
         else { //Will be hit in recovery path
             val toState = switch (existing.getActivationState()) {
                 case ACTIVE -> LocalServiceState.ACTIVE;
+                case CONFIG_TESTING -> LocalServiceState.CONFIG_TESTING;
                 case INACTIVE -> LocalServiceState.INACTIVE;
             };
             return StateData.create(toState, existing);

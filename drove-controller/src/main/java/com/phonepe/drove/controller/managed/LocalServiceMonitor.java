@@ -42,6 +42,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,7 @@ public class LocalServiceMonitor implements Managed {
     private final LocalServiceStateDB stateDB;
     private final LocalServiceLifecycleManagementEngine localServiceEngine;
     private final LeadershipEnsurer leadershipEnsurer;
+    private final AtomicBoolean processingUnderway = new AtomicBoolean(false);
 
     @Inject
     @IgnoreInJacocoGeneratedReport
@@ -76,7 +78,7 @@ public class LocalServiceMonitor implements Managed {
              leadershipEnsurer,
              ScheduledSignal.builder()
                      .initialDelay(Duration.ofSeconds(5))
-                     .interval(Duration.ofSeconds(30))
+                     .interval(Duration.ofSeconds(5))
                      .build());
     }
 
@@ -110,11 +112,22 @@ public class LocalServiceMonitor implements Managed {
     }
 
     private void checkAllServices(Date date) {
-        checkAllServices();
+        if (processingUnderway.get()) {
+            log.debug("Local service check already in progress. Skipping this run");
+            return;
+        }
+        processingUnderway.set(true);
+        try {
+            checkAllServices();
+        }
+        finally {
+            processingUnderway.set(false);
+        }
         log.info("Local services check completed at {}", date);
     }
 
     private void checkAllServices() {
+
         if (!leadershipEnsurer.isLeader()) {
             log.info("Skipping local services check as I'm not the leader");
             return;
@@ -123,7 +136,7 @@ public class LocalServiceMonitor implements Managed {
             log.warn("Local service check skipped as cluster is in maintenance window");
             return;
         }
-        val relevantStates = EnumSet.of(LocalServiceState.ACTIVE, LocalServiceState.INACTIVE);
+        val relevantStates = EnumSet.of(LocalServiceState.ACTIVE, LocalServiceState.CONFIG_TESTING, LocalServiceState.INACTIVE);
         val services = stateDB.services(0, Integer.MAX_VALUE)
                 .stream()
                 .filter(serviceInfo -> relevantStates.contains(localServiceEngine.currentState(serviceInfo.getServiceId())
@@ -179,6 +192,12 @@ public class LocalServiceMonitor implements Managed {
                 case INACTIVE -> {
                     if (!currInstances.isEmpty()) {
                         log.info("Instances found for inactive service: {}. Need to be scaled", serviceId);
+                        notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
+                    }
+                }
+                case CONFIG_TESTING -> {
+                    if (!liveExecutors.isEmpty() && currInstances.size() != 1) {
+                        log.info("Testing instance needs to be spun up for {}.", serviceId);
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
                     }
                 }

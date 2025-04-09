@@ -32,6 +32,7 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "STOP", value = LocalServiceDeactivateOperation.class),
         @JsonSubTypes.Type(name = "RESTART", value = LocalServiceRestartOperation.class),
         @JsonSubTypes.Type(name = "ADJUST_INSTANCES", value = LocalServiceAdjustInstancesOperation.class),
+        @JsonSubTypes.Type(name = "DEPLOY_TEST_INSTANCE", value = LocalServiceDeployTestInstanceOperation.class),
         @JsonSubTypes.Type(name = "REPLACE_INSTANCES", value = LocalServiceReplaceInstancesOperation.class),
         @JsonSubTypes.Type(name = "STOP_INSTANCES", value = LocalServiceStopInstancesOperation.class),
         @JsonSubTypes.Type(name = "UPDATE_INSTANCE_COUNT", value = LocalServiceUpdateInstanceCountOperation.class),

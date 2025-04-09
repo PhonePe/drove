@@ -484,9 +484,11 @@
     function localServiceStateToHtml(state) {
         switch(state) {
             case 'INIT' : return '<span class="badge fw-bold bg-primary">Initializing</span>';
-            case 'INACTIVE' : return '<span class="badge fw-bold bg-info">Inactive</span>';
+            case 'INACTIVE' : return '<span class="badge fw-bold bg-secondary">Inactive</span>';
+            case 'CONFIG_TESTING' : return '<span class="badge fw-bold bg-info">Config Testing</span>';
             case 'ACTIVE' : return '<span class="badge fw-bold bg-success">Active</span>';
             case 'ACTIVATION_REQUESTED' : return '<span class="badge fw-bold bg-warning">Activation Requested</span>';
+            case 'CONFIG_TESTING_REQUESTED' : return '<span class="badge fw-bold bg-warning"> Config Test Requested</span>';
             case 'DEACTIVATION_REQUESTED' : return '<span class="badge fw-bold bg-warning">Deactivation Requested</span>';
             case 'ADJUSTING_INSTANCES' : return '<span class="badge fw-bold bg-warning">Adjusting Instances</span>';
             case 'REPLACING_INSTANCES' : return '<span class="badge fw-bold bg-warning">Replacing Instances</span>';

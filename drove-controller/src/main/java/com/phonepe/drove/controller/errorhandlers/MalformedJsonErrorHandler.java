@@ -22,6 +22,7 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,7 +32,7 @@ import java.util.Map;
 public class MalformedJsonErrorHandler implements ExceptionMapper<JsonProcessingException> {
     @Override
     public Response toResponse(JsonProcessingException exception) {
-        return ControllerUtils.badRequest(Map.of("validationErrors", exception.getOriginalMessage()),
-                                          "JSON validation failure");
+        return ControllerUtils.badRequest(Map.of("validationErrors", List.of(exception.getOriginalMessage())),
+                                                 "JSON validation failure");
     }
 }

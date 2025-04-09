@@ -66,6 +66,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             = ImmutableMap.<LocalServiceState, Set<LocalServiceOperationType>>builder()
             .put(LocalServiceState.INIT, Set.of())
             .put(LocalServiceState.ACTIVATION_REQUESTED, Set.of())
+            .put(LocalServiceState.CONFIG_TESTING_REQUESTED, Set.of())
             .put(LocalServiceState.DESTROY_REQUESTED, Set.of())
             .put(LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED, Set.of(DEACTIVATE))
             .put(LocalServiceState.DEACTIVATION_REQUESTED, Set.of())
@@ -73,7 +74,18 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             .put(LocalServiceState.REPLACING_INSTANCES, Set.of())
             .put(LocalServiceState.STOPPING_INSTANCES, Set.of())
             .put(LocalServiceState.DESTROYED, Set.of())
-            .put(LocalServiceState.INACTIVE, Set.of(ACTIVATE, ADJUST_INSTANCES, DESTROY, UPDATE_INSTANCE_COUNT))
+            .put(LocalServiceState.INACTIVE, Set.of(ACTIVATE,
+                                                    DEPLOY_TEST_INSTANCE,
+                                                    ADJUST_INSTANCES,
+                                                    DESTROY,
+                                                    UPDATE_INSTANCE_COUNT))
+            .put(LocalServiceState.CONFIG_TESTING,
+                 Set.of(ACTIVATE,
+                        DEACTIVATE,
+                        ADJUST_INSTANCES,
+                        REPLACE_INSTANCES,
+                        RESTART,
+                        STOP_INSTANCES))
             .put(LocalServiceState.ACTIVE,
                  Set.of(DEACTIVATE,
                         UPDATE_INSTANCE_COUNT,
@@ -225,6 +237,11 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             }
             return ValidationResult.success();
 
+        }
+
+        @Override
+        public ValidationResult visit(LocalServiceDeployTestInstanceOperation localServiceDeployTestInstanceOperation) {
+            return ValidationResult.success();
         }
 
         private List<String> filterInvalidIds(Collection<String> instances) {

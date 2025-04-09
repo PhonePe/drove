@@ -822,6 +822,11 @@ public class ControllerUtils {
             public String visit(LocalServiceStopInstancesOperation localServiceStopInstancesOperation) {
                 return localServiceStopInstancesOperation.getServiceId();
             }
+
+            @Override
+            public String visit(LocalServiceDeployTestInstanceOperation localServiceDeployTestInstanceOperation) {
+                return localServiceDeployTestInstanceOperation.getServiceId();
+            }
         });
     }
 
