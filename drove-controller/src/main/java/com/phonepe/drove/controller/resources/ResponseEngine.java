@@ -243,7 +243,7 @@ public class ResponseEngine {
             allApps++;
         }
         var liveTasks = 0;
-        for (val taskInfo : taskEngine.activeTasks(EnumSet.allOf(TaskState.class))) {
+        for (val taskInfo : taskEngine.tasks(EnumSet.allOf(TaskState.class))) {
             liveTasks += TaskState.ACTIVE_STATES.contains(taskInfo.getState())
                          ? 1
                          : 0;

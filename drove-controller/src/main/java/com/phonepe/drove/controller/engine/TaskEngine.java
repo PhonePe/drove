@@ -216,10 +216,10 @@ public class TaskEngine {
     }
 
     public List<TaskInfo> activeTasks() {
-        return activeTasks(TaskState.ACTIVE_STATES);
+        return tasks(TaskState.ACTIVE_STATES);
     }
 
-    public List<TaskInfo> activeTasks(Set<TaskState> states) {
+    public List<TaskInfo> tasks(Set<TaskState> states) {
         return taskDB.tasks(
                 runners.values()
                         .stream()
