@@ -166,8 +166,9 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                                           .build());
             }
             case CONFIG_TESTING -> {
-                Collections.shuffle(liveExecutors);
-                val executor = liveExecutors.stream().findAny().orElse(null);
+                final var executors = new ArrayList<>(liveExecutors);
+                Collections.shuffle(executors);
+                val executor = executors.stream().findAny().orElse(null);
                 if(executor == null) {
                     log.info("There are no executors on the cluster. Will not create any instances");
                     yield Optional.empty();
