@@ -67,7 +67,7 @@ options:
   staleAppAge: 2d
   staleInstanceAge: 1d
   staleTaskAge: 1d
-  clusterOpParallelism: 4
+  clusterOpParallelism: 32
   allowedMountDirs:
    - /tmp
    - /home

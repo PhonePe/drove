@@ -49,6 +49,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -65,6 +66,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
+    private final ThreadFactory threadFactory;
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
     private final ClusterOpSpec defaultClusterOpSpec;
@@ -77,7 +79,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
-            InstanceIdGenerator instanceIdGenerator,
+            InstanceIdGenerator instanceIdGenerator, ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller,
             ClusterOpSpec defaultClusterOpSpec) {
@@ -87,6 +89,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
@@ -162,7 +165,8 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                     yield Optional.empty();
                 }
                 yield Optional.of(JobTopology.<Boolean>builder()
-                                          .addJob(jobList)
+                                          .withThreadFactory(threadFactory)
+                                          .addParallel(clusterOpSpec.getParallelism(), jobList)
                                           .build());
             }
             case CONFIG_TESTING -> {
@@ -197,7 +201,9 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                 }
                 yield Optional.of(
                         JobTopology.<Boolean>builder()
-                                .addJob(createStopJobs(extraInstances, currInfo, clusterOpSpec, null))
+                                .withThreadFactory(threadFactory)
+                                .addParallel(clusterOpSpec.getParallelism(),
+                                             createStopJobs(extraInstances, currInfo, clusterOpSpec, null))
                                 .build());
             }
         };
