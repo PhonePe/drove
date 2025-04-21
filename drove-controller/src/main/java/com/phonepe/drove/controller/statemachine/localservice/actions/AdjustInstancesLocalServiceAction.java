@@ -278,11 +278,9 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
             JobExecutionResult<Boolean> executionResult) {
         log.debug("Execution result: {}", executionResult);
         val activationState = currentState.getData().getActivationState();
-        if (executionResult.isCancelled()) {
-            if (activationState.equals(ActivationState.ACTIVE) || activationState.equals(ActivationState.CONFIG_TESTING)) {
-                log.info("Job has been cancelled for some reason. Will request deactivation for safety");
-                return StateData.from(currentState, LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED);
-            }
+        if (executionResult.isCancelled() && activationState.equals(ActivationState.ACTIVE)) {
+            log.info("Job has been cancelled for some reason. Will request deactivation for safety");
+            return StateData.from(currentState, LocalServiceState.EMERGENCY_DEACTIVATION_REQUESTED);
         }
         return StateData.from(currentState, ControllerUtils.serviceActivationStateToSMState(activationState));
     }

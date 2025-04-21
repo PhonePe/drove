@@ -76,6 +76,7 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
         this.stateMachineCompleted = stateMachineCompleted;
     }
 
+    @SuppressWarnings("java:S1181")
     public void start() {
         currentState = executorService.submit(() -> {
             log.info("Monitor started for app: {}", deployableId);

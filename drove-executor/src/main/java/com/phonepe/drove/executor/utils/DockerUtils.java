@@ -410,8 +410,7 @@ public class DockerUtils {
         deviceSpecs.forEach(device -> device.accept(new DeviceSpecVisitor<Void>() {
             @Override
             public Void visit(DirectDeviceSpec directDeviceSpec) {
-                val cGroupPermissions = translateDevicePermissions(directDeviceSpec);
-                devices.add(new Device(cGroupPermissions,
+                devices.add(new Device(translateDevicePermissions(directDeviceSpec),
                                        Objects.requireNonNullElse(directDeviceSpec.getPathInContainer(),
                                                                   directDeviceSpec.getPathOnHost()),
                                        directDeviceSpec.getPathOnHost()));

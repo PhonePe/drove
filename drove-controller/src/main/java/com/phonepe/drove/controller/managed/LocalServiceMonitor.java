@@ -182,7 +182,7 @@ public class LocalServiceMonitor implements Managed {
         });
     }
 
-    @SuppressWarnings("java:S1301")
+    @SuppressWarnings({"java:S1301", "java:S131"})
     private void handleServiceInstances(
             Map<String, LocalServiceInfo> services,
             ArrayList<ExecutorHostInfo> liveExecutors) {
