@@ -48,6 +48,7 @@ import lombok.val;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
@@ -79,7 +80,8 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
             InstanceScheduler scheduler,
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
-            InstanceIdGenerator instanceIdGenerator, ThreadFactory threadFactory,
+            InstanceIdGenerator instanceIdGenerator,
+            @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller,
             ClusterOpSpec defaultClusterOpSpec) {
