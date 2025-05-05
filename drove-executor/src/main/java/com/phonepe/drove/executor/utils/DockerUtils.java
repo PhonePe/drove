@@ -191,40 +191,20 @@ public class DockerUtils {
             populateSystemResources(resourceConfig, deploymentUnitSpec, hostConfig);
             populateResourceRequirements(resourceConfig, deploymentUnitSpec, hostConfig, resourceManager);
             val exposedPorts = new ArrayList<ExposedPort>();
-            val env = new ArrayList<String>();
-            val hostName = hostname();
-            env.add("HOST=" + hostName);
+
             if (null != deploymentUnitSpec.getVolumes()) {
                 populateVolumeMounts(deploymentUnitSpec, hostConfig);
             }
 
-            val labels = new HashMap<String, String>();
-            //Add all env with values
-            env.addAll(Objects.requireNonNullElse(deploymentUnitSpec.getEnv(), Map.<String, String>of())
-                               .entrySet()
-                               .stream()
-                               .map(e -> {
-                                   if (Strings.isNullOrEmpty(e.getValue())) {
-                                       val value = System.getenv(e.getKey());
-                                       if (Strings.isNullOrEmpty(value)) {
-                                           log.warn("No local value found for empty variable: {}. Nothing will be set.",
-                                                    e.getKey());
-                                           return null;
-                                       }
-                                       else {
-                                           return e.getKey() + "=" + value;
-                                       }
-                                   }
-                                   else {
-                                       return e.getKey() + "=" + e.getValue();
-                                   }
-                               })
-                               .filter(Objects::nonNull)
-                               .toList());
+            val env = new ArrayList<String>();
+            val hostName = hostname();
+            env.add("HOST=" + hostName);
+            addEnvironmentVariables(deploymentUnitSpec, env);
             deploymentUnitSpec.getExecutable().accept((ExecutableTypeVisitor<Void>) dockerCoordinates -> {
                 env.add("DROVE_CONTAINER_ID=" + dockerCoordinates.getUrl());
                 return null;
             });
+            val labels = new HashMap<String, String>();
             val params = new DockerRunParams(hostName, hostConfig, exposedPorts, labels, env);
             augmenter.augment(params);
             log.debug("Environment: {}", env);
@@ -449,6 +429,31 @@ public class DockerUtils {
         if (!deviceRequests.isEmpty()) {
             hostConfig.withDeviceRequests(deviceRequests);
         }
+    }
+
+    private static void addEnvironmentVariables(DeploymentUnitSpec deploymentUnitSpec, ArrayList<String> env) {
+        //Add all env with values
+        env.addAll(Objects.requireNonNullElse(deploymentUnitSpec.getEnv(), Map.<String, String>of())
+                           .entrySet()
+                           .stream()
+                           .map(e -> {
+                               if (Strings.isNullOrEmpty(e.getValue())) {
+                                   val value = System.getenv(e.getKey());
+                                   if (Strings.isNullOrEmpty(value)) {
+                                       log.warn("No local value found for empty variable: {}. Nothing will be set.",
+                                                e.getKey());
+                                       return null;
+                                   }
+                                   else {
+                                       return e.getKey() + "=" + value;
+                                   }
+                               }
+                               else {
+                                   return e.getKey() + "=" + e.getValue();
+                               }
+                           })
+                           .filter(Objects::nonNull)
+                           .toList());
     }
 
     private static String translateDevicePermissions(DirectDeviceSpec directDeviceSpec) {
