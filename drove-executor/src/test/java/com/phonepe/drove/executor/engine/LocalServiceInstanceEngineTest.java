@@ -120,6 +120,7 @@ class LocalServiceInstanceEngineTest extends AbstractExecutorEngineEnabledTestBa
                                                                 new MemoryAllocation(Collections.singletonMap(0,
                                                                                                               512L))),
                                                 Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
+                                                false,
                                                 Collections.emptyList(),
                                                 Collections.emptyList(),
                                                 new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,

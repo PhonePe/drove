@@ -40,5 +40,10 @@ public interface DeploymentUnitSpec {
     List<String> getArgs();
     List<DeviceSpec> getDevices();
     UserSpec getUserSpec();
+
+    default boolean isHostLevelInstance() {
+        return false;
+    }
+
     <T> T accept(final DeploymentUnitSpecVisitor<T> visitor);
 }

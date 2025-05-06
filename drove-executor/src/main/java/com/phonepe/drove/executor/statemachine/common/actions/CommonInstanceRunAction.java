@@ -94,18 +94,20 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
                         val portMappings = new HashMap<String, InstancePort>();
                         portSpecs(instanceSpec)
                                 .forEach(
-                                        portSpec -> {
-                                            val freePort = findFreePort();
-                                            val specPort = portSpec.getPort();
-                                            val exposedPort = new ExposedPort(specPort);
-                                            ports.bind(exposedPort, Ports.Binding.bindPort(freePort));
-                                            exposedPorts.add(exposedPort);
-                                            params.getCustomEnv().add(String.format("PORT_%d=%d", specPort, freePort));
-                                            portMappings.put(portSpec.getName(),
-                                                             new InstancePort(portSpec.getPort(),
-                                                                              freePort,
-                                                                              portSpec.getType()));
-                                        });
+                                portSpec -> {
+                                    val containerPort = params.isHostLevelInstance()
+                                                        ? portSpec.getPort()
+                                                        : findFreePort();
+                                    val specPort = portSpec.getPort();
+                                    val exposedPort = new ExposedPort(specPort);
+                                    ports.bind(exposedPort, Ports.Binding.bindPort(containerPort));
+                                    exposedPorts.add(exposedPort);
+                                    params.getCustomEnv().add(String.format("PORT_%d=%d", specPort, containerPort));
+                                    portMappings.put(portSpec.getName(),
+                                                     new InstancePort(portSpec.getPort(),
+                                                                      containerPort,
+                                                                      portSpec.getType()));
+                                });
                         params.getHostConfig().withPortBindings(ports);
                         val instanceInfo = instanceInfo(currentState,
                                                         portMappings,

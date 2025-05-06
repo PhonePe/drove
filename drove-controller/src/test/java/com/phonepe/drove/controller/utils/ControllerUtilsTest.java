@@ -16,11 +16,13 @@
 
 package com.phonepe.drove.controller.utils;
 
+import com.phonepe.drove.models.application.placement.policies.*;
 import dev.failsafe.RetryPolicy;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -42,5 +44,21 @@ class ControllerUtilsTest {
                                  throw new RuntimeException("Test");
                              },
                              RetryPolicy.<StateCheckStatus>builder().withMaxAttempts(1).build()));
+    }
+
+    @Test
+    void testHostLevelInstance() {
+        assertFalse(ControllerUtils.isHostLevelDeployable(new OnePerHostPlacementPolicy()));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new MaxNPerHostPlacementPolicy(2)));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new MatchTagPlacementPolicy("aa")));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new NoTagPlacementPolicy()));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new RuleBasedPlacementPolicy("")));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new AnyPlacementPolicy()));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new CompositePlacementPolicy(List.of(new AnyPlacementPolicy(),
+                                                                                               new MatchTagPlacementPolicy(
+                                                                                                       "Aa")),
+                                                                                       CompositePlacementPolicy.CombinerType.AND)));
+        assertTrue(ControllerUtils.isHostLevelDeployable(new LocalPlacementPolicy(true)));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new LocalPlacementPolicy(false)));
     }
 }

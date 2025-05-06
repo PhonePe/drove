@@ -36,7 +36,7 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
-import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
@@ -52,8 +52,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import static com.phonepe.drove.common.CommonUtils.waitForAction;
-import static com.phonepe.drove.controller.utils.ControllerUtils.ensureInstanceState;
-import static com.phonepe.drove.controller.utils.ControllerUtils.translateConfigSpecs;
+import static com.phonepe.drove.controller.utils.ControllerUtils.*;
 
 /**
  * Starts  a single instance by whatever means necessary
@@ -125,7 +124,9 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                log.error("Error setting up instance for " + serviceId, failure);
                                            }
                                            else {
-                                               log.error("Error setting up instance for {}. Event: {}", serviceId, event);
+                                               log.error("Error setting up instance for {}. Event: {}",
+                                                         serviceId,
+                                                         event);
                                            }
                                        });
             if (context.isStopped() || context.isCancelled()) {
@@ -158,28 +159,22 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         }
 
         val spec = new LocalServiceInstanceSpec(serviceId,
-                                                      localServiceSpec.getName(),
-                                                      instanceId,
-                                                      localServiceSpec.getExecutable(),
-                                                      List.of(node.getCpu(),
-                                                              node.getMemory()),
-                                                      localServiceSpec.getExposedPorts(),
-                                                      localServiceSpec.getVolumes(),
-                                                      translateConfigSpecs(
-                                                              localServiceSpec.getConfigs(),
-                                                              httpCaller),
-                                                      localServiceSpec.getHealthcheck(),
-                                                      localServiceSpec.getReadiness(),
-                                                      localServiceSpec.getLogging(),
-                                                      localServiceSpec.getEnv(),
-                                                      localServiceSpec.getArgs(),
-                                                      localServiceSpec.getDevices(),
-                                                      localServiceSpec.getPreShutdown(),
-                                                      localServiceSpec.getUserSpec(),
-                                                      generateAppInstanceToken(
-                                                              node,
-                                                              serviceId,
-                                                              instanceId));
+                                                localServiceSpec.getName(),
+                                                instanceId,
+                                                localServiceSpec.getExecutable(),
+                                                List.of(node.getCpu(), node.getMemory()),
+                                                localServiceSpec.getExposedPorts(),
+                                                isHostLevelDeployable(localServiceSpec.getPlacementPolicy()),
+                                                localServiceSpec.getVolumes(),
+                                                translateConfigSpecs(localServiceSpec.getConfigs(), httpCaller),
+                                                localServiceSpec.getHealthcheck(),
+                                                localServiceSpec.getReadiness(),
+                                                localServiceSpec.getLogging(),
+                                                localServiceSpec.getEnv(),
+                                                localServiceSpec.getArgs(),
+                                                localServiceSpec.getDevices(),
+                                                localServiceSpec.getPreShutdown(),
+                                                generateAppInstanceToken(node, serviceId, instanceId));
         val startMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                                 new ExecutorAddress(node.getExecutorId(),
                                                                                     node.getHostname(),

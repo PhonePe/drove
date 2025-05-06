@@ -111,8 +111,8 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         ensureFailure(
                 validator.validateOperation(engine,
                                             new LocalServiceStopInstancesOperation(serviceId,
-                                                                          Set.of(),
-                                                                          ClusterOpSpec.DEFAULT)),
+                                                                                   Set.of(),
+                                                                                   ClusterOpSpec.DEFAULT)),
                 "No operations allowed for SomeServiceId as it is in %s state".formatted(testState));
     }
 
@@ -158,7 +158,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
         val res = validator.validateOperation(engine,
                                               new LocalServiceCreateOperation(ControllerTestUtils.localServiceSpec(1),
-                                                                     1));
+                                                                              1));
         ensureSuccess(res);
     }
 
@@ -168,11 +168,22 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
         val res = validator.validateOperation(engine,
                                               new LocalServiceCreateOperation(
-                                             ControllerTestUtils.localServiceSpec(1)
-                                                     .withName(null)
-                                                     .withVersion(null),
-                                             1));
+                                                      ControllerTestUtils.localServiceSpec(1)
+                                                              .withName(null)
+                                                              .withVersion(null),
+                                                      1));
         ensureFailure(res, "No local service id found in operation");
+    }
+
+    @Test
+    void testCreateFailHostLevelMoreThanOneInstance() {
+        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val res = validator.validateOperation(engine,
+                                              new LocalServiceCreateOperation(
+                                                      ControllerTestUtils.localServiceSpec(1)
+                                                              .withPlacementPolicy(new LocalPlacementPolicy(true)),
+                                                      2));
+        ensureFailure(res, "Host level service cannot have more than one instance");
     }
 
     @Test
@@ -180,7 +191,8 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
         when(engine.exists(anyString())).thenReturn(true);
         val res = validator.validateOperation(engine,
-                                              new LocalServiceCreateOperation(ControllerTestUtils.localServiceSpec(1), 1));
+                                              new LocalServiceCreateOperation(ControllerTestUtils.localServiceSpec(1),
+                                                                              1));
         ensureFailure(res, "Local service TEST_SPEC-00001 already exists");
     }
 
@@ -320,18 +332,18 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(INACTIVE));
-        when(lsDB.service(serviceId)).thenReturn(Optional.of(new LocalServiceInfo(serviceId,
-                                                                                  ControllerTestUtils.localServiceSpec()
-                                                                                          .withPlacementPolicy(new LocalPlacementPolicy(
-                                                                                                  true)),
-                                                                                  1,
-                                                                                  ActivationState.INACTIVE,
-                                                                                  null,
-                                                                                  null)));
+        when(lsDB.service(serviceId)).thenReturn(Optional.of(
+                new LocalServiceInfo(serviceId,
+                                     ControllerTestUtils.localServiceSpec()
+                                             .withPlacementPolicy(new LocalPlacementPolicy(true)),
+                                     1,
+                                     ActivationState.INACTIVE,
+                                     null,
+                                     null)));
 
         val res = validator.validateOperation(engine,
                                               new LocalServiceUpdateInstanceCountOperation(serviceId, 1));
-        ensureFailure(res, "Update is allowed for services that do not have Host Level option set");
+        ensureFailure(res, "Instance count update is allowed only for services that do not have Host Level option set");
     }
 
     @Test
@@ -348,9 +360,9 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         when(lsDB.instance(eq(serviceId), anyString())).thenReturn(Optional.empty());
         ensureFailure(validator.validateOperation(engine,
                                                   new LocalServiceReplaceInstancesOperation(serviceId,
-                                                                                   Set.of("blah"),
-                                                                                   false,
-                                                                                   ClusterOpSpec.DEFAULT)),
+                                                                                            Set.of("blah"),
+                                                                                            false,
+                                                                                            ClusterOpSpec.DEFAULT)),
                       "There are no replaceable healthy instances with ids: [blah]");
     }
 
@@ -387,9 +399,9 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
                                                                      null)));
         ensureFailure(validator.validateOperation(engine,
                                                   new LocalServiceReplaceInstancesOperation(serviceId,
-                                                                                   Set.of("blah"),
-                                                                                   false,
-                                                                                   ClusterOpSpec.DEFAULT)),
+                                                                                            Set.of("blah"),
+                                                                                            false,
+                                                                                            ClusterOpSpec.DEFAULT)),
                       "There are no replaceable healthy instances with ids: [blah]");
     }
 
@@ -426,9 +438,9 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
                                                                      null)));
         ensureSuccess(validator.validateOperation(engine,
                                                   new LocalServiceReplaceInstancesOperation(serviceId,
-                                                                                   Set.of("SI-1"),
-                                                                                   false,
-                                                                                   ClusterOpSpec.DEFAULT)));
+                                                                                            Set.of("SI-1"),
+                                                                                            false,
+                                                                                            ClusterOpSpec.DEFAULT)));
     }
 
     @Test
@@ -445,8 +457,8 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         when(lsDB.instance(eq(serviceId), anyString())).thenReturn(Optional.empty());
         ensureFailure(validator.validateOperation(engine,
                                                   new LocalServiceStopInstancesOperation(serviceId,
-                                                                                   Set.of("blah"),
-                                                                                   ClusterOpSpec.DEFAULT)),
+                                                                                         Set.of("blah"),
+                                                                                         ClusterOpSpec.DEFAULT)),
                       "There are no healthy instances with ids: [blah]");
     }
 
@@ -483,8 +495,8 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
                                                                      null)));
         ensureSuccess(validator.validateOperation(engine,
                                                   new LocalServiceStopInstancesOperation(serviceId,
-                                                                                   Set.of("SI-1"),
-                                                                                   ClusterOpSpec.DEFAULT)));
+                                                                                         Set.of("SI-1"),
+                                                                                         ClusterOpSpec.DEFAULT)));
     }
 
     private static void ensureSuccess(ValidationResult res) {

@@ -150,6 +150,7 @@ public class DockerUtils {
         String hostname;
         HostConfig hostConfig;
         List<ExposedPort> exposedPorts;
+        boolean hostLevelInstance;
         Map<String, String> customLabels;
         List<String> customEnv;
     }
@@ -205,7 +206,8 @@ public class DockerUtils {
                 return null;
             });
             val labels = new HashMap<String, String>();
-            val params = new DockerRunParams(hostName, hostConfig, exposedPorts, labels, env);
+            val params = new DockerRunParams(hostName, hostConfig, exposedPorts,
+                                             deploymentUnitSpec.isHostLevelInstance(), labels, env);
             augmenter.augment(params);
             log.debug("Environment: {}", env);
             if (!Objects.requireNonNullElse(deploymentUnitSpec.getArgs(), List.<String>of()).isEmpty()) {

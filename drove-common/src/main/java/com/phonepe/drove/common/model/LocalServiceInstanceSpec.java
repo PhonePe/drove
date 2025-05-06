@@ -44,6 +44,7 @@ public class LocalServiceInstanceSpec implements DeploymentUnitSpec {
     ExecutableCoordinates executable;
     List<ResourceAllocation> resources;
     List<PortSpec> ports;
+    boolean hostLevelInstance;
     List<MountedVolume> volumes;
     List<ConfigSpec> configs;
     CheckSpec healthcheck;

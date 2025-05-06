@@ -911,4 +911,48 @@ public class ControllerUtils {
             case INACTIVE -> INACTIVE;
         };
     }
+
+    public static Boolean isHostLevelDeployable(final PlacementPolicy placementPolicy) {
+        return placementPolicy.accept(new PlacementPolicyVisitor<>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return localPlacementPolicy.isHostLevel();
+            }
+        });
+    }
 }

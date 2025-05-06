@@ -25,13 +25,17 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
+import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.devices.DetailedDeviceSpec;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.statemachine.StateData;
+import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.net.ServerSocket;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +69,37 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resp = action.execute(context,
                                   StateData.create(STARTING, createExecutorLocaLServiceInstanceInfo(spec, 8080)));
         assertEquals(UNREADY, resp.getState());
+    }
+
+
+    @Test
+    void testRunLocalPort() {
+        val port = freePort();
+        val spec = testLocalServiceInstanceSpec()
+                .withPorts(List.of(new PortSpec("main", port, PortType.TCP)))
+                .withHostLevelInstance(true);
+        val resourceManager = mock(ResourceManager.class);
+        when(resourceManager.currentState())
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+        val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
+                                                       ExecutorOptions.DEFAULT,
+                                                       CommonTestUtils.httpCaller(),
+                                                       MAPPER,
+                                                       SharedMetricRegistries.getOrCreate("test"),
+                                                       resourceManager);
+
+        val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
+        val resp = action.execute(context,
+                                  StateData.create(STARTING, createExecutorLocaLServiceInstanceInfo(spec, port)));
+        assertEquals(UNREADY, resp.getState());
+    }
+
+    @SneakyThrows
+    private int freePort() {
+        try (val s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        }
     }
 
     @Test

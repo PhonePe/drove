@@ -180,7 +180,15 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             if (engine.exists(serviceId)) {
                 return ValidationResult.failure("Local service " + serviceId + " already exists");
             }
-            return validator.validateSpec(createOperation.getSpec());
+            val specValidationResult = validator.validateSpec(createOperation.getSpec());
+            if(!specValidationResult.getStatus().equals(ValidationStatus.SUCCESS)) {
+                return specValidationResult;
+            }
+            val policy = (LocalPlacementPolicy)createOperation.getSpec().getPlacementPolicy();
+            if (policy.isHostLevel() && createOperation.getInstancesPerHost() > 1) {
+                return ValidationResult.failure("Host level service cannot have more than one instance");
+            }
+            return specValidationResult;
         }
 
         @Override
@@ -207,7 +215,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
                     })
                     .map(s -> ValidationResult.success())
                     .orElse(ValidationResult.failure(
-                            "Update is allowed for services that do not have Host Level option set"));
+                            "Instance count update is allowed only for services that do not have Host Level option set"));
         }
 
         @Override
