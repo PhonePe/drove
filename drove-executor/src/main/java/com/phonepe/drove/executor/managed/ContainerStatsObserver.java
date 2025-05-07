@@ -16,13 +16,11 @@
 
 package com.phonepe.drove.executor.managed;
 
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.exception.NotFoundException;
-import com.github.dockerjava.api.model.BlkioStatEntry;
-import com.github.dockerjava.api.model.MemoryStatsConfig;
-import com.github.dockerjava.api.model.StatisticNetworksConfig;
-import com.github.dockerjava.api.model.Statistics;
+import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.InvocationBuilder;
 import com.google.inject.Inject;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
@@ -276,6 +274,8 @@ public class ContainerStatsObserver implements Managed {
                                            .filter(entry -> entry.getOp().equals("write"))
                                            .mapToLong(entry -> entry.getMajor() + entry.getMinor())
                                            .sum()));
+            data.getPidStatsReceived()
+                    .connect(gauge("current_pid_usage", instanceInfo, SignalData::getData));
             return data;
         });
         reportStatsForInstance(instanceId);
@@ -283,25 +283,7 @@ public class ContainerStatsObserver implements Managed {
 
     private void unregisterTrackedContainer(final String instanceId) {
         instances.computeIfPresent(instanceId, (iid, oldValue) -> {
-            metricRegistry.remove(metricName(oldValue, "nr_throttled"));
-            metricRegistry.remove(metricName(oldValue, "cpu_cores_allocated"));
-            metricRegistry.remove(metricName(oldValue, "cpu_percentage_per_core"));
-            metricRegistry.remove(metricName(oldValue, "cpu_percentage_overall"));
-            metricRegistry.remove(metricName(oldValue, "cpu_absolute_per_ms"));
-            metricRegistry.remove(metricName(oldValue, "memory_usage"));
-            metricRegistry.remove(metricName(oldValue, "memory_usage_percentage"));
-            metricRegistry.remove(metricName(oldValue, "memory_allocated"));
-            metricRegistry.remove(metricName(oldValue, "memory_usage_max"));
-            metricRegistry.remove(metricName(oldValue, "memory_usage_limit"));
-            metricRegistry.remove(metricName(oldValue, "network_tx_bytes"));
-            metricRegistry.remove(metricName(oldValue, "network_tx_per_sec_bytes"));
-            metricRegistry.remove(metricName(oldValue, "network_tx_errors"));
-            metricRegistry.remove(metricName(oldValue, "network_tx_dropped"));
-            metricRegistry.remove(metricName(oldValue, "network_rx_bytes"));
-            metricRegistry.remove(metricName(oldValue, "network_rx_per_sec_bytes"));
-            metricRegistry.remove(metricName(oldValue, "network_rx_errors"));
-            metricRegistry.remove(metricName(oldValue, "network_rx_dropped"));
-            metricRegistry.remove(metricName(oldValue, "block_io_write_bytes"));
+            metricRegistry.removeMatching(MetricFilter.contains(iid));
             return null;
         });
     }
@@ -401,6 +383,7 @@ public class ContainerStatsObserver implements Managed {
         ConsumingSyncSignal<SignalData<Collection<StatisticNetworksConfig>>> networkStatsReceived =
                 new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<Collection<BlkioStatEntry>>> ioStatsReceived = new ConsumingSyncSignal<>();
+        ConsumingSyncSignal<SignalData<Long>> pidStatsReceived = new ConsumingSyncSignal<>();
 
         public InstanceData(DeployedInstanceInfo instanceInfo, String dockerId) {
             this.instanceInfo = instanceInfo;
@@ -436,11 +419,13 @@ public class ContainerStatsObserver implements Managed {
                                                                       .toList()));
                 }
             }
+            if (null != data.getPidsStats()) {
+                val pidCount = Objects.requireNonNullElse(data.getPidsStats().getCurrent(), -1L);
+                if(pidCount > 0) {
+                    pidStatsReceived.dispatch(new SignalData<>(instanceInfo, pidCount));
+                }
+            }
         }
-    }
-
-    private static String metricName(final InstanceData instanceData, String name) {
-        return metricName(instanceData.getInstanceInfo(), name);
     }
 
     private static String metricName(final DeployedInstanceInfo instanceInfo, String name) {
