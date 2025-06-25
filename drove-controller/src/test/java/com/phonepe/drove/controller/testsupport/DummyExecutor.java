@@ -376,9 +376,11 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                resourceSnapshot,
                                                                List.copyOf(appInstances.values()),
                                                                List.of(),
-                                                               List.copyOf(serviceInstances.values()),
+                                                               List.of(),
                                                                Set.of("localhost"),
+                                                               Map.of(),
                                                                ExecutorState.ACTIVE)));
+
         log.info("Snapshot updated");
     }
 

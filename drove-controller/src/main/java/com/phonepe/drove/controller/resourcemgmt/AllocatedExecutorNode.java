@@ -22,6 +22,7 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,5 +37,6 @@ public class AllocatedExecutorNode {
     CPUAllocation cpu;
     MemoryAllocation memory;
     Set<String> tags;
+    Map<String, String> metadata;
     ExecutorState executorState;
 }

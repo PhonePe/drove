@@ -28,6 +28,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
@@ -166,7 +167,9 @@ class ManagedLeadershipObserverTest {
                                              null,
                                              null,
                                              null,
+                                             Map.of(),
                                              ExecutorState.ACTIVE)));
+
         val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
         obs.start();
         waitUntil(() -> obs.leader().isEmpty());

@@ -108,7 +108,7 @@ public class ExecutorTestingUtils {
                                            UUID.randomUUID().toString(),
                                            new DockerCoordinates(imageName, Duration.seconds(100)),
                                            ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
-                                                                                                       Set.of(2, 3))),
+                                                                                                       Set.of(0, 1, 2, 3))),
                                                             new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                            Collections.singletonList(new PortSpec("main", 8000, portType)),
                                            List.of(new MountedVolume("/tmp",

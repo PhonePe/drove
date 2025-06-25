@@ -406,6 +406,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                             }
                         }))
                         .sum();
+
         //NOTE: THis ensures everything is on the SAME numa node for performance
         return hostInfo.getNodes()
                 .entrySet()
@@ -419,9 +420,8 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                                                        allocateCPUs(node, cpus),
                                                        new MemoryAllocation(
                                                                Collections.singletonMap(node.getKey(), memory)),
-                                                       hostInfo.getNodeData().getTags() == null
-                                                       ? Set.of()
-                                                       : hostInfo.getNodeData().getTags(),
+                                                       Objects.requireNonNullElse(hostInfo.getNodeData().getTags(), Set.of()),
+                                                       Objects.requireNonNullElse(hostInfo.getNodeData().getMetadata(), Map.of()),
                                                        hostInfo.getNodeData().getExecutorState()))
                 .findAny();
     }

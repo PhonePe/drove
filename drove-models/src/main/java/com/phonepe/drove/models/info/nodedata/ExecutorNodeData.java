@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.info.nodedata;
 
+import com.google.common.collect.Maps;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
@@ -26,10 +27,7 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -44,6 +42,7 @@ public class ExecutorNodeData extends NodeData {
     List<TaskInfo> tasks;
     List<LocalServiceInstanceInfo> serviceInstances;
     Set<String> tags;
+    Map<String, String> metadata;
     ExecutorState executorState;
 
     @Jacksonized
@@ -59,6 +58,7 @@ public class ExecutorNodeData extends NodeData {
             List<TaskInfo> tasks,
             List<LocalServiceInstanceInfo> serviceInstances,
             Set<String> tags,
+            Map<String, String> metadata,
             ExecutorState executorState) {
         super(NodeType.EXECUTOR, hostname, port, transportType, updated);
         this.state = state;
@@ -66,6 +66,7 @@ public class ExecutorNodeData extends NodeData {
         this.tasks = tasks;
         this.serviceInstances = serviceInstances;
         this.tags = tags;
+        this.metadata = metadata;
         this.executorState = executorState;
     }
 
@@ -81,7 +82,8 @@ public class ExecutorNodeData extends NodeData {
             final List<TaskInfo> taskInstances,
             final List<LocalServiceInstanceInfo> serviceInstances,
             final Set<String> tags,
-            final ExecutorState executorState) {
+            final ExecutorState executorState,
+            final Map<String, String> metadata) {
         return new ExecutorNodeData(nodeData.getHostname(),
                                     nodeData.getPort(),
                                     nodeData.getTransportType(),
@@ -91,6 +93,9 @@ public class ExecutorNodeData extends NodeData {
                                     taskInstances,
                                     serviceInstances,
                                     null == tags ? Collections.emptySet() : tags,
-                                    executorState);
+                                    Objects.requireNonNullElse(metadata, Map.of()),
+                                    executorState
+                );
+
     }
 }

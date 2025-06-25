@@ -27,6 +27,8 @@
 
     <properties>
         <docker-java.version>3.3.6</docker-java.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <reflections.version>0.10.2</reflections.version>
     </properties>
 
     <dependencies>
@@ -74,6 +76,11 @@
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>

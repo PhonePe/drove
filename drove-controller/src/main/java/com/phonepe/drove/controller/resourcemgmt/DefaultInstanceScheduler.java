@@ -104,8 +104,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
     @Override
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, String instanceId, DeploymentSpec applicationSpec) {
-        var placementPolicy = Objects.requireNonNullElse(applicationSpec.getPlacementPolicy(),
+            String schedulingSessionId, String instanceId, DeploymentSpec deploymentSpec) {
+
+        var placementPolicy = Objects.requireNonNullElse(deploymentSpec.getPlacementPolicy(),
                                                          new AnyPlacementPolicy());
         if (hasTagPolicy(placementPolicy)) {
             log.info("Placement policy seems to have tags already, skipping mutation");
@@ -115,7 +116,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
                                                            CompositePlacementPolicy.CombinerType.AND);
         }
-        return schedule(schedulingSessionId, instanceId, applicationSpec, placementPolicy);
+        return schedule(schedulingSessionId, instanceId, deploymentSpec, placementPolicy);
     }
 
     @Override

@@ -115,7 +115,9 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
                 .setOsCores(IntStream.rangeClosed(0, 19).boxed().collect(Collectors.toUnmodifiableSet()))
                 .setExposedMemPercentage(90)
                 .setTags(Set.of("test-machine"));
+
         val rl = getNewNumaRL(resourceConfig, readLinesFromFile("/numactl-resource-loader-test/mismatch.txt"));
+
         try {
             rl.loadSystemResources();
             fail("Should have thrown exception");

@@ -32,10 +32,12 @@ import lombok.val;
 import org.apache.curator.test.TestingCluster;
 import org.junit.jupiter.api.Test;
 
+
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -78,6 +80,7 @@ class ZkNodeDataStoreTest {
                                                 List.of(),
                                                 List.of(),
                                                 Set.of(),
+                                                Map.of(),
                                                 ExecutorState.ACTIVE);
             store.updateNodeData(nodeData);
             var executors = store.nodes(NodeType.EXECUTOR);

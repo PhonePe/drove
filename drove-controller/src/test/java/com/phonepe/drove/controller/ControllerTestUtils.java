@@ -218,6 +218,7 @@ public class ControllerTestUtils {
                                          new CPUAllocation(Collections.singletonMap(0, Collections.singleton(2))),
                                          new MemoryAllocation(Collections.singletonMap(0, 512L)),
                                          Collections.emptySet(),
+                                         Map.of(),
                                          ExecutorState.ACTIVE);
     }
 
@@ -290,6 +291,7 @@ public class ControllerTestUtils {
                                      taskInstances,
                                      serviceInstances,
                                      Set.of(),
+                                     Map.of(),
                                      blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
@@ -327,6 +329,7 @@ public class ControllerTestUtils {
                                     List.of(),
                                     List.of(),
                                     tags,
+                                    Map.of(),
                                     blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE);
     }
 

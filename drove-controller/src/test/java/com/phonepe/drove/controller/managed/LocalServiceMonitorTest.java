@@ -289,8 +289,9 @@ class LocalServiceMonitorTest {
                                                                       LocalServiceInstanceState.HEALTHY,
                                                                       Date.from(Instant.now()),
                                                                       "")),
-                                                              nodeData.getTags(),
-                                                              nodeData.getExecutorState()));
+                                                             nodeData.getTags(),
+                                                             nodeData.getMetadata(),
+                                                             nodeData.getExecutorState()));
                 })
                 .toList();
         val stopCalled = new AtomicInteger(0);

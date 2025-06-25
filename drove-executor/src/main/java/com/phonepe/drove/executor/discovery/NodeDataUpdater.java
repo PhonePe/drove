@@ -27,6 +27,7 @@ import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.executor.managed.MetadataManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+
 /**
  *
  */
@@ -62,10 +64,10 @@ public class NodeDataUpdater implements Managed {
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ResourceConfig resourceConfig;
     private final ExecutorStateManager executorStateManager;
-
+    private final MetadataManager metadataManager;
+    private ExecutorNodeData currentData;
     private final ScheduledSignal refreshSignal = new ScheduledSignal(Constants.EXECUTOR_REFRESH_INTERVAL);
     private final AtomicBoolean started = new AtomicBoolean();
-    private ExecutorNodeData currentData;
     private final Lock stateLock = new ReentrantLock();
 
     @Inject
@@ -76,7 +78,9 @@ public class NodeDataUpdater implements Managed {
             ApplicationInstanceEngine applicationInstanceEngine,
             TaskInstanceEngine taskInstanceEngine, LocalServiceInstanceEngine localServiceInstanceEngine,
             ResourceConfig resourceConfig,
-            ExecutorStateManager executorStateManager) {
+            ExecutorStateManager executorStateManager,
+            MetadataManager metadataManager) {
+
         this.nodeDataStore = nodeDataStore;
         this.resourceDB = resourceDB;
         this.applicationInstanceEngine = applicationInstanceEngine;
@@ -84,6 +88,7 @@ public class NodeDataUpdater implements Managed {
         this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.resourceConfig = resourceConfig;
         this.executorStateManager = executorStateManager;
+        this.metadataManager = metadataManager;
         this.refreshSignal.connect(this::refresh);
         this.applicationInstanceEngine.onStateChange().connect(info -> refresh(new Date()));
         executorIdManager.onHostInfoGenerated()
@@ -124,16 +129,18 @@ public class NodeDataUpdater implements Managed {
         try {
             stateLock.lock();
             currentData = new ExecutorNodeData(
-                    hostname,
-                    port,
-                    transportType,
-                    new Date(),
-                    ExecutorUtils.executorSnapshot(resourceState, executorId),
-                    applicationInstanceEngine.currentState(),
-                    taskInstanceEngine.currentState(),
-                    localServiceInstanceEngine.currentState(),
-                    tags(),
-                    executorStateManager.currentState());
+                            hostname,
+                            port,
+                            transportType,
+                            new Date(),
+                            ExecutorUtils.executorSnapshot(resourceState, executorId),
+                            applicationInstanceEngine.currentState(),
+                            taskInstanceEngine.currentState(),
+                            localServiceInstanceEngine.currentState(),
+                            tags(),
+                            metadataManager.fetchMetadata(),
+                            executorStateManager.currentState()
+                        );
             nodeDataStore.updateNodeData(currentData);
         }
         finally {
@@ -160,7 +167,8 @@ public class NodeDataUpdater implements Managed {
                     taskInstanceEngine.currentState(),
                     localServiceInstanceEngine.currentState(),
                     tags(),
-                    executorStateManager.currentState());
+                    executorStateManager.currentState(),
+                    metadataManager.fetchMetadata());
             nodeDataStore.updateNodeData(currentData);
         }
         finally {

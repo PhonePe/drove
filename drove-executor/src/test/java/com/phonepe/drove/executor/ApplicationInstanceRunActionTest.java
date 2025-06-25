@@ -87,7 +87,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRun() {
-        runAction(1, new ResourceConfig(), true);
+        runAction(1, ResourceConfig.builder().build(), true);
     }
 
     @Test
@@ -95,8 +95,9 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     void testRunWithOverProvisioning() {
         val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(4, new ResourceConfig()
-                .setOverProvisioning(new OverProvisioning()
-                                             .setEnabled(true)),
+                        .setOverProvisioning(new OverProvisioning()
+                                             .setEnabled(true))
+                        ,
                   true);
     }
 

@@ -778,7 +778,9 @@ class TaskEngineTest extends ControllerTestBase {
                                                 List.of(),
                                                 List.of(),
                                                 Set.of(),
+                                                Map.of(),
                                                 ExecutorState.ACTIVE)));
+
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
 

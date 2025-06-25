@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.executor.resourcemgmt;
 
+import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
 import org.junit.jupiter.api.Test;
 
 
@@ -28,12 +29,14 @@ class ResourceConfigTest {
 
     @Test
     void validateDefaultValuesAreGeneratedForResourceConfig() {
-        var resourceConfig = new ResourceConfig();
+        var resourceConfig = ResourceConfig.builder().build();
         assertEquals(Collections.emptySet(), resourceConfig.getOsCores());
         assertEquals(100, resourceConfig.getExposedMemPercentage());
         assertFalse(resourceConfig.isDisableNUMAPinning());
         assertEquals(Collections.emptySet(), resourceConfig.getTags());
+        assertEquals(MetadataConfig.DEFAULT, resourceConfig.getMetadata());
         assertFalse(resourceConfig.getOverProvisioning().isEnabled());
+
     }
 
 }

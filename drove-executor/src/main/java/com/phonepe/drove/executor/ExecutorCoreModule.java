@@ -23,10 +23,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.google.common.base.Strings;
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.name.Names;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
@@ -34,6 +31,7 @@ import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
+import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
@@ -45,6 +43,7 @@ import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaActivationResourceLoader;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaCtlBasedResourceLoader;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningResourceLoader;
@@ -177,6 +176,11 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     public ResourceConfig resourceConfig(final AppConfig appConfig) {
         return Objects.requireNonNullElse(appConfig.getResources(), ResourceConfig.DEFAULT);
+    }
+
+    @Provides
+    @Singleton MetadataConfig metadataConfig(final ResourceConfig resourceConfig) {
+        return Objects.requireNonNullElse(resourceConfig.getMetadata(), MetadataConfig.DEFAULT);
     }
 
     @Provides

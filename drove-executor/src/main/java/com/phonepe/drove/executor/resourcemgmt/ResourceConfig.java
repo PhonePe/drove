@@ -16,10 +16,12 @@
 
 package com.phonepe.drove.executor.resourcemgmt;
 
+import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -31,10 +33,11 @@ import java.util.Set;
  */
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@Jacksonized
+@NoArgsConstructor
 public class ResourceConfig {
-    public static final ResourceConfig DEFAULT = new ResourceConfig();
+    public static final ResourceConfig DEFAULT = ResourceConfig.builder().build();
 
     @Builder.Default
     private Set<Integer> osCores = Collections.emptySet();
@@ -57,6 +60,9 @@ public class ResourceConfig {
 
     @Builder.Default
     private Set<String> tags = Collections.emptySet();
+
+    @Builder.Default
+    private MetadataConfig metadata = MetadataConfig.DEFAULT;
 
     @Builder.Default
     private OverProvisioning overProvisioning = OverProvisioning.DEFAULT;
