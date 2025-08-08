@@ -34,6 +34,7 @@ import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.controller.config.ViewOptions;
 import com.phonepe.drove.controller.engine.*;
 import com.phonepe.drove.controller.event.EventStore;
@@ -45,7 +46,6 @@ import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
-import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -177,7 +177,8 @@ public class ControllerCoreModule extends AbstractModule {
         bind(TaskDB.class).to(CachingProxyTaskDB.class);
         bind(TaskDB.class).annotatedWith(Names.named("StoredTaskDB")).to(ZkTaskDB.class);
         bind(LocalServiceStateDB.class).to(CachingProxyLocalServiceStateDB.class);
-        bind(LocalServiceStateDB.class).annotatedWith(Names.named("StoredLocalServiceDB")).to(ZKLocalServiceStateDB.class);
+        bind(LocalServiceStateDB.class).annotatedWith(Names.named("StoredLocalServiceDB"))
+                .to(ZKLocalServiceStateDB.class);
         bind(ClusterStateDB.class).to(CachingProxyClusterStateDB.class);
         bind(ClusterStateDB.class).annotatedWith(Names.named("StoredClusterStateDB")).to(ZkClusterStateDB.class);
         bind(EventStore.class).to(InMemoryEventStore.class);
@@ -190,7 +191,9 @@ public class ControllerCoreModule extends AbstractModule {
         bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState, AppActionContext,
                 Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>>() {
         }).to(InjectingAppActionFactory.class);
-        bind(new TypeLiteral<ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState, LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext, LocalServiceOperation>>>() {
+        bind(new TypeLiteral<ActionFactory<LocalServiceInfo, LocalServiceOperation, LocalServiceState,
+                LocalServiceActionContext, Action<LocalServiceInfo, LocalServiceState, LocalServiceActionContext,
+                LocalServiceOperation>>>() {
         }).to(InjectingLocalServiceActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
     }
@@ -227,7 +230,8 @@ public class ControllerCoreModule extends AbstractModule {
     @Singleton
     public InstallationMetadata installationMetadata(final AppConfig appConfig) {
         val view = Objects.requireNonNullElseGet(appConfig.getView(),
-                                                 () -> new ViewOptions(new ViewOptions.InstallationConfig("local", ViewOptions.Criticality.DEVELOPMENT),
+                                                 () -> new ViewOptions(new ViewOptions.InstallationConfig("local",
+                                                                                                          ViewOptions.Criticality.DEVELOPMENT),
                                                                        Map.of()));
         return new InstallationMetadata(loadVersionFromManifest(),
                                         view.getInstallation(),
@@ -246,7 +250,8 @@ public class ControllerCoreModule extends AbstractModule {
                 if (null != title && title.equals("drove-controller")) {
                     return attributes.getValue("Implementation-Version");
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 log.error("Error reading version from manifest: ", e);
                 throw e;
             }
