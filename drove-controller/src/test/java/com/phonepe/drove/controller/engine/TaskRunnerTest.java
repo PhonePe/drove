@@ -24,11 +24,7 @@ import com.phonepe.drove.common.model.executor.StartTaskMessage;
 import com.phonepe.drove.common.model.executor.StopTaskMessage;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
-import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
@@ -66,10 +62,8 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testTaskRun() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val inst = new AtomicReference<TaskInstanceSpec>();
 
@@ -90,9 +84,9 @@ class TaskRunnerTest extends ControllerTestBase {
         val tr = new TaskRunner(taskSpec.getSourceAppName(),
                                 taskSpec.getTaskId(),
                                 new JobExecutor<>(Executors.newSingleThreadExecutor()),
-                                tdb,
+                                pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -101,7 +95,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 httpCaller());
         val testDone = new AtomicBoolean();
         completedSignal.connect(runner -> testDone.set(true));
-        tdb.updateTask(taskSpec.getSourceAppName(), taskSpec.getTaskId(), new TaskInfo(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(), taskSpec.getTaskId(), new TaskInfo(taskSpec.getSourceAppName(),
                                                                                        taskSpec.getTaskId(),
                                                                                        "TI001",
                                                                                        "EXECUTOR_5",
@@ -126,7 +120,7 @@ class TaskRunnerTest extends ControllerTestBase {
 
         CommonTestUtils.waitUntil(stopCalled::get);
         //Stop has been called, so set state accordingly
-        tdb.updateTask(taskSpec.getSourceAppName(), taskSpec.getTaskId(), new TaskInfo(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(), taskSpec.getTaskId(), new TaskInfo(taskSpec.getSourceAppName(),
                                                                                        taskSpec.getTaskId(),
                                                                                        "TI001",
                                                                                        "EXECUTOR_5",
@@ -144,7 +138,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                                                                        new Date()));
         tr.updateCurrentState();
         CommonTestUtils.waitUntil(testDone::get);
-        assertEquals(STOPPED, tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+        assertEquals(STOPPED, pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
                 .map(TaskInfo::getState)
                 .orElse(UNKNOWN));
         f.get();
@@ -153,10 +147,8 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testTaskRunFail() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
 
         val comm = mock(ControllerCommunicator.class);
@@ -170,9 +162,9 @@ class TaskRunnerTest extends ControllerTestBase {
         val tr = new TaskRunner(taskSpec.getSourceAppName(),
                                 taskSpec.getTaskId(),
                                 new JobExecutor<>(Executors.newSingleThreadExecutor()),
-                                tdb,
+                                pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -187,7 +179,7 @@ class TaskRunnerTest extends ControllerTestBase {
         val f = Executors.newSingleThreadExecutor().submit(tr);
 
         CommonTestUtils.waitUntil(testDone::get);
-        assertTrue(tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isEmpty());
+        assertTrue(pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isEmpty());
         f.get();
     }
 }

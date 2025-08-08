@@ -18,6 +18,8 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.controller.rule.RuleEvaluator;
+import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -37,6 +39,10 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.operation.rule.RuleCallStatus;
+import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -86,6 +92,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     private final TaskDB taskDB;
     private final LocalServiceStateDB localServiceStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
+    private final RuleEvaluator ruleEvaluator;
     //Map of sessionId -> [executorId -> [ instanceId -> resources]]]
     private final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> schedulingSessionData =
             new ConcurrentHashMap<>();
@@ -95,11 +102,13 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
             LocalServiceStateDB localServiceStateDB,
-            ClusterResourcesDB clusterResourcesDB) {
+            ClusterResourcesDB clusterResourcesDB,
+            RuleEvaluator ruleEvaluator) {
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.localServiceStateDB = localServiceStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
+        this.ruleEvaluator = ruleEvaluator;
     }
 
     @Override
@@ -108,8 +117,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
         var placementPolicy = Objects.requireNonNullElse(deploymentSpec.getPlacementPolicy(),
                                                          new AnyPlacementPolicy());
-        if (hasTagPolicy(placementPolicy)) {
-            log.info("Placement policy seems to have tags already, skipping mutation");
+        if (shouldAllowCombiningOfPolicy(placementPolicy)) {
+            log.info("Placement policy {} seems to be disallowed for combining, skipping mutation.", placementPolicy.getType());
         }
         else {
             log.info("No tags specified in placement policy, will ensure deployments don't go to tagged executors");
@@ -134,7 +143,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         val selectedNode = clusterResourcesDB.selectNodes(
                 deploymentSpec.getResources(),
                 allowedStates,
-                allocatedNode -> validateNode(placementPolicy, sessionData, allocatedNode));
+                allocatedNode -> validateNode(placementPolicy, sessionData, allocatedNode, deploymentSpec));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration
@@ -286,7 +295,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     private boolean validateNode(
             final PlacementPolicy placementPolicy,
             Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
-            final AllocatedExecutorNode executorNode) {
+            final AllocatedExecutorNode executorNode,
+            final DeploymentSpec deploymentSpec) {
         val allocatedExecutorId = executorNode.getExecutorId();
 
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
@@ -319,8 +329,26 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                //TODO::IMPLEMENT
-                return false;
+                var allExecutorLevelMetadata = sessionLevelData.keySet()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                executorId -> executorId,
+                                executorId -> clusterResourcesDB.lastKnownSnapshot(executorId)
+                                        .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
+                                        .orElse(Map.of()))
+                        );
+
+                var schedulingInfo = SchedulingInfo.builder()
+                        .executorNodeId(executorNode.getExecutorId())
+                        .allocatedExecutorNodeMetadata(
+                                Objects.requireNonNullElse( executorNode.getMetadata(), Map.of()))
+                        .allExecutorMetadata(allExecutorLevelMetadata)
+                        .applicationEnvironment(deploymentSpec.getEnv())
+                        .build();
+
+                RuleEvalResponse evalResponse = ruleEvaluator.evaluate(ruleBased, schedulingInfo);
+                return (RuleCallStatus.SUCCESS == evalResponse.getStatus() &&
+                        evalResponse.isResult());
             }
 
             @Override
@@ -348,7 +376,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         });
     }
 
-    private boolean hasTagPolicy(final PlacementPolicy policy) {
+    private boolean shouldAllowCombiningOfPolicy(final PlacementPolicy policy) {
         return policy.accept(new PlacementPolicyVisitor<Boolean>() {
             @Override
             public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
@@ -372,7 +400,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                return false;
+                return true;
             }
 
             @Override
@@ -384,7 +412,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
                 return compositePlacementPolicy.getPolicies()
                         .stream()
-                        .anyMatch(DefaultInstanceScheduler.this::hasTagPolicy);
+                        .anyMatch(DefaultInstanceScheduler.this::shouldAllowCombiningOfPolicy);
             }
 
             @Override

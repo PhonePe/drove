@@ -23,6 +23,7 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
+import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
@@ -93,8 +94,10 @@ class ApisTest {
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
 
+    private static final RuleEvaluator ruleEvaluator = mock(RuleEvaluator.class);
+
     private static final ResourceExtension EXT = ResourceExtension.builder()
-            .addResource(new Apis(applicationEngine, taskEngine, localServiceEngine, responseEngine, clusterStateDB))
+            .addResource(new Apis(applicationEngine, taskEngine, localServiceEngine, responseEngine, clusterStateDB, ruleEvaluator))
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .addProvider(new AuthDynamicFeature(
                     new DummyAuthFilter.Builder()

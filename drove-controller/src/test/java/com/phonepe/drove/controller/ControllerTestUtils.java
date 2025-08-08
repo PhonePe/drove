@@ -306,6 +306,11 @@ public class ControllerTestUtils {
     }
 
     public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags, boolean blacklisted) {
+        return generateExecutorNode(index, tags, blacklisted, Map.of());
+    }
+
+
+    public static ExecutorNodeData generateExecutorNode(int index, Set<String> tags, boolean blacklisted, Map<String, String> metadata) {
         val executorId = executorId(index);
         return new ExecutorNodeData(String.format("host%05d", index),
                                     8080,
@@ -329,7 +334,7 @@ public class ControllerTestUtils {
                                     List.of(),
                                     List.of(),
                                     tags,
-                                    Map.of(),
+                                    metadata,
                                     blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE);
     }
 

@@ -54,24 +54,28 @@ public class ControllerOptions {
     public static final Duration DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL = Duration.seconds(3);
     public static final Set<String> DEFAULT_AUDITED_METHODS = Set.of("POST", "PUT");
     public static final List<String> DEFAULT_ALLOWED_MOUNT_DIRS = List.of();
+    public static final int DEFAULT_COMPILED_RULE_CACHE_SIZE = 100;
 
-    public static final ControllerOptions DEFAULT = new ControllerOptions(DEFAULT_STALE_CHECK_INTERVAL,
-                                                                          DEFAULT_STALE_APP_AGE,
-                                                                          DEFAULT_MAX_STALE_INSTANCES_COUNT,
-                                                                          DEFAULT_STALE_INSTANCE_AGE,
-                                                                          DEFAULT_STALE_TASK_AGE,
-                                                                          DEFAULT_STALE_SERVICE_AGE,
-                                                                          DEFAULT_MAX_EVENT_STORAGE_DURATION,
-                                                                          ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
-                                                                          ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
-                                                                          DEFAULT_JOB_RETRY_COUNT,
-                                                                          DEFAULT_JOB_RETRY_INTERVAL,
-                                                                          DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
-                                                                          DEFAULT_AUDITED_METHODS,
-                                                                          DEFAULT_ALLOWED_MOUNT_DIRS,
-                                                                          false,
-                                                                          false,
-                                                                          false);
+    public static final ControllerOptions DEFAULT = new ControllerOptions(
+            DEFAULT_STALE_CHECK_INTERVAL,
+            DEFAULT_STALE_APP_AGE,
+            DEFAULT_MAX_STALE_INSTANCES_COUNT,
+            DEFAULT_STALE_INSTANCE_AGE,
+            DEFAULT_STALE_TASK_AGE,
+            DEFAULT_STALE_SERVICE_AGE,
+            DEFAULT_MAX_EVENT_STORAGE_DURATION,
+            ClusterOpSpec.DEFAULT_CLUSTER_OP_TIMEOUT,
+            ClusterOpSpec.DEFAULT_CLUSTER_OP_PARALLELISM,
+            DEFAULT_JOB_RETRY_COUNT,
+            DEFAULT_JOB_RETRY_INTERVAL,
+            DEFAULT_INSTANCE_STATE_CHECK_RETRY_INTERVAL,
+            DEFAULT_AUDITED_METHODS,
+            DEFAULT_ALLOWED_MOUNT_DIRS,
+            false,
+            false,
+            false,
+            DEFAULT_COMPILED_RULE_CACHE_SIZE
+    );
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
     Duration staleCheckInterval;
@@ -118,4 +122,7 @@ public class ControllerOptions {
     Boolean disableCmdlArgs;
 
     Boolean enableRawDeviceAccess;
+
+    @Range(min = 0, max = 1000)
+    Integer compiledRuleCacheCount;
 }

@@ -18,14 +18,17 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
-import com.phonepe.drove.models.application.placement.policies.*;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPolicy;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -35,6 +38,9 @@ import static com.phonepe.drove.models.application.placement.policies.CompositeP
 import static com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy.CombinerType.OR;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 /**
  *
@@ -44,10 +50,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testScheduling() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
         //Load cluster nodes
@@ -69,10 +72,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testOnePerHostPlacementPolicy() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new OnePerHostPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -92,10 +92,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testMaxNPerHostPlacementPolicy() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -113,12 +110,45 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     }
 
     @Test
+    void testRuleBasedPolicyForSpecificNode() {
+        val rdb = new InMemoryClusterResourcesDB();
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val originalSpec = appSpec();
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj( i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i))).toList());
+        rdb.update(IntStream.rangeClosed(4, 5).mapToObj( i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i, "specialNode", "yes"))).toList());
+        val schedId = "SCHED_ID_1";
+        val instanceId = "I1";
+        int nodeToBeSelected = 2;
+        val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy("'/allocatedExecutorNodeMetadata/envvar1' == \"val" + nodeToBeSelected + "\"", RuleBasedPlacementPolicy.RuleType.HOPE));
+        var node = sched.schedule(schedId, instanceId, spec).orElse(null);
+        assertEquals("EXECUTOR_" + nodeToBeSelected, node.getExecutorId(), "Specific selected node as per ENV variable");
+        sched.discardAllocation(schedId, instanceId, node);
+    }
+
+    @Test
+    void testRuleBasedPolicyFromSpecialNodes() {
+        val rdb = new InMemoryClusterResourcesDB();
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val originalSpec = appSpec();
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj( i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i))).toList());
+        rdb.update(IntStream.rangeClosed(4, 5).mapToObj( i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i, "specialNode", "yes"))).toList());
+        val schedId = "SCHED_ID_1";
+        val instanceId = "I1";
+        val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy(
+                "allocatedExecutorNodeMetadata.containsKey(\"specialNode\")",
+                RuleBasedPlacementPolicy.RuleType.MVEL));
+        var node = sched.schedule(schedId, instanceId, spec).orElse(null);
+        Map<String, String> result = Map.of("EXECUTOR_4", "EXECUTOR_4", "EXECUTOR_5", "EXECUTOR_5");
+        assertNotNull(node, "Special node selected as per ENV variable");
+        assertTrue(result.containsKey(node.getExecutorId()), "Special node selected as per ENV variable");
+        sched.discardAllocation(schedId, instanceId, node);
+
+    }
+
+    @Test
     void testMatchTagPlacementPolicyNormal() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MatchTagPlacementPolicy("test"));
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -139,10 +169,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testNoTagPlacementPolicy() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new NoTagPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -163,10 +190,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCompositePlacementPolicyAnd() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec
                 .withPlacementPolicy(new CompositePlacementPolicy(
@@ -190,10 +214,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCompositePlacementPolicyOR() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new CompositePlacementPolicy(
                 List.of(new MatchTagPlacementPolicy("test"),
@@ -219,10 +240,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testMultiSessionAllocation() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
         //Load cluster nodes
@@ -251,10 +269,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testBlacklistSkipping() {
         val rdb = new InMemoryClusterResourcesDB();
-        val instanceInfoDB = new InMemoryApplicationInstanceInfoDB();
-        val taskDB = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val sched = new DefaultInstanceScheduler(instanceInfoDB, taskDB, localServiceDB, rdb);
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
         //Load cluster nodes

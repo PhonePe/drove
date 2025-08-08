@@ -17,6 +17,7 @@
 package com.phonepe.drove.controller.engine;
 
 import com.codahale.metrics.SharedMetricRegistries;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
@@ -40,11 +41,15 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.rule.RuleEvaluator;
+import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
+import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.testsupport.*;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.events.events.DroveLocalServiceStateChangeEvent;
 import com.phonepe.drove.models.events.events.datatags.LocalServiceEventDataTag;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -72,6 +77,7 @@ import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -140,6 +146,17 @@ class LocalServiceLifecycleManagementEngineTest {
                 bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
                 })
                         .to(DummyExecutorMessageSender.class).asEagerSingleton();
+            }
+
+            @Provides
+            @Singleton
+            public RuleEvaluator ruleEvaluator(ObjectMapper objectMapper) {
+                return new RuleEvaluator(
+                        Map.of(
+                                RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(objectMapper),
+                                RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
+                                )
+                );
             }
 
             @Provides

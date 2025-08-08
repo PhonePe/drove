@@ -40,6 +40,10 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.rule.RuleEvalStrategy;
+import com.phonepe.drove.controller.rule.RuleEvaluator;
+import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
+import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.testsupport.*;
@@ -48,6 +52,7 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.models.events.events.datatags.AppEventDataTag;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -106,7 +111,7 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
     ApplicationLifecycleManagementEngine engine;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         val injector = Guice.createInjector(new AbstractModule() {
             @Override
             protected void configure() {
@@ -130,6 +135,11 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
                 bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState,
                         AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>>() {
                 }).to(InjectingAppActionFactory.class);
+                bind(RuleEvaluator.class)
+                        .toInstance(new RuleEvaluator(Map.of(
+                                RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
+                                RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
+                        )));
                 bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
                 })
                         .to(DummyExecutorMessageSender.class).asEagerSingleton();

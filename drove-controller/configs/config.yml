@@ -74,4 +74,5 @@ options:
   # Turn the following flag off or remove it to enable read access check
   # This is useful only if some kind of auth is enabled
   disableReadAuth: true
+  compiledRuleCacheCount: 2
   enableRawDeviceAccess: true

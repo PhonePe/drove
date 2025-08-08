@@ -52,7 +52,7 @@ class ControllerUtilsTest {
         assertFalse(ControllerUtils.isHostLevelDeployable(new MaxNPerHostPlacementPolicy(2)));
         assertFalse(ControllerUtils.isHostLevelDeployable(new MatchTagPlacementPolicy("aa")));
         assertFalse(ControllerUtils.isHostLevelDeployable(new NoTagPlacementPolicy()));
-        assertFalse(ControllerUtils.isHostLevelDeployable(new RuleBasedPlacementPolicy("")));
+        assertFalse(ControllerUtils.isHostLevelDeployable(new RuleBasedPlacementPolicy("", RuleBasedPlacementPolicy.RuleType.HOPE)));
         assertFalse(ControllerUtils.isHostLevelDeployable(new AnyPlacementPolicy()));
         assertFalse(ControllerUtils.isHostLevelDeployable(new CompositePlacementPolicy(List.of(new AnyPlacementPolicy(),
                                                                                                new MatchTagPlacementPolicy(

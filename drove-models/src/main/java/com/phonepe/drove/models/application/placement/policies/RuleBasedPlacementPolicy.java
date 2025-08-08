@@ -23,13 +23,16 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
+import lombok.Getter;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 /**
  *
  */
+
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -37,12 +40,31 @@ import javax.validation.constraints.NotEmpty;
 @Builder
 public class RuleBasedPlacementPolicy extends PlacementPolicy {
 
-    @NotEmpty(message = "- Specify a hope rule to select/reject node based")
+    public static final String HOPE_RULE = "HOPE";
+    public static final String MVEL_RULE = "MVEL";
+
+    @Getter
+    public enum RuleType {
+        HOPE(HOPE_RULE),
+        MVEL(MVEL_RULE);
+
+        private final String name;
+
+        RuleType(String name) {
+            this.name = name;
+        }
+    }
+
+    @NotEmpty(message = "- Specify a rule to select/reject node based")
     String rule;
 
-    public RuleBasedPlacementPolicy(String rule) {
+    @NotNull
+    RuleType ruleType;
+
+    public RuleBasedPlacementPolicy(String rule, RuleType ruleType) {
         super(PlacementPolicyType.RULE_BASED);
         this.rule = rule;
+        this.ruleType = ruleType;
     }
 
     @Override

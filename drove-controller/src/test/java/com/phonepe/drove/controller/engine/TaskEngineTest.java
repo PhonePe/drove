@@ -26,13 +26,9 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
-import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
-import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryClusterStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
-import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
 import com.phonepe.drove.models.application.MountedVolume;
@@ -74,10 +70,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunStartStop() {
-        val tdb = new InMemoryTaskDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -89,7 +83,7 @@ class TaskEngineTest extends ControllerTestBase {
             val msg = invocationOnMock.getArgument(0, StartTaskMessage.class);
             val instSpec = msg.getSpec();
             inst.set(instSpec);
-            tdb.updateTask(instSpec.getSourceAppName(),
+            pair.getKey().updateTask(instSpec.getSourceAppName(),
                            instSpec.getTaskId(),
                            new TaskInfo(instSpec.getSourceAppName(),
                                         instSpec.getTaskId(),
@@ -112,7 +106,7 @@ class TaskEngineTest extends ControllerTestBase {
         when(comm.send(any(StopTaskMessage.class))).thenAnswer(invocationOnMock -> {
             val msg = invocationOnMock.getArgument(0, StopTaskMessage.class);
             val instSpec = inst.get();
-            tdb.updateTask(instSpec.getSourceAppName(),
+            pair.getKey().updateTask(instSpec.getSourceAppName(),
                            instSpec.getTaskId(),
                            new TaskInfo(instSpec.getSourceAppName(),
                                         instSpec.getTaskId(),
@@ -134,9 +128,9 @@ class TaskEngineTest extends ControllerTestBase {
         });
         val taskSpec = taskSpec();
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -162,10 +156,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunAutoStop() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -174,7 +166,7 @@ class TaskEngineTest extends ControllerTestBase {
         when(comm.send(any(StartTaskMessage.class))).thenAnswer(invocationOnMock -> {
             val msg = invocationOnMock.getArgument(0, StartTaskMessage.class);
             val instSpec = msg.getSpec();
-            tdb.updateTask(instSpec.getSourceAppName(),
+            pair.getKey().updateTask(instSpec.getSourceAppName(),
                            instSpec.getTaskId(),
                            new TaskInfo(instSpec.getSourceAppName(),
                                         instSpec.getTaskId(),
@@ -196,9 +188,9 @@ class TaskEngineTest extends ControllerTestBase {
         });
         val taskSpec = taskSpec();
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -216,7 +208,7 @@ class TaskEngineTest extends ControllerTestBase {
         assertFalse(te.activeTasks().isEmpty());
         val task = te.activeTasks().get(0);
         //This simulates task completion
-        tdb.updateTask(task.getSourceAppName(),
+        pair.getKey().updateTask(task.getSourceAppName(),
                        task.getTaskId(),
                        new TaskInfo(task.getSourceAppName(),
                                     task.getTaskId(),
@@ -240,10 +232,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunTaskLoss() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -253,7 +243,7 @@ class TaskEngineTest extends ControllerTestBase {
         when(comm.send(any(StartTaskMessage.class))).thenAnswer(invocationOnMock -> {
             val msg = invocationOnMock.getArgument(0, StartTaskMessage.class);
             val instSpec = msg.getSpec();
-            tdb.updateTask(instSpec.getSourceAppName(),
+            pair.getKey().updateTask(instSpec.getSourceAppName(),
                            instSpec.getTaskId(),
                            new TaskInfo(instSpec.getSourceAppName(),
                                         instSpec.getTaskId(),
@@ -275,9 +265,9 @@ class TaskEngineTest extends ControllerTestBase {
         });
         val taskSpec = taskSpec();
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -295,7 +285,7 @@ class TaskEngineTest extends ControllerTestBase {
         assertFalse(te.activeTasks().isEmpty());
         val task = te.activeTasks().get(0);
         //This simulates task completion
-        tdb.updateTask(task.getSourceAppName(),
+        pair.getKey().updateTask(task.getSourceAppName(),
                        task.getTaskId(),
                        new TaskInfo(task.getSourceAppName(),
                                     task.getTaskId(),
@@ -319,10 +309,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunZombieKill() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -332,7 +320,7 @@ class TaskEngineTest extends ControllerTestBase {
         val taskSpec = taskSpec();
         when(comm.send(any(StopTaskMessage.class))).thenAnswer(invocationOnMock -> {
             val msg = invocationOnMock.getArgument(0, StopTaskMessage.class);
-            tdb.updateTask(taskSpec.getSourceAppName(),
+            pair.getKey().updateTask(taskSpec.getSourceAppName(),
                            taskSpec.getTaskId(),
                            new TaskInfo(taskSpec.getSourceAppName(),
                                         taskSpec.getTaskId(),
@@ -352,7 +340,7 @@ class TaskEngineTest extends ControllerTestBase {
                                         new Date()));
             return new MessageResponse(msg.getHeader(), MessageDeliveryStatus.ACCEPTED);
         });
-        tdb.updateTask(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
                        new TaskInfo(taskSpec.getSourceAppName(),
                                     taskSpec.getTaskId(),
@@ -371,9 +359,9 @@ class TaskEngineTest extends ControllerTestBase {
                                     new Date(),
                                     new Date()));
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -386,11 +374,11 @@ class TaskEngineTest extends ControllerTestBase {
                                 ControllerOptions.DEFAULT,
                                 httpCaller());
         te.handleZombieTask(taskSpec.getSourceAppName(), taskSpec.getTaskId());
-        CommonTestUtils.waitUntil(() -> tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+        CommonTestUtils.waitUntil(() -> pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
                 .map(TaskInfo::getState)
                 .filter(STOPPED::equals)
                 .isPresent());
-        assertTrue(tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+        assertTrue(pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
                            .map(TaskInfo::getState)
                            .filter(STOPPED::equals)
                            .isPresent());
@@ -398,10 +386,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunRecovery() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -410,7 +396,7 @@ class TaskEngineTest extends ControllerTestBase {
         val taskSpec = taskSpec();
         when(comm.send(any(StopTaskMessage.class))).thenAnswer(invocationOnMock -> {
             val msg = invocationOnMock.getArgument(0, StopTaskMessage.class);
-            tdb.updateTask(taskSpec.getSourceAppName(),
+            pair.getKey().updateTask(taskSpec.getSourceAppName(),
                            taskSpec.getTaskId(),
                            new TaskInfo(taskSpec.getSourceAppName(),
                                         taskSpec.getTaskId(),
@@ -431,9 +417,9 @@ class TaskEngineTest extends ControllerTestBase {
             return new MessageResponse(msg.getHeader(), MessageDeliveryStatus.ACCEPTED);
         });
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -446,7 +432,7 @@ class TaskEngineTest extends ControllerTestBase {
                                 ControllerOptions.DEFAULT,
                                 httpCaller());
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
-        tdb.updateTask(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
                        new TaskInfo(taskSpec.getSourceAppName(),
                                     taskSpec.getTaskId(),
@@ -475,17 +461,15 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskStartFailIdCollision() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
 
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
-        tdb.updateTask(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
                        new TaskInfo(taskSpec.getSourceAppName(),
                                     taskSpec.getTaskId(),
@@ -504,9 +488,9 @@ class TaskEngineTest extends ControllerTestBase {
                                     new Date(),
                                     new Date()));
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -528,10 +512,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskStartFailNoResource() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -539,7 +521,7 @@ class TaskEngineTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec()
                 .withResources(List.of(new CPURequirement(10000), new MemoryRequirement(512000000)));
-        tdb.updateTask(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
                        new TaskInfo(taskSpec.getSourceAppName(),
                                     taskSpec.getTaskId(),
@@ -558,9 +540,9 @@ class TaskEngineTest extends ControllerTestBase {
                                     new Date(),
                                     new Date()));
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -579,10 +561,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskStartFailNoWhitelisting() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -590,7 +570,7 @@ class TaskEngineTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec()
                 .withVolumes(List.of(new MountedVolume("/etc", "/etc", MountedVolume.MountMode.READ_WRITE)));
-        tdb.updateTask(taskSpec.getSourceAppName(),
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
                        taskSpec.getTaskId(),
                        new TaskInfo(taskSpec.getSourceAppName(),
                                     taskSpec.getTaskId(),
@@ -609,9 +589,9 @@ class TaskEngineTest extends ControllerTestBase {
                                     new Date(),
                                     new Date()));
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -632,10 +612,8 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     @SuppressWarnings("unchecked")
     void testTaskStartSchedFail() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -645,9 +623,9 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val jobSched = (JobExecutor<Boolean>) mock(JobExecutor.class);
         when(jobSched.schedule(any(JobTopology.class), any(), any())).thenReturn(null);
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -666,10 +644,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskKillFail() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -677,9 +653,9 @@ class TaskEngineTest extends ControllerTestBase {
         val comm = mock(ControllerCommunicator.class);
         val taskSpec = taskSpec();
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -702,10 +678,10 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     @SuppressWarnings("unchecked")
     void testTaskKillSchedFail() {
-        val tdb = mock(TaskDB.class);
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+        var taskDB = mock(TaskDB.class);
+
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
         when(le.isLeader()).thenReturn(true);
@@ -715,7 +691,7 @@ class TaskEngineTest extends ControllerTestBase {
         val executor = Executors.newCachedThreadPool();
         val jobSched = (JobExecutor<Boolean>) mock(JobExecutor.class);
         when(jobSched.schedule(any(JobTopology.class), any(), any())).thenReturn(null);
-        when(tdb.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()))
+        when(taskDB.task(taskSpec.getSourceAppName(), taskSpec.getTaskId()))
                 .thenReturn(Optional.of(
                         new TaskInfo(taskSpec.getSourceAppName(),
                                      taskSpec.getTaskId(),
@@ -733,10 +709,10 @@ class TaskEngineTest extends ControllerTestBase {
                                      "",
                                      new Date(),
                                      new Date())));
-        when(tdb.onStateChange()).thenReturn(new ConsumingFireForgetSignal<>());
-        val te = new TaskEngine(tdb,
+        when(taskDB.onStateChange()).thenReturn(new ConsumingFireForgetSignal<>());
+        val te = new TaskEngine(taskDB,
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
@@ -759,10 +735,8 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testResourceCrunch() {
-        val tdb = new InMemoryTaskDB();
-        val localServiceDB = new InMemoryLocalServiceStateDB();
-        val instanceDB = new InMemoryApplicationInstanceInfoDB();
         val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(List.of(new ExecutorNodeData("poor-host",
                                                 8080,
                                                 NodeTransportType.HTTP,
@@ -786,9 +760,9 @@ class TaskEngineTest extends ControllerTestBase {
 
         val comm = mock(ControllerCommunicator.class);
         val executor = Executors.newCachedThreadPool();
-        val te = new TaskEngine(tdb,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
-                                new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb),
+                                pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),

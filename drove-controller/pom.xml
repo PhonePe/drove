@@ -28,6 +28,8 @@
     <properties>
         <guicey-server-pages.version>5.10.2</guicey-server-pages.version>
         <handlebars.version>4.3.1</handlebars.version>
+        <hope-lang.version>2.0.9</hope-lang.version>
+        <mvel.version>2.5.0.Final</mvel.version>
     </properties>
 
     <dependencies>
@@ -93,6 +95,22 @@
                     <artifactId>guava</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.appform.hope</groupId>
+            <artifactId>hope-lang</artifactId>
+            <version>${hope-lang.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.jayway.jsonpath</groupId>
+                    <artifactId>json-path</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.mvel</groupId>
+            <artifactId>mvel2</artifactId>
+            <version>${mvel.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>

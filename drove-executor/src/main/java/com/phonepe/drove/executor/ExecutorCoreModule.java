@@ -60,6 +60,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.SynchronousQueue;
 

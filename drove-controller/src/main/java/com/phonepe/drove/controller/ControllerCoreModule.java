@@ -57,6 +57,7 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
+import io.appform.hope.core.functions.impl.arr.In;
 import io.dropwizard.setup.Environment;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -140,9 +141,34 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    public Map<RuleBasedPlacementPolicy.RuleType, RuleEvalStrategy> provideRuleEvalStrategyRegistry(MvelRuleStrategy mvelRuleStrategy, HopeRuleStrategy hopeRuleStrategy) {
+        return Map.of(
+                RuleBasedPlacementPolicy.RuleType.MVEL, mvelRuleStrategy,
+                RuleBasedPlacementPolicy.RuleType.HOPE, hopeRuleStrategy
+        );
+    }
+
+    @Provides
+    @Singleton
     @Named("JobLevelThreadFactory")
     public ThreadFactory jobLevelThreadFactory() {
         return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
+    }
+
+    @Provides
+    @Singleton
+    @Named("HopeRuleCompiledCacheSize")
+    public Integer hopeRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
+        return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
+                                          ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
+    }
+
+    @Provides
+    @Singleton
+    @Named("MvelRuleCompiledCacheSize")
+    public Integer mvelRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
+        return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
+                ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
     }
 
     @Provides

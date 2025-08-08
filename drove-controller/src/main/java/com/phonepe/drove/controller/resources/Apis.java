@@ -25,6 +25,8 @@ import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.masking.EnforceMasking;
+import com.phonepe.drove.models.api.DryRunRuleInfo;
+import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -40,6 +42,7 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
+import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.Auth;
@@ -84,6 +87,7 @@ public class Apis {
 
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
+    private final RuleEvaluator ruleEvaluator;
 
 
     @Inject
@@ -92,12 +96,14 @@ public class Apis {
             TaskEngine taskEngine,
             LocalServiceLifecycleManagementEngine localServiceEngine,
             ResponseEngine responseEngine,
-            ClusterStateDB clusterStateDB) {
+            ClusterStateDB clusterStateDB,
+            RuleEvaluator ruleEvaluator) {
         this.applicationEngine = applicationEngine;
         this.taskEngine = taskEngine;
         this.localServiceEngine = localServiceEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
+        this.ruleEvaluator = ruleEvaluator;
     }
 
     @POST
@@ -116,6 +122,38 @@ public class Apis {
             return ControllerUtils.ok(Map.of("valid", true));
         }
         return ControllerUtils.commandValidationFailure(res.getMessages());
+    }
+
+    @POST
+    @Path("/applications/placementpolicy/rule/dryrun")
+    @Timed
+    public Response validatePlacementRule(
+            @Auth final DroveUser user,
+            @Valid @NotNull final DryRunRuleInfo dryRunRuleInfo) {
+
+        if ( CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return maintenanceModeError();
+        }
+        val policy = dryRunRuleInfo.getRuleBasedPlacementPolicy();
+        val schedulingInfo = dryRunRuleInfo.getSchedulingInfo();
+
+        val checkResponse = ruleEvaluator.check(policy);
+        if (RuleCallStatus.SUCCESS != checkResponse.getStatus()) {
+            return ControllerUtils.ok(Map.of(
+                    "status", false,
+                    "checkResult", checkResponse.getError(),
+                    "evalResult", null));
+        }
+
+        val evalResponse = ruleEvaluator.evaluate(policy, schedulingInfo);
+
+        log.info("ACCESS_AUDIT: Placement rule dryrun: {} received from user: {}. Validation result: {}",
+                policy.getRule(), user.getName(), evalResponse.isResult());
+
+        return ControllerUtils.ok(Map.of(
+                "status", evalResponse.getStatus() == RuleCallStatus.SUCCESS,
+                "checkResult", checkResponse,
+                "evalResult", evalResponse));
     }
 
     @POST
