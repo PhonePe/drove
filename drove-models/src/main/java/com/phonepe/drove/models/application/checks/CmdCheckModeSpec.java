@@ -36,9 +36,12 @@ public class CmdCheckModeSpec extends CheckModeSpec {
     @NotEmpty
     String command;
 
-    public CmdCheckModeSpec(String command) {
+    boolean shellDisabled;
+
+    public CmdCheckModeSpec(String command, boolean shellDisabled) {
         super(CheckMode.CMD);
         this.command = command;
+        this.shellDisabled = shellDisabled;
     }
 
     @Override

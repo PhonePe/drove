@@ -53,7 +53,7 @@ public class CmdChecker implements Checker {
         }
 
         val output = runCommandInContainer(
-                containerId, context.getClient(), cmdCheckModeSpec.getCommand());
+                containerId, context.getClient(), cmdCheckModeSpec.getCommand(), cmdCheckModeSpec.isShellDisabled());
         log.debug("Command output: {}", output);
         val msg = output.getOutput();
         val exitCode = output.getStatus();

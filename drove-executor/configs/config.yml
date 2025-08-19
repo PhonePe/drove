@@ -1,3 +1,4 @@
+# sudo ln -sf $HOME/.colima/docker.sock /var/run/docker.sock if dockerjava is unable to connect to docker daemon on Mac OS
 server:
   applicationConnectors:
     - type: http
@@ -32,7 +33,7 @@ logging:
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceLogId}] %message%n"
 
     - type: drove
-      logPath: "/home/santanu/drove/drove-executor"
+      logPath: "${HOME}/drove/drove-executor"
       archivedLogFileSuffix: "%d"
       archivedFileCount: 3
       threshold: INFO
@@ -41,7 +42,7 @@ logging:
       archive: true
 
 options:
-  hostname: host-1
+  hostname: localhost
   cacheImages: true
   maxOpenFiles: 10_000
   logBufferSize: 5m

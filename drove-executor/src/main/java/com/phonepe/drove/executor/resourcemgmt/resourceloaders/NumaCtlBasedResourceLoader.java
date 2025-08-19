@@ -16,7 +16,10 @@
 
 package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -27,9 +30,11 @@ import lombok.val;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -48,11 +53,15 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
         this.resourceConfig = resourceConfig;
     }
 
-
     @Override
     @SneakyThrows
     public Map<Integer, ResourceManager.NodeInfo> loadSystemResources() {
-        return parseCommandOutput(fetchSystemResourceUsingNumaCTL());
+        if (CommonUtils.isRunningOnMacOS()) {
+            log.info("Since numactl is not supported on systems running Mac OS, " +
+                    "using sysctl to automatically determine node resources");
+            return fetchSystemResourcesUsingSysCTL();
+        }
+        return parseNumaCTLOutput(fetchSystemResourceUsingNumaCTL());
     }
 
     protected List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
@@ -70,8 +79,56 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
         return lines;
     }
 
-    private Map<Integer, ResourceManager.NodeInfo> parseCommandOutput(List<String> lines) {
+    /**
+     * This utility method runs commands to determine available vCores and Memory on Mac OS since `numactl` is unavailable.
+     * Note: This method should only be used on Mac OS since the commands used are OS specific.
+     * @return a {@code Map} between the numa node id to {@code NodeInfo}
+     * @throws Exception - when command execution fails
+     */
+    private Map<Integer, ResourceManager.NodeInfo> fetchSystemResourcesUsingSysCTL() throws Exception {
+        Preconditions.checkState(CommonUtils.isRunningOnMacOS(),
+                "Sysctl should be used only on Mac OS for determining available vCores and Memory");
+        String coreCountCmd = "/usr/sbin/sysctl -a | grep machdep.cpu.core.count | awk '{print $2}'";
+        String memorySizeCmd = "/usr/sbin/sysctl -a | grep 'hw.memsize:' | awk '{print $2}'";
+        int physicalCoreCount = parseCommandOutput(coreCountCmd, true)
+                .stream()
+                .findFirst()
+                .map(Integer::parseInt)
+                .orElseThrow(() -> new RuntimeException("Unexpected empty command output [command = %s]".formatted(coreCountCmd)));
+        long memorySizeInBytes = parseCommandOutput(memorySizeCmd, true)
+                .stream()
+                .findFirst()
+                .map(Long::parseLong)
+                .orElseThrow(() -> new RuntimeException("Unexpected empty command output [command = %s]".formatted(memorySizeCmd)));
+        Set<Integer> physicalCores = new HashSet<>();
+        for (int i = 0; i < physicalCoreCount; i++) {
+            physicalCores.add(i);
+        }
+        // convert memory returned by sysctl from bytes to MiB
+        long memoryInMiB = memorySizeInBytes / (1024 * 1024);
+        long exposedMemoryInMiB = (long) (memoryInMiB * (resourceConfig.getExposedMemPercentage() / 100.0));
+        return Map.of(
+                0, ResourceManager.NodeInfo
+                        .from(physicalCores, exposedMemoryInMiB));
+    }
 
+    /**
+     * This utility method parses the output to identify the mapping between vCPU cores, memory size and NUMA nodes.
+     * The output for `numactl -H` commands looks like below on Linux systems.
+     * Output:
+     * available: 2 nodes (0-1)
+     * node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+     * node 0 size: 241567 MB
+     * node 0 free: 207169 MB
+     * node 1 cpus: 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79
+     * node 1 size: 290264 MB
+     * node 1 free: 248480 MB
+     * node distances:
+     * node   0   1
+     *   0:  10  21
+     *   1:  21  10
+     */
+    private Map<Integer, ResourceManager.NodeInfo> parseNumaCTLOutput(final List<String> lines) {
         val cores = fetchNodeToCPUMap(lines);
         val mem = fetchNodeToMemoryMap(lines);
         if (!Sets.difference(cores.keySet(), mem.keySet()).isEmpty()) {
@@ -87,6 +144,59 @@ public class NumaCtlBasedResourceLoader implements ResourceLoader {
                                 e.getValue(),
                                 mem.get(e.getKey()))))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond));
+    }
+
+    /**
+     * Run the given command and returns the output lines
+     * @param commandWithArgs - command along with its arguments to run
+     * @param runWithShell - whether to run the command via a shell program
+     * @return {@code List<String>} which represents the output lines
+     * @throws InterruptedException - when the command execution is interrupted
+     * @throws IOException - when the command exits with an error
+     */
+    private List<String> parseCommandOutput(final String commandWithArgs,
+                                            final boolean runWithShell) throws InterruptedException, IOException {
+        try {
+            String[] cmdArgsArray;
+            if (!runWithShell) {
+                cmdArgsArray = commandWithArgs.split("[ ]+");
+            } else {
+                cmdArgsArray = new String[] {"/bin/sh", "-c", commandWithArgs};
+            }
+            String cmdString = Joiner.on(" ").join(cmdArgsArray);
+            log.info("Running the following command: {}", cmdString);
+            val process = new ProcessBuilder(cmdArgsArray).start();
+            List<String> lines;
+            List<String> errLines;
+            // wait for up to 10 seconds for the command to finish
+            boolean hasCompleted = process.waitFor(10, TimeUnit.SECONDS);
+            if (!hasCompleted) {
+                String errMessage = "Command execution took more than 10 seconds. [command = %s]".formatted(
+                        cmdString);
+                log.error(errMessage);
+                throw new IOException(errMessage);
+            }
+            try (val input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                lines = input.lines().toList();
+            }
+            int exitCode = process.exitValue();
+            if (exitCode != 0) {
+                try (val input = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    errLines = input.lines().toList();
+                }
+                log.error("Error running command: \n{}", errLines);
+                throw new IOException(
+                        "Command: '%s' returned: %d".formatted(commandWithArgs, exitCode));
+            }
+            return lines;
+        } catch (IOException e) {
+            log.error("Encountered exception while running command: [{}]", commandWithArgs, e);
+            throw e;
+        } catch (InterruptedException e) {
+            log.warn("Command run is interrupted");
+            Thread.currentThread().interrupt();
+            throw e;
+        }
     }
 
     private Map<Integer, Set<Integer>> fetchNodeToCPUMap(List<String> lines) {

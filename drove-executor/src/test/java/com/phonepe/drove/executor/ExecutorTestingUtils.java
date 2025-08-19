@@ -157,8 +157,8 @@ public class ExecutorTestingUtils {
                                                                                              "",
                                                                                              Duration.seconds(1),
                                                                                              useHttps),
-                                                                       new CmdCheckModeSpec("echo -n 1"),
-                                                                       new CmdCheckModeSpec("SomeWrongCommand")
+                                                                       new CmdCheckModeSpec("echo -n 1", false),
+                                                                       new CmdCheckModeSpec("SomeWrongCommand", false)
                                                                       ),
                                                                Duration.seconds(1)),
                                            null,

@@ -45,7 +45,7 @@ class CmdCheckerTest extends AbstractTestBase {
         runTest(containerId -> {
             val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false)
                     .setDockerInstanceId(containerId);
-            try (val cc = new CmdChecker(new CmdCheckModeSpec("/bin/echo XX"), ctx)) {
+            try (val cc = new CmdChecker(new CmdCheckModeSpec("/bin/echo XX", false), ctx)) {
                 val result = cc.call();
                 assertEquals(CheckResult.Status.HEALTHY, result.getStatus());
                 assertTrue(Strings.isNullOrEmpty(result.getMessage()));
@@ -59,7 +59,7 @@ class CmdCheckerTest extends AbstractTestBase {
         runTest(containerId -> {
             val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false)
                     .setDockerInstanceId(containerId);
-            try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
+            try(val cc = new CmdChecker(new CmdCheckModeSpec("blah", false), ctx)) {
                 val result = cc.call();
                 assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
                 assertFalse(Strings.isNullOrEmpty(result.getMessage()));
@@ -71,7 +71,7 @@ class CmdCheckerTest extends AbstractTestBase {
     @SneakyThrows
     void testNoContainer() {
         val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false);
-        try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
+        try(val cc = new CmdChecker(new CmdCheckModeSpec("blah", false), ctx)) {
             val result = cc.call();
             assertEquals(CheckResult.Status.UNHEALTHY, result.getStatus());
             assertFalse(Strings.isNullOrEmpty(result.getMessage()));
@@ -83,7 +83,7 @@ class CmdCheckerTest extends AbstractTestBase {
     void testError() {
         val ctx = new InstanceActionContext<ApplicationInstanceSpec>("EX1", null, DOCKER_CLIENT, false)
                 .setDockerInstanceId("WrongId");
-        try(val cc = new CmdChecker(new CmdCheckModeSpec("blah"), ctx)) {
+        try(val cc = new CmdChecker(new CmdCheckModeSpec("blah", false), ctx)) {
             assertEquals(CheckResult.Status.UNHEALTHY, cc.call().getStatus());
         }
         catch (NotFoundException e) {

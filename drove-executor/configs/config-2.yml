@@ -32,7 +32,7 @@ logging:
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceLogId}] %message%n"
 
     - type: drove
-      logPath: "/home/santanu/drove/drove-executor"
+      logPath: "${HOME}/drove/drove-executor"
       archivedLogFileSuffix: "%d"
       archivedFileCount: 3
       threshold: INFO

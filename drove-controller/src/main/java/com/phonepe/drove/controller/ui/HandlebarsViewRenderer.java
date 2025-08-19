@@ -20,6 +20,7 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.cache.GuavaTemplateCache;
 import com.github.jknack.handlebars.helper.ConditionalHelpers;
+import com.github.jknack.handlebars.helper.StringHelpers;
 import com.github.jknack.handlebars.io.TemplateSource;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -75,6 +76,7 @@ public class HandlebarsViewRenderer implements ViewRenderer {
             .registerHelper("gte", ConditionalHelpers.gte)
             .registerHelper("lt", ConditionalHelpers.lt)
             .registerHelper("lte", ConditionalHelpers.lte)
+            .registerHelper("lower", StringHelpers.lower)
             .registerHelpers(new CustomHelpers())
             ;
 

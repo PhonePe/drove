@@ -74,6 +74,7 @@ import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -344,4 +345,10 @@ public class CommonUtils {
                 .onFailure(failureObserver)
                 .get(action::getAsBoolean);
     }
+
+    public static boolean isRunningOnMacOS() {
+        val osName = ManagementFactory.getOperatingSystemMXBean().getName();
+        return !Strings.isNullOrEmpty(osName) && osName.toLowerCase().contains("mac");
+    }
+
 }

@@ -70,8 +70,6 @@ public class DroveAppenderFactory<E extends DeferredProcessingAware> extends Abs
 
     private boolean immediateFlush = true;
 
-
-
     @Override
     @SuppressWarnings("java:S1075")
     public Appender<ILoggingEvent> build(

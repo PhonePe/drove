@@ -61,6 +61,7 @@ public abstract class CommonExecutableFetchAction<E extends DeployedExecutionObj
                                        "Pull operation interrupted");
         }
         catch (Exception e) {
+            log.error("Error while pulling image " + image, e);
             return StateData.errorFrom(currentState,
                                        defaultErrorState(),
                                        "Error while pulling image " + image + ": " + e.getMessage());
