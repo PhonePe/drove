@@ -24,6 +24,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>drove-hazelcast-discovery</artifactId>
+    <name>Hazelcast Node Discovery for Drove cluster</name>
 
     <properties>
         <hazelcast.version>5.2.1</hazelcast.version>

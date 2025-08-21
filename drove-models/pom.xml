@@ -24,6 +24,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>drove-models</artifactId>
+    <name>Models used by Drove APIs</name>
 
     <dependencies>
         <dependency>

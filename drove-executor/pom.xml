@@ -24,6 +24,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>drove-executor</artifactId>
+    <name>Executor Service For Drove</name>
 
     <properties>
         <docker-java.version>3.3.6</docker-java.version>

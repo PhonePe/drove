@@ -24,6 +24,7 @@
     </parent>
 
     <artifactId>drove-events-client</artifactId>
+    <name>Drove Cluster Event Listener</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

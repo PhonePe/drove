@@ -18,16 +18,20 @@ package com.phonepe.drove.common;
 
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
-import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
-import lombok.val;
+import com.phonepe.drove.models.common.Protocol;
 import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
@@ -40,6 +44,7 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.common.CommonUtils.*;
 import static com.phonepe.drove.models.common.HTTPVerb.GET;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -159,6 +164,24 @@ class CommonUtilsTest {
                                                              null,
                                                              null,
                                                              null)));
+        assertEquals("test", instanceId(new LocalServiceInstanceSpec(null,
+                                                                     null,
+                                                                     "test",
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     false,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null)));
     }
 
     @Test
@@ -178,5 +201,44 @@ class CommonUtilsTest {
                                                                      io.dropwizard.util.Duration.seconds(1),
                                                                      false),
                                                Duration.ofSeconds(2)));
+    }
+
+    @Test
+    void testInternalCreateHttpsClient() {
+        assertNotNull(createInternalHttpClient(new HTTPCheckModeSpec(Protocol.HTTPS,
+                                                                     "admin",
+                                                                     "/",
+                                                                     GET,
+                                                                     Set.of(200),
+                                                                     "",
+                                                                     io.dropwizard.util.Duration.seconds(1),
+                                                                     true),
+                                               Duration.ofSeconds(2)));
+    }
+
+    @Test
+    void testWaitForAction() {
+        assertTrue(waitForAction(RetryPolicy.<Boolean>builder().build(),
+                      () -> true));
+    }
+
+    @Test
+    void testForIsRunningOnMacOS() {
+        try(final var mFactory = mockStatic(ManagementFactory.class)) {
+            {
+                final var opBean = mock(OperatingSystemMXBean.class);
+                mFactory.when(ManagementFactory::getOperatingSystemMXBean).thenReturn(opBean);
+                when(opBean.getName()).thenReturn("linux");
+                assertFalse(isRunningOnMacOS());
+            }
+        }
+        try(final var mFactory = mockStatic(ManagementFactory.class)) {
+            {
+                final var opBean = mock(OperatingSystemMXBean.class);
+                mFactory.when(ManagementFactory::getOperatingSystemMXBean).thenReturn(opBean);
+                when(opBean.getName()).thenReturn("mac");
+                assertTrue(isRunningOnMacOS());
+            }
+        }
     }
 }

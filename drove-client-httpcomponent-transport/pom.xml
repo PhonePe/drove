@@ -24,6 +24,7 @@
     </parent>
 
     <artifactId>drove-client-httpcomponent-transport</artifactId>
+    <name>Apache HTTP Component based transport for Drove Client</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

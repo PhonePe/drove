@@ -25,6 +25,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>drove-authentication</artifactId>
+    <name>Authentication Module For Drove</name>
 
     <properties>
         <java-jwt.version>3.19.2</java-jwt.version>

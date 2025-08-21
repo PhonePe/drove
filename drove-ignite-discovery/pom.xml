@@ -6,7 +6,7 @@
         <version>1.32-SNAPSHOT</version>
     </parent>
     <artifactId>drove-ignite-discovery</artifactId>
-    <name>drove-ignite-discovery</name>
+    <name>Apache Ignite Node Discovery for Drove</name>
     <url>http://maven.apache.org</url>
 
     <properties>

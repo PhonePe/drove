@@ -24,6 +24,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>drove-controller</artifactId>
+    <name>Cluster Controller for Drove</name>
 
     <properties>
         <guicey-server-pages.version>5.10.2</guicey-server-pages.version>
