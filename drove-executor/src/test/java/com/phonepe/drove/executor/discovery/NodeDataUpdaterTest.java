@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.executor.discovery;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Guice;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonUtils;
@@ -25,17 +24,15 @@ import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
+import com.phonepe.drove.executor.managed.MetadataManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.managed.MetadataManager;
-import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.models.info.nodedata.*;
-import io.dropwizard.setup.Environment;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,7 +78,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                  rdb,
                                                  ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
-        val mm = new MetadataManager(rCfg.getMetadata(), Map.of());
+        val mm = new MetadataManager(rCfg.getMetadata(), METRIC_REGISTRY);
         val ndu = new NodeDataUpdater(eim, nds, rdb, ie, te, lse, rCfg, blm, mm);
         ndu.start();
         assertTrue(nds.nodes(NodeType.EXECUTOR).isEmpty());

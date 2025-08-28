@@ -31,6 +31,11 @@ import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceState;
+import com.phonepe.drove.models.operation.localserviceops.LocalServiceDestroyOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.val;
@@ -44,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
+import static com.phonepe.drove.controller.ControllerTestUtils.localServiceSpec;
 import static com.phonepe.drove.controller.config.ControllerOptions.DEFAULT;
 import static com.phonepe.drove.controller.config.ControllerOptions.DEFAULT_MAX_STALE_INSTANCES_COUNT;
 import static com.phonepe.drove.models.application.ApplicationState.MONITORING;
@@ -193,6 +199,104 @@ class StaleDataCleanerTest {
         sdc.stop();
     }
 
+    @Test
+    void testStaleServiceCleanup() {
+        val appStateDB = new InMemoryApplicationStateDB();
+        val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val lsDB = new InMemoryLocalServiceStateDB();
+        val taskDB = mock(TaskDB.class);
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+
+        val sdc = new StaleDataCleaner(appStateDB,
+                                       instanceDB,
+                                       taskDB,
+                                       lsDB,
+                                       le,
+                                       appEngine,
+                                       localServiceEngine,
+                                       ControllerOptions.DEFAULT,
+                                       Duration.ofSeconds(1), ControllerTestUtils.DEFAULT_CLUSTER_OP);
+
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val oldDate = Date.from(LocalDate.now().minusDays(32).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        lsDB.updateService(serviceId,
+                           new LocalServiceInfo(serviceId, spec, 1, ActivationState.INACTIVE, oldDate, oldDate));
+
+        val testRun = new AtomicBoolean();
+        when(localServiceEngine.currentState(anyString())).thenReturn(Optional.of(LocalServiceState.INACTIVE));
+        when(localServiceEngine.handleOperation(any(LocalServiceDestroyOperation.class)))
+                .thenAnswer(invocationOnMock -> {
+                    val dId = invocationOnMock.getArgument(0, LocalServiceDestroyOperation.class).getServiceId();
+                    testRun.set(dId.equals(serviceId));
+                    lsDB.removeService(serviceId);
+                    return ValidationResult.success();
+                });
+        sdc.start();
+        await().atMost(Duration.ofMinutes(1))
+                .until(testRun::get);
+        sdc.stop();
+        assertNull(lsDB.service(serviceId).orElse(null));
+    }
+
+    @Test
+    void testStaleServiceInstanceCleanup() {
+        val appStateDB = new InMemoryApplicationStateDB();
+        val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val taskDB = mock(TaskDB.class);
+        val lsDB = new InMemoryLocalServiceStateDB();
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+
+        val sdc = new StaleDataCleaner(appStateDB,
+                                       instanceDB,
+                                       taskDB,
+                                       lsDB,
+                                       le,
+                                       appEngine,
+                                       localServiceEngine,
+                                       ControllerOptions.DEFAULT,
+                                       Duration.ofSeconds(1), ControllerTestUtils.DEFAULT_CLUSTER_OP);
+
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val oldDate = Date.from(LocalDate.now().minusDays(32).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        lsDB.updateService(serviceId,
+                           new LocalServiceInfo(serviceId, spec, 2, ActivationState.ACTIVE, new Date(), new Date()));
+        IntStream.rangeClosed(1, 100)
+                .forEach(i -> {
+                    val instance = ControllerTestUtils.generateLocalServiceInstanceInfo(
+                            serviceId,
+                            spec,
+                            i,
+                            LocalServiceInstanceState.STOPPED,
+                            oldDate,
+                            null);
+                    lsDB.updateInstanceState(serviceId, instance.getInstanceId(), instance);
+                });
+        when(localServiceEngine.currentState(anyString())).thenReturn(Optional.of(LocalServiceState.ACTIVE));
+
+        sdc.start();
+        await().atMost(Duration.ofMinutes(1)).until(() -> lsDB.oldInstances(serviceId)
+                .isEmpty());
+        sdc.stop();
+    }
+
+    @Test
+    void testStaleLocalServiceInstanceCleanupByCount() {
+        {
+            testCleanupByLocalServiceInstanceCount(ControllerOptions.DEFAULT, DEFAULT_MAX_STALE_INSTANCES_COUNT);
+        }
+        {
+            testCleanupByLocalServiceInstanceCount(DEFAULT.withMaxStaleInstancesCount(110), 110);
+        }
+    }
+
     private static void generateTasks(InMemoryTaskDB taskDB, java.util.Date oldDate, String appName, int start) {
         IntStream.rangeClosed(start, start + 100)
                 .forEach(i -> {
@@ -243,6 +347,46 @@ class StaleDataCleanerTest {
         sdc.start();
         await().atMost(Duration.ofMinutes(1))
                 .until(() -> instanceDB.oldInstances(appId, 0, Integer.MAX_VALUE).size() == expectedCount);
+        sdc.stop();
+    }
+
+    private static void testCleanupByLocalServiceInstanceCount(ControllerOptions options, int expectedCount) {
+        val appStateDB = new InMemoryApplicationStateDB();
+        val instanceDB = new InMemoryApplicationInstanceInfoDB();
+        val taskDB = mock(TaskDB.class);
+        val lsDB = new InMemoryLocalServiceStateDB();
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+
+        val sdc = new StaleDataCleaner(appStateDB,
+                                       instanceDB,
+                                       taskDB,
+                                       lsDB,
+                                       le,
+                                       appEngine,
+                                       localServiceEngine,
+                                       options,
+                                       Duration.ofSeconds(1),
+                                       ControllerTestUtils.DEFAULT_CLUSTER_OP);
+
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val date = new java.util.Date();
+        lsDB.updateService(serviceId, new LocalServiceInfo(serviceId, spec, 1, ActivationState.ACTIVE, date, date));
+        IntStream.rangeClosed(1, 250)
+                .forEach(i -> {
+                    val instance = ControllerTestUtils.generateLocalServiceInstanceInfo(
+                            serviceId, spec, i, LocalServiceInstanceState.STOPPED, date,
+                            null);
+                    lsDB.updateInstanceState(serviceId, instance.getInstanceId(), instance);
+                });
+        when(localServiceEngine.currentState(anyString())).thenReturn(Optional.of(LocalServiceState.ACTIVE));
+
+        sdc.start();
+        await().atMost(Duration.ofMinutes(1))
+                .until(() -> lsDB.oldInstances(serviceId).size() == expectedCount);
         sdc.stop();
     }
 

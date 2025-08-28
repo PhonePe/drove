@@ -17,6 +17,7 @@
 package com.phonepe.drove.executor.resourcemgmt.metadata.providers;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.executor.resourcemgmt.metadata.config.EnvironmentBasedMetadataProviderConfig;
 import com.phonepe.drove.executor.resourcemgmt.metadata.config.MetadataProviderType;
 import com.phonepe.drove.executor.resourcemgmt.metadata.filters.RegexMatchPredicate;
@@ -32,17 +33,34 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EnvironmentBasedMetadataProvider implements MetadataProvider {
 
+    @MetadataProviderNamed(MetadataProviderType.ENVIRONMENT)
+    public static class EnviornmentBasedMetadataProviderFactory implements MetadataProviderFactory<EnvironmentBasedMetadataProviderConfig, EnvironmentBasedMetadataProvider> {
+
+        @Override
+        public EnvironmentBasedMetadataProvider create(
+                final MetricRegistry metricRegistry,
+                final EnvironmentBasedMetadataProviderConfig config) {
+            return new EnvironmentBasedMetadataProvider(metricRegistry, config);
+        }
+    }
+
     private final Predicate<Map.Entry<String, String>> matcher;
 
     private final Supplier<Map<String, String>> dataProvider;
 
     @Inject
-    public EnvironmentBasedMetadataProvider(final MetricRegistry metricRegistry, final EnvironmentBasedMetadataProviderConfig config) {
+    public EnvironmentBasedMetadataProvider(
+            final MetricRegistry metricRegistry,
+            final EnvironmentBasedMetadataProviderConfig config) {
         this(metricRegistry, config, System::getenv);
     }
 
     @SuppressWarnings("unused")
-    public EnvironmentBasedMetadataProvider(final MetricRegistry metricRegistry, final EnvironmentBasedMetadataProviderConfig config, Supplier<Map<String, String>> dataProvider) {
+    @VisibleForTesting
+    public EnvironmentBasedMetadataProvider(
+            final MetricRegistry metricRegistry,
+            final EnvironmentBasedMetadataProviderConfig config,
+            final Supplier<Map<String, String>> dataProvider) {
         this.matcher = new RegexMatchPredicate(config.getWhitelistedVariables());
         this.dataProvider = dataProvider;
     }
@@ -54,14 +72,7 @@ public class EnvironmentBasedMetadataProvider implements MetadataProvider {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    @MetadataProviderNamed(MetadataProviderType.ENVIRONMENT)
-    public static class EnviornmentBasedMetadataProviderFactory implements MetadataProviderFactory<EnvironmentBasedMetadataProviderConfig, EnvironmentBasedMetadataProvider> {
 
-        @Override
-        public EnvironmentBasedMetadataProvider create(final MetricRegistry metricRegistry, final EnvironmentBasedMetadataProviderConfig config) {
-            return new EnvironmentBasedMetadataProvider(metricRegistry, config);
-        }
-    }
 
 
 }

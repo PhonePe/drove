@@ -52,6 +52,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 import static java.util.stream.Collectors.toMap;
 
@@ -131,12 +132,6 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
                                                       tokenManager,
                                                       httpCaller,
                                                       executor);
-    }
-
-    private String errorMessage(JobExecutionResult<Boolean> executionResult) {
-        return executionResult.getFailure() == null
-               ? "Execution failed"
-               : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 
     @Override
@@ -228,7 +223,6 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
                 if (!instances.containsAll(instancesToBeStopped)) {
                     return determineState(currentState, null);
                 }
-                return determineState(currentState, errMsg);
             }
             return determineState(currentState, errMsg);
         }

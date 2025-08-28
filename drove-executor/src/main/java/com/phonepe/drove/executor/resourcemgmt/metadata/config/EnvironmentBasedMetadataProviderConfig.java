@@ -33,7 +33,7 @@ import java.util.List;
 public class EnvironmentBasedMetadataProviderConfig extends MetadataProviderConfig {
 
     @NotEmpty
-    private List<@NotEmpty String> whitelistedVariables;
+    List<@NotEmpty String> whitelistedVariables;
 
     public EnvironmentBasedMetadataProviderConfig(final List<String> whitelistedVariables) {
         super(MetadataProviderType.ENVIRONMENT);

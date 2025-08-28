@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.testsupport;
 
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
@@ -42,6 +43,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -278,6 +280,9 @@ public class DummyExecutor implements Runnable, AutoCloseable {
 
             @Override
             public Void visit(StartLocalServiceInstanceMessage startLocalServiceInstanceMessage) {
+                final var sleep = Integer.parseInt(System.getProperty("sleep_before_responding", "0"));
+                log.info("Delaying by: {}", sleep);
+                CommonTestUtils.delay(Duration.ofMillis(sleep));
                 val spec = startLocalServiceInstanceMessage.getSpec();
                 val random = new Random();
                 val ports = new LocalInstanceInfo(

@@ -7,7 +7,9 @@
  *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for
+ * the specific language governing permissions and limitations under the License.
  */
 
 package com.phonepe.drove.controller.rule;
@@ -34,13 +36,12 @@ public class RuleEvaluator {
     }
 
     public RuleEvalResponse evaluate(RuleBasedPlacementPolicy ruleBasedPlacementPolicy, SchedulingInfo schedulingInfo) {
-        if ( ! ruleEvalStrategies.containsKey(ruleBasedPlacementPolicy.getRuleType()) ) {
-            log.warn("Rule type {} not supported",
-                    ruleBasedPlacementPolicy.getRuleType()
-            );
+        if (!ruleEvalStrategies.containsKey(ruleBasedPlacementPolicy.getRuleType())) {
+            warnUnsupportedRule(ruleBasedPlacementPolicy);
             return RuleEvalResponse.builder()
                     .status(RuleCallStatus.FAILURE)
                     .error("Unregistered RuleType :" + ruleBasedPlacementPolicy.getRuleType())
+                    .result(false)
                     .build();
         }
 
@@ -48,15 +49,13 @@ public class RuleEvaluator {
                 .evaluate(
                         ruleBasedPlacementPolicy.getRule(),
                         schedulingInfo
-                );
+                         );
 
     }
 
     public RuleCheckResponse check(RuleBasedPlacementPolicy ruleBasedPlacementPolicy) {
-        if ( ! ruleEvalStrategies.containsKey(ruleBasedPlacementPolicy.getRuleType()) ) {
-            log.warn("Rule type {} not supported",
-                    ruleBasedPlacementPolicy.getRuleType()
-            );
+        if (!ruleEvalStrategies.containsKey(ruleBasedPlacementPolicy.getRuleType())) {
+            warnUnsupportedRule(ruleBasedPlacementPolicy);
             return RuleCheckResponse.builder()
                     .status(RuleCallStatus.FAILURE)
                     .error("Unregistered RuleType :" + ruleBasedPlacementPolicy.getRuleType())
@@ -67,4 +66,7 @@ public class RuleEvaluator {
                 .check(ruleBasedPlacementPolicy.getRule());
     }
 
+    private static void warnUnsupportedRule(RuleBasedPlacementPolicy ruleBasedPlacementPolicy) {
+        log.warn("Rule type {} not supported", ruleBasedPlacementPolicy.getRuleType());
+    }
 }

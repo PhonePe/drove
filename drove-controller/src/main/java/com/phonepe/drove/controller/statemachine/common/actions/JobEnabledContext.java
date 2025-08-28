@@ -17,14 +17,19 @@
 package com.phonepe.drove.controller.statemachine.common.actions;
 
 import com.phonepe.drove.statemachine.ActionContext;
-import lombok.Data;
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 /**
  * A context that stores job information
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public abstract class JobEnabledContext<D> extends ActionContext<D> {

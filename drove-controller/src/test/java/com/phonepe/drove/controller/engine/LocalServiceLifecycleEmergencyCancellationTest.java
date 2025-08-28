@@ -52,9 +52,7 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.events.events.DroveLocalServiceStateChangeEvent;
 import com.phonepe.drove.models.events.events.datatags.LocalServiceEventDataTag;
-import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
-import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -82,7 +80,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.engine.ValidationStatus.SUCCESS;
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
@@ -94,7 +91,7 @@ import static org.mockito.Mockito.when;
  * Test for {@link LocalServiceLifecycleManagementEngine}
  */
 @Slf4j
-class LocalServiceLifecycleManagementEngineTest {
+class LocalServiceLifecycleEmergencyCancellationTest {
 
     @Inject
     LocalServiceStateDB localServiceStateDB;
@@ -155,7 +152,7 @@ class LocalServiceLifecycleManagementEngineTest {
                         Map.of(
                                 RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(objectMapper),
                                 RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
-                                )
+                              )
                 );
             }
 
@@ -225,7 +222,7 @@ class LocalServiceLifecycleManagementEngineTest {
     }
 
     @Test
-    void testLifecycleLocalService() {
+    void testCancellation() {
 
         val spec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(spec);
@@ -233,83 +230,50 @@ class LocalServiceLifecycleManagementEngineTest {
         setupStateRecorder(serviceId, states);
         createService(spec, serviceId);
 
-        deployTestInstanceService(serviceId);
-        sendCommand(serviceId,
-                    new LocalServiceAdjustInstancesOperation(serviceId, null),
-                    ADJUSTING_INSTANCES);
-        ensureCurrentState(serviceId, CONFIG_TESTING);
-
         activateService(serviceId);
-        sendCommand(serviceId,
-                    new LocalServiceAdjustInstancesOperation(serviceId, null),
-                    ADJUSTING_INSTANCES);
-        ensureCurrentState(serviceId, ACTIVE);
-        sendCommand(serviceId,
-                    new LocalServiceRestartOperation(serviceId, false, null),
-                    REPLACING_INSTANCES);
-        ensureCurrentState(serviceId, ACTIVE);
-        val instances = localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
-                .stream()
-                .map(LocalServiceInstanceInfo::getInstanceId)
-                        .collect(Collectors.toUnmodifiableSet());
-        //Test stop first
-        sendCommand(serviceId,
-                    new LocalServiceReplaceInstancesOperation(serviceId, instances, true, ClusterOpSpec.DEFAULT),
-                    REPLACING_INSTANCES);
-        ensureCurrentState(serviceId, ACTIVE);
+        System.setProperty("sleep_before_responding", "5000"); //Giving some time for the cancellation to take effect
+        final var es = Executors.newCachedThreadPool();
 
-        val instanceIds = localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
-                .stream()
-                .map(LocalServiceInstanceInfo::getInstanceId)
-                .collect(Collectors.toUnmodifiableSet());
-        sendCommand(serviceId,
-                    new LocalServiceStopInstancesOperation(serviceId, instanceIds, ClusterOpSpec.DEFAULT),
-                    STOPPING_INSTANCES);
-        ensureCurrentState(serviceId, ACTIVE);
+        // Setup the handler to call cancel when the
+        droveEventBus.onNewEvent().connect(e -> {
+            if (e instanceof DroveLocalServiceStateChangeEvent asc) {
+                val metadata = asc.getMetadata();
+                if (metadata.get(LocalServiceEventDataTag.LOCAL_SERVICE_ID).equals(serviceId)
+                        && metadata.get(LocalServiceEventDataTag.CURRENT_STATE).equals(ADJUSTING_INSTANCES)) {
+                    while (!engine.cancelCurrentJob(serviceId)) {
+                        //Action might not have been triggered in the
+                        // backend, so we retry
+                        log.debug("Cancel call failed. Will retry...");
+                        CommonTestUtils.delay(Duration.ofSeconds(1));
+                    }
+                    log.info("Called cancel");
+                }
+            }
+        });
+        try {
+            sendCommand(serviceId,
+                        new LocalServiceUpdateInstanceCountOperation(serviceId, 5),
+                        UPDATING_INSTANCES_COUNT);
+            ensureCurrentState(serviceId, ACTIVE);
+            sendCommand(serviceId,
+                        new LocalServiceAdjustInstancesOperation(serviceId, null),
+                        ADJUSTING_INSTANCES);
+            ensureCurrentState(serviceId, INACTIVE);
 
-        //Increase count per host
-        updateInstancesCount(serviceId, 2);
-
-        //Reduce count per host
-        updateInstancesCount(serviceId, 1);
-
-        deactivateService(serviceId);
-
-        sendCommand(serviceId,
-                    new LocalServiceAdjustInstancesOperation(serviceId, null),
-                    ADJUSTING_INSTANCES);
-        ensureCurrentState(serviceId, INACTIVE);
-
-        destroyService(serviceId);
-        assertEquals(EnumSet.of(INACTIVE,
-                                DEACTIVATION_REQUESTED,
-                                ACTIVATION_REQUESTED,
-                                ACTIVE,
-                                CONFIG_TESTING,
-                                CONFIG_TESTING_REQUESTED,
-                                ADJUSTING_INSTANCES,
-                                REPLACING_INSTANCES,
-                                STOPPING_INSTANCES,
-                                UPDATING_INSTANCES_COUNT,
-                                DESTROY_REQUESTED,
-                                DESTROYED), states);
-    }
-
-    private void updateInstancesCount(String serviceId, int instancesPerHost) {
-        log.info("Setting instances count to {}", instancesPerHost);
-        sendCommand(serviceId,
-                    new LocalServiceUpdateInstanceCountOperation(serviceId, instancesPerHost),
-                    UPDATING_INSTANCES_COUNT);
-        ensureCurrentState(serviceId, ACTIVE);
-        sendCommand(serviceId,
-                    new LocalServiceAdjustInstancesOperation(serviceId, null),
-                    ADJUSTING_INSTANCES);
-        ensureCurrentState(serviceId, ACTIVE);
-        assertEquals(instancesPerHost, activeInstancesCount(serviceId));
-    }
-
-    private int activeInstancesCount(String serviceId) {
-        return localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false).size();
+            destroyService(serviceId);
+            assertEquals(EnumSet.of(INACTIVE,
+                                    ACTIVE,
+                                    ACTIVATION_REQUESTED,
+                                    DEACTIVATION_REQUESTED,
+                                    ADJUSTING_INSTANCES,
+                                    EMERGENCY_DEACTIVATION_REQUESTED,
+                                    UPDATING_INSTANCES_COUNT,
+                                    DESTROY_REQUESTED,
+                                    DESTROYED), states);
+        }
+        finally {
+            System.setProperty("sleep_before_responding", "0");
+        }
     }
 
     private void ensureCurrentState(String serviceId, LocalServiceState state) {
@@ -332,10 +296,6 @@ class LocalServiceLifecycleManagementEngineTest {
 
     private void createService(LocalServiceSpec spec, String serviceId) {
         sendCommand(serviceId, new LocalServiceCreateOperation(spec, 1), INACTIVE);
-    }
-
-    private void deployTestInstanceService(String serviceId) {
-        sendCommand(serviceId, new LocalServiceDeployTestInstanceOperation(serviceId), CONFIG_TESTING);
     }
 
     private void activateService(String serviceId) {

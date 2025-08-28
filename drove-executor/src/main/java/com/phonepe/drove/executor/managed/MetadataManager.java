@@ -25,14 +25,17 @@ import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
 import com.phonepe.drove.executor.resourcemgmt.metadata.filters.RegexMatchPredicate;
 import com.phonepe.drove.executor.resourcemgmt.metadata.providers.MetadataProvider;
 import io.dropwizard.lifecycle.Managed;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.reflections.Reflections;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
-import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -41,22 +44,40 @@ import java.util.stream.Collectors;
 @Order(20)
 public class MetadataManager implements Managed {
 
+    @Value
+    private static class VerifyChecksAndLog implements Predicate<Map.Entry<String, String>> {
+        Predicate<Map.Entry<String, String>> underlyingCheck;
+        String errorLogFormat;
+
+        @Override
+        public boolean test(Map.Entry<String, String> entry) {
+            if (underlyingCheck.test(entry)) {
+                log.error(errorLogFormat, entry.getKey());
+                return false;
+            }
+            return true;
+        }
+
+    }
+
     private final Map<String, MetadataProvider> metadataProviders;
     private final Predicate<Map.Entry<String, String>> blacklistedFilter;
     private final int valueMaxLimit;
 
-    @VisibleForTesting
-    public MetadataManager(
-            final MetadataConfig config,
-            final Map<String, MetadataProvider> metadataProviders) {
-        this.metadataProviders = Objects.requireNonNullElse(metadataProviders, Map.of());
+
+    @Inject
+    @SuppressWarnings("unused")
+    public MetadataManager(final MetadataConfig config, final MetricRegistry metricRegistry) {
+        metadataProviders = createMetadataProviders(config, metricRegistry);
         this.valueMaxLimit = config.getValueMaxLimit();
         this.blacklistedFilter = new RegexMatchPredicate(config.getBlacklistedKeys());
     }
 
-    @Inject
-    public MetadataManager(final MetadataConfig config, final MetricRegistry metricRegistry) {
-        metadataProviders = createMetadataProviders(config, metricRegistry);
+    @VisibleForTesting
+    MetadataManager(
+            final MetadataConfig config,
+            final Map<String, MetadataProvider> metadataProviders) {
+        this.metadataProviders = Objects.requireNonNullElse(metadataProviders, Map.of());
         this.valueMaxLimit = config.getValueMaxLimit();
         this.blacklistedFilter = new RegexMatchPredicate(config.getBlacklistedKeys());
     }
@@ -76,16 +97,16 @@ public class MetadataManager implements Managed {
 
     public Map<String, String> fetchMetadata() {
 
-        var conflicts = findConflictingKeys(metadataProviders);
+        val conflicts = findConflictingKeys(metadataProviders);
 
         return metadataProviders
-                .entrySet()
+                .values()
                 .stream()
-                .map(Map.Entry::getValue)
                 .map(MetadataProvider::metadata)
                 .flatMap(map -> map.entrySet().stream())
                 .filter(new VerifyChecksAndLog(blacklistedFilter, "Blacklisted Key '{}' ignored"))
-                .filter(new VerifyChecksAndLog(entry -> entry.getValue().length() > valueMaxLimit, "Value for the key '{}' is higher than the allowed limit of " + valueMaxLimit + " is ignored"))
+                .filter(new VerifyChecksAndLog(entry -> entry.getValue().length() > valueMaxLimit,
+                                               "Value for the key '{}' is higher than the allowed limit of " + valueMaxLimit + " is ignored"))
                 .filter(entry -> !conflicts.contains(entry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -95,58 +116,33 @@ public class MetadataManager implements Managed {
         var conflicts = metadataProviders.entrySet()
                 .stream()
                 .flatMap(entry -> entry.getValue().metadata()
-                        .entrySet()
+                        .keySet()
                         .stream()
-                        .map(metaDataKv -> new AbstractMap.SimpleEntry<>(metaDataKv.getKey(), entry.getKey())))
+                        .map(s -> new AbstractMap.SimpleEntry<>(s, entry.getKey())))
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
-                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())))
+                                               Collectors.mapping(Map.Entry::getValue, Collectors.toList())))
                 .entrySet().stream()
                 .filter(entry -> entry.getValue().size() > 1)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (!conflicts.isEmpty()) {
-            conflicts
-                    .entrySet()
-                    .forEach(entry -> {
-                            String providersList = entry.getValue().stream()
-                                .distinct()
-                                .map(Object::toString)
-                                .collect(Collectors.joining(", "));
-                            log.error("Duplicate key '{}' ignored, found in the providers {}", entry.getKey(), providersList);
-                        }
-                    );
+            conflicts.forEach((key, value) -> {
+                String providersList = value.stream()
+                        .distinct()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "));
+                log.error("Duplicate key '{}' ignored, found in the providers {}", key, providersList);
+            });
 
         }
 
         return conflicts.keySet().stream().toList();
     }
 
-
-    @VisibleForTesting
-    static class VerifyChecksAndLog implements Predicate<Map.Entry<String,String>> {
-        private final Predicate<Map.Entry<String, String>> underlyingCheck;
-        private final String errorLogFormat;
-
-        public VerifyChecksAndLog(Predicate<Map.Entry<String,String>> check, String errorLogFormat) {
-            this.underlyingCheck = check;
-            this.errorLogFormat = errorLogFormat;
-        }
-
-        @Override
-        public boolean test(Map.Entry<String, String> entry) {
-            if ( underlyingCheck.test(entry) ) {
-                log.error(errorLogFormat, entry.getKey());
-                return false;
-            }
-            return true;
-        }
-
-    }
-
-
-    @VisibleForTesting
     @SuppressWarnings("unchecked")
-    static Map<String, MetadataProvider> createMetadataProviders(MetadataConfig metadataConfig, MetricRegistry metricRegistry) {
+    private static Map<String, MetadataProvider> createMetadataProviders(
+            MetadataConfig metadataConfig,
+            MetricRegistry metricRegistry) {
         var providersFactoryAvailable = new Reflections("com.phonepe.drove")
                 .getSubTypesOf(MetadataProvider.MetadataProviderFactory.class);
         return metadataConfig.getMetadataProviders()
@@ -155,24 +151,30 @@ public class MetadataManager implements Managed {
                 .map(providerConfigEntry -> {
                     String name = providerConfigEntry.getKey();
                     val cfg = providerConfigEntry.getValue();
-                    String providerName = providerConfigEntry.getValue().getType();
+                    val providerName = providerConfigEntry.getValue().getType();
                     val instance = providersFactoryAvailable.stream()
                             .filter(cls -> cls.getAnnotation(MetadataProvider.MetadataProviderNamed.class) != null)
-                            .filter(cls -> cls.getAnnotation(MetadataProvider.MetadataProviderNamed.class).value().equals(providerName))
+                            .filter(cls -> cls.getAnnotation(MetadataProvider.MetadataProviderNamed.class)
+                                    .value()
+                                    .equals(providerName))
                             .map(cls -> {
                                 try {
                                     val constructor = cls.getDeclaredConstructor();
                                     val factory = constructor.newInstance();
                                     return factory.create(metricRegistry, cfg);
-                                } catch (Exception e) {
+                                }
+                                catch (Exception e) {
+                                    log.error("Error building metadata provider: %s".formatted(e.getMessage()), e);
                                     return null;
                                 }
                             })
                             .filter(Objects::nonNull)
                             .findFirst();
-                    if ( instance.isEmpty() ) {
+                    if (instance.isEmpty()) {
                         throw new IllegalStateException("Unable to instantiate MetadataProvider with name: " + providerName
-                                + ". Please ensure that the MetadataProvider is available in the class & MetadataProviderFactory is with @MetadataProviderNamed.");
+                                                                + ". Please ensure that the MetadataProvider is " +
+                                                                "available in the class & MetadataProviderFactory is " +
+                                                                "with @MetadataProviderNamed.");
                     }
                     return new Pair<>(name, instance.get());
                 })

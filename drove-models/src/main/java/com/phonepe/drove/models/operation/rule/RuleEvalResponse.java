@@ -21,10 +21,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 public class RuleEvalResponse {
 
-    private final RuleCallStatus status;
-
-    private final boolean result;
-
-    private final String error;
+    RuleCallStatus status;
+    boolean result;
+    String error;
 
 }

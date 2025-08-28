@@ -28,6 +28,7 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
@@ -954,5 +955,11 @@ public class ControllerUtils {
                 return localPlacementPolicy.isHostLevel();
             }
         });
+    }
+
+    public static String errorMessage(JobExecutionResult<Boolean> executionResult) {
+        return executionResult.getFailure() == null
+               ? "Execution failed"
+               : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 }

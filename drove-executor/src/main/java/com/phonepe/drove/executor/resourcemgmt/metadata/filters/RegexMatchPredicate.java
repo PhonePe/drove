@@ -34,10 +34,11 @@ public class RegexMatchPredicate implements Predicate<Map.Entry<String, String>>
 
     @Override
     public boolean test(final Map.Entry<String, String> entry) {
-        if ( Objects.isNull(entry) )
+        if (Objects.isNull(entry)) {
             return false;
+        }
 
-        return regexPatterns.parallelStream()
+        return regexPatterns.stream()
                 .anyMatch(pattern -> pattern.matcher(entry.getKey()).matches());
     }
 }

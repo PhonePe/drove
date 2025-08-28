@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 
 /**
@@ -81,12 +82,6 @@ public class StopInstancesLocalServiceAction extends LocalServiceAsyncAction {
         this.retrySpecFactory = retrySpecFactory;
         this.threadFactory = threadFactory;
         this.defaultOpSpec = defaultOpSpec;
-    }
-
-    private String errorMessage(JobExecutionResult<Boolean> executionResult) {
-        return executionResult.getFailure() == null
-               ? "Execution failed"
-               : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 
     @Override

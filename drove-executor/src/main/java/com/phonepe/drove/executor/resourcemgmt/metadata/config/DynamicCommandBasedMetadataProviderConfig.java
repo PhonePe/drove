@@ -40,7 +40,9 @@ public class DynamicCommandBasedMetadataProviderConfig extends MetadataProviderC
     @NotNull
     Map<String, @NotNull CommandBasedConfig> commands;
 
-    public DynamicCommandBasedMetadataProviderConfig(int commandRerunInSecs, final Map<String, CommandBasedConfig> dynamicCommandBasedConfig) {
+    public DynamicCommandBasedMetadataProviderConfig(
+            final int commandRerunInSecs,
+            final Map<String, CommandBasedConfig> dynamicCommandBasedConfig) {
         super(MetadataProviderType.DYNAMIC_COMMAND);
         this.commandRerunInSecs = commandRerunInSecs;
         this.commands = dynamicCommandBasedConfig;

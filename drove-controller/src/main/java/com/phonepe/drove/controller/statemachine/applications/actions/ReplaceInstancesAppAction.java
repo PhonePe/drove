@@ -55,6 +55,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
 import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
 
 /**
@@ -199,9 +200,4 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
 
-    private String errorMessage(JobExecutionResult<Boolean> executionResult) {
-        return executionResult.getFailure() == null
-               ? "Execution failed"
-               : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
-    }
 }

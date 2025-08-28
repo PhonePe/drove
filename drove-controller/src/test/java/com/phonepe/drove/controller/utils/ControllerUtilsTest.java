@@ -16,13 +16,17 @@
 
 package com.phonepe.drove.controller.utils;
 
+import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.models.application.placement.policies.*;
 import dev.failsafe.RetryPolicy;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -60,5 +64,20 @@ class ControllerUtilsTest {
                                                                                        CompositePlacementPolicy.CombinerType.AND)));
         assertTrue(ControllerUtils.isHostLevelDeployable(new LocalPlacementPolicy(true)));
         assertFalse(ControllerUtils.isHostLevelDeployable(new LocalPlacementPolicy(false)));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testErrorMessage() {
+        val res = (JobExecutionResult<Boolean>) mock(JobExecutionResult.class);
+        {
+            when(res.getFailure()).thenReturn(null);
+            assertEquals("Execution failed", errorMessage(res));
+        }
+        reset(res);
+        {
+            when(res.getFailure()).thenReturn(new Exception("test error"));
+            assertEquals("Execution of jobs failed with error: test error", errorMessage(res));
+        }
     }
 }

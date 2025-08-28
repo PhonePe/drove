@@ -35,16 +35,15 @@ import java.util.Map;
 @Builder
 @Jacksonized
 public class MetadataConfig {
-
     public static final MetadataConfig DEFAULT = new MetadataConfig();
 
     @Builder.Default
-    private Map<String, @NotNull @Valid MetadataProviderConfig> metadataProviders = Map.of();
+    Map<String, @NotNull @Valid MetadataProviderConfig> metadataProviders = Map.of();
 
     @Builder.Default
     @Min(1)
-    private int valueMaxLimit = 1024;
+    int valueMaxLimit = 1024;
 
     @Builder.Default
-    private List<@NotNull String> blacklistedKeys = List.of();
+    List<@NotNull String> blacklistedKeys = List.of();
 }

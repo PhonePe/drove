@@ -18,16 +18,18 @@ package com.phonepe.drove.executor.resourcemgmt.metadata.config;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(name = MetadataProviderType.ENVIRONMENT, value = EnvironmentBasedMetadataProviderConfig.class),
-        @JsonSubTypes.Type(name = MetadataProviderType.CONFIGURED, value = ConfiguredMetadataProviderConfig.class),
-        @JsonSubTypes.Type(name = MetadataProviderType.DYNAMIC_COMMAND, value = DynamicCommandBasedMetadataProviderConfig.class),
+        @JsonSubTypes.Type(
+                name = MetadataProviderType.ENVIRONMENT, value = EnvironmentBasedMetadataProviderConfig.class),
+        @JsonSubTypes.Type(
+                name = MetadataProviderType.CONFIGURED, value = ConfiguredMetadataProviderConfig.class),
+        @JsonSubTypes.Type(
+                name = MetadataProviderType.DYNAMIC_COMMAND, value = DynamicCommandBasedMetadataProviderConfig.class),
 })
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Data

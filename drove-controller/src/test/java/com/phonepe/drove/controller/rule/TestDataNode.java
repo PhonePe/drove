@@ -14,27 +14,14 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.executor.resourcemgmt.metadata.config;
+package com.phonepe.drove.controller.rule;
 
-import lombok.Builder;
 import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-
+/**
+ *
+ */
 @Value
-@Builder
-@Jacksonized
-public class CommandBasedConfig {
-
-    @NotNull
-    CommandType type;
-
-    @NotEmpty
-    String command;
-
-    @NotEmpty
-    String defaultValue;
+public class TestDataNode {
+    String data;
 }

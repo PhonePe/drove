@@ -132,12 +132,20 @@ public class AppRecovery implements Managed {
                             val pendingTasks = taskDB.tasks(List.of(appName), recoveryStates, true);
                             pendingTasks.getOrDefault(appName, List.of())
                                     .forEach(task -> {
-                                        val runner = taskEngine.registerTaskRunner(appName, task.getTaskId());
-                                        if (null != runner) {
-                                            log.info("Task {}/{} recovered", appName, task.getTaskId());
+                                        try {
+                                            val runner = taskEngine.registerTaskRunner(appName, task.getTaskId());
+                                            if (null != runner) {
+                                                log.info("Task {}/{} recovered", appName, task.getTaskId());
+                                            }
+                                            else {
+                                                log.info("Task {}/{} could not be recovered",
+                                                         appName,
+                                                         task.getTaskId());
+                                            }
                                         }
-                                        else {
-                                            log.info("Task {}/{} could not be recovered", appName, task.getTaskId());
+                                        catch (Exception e) {
+                                            log.error("Error registering task runner for task: %s/%s"
+                                                              .formatted(appName, task.getTaskId()), e);
                                         }
                                     });
                         });

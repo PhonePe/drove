@@ -115,6 +115,7 @@ public abstract class DeployableLifeCycleManagementEngine<T, V, D, S extends Enu
     }
 
     @MonitoredFunction
+    @SuppressWarnings("unchecked")
     public boolean cancelCurrentJob(final String deployableId) {
         val sm = stateMachines.get(deployableId);
         if (null == sm) {

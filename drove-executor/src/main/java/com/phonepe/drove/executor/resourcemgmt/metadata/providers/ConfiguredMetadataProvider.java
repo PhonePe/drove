@@ -31,7 +31,9 @@ public class ConfiguredMetadataProvider implements MetadataProvider {
 
     @Inject
     @SuppressWarnings("unused")
-    public ConfiguredMetadataProvider(final MetricRegistry metricRegistry, final ConfiguredMetadataProviderConfig config) {
+    public ConfiguredMetadataProvider(
+            final MetricRegistry metricRegistry,
+            final ConfiguredMetadataProviderConfig config) {
         this.map = Map.copyOf(config.getMetadata());
     }
 
@@ -44,7 +46,9 @@ public class ConfiguredMetadataProvider implements MetadataProvider {
     public static class ConfiguredMetadataProviderFactory implements MetadataProviderFactory<ConfiguredMetadataProviderConfig, ConfiguredMetadataProvider> {
 
         @Override
-        public ConfiguredMetadataProvider create(final MetricRegistry metricRegistry, final ConfiguredMetadataProviderConfig config) {
+        public ConfiguredMetadataProvider create(
+                final MetricRegistry metricRegistry,
+                final ConfiguredMetadataProviderConfig config) {
             return new ConfiguredMetadataProvider(metricRegistry, config);
         }
     }
