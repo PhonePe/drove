@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
@@ -65,7 +66,7 @@ class DockerUtilsTest {
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,
                                              new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
-        val httpCaller = mock(HttpCaller.class);
+        pullImage(spec);
         val containerId = DockerUtils.createContainer(
                 resourceConfig,
                 DOCKER_CLIENT,
@@ -91,6 +92,7 @@ class DockerUtilsTest {
         val httpCaller = mock(HttpCaller.class);
         val spec = ExecutorTestingUtils.testTaskInstanceSpec()
                 .withEnv(Map.of("ITERATIONS", "10000", "LOOP_SLEEP", "5"));
+        pullImage(spec);
         val containerId = DockerUtils.createContainer(
                 ResourceConfig.DEFAULT,
                 DOCKER_CLIENT,
@@ -111,6 +113,17 @@ class DockerUtilsTest {
         }
         finally {
             DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
+    private static void pullImage(TaskInstanceSpec spec) {
+        try {
+            val imageId = DockerUtils.pullImage(DOCKER_CLIENT, null, spec, Function.identity());
+            assertNotNull(DOCKER_CLIENT.inspectImageCmd(imageId).exec());
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Assertions.fail("Pull Interrupted", e);
         }
     }
 
