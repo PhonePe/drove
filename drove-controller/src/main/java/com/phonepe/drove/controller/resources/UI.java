@@ -21,8 +21,10 @@ import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import com.phonepe.drove.auth.model.DroveUserVisitorAdaptor;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.ui.views.*;
 import io.dropwizard.auth.Auth;
@@ -57,6 +59,7 @@ public class UI {
                                                                             EXTERNAL_READ_ONLY,
                                                                             DROVE_EXTERNAL_MAINTENANCE);
     private final ApplicationStateDB applicationStateDB;
+
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
     private final LocalServiceStateDB localServiceStateDB;
@@ -83,7 +86,7 @@ public class UI {
 
     @GET
     public HomeView home() {
-        return new HomeView();
+        return new HomeView(installationMetadata);
     }
 
     @GET

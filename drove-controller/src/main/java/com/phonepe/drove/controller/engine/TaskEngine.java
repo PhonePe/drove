@@ -39,7 +39,6 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.appform.signals.signals.ScheduledSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -186,7 +185,6 @@ public class TaskEngine {
         });
     }
 
-    @NotNull
     private ArrayList<String> validateTaskSpec(TaskSpec taskSpec) {
         val errors = new ArrayList<String>();
         errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));

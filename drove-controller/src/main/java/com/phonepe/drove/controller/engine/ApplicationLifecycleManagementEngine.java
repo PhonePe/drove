@@ -19,7 +19,6 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statemachine.applications.AppAction;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.applications.ApplicationStateMachine;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -79,6 +78,7 @@ public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleMan
             ClusterOpSpec defaultClusterOpSpec) {
         super(factory, applicationCommandValidator, droveEventBus, retrySpecFactory, monitorExecutor, defaultClusterOpSpec);
         this.stateDB = stateDB;
+        this.instanceInfoDB = instanceInfoDB;
     }
 
     @Override

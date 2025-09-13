@@ -162,11 +162,14 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                 localServiceSpec.getName(),
                                                 instanceId,
                                                 localServiceSpec.getExecutable(),
-                                                List.of(node.getCpu(), node.getMemory()),
+                                                List.of(node.getCpu(),
+                                                        node.getMemory()),
                                                 localServiceSpec.getExposedPorts(),
                                                 isHostLevelDeployable(localServiceSpec.getPlacementPolicy()),
                                                 localServiceSpec.getVolumes(),
-                                                translateConfigSpecs(localServiceSpec.getConfigs(), httpCaller),
+                                                translateConfigSpecs(
+                                                        localServiceSpec.getConfigs(),
+                                                        httpCaller),
                                                 localServiceSpec.getHealthcheck(),
                                                 localServiceSpec.getReadiness(),
                                                 localServiceSpec.getLogging(),
@@ -174,7 +177,12 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                                                 localServiceSpec.getArgs(),
                                                 localServiceSpec.getDevices(),
                                                 localServiceSpec.getPreShutdown(),
-                                                generateAppInstanceToken(node, serviceId, instanceId));
+                                                localServiceSpec.getUserSpec(),
+                                                generateAppInstanceToken(
+                                                        node,
+                                                        serviceId,
+                                                        instanceId));
+
         val startMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                                 new ExecutorAddress(node.getExecutorId(),
                                                                                     node.getHostname(),

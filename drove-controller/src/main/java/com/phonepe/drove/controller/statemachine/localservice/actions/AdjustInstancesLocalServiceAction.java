@@ -45,7 +45,6 @@ import com.phonepe.drove.models.operation.localserviceops.LocalServiceAdjustInst
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -221,7 +220,6 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         return LocalServiceInstanceState.RUNNING_STATES.contains(serviceInstance.getState());
     }
 
-    @NotNull
     private List<Job<Boolean>> createStopJobs(
             Collection<String> extraInstances,
             LocalServiceInfo currInfo,
@@ -242,7 +240,6 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                 .toList();
     }
 
-    @NotNull
     private List<Job<Boolean>> createNewInstanceJobs(
             Map<String, Integer> newInstancesPerExecutor,
             LocalServiceInfo currInfo,

@@ -30,7 +30,6 @@ import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -256,7 +255,6 @@ class BlacklistingAppMovementManagerTest {
         bmm.stop();
     }
 
-    @NotNull
     private static ClusterOpSpec clusterOpSpec() {
         return new ClusterOpSpec(io.dropwizard.util.Duration.milliseconds(100), 1, FailureStrategy.STOP);
     }

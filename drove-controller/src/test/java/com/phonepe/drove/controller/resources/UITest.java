@@ -61,8 +61,7 @@ class UITest {
                                               taskDB,
                                               localServiceStateDB,
                                               ControllerOptions.DEFAULT,
-                                              installationMetadata,
-                                              null);
+                                              installationMetadata);
 
     @BeforeAll
     static void initializeTemplate() {

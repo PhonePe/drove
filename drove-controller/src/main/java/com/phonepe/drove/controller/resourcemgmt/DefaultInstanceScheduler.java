@@ -19,7 +19,6 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.rule.RuleEvaluator;
-import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -30,11 +29,13 @@ import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
@@ -278,6 +279,16 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         taskInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY));
+            }
+
+            @Override
+            public InstanceResourceAllocation visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
+                return new InstanceResourceAllocation(
+                        localServiceInstanceInfo.getExecutorId(),
+                        localServiceInstanceInfo.getInstanceId(),
+                        (CPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.CPU),
+                        (MemoryAllocation) filterAllocation(localServiceInstanceInfo.getResources(),
+                                                            ResourceType.MEMORY));
             }
 
             private static ResourceAllocation filterAllocation(

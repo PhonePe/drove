@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Singleton;
@@ -88,7 +87,6 @@ class TaskStateMachineTest {
                 });
     }
 
-    @NotNull
     private TaskStateMachine getSmFromInitialState(TaskInstanceSpec instanceSpec, TaskState state) {
         return new TaskStateMachine(UUID.randomUUID().toString(),
                                     instanceSpec,

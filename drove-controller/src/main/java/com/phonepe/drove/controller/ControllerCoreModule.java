@@ -43,12 +43,16 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.rule.RuleEvalStrategy;
+import com.phonepe.drove.controller.rule.hope.HopeRuleStrategy;
+import com.phonepe.drove.controller.rule.mvel.MvelRuleStrategy;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
@@ -57,21 +61,23 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
-import io.appform.hope.core.functions.impl.arr.In;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import io.dropwizard.util.Duration;
+import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.jar.Manifest;
 
 /**
  *

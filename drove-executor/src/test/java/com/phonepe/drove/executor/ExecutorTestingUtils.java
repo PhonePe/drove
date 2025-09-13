@@ -108,7 +108,7 @@ public class ExecutorTestingUtils {
                                            UUID.randomUUID().toString(),
                                            new DockerCoordinates(imageName, Duration.seconds(100)),
                                            ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
-                                                                                                       Set.of(0, 1, 2, 3))),
+                                                                                                       Set.of(2, 3))),
                                                             new MemoryAllocation(Collections.singletonMap(0, 512L))),
                                            Collections.singletonList(new PortSpec("main", 8000, portType)),
                                            List.of(new MountedVolume("/tmp",
@@ -214,11 +214,13 @@ public class ExecutorTestingUtils {
         val protocol = useHttps ? Protocol.HTTPS : Protocol.HTTP;
         val portType = useHttps ? PortType.HTTPS : PortType.HTTP;
         return new LocalServiceInstanceSpec("T001",
+                                            "TEST_SPEC",
                                             UUID.randomUUID().toString(),
                                             new DockerCoordinates(imageName, Duration.seconds(100)),
-                                            List.of(new CPUAllocation(Collections.singletonMap(0, Set.of(2, 3))),
-                                                    new MemoryAllocation(Collections.singletonMap(0, 512L))),
-                                            List.of(new PortSpec("main", 8000, portType)),
+                                            ImmutableList.of(new CPUAllocation(Collections.singletonMap(0,
+                                                                                                        Set.of(0, 1, 2, 3))),
+                                                             new MemoryAllocation(Collections.singletonMap(0, 512L))),
+                                            Collections.singletonList(new PortSpec("main", 8000, portType)),
                                             false,
                                             List.of(new MountedVolume("/tmp",
                                                                       "/tmp",
@@ -266,10 +268,11 @@ public class ExecutorTestingUtils {
                                                                                               "",
                                                                                               Duration.seconds(1),
                                                                                               useHttps),
-                                                                        new CmdCheckModeSpec("echo -n 1"),
-                                                                        new CmdCheckModeSpec("SomeWrongCommand")
+                                                                        new CmdCheckModeSpec("echo -n 1", false),
+                                                                        new CmdCheckModeSpec("SomeWrongCommand", false)
                                                                        ),
                                                                 Duration.seconds(1)),
+                                            null,
                                             "TestToken");
     }
 
