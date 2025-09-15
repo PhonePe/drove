@@ -23,7 +23,10 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.google.common.base.Strings;
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
@@ -31,9 +34,9 @@ import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
-import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.executor.discovery.RemoteNodeDataStore;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
@@ -60,7 +63,6 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.URI;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.SynchronousQueue;
 
@@ -72,7 +74,10 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(NodeDataStore.class).to(ZkNodeDataStore.class);
+        bind(NodeDataStore.class).to(RemoteNodeDataStore.class);
+        bind(NodeDataStore.class)
+                .annotatedWith(Names.named("PersistentNodeDataStore"))
+                .to(ZkNodeDataStore.class);
         bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>() {
         })
                 .to(RemoteControllerMessageSender.class);
@@ -180,7 +185,8 @@ public class ExecutorCoreModule extends AbstractModule {
     }
 
     @Provides
-    @Singleton MetadataConfig metadataConfig(final ResourceConfig resourceConfig) {
+    @Singleton
+    MetadataConfig metadataConfig(final ResourceConfig resourceConfig) {
         return Objects.requireNonNullElse(resourceConfig.getMetadata(), MetadataConfig.DEFAULT);
     }
 
@@ -198,8 +204,8 @@ public class ExecutorCoreModule extends AbstractModule {
                                            ExecutorOptions.DEFAULT_CONTAINER_COMMAND_TIMEOUT)
                         .toMilliseconds());
         val dockerSocketPath = Strings.isNullOrEmpty(executorOptions.getDockerSocketPath())
-                         ? ExecutorOptions.DEFAULT_DOCKER_SOCKET_PATH
-                         : executorOptions.getDockerSocketPath();
+                               ? ExecutorOptions.DEFAULT_DOCKER_SOCKET_PATH
+                               : executorOptions.getDockerSocketPath();
         log.info("Using docker path: {}", dockerSocketPath);
         return DockerClientImpl.getInstance(
                 DefaultDockerClientConfig.createDefaultConfigBuilder()
