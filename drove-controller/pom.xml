@@ -19,7 +19,7 @@
     <parent>
         <artifactId>drove</artifactId>
         <groupId>com.phonepe.drove</groupId>
-        <version>1.32</version>
+        <version>1.32.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -119,6 +119,11 @@
             <version>${curator.version}</version>
         </dependency>
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.phonepe.drove</groupId>
             <artifactId>drove-common</artifactId>
             <version>${project.version}</version>
@@ -162,12 +167,6 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.16.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
