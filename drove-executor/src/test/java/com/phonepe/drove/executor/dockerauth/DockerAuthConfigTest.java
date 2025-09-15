@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.executor.dockerauth;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- *
+ * Tests for {@link DockerAuthConfig}
  */
 class DockerAuthConfigTest {
     @Test
@@ -48,5 +49,19 @@ class DockerAuthConfigTest {
         DockerUtils.populateDockerRegistryAuth(authConfig, pullCmd);
         val pullCmdAuthConfig = pullCmd.getAuthConfig();
         assertNull(pullCmdAuthConfig);
+    }
+
+    @Test
+    void testDockerAuthNoConfigNoRepo() {
+        val pullCmd = DOCKER_CLIENT.pullImageCmd("test-image");
+        val authConfig = new DockerAuthConfig();
+        DockerUtils.populateDockerRegistryAuth(authConfig, pullCmd);
+        val pullCmdAuthConfig = pullCmd.getAuthConfig();
+        // This test gets a little complicated if the developer running the test docker config for docker hub
+        assertTrue(pullCmdAuthConfig == null //The is no docker config for docker hub
+                           //This will be non-null if config exists. Ensure it's for docker hub
+                           || !(Strings.isNullOrEmpty(pullCmdAuthConfig.getRegistryAddress())
+                && pullCmdAuthConfig.getRegistryAddress().contains("docker.io")));
+
     }
 }
