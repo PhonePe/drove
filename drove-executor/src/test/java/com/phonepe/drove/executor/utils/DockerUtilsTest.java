@@ -184,33 +184,4 @@ class DockerUtilsTest {
                              executorOptions));
     }
 
-    @Test
-    void parseDockerImageUri() {
-        DockerUtils.DockerImageComponents result;
-        result = DockerUtils.parseDockerImageUri("abc.com/def/ghi:tag-123");
-        Assertions.assertEquals("abc.com", result.host().get());
-        Assertions.assertTrue(result.port().isEmpty());
-        Assertions.assertEquals("def/ghi", result.repository());
-        Assertions.assertEquals("tag-123", result.tag().get());
-        result = DockerUtils.parseDockerImageUri("abc.com:443/ghi:tag-123");
-        Assertions.assertEquals("abc.com", result.host().get());
-        Assertions.assertEquals(443, result.port().get());
-        Assertions.assertEquals("ghi", result.repository());
-        Assertions.assertEquals("tag-123", result.tag().get());
-        result = DockerUtils.parseDockerImageUri("abc.com:443/ghi");
-        Assertions.assertEquals("abc.com", result.host().get());
-        Assertions.assertEquals(443, result.port().get());
-        Assertions.assertEquals("ghi", result.repository());
-        Assertions.assertTrue(result.tag().isEmpty());
-        result = DockerUtils.parseDockerImageUri("ghi");
-        Assertions.assertTrue(result.host().isEmpty());
-        Assertions.assertTrue(result.port().isEmpty());
-        Assertions.assertEquals("ghi", result.repository());
-        Assertions.assertTrue(result.tag().isEmpty());
-        result = DockerUtils.parseDockerImageUri("abc/def/ghi/jkl/lmn:123-450-SNAPSHOT");
-        Assertions.assertTrue(result.host().isEmpty());
-        Assertions.assertTrue(result.port().isEmpty());
-        Assertions.assertEquals("abc/def/ghi/jkl/lmn", result.repository());
-        Assertions.assertEquals("123-450-SNAPSHOT", result.tag().get());
-    }
 }

@@ -61,8 +61,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
 
@@ -72,8 +70,6 @@ import static com.phonepe.drove.common.CommonUtils.hostname;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DockerUtils {
-    private static final Pattern DOCKER_IMAGE_URI_PATTERN =
-            Pattern.compile("((?<HOST>([^/:.]+\\.)([^/:.]+\\.?)+):?(?<PORT>[0-9]+)?/)?(?<REPOSITORY>[^:]+):?(?<TAG>.+)?");
 
     public static <T> T pullImage(
             final DockerClient client,
@@ -104,29 +100,24 @@ public class DockerUtils {
     public static void populateDockerRegistryAuth(DockerAuthConfig dockerAuthConfig, PullImageCmd pullImageCmd) {
         val authEntries = dockerAuthConfig.getEntries();
         val imageUri = Objects.requireNonNullElse(pullImageCmd.getRepository(), "");
-        var registry = "";
-        DockerImageComponents dockerImageComponents = parseDockerImageUri(imageUri);
-        if (dockerImageComponents.host.isPresent()) {
-            registry = dockerImageComponents.host.get() +
-                    dockerImageComponents.port.map(value -> ":" + value).orElse("");
+        val endIndex = imageUri.indexOf("/");
+        val registry = -1 == endIndex ? null : imageUri.substring(0, endIndex);
+        if (Strings.isNullOrEmpty(registry)) {
+            log.info("No registry found in image uri: {}. Skipping auth setup", imageUri);
+            return;
+        }
+        log.debug("Docker image registry auth lookup: {}", registry);
+        if (authEntries.containsKey(registry)) {
+            val ac = new AuthConfig();
+            authEntries.get(registry).accept((DockerAuthConfigVisitor<Void>) credentials -> {
+                ac.withUsername(credentials.getUsername()).withPassword(credentials.getPassword());
+                return null;
+            });
+            pullImageCmd.withAuthConfig(ac);
+            log.info("Docker auth setup for registry: {}", registry);
         }
         else {
-            log.warn("Docker image uri is missing registry information");
-        }
-        if (!Strings.isNullOrEmpty(registry)) {
-            log.info("Docker image registry auth lookup: {}", registry);
-            if (authEntries.containsKey(registry)) {
-                val ac = new AuthConfig();
-                authEntries.get(registry).accept((DockerAuthConfigVisitor<Void>) credentials -> {
-                    ac.withUsername(credentials.getUsername()).withPassword(credentials.getPassword());
-                    return null;
-                });
-                pullImageCmd.withAuthConfig(ac);
-                log.info("Docker auth setup for registry: {}", registry);
-            }
-            else {
-                log.info("No auth info found for registry: {}", registry);
-            }
+            log.info("No auth info found for registry: {}", registry);
         }
     }
 
@@ -321,7 +312,7 @@ public class DockerUtils {
             final DockerClient client,
             final String command,
             final boolean shellDisabled) {
-        String[] cmdWithArgs = shellDisabled ? command.split(" ") : new String[] {"sh", "-c", command};
+        String[] cmdWithArgs = shellDisabled ? command.split(" ") : new String[]{"sh", "-c", command};
         val execId = client.execCreateCmd(containerId)
                 .withAttachStderr(true)
                 .withAttachStdout(true)
@@ -598,26 +589,4 @@ public class DockerUtils {
             }
         });
     }
-
-    /**
-     * This utility method checks whether the given dockerImageUri is well-formed.
-     * If it is well-formed, then it is parsed and converted to a {@code DockerImageComponents} object.
-     * @param dockerImageUri
-     */
-    @VisibleForTesting
-    static DockerImageComponents parseDockerImageUri(final String dockerImageUri) {
-        // [HOST[:PORT]/]NAMESPACE/REPOSITORY[:TAG]
-        Matcher matcher = DOCKER_IMAGE_URI_PATTERN.matcher(dockerImageUri);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("dockerImageUri doesn't match DOCKER_IMAGE_URI_PATTERN: %s"
-                    .formatted(DOCKER_IMAGE_URI_PATTERN));
-        }
-        Optional<String> host = Optional.ofNullable(matcher.group("HOST"));
-        Optional<Integer> port = Optional.ofNullable(matcher.group("PORT")).map(Integer::parseInt);
-        String repository = matcher.group("REPOSITORY");
-        Optional<String> tag = Optional.ofNullable(matcher.group("TAG"));
-        return new DockerImageComponents(host, port, repository, tag);
-    }
-
-    record DockerImageComponents(Optional<String> host, Optional<Integer> port, String repository, Optional<String> tag) {}
 }
