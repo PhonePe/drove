@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.executor;
 
+import com.phonepe.drove.executor.discovery.RemoteUpdateMode;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import io.dropwizard.util.DataSize;
 import io.dropwizard.util.DataSizeUnit;
@@ -49,6 +50,7 @@ public class ExecutorOptions {
     public static final Duration DEFAULT_CONTAINER_COMMAND_TIMEOUT = Duration.seconds(30);
     @SuppressWarnings("java:S1075")
     public static final String DEFAULT_DOCKER_SOCKET_PATH = "/var/run/docker.sock";
+    public static final RemoteUpdateMode DEFAULT_UPDATE_MODE = RemoteUpdateMode.RPC;
 
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(null,
                                                                       true,
@@ -58,7 +60,8 @@ public class ExecutorOptions {
                                                                       DEFAULT_LOG_CACHE_COUNT,
                                                                       DEFAULT_CONTAINER_COMMAND_TIMEOUT,
                                                                       DEFAULT_DOCKER_SOCKET_PATH,
-                                                                      null);
+                                                                      null,
+                                                                      DEFAULT_UPDATE_MODE);
 
     @Length(max = 255)
     String hostname;
@@ -84,4 +87,5 @@ public class ExecutorOptions {
 
     UserSpec defaultUserSpec;
 
+    RemoteUpdateMode remoteUpdateMode;
 }
