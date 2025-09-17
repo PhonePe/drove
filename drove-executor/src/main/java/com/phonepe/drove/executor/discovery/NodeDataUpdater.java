@@ -51,12 +51,14 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- *
+ * Updates node data to {@link NodeDataStore}.
  */
 @Slf4j
 @Singleton
 @Order(40)
 public class NodeDataUpdater implements Managed {
+    private static final String STATE_CHANGE_HANDLER_NAME = "state-change-notifier";
+
     private final NodeDataStore nodeDataStore;
     private final ResourceManager resourceDB;
     private final ApplicationInstanceEngine applicationInstanceEngine;
@@ -97,12 +99,14 @@ public class NodeDataUpdater implements Managed {
 
     @Override
     public void start() throws Exception {
-        resourceDB.onResourceUpdated().connect(this::refreshNodeState);
-        executorStateManager.onStateChange().connect(state -> refreshNodeState());
+        resourceDB.onResourceUpdated().connect(STATE_CHANGE_HANDLER_NAME, this::refreshNodeState);
+        executorStateManager.onStateChange().connect(STATE_CHANGE_HANDLER_NAME, state -> refreshNodeState());
     }
 
     @Override
     public void stop() throws Exception {
+        resourceDB.onResourceUpdated().disconnect(STATE_CHANGE_HANDLER_NAME);
+        executorStateManager.onStateChange().disconnect(STATE_CHANGE_HANDLER_NAME);
         refreshSignal.close();
     }
 

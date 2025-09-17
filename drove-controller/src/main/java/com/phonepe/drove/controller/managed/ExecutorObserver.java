@@ -115,8 +115,8 @@ public class ExecutorObserver implements Managed {
                                 executorId -> eventBus.publish(
                                         new DroveExecutorRemovedEvent(executorMetadata(executorId))));
                     }
-                    else {
-                        val newExecutors = Sets.difference(ids, knownExecutors);
+                    val newExecutors = Sets.difference(ids, knownExecutors);
+                    if(!newExecutors.isEmpty()) {
                         log.info("New executors detected: {}", newExecutors);
                         currentExecutors.stream()
                                 .filter(executor -> newExecutors.contains(executor.getState().getExecutorId()))

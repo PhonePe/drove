@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.engine;
 
+import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.models.events.events.DroveInstanceStateChangeEvent;
@@ -60,6 +61,7 @@ public class StateUpdater {
     private final TaskDB taskDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final LocalServiceStateDB localServiceStateDB;
+    private final NodeDataStore nodeDataStore;
 
     private final DroveEventBus droveEventBus;
 
@@ -186,6 +188,7 @@ public class StateUpdater {
                     hasAnyData = true;
                     anyDataUpdated = updateAllServiceInstances(anyDataUpdated, serviceInstances);
                 }
+                nodeDataStore.updateNodeData(node);
             }
             if (!hasAnyData || anyDataUpdated) {
                 resourcesDB.update(children);
@@ -346,11 +349,13 @@ public class StateUpdater {
             TaskDB taskDB,
             ApplicationInstanceInfoDB instanceInfoDB,
             LocalServiceStateDB localServiceStateDB,
+            NodeDataStore nodeDataStore,
             DroveEventBus droveEventBus) {
         this.resourcesDB = resourcesDB;
         this.taskDB = taskDB;
         this.instanceInfoDB = instanceInfoDB;
         this.localServiceStateDB = localServiceStateDB;
+        this.nodeDataStore = nodeDataStore;
         this.droveEventBus = droveEventBus;
         this.executor.submit(new UpdateHandler());
     }
