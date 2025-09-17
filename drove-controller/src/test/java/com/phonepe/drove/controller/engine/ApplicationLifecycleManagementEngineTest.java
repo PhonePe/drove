@@ -27,6 +27,7 @@ import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -40,7 +41,6 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.rule.RuleEvalStrategy;
 import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
@@ -198,6 +198,12 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
             @Singleton
             public HttpCaller httpCaller() {
                 return CommonTestUtils.httpCaller();
+            }
+
+            @Provides
+            @Singleton
+            public NodeDataStore nodeDataStore() {
+                return mock(NodeDataStore.class);
             }
         });
         injector.injectMembers(this);

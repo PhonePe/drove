@@ -29,6 +29,7 @@ import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -212,6 +213,12 @@ class LocalServiceLifecycleManagementEngineTest {
             @Singleton
             public HttpCaller httpCaller() {
                 return CommonTestUtils.httpCaller();
+            }
+
+            @Provides
+            @Singleton
+            public NodeDataStore nodeDataStore() {
+                return mock(NodeDataStore.class);
             }
         });
         injector.injectMembers(this);
