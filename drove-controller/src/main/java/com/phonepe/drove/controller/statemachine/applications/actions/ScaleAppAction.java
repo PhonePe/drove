@@ -24,24 +24,24 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
+import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.statemachine.applications.AppAsyncAction;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
-import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
+import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -187,6 +187,28 @@ public class ScaleAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
+        try {
+            return processResultInternal(context, currentState, operation, executionResult);
+        }
+        finally {
+            if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+                scheduler.finaliseSession(context.getSchedulingSessionId());
+                log.info("Scheduling session {} is now closed", context.getSchedulingSessionId());
+                context.setSchedulingSessionId(null);
+            }
+        }
+    }
+
+    @Override
+    public boolean cancel(AppActionContext context) {
+        return cancelCurrentJobs(context);
+    }
+
+    private StateData<ApplicationState, ApplicationInfo> processResultInternal(
+            AppActionContext context,
+            StateData<ApplicationState, ApplicationInfo> currentState,
+            ApplicationOperation operation,
+            JobExecutionResult<Boolean> executionResult) {
         val message = executionResult.getFailure() == null
                       ? "Execution failed"
                       : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
@@ -211,20 +233,9 @@ public class ScaleAppAction extends AppAsyncAction {
                 return StateData.errorFrom(currentState, ApplicationState.SCALING_REQUESTED, errMsg);
             }
         }
-        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
-            scheduler.finaliseSession(context.getSchedulingSessionId());
-            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
-            context.setSchedulingSessionId(null);
-        }
         if (count > 0) {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
-
-    @Override
-    public boolean cancel(AppActionContext context) {
-        return cancelCurrentJobs(context);
-    }
-
 }

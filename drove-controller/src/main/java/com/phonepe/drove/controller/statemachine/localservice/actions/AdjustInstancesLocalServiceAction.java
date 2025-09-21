@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -110,6 +111,10 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         val instancesPerHost = currInfo.getInstancesPerHost();
         val liveExecutors = clusterResourcesDB.currentSnapshot(true);
         val clusterOpSpec = Objects.requireNonNullElse(scaleOp.getOpSpec(), defaultClusterOpSpec);
+        val schedulingSessionId = UUID.randomUUID().toString();
+        // This is a benign operation, so we set this up regardless of new instances need to be created or not
+        // finalize call on non-existent scheduling session ids do not cause any issues
+        context.setSchedulingSessionId(schedulingSessionId);
         return switch (currInfo.getActivationState()) {
             case ACTIVE -> {
                 val newInstancesPerExecutor = new HashMap<String, Integer>();
@@ -137,7 +142,6 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                                                                   runningInstances.size()));
                     }
                 });
-                val schedulingSessionId = UUID.randomUUID().toString();
                 val jobList = new ArrayList<Job<Boolean>>();
 
                 if (newInstancesPerExecutor.isEmpty()) {
@@ -179,7 +183,6 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                     yield Optional.empty();
                 }
                 log.info("Will spin up test instance on {}", executor.getExecutorId());
-                val schedulingSessionId = UUID.randomUUID().toString();
                 yield Optional.of(JobTopology.<Boolean>builder()
                                           .addJob(createNewInstanceJobs(Map.of(executor.getExecutorId(), 1),
                                                                         currInfo,

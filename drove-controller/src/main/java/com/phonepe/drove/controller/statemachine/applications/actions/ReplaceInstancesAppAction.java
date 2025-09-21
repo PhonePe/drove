@@ -185,19 +185,24 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        var errMsg = Boolean.TRUE.equals(executionResult.getResult())
-                     ? ""
-                     : errorMessage(executionResult);
-        val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
-        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
-            scheduler.finaliseSession(context.getSchedulingSessionId());
-            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
-            context.setSchedulingSessionId(null);
+        try {
+            var errMsg = Boolean.TRUE.equals(executionResult.getResult())
+                         ? ""
+                         : errorMessage(executionResult);
+            val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+
+            if (count > 0) {
+                return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
+            }
+            return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
         }
-        if (count > 0) {
-            return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
+        finally {
+            if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+                scheduler.finaliseSession(context.getSchedulingSessionId());
+                log.info("Scheduling session {} is now closed", context.getSchedulingSessionId());
+                context.setSchedulingSessionId(null);
+            }
         }
-        return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
 
 }

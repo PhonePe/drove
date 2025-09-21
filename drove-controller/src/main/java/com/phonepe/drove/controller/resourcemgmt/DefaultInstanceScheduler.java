@@ -119,7 +119,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         var placementPolicy = Objects.requireNonNullElse(deploymentSpec.getPlacementPolicy(),
                                                          new AnyPlacementPolicy());
         if (shouldAllowCombiningOfPolicy(placementPolicy)) {
-            log.info("Placement policy {} seems to be disallowed for combining, skipping mutation.", placementPolicy.getType());
+            log.info("Placement policy {} seems to be disallowed for combining, skipping mutation.",
+                     placementPolicy.getType());
         }
         else {
             log.info("No tags specified in placement policy, will ensure deployments don't go to tagged executors");
@@ -132,15 +133,19 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, String instanceId,
-            DeploymentSpec deploymentSpec,
+            final String schedulingSessionId,
+            final String instanceId,
+            final DeploymentSpec deploymentSpec,
             final PlacementPolicy placementPolicy,
             final Set<ExecutorState> allowedStates) {
 
 
         val sessionData = schedulingSessionData.computeIfAbsent(
                 schedulingSessionId,
-                id -> clusterSnapshot(deploymentSpec));
+                id -> {
+                    log.info("CREATE::SID: {}", schedulingSessionId);
+                    return clusterSnapshot(deploymentSpec);
+                });
         val selectedNode = clusterResourcesDB.selectNodes(
                 deploymentSpec.getResources(),
                 allowedStates,
@@ -169,6 +174,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @MonitoredFunction
     public synchronized void finaliseSession(final String schedulingSessionId) {
         schedulingSessionData.remove(schedulingSessionId);
+        log.info("FINALIZED::SID: {}", schedulingSessionId);
+
     }
 
     @Override
@@ -343,16 +350,16 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                 var allExecutorLevelMetadata = sessionLevelData.keySet()
                         .stream()
                         .collect(Collectors.toMap(
-                                executorId -> executorId,
-                                executorId -> clusterResourcesDB.lastKnownSnapshot(executorId)
-                                        .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
-                                        .orElse(Map.of()))
-                        );
+                                         executorId -> executorId,
+                                         executorId -> clusterResourcesDB.lastKnownSnapshot(executorId)
+                                                 .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
+                                                 .orElse(Map.of()))
+                                );
 
                 var schedulingInfo = SchedulingInfo.builder()
                         .executorNodeId(executorNode.getExecutorId())
                         .allocatedExecutorNodeMetadata(
-                                Objects.requireNonNullElse( executorNode.getMetadata(), Map.of()))
+                                Objects.requireNonNullElse(executorNode.getMetadata(), Map.of()))
                         .allExecutorMetadata(allExecutorLevelMetadata)
                         .applicationEnvironment(deploymentSpec.getEnv())
                         .build();

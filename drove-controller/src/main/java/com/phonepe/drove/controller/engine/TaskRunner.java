@@ -195,17 +195,21 @@ public class TaskRunner implements Runnable {
     private void handleJobCompletionResult(
             final TaskJobContext context,
             final JobExecutionResult<Boolean> executionResult) {
-        if (TRUE.equals(executionResult.getResult())) {
-            updateCurrentState();
+        try {
+            if (TRUE.equals(executionResult.getResult())) {
+                updateCurrentState();
+            }
+            else {
+                log.error("Unable to start job for {}/{}", sourceAppName, taskId);
+                updateCurrentState(TaskState.LOST);
+            }
         }
-        else {
-            log.error("Unable to start job for {}/{}", sourceAppName, taskId);
-            updateCurrentState(TaskState.LOST);
-        }
-        if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
-            scheduler.finaliseSession(context.getSchedulingSessionId());
-            log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
-            context.setSchedulingSessionId(null);
+        finally {
+            if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
+                scheduler.finaliseSession(context.getSchedulingSessionId());
+                log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
+                context.setSchedulingSessionId(null);
+            }
         }
     }
 
