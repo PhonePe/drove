@@ -40,7 +40,7 @@ public abstract class AppAsyncAction extends AsyncAction<ApplicationInfo, Applic
     protected AppAsyncAction(
             final JobExecutor<Boolean> jobExecutor,
             final ApplicationInstanceInfoDB instanceInfoDB,
-            final List<AsyncActionPlugin<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> plugins) {
+            final List<AsyncActionPlugin<AppActionContext, ApplicationOperation>> plugins) {
         super(jobExecutor, plugins);
         this.instanceInfoDB = instanceInfoDB;
     }

@@ -42,8 +42,8 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
     protected LocalServiceAsyncAction(
             final JobExecutor<Boolean> jobExecutor,
             final LocalServiceStateDB stateDB,
-            final List<AsyncActionPlugin<LocalServiceInfo, LocalServiceState,
-                                    LocalServiceActionContext, LocalServiceOperation>> plugins) {
+            final List<AsyncActionPlugin<
+                    LocalServiceActionContext, LocalServiceOperation>> plugins) {
         super(jobExecutor, plugins);
         this.stateDB = stateDB;
     }

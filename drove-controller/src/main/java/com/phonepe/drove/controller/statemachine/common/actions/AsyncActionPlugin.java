@@ -22,7 +22,7 @@ import com.phonepe.drove.jobexecutor.JobTopology;
 /**
  * This will be called in path before a topology is started and in process result
  */
-public interface AsyncActionPlugin<T, S extends Enum<S>, C extends JobEnabledContext<D>, D> {
+public interface AsyncActionPlugin<C extends JobEnabledContext<D>, D> {
 
     default void beforeTopologyCreation(final C context, final D operation) {
         //Nothing to do here

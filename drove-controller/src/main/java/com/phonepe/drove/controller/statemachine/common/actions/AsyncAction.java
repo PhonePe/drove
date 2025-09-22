@@ -43,11 +43,11 @@ public abstract class AsyncAction<T, S extends Enum<S>, C extends JobEnabledCont
     private final Lock jobLock = new ReentrantLock();
     private final Condition condition = jobLock.newCondition();
     private final JobExecutor<Boolean> jobExecutor;
-    private final List<AsyncActionPlugin<T, S, C, D>> plugins;
+    private final List<AsyncActionPlugin<C, D>> plugins;
     private final AtomicBoolean done = new AtomicBoolean(false);
     private final AtomicReference<StateData<S, T>> result = new AtomicReference<>();
 
-    protected AsyncAction(JobExecutor<Boolean> jobExecutor, List<AsyncActionPlugin<T, S, C, D>> plugins) {
+    protected AsyncAction(JobExecutor<Boolean> jobExecutor, List<AsyncActionPlugin<C, D>> plugins) {
         this.jobExecutor = jobExecutor;
         this.plugins = Objects.requireNonNullElseGet(plugins, List::of);
     }

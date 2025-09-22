@@ -31,7 +31,7 @@ import java.util.UUID;
  */
 @Slf4j
 @AllArgsConstructor
-public class SchedulerSessionManagementPlugin<T, S extends Enum<S>, C extends JobEnabledContext<D>, D> implements AsyncActionPlugin<T,S,C,D> {
+public class SchedulerSessionManagementPlugin<C extends JobEnabledContext<D>, D> implements AsyncActionPlugin<C,D> {
 
     private final InstanceScheduler scheduler;
 
