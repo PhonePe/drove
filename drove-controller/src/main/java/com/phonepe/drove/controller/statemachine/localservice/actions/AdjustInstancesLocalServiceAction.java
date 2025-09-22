@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -27,6 +26,7 @@ import com.phonepe.drove.controller.engine.jobs.StartSingleLocalServiceInstanceJ
 import com.phonepe.drove.controller.engine.jobs.StopSingleLocalServiceInstanceJob;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.SchedulerSessionManagementPlugin;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAsyncAction;
@@ -85,7 +85,7 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller,
             ClusterOpSpec defaultClusterOpSpec) {
-        super(jobExecutor, stateDB);
+        super(jobExecutor, stateDB, List.of(new SchedulerSessionManagementPlugin<>(scheduler)));
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
         this.communicator = communicator;
@@ -111,10 +111,9 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
         val instancesPerHost = currInfo.getInstancesPerHost();
         val liveExecutors = clusterResourcesDB.currentSnapshot(true);
         val clusterOpSpec = Objects.requireNonNullElse(scaleOp.getOpSpec(), defaultClusterOpSpec);
-        val schedulingSessionId = UUID.randomUUID().toString();
+        val schedulingSessionId = context.getSchedulingSessionId();
         // This is a benign operation, so we set this up regardless of new instances need to be created or not
         // finalize call on non-existent scheduling session ids do not cause any issues
-        context.setSchedulingSessionId(schedulingSessionId);
         return switch (currInfo.getActivationState()) {
             case ACTIVE -> {
                 val newInstancesPerExecutor = new HashMap<String, Integer>();

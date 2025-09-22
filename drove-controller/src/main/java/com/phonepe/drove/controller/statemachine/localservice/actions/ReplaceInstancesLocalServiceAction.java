@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.statemachine.localservice.actions;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -27,6 +26,7 @@ import com.phonepe.drove.controller.engine.jobs.StopSingleLocalServiceInstanceJo
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.SchedulerSessionManagementPlugin;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAsyncAction;
@@ -86,7 +86,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller,
             ClusterOpSpec defaultClusterOpSpec) {
-        super(jobExecutor, localServiceStateDB);
+        super(jobExecutor, localServiceStateDB, List.of(new SchedulerSessionManagementPlugin<>(scheduler)));
         this.localServiceStateDB = localServiceStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;
@@ -99,40 +99,6 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
         this.defaultClusterOpSpec = defaultClusterOpSpec;
     }
 
-
-    private StopSingleLocalServiceInstanceJob stopOldInstanceJob(
-            LocalServiceInstanceInfo instanceInfo,
-            String serviceId,
-            ClusterOpSpec clusterOpSpec,
-            String schedulingSessionId) {
-        return new StopSingleLocalServiceInstanceJob(
-                serviceId,
-                instanceInfo.getInstanceId(),
-                clusterOpSpec,
-                scheduler,
-                schedulingSessionId,
-                localServiceStateDB,
-                clusterResourcesDB,
-                communicator,
-                retrySpecFactory);
-    }
-
-    private StartSingleLocalServiceInstanceJob startNewInstanceJob(
-            LocalServiceInfo localServiceInfo,
-            ClusterOpSpec clusterOpSpec,
-            String schedulingSessionId,
-            ExecutorHostInfo executor) {
-        return new StartSingleLocalServiceInstanceJob(localServiceInfo,
-                                                      clusterOpSpec,
-                                                      scheduler,
-                                                      localServiceStateDB, communicator,
-                                                      schedulingSessionId,
-                                                      retrySpecFactory,
-                                                      instanceIdGenerator,
-                                                      tokenManager,
-                                                      httpCaller,
-                                                      executor);
-    }
 
     @Override
     protected Optional<JobTopology<Boolean>> jobsToRun(
@@ -206,32 +172,57 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
             StateData<LocalServiceState, LocalServiceInfo> currentState,
             LocalServiceOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        var errMsg = Boolean.TRUE.equals(executionResult.getResult())
+        val errMsg = Boolean.TRUE.equals(executionResult.getResult())
                      ? ""
                      : errorMessage(executionResult);
-        try {
-            val restartOp = safeCast(operation, LocalServiceReplaceInstancesOperation.class);
+        val restartOp = safeCast(operation, LocalServiceReplaceInstancesOperation.class);
 
-            val instancesToBeStopped = Objects.requireNonNullElse(restartOp.getInstanceIds(), List.<String>of());
-            if (!instancesToBeStopped.isEmpty()) {
-                val instances = localServiceStateDB.instances(context.getServiceId(),
-                                                              EnumSet.of(LocalServiceInstanceState.HEALTHY),
-                                                              false)
-                        .stream()
-                        .map(LocalServiceInstanceInfo::getInstanceId)
-                        .collect(Collectors.toUnmodifiableSet());
-                if (!instances.containsAll(instancesToBeStopped)) {
-                    return determineState(currentState, null);
-                }
-            }
-            return determineState(currentState, errMsg);
-        }
-        finally {
-            if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
-                scheduler.finaliseSession(context.getSchedulingSessionId());
-                log.debug("Scheduling session {} is now closed", context.getSchedulingSessionId());
-                context.setSchedulingSessionId(null);
+        val instancesToBeStopped = Objects.requireNonNullElse(restartOp.getInstanceIds(), List.<String>of());
+        if (!instancesToBeStopped.isEmpty()) {
+            val instances = localServiceStateDB.instances(context.getServiceId(),
+                                                          EnumSet.of(LocalServiceInstanceState.HEALTHY),
+                                                          false)
+                    .stream()
+                    .map(LocalServiceInstanceInfo::getInstanceId)
+                    .collect(Collectors.toUnmodifiableSet());
+            if (!instances.containsAll(instancesToBeStopped)) {
+                return determineState(currentState, null);
             }
         }
+        return determineState(currentState, errMsg);
+    }
+
+    private StopSingleLocalServiceInstanceJob stopOldInstanceJob(
+            LocalServiceInstanceInfo instanceInfo,
+            String serviceId,
+            ClusterOpSpec clusterOpSpec,
+            String schedulingSessionId) {
+        return new StopSingleLocalServiceInstanceJob(
+                serviceId,
+                instanceInfo.getInstanceId(),
+                clusterOpSpec,
+                scheduler,
+                schedulingSessionId,
+                localServiceStateDB,
+                clusterResourcesDB,
+                communicator,
+                retrySpecFactory);
+    }
+
+    private StartSingleLocalServiceInstanceJob startNewInstanceJob(
+            LocalServiceInfo localServiceInfo,
+            ClusterOpSpec clusterOpSpec,
+            String schedulingSessionId,
+            ExecutorHostInfo executor) {
+        return new StartSingleLocalServiceInstanceJob(localServiceInfo,
+                                                      clusterOpSpec,
+                                                      scheduler,
+                                                      localServiceStateDB, communicator,
+                                                      schedulingSessionId,
+                                                      retrySpecFactory,
+                                                      instanceIdGenerator,
+                                                      tokenManager,
+                                                      httpCaller,
+                                                      executor);
     }
 }

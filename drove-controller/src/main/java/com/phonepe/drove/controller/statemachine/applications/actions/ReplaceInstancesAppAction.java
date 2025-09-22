@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.statemachine.applications.actions;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -26,6 +25,7 @@ import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.SchedulerSessionManagementPlugin;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
@@ -52,7 +52,6 @@ import javax.inject.Named;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
 
 import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
@@ -88,7 +87,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller) {
-        super(jobExecutor, instanceInfoDB);
+        super(jobExecutor, instanceInfoDB, List.of(new SchedulerSessionManagementPlugin<>(scheduler)));
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
@@ -124,8 +123,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             return Optional.empty();
         }
         int parallelism = clusterOpSpec.getParallelism();
-        val schedulingSessionId = UUID.randomUUID().toString();
-        context.setSchedulingSessionId(schedulingSessionId);
+        val schedulingSessionId = context.getSchedulingSessionId();
 
         log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}",
                  instances.size(),
@@ -185,24 +183,15 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        try {
-            var errMsg = Boolean.TRUE.equals(executionResult.getResult())
-                         ? ""
-                         : errorMessage(executionResult);
-            val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
+        var errMsg = Boolean.TRUE.equals(executionResult.getResult())
+                     ? ""
+                     : errorMessage(executionResult);
+        val count = instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY);
 
-            if (count > 0) {
-                return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
-            }
-            return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
+        if (count > 0) {
+            return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }
-        finally {
-            if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
-                scheduler.finaliseSession(context.getSchedulingSessionId());
-                log.info("Scheduling session {} is now closed", context.getSchedulingSessionId());
-                context.setSchedulingSessionId(null);
-            }
-        }
+        return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
 
 }

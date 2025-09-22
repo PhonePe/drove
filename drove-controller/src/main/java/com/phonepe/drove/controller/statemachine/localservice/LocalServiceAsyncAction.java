@@ -18,6 +18,7 @@ package com.phonepe.drove.controller.statemachine.localservice;
 
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.common.actions.AsyncAction;
+import com.phonepe.drove.controller.statemachine.common.actions.AsyncActionPlugin;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
@@ -27,6 +28,7 @@ import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -37,8 +39,12 @@ public abstract class LocalServiceAsyncAction extends AsyncAction<LocalServiceIn
         LocalServiceActionContext, LocalServiceOperation> {
     protected final LocalServiceStateDB stateDB;
 
-    protected LocalServiceAsyncAction(JobExecutor<Boolean> jobExecutor, LocalServiceStateDB stateDB) {
-        super(jobExecutor);
+    protected LocalServiceAsyncAction(
+            final JobExecutor<Boolean> jobExecutor,
+            final LocalServiceStateDB stateDB,
+            final List<AsyncActionPlugin<LocalServiceInfo, LocalServiceState,
+                                    LocalServiceActionContext, LocalServiceOperation>> plugins) {
+        super(jobExecutor, plugins);
         this.stateDB = stateDB;
     }
 

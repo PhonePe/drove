@@ -74,7 +74,7 @@ public class StopInstancesLocalServiceAction extends LocalServiceAsyncAction {
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ClusterOpSpec defaultOpSpec) {
-        super(jobExecutor, localServiceStateDB);
+        super(jobExecutor, localServiceStateDB, null);
         this.localServiceStateDB = localServiceStateDB;
         this.clusterResourcesDB = clusterResourcesDB;
         this.scheduler = scheduler;

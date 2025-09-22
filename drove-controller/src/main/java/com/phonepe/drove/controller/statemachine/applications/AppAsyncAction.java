@@ -18,6 +18,7 @@ package com.phonepe.drove.controller.statemachine.applications;
 
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statemachine.common.actions.AsyncAction;
+import com.phonepe.drove.controller.statemachine.common.actions.AsyncActionPlugin;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -26,15 +27,21 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 /**
  *
  */
 @Slf4j
-public abstract class AppAsyncAction extends AsyncAction<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation> {
+public abstract class AppAsyncAction extends AsyncAction<ApplicationInfo, ApplicationState, AppActionContext,
+        ApplicationOperation> {
     private final ApplicationInstanceInfoDB instanceInfoDB;
 
-    protected AppAsyncAction(JobExecutor<Boolean> jobExecutor, ApplicationInstanceInfoDB instanceInfoDB) {
-        super(jobExecutor);
+    protected AppAsyncAction(
+            final JobExecutor<Boolean> jobExecutor,
+            final ApplicationInstanceInfoDB instanceInfoDB,
+            final List<AsyncActionPlugin<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>> plugins) {
+        super(jobExecutor, plugins);
         this.instanceInfoDB = instanceInfoDB;
     }
 
@@ -42,7 +49,7 @@ public abstract class AppAsyncAction extends AsyncAction<ApplicationInfo, Applic
     protected StateData<ApplicationState, ApplicationInfo> handleEmptyTopology(
             AppActionContext context,
             StateData<ApplicationState, ApplicationInfo> currentState) {
-        if(instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) == 0) {
+        if (instanceInfoDB.instanceCount(context.getAppId(), InstanceState.HEALTHY) == 0) {
             return StateData.from(currentState, ApplicationState.MONITORING);
         }
         return StateData.from(currentState, ApplicationState.RUNNING);

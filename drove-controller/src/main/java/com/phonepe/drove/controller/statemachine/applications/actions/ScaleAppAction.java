@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.statemachine.applications.actions;
 
-import com.google.common.base.Strings;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -26,6 +25,7 @@ import com.phonepe.drove.controller.engine.jobs.StartSingleInstanceJob;
 import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.SchedulerSessionManagementPlugin;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
@@ -49,8 +49,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.LongStream;
 
@@ -86,7 +86,7 @@ public class ScaleAppAction extends AppAsyncAction {
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller) {
-        super(jobExecutor, instanceInfoDB);
+        super(jobExecutor, instanceInfoDB, List.of(new SchedulerSessionManagementPlugin<>(scheduler)));
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
@@ -119,8 +119,7 @@ public class ScaleAppAction extends AppAsyncAction {
         val parallelism = clusterOpSpec.getParallelism();
         if (currentInstancesCount < required) {
             val numNew = required - currentInstancesCount;
-            val schedulingSessionId = UUID.randomUUID().toString();
-            context.setSchedulingSessionId(schedulingSessionId);
+            val schedulingSessionId = context.getSchedulingSessionId();
             log.info("{} new instances to be started. Sched session ID: {}", numNew, schedulingSessionId);
             return Optional.of(JobTopology.<Boolean>builder()
                                        .withThreadFactory(threadFactory)
@@ -187,28 +186,6 @@ public class ScaleAppAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation,
             JobExecutionResult<Boolean> executionResult) {
-        try {
-            return processResultInternal(context, currentState, operation, executionResult);
-        }
-        finally {
-            if (!Strings.isNullOrEmpty(context.getSchedulingSessionId())) {
-                scheduler.finaliseSession(context.getSchedulingSessionId());
-                log.info("Scheduling session {} is now closed", context.getSchedulingSessionId());
-                context.setSchedulingSessionId(null);
-            }
-        }
-    }
-
-    @Override
-    public boolean cancel(AppActionContext context) {
-        return cancelCurrentJobs(context);
-    }
-
-    private StateData<ApplicationState, ApplicationInfo> processResultInternal(
-            AppActionContext context,
-            StateData<ApplicationState, ApplicationInfo> currentState,
-            ApplicationOperation operation,
-            JobExecutionResult<Boolean> executionResult) {
         val message = executionResult.getFailure() == null
                       ? "Execution failed"
                       : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
@@ -237,5 +214,10 @@ public class ScaleAppAction extends AppAsyncAction {
             return StateData.errorFrom(currentState, ApplicationState.RUNNING, errMsg);
         }
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
+    }
+
+    @Override
+    public boolean cancel(AppActionContext context) {
+        return cancelCurrentJobs(context);
     }
 }

@@ -48,6 +48,7 @@ import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.functionmetrics.MonitoredFunction;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -133,7 +134,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
-            final String schedulingSessionId,
+            @NonNull final String schedulingSessionId,
             final String instanceId,
             final DeploymentSpec deploymentSpec,
             final PlacementPolicy placementPolicy,

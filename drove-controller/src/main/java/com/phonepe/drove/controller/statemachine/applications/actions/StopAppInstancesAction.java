@@ -69,7 +69,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
             final ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
-        super(jobExecutor, instanceInfoDB);
+        super(jobExecutor, instanceInfoDB, null);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
         this.clusterResourcesDB = clusterResourcesDB;
