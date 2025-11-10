@@ -17,31 +17,41 @@
 package com.phonepe.drove.executor.discovery;
 
 import io.dropwizard.lifecycle.Managed;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 /**
  *
  */
 @Order(20)
+@Slf4j
 public class ZookeeperManager implements Managed {
     private final CuratorFramework curatorFramework;
 
     @Inject
-    public ZookeeperManager(CuratorFramework curatorFramework) {
+    public ZookeeperManager(@Nullable CuratorFramework curatorFramework) {
         this.curatorFramework = curatorFramework;
     }
 
     @Override
     public void start() throws Exception {
+        if(null == curatorFramework) {
+            log.info("Zookeeper is not enabled");
+            return;
+        }
         curatorFramework.start();
         curatorFramework.blockUntilConnected();
     }
 
     @Override
     public void stop() throws Exception {
+        if (null == curatorFramework) {
+            return;
+        }
         curatorFramework.close();
     }
 }

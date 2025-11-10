@@ -14,19 +14,23 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.discovery.leadership;
+package com.phonepe.drove.executor.discovery;
 
-import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import lombok.Builder;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
-import java.util.Optional;
+import javax.validation.constraints.NotEmpty;
+import java.net.URL;
+import java.util.List;
 
 /**
- *
+ * Controller configuration.
  */
-public interface LeadershipObserver {
-    Optional<ControllerNodeData> leader();
-
-    void start();
-
-    void stop();
+@Value
+@Builder
+@Jacksonized
+public class ControllerConfig {
+    @NotEmpty
+    List<URL> endpoints;
 }

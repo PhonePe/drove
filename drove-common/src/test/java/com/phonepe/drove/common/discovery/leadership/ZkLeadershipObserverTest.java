@@ -35,9 +35,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- *
+ * Tests {@link ZkLeadershipObserver}
  */
-class LeadershipObserverTest {
+class ZkLeadershipObserverTest {
 
     @Test
     void test() {
@@ -56,7 +56,7 @@ class LeadershipObserverTest {
                                     new ControllerNodeData("host2", 8080, NodeTransportType.HTTP, new Date(), false));
                         });
 
-        val l = new LeadershipObserver(dataStore);
+        val l = new ZkLeadershipObserver(dataStore);
         l.start();
         CommonTestUtils.waitUntil(() -> l.leader().isPresent());
         assertEquals("host1", l.leader().map(NodeData::getHostname).orElse(""));

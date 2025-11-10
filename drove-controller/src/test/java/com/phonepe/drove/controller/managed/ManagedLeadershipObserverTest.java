@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
+import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,7 @@ class ManagedLeadershipObserverTest {
                                                                                        NodeTransportType.HTTP,
                                                                                        new Date(),
                                                                                        true)));
-        val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
+        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
         obs.start();
         waitUntil(() -> obs.leader().isPresent());
         val leader = obs.leader().orElse(null);
@@ -80,7 +80,7 @@ class ManagedLeadershipObserverTest {
                                                                                        NodeTransportType.HTTP,
                                                                                        new Date(),
                                                                                        false)));
-        val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
+        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
         obs.start();
         waitUntil(() -> obs.leader().isEmpty());
         val leader = obs.leader().orElse(null);
@@ -112,7 +112,7 @@ class ManagedLeadershipObserverTest {
                                new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), false));
             }
         });
-        val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
+        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
         obs.start();
         {
             ctr.set(0);
@@ -169,7 +169,7 @@ class ManagedLeadershipObserverTest {
                                              null,
                                              Map.of(),
                                              ExecutorState.ACTIVE)));
-        val obs = new ManagedLeadershipObserver(new LeadershipObserver(nds));
+        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
         obs.start();
         waitUntil(() -> obs.leader().isEmpty());
         val leader = obs.leader().orElse(null);

@@ -60,7 +60,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
                                                                new Date(),
                                                                true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+        val msgSender = new RemoteControllerMessageSender(() -> leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
                                                           CommonUtils.createHttpClient(false));
@@ -82,7 +82,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
                                                                new Date(),
                                                                true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+        val msgSender = new RemoteControllerMessageSender(() -> leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
                                                           CommonUtils.createHttpClient(false));
@@ -105,7 +105,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
                                                                new Date(),
                                                                true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+        val msgSender = new RemoteControllerMessageSender(() -> leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
                                                           CommonUtils.createHttpClient(false));
@@ -123,7 +123,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
         when(leaderObserver.leader())
                 .thenReturn(Optional.empty());
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+        val msgSender = new RemoteControllerMessageSender(() -> leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
                                                           CommonUtils.createHttpClient(false));
@@ -143,7 +143,7 @@ class RemoteControllerMessageSenderTest extends AbstractTestBase {
                                                                new Date(),
                                                                true)));
 
-        val msgSender = new RemoteControllerMessageSender(leaderObserver,
+        val msgSender = new RemoteControllerMessageSender(() -> leaderObserver,
                                                           AbstractTestBase.MAPPER,
                                                           ClusterAuthenticationConfig.DEFAULT,
                                                           CommonUtils.createHttpClient(false));

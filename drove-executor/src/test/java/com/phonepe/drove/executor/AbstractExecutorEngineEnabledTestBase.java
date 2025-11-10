@@ -25,19 +25,23 @@ import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
+import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
 import lombok.val;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -152,7 +156,14 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             @Provides
             @Singleton
             public LeadershipObserver leadershipObserver() {
-                return mock(LeadershipObserver.class);
+                return mock(ZkLeadershipObserver.class);
+            }
+
+            @Provides
+            @Singleton
+            @Named("ControllerHttpClient")
+            public CloseableHttpClient closeableHttpClient() {
+                return ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT);
             }
         });
 

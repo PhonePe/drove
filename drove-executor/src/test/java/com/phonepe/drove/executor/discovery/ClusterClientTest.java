@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
@@ -75,7 +76,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         val res = clusterClient.lastKnownInstances();
         assertEquals(1, res.getAppInstanceIds().size());
     }
@@ -91,7 +92,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         val res = clusterClient.lastKnownInstances();
         assertEquals(KnownInstancesData.EMPTY, res);
     }
@@ -106,7 +107,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertEquals(KnownInstancesData.EMPTY, clusterClient.lastKnownInstances());
     }
 
@@ -120,14 +121,14 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertEquals(KnownInstancesData.EMPTY, clusterClient.lastKnownInstances());
     }
 
     @Test
     void testLastKnownInstanceNoLeader() {
         when(leObs.leader()).thenReturn(Optional.empty());
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertEquals(KnownInstancesData.EMPTY, clusterClient.lastKnownInstances());
     }
 
@@ -138,7 +139,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            wm.getHttpPort(),
                                                                            NodeTransportType.HTTP,
                                                                            new Date(),
-                                                                           true)));        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+                                                                           true)));        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertEquals(KnownInstancesData.EMPTY, clusterClient.lastKnownInstances());
     }
 
@@ -154,7 +155,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         val res = clusterClient.currentKnownInstances();
         assertEquals(1, res.getAppInstanceIds().size());
     }
@@ -171,7 +172,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         val res = clusterClient.reservedResources();
         assertEquals(1, res.getCpus());
         assertEquals(128, res.getMemory());
@@ -189,7 +190,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         val res = clusterClient.reservedResources();
         assertEquals(0, res.getCpus());
         assertEquals(0, res.getMemory());
@@ -206,7 +207,7 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertThrows(ControllerCommunicationError.class, clusterClient::reservedResources);
     }
 
@@ -220,14 +221,14 @@ class ClusterClientTest extends AbstractTestBase {
                                                                            new Date(),
                                                                            true)));
 
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertThrows(ControllerCommunicationError.class, clusterClient::reservedResources);
     }
 
     @Test
     void testReservedResourcesNoLeader() {
         when(leObs.leader()).thenReturn(Optional.empty());
-        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ClusterAuthenticationConfig.DEFAULT);
+        val clusterClient = new ClusterClient(eIdMan, leObs, MAPPER, ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
         assertThrows(ControllerCommunicationError.class, clusterClient::reservedResources);
     }
 

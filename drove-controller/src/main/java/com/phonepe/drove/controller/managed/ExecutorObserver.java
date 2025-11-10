@@ -16,25 +16,27 @@
 
 package com.phonepe.drove.controller.managed;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
-import com.phonepe.drove.common.zookeeper.ZkUtils;
+import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
+import com.phonepe.drove.common.discovery.NodeDataStore;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.StateUpdater;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.events.events.DroveExecutorAddedEvent;
 import com.phonepe.drove.models.events.events.DroveExecutorRemovedEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.zookeeper.KeeperException;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -43,34 +45,56 @@ import java.util.stream.Collectors;
 import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
 
 /**
- *
+ * The ExecutorObserver keeps track of executors in the cluster by querying the raw data from the {@link NodeDataStore}
+ * and keeps the in memory cluster resources db uptodate by comparing current and previous states. Any executor which
+ * has _not_ updated it's data in the stipulated window is considered to have been removed from the cluster.
  */
 @Slf4j
 @Order(20)
 @Singleton
 public class ExecutorObserver implements Managed {
 
-    private final CuratorFramework curatorFramework;
-    private final ObjectMapper mapper;
+    private final NodeDataStore nodeDataStore;
     private final StateUpdater updater;
     private final LeadershipEnsurer leadershipEnsurer;
     private final DroveEventBus eventBus;
+    private final Duration staleExecutorAge;
     private final Lock refreshLock = new ReentrantLock();
-    private final ScheduledSignal dataRefresher = new ScheduledSignal(Duration.ofSeconds(10));
+    private final ScheduledSignal dataRefresher;
     private final Set<String> knownExecutors = new HashSet<>();
 
     @Inject
+    @IgnoreInJacocoGeneratedReport
     public ExecutorObserver(
-            CuratorFramework curatorFramework,
-            ObjectMapper mapper,
+            NodeDataStore nodeDataStore,
             StateUpdater updater,
             LeadershipEnsurer leadershipEnsurer,
-            DroveEventBus eventBus) {
-        this.curatorFramework = curatorFramework;
-        this.mapper = mapper;
+            DroveEventBus eventBus,
+            ControllerOptions controllerOptions) {
+        this(nodeDataStore,
+             updater,
+             leadershipEnsurer,
+             eventBus,
+             controllerOptions,
+             Duration.ofSeconds(10));
+    }
+
+    @VisibleForTesting
+    ExecutorObserver(
+            NodeDataStore nodeDataStore,
+            StateUpdater updater,
+            LeadershipEnsurer leadershipEnsurer,
+            DroveEventBus eventBus,
+            ControllerOptions controllerOptions,
+            Duration dataRefreshInterval) {
+        this.nodeDataStore = nodeDataStore;
         this.updater = updater;
         this.leadershipEnsurer = leadershipEnsurer;
         this.eventBus = eventBus;
+        this.staleExecutorAge = Objects.requireNonNullElse(controllerOptions.getStaleExecutorAge(),
+                                                           ControllerOptions.DEFAULT_STALE_EXECUTOR_AGE)
+                .toJavaDuration();
+        this.dataRefresher = new ScheduledSignal(dataRefreshInterval);
     }
 
     @Override
@@ -116,7 +140,7 @@ public class ExecutorObserver implements Managed {
                                         new DroveExecutorRemovedEvent(executorMetadata(executorId))));
                     }
                     val newExecutors = Sets.difference(ids, knownExecutors);
-                    if(!newExecutors.isEmpty()) {
+                    if (!newExecutors.isEmpty()) {
                         log.info("New executors detected: {}", newExecutors);
                         currentExecutors.stream()
                                 .filter(executor -> newExecutors.contains(executor.getState().getExecutorId()))
@@ -139,22 +163,20 @@ public class ExecutorObserver implements Managed {
     }
 
     private List<ExecutorNodeData> fetchNodes() {
-        try {
-            return ZkUtils.readChildrenNodes(curatorFramework,
-                                             "/executor",
-                                             0,
-                                             Integer.MAX_VALUE,
-                                             path -> ZkUtils.readNodeData(curatorFramework,
-                                                                          "/executor/" + path,
-                                                                          mapper,
-                                                                          ExecutorNodeData.class));
-        }
-        catch (KeeperException.NoNodeException e) {
-            log.warn("No executors found.. Maybe executors not started?");
-        }
-        catch (Exception e) {
-            log.error("Error reading children from ZK: ", e);
-        }
-        return Collections.emptyList();
+        val lastAllowed = Date.from(Instant.now().minus(staleExecutorAge));
+        return nodeDataStore.nodes(NodeType.EXECUTOR)
+                .stream()
+                .map(ExecutorNodeData.class::cast)
+                .filter(executor -> {
+                    val stale = executor.getUpdated().before(lastAllowed);
+                    if (stale) {
+                        log.warn("Executor {} last updated was {}. check threshold is {}",
+                                 executor.getState().getExecutorId(),
+                                 executor.getUpdated(),
+                                 lastAllowed);
+                    }
+                    return !stale;
+                })
+                .toList();
     }
 }

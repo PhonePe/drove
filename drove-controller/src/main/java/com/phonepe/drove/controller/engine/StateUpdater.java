@@ -232,9 +232,15 @@ public class StateUpdater {
             executorIds.stream()
                     .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
                     .filter(Objects::nonNull)
-                    .flatMap(hostInfo -> hostInfo.getNodeData().getInstances().stream())
-                    .forEach(instance -> instanceInfoDB.deleteInstanceState(instance.getAppId(),
-                                                                                 instance.getInstanceId()));
+                            .forEach(hostInfo -> {
+                                final var nodeData = hostInfo.getNodeData();
+                                nodeData.getInstances()
+                                        .forEach(instance -> instanceInfoDB.deleteInstanceState(
+                                                instance.getAppId(), instance.getInstanceId()));
+                                nodeData.getServiceInstances()
+                                        .forEach(localServiceInstance -> localServiceStateDB.deleteInstanceState(
+                                                localServiceInstance.getServiceId(), localServiceInstance.getInstanceId()));
+                            });
             resourcesDB.remove(executorIds);
             return true;
         }

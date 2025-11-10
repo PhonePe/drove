@@ -48,6 +48,7 @@ import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaActivationRes
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaCtlBasedResourceLoader;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningResourceLoader;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.AccessLevel;
@@ -57,6 +58,7 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.URI;
@@ -163,14 +165,31 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public ZkConfig zkConfig(final AppConfig appConfig) {
-        return appConfig.getZookeeper();
+    @Nullable
+    public ZkConfig zkConfig(final AppConfig appConfig,
+                             RemoteUpdateMode remoteUpdateMode) {
+        val zkConfig = appConfig.getZookeeper();
+        if (remoteUpdateMode.equals(RemoteUpdateMode.STORE)) {
+            if (null == zkConfig) {
+                throw new IllegalArgumentException("Zookeeper configuration is mandatory if update mode is set to 'STORE'");
+            }
+        }
+        else {
+            log.warn("Ignoring zookeeper configuration as update mode is set to " + remoteUpdateMode.name());
+            return null;
+        }
+        return zkConfig;
     }
 
     @Provides
     @Singleton
-    public CuratorFramework curator(ZkConfig config) {
-        return CommonUtils.buildCurator(config);
+    @Nullable
+    public CuratorFramework curator(@Nullable ZkConfig zkConfig) {
+        if(null == zkConfig) {
+            log.info("No zookeeper config provided. Curator will not be created.");
+            return null;
+        }
+        return CommonUtils.buildCurator(zkConfig);
     }
 
     @Provides
@@ -234,6 +253,64 @@ public class ExecutorCoreModule extends AbstractModule {
     public DockerAuthConfig dockerAuthConfig(final AppConfig config) {
         return Objects.requireNonNullElse(config.getDockerAuth(), DockerAuthConfig.DEFAULT);
 
+    }
+
+    @Provides
+    public RemoteUpdateMode updateMode(final AppConfig appConfig) {
+        return Objects.requireNonNullElse(
+                Objects.requireNonNullElse(appConfig.getOptions(), ExecutorOptions.DEFAULT).getRemoteUpdateMode(),
+                ExecutorOptions.DEFAULT_UPDATE_MODE);
+    }
+
+    @Provides
+    @Singleton
+    public NodeDataStore nodeDataStore(
+            final RemoteUpdateMode updateMode,
+            @Nullable final CuratorFramework curatorFramework,
+            final ObjectMapper mapper,
+            final ExecutorCommunicator executorCommunicator) {
+        return switch (updateMode) {
+            case STORE -> new ZkNodeDataStore(curatorFramework, mapper);
+            case RPC -> new RemoteNodeDataStore(executorCommunicator);
+        };
+    }
+
+    @Provides
+    @Singleton
+    public LeadershipObserver leadershipObserver(
+            final RemoteUpdateMode updateMode,
+            final NodeDataStore nodeDataStore,
+            @Nullable final ControllerConfig controllerConfig,
+            @Named("ControllerHttpClient") final CloseableHttpClient httpClient) {
+        return switch (updateMode) {
+            case STORE -> new ZkLeadershipObserver(nodeDataStore);
+            case RPC -> new RemoteLeadershipObserver(controllerConfig, httpClient);
+        };
+    }
+
+    @Provides
+    @Singleton
+    @Nullable
+    public ControllerConfig controllerConfig(final RemoteUpdateMode updateMode,
+                                             final AppConfig appConfig) {
+        val controllerConfig = appConfig.getControllers();
+        if (updateMode.equals(RemoteUpdateMode.RPC)) {
+            if (null == controllerConfig) {
+                throw new IllegalArgumentException("Controller configuration is mandatory if update mode is set to 'RPC");
+            }
+        }
+        else {
+            log.warn("Ignoring controller config as update mode is set to STORE");
+            return null;
+        }
+        return controllerConfig;
+    }
+
+    @Provides
+    @Singleton
+    @Named("ControllerHttpClient")
+    public CloseableHttpClient provideControllerHttpClient(ClusterAuthenticationConfig clusterAuthenticationConfig) {
+        return ExecutorUtils.buildControllerClient(clusterAuthenticationConfig);
     }
 
     @Provides

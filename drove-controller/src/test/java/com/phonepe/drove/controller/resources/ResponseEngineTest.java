@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.resources;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Maps;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
+import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
@@ -79,7 +80,7 @@ import static org.mockito.Mockito.*;
  */
 class ResponseEngineTest {
 
-    private final LeadershipObserver leadershipObserver = mock(LeadershipObserver.class);
+    private final LeadershipObserver leadershipObserver = mock(ZkLeadershipObserver.class);
     private final ApplicationLifecycleManagementEngine appEngine = mock(ApplicationLifecycleManagementEngine.class);
     private final ApplicationStateDB applicationStateDB = mock(ApplicationStateDB.class);
     private final ApplicationInstanceInfoDB instanceInfoDB = mock(ApplicationInstanceInfoDB.class);

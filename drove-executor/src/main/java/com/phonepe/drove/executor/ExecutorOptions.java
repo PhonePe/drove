@@ -49,6 +49,7 @@ public class ExecutorOptions {
     public static final Duration DEFAULT_CONTAINER_COMMAND_TIMEOUT = Duration.seconds(30);
     @SuppressWarnings("java:S1075")
     public static final String DEFAULT_DOCKER_SOCKET_PATH = "/var/run/docker.sock";
+    public static final RemoteUpdateMode DEFAULT_UPDATE_MODE = RemoteUpdateMode.STORE;
 
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(null,
                                                                       true,

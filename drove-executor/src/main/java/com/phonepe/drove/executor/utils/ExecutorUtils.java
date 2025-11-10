@@ -16,6 +16,8 @@
 
 package com.phonepe.drove.executor.utils;
 
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.model.ClusterCommHeaders;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.checker.Checker;
@@ -36,6 +38,7 @@ import com.phonepe.drove.models.config.impl.ExecutorHttpFetchConfigSpec;
 import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -49,6 +52,13 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.http.protocol.HttpContext;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -240,5 +250,36 @@ public class ExecutorUtils {
         return cores.stream()
                 .collect(Collectors.toMap(Function.identity(),
                                           Function.identity()));
+    }
+
+    public static CloseableHttpClient buildControllerClient(ClusterAuthenticationConfig clusterAuthenticationConfig) {
+        val authSecret = clusterAuthenticationConfig.getSecrets()
+                .stream()
+                .filter(s -> s.getNodeType().equals(NodeType.EXECUTOR))
+                .findAny()
+                .map(ClusterAuthenticationConfig.SecretConfig::getSecret)
+                .orElse(null);
+        return HttpClients.custom()
+                .addRequestInterceptorFirst((httpRequest, entity, httpContext)
+                                                    -> httpRequest.addHeader(new BasicHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION,
+                                                                                             authSecret)))
+                .setRedirectStrategy(new RedirectStrategy() {
+                    @Override
+                    public boolean isRedirected(
+                            org.apache.hc.core5.http.HttpRequest request,
+                            HttpResponse response,
+                            HttpContext context) throws HttpException {
+                        return false;
+                    }
+
+                    @Override
+                    public URI getLocationURI(
+                            org.apache.hc.core5.http.HttpRequest request,
+                            HttpResponse response,
+                            HttpContext context) throws HttpException {
+                        return null;
+                    }
+                })
+                .build();
     }
 }

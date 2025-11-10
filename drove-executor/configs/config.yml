@@ -53,11 +53,11 @@ options:
   defaultUserSpec:
     user: 1000
     group: 1000
-
+  remoteUpdateMode: RPC
 #   workingDir: /tmp/
 
-zookeeper:
-  connectionString: localhost:2181
+# zookeeper:
+#   connectionString: localhost:2181
 
 resources:
   osCores: [ 0, 1 ]
@@ -90,5 +90,10 @@ clusterAuth:
 #    - type: console
 #      timeZone: IST
 #      output: stdout
+
+controllers:
+  endpoints:
+    - http://host-1:10000
+    - http://host-2:10010
 
 

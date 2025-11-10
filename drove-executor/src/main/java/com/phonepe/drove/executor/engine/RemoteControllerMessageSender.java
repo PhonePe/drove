@@ -31,6 +31,7 @@ import dev.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.Optional;
@@ -41,11 +42,11 @@ import java.util.Optional;
 @Singleton
 @Slf4j
 public class RemoteControllerMessageSender extends RemoteMessageSender<ControllerMessageType, ControllerMessage> {
-    private final ManagedLeadershipObserver observer;
+    private final Provider<ManagedLeadershipObserver> observer;
 
     @Inject
     public RemoteControllerMessageSender(
-            ManagedLeadershipObserver observer,
+            Provider<ManagedLeadershipObserver> observer,
             ObjectMapper mapper,
             ClusterAuthenticationConfig clusterAuthenticationConfig,
             CloseableHttpClient httpClient) {
@@ -65,7 +66,9 @@ public class RemoteControllerMessageSender extends RemoteMessageSender<Controlle
 
     @Override
     protected Optional<RemoteHost> translateRemoteAddress(ControllerMessage message) {
-        return observer.leader().map(leader -> new RemoteHost(leader.getHostname(),
+        return observer.get()
+                .leader()
+                .map(leader -> new RemoteHost(leader.getHostname(),
                                                               leader.getPort(),
                                                               leader.getTransportType()));
     }
