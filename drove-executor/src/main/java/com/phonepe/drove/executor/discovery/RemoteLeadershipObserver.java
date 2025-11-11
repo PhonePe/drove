@@ -63,7 +63,13 @@ public class RemoteLeadershipObserver implements LeadershipObserver {
 
     @Override
     public Optional<ControllerNodeData> leader() {
-        return Optional.ofNullable(leader.get());
+        val stamp = leaderLock.readLock();
+        try {
+            return Optional.ofNullable(leader.get());
+        }
+        finally {
+            leaderLock.unlock(stamp);
+        }
     }
 
     @Override
