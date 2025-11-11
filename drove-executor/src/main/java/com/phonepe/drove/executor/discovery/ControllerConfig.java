@@ -16,6 +16,8 @@
 
 package com.phonepe.drove.executor.discovery;
 
+import io.dropwizard.util.Duration;
+import io.dropwizard.validation.DurationRange;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -23,6 +25,7 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Controller configuration.
@@ -31,6 +34,12 @@ import java.util.List;
 @Builder
 @Jacksonized
 public class ControllerConfig {
+    public static final Duration DEFAULT_CHECK_INTERVAL = Duration.seconds(10);
+
     @NotEmpty
     List<URL> endpoints;
+
+    @Builder.Default
+    @DurationRange(min = 3, max = 60, unit = TimeUnit.SECONDS)
+    Duration leadershipCheckInterval = DEFAULT_CHECK_INTERVAL;
 }

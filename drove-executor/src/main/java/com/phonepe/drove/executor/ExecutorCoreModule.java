@@ -166,12 +166,14 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     @Nullable
-    public ZkConfig zkConfig(final AppConfig appConfig,
-                             RemoteUpdateMode remoteUpdateMode) {
+    public ZkConfig zkConfig(
+            final AppConfig appConfig,
+            RemoteUpdateMode remoteUpdateMode) {
         val zkConfig = appConfig.getZookeeper();
         if (remoteUpdateMode.equals(RemoteUpdateMode.STORE)) {
             if (null == zkConfig) {
-                throw new IllegalArgumentException("Zookeeper configuration is mandatory if update mode is set to 'STORE'");
+                throw new IllegalArgumentException(
+                        "Zookeeper configuration is mandatory if update mode is set to 'STORE'");
             }
         }
         else {
@@ -185,7 +187,7 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     @Nullable
     public CuratorFramework curator(@Nullable ZkConfig zkConfig) {
-        if(null == zkConfig) {
+        if (null == zkConfig) {
             log.info("No zookeeper config provided. Curator will not be created.");
             return null;
         }
@@ -284,19 +286,25 @@ public class ExecutorCoreModule extends AbstractModule {
             @Named("ControllerHttpClient") final CloseableHttpClient httpClient) {
         return switch (updateMode) {
             case STORE -> new ZkLeadershipObserver(nodeDataStore);
-            case RPC -> new RemoteLeadershipObserver(controllerConfig, httpClient);
+            case RPC -> new RemoteLeadershipObserver(Objects.requireNonNull(controllerConfig),
+                                                     httpClient,
+                                                     Objects.requireNonNullElse(controllerConfig.getLeadershipCheckInterval(),
+                                                                                ControllerConfig.DEFAULT_CHECK_INTERVAL)
+                                                             .toJavaDuration());
         };
     }
 
     @Provides
     @Singleton
     @Nullable
-    public ControllerConfig controllerConfig(final RemoteUpdateMode updateMode,
-                                             final AppConfig appConfig) {
+    public ControllerConfig controllerConfig(
+            final RemoteUpdateMode updateMode,
+            final AppConfig appConfig) {
         val controllerConfig = appConfig.getControllers();
         if (updateMode.equals(RemoteUpdateMode.RPC)) {
             if (null == controllerConfig) {
-                throw new IllegalArgumentException("Controller configuration is mandatory if update mode is set to 'RPC");
+                throw new IllegalArgumentException("Controller configuration is mandatory if update mode is set to " +
+                                                           "'RPC");
             }
         }
         else {
@@ -309,8 +317,15 @@ public class ExecutorCoreModule extends AbstractModule {
     @Provides
     @Singleton
     @Named("ControllerHttpClient")
-    public CloseableHttpClient provideControllerHttpClient(ClusterAuthenticationConfig clusterAuthenticationConfig) {
-        return ExecutorUtils.buildControllerClient(clusterAuthenticationConfig);
+    public CloseableHttpClient provideControllerHttpClient(
+            ClusterAuthenticationConfig clusterAuthenticationConfig,
+            ExecutorOptions executorOptions) {
+        return ExecutorUtils.buildControllerClient(
+                clusterAuthenticationConfig,
+                Objects.requireNonNullElse(executorOptions.getControllerConnectTimeout(),
+                                           ExecutorOptions.DEFAULT_CONTROLLER_CONNECT_TIMEOUT).toJavaDuration(),
+                Objects.requireNonNullElse(executorOptions.getControllerResponseTimeout(),
+                                           ExecutorOptions.DEFAULT_CONTROLLER_RESPONSE_TIMEOUT).toJavaDuration());
     }
 
     @Provides

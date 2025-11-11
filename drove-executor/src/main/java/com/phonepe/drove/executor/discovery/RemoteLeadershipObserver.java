@@ -16,17 +16,16 @@
 
 package com.phonepe.drove.executor.discovery;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import io.appform.signals.signals.ScheduledSignal;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URL;
@@ -40,16 +39,27 @@ import java.util.concurrent.locks.StampedLock;
  * Checks for cluster leader by pinging the specified controllers in the cluster.
  */
 @Singleton
-@AllArgsConstructor(onConstructor_ = {@Inject})
 @Slf4j
 public class RemoteLeadershipObserver implements LeadershipObserver {
     private static final String HANDLER = "__LEADER_FINDER__";
+    @VisibleForTesting
+    static final String PING_API = "/apis/v1/ping";
 
     private final ControllerConfig controllerConfig;
     private final CloseableHttpClient httpClient;
+
     private final AtomicReference<ControllerNodeData> leader = new AtomicReference<>(null);
-    private final ScheduledSignal scheduledSignal = new ScheduledSignal(Duration.ofSeconds(10));
     private final StampedLock leaderLock = new StampedLock();
+    private final ScheduledSignal scheduledSignal;
+
+    public RemoteLeadershipObserver(
+            ControllerConfig controllerConfig,
+            CloseableHttpClient httpClient,
+            Duration checkInterval) {
+        this.controllerConfig = controllerConfig;
+        this.httpClient = httpClient;
+        this.scheduledSignal = new ScheduledSignal(checkInterval);
+    }
 
     @Override
     public Optional<ControllerNodeData> leader() {
@@ -72,10 +82,6 @@ public class RemoteLeadershipObserver implements LeadershipObserver {
     }
 
     private void findLeader() {
-        if (null == controllerConfig) {
-            log.debug("No controller config provided. Nothing will be done");
-            return;
-        }
         var stamp = leaderLock.tryReadLock();
         if (stamp == 0) {
             log.info("Looks like another attempt is already underway. Skipping this leader check");
@@ -126,7 +132,7 @@ public class RemoteLeadershipObserver implements LeadershipObserver {
     private boolean pingEndpoint(URL endpoint) {
         try {
             return httpClient.execute(new HttpGet(UriBuilder.fromUri(endpoint.toURI())
-                                                          .path("/apis/v1/ping")
+                                                          .path(PING_API)
                                                           .build()),
                                       response -> {
                                           final var responseCode = response.getCode();

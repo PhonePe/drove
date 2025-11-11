@@ -51,6 +51,9 @@ public class ExecutorOptions {
     public static final String DEFAULT_DOCKER_SOCKET_PATH = "/var/run/docker.sock";
     public static final RemoteUpdateMode DEFAULT_UPDATE_MODE = RemoteUpdateMode.STORE;
 
+    public static final Duration DEFAULT_CONTROLLER_CONNECT_TIMEOUT = Duration.seconds(1);
+    public static final Duration DEFAULT_CONTROLLER_RESPONSE_TIMEOUT = Duration.seconds(1);
+
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(null,
                                                                       true,
                                                                       DEFAULT_MAX_OPEN_FILES,
@@ -85,4 +88,8 @@ public class ExecutorOptions {
 
     UserSpec defaultUserSpec;
 
+    RemoteUpdateMode remoteUpdateMode;
+
+    Duration controllerConnectTimeout;
+    Duration controllerResponseTimeout;
 }
