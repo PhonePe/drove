@@ -324,7 +324,6 @@ public class ExecutorLogFileApis {
         Objects.<Map<String, Object>>requireNonNullElse(queryParams, Map.of())
                 .forEach(uriBuilder::queryParam);
         val request = new HttpGet(uriBuilder.build());
-//        request.setHeader(CONTENT_TYPE, "application/json");
         request.setHeader(NODE_ID_HEADER, nodeId);
         if (null != secret) {
             request.setHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
