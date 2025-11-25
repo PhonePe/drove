@@ -17,11 +17,13 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
@@ -33,6 +35,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -179,7 +182,9 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                   node -> true
                                  )
                            .orElse(null));
-        db.deselectNode(allocatedNode.getExecutorId(), allocatedNode.getCpu(), allocatedNode.getMemory()); // Free up cores
+        db.deselectNode(allocatedNode.getExecutorId(),
+                        allocatedNode.getCpu(),
+                        allocatedNode.getMemory()); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
                                      EnumSet.of(ExecutorState.ACTIVE),
@@ -194,12 +199,20 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         IntStream.rangeClosed(1, 10)
                 .forEach(i -> db.markBlacklisted(executorId(i)));
         assertTrue(IntStream.rangeClosed(1, 10)
-                .allMatch(i -> db.isBlacklisted(executorId(i))));
+                           .allMatch(i -> db.isBlacklisted(executorId(i))),
+                   "Did not blacklist: " + IntStream.rangeClosed(1, 10)
+                           .filter(i -> !db.isBlacklisted(executorId(i)))
+                           .boxed()
+                           .toList());
         db.update(IntStream.rangeClosed(1, 5)
-                .mapToObj(ControllerTestUtils::generateExecutorNode)
-                .toList());
+                          .mapToObj(ControllerTestUtils::generateExecutorNode)
+                          .toList());
         assertTrue(IntStream.rangeClosed(1, 10)
-                           .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will prioritise the info in local map
+                           .allMatch(i -> db.isBlacklisted(executorId(i))),
+                   "Did not blacklist: " + IntStream.rangeClosed(1, 10)
+                           .filter(i -> !db.isBlacklisted(executorId(i)))
+                           .boxed()
+                           .toList()); //This will prioritise the info in local map
         IntStream.rangeClosed(1, 10)
                 .forEach(i -> db.unmarkBlacklisted(executorId(i)));
         assertTrue(IntStream.rangeClosed(1, 10)
@@ -210,6 +223,185 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         assertTrue(IntStream.rangeClosed(1, 10)
                            .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will use node level data
 
+    }
+
+    @Test
+    void testExecutorState() {
+        val db = new InMemoryClusterResourcesDB();
+        val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
+        val executorId = originalNodeData.getState().getExecutorId();
+
+        db.update(List.of(originalNodeData));
+        { // Allocate node and assert that it is active
+            val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                               EnumSet.of(ExecutorState.ACTIVE),
+                                               node -> true
+                                              )
+                    .orElse(null);
+            assertNotNull(allocatedNode);
+            assertTrue(db.isActive(allocatedNode.getExecutorId()));
+            assertFalse(db.isBlacklisted(allocatedNode.getExecutorId()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory());
+        }
+        {
+            // Now blacklist node and assert that node is not allocated
+            db.markBlacklisted(executorId);
+            assertFalse(db.isActive(executorId));
+            assertTrue(db.isBlacklisted(executorId));
+            assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                      EnumSet.of(ExecutorState.ACTIVE),
+                                      node -> true
+                                     )
+                               .orElse(null));
+
+            // Now select node with blacklisted state allowed
+            final var allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                                     EnumSet.of(ExecutorState.BLACKLISTED),
+                                                     node -> true
+                                                    )
+                    .orElse(null);
+            assertNotNull(allocatedNode);
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory());
+        }
+        {
+            // Now unblacklist node and assert that node is allocated
+            db.unmarkBlacklisted(executorId);
+            assertTrue(db.isActive(executorId));
+            assertFalse(db.isBlacklisted(executorId));
+            assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                         EnumSet.of(ExecutorState.ACTIVE),
+                                         node -> true
+                                        )
+                                  .orElse(null));
+        }
+        {
+            // Now mark node as blacklisted by updating state
+            db.update(List.of(ExecutorNodeData.from(
+                    originalNodeData,
+                    originalNodeData.getState(),
+                    originalNodeData.getInstances(),
+                    originalNodeData.getTasks(),
+                    originalNodeData.getServiceInstances(),
+                    originalNodeData.getTags(),
+                    ExecutorState.BLACKLISTED,
+                    originalNodeData.getMetadata()
+                                                   )));
+            assertFalse(db.isActive(executorId));
+            assertTrue(db.isBlacklisted(executorId));
+            assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                      EnumSet.of(ExecutorState.ACTIVE),
+                                      node -> true
+                                     )
+                               .orElse(null));
+
+            final var allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                                     EnumSet.of(ExecutorState.BLACKLISTED),
+                                                     node -> true
+                                                    )
+                    .orElse(null);
+            assertNotNull(allocatedNode);
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory());
+        }
+        {
+            // Now mark node as active by updating state
+            db.update(List.of(ExecutorNodeData.from(
+                    originalNodeData,
+                    originalNodeData.getState(),
+                    originalNodeData.getInstances(),
+                    originalNodeData.getTasks(),
+                    originalNodeData.getServiceInstances(),
+                    originalNodeData.getTags(),
+                    ExecutorState.ACTIVE,
+                    originalNodeData.getMetadata()
+                                                   )));
+            assertTrue(db.isActive(executorId));
+            assertFalse(db.isBlacklisted(executorId));
+            assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                         EnumSet.of(ExecutorState.ACTIVE),
+                                         node -> true
+                                        )
+                                  .orElse(null));
+        }
+    }
+
+    @Test
+    void testUpdatedSignal() {
+        val db = new InMemoryClusterResourcesDB();
+        val changesReceived = new AtomicInteger(0);
+        final var testHandler = "TEST_HANDLER";
+        db.onTopologyChange().connect(testHandler, changes -> {
+            assertEquals(10, changes.addedExecutors().size());
+            assertEquals(0, changes.removedExecutors().size());
+            assertEquals(10, changes.currentLive().size());
+            changesReceived.incrementAndGet();
+        });
+        val originalNodes = IntStream.rangeClosed(1, 10)
+                .mapToObj(ControllerTestUtils::generateExecutorNode)
+                .toList();
+        val currValue = new AtomicInteger(changesReceived.get());
+        db.update(originalNodes);
+
+        // Ensure the assertions are triggered
+        CommonTestUtils.waitUntil(() -> changesReceived.get() > currValue.get());
+        db.onTopologyChange().disconnect(testHandler);
+
+        val toBlacklist = originalNodes.subList(0, 5)
+                .stream()
+                .map(node -> node.getState().getExecutorId())
+                .collect(Collectors.toSet());
+        val toRemain = originalNodes.subList(5, 10)
+                .stream()
+                .map(node -> node.getState().getExecutorId())
+                .collect(Collectors.toSet());
+
+        // Now let us blacklist some nodes and ensure the logic is correct for livenodes
+        currValue.set(changesReceived.get());
+        db.onTopologyChange().connect(testHandler, changes -> {
+            changesReceived.incrementAndGet();
+            assertTrue(toBlacklist.containsAll(changes.removedExecutors()));
+            assertEquals(0, changes.addedExecutors().size());
+        });
+        toBlacklist.forEach(db::markBlacklisted);
+        // Ensure the assertions are triggered
+        CommonTestUtils.waitUntil(() -> changesReceived.get() == (currValue.get() + 5));
+        db.onTopologyChange().disconnect(testHandler);
+        assertEquals(toRemain, db.currentSnapshot(true)
+                .stream()
+                .map(ExecutorHostInfo::getExecutorId)
+                .collect(Collectors.toUnmodifiableSet()));
+
+
+        // now we bring the nodes back up and ensure the signal is raised
+        currValue.set(changesReceived.get());
+        db.onTopologyChange().connect(testHandler, changes -> {
+            changesReceived.incrementAndGet();
+            assertTrue(toBlacklist.containsAll(changes.addedExecutors()));
+            assertEquals(0, changes.removedExecutors().size());
+        });
+        toBlacklist.forEach(db::unmarkBlacklisted);
+        // Ensure the assertions are triggered
+        CommonTestUtils.waitUntil(() -> changesReceived.get() == (currValue.get() + 5));
+        db.onTopologyChange().disconnect(testHandler);
+        assertEquals(Sets.union(toBlacklist, toRemain), db.currentSnapshot(true)
+                .stream()
+                .map(ExecutorHostInfo::getExecutorId)
+                .collect(Collectors.toUnmodifiableSet()));
+
+        // Finally we remove nodes and ensure signal is raised
+        currValue.set(changesReceived.get());
+        db.onTopologyChange().connect(testHandler, changes -> {
+            changesReceived.addAndGet(changes.removedExecutors().size());
+            assertTrue(toBlacklist.containsAll(changes.removedExecutors()));
+            assertEquals(0, changes.addedExecutors().size());
+        });
+        db.remove(toBlacklist);
+        // Ensure the assertions are triggered
+        CommonTestUtils.waitUntil(() -> changesReceived.get() == (currValue.get() + 5));
+        db.onTopologyChange().disconnect(testHandler);
+        assertEquals(toRemain, db.currentSnapshot(true)
+                .stream()
+                .map(ExecutorHostInfo::getExecutorId)
+                .collect(Collectors.toUnmodifiableSet()));
     }
 
 }

@@ -23,6 +23,6 @@ import java.util.Set;
  */
 public record ExecutorTopologyChanges(Set<String> addedExecutors,
                                       Set<String> removedExecutors,
-                                      Set<String> currentKnown) {
+                                      Set<String> currentLive) {
     //Nothing to do here
 }

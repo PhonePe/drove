@@ -93,9 +93,9 @@ public abstract class ClusterResourcesDB {
     protected final void raiseEvent(
             Set<String> addedExecutors,
             Set<String> removedExecutors,
-            Set<String> currentKnown) {
+            Set<String> currentLive) {
         if(!addedExecutors.isEmpty() || !removedExecutors.isEmpty()) {
-            topologyChanged.dispatch(new ExecutorTopologyChanges(addedExecutors, removedExecutors, currentKnown));
+            topologyChanged.dispatch(new ExecutorTopologyChanges(addedExecutors, removedExecutors, currentLive));
         }
     }
 
