@@ -48,12 +48,12 @@ import javax.validation.constraints.NotEmpty;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.OutputStream;
+import java.net.URLConnection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 /**
  *
@@ -134,7 +134,7 @@ public class ExecutorLogFileApis {
 
     @GET
     @Path("/applications/{appId}/{instanceId}/download/{fileName}")
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Produces({MediaType.APPLICATION_OCTET_STREAM, "application/gzip", MediaType.TEXT_PLAIN})
     @Metered
     public Response downloadAppLogFile(
             @PathParam("appId") @NotEmpty final String appId,
@@ -319,11 +319,12 @@ public class ExecutorLogFileApis {
                                 appId,
                                 instanceId,
                                 path);
+        log.info("Calling executor URL: {}", url);
         val uriBuilder = UriBuilder.fromPath(url);
         Objects.<Map<String, Object>>requireNonNullElse(queryParams, Map.of())
                 .forEach(uriBuilder::queryParam);
         val request = new HttpGet(uriBuilder.build());
-        request.setHeader(CONTENT_TYPE, "application/json");
+//        request.setHeader(CONTENT_TYPE, "application/json");
         request.setHeader(NODE_ID_HEADER, nodeId);
         if (null != secret) {
             request.setHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, secret.getSecret());
@@ -357,7 +358,7 @@ public class ExecutorLogFileApis {
 
     private static Map<String, String> fileDownloadHeaders(String fileName) {
         return Map.of(HttpHeaders.CONTENT_TYPE,
-                      MediaType.TEXT_PLAIN,
+                      Objects.requireNonNullElse(URLConnection.guessContentTypeFromName(fileName), MediaType.TEXT_PLAIN),
                       HttpHeaders.CONTENT_DISPOSITION,
                       "attachment; filename=" + fileName);
     }

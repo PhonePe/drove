@@ -31,13 +31,16 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.ws.rs.*;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.*;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -156,20 +159,24 @@ public class LogFileStream {
                                      @Override
                                      public void write(OutputStream output) throws IOException,
                                                                                    WebApplicationException {
-                                         try (val br = new BufferedReader(new FileReader(logFile), DEFAULT_BUFFER_SIZE);
-                                              val bw = new BufferedWriter(new OutputStreamWriter(output),
-                                                                          DEFAULT_BUFFER_SIZE)) {
-                                             var buffer = new char[DEFAULT_BUFFER_SIZE];
+                                         try (val br = new FileInputStream(logFile)) {
+                                             var buffer = new byte[DEFAULT_BUFFER_SIZE];
                                              int bytesRead;
 
-                                             while ((bytesRead = br.read(buffer, 0, DEFAULT_BUFFER_SIZE)) != -1) {
-                                                 bw.write(buffer, 0, bytesRead);
+                                             while ((bytesRead = br.read(buffer)) != -1) {
+                                                 output.write(buffer, 0, bytesRead);
                                              }
-                                             bw.flush();
+                                             output.flush();
                                          }
                                      }
                                  };
-                                 return Response.ok(so).build();
+                                 final var responseBuilder = Response.ok(so);
+                                 final var headers = Map.of(HttpHeaders.CONTENT_TYPE,
+                                        Objects.requireNonNullElse(URLConnection.guessContentTypeFromName(fileName), MediaType.TEXT_PLAIN),
+                                        HttpHeaders.CONTENT_DISPOSITION,
+                                        "attachment; filename=" + fileName);
+                                 headers.forEach(responseBuilder::header);
+                                 return responseBuilder.build();
                              });
     }
 
