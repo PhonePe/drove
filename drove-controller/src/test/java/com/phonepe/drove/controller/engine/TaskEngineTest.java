@@ -45,6 +45,7 @@ import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
+import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -778,5 +779,121 @@ class TaskEngineTest extends ControllerTestBase {
                                                         ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals(2, r.getMessages().size());
+    }
+
+    @Test
+    void testTaskValidation() {
+        val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+
+        // Setup 2 nodes:
+        // 1. Generic node (no tags, limited resources)
+        // 2. GPU node (tag=GPU, high resources)
+        cdb.update(List.of(
+                new ExecutorNodeData("generic-host",
+                                     8080,
+                                     NodeTransportType.HTTP,
+                                     new Date(),
+                                     new ExecutorResourceSnapshot("GEN1",
+                                                                  new AvailableCPU(Map.of(0, Set.of(0, 1)),
+                                                                                   Map.of(0, Set.of())),
+                                                                  new AvailableMemory(
+                                                                          Map.of(0, 2048L),
+                                                                          Map.of(0, 0L)),
+                                                                  new PhysicalLayout(Map.of(0, Set.of(0, 1)),
+                                                                                     Map.of(0, 2048L))),
+                                     List.of(),
+                                     List.of(),
+                                     List.of(),
+                                     Set.of(), // No tags
+                                     Map.of(),
+                                     ExecutorState.ACTIVE),
+                new ExecutorNodeData("gpu-host",
+                                     8081,
+                                     NodeTransportType.HTTP,
+                                     new Date(),
+                                     new ExecutorResourceSnapshot("GPU1",
+                                                                  new AvailableCPU(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                                   Map.of(0, Set.of())),
+                                                                  new AvailableMemory(
+                                                                          Map.of(0, 16384L),
+                                                                          Map.of(0, 0L)),
+                                                                  new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                                     Map.of(0, 16384L))),
+                                     List.of(),
+                                     List.of(),
+                                     List.of(),
+                                     Set.of("GPU"), // Tagged
+                                     Map.of(),
+                                     ExecutorState.ACTIVE)
+                          ));
+
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val comm = mock(ControllerCommunicator.class);
+        val executor = Executors.newCachedThreadPool();
+        val te = new TaskEngine(pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                Executors.defaultThreadFactory(),
+                                executor,
+                                new JobExecutor<>(executor),
+                                new InMemoryClusterStateDB(),
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                ControllerOptions.DEFAULT,
+                                httpCaller());
+
+        // Case 1: Small task, no placement policy -> Should fit on generic-host (implied NoTag)
+        {
+            val spec = taskSpec()
+                    .withResources(List.of(new CPURequirement(1), new MemoryRequirement(512)));
+            val r = te.validateSpec(spec);
+            assertEquals(ValidationStatus.SUCCESS, r.getStatus(), "Small task should succeed on generic host");
+        }
+
+        // Case 2: Large task, no placement policy -> Should fail (implied NoTag, generic host too small)
+        // Even though gpu-host has resources, it's tagged, so implicit NoTag excludes it.
+        {
+            val spec = taskSpec()
+                    .withResources(List.of(new CPURequirement(4), new MemoryRequirement(8192)));
+            val r = te.validateSpec(spec);
+            assertEquals(ValidationStatus.FAILURE, r.getStatus(), "Large task without tag should fail");
+            assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Cluster does not have enough CPU")));
+        }
+
+        // Case 3: Large task, explicit MATCH_TAG=GPU -> Should succeed on gpu-host
+        {
+            val spec = taskSpec()
+                    .withResources(List.of(new CPURequirement(4), new MemoryRequirement(8192)))
+                    .withPlacementPolicy(new MatchTagPlacementPolicy("GPU"));
+            val r = te.validateSpec(spec);
+            assertEquals(ValidationStatus.SUCCESS,
+                         r.getStatus(),
+                         "Large task with GPU tag should succeed on gpu host");
+        }
+
+        // Case 4: Moderate task, MATCH_TAG=NON_EXISTENT -> Should fail
+        {
+            val spec = taskSpec()
+                    .withResources(List.of(new CPURequirement(1), new MemoryRequirement(512)))
+                    .withPlacementPolicy(new MatchTagPlacementPolicy("NON_EXISTENT"));
+            val r = te.validateSpec(spec);
+            assertEquals(ValidationStatus.FAILURE, r.getStatus(), "Task with non-existent tag should fail");
+            assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Cluster does not have enough CPU"))); // Filtered out all nodes -> 0 CPU
+        }
+
+        // Case 5: Huge task, MATCH_TAG=GPU -> Should fail (gpu-host has resources, but not ENOUGH)
+        {
+            val spec = taskSpec()
+                    .withResources(List.of(new CPURequirement(100), new MemoryRequirement(100000))) // excessively large
+                    .withPlacementPolicy(new MatchTagPlacementPolicy("GPU"));
+            val r = te.validateSpec(spec);
+            assertEquals(ValidationStatus.FAILURE, r.getStatus(), "Huge task should fail even on tagged host");
+            assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Cluster does not have enough CPU")));
+        }
     }
 }
