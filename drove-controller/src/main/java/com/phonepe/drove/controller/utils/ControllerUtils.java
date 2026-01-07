@@ -1,23 +1,24 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.controller.utils;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -97,9 +98,10 @@ public class ControllerUtils {
         return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
             @Override
             public String visit(ApplicationSpec applicationSpec) {
-                return Strings.isNullOrEmpty(applicationSpec.getName()) || Strings.isNullOrEmpty(applicationSpec.getVersion())
-                       ? null
-                       : applicationSpec.getName() + "-" + applicationSpec.getVersion();
+                return Strings.isNullOrEmpty(applicationSpec.getName()) || Strings.isNullOrEmpty(applicationSpec
+                        .getVersion())
+                                ? null
+                                : applicationSpec.getName() + "-" + applicationSpec.getVersion();
             }
 
             @Override
@@ -110,29 +112,31 @@ public class ControllerUtils {
             @Override
             public String visit(LocalServiceSpec localServiceSpec) {
 
-                return Strings.isNullOrEmpty(localServiceSpec.getName()) || Strings.isNullOrEmpty(localServiceSpec.getVersion())
-                       ? null
-                       : localServiceSpec.getName() + "-" + localServiceSpec.getVersion();
+                return Strings.isNullOrEmpty(localServiceSpec.getName()) || Strings.isNullOrEmpty(localServiceSpec
+                        .getVersion())
+                                ? null
+                                : localServiceSpec.getName() + "-" + localServiceSpec.getVersion();
             }
         });
     }
 
     public static boolean ensureInstanceState(
-            final LocalServiceStateDB instanceInfoDB,
-            long timeout,
-            String serviceId,
-            String instanceId,
-            LocalServiceInstanceState required,
-            ControllerRetrySpecFactory retrySpecFactory) {
+                                              final LocalServiceStateDB instanceInfoDB,
+                                              long timeout,
+                                              String serviceId,
+                                              String instanceId,
+                                              LocalServiceInstanceState required,
+                                              ControllerRetrySpecFactory retrySpecFactory) {
 
-        val retryPolicy =
-                CommonUtils.<StateCheckStatus>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(timeout),
-                        MISMATCH::equals);
+        val retryPolicy = CommonUtils.<StateCheckStatus>policy(
+                                                               retrySpecFactory.instanceStateCheckRetrySpec(timeout),
+                                                               MISMATCH::equals);
         try {
             val status = waitForState(
-                    () -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB, serviceId, instanceId), required),
-                    retryPolicy);
+                                      () -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB,
+                                                                                       serviceId,
+                                                                                       instanceId), required),
+                                      retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -144,22 +148,23 @@ public class ControllerUtils {
                 else {
                     if (status.equals(MISMATCH)) {
                         log.error(
-                                "Looks like local service instance {}/{} is stuck in state: {}. Detailed instance " +
-                                        "data: {}}",
-                                serviceId,
-                                instanceId,
-                                curr.getState(),
-                                curr);
+                                  "Looks like local service instance {}/{} is stuck in state: {}. Detailed instance " +
+                                          "data: {}}",
+                                  serviceId,
+                                  instanceId,
+                                  curr.getState(),
+                                  curr);
                     }
                     else {
                         log.error(
-                                "Looks like local service instance {}/{} has failed permanently and reached state: {}" +
-                                        "." +
-                                        " Detailed instance data: {}}",
-                                serviceId,
-                                instanceId,
-                                curr.getState(),
-                                curr);
+                                  "Looks like local service instance {}/{} has failed permanently and reached state: {}"
+                                          +
+                                          "." +
+                                          " Detailed instance data: {}}",
+                                  serviceId,
+                                  instanceId,
+                                  curr.getState(),
+                                  curr);
                     }
                 }
             }
@@ -171,20 +176,21 @@ public class ControllerUtils {
     }
 
     public static boolean ensureInstanceState(
-            final ApplicationInstanceInfoDB instanceInfoDB,
-            long timeout,
-            String appId,
-            String instanceId,
-            InstanceState required,
-            ControllerRetrySpecFactory retrySpecFactory) {
-        val retryPolicy =
-                CommonUtils.<StateCheckStatus>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(timeout),
-                        MISMATCH::equals);
+                                              final ApplicationInstanceInfoDB instanceInfoDB,
+                                              long timeout,
+                                              String appId,
+                                              String instanceId,
+                                              InstanceState required,
+                                              ControllerRetrySpecFactory retrySpecFactory) {
+        val retryPolicy = CommonUtils.<StateCheckStatus>policy(
+                                                               retrySpecFactory.instanceStateCheckRetrySpec(timeout),
+                                                               MISMATCH::equals);
         try {
             val status = waitForState(
-                    () -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB, appId, instanceId), required),
-                    retryPolicy);
+                                      () -> ensureAppInstanceState(currentInstanceInfo(instanceInfoDB,
+                                                                                       appId,
+                                                                                       instanceId), required),
+                                      retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -196,11 +202,14 @@ public class ControllerUtils {
                 else {
                     if (status.equals(MISMATCH)) {
                         log.error("Looks like app instance {}/{} is stuck in state: {}. Detailed instance data: {}}",
-                                  appId, instanceId, curr.getState(), curr);
+                                  appId,
+                                  instanceId,
+                                  curr.getState(),
+                                  curr);
                     }
                     else {
                         log.error("Looks like app instance {}/{} has failed permanently and reached state: {}." +
-                                          " Detailed instance data: {}}",
+                                " Detailed instance data: {}}",
                                   appId,
                                   instanceId,
                                   curr.getState(),
@@ -216,19 +225,19 @@ public class ControllerUtils {
     }
 
     public static boolean ensureTaskState(
-            final TaskDB taskDB,
-            long timeout,
-            String sourceAppName,
-            String taskId,
-            TaskState required,
-            ControllerRetrySpecFactory retrySpecFactory) {
-        val retryPolicy =
-                CommonUtils.<StateCheckStatus>policy(
-                        retrySpecFactory.instanceStateCheckRetrySpec(timeout),
-                        MISMATCH::equals);
+                                          final TaskDB taskDB,
+                                          long timeout,
+                                          String sourceAppName,
+                                          String taskId,
+                                          TaskState required,
+                                          ControllerRetrySpecFactory retrySpecFactory) {
+        val retryPolicy = CommonUtils.<StateCheckStatus>policy(
+                                                               retrySpecFactory.instanceStateCheckRetrySpec(timeout),
+                                                               MISMATCH::equals);
         try {
             val status = waitForState(
-                    () -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId), required), retryPolicy);
+                                      () -> ensureTaskState(currentTaskInfo(taskDB, sourceAppName, taskId), required),
+                                      retryPolicy);
             if (status.equals(MATCH)) {
                 return true;
             }
@@ -240,17 +249,20 @@ public class ControllerUtils {
                 else {
                     if (status.equals(MISMATCH)) {
                         log.error("Looks like task {}/{} is stuck in state: {}. Detailed instance data: {}}",
-                                  sourceAppName, taskId, curr.getState(), curr);
+                                  sourceAppName,
+                                  taskId,
+                                  curr.getState(),
+                                  curr);
                     }
                     else {
                         log.error(
-                                "Looks like task {}/{} has failed permanently and reached state: {}. Detailed " +
-                                        "instance " +
-                                        "data: {}}",
-                                sourceAppName,
-                                taskId,
-                                curr.getState(),
-                                curr);
+                                  "Looks like task {}/{} has failed permanently and reached state: {}. Detailed " +
+                                          "instance " +
+                                          "data: {}}",
+                                  sourceAppName,
+                                  taskId,
+                                  curr.getState(),
+                                  curr);
                     }
                 }
             }
@@ -262,64 +274,66 @@ public class ControllerUtils {
     }
 
     public static <O extends ApplicationOperation> O safeCast(
-            final ApplicationOperation applicationOperation,
-            final Class<O> clazz) {
+                                                              final ApplicationOperation applicationOperation,
+                                                              final Class<O> clazz) {
         val obj = applicationOperation.getClass().equals(clazz)
-                  ? clazz.cast(applicationOperation)
-                  : null;
+                ? clazz.cast(applicationOperation)
+                : null;
         Objects.requireNonNull(obj, castFailure(applicationOperation.getClass(), clazz));
         return obj;
     }
 
 
     public static <O extends LocalServiceOperation> O safeCast(
-            final LocalServiceOperation operation,
-            final Class<O> clazz) {
+                                                               final LocalServiceOperation operation,
+                                                               final Class<O> clazz) {
         val obj = operation.getClass().equals(clazz)
-                  ? clazz.cast(operation)
-                  : null;
+                ? clazz.cast(operation)
+                : null;
         Objects.requireNonNull(obj, castFailure(operation.getClass(), clazz));
         return obj;
     }
 
     public static <O extends TaskOperation> O safeCast(
-            final TaskOperation taskOperation,
-            final Class<O> clazz) {
+                                                       final TaskOperation taskOperation,
+                                                       final Class<O> clazz) {
         val obj = taskOperation.getClass().equals(clazz)
-                  ? clazz.cast(taskOperation)
-                  : null;
+                ? clazz.cast(taskOperation)
+                : null;
         Objects.requireNonNull(obj, castFailure(taskOperation.getClass(), clazz));
         return obj;
     }
 
     private static LocalServiceInstanceInfo currentInstanceInfo(
-            final LocalServiceStateDB instanceInfoDB,
-            String serviceId,
-            String instanceId) {
+                                                                final LocalServiceStateDB instanceInfoDB,
+                                                                String serviceId,
+                                                                String instanceId) {
         return instanceInfoDB.instance(serviceId, instanceId).orElse(null);
     }
 
     private static InstanceInfo currentInstanceInfo(
-            final ApplicationInstanceInfoDB instanceInfoDB,
-            String appId,
-            String instanceId) {
+                                                    final ApplicationInstanceInfoDB instanceInfoDB,
+                                                    String appId,
+                                                    String instanceId) {
         return instanceInfoDB.instance(appId, instanceId).orElse(null);
     }
 
     private static TaskInfo currentTaskInfo(
-            final TaskDB taskDB,
-            String sourceAppName,
-            String taskId) {
+                                            final TaskDB taskDB,
+                                            String sourceAppName,
+                                            String taskId) {
         return taskDB.task(sourceAppName, taskId).orElse(null);
     }
 
     private static <T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
-            final LocalServiceInstanceInfo instanceInfo,
-            final T instanceState) {
+                                                                               final LocalServiceInstanceInfo instanceInfo,
+                                                                               final T instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Local Service Instance state for {}/{}: {}",
-                      instanceInfo.getServiceId(), instanceInfo.getInstanceId(), currState);
+                      instanceInfo.getServiceId(),
+                      instanceInfo.getInstanceId(),
+                      currState);
             if (currState == instanceState) {
                 log.info("Local Service Instance {}/{} reached desired state: {}",
                          instanceInfo.getServiceId(),
@@ -335,12 +349,14 @@ public class ControllerUtils {
     }
 
     private static <T extends Enum<T>> StateCheckStatus ensureAppInstanceState(
-            final InstanceInfo instanceInfo,
-            final T instanceState) {
+                                                                               final InstanceInfo instanceInfo,
+                                                                               final T instanceState) {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Instance state for {}/{}: {}",
-                      instanceInfo.getAppId(), instanceInfo.getInstanceId(), currState);
+                      instanceInfo.getAppId(),
+                      instanceInfo.getInstanceId(),
+                      currState);
             if (currState == instanceState) {
                 log.info("Instance {}/{} reached desired state: {}",
                          instanceInfo.getAppId(),
@@ -359,7 +375,9 @@ public class ControllerUtils {
         if (null != instanceInfo) {
             val currState = instanceInfo.getState();
             log.trace("Task state for {}/{}: {}",
-                      instanceInfo.getSourceAppName(), instanceInfo.getTaskId(), currState);
+                      instanceInfo.getSourceAppName(),
+                      instanceInfo.getTaskId(),
+                      currState);
             if (currState == instanceState) {
                 log.info("Task {}/{} reached desired state: {}",
                          instanceInfo.getSourceAppName(),
@@ -544,10 +562,11 @@ public class ControllerUtils {
     }
 
     public static List<String> ensureWhitelistedVolumes(
-            Collection<MountedVolume> volumes, ControllerOptions controllerOptions) {
+                                                        Collection<MountedVolume> volumes,
+                                                        ControllerOptions controllerOptions) {
         val whitelistedDirs = Objects.requireNonNullElse(
-                controllerOptions.getAllowedMountDirs(),
-                List.<String>of());
+                                                         controllerOptions.getAllowedMountDirs(),
+                                                         List.<String>of());
         if (null != volumes && !whitelistedDirs.isEmpty()) {
             return volumes.stream()
                     .filter(volume -> whitelistedDirs.stream()
@@ -560,7 +579,8 @@ public class ControllerUtils {
     }
 
     public static List<String> ensureCmdlArgs(
-            List<String> args, ControllerOptions controllerOptions) {
+                                              List<String> args,
+                                              ControllerOptions controllerOptions) {
         val argsDisabled = Objects.requireNonNullElse(controllerOptions.getDisableCmdlArgs(), false);
         val argList = Objects.requireNonNullElse(args, List.<String>of());
         if (argsDisabled && !argList.isEmpty()) {
@@ -573,11 +593,12 @@ public class ControllerUtils {
     }
 
     public static List<String> checkDeviceDisabled(
-            List<DeviceSpec> devices, ControllerOptions controllerOptions) {
+                                                   List<DeviceSpec> devices,
+                                                   ControllerOptions controllerOptions) {
         val deviceEnabled = Objects.requireNonNullElse(controllerOptions.getEnableRawDeviceAccess(), false);
         if (!deviceEnabled && null != devices && !devices.isEmpty()) {
             return List.of("Device access is disabled. " +
-                                   "To enable, set enableRawDeviceAccess: true in controller options.");
+                    "To enable, set enableRawDeviceAccess: true in controller options.");
         }
         return List.of();
     }
@@ -589,13 +610,15 @@ public class ControllerUtils {
                     @Override
                     public ConfigSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
                         return new InlineConfigSpec(
-                                configSpec.getLocalFilename(),
-                                httpCaller.execute(configSpec.accept(new ConfigSpecVisitorAdapter<>() {
-                                    @Override
-                                    public HTTPCallSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
-                                        return controllerHttpFetchConfig.getHttp();
-                                    }
-                                })));
+                                                    configSpec.getLocalFilename(),
+                                                    httpCaller.execute(configSpec.accept(
+                                                                                         new ConfigSpecVisitorAdapter<>() {
+                                                                                             @Override
+                                                                                             public HTTPCallSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
+                                                                                                 return controllerHttpFetchConfig
+                                                                                                         .getHttp();
+                                                                                             }
+                                                                                         })));
                     }
                 }))
                 .toList();
@@ -603,8 +626,8 @@ public class ControllerUtils {
 
     @SuppressWarnings("java:S1874")
     public static StateCheckStatus waitForState(
-            Supplier<StateCheckStatus> checker,
-            RetryPolicy<StateCheckStatus> retryPolicy) {
+                                                Supplier<StateCheckStatus> checker,
+                                                RetryPolicy<StateCheckStatus> retryPolicy) {
         return Failsafe.with(List.of(retryPolicy))
                 .onComplete(e -> {
                     val failure = e.getException();
@@ -616,11 +639,23 @@ public class ControllerUtils {
     }
 
     public static void checkResources(
-            final ClusterResourcesDB clusterResourcesDB,
-            final DeploymentSpec spec,
-            final long requiredInstances,
-            final List<String> errors) {
-        val executors = clusterResourcesDB.currentSnapshot(true);
+                                      final ClusterResourcesDB clusterResourcesDB,
+                                      final DeploymentSpec spec,
+                                      final long requiredInstances,
+                                      final List<String> errors) {
+        var placementPolicy = Objects.requireNonNullElse(spec.getPlacementPolicy(),
+                                                         new AnyPlacementPolicy());
+        if (!shouldAllowCombiningOfPolicy(placementPolicy)) {
+            placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
+                                                           CompositePlacementPolicy.CombinerType.AND);
+        }
+
+        val finalPolicy = placementPolicy;
+        val executors = clusterResourcesDB.currentSnapshot(true)
+                .stream()
+                .filter(executor -> isExecutorEligibleForPlacement(executor, finalPolicy))
+                .toList();
+
         var freeCores = 0;
         var freeMemory = 0L;
         for (val exec : executors) {
@@ -660,11 +695,11 @@ public class ControllerUtils {
         val requiredMem = requiredInstances * requiredMemPerInstance;
         if (requiredCores > freeCores) {
             errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
-                               "Available: " + freeCores);
+                    "Available: " + freeCores);
         }
         if (requiredMem > freeMemory) {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
-                               "Available: " + freeMemory);
+                    "Available: " + freeMemory);
         }
         val maxAvailablePhysicalCoresPerNode = executors.stream()
                 .map(e -> e.getNodeData().getState().getLayout())
@@ -675,9 +710,113 @@ public class ControllerUtils {
                 .orElse(Integer.MAX_VALUE);
         if (maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
             errors.add("Required cores exceeds the maximum core available on a single " +
-                               "NUMA node in the cluster. Required: " + requiredCores
-                               + " Max: " + maxAvailablePhysicalCoresPerNode);
+                    "NUMA node in the cluster. Required: " + requiredCores
+                    + " Max: " + maxAvailablePhysicalCoresPerNode);
         }
+    }
+
+    public static boolean shouldAllowCombiningOfPolicy(final PlacementPolicy policy) {
+        return policy.accept(new PlacementPolicyVisitor<>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                return compositePlacementPolicy.getPolicies()
+                        .stream()
+                        .anyMatch(ControllerUtils::shouldAllowCombiningOfPolicy);
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return false;
+            }
+        });
+    }
+
+    private static boolean isExecutorEligibleForPlacement(ExecutorHostInfo executor, PlacementPolicy policy) {
+        return policy.accept(new PlacementPolicyVisitor<>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return Objects.requireNonNullElse(executor.getNodeData().getTags(), Set.of())
+                        .contains(matchTag.getTag());
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return Sets.difference(Objects.requireNonNullElse(executor.getNodeData().getTags(), Set.of()),
+                                       Set.of(executor.getNodeData().getHostname())).isEmpty();
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                val combiner = Objects.requireNonNullElse(compositePlacementPolicy.getCombiner(),
+                                                          CompositePlacementPolicy.CombinerType.AND);
+
+                if (combiner == CompositePlacementPolicy.CombinerType.AND) {
+                    return compositePlacementPolicy.getPolicies().stream().allMatch(p -> isExecutorEligibleForPlacement(
+                                                                                                                        executor,
+                                                                                                                        p));
+                }
+                else {
+                    return compositePlacementPolicy.getPolicies().stream().anyMatch(p -> isExecutorEligibleForPlacement(
+                                                                                                                        executor,
+                                                                                                                        p));
+                }
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return true;
+            }
+        });
     }
 
 
@@ -766,16 +905,16 @@ public class ControllerUtils {
 
     public static long totalCPU(DeploymentSpec spec, long instances) {
         return instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return cpuRequirement.getCount();
-                    }
+            @Override
+            public Long visit(CPURequirement cpuRequirement) {
+                return cpuRequirement.getCount();
+            }
 
-                    @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return 0L;
-                    }
-                }))
+            @Override
+            public Long visit(MemoryRequirement memoryRequirement) {
+                return 0L;
+            }
+        }))
                 .sum();
     }
 
@@ -839,9 +978,9 @@ public class ControllerUtils {
                     @Override
                     public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
                         return ports.containsKey(httpCheck.getPortName())
-                               ? Optional.empty()
-                               : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
-                                                     + ". Available ports: " + ports.keySet());
+                                ? Optional.empty()
+                                : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
+                                        + ". Available ports: " + ports.keySet());
                     }
 
                     @Override
@@ -881,8 +1020,8 @@ public class ControllerUtils {
     public static long timeoutMS(final CheckSpec checkSpec) {
         return Objects.requireNonNullElse(checkSpec.getInitialDelay(), Duration.seconds(0)).toMilliseconds()
                 + (checkSpec.getAttempts()
-                * (checkSpec.getTimeout().toMilliseconds()
-                + checkSpec.getInterval().toMilliseconds()));
+                        * (checkSpec.getTimeout().toMilliseconds()
+                                + checkSpec.getInterval().toMilliseconds()));
 
     }
 
@@ -896,9 +1035,9 @@ public class ControllerUtils {
         var actualTimeout = providedTimeout;
         if (providedTimeout < maxTimeout) {
             log.warn("Provided state check timeout {} ms is less than the minimum required time for the container to " +
-                            "come up which is computed to {} ms. Will adjust.",
-                    providedTimeout,
-                    maxTimeout);
+                    "come up which is computed to {} ms. Will adjust.",
+                     providedTimeout,
+                     maxTimeout);
             actualTimeout = maxTimeout;
         }
         return actualTimeout;
@@ -958,7 +1097,7 @@ public class ControllerUtils {
 
     public static String errorMessage(JobExecutionResult<Boolean> executionResult) {
         return executionResult.getFailure() == null
-               ? "Execution failed"
-               : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
+                ? "Execution failed"
+                : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 }

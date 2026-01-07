@@ -119,7 +119,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
         var placementPolicy = Objects.requireNonNullElse(deploymentSpec.getPlacementPolicy(),
                                                          new AnyPlacementPolicy());
-        if (shouldAllowCombiningOfPolicy(placementPolicy)) {
+        if (ControllerUtils.shouldAllowCombiningOfPolicy(placementPolicy)) {
             log.info("Placement policy {} seems to be disallowed for combining, skipping mutation.",
                      placementPolicy.getType());
         }
@@ -391,52 +391,6 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             @Override
             public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
                 return true;
-            }
-        });
-    }
-
-    private boolean shouldAllowCombiningOfPolicy(final PlacementPolicy policy) {
-        return policy.accept(new PlacementPolicyVisitor<Boolean>() {
-            @Override
-            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(NoTagPlacementPolicy noTag) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
-                return false;
-            }
-
-            @Override
-            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
-                return compositePlacementPolicy.getPolicies()
-                        .stream()
-                        .anyMatch(DefaultInstanceScheduler.this::shouldAllowCombiningOfPolicy);
-            }
-
-            @Override
-            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
-                return false;
             }
         });
     }
