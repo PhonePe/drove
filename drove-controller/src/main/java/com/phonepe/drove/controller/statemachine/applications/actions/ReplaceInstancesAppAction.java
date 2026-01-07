@@ -194,4 +194,9 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         return StateData.errorFrom(currentState, ApplicationState.MONITORING, errMsg);
     }
 
+    @Override
+    public boolean cancel(AppActionContext context) {
+        return cancelCurrentJobs(context);
+    }
+
 }

@@ -225,4 +225,9 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
                                                       httpCaller,
                                                       executor);
     }
+
+    @Override
+    public boolean cancel(LocalServiceActionContext context) {
+        return cancelCurrentJobs(context);
+    }
 }
