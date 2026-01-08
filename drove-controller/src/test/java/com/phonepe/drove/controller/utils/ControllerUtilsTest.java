@@ -16,8 +16,13 @@
 
 package com.phonepe.drove.controller.utils;
 
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
+import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.*;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.task.TaskSpec;
 import dev.failsafe.RetryPolicy;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -78,6 +83,54 @@ class ControllerUtilsTest {
         {
             when(res.getFailure()).thenReturn(new Exception("test error"));
             assertEquals("Execution of jobs failed with error: test error", errorMessage(res));
+        }
+    }
+
+    @Test
+    void testGetFinalPlacementPolicy() {
+        // 1. ApplicationSpec with AnyPlacementPolicy -> Should append NoTag
+        {
+            ApplicationSpec appSpec = ControllerTestUtils.appSpec().withPlacementPolicy(new AnyPlacementPolicy());
+            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(appSpec);
+            CompositePlacementPolicy composite = assertInstanceOf(CompositePlacementPolicy.class, policy);
+            assertEquals(CompositePlacementPolicy.CombinerType.AND, composite.getCombiner());
+            assertEquals(2, composite.getPolicies().size());
+            assertTrue(composite.getPolicies().stream().anyMatch(AnyPlacementPolicy.class::isInstance));
+            assertTrue(composite.getPolicies().stream().anyMatch(NoTagPlacementPolicy.class::isInstance));
+        }
+
+        // 2. ApplicationSpec with MatchTagPlacementPolicy -> Should return as is
+        {
+            ApplicationSpec appSpec = ControllerTestUtils.appSpec().withPlacementPolicy(new MatchTagPlacementPolicy("tag"));
+            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(appSpec);
+            assertInstanceOf(MatchTagPlacementPolicy.class, policy);
+            assertEquals("tag", ((MatchTagPlacementPolicy) policy).getTag());
+        }
+
+        // 3. TaskSpec with AnyPlacementPolicy -> Should append NoTag
+        {
+            TaskSpec taskSpec = ControllerTestUtils.taskSpec().withPlacementPolicy(new AnyPlacementPolicy());
+            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(taskSpec);
+            CompositePlacementPolicy composite = assertInstanceOf(CompositePlacementPolicy.class, policy);
+            assertEquals(CompositePlacementPolicy.CombinerType.AND, composite.getCombiner());
+            assertEquals(2, composite.getPolicies().size());
+            assertTrue(composite.getPolicies().stream().anyMatch(AnyPlacementPolicy.class::isInstance));
+            assertTrue(composite.getPolicies().stream().anyMatch(NoTagPlacementPolicy.class::isInstance));
+        }
+
+        // 4. LocalServiceSpec with AnyPlacementPolicy -> Should return as is (no NoTag appended)
+        {
+            LocalServiceSpec localServiceSpec = ControllerTestUtils.localServiceSpec().withPlacementPolicy(new AnyPlacementPolicy());
+            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(localServiceSpec);
+            assertInstanceOf(AnyPlacementPolicy.class, policy);
+        }
+
+         // 5. LocalServiceSpec with MatchTagPlacementPolicy -> Should return as is
+        {
+            LocalServiceSpec localServiceSpec = ControllerTestUtils.localServiceSpec().withPlacementPolicy(new MatchTagPlacementPolicy("tag"));
+            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(localServiceSpec);
+            assertInstanceOf(MatchTagPlacementPolicy.class, policy);
+            assertEquals("tag", ((MatchTagPlacementPolicy) policy).getTag());
         }
     }
 }

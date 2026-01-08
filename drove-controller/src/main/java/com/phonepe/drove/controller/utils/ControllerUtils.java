@@ -643,14 +643,7 @@ public class ControllerUtils {
                                       final DeploymentSpec spec,
                                       final long requiredInstances,
                                       final List<String> errors) {
-        var placementPolicy = Objects.requireNonNullElse(spec.getPlacementPolicy(),
-                                                         new AnyPlacementPolicy());
-        if (!shouldAllowCombiningOfPolicy(placementPolicy)) {
-            placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
-                                                           CompositePlacementPolicy.CombinerType.AND);
-        }
-
-        val finalPolicy = placementPolicy;
+        val finalPolicy = getFinalPlacementPolicy(spec);
         val executors = clusterResourcesDB.currentSnapshot(true)
                 .stream()
                 .filter(executor -> isExecutorEligibleForPlacement(executor, finalPolicy))
@@ -1049,6 +1042,41 @@ public class ControllerUtils {
             case CONFIG_TESTING -> CONFIG_TESTING;
             case INACTIVE -> INACTIVE;
         };
+    }
+
+    public static PlacementPolicy getFinalPlacementPolicy(DeploymentSpec deploymentSpec) {
+        return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
+
+            @Override
+            public PlacementPolicy visit(ApplicationSpec applicationSpec) {
+                var placementPolicy = Objects.requireNonNullElse(applicationSpec.getPlacementPolicy(),
+                                                         new AnyPlacementPolicy());
+                if (!shouldAllowCombiningOfPolicy(placementPolicy)) {
+                    return new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
+                                                                   CompositePlacementPolicy.CombinerType.AND);
+                }
+
+                return placementPolicy;
+            }
+
+            @Override
+            public PlacementPolicy visit(TaskSpec taskSpec) {
+                var placementPolicy = Objects.requireNonNullElse(taskSpec.getPlacementPolicy(),
+                                                         new AnyPlacementPolicy());
+                if (!shouldAllowCombiningOfPolicy(placementPolicy)) {
+                    return new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
+                                                                   CompositePlacementPolicy.CombinerType.AND);
+                }
+
+                return placementPolicy;
+            }
+
+            @Override
+            public PlacementPolicy visit(LocalServiceSpec localServiceSpec) {
+                // For LocalService, return as is
+                return localServiceSpec.getPlacementPolicy();
+            }
+        });
     }
 
     public static Boolean isHostLevelDeployable(final PlacementPolicy placementPolicy) {
