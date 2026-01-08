@@ -116,18 +116,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     @Override
     public synchronized Optional<AllocatedExecutorNode> schedule(
             String schedulingSessionId, String instanceId, DeploymentSpec deploymentSpec) {
-
-        var placementPolicy = Objects.requireNonNullElse(deploymentSpec.getPlacementPolicy(),
-                                                         new AnyPlacementPolicy());
-        if (ControllerUtils.shouldAllowCombiningOfPolicy(placementPolicy)) {
-            log.info("Placement policy {} seems to be disallowed for combining, skipping mutation.",
-                     placementPolicy.getType());
-        }
-        else {
-            log.info("No tags specified in placement policy, will ensure deployments don't go to tagged executors");
-            placementPolicy = new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
-                                                           CompositePlacementPolicy.CombinerType.AND);
-        }
+        var placementPolicy = ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec);
         return schedule(schedulingSessionId, instanceId, deploymentSpec, placementPolicy);
     }
 

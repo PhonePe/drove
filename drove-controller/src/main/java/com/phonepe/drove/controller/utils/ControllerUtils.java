@@ -643,7 +643,7 @@ public class ControllerUtils {
                                       final DeploymentSpec spec,
                                       final long requiredInstances,
                                       final List<String> errors) {
-        val finalPolicy = getFinalPlacementPolicy(spec);
+        val finalPolicy = computeEffectivePlacementPolicy(spec);
         val executors = clusterResourcesDB.currentSnapshot(true)
                 .stream()
                 .filter(executor -> isExecutorEligibleForPlacement(executor, finalPolicy))
@@ -1044,7 +1044,7 @@ public class ControllerUtils {
         };
     }
 
-    public static PlacementPolicy getFinalPlacementPolicy(DeploymentSpec deploymentSpec) {
+    public static PlacementPolicy computeEffectivePlacementPolicy(DeploymentSpec deploymentSpec) {
         return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
 
             @Override

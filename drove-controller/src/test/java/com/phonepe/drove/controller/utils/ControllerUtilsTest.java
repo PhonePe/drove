@@ -87,11 +87,11 @@ class ControllerUtilsTest {
     }
 
     @Test
-    void testGetFinalPlacementPolicy() {
+    void testComputeEffectivePlacementPolicy() {
         // 1. ApplicationSpec with AnyPlacementPolicy -> Should append NoTag
         {
             ApplicationSpec appSpec = ControllerTestUtils.appSpec().withPlacementPolicy(new AnyPlacementPolicy());
-            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(appSpec);
+            PlacementPolicy policy = ControllerUtils.computeEffectivePlacementPolicy(appSpec);
             CompositePlacementPolicy composite = assertInstanceOf(CompositePlacementPolicy.class, policy);
             assertEquals(CompositePlacementPolicy.CombinerType.AND, composite.getCombiner());
             assertEquals(2, composite.getPolicies().size());
@@ -102,7 +102,7 @@ class ControllerUtilsTest {
         // 2. ApplicationSpec with MatchTagPlacementPolicy -> Should return as is
         {
             ApplicationSpec appSpec = ControllerTestUtils.appSpec().withPlacementPolicy(new MatchTagPlacementPolicy("tag"));
-            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(appSpec);
+            PlacementPolicy policy = ControllerUtils.computeEffectivePlacementPolicy(appSpec);
             assertInstanceOf(MatchTagPlacementPolicy.class, policy);
             assertEquals("tag", ((MatchTagPlacementPolicy) policy).getTag());
         }
@@ -110,7 +110,7 @@ class ControllerUtilsTest {
         // 3. TaskSpec with AnyPlacementPolicy -> Should append NoTag
         {
             TaskSpec taskSpec = ControllerTestUtils.taskSpec().withPlacementPolicy(new AnyPlacementPolicy());
-            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(taskSpec);
+            PlacementPolicy policy = ControllerUtils.computeEffectivePlacementPolicy(taskSpec);
             CompositePlacementPolicy composite = assertInstanceOf(CompositePlacementPolicy.class, policy);
             assertEquals(CompositePlacementPolicy.CombinerType.AND, composite.getCombiner());
             assertEquals(2, composite.getPolicies().size());
@@ -121,14 +121,14 @@ class ControllerUtilsTest {
         // 4. LocalServiceSpec with AnyPlacementPolicy -> Should return as is (no NoTag appended)
         {
             LocalServiceSpec localServiceSpec = ControllerTestUtils.localServiceSpec().withPlacementPolicy(new AnyPlacementPolicy());
-            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(localServiceSpec);
+            PlacementPolicy policy = ControllerUtils.computeEffectivePlacementPolicy(localServiceSpec);
             assertInstanceOf(AnyPlacementPolicy.class, policy);
         }
 
-         // 5. LocalServiceSpec with MatchTagPlacementPolicy -> Should return as is
+        // 5. LocalServiceSpec with MatchTagPlacementPolicy -> Should return as is
         {
             LocalServiceSpec localServiceSpec = ControllerTestUtils.localServiceSpec().withPlacementPolicy(new MatchTagPlacementPolicy("tag"));
-            PlacementPolicy policy = ControllerUtils.getFinalPlacementPolicy(localServiceSpec);
+            PlacementPolicy policy = ControllerUtils.computeEffectivePlacementPolicy(localServiceSpec);
             assertInstanceOf(MatchTagPlacementPolicy.class, policy);
             assertEquals("tag", ((MatchTagPlacementPolicy) policy).getTag());
         }
