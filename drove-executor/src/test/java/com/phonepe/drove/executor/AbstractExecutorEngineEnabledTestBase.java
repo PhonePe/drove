@@ -43,7 +43,9 @@ import org.junit.jupiter.api.BeforeEach;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -168,9 +170,10 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
         });
 
         injector.injectMembers(this);
-        resourceDB.populateResources(Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
-                                                                               .boxed()
-                                                                               .collect(Collectors.toUnmodifiableSet()),
-                                                                             16_000_000)));
+        val compute = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
+                        .boxed()
+                        .collect(Collectors.toUnmodifiableSet()),
+                16_000_000));
+        resourceDB.populateResources(new ResourceManager.ExecutorResources(compute, Set.of()));
     }
 }

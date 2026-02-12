@@ -26,6 +26,7 @@ public enum AppEventDataTag {
     APP_VERSION,
     EXECUTABLE,
     CPU_COUNT,
+    GPU_COUNT,
     MEMORY,
     PLACEMENT_POLICY,
     PORTS,

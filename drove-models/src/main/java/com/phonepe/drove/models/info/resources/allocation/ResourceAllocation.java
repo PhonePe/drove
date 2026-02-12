@@ -28,6 +28,7 @@ import lombok.Data;
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "CPU", value = CPUAllocation.class),
         @JsonSubTypes.Type(name = "MEMORY", value = MemoryAllocation.class),
+        @JsonSubTypes.Type(name = "GPU", value = GPUAllocation.class),
 })
 @Data
 public abstract class ResourceAllocation {

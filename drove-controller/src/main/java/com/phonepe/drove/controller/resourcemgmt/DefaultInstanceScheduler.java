@@ -31,6 +31,7 @@ import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -152,7 +153,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                            new InstanceResourceAllocation(executorId,
                                                                           instanceId,
                                                                           allocatedExecutorNode.getCpu(),
-                                                                          allocatedExecutorNode.getMemory()));
+                                                                          allocatedExecutorNode.getMemory(),
+                                                                          allocatedExecutorNode.getGpu()));
                     log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
                              sid, executorId, currentAllocations.size());
                     return executorAllocations;
@@ -185,7 +187,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                 if (removed != null) {
                                     clusterResourcesDB.deselectNode(removed.getExecutorId(),
                                                                     removed.getCpu(),
-                                                                    removed.getMemory());
+                                                                    removed.getMemory(),
+                                            removed.getGpu());
                                     log.info("Relinquished resources for {}/{}",
                                              removed.getExecutorId(), removed.getInstanceId());
                                 }
@@ -266,7 +269,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         applicationInstanceInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(applicationInstanceInfo.getResources(),
-                                                            ResourceType.MEMORY));
+                                                            ResourceType.MEMORY),
+                        (GPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.GPU));
             }
 
             @Override
@@ -275,7 +279,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         taskInfo.getExecutorId(),
                         taskInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.CPU),
-                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY));
+                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY),
+                        (GPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.GPU));
             }
 
             @Override
@@ -285,7 +290,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         localServiceInstanceInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(localServiceInstanceInfo.getResources(),
-                                                            ResourceType.MEMORY));
+                                                            ResourceType.MEMORY),
+                        (GPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.GPU));
             }
 
             private static ResourceAllocation filterAllocation(

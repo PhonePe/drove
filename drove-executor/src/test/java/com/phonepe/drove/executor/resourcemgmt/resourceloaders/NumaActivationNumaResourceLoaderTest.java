@@ -34,17 +34,17 @@ import static com.phonepe.drove.executor.ExecutorTestingUtils.discoveredNumaNode
 import static com.phonepe.drove.executor.utils.ExecutorUtils.mapCores;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class NumaActivationResourceLoaderTest extends AbstractTestBase {
+class NumaActivationNumaResourceLoaderTest extends AbstractTestBase {
 
     @Test
     @SneakyThrows
     void testIfNoChangeIsMadeWhenNumaPinningIsEnabled() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         val availableCores = Set.of(1, 2, 3, 4);
         val resourceMap = Map.of(0,
                                  ResourceManager.NodeInfo.from(availableCores, 1000));
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
-        val rl = new NumaActivationResourceLoader(baseLoader, ExecutorTestingUtils.resourceConfig());
+        val rl = new NumaActivationNumaResourceLoader(baseLoader, ExecutorTestingUtils.resourceConfig());
         val processedResource = rl.loadSystemResources();
         assertEquals(resourceMap, processedResource);
     }
@@ -52,13 +52,13 @@ class NumaActivationResourceLoaderTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testIfNodesAreFlattenedOutIfNumaPinningIsDisabled() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         val resourceMap
                 = Map.of(0, discoveredNumaNode(1), 1, discoveredNumaNode(5));
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setDisableNUMAPinning(true);
-        val rl = new NumaActivationResourceLoader(baseLoader, resourceConfig);
+        val rl = new NumaActivationNumaResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
         val combinedAvailableCores = Set.of(1, 2, 3, 4, 5, 6, 7, 8);
         assertEquals(Map.of(0,
@@ -73,11 +73,11 @@ class NumaActivationResourceLoaderTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testIfEmptyNodeIsCreatedForNoNodeResponse() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(Collections.emptyMap());
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setDisableNUMAPinning(true);
-        val rl = new NumaActivationResourceLoader(baseLoader, resourceConfig);
+        val rl = new NumaActivationNumaResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
         assertEquals(Map.of(0,
                             new ResourceManager.NodeInfo(Set.of(), Map.of(), 0, Set.of(), 0)),
@@ -87,14 +87,14 @@ class NumaActivationResourceLoaderTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testOverProvisioningWithNumaDisabled() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         val resourceMap
                 = Map.of(0, discoveredNumaNode(1), 1, discoveredNumaNode(5));
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setDisableNUMAPinning(true)
                 .setOverProvisioning(new OverProvisioning(true, 3, 2));
-        val rl = new NumaActivationResourceLoader(new OverProvisioningResourceLoader(baseLoader, resourceConfig), resourceConfig);
+        val rl = new NumaActivationNumaResourceLoader(new OverProvisioningNumaResourceLoader(baseLoader, resourceConfig), resourceConfig);
         val processedResource = rl.loadSystemResources();
         val combinedAvailableCores = Set.of(1, 2, 3, 4, 5, 6, 7, 8);
         val coreMapping = coreMappings();

@@ -40,6 +40,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
@@ -48,6 +49,7 @@ import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.val;
+import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -748,7 +750,8 @@ class TaskEngineTest extends ControllerTestBase {
                                                                              new AvailableMemory(
                                                                                      Map.of(),
                                                                                      Map.of()),
-                                                                             new PhysicalLayout(Map.of(), Map.of())),
+                                                                             new AvailableGPU(List.of(), List.of()),
+                                                                             new PhysicalLayout(Map.of(), Map.of(), Set.of())),
                                                 List.of(),
                                                 List.of(),
                                                 List.of(),
@@ -775,10 +778,10 @@ class TaskEngineTest extends ControllerTestBase {
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                 ControllerOptions.DEFAULT,
                                 httpCaller());
-        val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.taskSpec(),
+        val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.withGPU(ControllerTestUtils.taskSpec(), 1),
                                                         ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
-        assertEquals(2, r.getMessages().size());
+        assertEquals(3, r.getMessages().size());
     }
 
     @Test

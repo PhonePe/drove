@@ -18,6 +18,7 @@ package com.phonepe.drove.models.info;
 
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,5 +36,6 @@ public class ExecutorResourceSnapshot {
     String executorId;
     AvailableCPU cpus;
     AvailableMemory memory;
+    AvailableGPU gpus;
     PhysicalLayout layout;
 }

@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
@@ -36,6 +37,7 @@ public class AllocatedExecutorNode {
     NodeTransportType transportType;
     CPUAllocation cpu;
     MemoryAllocation memory;
+    GPUAllocation gpu;
     Set<String> tags;
     Map<String, String> metadata;
     ExecutorState executorState;

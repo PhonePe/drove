@@ -18,10 +18,7 @@ package com.phonepe.drove.controller.ui;
 
 import com.google.common.base.Joiner;
 import com.phonepe.drove.controller.config.ViewOptions;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
+import com.phonepe.drove.models.info.resources.allocation.*;
 
 /**
  *
@@ -60,6 +57,11 @@ public class CustomHelpers {
                                               e.getKey(),
                                               e.getValue()))
                                       .toList());
+            }
+
+            @Override
+            public CharSequence visit(GPUAllocation gpu) {
+                return "<b>GPU Allocation</b>: " + gpu.getGpuIds().size() + " GPU(s) allocated";
             }
         });
     }

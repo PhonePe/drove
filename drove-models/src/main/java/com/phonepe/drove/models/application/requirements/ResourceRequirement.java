@@ -29,6 +29,7 @@ import lombok.Data;
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "CPU", value = CPURequirement.class),
         @JsonSubTypes.Type(name = "MEMORY", value = MemoryRequirement.class),
+        @JsonSubTypes.Type(name="GPU", value = GPURequirement.class)
 })
 @Data
 @Schema(

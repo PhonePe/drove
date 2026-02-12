@@ -53,8 +53,8 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val spec = testAppInstanceSpec();
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
         val action = new ApplicationInstanceRunAction(new ResourceConfig(),
                                                       ExecutorOptions.DEFAULT,
                                                       CommonTestUtils.httpCaller(),
@@ -76,8 +76,8 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                              .build()));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
         val action = new ApplicationInstanceRunAction(new ResourceConfig(),
                                                       ExecutorOptions.DEFAULT,
                                                       CommonTestUtils.httpCaller(),

@@ -53,8 +53,8 @@ class ApplicationInstanceStopActionTest extends AbstractTestBase {
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
         val startAction = new ApplicationInstanceRunAction(new ResourceConfig(), ExecutorOptions.DEFAULT,
                                                            CommonTestUtils.httpCaller(),
                                                            MAPPER,

@@ -23,4 +23,6 @@ public interface ResourceAllocationVisitor<T> {
     T visit(final CPUAllocation cpu);
 
     T visit(final MemoryAllocation memory);
+
+    T visit(final GPUAllocation gpu);
 }

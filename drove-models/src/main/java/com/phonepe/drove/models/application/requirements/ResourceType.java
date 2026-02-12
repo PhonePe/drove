@@ -16,15 +16,11 @@
 
 package com.phonepe.drove.models.application.requirements;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 /**
- * Types of resources that can be requested
+ *
  */
-@Schema(description = "Types of resources that can be requested for application instances")
 public enum ResourceType {
-    @Schema(description = "CPU cores")
     CPU,
-    @Schema(description = "Memory (RAM)")
-    MEMORY
+    MEMORY,
+    GPU
 }

@@ -33,14 +33,14 @@ import java.util.Set;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.discoveredNumaNode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class OverProvisioningResourceLoaderTest {
+class OverProvisioningNumaResourceLoaderTest {
     @Test
     @SneakyThrows
     void testIfNoChangeIsMadeWhenOverProvisioningIsDisabled() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         val resourceMap = Map.of(0, discoveredNumaNode());
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
-        val rl = new OverProvisioningResourceLoader(baseLoader, ExecutorTestingUtils.resourceConfig());
+        val rl = new OverProvisioningNumaResourceLoader(baseLoader, ExecutorTestingUtils.resourceConfig());
         val processedResource = rl.loadSystemResources();
         assertEquals(resourceMap, processedResource);
     }
@@ -48,14 +48,14 @@ class OverProvisioningResourceLoaderTest {
     @Test
     @SneakyThrows
     void testIfResourcesAreOverProvisionedIfOverProvisioningIsEnabled() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         val rootNodeInfo = discoveredNumaNode();
         val resourceMap = Map.of(0, rootNodeInfo);
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setOverProvisioning(
                 new OverProvisioning(true, 2, 2));
-        val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
+        val rl = new OverProvisioningNumaResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
         val vCoreMapping = Map.of(
                 7, 1,
@@ -78,13 +78,13 @@ class OverProvisioningResourceLoaderTest {
     @Test
     @SneakyThrows
     void testIfEmptyNodeIsCreatedForNoNodeResponseWithOverProvisioningEnabled() {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(Collections.emptyMap());
         val resourceConfig = ExecutorTestingUtils.resourceConfig();
         resourceConfig.setOverProvisioning(
                 new OverProvisioning(true, 2, 2)
                                           );
-        val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
+        val rl = new OverProvisioningNumaResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
         assertEquals(Map.of(), processedResource);
     }
@@ -93,7 +93,7 @@ class OverProvisioningResourceLoaderTest {
     @ParameterizedTest
     @CsvSource({"4,20", "20,4", "20,20"})
     void testNoOverlap(int numCores, int cpuMultiplier) {
-        val baseLoader = Mockito.mock(ResourceLoader.class);
+        val baseLoader = Mockito.mock(NumaResourceLoader.class);
         val rootNodeInfo = discoveredNumaNode(0, numCores);
         val resourceMap = Map.of(0, rootNodeInfo);
         Mockito.when(baseLoader.loadSystemResources()).thenReturn(resourceMap);
@@ -101,7 +101,7 @@ class OverProvisioningResourceLoaderTest {
 
         resourceConfig.setOverProvisioning(
                 new OverProvisioning(true, cpuMultiplier, 1));
-        val rl = new OverProvisioningResourceLoader(baseLoader, resourceConfig);
+        val rl = new OverProvisioningNumaResourceLoader(baseLoader, resourceConfig);
         val processedResource = rl.loadSystemResources();
         System.out.println(processedResource);
         val out = processedResource.values()

@@ -17,6 +17,7 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
@@ -29,4 +30,5 @@ class InstanceResourceAllocation {
     String instanceId;
     CPUAllocation cpu;
     MemoryAllocation memory;
+    GPUAllocation gpu;
 }

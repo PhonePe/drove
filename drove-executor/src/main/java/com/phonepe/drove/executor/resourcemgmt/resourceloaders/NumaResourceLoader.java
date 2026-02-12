@@ -20,6 +20,6 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 
 import java.util.Map;
 
-public interface ResourceLoader {
+public interface NumaResourceLoader {
     Map<Integer, ResourceManager.NodeInfo> loadSystemResources();
 }

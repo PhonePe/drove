@@ -55,9 +55,23 @@
                 </div>
             </script>
 
+            <script type="text/template" data-template="gpuStatusTemplate">
+                <div class="col-12">
+                    <div class="card me-2 mb-2">
+                        <h6 class="card-title m-2 text-center">
+                            GPUs
+                        </h6>
+                        <div class="card-body text-center">
+                            <div class="mb-2">${gpuProviderCounts}</div>
+                            ${gpuBadges}
+                        </div>
+                    </div>
+                </div>
+            </script>
+
             <div class="col-12 col-md-4 mb-2" id="executorSummary">
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-8">
                 <div class="row">
                     <div class="col">
                         <h5 class="fw-bold">NUMA Node Status</h5>
@@ -68,8 +82,19 @@
                         </small>
                     </div>
                 </div>
-                <div class="row" id="cpuStatus">
+                <div class="row" id="cpuStatus"></div>
+
+                <div class="row mt-2">
+                    <div class="col">
+                        <h5 class="fw-bold">GPU Status</h5>
+                        <small class="mb-1" style="font-size: x-small">
+                            GPU status indicator:
+                            <span class="core-display text-danger" style="font-size: x-small">Used</span>
+                            <span class="core-display text-success" style="font-size: x-small">Unused</span>
+                        </small>
+                    </div>
                 </div>
+                <div class="row" id="gpuStatus"></div>
             </div>
         </div>
     </section>
@@ -203,6 +228,52 @@
         ]));
     }
 
+    function transposeGpus(gpus) {
+        if(!gpus) {
+            return { free: [], used: [] };
+        }
+        // AvailableGPU has shape: { freeGpus: [GPUInfo], usedGpus: [GPUInfo] }
+        return {
+            free: gpus.freeGpus || [],
+            used: gpus.usedGpus || []
+        };
+    }
+
+    function renderGpuStatus(gpuState, gpuLayout) {
+        const gpuStatus = $('#gpuStatus');
+        gpuStatus.empty();
+
+        const { free, used } = transposeGpus(gpuState);
+        const allGpus = gpuLayout
+
+        if(allGpus.length === 0) {
+            gpuStatus.append('<div class="col"><small class="text-muted">No GPUs reported</small></div>');
+            return;
+        }
+
+        const providerCounts = allGpus.reduce((acc, gpu) => {
+            const provider = gpu.gpuProvider || 'N/A';
+            acc[provider] = (acc[provider] || 0) + 1;
+            return acc;
+        }, {});
+
+        const gpuProviderCounts = Object.entries(providerCounts).map(([provider, count]) => {
+            return `<span class="badge bg-info text-dark me-1">${provider}: ${count}</span>`;
+        }).join(" ");
+
+        const isGpuFree = (gpu) => (free || []).some(freeGpu => freeGpu === gpu.gpuId);
+
+        allGpus.sort((a, b) => ('' + a.gpuId).localeCompare('' + b.gpuId, undefined, { numeric: true }));
+
+        const gpuBadges = allGpus.map(gpu => {
+            const isFree = isGpuFree(gpu);
+            return '<span class="core-display {0} fw-bold" title="Provider: {2}">{1}</span>'
+                .format(isFree ? 'text-success' : 'text-danger', gpu.gpuId, gpu.gpuProvider || 'N/A');
+        }).join(" ");
+
+        gpuStatus.append(renderTemplateHtml('gpuStatusTemplate', [{ gpuProviderCounts, gpuBadges }]));
+    }
+
     function loadExecutorSnapshot() {
         $.ajax({
             url: '/apis/v1/cluster/executors/{{executorId}}',
@@ -246,6 +317,8 @@
 
                         cpuStatus.append(renderTemplateHtml('numaNodeTemplate', [{ nodeId, cores, memory }]));
                     });
+
+                    renderGpuStatus(data.state.gpus, data.state.layout.gpus);
                     ii.clear();
                     ii.rows.add(executorDataTransformer(res, res.data.instances || [])).draw();
                     ti.clear();

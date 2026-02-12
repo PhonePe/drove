@@ -18,8 +18,10 @@ package com.phonepe.drove.executor.resourcemgmt;
 
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.model.utils.Pair;
+import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
@@ -51,8 +53,14 @@ public class ResourceManager {
         String id;
         ResourceLockType type;
         Map<Integer, NodeInfo> usedResources;
+        List<String> usedGPUs;
     }
-
+    @Data
+    @AllArgsConstructor
+    public static class ExecutorResources {
+        Map<Integer, NodeInfo> numaNodeToResource;
+        Set<GPUInfo> gpuInfos;
+    }
     @Data
     @AllArgsConstructor
     public static class NodeInfo {
@@ -78,18 +86,20 @@ public class ResourceManager {
             .executorService(Executors.newSingleThreadExecutor())
             .build();
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
+    private List<String> gpus = Collections.emptyList();
     private PhysicalLayout physicalLayout = null;
 
     @MonitoredFunction
-    public synchronized void populateResources(Map<Integer, NodeInfo> nodes) {
-        this.nodes = Map.copyOf(nodes);
+    public synchronized void populateResources(ExecutorResources resources) {
+        this.nodes = Map.copyOf(resources.getNumaNodeToResource());
+        this.gpus = List.copyOf(resources.getGpuInfos().stream().map(GPUInfo::getGpuId).collect(Collectors.toList()));
         val cores = new HashMap<Integer, Set<Integer>>();
         val memory = new HashMap<Integer, Long>();
-        nodes.forEach((numaNode, info) -> {
+        resources.getNumaNodeToResource().forEach((numaNode, info) -> {
             cores.put(numaNode, info.getPhysicalCores());
             memory.put(numaNode, info.getPhysicalMemoryInMB());
         });
-        this.physicalLayout = new PhysicalLayout(cores, memory);
+        this.physicalLayout = new PhysicalLayout(cores, memory, resources.getGpuInfos().stream().collect(Collectors.toUnmodifiableSet()));
     }
 
     @MonitoredFunction
@@ -109,6 +119,16 @@ public class ResourceManager {
             log.error("Provided cpu or memory requirement not available. Usage Info: {}", usage);
             return false;
         }
+        if (!gpus.containsAll(usage.getUsedGPUs())) {
+            log.error("Provided gpu requirement not available. Usage Info: {}", usage);
+            return false;
+        }
+        val currentGpus = new ArrayList<>(gpus);
+        usage.getUsedGPUs().forEach(gpu -> {
+            val gpuAllocation = currentGpus.stream().filter(g -> g.equals(gpu)).findFirst();
+            currentGpus.remove(gpuAllocation.get());
+        });
+        //TODO(gabber12): revisit
         val currNodes = new HashMap<>(nodes);
         resourceRequirements
                 .forEach((node, requirement)
@@ -119,6 +139,7 @@ public class ResourceManager {
                                 old.getPhysicalMemoryInMB(),
                                 Set.copyOf(Sets.difference(old.getAvailableCores(), requirement.getAvailableCores())),
                                 old.getMemoryInMB() - requirement.getMemoryInMB())));
+        gpus = List.copyOf(currentGpus);
         nodes = Map.copyOf(currNodes);
         resourceLocks.put(usage.getId(), usage);
         resourceUpdated.dispatch(calculateResources());
@@ -134,7 +155,9 @@ public class ResourceManager {
 
         val usage = resourceLocks.get(id);
         val currNodes = new HashMap<>(nodes);
+        val currentGpus = new ArrayList<>(gpus);
         val resourceRequirements = usage.getUsedResources();
+        //TODO(gabber12): revisit
         resourceRequirements
                 .forEach((node, requirement)
                                  -> currNodes.computeIfPresent(
@@ -144,6 +167,8 @@ public class ResourceManager {
                                 old.getPhysicalMemoryInMB(),
                                 Set.copyOf(Sets.union(old.getAvailableCores(), requirement.getAvailableCores())),
                                 old.getMemoryInMB() + requirement.getMemoryInMB())));
+        currentGpus.addAll(usage.getUsedGPUs());
+        gpus = List.copyOf(currentGpus);
         nodes = Map.copyOf(currNodes);
         resourceLocks.remove(id);
         resourceUpdated.dispatch(calculateResources());
@@ -184,8 +209,17 @@ public class ResourceManager {
                         .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Long::sum));
 
+        val gpus = this.gpus.stream()
+                .toList();
+        val usedGpus = resourceLocks.values()
+                .stream()
+                .map(ResourceUsage::getUsedGPUs)
+                .flatMap(Collection::stream)
+                .toList();
+        //TODO(gabber12): gpu info
         return new ResourceInfo(new AvailableCPU(cpus, usedCores),
                                 new AvailableMemory(memory, usedMemory),
+                                new AvailableGPU(gpus, usedGpus),
                                 physicalLayout);
     }
 

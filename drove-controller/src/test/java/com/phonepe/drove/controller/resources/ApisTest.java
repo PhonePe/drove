@@ -301,6 +301,7 @@ class ApisTest {
                                         10,
                                         100,
                                         512,
+                                        0,
                                         spec.getTags(),
                                         ApplicationState.RUNNING,
                                         new Date(),

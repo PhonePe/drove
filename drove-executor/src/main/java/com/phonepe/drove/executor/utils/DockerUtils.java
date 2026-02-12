@@ -45,6 +45,7 @@ import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import io.dropwizard.util.DataSize;
@@ -390,6 +391,21 @@ public class DockerUtils {
                         if (!resourceConfig.isDisableNUMAPinning()) {
                             hostConfig.withCpusetMems(StringUtils.join(memory.getMemoryInMB().keySet(), ","));
                         }
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(GPUAllocation gpu) {
+
+                        var deviceRequests = hostConfig.getDeviceRequests();
+                        if (Objects.isNull(deviceRequests)) {
+                            deviceRequests = new ArrayList<>();
+                            hostConfig.withDeviceRequests(deviceRequests);
+                        }
+                        deviceRequests.add(new DeviceRequest()
+                                                     .withDeviceIds(new ArrayList<>(gpu.getGpuIds()))
+                                                     .withCapabilities(List.of(List.of("gpu")))
+                                                     );
                         return null;
                     }
                 }));

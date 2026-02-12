@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -49,7 +50,14 @@ public class ExecutorHostInfo {
         Map<Integer, CoreState> cores = new HashMap<>();
         MemInfo memory = new MemInfo();
     }
+
+    @Value
+    public static class HostGPUInfo {
+        Map<String, CoreState> gpus = new HashMap<>();
+    }
+
     String executorId;
     ExecutorNodeData nodeData;
     Map<Integer, NumaNodeInfo> nodes;
+    HostGPUInfo gpuInfo;
 }

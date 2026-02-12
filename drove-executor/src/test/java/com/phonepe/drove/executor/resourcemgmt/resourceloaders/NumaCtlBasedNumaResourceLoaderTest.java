@@ -19,6 +19,7 @@ package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -38,16 +40,22 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  */
 @Slf4j
-class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
+class NumaCtlBasedNumaResourceLoaderTest extends AbstractTestBase {
 
-    private static NumaCtlBasedResourceLoader getNewNumaRL(
+    private static NumaCtlBasedNumaResourceLoader getNewNumaRL(
             ResourceConfig resourceConfig,
             List<String> numaResponseLines
     ) {
-        return new NumaCtlBasedResourceLoader(resourceConfig) {
+        return new NumaCtlBasedNumaResourceLoader(resourceConfig) {
             @Override
             protected List<String> fetchSystemResourceUsingNumaCTL() throws Exception {
                 return numaResponseLines;
+            }
+
+            //Make tests work on macos
+            @Override
+            protected Map<Integer, ResourceManager.NodeInfo> fetchSystemResourcesUsingSysCTL() throws Exception {
+                return parseNumaCTLOutput(numaResponseLines);
             }
         };
     }
@@ -131,7 +139,7 @@ class NumaCtlBasedResourceLoaderTest extends AbstractTestBase {
     void testNumaCtlCommandLoader() {
         val nc = new File("/usr/bin/numactl");
         if (nc.exists() && !nc.isDirectory() && nc.canExecute()) {
-            val rl = new NumaCtlBasedResourceLoader(resourceConfig());
+            val rl = new NumaCtlBasedNumaResourceLoader(resourceConfig());
             val info = rl.loadSystemResources();
             assertFalse(info.isEmpty());
             assertFalse(info.get(0).getAvailableCores().isEmpty());

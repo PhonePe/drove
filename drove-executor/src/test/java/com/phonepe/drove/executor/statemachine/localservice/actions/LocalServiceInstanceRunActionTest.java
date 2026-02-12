@@ -56,8 +56,8 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val spec = testLocalServiceInstanceSpec();
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L), Set.of())));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
@@ -80,8 +80,8 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                 .withHostLevelInstance(true);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null,null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
@@ -111,8 +111,8 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                                              .build()));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null,null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),

@@ -32,14 +32,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Singleton
-public class NumaActivationResourceLoader implements ResourceLoader {
+public class NumaActivationNumaResourceLoader implements NumaResourceLoader {
 
-    private final ResourceLoader root;
+    private final NumaResourceLoader root;
     private final ResourceConfig resourceConfig;
 
     @Inject
-    public NumaActivationResourceLoader(
-            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER) ResourceLoader root,
+    public NumaActivationNumaResourceLoader(
+            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER) NumaResourceLoader root,
             ResourceConfig resourceConfig) {
         this.root = root;
         this.resourceConfig = resourceConfig;
@@ -63,6 +63,7 @@ public class NumaActivationResourceLoader implements ResourceLoader {
                                 availableCores.addAll(nodeInfo.getAvailableCores());
                                 availableMemory.addAndGet(nodeInfo.getMemoryInMB());
                             });
+
             return Map.of(0,
                           new ResourceManager.NodeInfo(physicalCores,
                                                        vCores,

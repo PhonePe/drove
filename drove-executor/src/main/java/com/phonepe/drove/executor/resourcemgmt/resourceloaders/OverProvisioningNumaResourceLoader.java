@@ -35,16 +35,16 @@ import java.util.stream.IntStream;
 
 @Slf4j
 @Singleton
-public class OverProvisioningResourceLoader implements ResourceLoader {
+public class OverProvisioningNumaResourceLoader implements NumaResourceLoader {
 
-    private final ResourceLoader root;
+    private final NumaResourceLoader root;
     private final OverProvisioning overProvisioning;
     private final int cpuMultiplier;
     private final int memoryMultiplier;
 
     @Inject
-    public OverProvisioningResourceLoader(
-            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) ResourceLoader root,
+    public OverProvisioningNumaResourceLoader(
+            @Named(ExecutorCoreModule.ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER) NumaResourceLoader root,
             ResourceConfig resourceConfig) {
         this.overProvisioning = Objects.requireNonNullElse(
                 resourceConfig.getOverProvisioning(), OverProvisioning.DEFAULT);

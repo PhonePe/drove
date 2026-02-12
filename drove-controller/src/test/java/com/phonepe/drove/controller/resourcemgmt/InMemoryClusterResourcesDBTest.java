@@ -26,7 +26,9 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -98,6 +100,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                                new AvailableMemory(
                                                        Map.of(0, 3 * 128 * (2L ^ 20)),
                                                        Map.of(0, 128 * (2L ^ 20))),
+                                               new AvailableGPU(List.of(), List.of()),
                                                new PhysicalLayout(Map.of(0,
                                                                          Set.of(0, 1, 2, 3, 4),
                                                                          1,
@@ -105,7 +108,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                                                   Map.of(0,
                                                                          4 * 128 * (2L ^ 20),
                                                                          1,
-                                                                         4 * 128 * (2L ^ 20)))));
+                                                                         4 * 128 * (2L ^ 20)), Set.of())));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
@@ -161,7 +164,9 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                                                                   .getMemoryInMB()
                                                                                   .get(0)),
                                                                    allocatedNode.getMemory().getMemoryInMB()),
-                                               originalResource.getLayout()));
+                                               new AvailableGPU(List.of(), List.of()),
+                                               originalResource.getLayout()
+                ));
         //Ensure states have reflected properly
         {
             val nodeInfo = db.currentSnapshot(allocatedNode.getExecutorId()).orElse(null);
@@ -184,7 +189,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                            .orElse(null));
         db.deselectNode(allocatedNode.getExecutorId(),
                         allocatedNode.getCpu(),
-                        allocatedNode.getMemory()); // Free up cores
+                        allocatedNode.getMemory(),
+                new GPUAllocation(Set.of())); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
                                      EnumSet.of(ExecutorState.ACTIVE),
@@ -196,21 +202,32 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
     @Test
     void testBlacklisting() {
         val db = new InMemoryClusterResourcesDB();
-        // Update executor state to blacklisted
-        db.update(IntStream.rangeClosed(1, 10)
-                          .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true))
-                          .toList());
+        IntStream.rangeClosed(1, 10)
+                .forEach(i -> db.markBlacklisted(executorId(i)));
         assertTrue(IntStream.rangeClosed(1, 10)
                            .allMatch(i -> db.isBlacklisted(executorId(i))),
                    "Did not blacklist: " + IntStream.rangeClosed(1, 10)
                            .filter(i -> !db.isBlacklisted(executorId(i)))
                            .boxed()
                            .toList());
-        db.update(IntStream.rangeClosed(1, 10)
-                          .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), false))
+        db.update(IntStream.rangeClosed(1, 5)
+                          .mapToObj(ControllerTestUtils::generateExecutorNode)
                           .toList());
         assertTrue(IntStream.rangeClosed(1, 10)
-                           .allMatch(i -> !db.isBlacklisted(executorId(i)))); //This will use node level data
+                           .allMatch(i -> db.isBlacklisted(executorId(i))),
+                   "Did not blacklist: " + IntStream.rangeClosed(1, 10)
+                           .filter(i -> !db.isBlacklisted(executorId(i)))
+                           .boxed()
+                           .toList()); //This will prioritise the info in local map
+        IntStream.rangeClosed(1, 10)
+                .forEach(i -> db.unmarkBlacklisted(executorId(i)));
+        assertTrue(IntStream.rangeClosed(1, 10)
+                           .noneMatch(i -> db.isBlacklisted(executorId(i))));
+        db.update(IntStream.rangeClosed(1, 10)
+                          .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true))
+                          .toList());
+        assertTrue(IntStream.rangeClosed(1, 10)
+                           .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will use node level data
 
     }
 
@@ -230,7 +247,38 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertNotNull(allocatedNode);
             assertTrue(db.isActive(allocatedNode.getExecutorId()));
             assertFalse(db.isBlacklisted(allocatedNode.getExecutorId()));
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory());
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+        }
+        {
+            // Now blacklist node and assert that node is not allocated
+            db.markBlacklisted(executorId);
+            assertFalse(db.isActive(executorId));
+            assertTrue(db.isBlacklisted(executorId));
+            assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                      EnumSet.of(ExecutorState.ACTIVE),
+                                      node -> true
+                                     )
+                               .orElse(null));
+
+            // Now select node with blacklisted state allowed
+            final var allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                                     EnumSet.of(ExecutorState.BLACKLISTED),
+                                                     node -> true
+                                                    )
+                    .orElse(null);
+            assertNotNull(allocatedNode);
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+        }
+        {
+            // Now unblacklist node and assert that node is allocated
+            db.unmarkBlacklisted(executorId);
+            assertTrue(db.isActive(executorId));
+            assertFalse(db.isBlacklisted(executorId));
+            assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                         EnumSet.of(ExecutorState.ACTIVE),
+                                         node -> true
+                                        )
+                                  .orElse(null));
         }
         {
             // Now mark node as blacklisted by updating state
@@ -258,7 +306,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                                     )
                     .orElse(null);
             assertNotNull(allocatedNode);
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory());
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
         }
         {
             // Now mark node as active by updating state
@@ -281,7 +329,25 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                   .orElse(null));
         }
     }
+    @Test
+    void testExecutorStateWithGPU() {
+        val db = new InMemoryClusterResourcesDB();
+        val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
+        val executorId = originalNodeData.getState().getExecutorId();
 
+        db.update(List.of(originalNodeData));
+        { // Allocate node and assert that it is active
+            val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                            EnumSet.of(ExecutorState.ACTIVE),
+                            node -> true
+                    )
+                    .orElse(null);
+            assertNotNull(allocatedNode);
+            assertTrue(db.isActive(allocatedNode.getExecutorId()));
+            assertFalse(db.isBlacklisted(allocatedNode.getExecutorId()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+        }
+    }
     @Test
     void testUpdatedSignal() {
         val db = new InMemoryClusterResourcesDB();
@@ -305,31 +371,21 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
         val toBlacklist = originalNodes.subList(0, 5)
                 .stream()
-                .toList();
-        val blackListedNodeIds = toBlacklist.stream()
-                    .map(executor -> executor.getState().getExecutorId())
-                    .collect(Collectors.toUnmodifiableSet());
+                .map(node -> node.getState().getExecutorId())
+                .collect(Collectors.toSet());
         val toRemain = originalNodes.subList(5, 10)
                 .stream()
                 .map(node -> node.getState().getExecutorId())
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toSet());
 
         // Now let us blacklist some nodes and ensure the logic is correct for livenodes
         currValue.set(changesReceived.get());
         db.onTopologyChange().connect(testHandler, changes -> {
             changesReceived.incrementAndGet();
-            assertTrue(blackListedNodeIds.containsAll(changes.removedExecutors()));
+            assertTrue(toBlacklist.containsAll(changes.removedExecutors()));
             assertEquals(0, changes.addedExecutors().size());
         });
-        toBlacklist.forEach(executor -> db.update(List.of(ExecutorNodeData.from(executor,
-                                               executor.getState(),
-                                               executor.getInstances(),
-                                               executor.getTasks(),
-                                               executor.getServiceInstances(),
-                                               executor.getTags(),
-                                               ExecutorState.BLACKLISTED,
-                                               executor.getMetadata()
-                                              ))));
+        toBlacklist.forEach(db::markBlacklisted);
         // Ensure the assertions are triggered
         CommonTestUtils.waitUntil(() -> changesReceived.get() == (currValue.get() + 5));
         db.onTopologyChange().disconnect(testHandler);
@@ -343,22 +399,14 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         currValue.set(changesReceived.get());
         db.onTopologyChange().connect(testHandler, changes -> {
             changesReceived.incrementAndGet();
-            assertTrue(blackListedNodeIds.containsAll(changes.addedExecutors()));
+            assertTrue(toBlacklist.containsAll(changes.addedExecutors()));
             assertEquals(0, changes.removedExecutors().size());
         });
-        toBlacklist.forEach(executor -> db.update(List.of(ExecutorNodeData.from(executor,
-                                               executor.getState(),
-                                               executor.getInstances(),
-                                               executor.getTasks(),
-                                               executor.getServiceInstances(),
-                                               executor.getTags(),
-                                               ExecutorState.ACTIVE,
-                                               executor.getMetadata()
-                                              ))));
+        toBlacklist.forEach(db::unmarkBlacklisted);
         // Ensure the assertions are triggered
         CommonTestUtils.waitUntil(() -> changesReceived.get() == (currValue.get() + 5));
         db.onTopologyChange().disconnect(testHandler);
-        assertEquals(Sets.union(blackListedNodeIds, toRemain), db.currentSnapshot(true)
+        assertEquals(Sets.union(toBlacklist, toRemain), db.currentSnapshot(true)
                 .stream()
                 .map(ExecutorHostInfo::getExecutorId)
                 .collect(Collectors.toUnmodifiableSet()));
@@ -367,10 +415,10 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         currValue.set(changesReceived.get());
         db.onTopologyChange().connect(testHandler, changes -> {
             changesReceived.addAndGet(changes.removedExecutors().size());
-            assertTrue(blackListedNodeIds.containsAll(changes.removedExecutors()));
+            assertTrue(toBlacklist.containsAll(changes.removedExecutors()));
             assertEquals(0, changes.addedExecutors().size());
         });
-        db.remove(blackListedNodeIds);
+        db.remove(toBlacklist);
         // Ensure the assertions are triggered
         CommonTestUtils.waitUntil(() -> changesReceived.get() == (currValue.get() + 5));
         db.onTopologyChange().disconnect(testHandler);

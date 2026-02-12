@@ -27,12 +27,15 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.EXECUTOR_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,7 +61,8 @@ class MessagingTest {
                                                               new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                                                            new AvailableCPU(Map.of(), Map.of()),
                                                                                            new AvailableMemory(Map.of(), Map.of()),
-                                                                                           new PhysicalLayout(Map.of(), Map.of())),
+                                                                                           new AvailableGPU(List.of(), List.of()),
+                                                                                           new PhysicalLayout(Map.of(), Map.of(), Set.of())),
                                                               null));
         assertEquals(MessageDeliveryStatus.ACCEPTED, res.getStatus());
     }

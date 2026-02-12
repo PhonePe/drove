@@ -23,4 +23,6 @@ public interface AvailableResourceVisitor<T> {
     T visit(AvailableCPU cpu);
 
     T visit(AvailableMemory memory);
+
+    T visit(AvailableGPU gpu);
 }

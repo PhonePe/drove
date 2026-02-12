@@ -58,6 +58,7 @@ public class ResourceConfig {
     @Builder.Default
     private boolean enableNvidiaGpu = false;
 
+    private NvidiaGPULoaderConfig nvidiaGPULoaderConfig;
     @Builder.Default
     private Set<String> tags = Collections.emptySet();
 

@@ -36,6 +36,7 @@
                                 <th>Ports</th>
                                 <th>Cores</th>
                                 <th>Memory</th>
+                                <th>Extras</th>
                                 <th>State</th>
                                 <th>Running For</th>
                                 <th>Last Updated</th>
@@ -64,6 +65,7 @@
                                 <th>Ports</th>
                                 <th>Cores</th>
                                 <th>Memory</th>
+                                <th>Extras</th>
                                 <th>State</th>
                                 <th>Lifetime</th>
                                 <th>Created</th>
@@ -162,6 +164,9 @@
                 if(r.type === `MEMORY`) {
                     info.usedMemory = Object.values(r.memoryInMB).reduce((s,m) => s + m, 0);
                 }
+                if(r.type === `GPU`) {
+                    info.extras = "GPU: " + Object.values(r.gpuIds).length;
+                }
             });
         });
         return res.data;
@@ -193,6 +198,7 @@
             { data: `ports` },
             { data: `usedCores` },
             { data: `usedMemory`, render: tableBytesText },
+            { data: `extras` },
             { data: `state`, render: tableInstanceStateText },
             { data: 'created', render: tableCreatedAgeText },
             { data: 'updated', render: tableUpdatedAgeText },
@@ -225,6 +231,7 @@
             { data: `ports` },
             { data: `usedCores` },
             { data: `usedMemory`, render: tableBytesText },
+            { data: `extras`},
             { data: `state`, render: tableInstanceStateText },
             { data: `created`, render: lifetime },
             { data: `created`, render: tableDateText },

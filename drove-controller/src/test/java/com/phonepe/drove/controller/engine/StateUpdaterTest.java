@@ -16,11 +16,8 @@
 
 package com.phonepe.drove.controller.engine;
 
-import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -30,6 +27,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -38,10 +36,7 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
@@ -55,9 +50,6 @@ import static org.mockito.Mockito.*;
  */
 class StateUpdaterTest {
 
-    private static final ControllerOptions CONTROLLER_OPTIONS = ControllerOptions.DEFAULT
-        .withDataUpdateParallelism(1);
-
     @Test
     @SuppressWarnings("unchecked")
     void testUpdater() {
@@ -65,7 +57,6 @@ class StateUpdaterTest {
         val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
         val lsDB = mock(LocalServiceStateDB.class);
-        val nds = mock(NodeDataStore.class);
         val appSpec = appSpec(1);
         val taskSpec = taskSpec(1);
         val serviceSpec = localServiceSpec(1);
@@ -99,19 +90,11 @@ class StateUpdaterTest {
             return true;
         }).when(lsDB).updateInstanceState(anyString(), anyString(), any(LocalServiceInstanceInfo.class));
         val droveEventBus = mock(DroveEventBus.class);
-        try(val su = new StateUpdater(cDB,
-                                      taskDB,
-                                      iiDB,
-                                      lsDB,
-                                      nds,
-                                      droveEventBus,
-                                      CONTROLLER_OPTIONS,
-                                      SharedMetricRegistries.getOrCreate("test"))) {
-            su.bulkUpdateClusterResources(nodes);
-            su.bulkUpdateClusterResources(List.of());
-            CommonTestUtils.waitUntil(() -> counter.get() == 3);
-            assertEquals(3, counter.get());
-        }
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, droveEventBus);
+        su.updateClusterResources(nodes);
+        su.updateClusterResources(List.of());
+        CommonTestUtils.waitUntil(() -> counter.get() == 3);
+        assertEquals(3, counter.get());
     }
 
     @Test
@@ -120,12 +103,18 @@ class StateUpdaterTest {
         val taskDB = mock(TaskDB.class);
         val lsDB = mock(LocalServiceStateDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
-        val nds = mock(NodeDataStore.class);
 
         val spec = appSpec(1);
         val taskSpec = taskSpec(1);
+        val serviceSpec = localServiceSpec(1);
         val instance = generateInstanceInfo(deployableObjectId(spec), spec, 0);
         val taskInstance = generateTaskInfo(taskSpec, 0);
+        val serviceInstance = generateLocalServiceInstanceInfo(deployableObjectId(serviceSpec),
+                                                               serviceSpec,
+                                                               0,
+                                                               LocalServiceInstanceState.HEALTHY,
+                                                               new Date(),
+                                                               "");
         val executor = ControllerTestUtils.executorHost(8080, List.of(instance), List.of(taskInstance), List.of());
 
         doReturn(Optional.of(executor))
@@ -143,18 +132,10 @@ class StateUpdaterTest {
         }).when(iiDB).deleteInstanceState(anyString(), anyString());
         val droveEventBus = mock(DroveEventBus.class);
 
-        try(val su = new StateUpdater(cDB,
-                                       taskDB,
-                                       iiDB,
-                                       lsDB,
-                                       nds,
-                                       droveEventBus,
-                                       CONTROLLER_OPTIONS,
-                                       SharedMetricRegistries.getOrCreate("test"))) {
-            su.remove(List.of(executor.getExecutorId()));
-            CommonTestUtils.waitUntil(() -> count.get() == 2);
-            assertEquals(2, count.get());
-        }
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, droveEventBus);
+        su.remove(List.of(executor.getExecutorId()));
+        CommonTestUtils.waitUntil(() -> count.get() == 2);
+        assertEquals(2, count.get());
     }
 
     @Test
@@ -163,11 +144,11 @@ class StateUpdaterTest {
         val lsDB = mock(LocalServiceStateDB.class);
         val taskDB = mock(TaskDB.class);
         val iiDB = mock(ApplicationInstanceInfoDB.class);
-        val nds = mock(NodeDataStore.class);
 
         val appSpec = appSpec(1);
         val appId = deployableObjectId(appSpec);
         val taskSpec = taskSpec();
+        val taskId = deployableObjectId(taskSpec);
         val serviceSpec = localServiceSpec();
         val serviceId = deployableObjectId(serviceSpec);
 
@@ -204,25 +185,16 @@ class StateUpdaterTest {
         }).when(lsDB).updateInstanceState(anyString(), anyString(), any(LocalServiceInstanceInfo.class));
         val droveEventBus = mock(DroveEventBus.class);
 
-        try(val su = new StateUpdater(cDB,
-                                       taskDB,
-                                       iiDB,
-                                       lsDB,
-                                       nds,
-                                       droveEventBus,
-                                       CONTROLLER_OPTIONS,
-                                       SharedMetricRegistries.getOrCreate("test"))) {
-
-            val resourceSnapshot = new ExecutorResourceSnapshot(EXECUTOR_ID,
-                                                              new AvailableCPU(Map.of(), Map.of()),
-                                                              new AvailableMemory(Map.of(), Map.of()),
-                                                              new PhysicalLayout(Map.of(), Map.of()));
-            su.updateSingle(resourceSnapshot, appInstance);
-            su.updateSingle(resourceSnapshot, taskInstance);
-            su.updateSingle(resourceSnapshot, serviceInstance);
-            CommonTestUtils.waitUntil(() -> counter.get() == 6);
-            assertEquals(6, counter.get());
-        }
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, droveEventBus);
+        val resourceSnapshot = new ExecutorResourceSnapshot(EXECUTOR_ID,
+                                                          new AvailableCPU(Map.of(), Map.of()),
+                                                          new AvailableMemory(Map.of(), Map.of()),
+                                                          new AvailableGPU(List.of(), List.of()),
+                                                          new PhysicalLayout(Map.of(), Map.of(), Set.of()));
+        su.updateSingle(resourceSnapshot, appInstance);
+        su.updateSingle(resourceSnapshot, taskInstance);
+        su.updateSingle(resourceSnapshot, serviceInstance);
+        CommonTestUtils.waitUntil(() -> counter.get() == 6);
+        assertEquals(6, counter.get());
     }
-
 }

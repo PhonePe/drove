@@ -33,7 +33,9 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -56,10 +58,11 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         nds.onNodeDataUpdate().connect(nodeData -> updateCounter.incrementAndGet());
         //when(nds.updateNodeData(any(NodeData.class));
         val rdb = new ResourceManager();
-        rdb.populateResources(Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 20)
-                                                                             .boxed()
-                                                                             .collect(Collectors.toUnmodifiableSet()),
-                                                                     512_000_000)));
+        Map<Integer, ResourceManager.NodeInfo> computeResources = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 20)
+                        .boxed()
+                        .collect(Collectors.toUnmodifiableSet()),
+                512_000_000));
+        rdb.populateResources(new ResourceManager.ExecutorResources(computeResources, Set.of()));
         val blm = new ExecutorStateManager(null, null);
         final var injector = Guice.createInjector();
         val ie = new ApplicationInstanceEngine(eim,
@@ -95,7 +98,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                                                                                    .boxed()
                                                                                                                    .collect(
                                                                                                                            Collectors.toUnmodifiableSet()),
-                                                                                                           128_000_000)))));
+                                                                                                           128_000_000)), List.of())));
         {
             waitUntil(() -> updateCounter.get() == 2);
             val nodes = nds.nodes(NodeType.EXECUTOR);

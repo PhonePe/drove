@@ -21,6 +21,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -32,35 +33,35 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  */
 class ResourceManagerTest extends AbstractTestBase {
-
+    //TODO(gabber12): Add tests for gpus
     @Test
     void testBasicResourceMgmt() {
         val rm = new ResourceManager();
-        rm.populateResources(Map.of(
+        rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
-                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)));
+                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
         testZeroState(rm.currentState());
 
         assertTrue(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)))));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)))));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)))));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail-2", ResourceManager.ResourceLockType.HARD,
-                        Map.of(2, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)))));
+                        Map.of(2, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail-3", ResourceManager.ResourceLockType.HARD,
-                        Map.of(0, ResourceManager.NodeInfo.from(set(3, 33), 2 ^ 10)))));
+                        Map.of(0, ResourceManager.NodeInfo.from(set(3, 33), 2 ^ 10)), List.of())));
         testAllocatedState(rm.currentState());
         assertTrue(rm.reclaimResources("test-usage"));
         assertFalse(rm.reclaimResources("test-usage-fail"));
@@ -71,40 +72,40 @@ class ResourceManagerTest extends AbstractTestBase {
     @Test
     void testSignal() {
         val rm = new ResourceManager();
-        rm.populateResources(Map.of(
+        rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
-                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)));
+                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
         testZeroState(rm.currentState());
         rm.onResourceUpdated().connect(this::testAllocatedState);
         assertTrue(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)))));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
     }
 
     @Test
     void testExhaustionReclaim() {
         val rm = new ResourceManager();
-        rm.populateResources(Map.of(
+        rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
-                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)));
+                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
         testZeroState(rm.currentState());
         IntStream.range(0, 20)
                 .forEach(i -> assertTrue(rm.lockResources(
                         new ResourceManager.ResourceUsage(
                                 "test-usage-" + i, ResourceManager.ResourceLockType.HARD,
-                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20))))));
+                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20)), List.of()))));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail", ResourceManager.ResourceLockType.HARD,
-                        Map.of(0, ResourceManager.NodeInfo.from(set(2,9), (2 ^ 16) / 20)))));
+                        Map.of(0, ResourceManager.NodeInfo.from(set(2,9), (2 ^ 16) / 20)), List.of())));
         IntStream.range(5, 10)
                 .forEach(i -> rm.reclaimResources("test-usage-" + i));
         IntStream.range(5, 10)
                 .forEach(i -> assertTrue(rm.lockResources(
                         new ResourceManager.ResourceUsage(
                                 "test-usage-at2-" + i, ResourceManager.ResourceLockType.HARD,
-                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20))))));
+                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20)), List.of()))));
 
 
     }
@@ -112,15 +113,15 @@ class ResourceManagerTest extends AbstractTestBase {
     @Test
     void testMultiNodeAllocation() {
         val rm = new ResourceManager();
-        rm.populateResources(Map.of(
+        rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
-                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)));
+                1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
         testZeroState(rm.currentState());
         assertTrue(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
                         Map.of(0, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10),
-                               1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)))));
+                               1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
         val info = rm.currentState();
         val freeCores = info.getCpu().getFreeCores();
         assertFalse(freeCores.isEmpty());

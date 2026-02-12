@@ -22,6 +22,7 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
@@ -78,8 +79,9 @@ public abstract class ClusterResourcesDB {
             Set<ExecutorState> allowedExecutorState, Predicate<AllocatedExecutorNode> filter);
 
     public abstract void deselectNode(String executorId,
-                                             CPUAllocation cpuAllocation,
-                                             MemoryAllocation memoryAllocation) ;
+                                      CPUAllocation cpuAllocation,
+                                      MemoryAllocation memoryAllocation,
+                                      GPUAllocation gpuAllocation) ;
 
     public abstract boolean isBlacklisted(String executorId);
 

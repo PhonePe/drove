@@ -23,37 +23,27 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 import com.google.common.base.Strings;
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.name.Names;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
-import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.common.zookeeper.ZkConfig;
-import com.phonepe.drove.executor.discovery.ControllerConfig;
-import com.phonepe.drove.executor.discovery.RemoteLeadershipObserver;
-import com.phonepe.drove.executor.discovery.RemoteNodeDataStore;
-import com.phonepe.drove.executor.discovery.RemoteUpdateMode;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
-import com.phonepe.drove.executor.engine.*;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
+import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaActivationResourceLoader;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaCtlBasedResourceLoader;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningResourceLoader;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
-import com.phonepe.drove.executor.utils.ExecutorUtils;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.*;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.AccessLevel;
@@ -63,7 +53,6 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.net.URI;
@@ -78,14 +67,17 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        bind(NodeDataStore.class).to(ZkNodeDataStore.class);
         bind(new TypeLiteral<MessageSender<ControllerMessageType, ControllerMessage>>() {
         })
                 .to(RemoteControllerMessageSender.class);
-        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER))
-                .to(NumaCtlBasedResourceLoader.class);
-        bind(ResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER))
-                .to(OverProvisioningResourceLoader.class);
-        bind(ResourceLoader.class).to(NumaActivationResourceLoader.class);
+        bind(NumaResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.NUMA_CTL_BASED_RESOURCE_LOADER))
+                .to(NumaCtlBasedNumaResourceLoader.class);
+        bind(NumaResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER))
+                .to(OverProvisioningNumaResourceLoader.class);
+        bind(NumaResourceLoader.class).to(NumaActivationNumaResourceLoader.class);
+        bind(GPUResourceLoader.class).to(NVIDIASMIGPUResourceLoader.class);
+        bind(ExecutorResourceLoader.class).to(ExecutorResourceLoaderImpl.class);
     }
 
 
@@ -168,33 +160,14 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    @Nullable
-    public ZkConfig zkConfig(
-            final AppConfig appConfig,
-            RemoteUpdateMode remoteUpdateMode) {
-        val zkConfig = appConfig.getZookeeper();
-        if (remoteUpdateMode.equals(RemoteUpdateMode.STORE)) {
-            if (null == zkConfig) {
-                throw new IllegalArgumentException(
-                        "Zookeeper configuration is mandatory if update mode is set to 'STORE'");
-            }
-        }
-        else {
-            log.warn("Ignoring zookeeper configuration as update mode is set to " + remoteUpdateMode.name());
-            return null;
-        }
-        return zkConfig;
+    public ZkConfig zkConfig(final AppConfig appConfig) {
+        return appConfig.getZookeeper();
     }
 
     @Provides
     @Singleton
-    @Nullable
-    public CuratorFramework curator(@Nullable ZkConfig zkConfig) {
-        if (null == zkConfig) {
-            log.info("No zookeeper config provided. Curator will not be created.");
-            return null;
-        }
-        return CommonUtils.buildCurator(zkConfig);
+    public CuratorFramework curator(ZkConfig config) {
+        return CommonUtils.buildCurator(config);
     }
 
     @Provides
@@ -204,8 +177,7 @@ public class ExecutorCoreModule extends AbstractModule {
     }
 
     @Provides
-    @Singleton
-    MetadataConfig metadataConfig(final ResourceConfig resourceConfig) {
+    @Singleton MetadataConfig metadataConfig(final ResourceConfig resourceConfig) {
         return Objects.requireNonNullElse(resourceConfig.getMetadata(), MetadataConfig.DEFAULT);
     }
 
@@ -223,8 +195,8 @@ public class ExecutorCoreModule extends AbstractModule {
                                            ExecutorOptions.DEFAULT_CONTAINER_COMMAND_TIMEOUT)
                         .toMilliseconds());
         val dockerSocketPath = Strings.isNullOrEmpty(executorOptions.getDockerSocketPath())
-                               ? ExecutorOptions.DEFAULT_DOCKER_SOCKET_PATH
-                               : executorOptions.getDockerSocketPath();
+                         ? ExecutorOptions.DEFAULT_DOCKER_SOCKET_PATH
+                         : executorOptions.getDockerSocketPath();
         log.info("Using docker path: {}", dockerSocketPath);
         return DockerClientImpl.getInstance(
                 DefaultDockerClientConfig.createDefaultConfigBuilder()
@@ -259,77 +231,6 @@ public class ExecutorCoreModule extends AbstractModule {
     public DockerAuthConfig dockerAuthConfig(final AppConfig config) {
         return Objects.requireNonNullElse(config.getDockerAuth(), DockerAuthConfig.DEFAULT);
 
-    }
-
-    @Provides
-    public RemoteUpdateMode updateMode(final AppConfig appConfig) {
-        return Objects.requireNonNullElse(
-                Objects.requireNonNullElse(appConfig.getOptions(), ExecutorOptions.DEFAULT).getRemoteUpdateMode(),
-                ExecutorOptions.DEFAULT_UPDATE_MODE);
-    }
-
-    @Provides
-    @Singleton
-    public NodeDataStore nodeDataStore(
-            final RemoteUpdateMode updateMode,
-            @Nullable final CuratorFramework curatorFramework,
-            final ObjectMapper mapper,
-            final ExecutorCommunicator executorCommunicator) {
-        return switch (updateMode) {
-            case STORE -> new ZkNodeDataStore(curatorFramework, mapper);
-            case RPC -> new RemoteNodeDataStore(executorCommunicator);
-        };
-    }
-
-    @Provides
-    @Singleton
-    public LeadershipObserver leadershipObserver(
-            final RemoteUpdateMode updateMode,
-            final NodeDataStore nodeDataStore,
-            @Nullable final ControllerConfig controllerConfig,
-            @Named("ControllerHttpClient") final CloseableHttpClient httpClient) {
-        return switch (updateMode) {
-            case STORE -> new ZkLeadershipObserver(nodeDataStore);
-            case RPC -> new RemoteLeadershipObserver(Objects.requireNonNull(controllerConfig),
-                                                     httpClient,
-                                                     Objects.requireNonNullElse(controllerConfig.getLeadershipCheckInterval(),
-                                                                                ControllerConfig.DEFAULT_CHECK_INTERVAL)
-                                                             .toJavaDuration());
-        };
-    }
-
-    @Provides
-    @Singleton
-    @Nullable
-    public ControllerConfig controllerConfig(
-            final RemoteUpdateMode updateMode,
-            final AppConfig appConfig) {
-        val controllerConfig = appConfig.getControllers();
-        if (updateMode.equals(RemoteUpdateMode.RPC)) {
-            if (null == controllerConfig) {
-                throw new IllegalArgumentException("Controller configuration is mandatory if update mode is set to " +
-                                                           "'RPC");
-            }
-        }
-        else {
-            log.warn("Ignoring controller config as update mode is set to STORE");
-            return null;
-        }
-        return controllerConfig;
-    }
-
-    @Provides
-    @Singleton
-    @Named("ControllerHttpClient")
-    public CloseableHttpClient provideControllerHttpClient(
-            ClusterAuthenticationConfig clusterAuthenticationConfig,
-            ExecutorOptions executorOptions) {
-        return ExecutorUtils.buildControllerClient(
-                clusterAuthenticationConfig,
-                Objects.requireNonNullElse(executorOptions.getControllerConnectTimeout(),
-                                           ExecutorOptions.DEFAULT_CONTROLLER_CONNECT_TIMEOUT).toJavaDuration(),
-                Objects.requireNonNullElse(executorOptions.getControllerResponseTimeout(),
-                                           ExecutorOptions.DEFAULT_CONTROLLER_RESPONSE_TIMEOUT).toJavaDuration());
     }
 
     @Provides

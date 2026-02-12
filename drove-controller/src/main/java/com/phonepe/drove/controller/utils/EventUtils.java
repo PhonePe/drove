@@ -26,6 +26,7 @@ import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.events.MapBuilder;
@@ -88,6 +89,12 @@ public class EventUtils {
                         metadata.put(AppEventDataTag.MEMORY, memoryRequirement.getSizeInMB());
                         return null;
                     }
+
+                    @Override
+                    public Void visit(GPURequirement gpuRequirement) {
+                        metadata.put(AppEventDataTag.GPU_COUNT, gpuRequirement.getCount());
+                        return null;
+                    }
                 }));
         Optional.ofNullable(spec.getExposedPorts())
                 .ifPresent(ports -> metadata.put(AppEventDataTag.PORTS, Joiner.on(",")
@@ -135,6 +142,12 @@ public class EventUtils {
                     @Override
                     public Void visit(MemoryRequirement memoryRequirement) {
                         metadata.put(LocalServiceEventDataTag.MEMORY, memoryRequirement.getSizeInMB());
+                        return null;
+                    }
+
+                    @Override
+                    public Void visit(GPURequirement gpuRequirement) {
+                        //TODO(gabber12): GPU local services if needed can also be added here
                         return null;
                     }
                 }));

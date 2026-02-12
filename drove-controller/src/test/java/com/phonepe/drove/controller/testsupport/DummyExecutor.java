@@ -30,11 +30,9 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
+import com.phonepe.drove.models.info.resources.allocation.*;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.*;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
@@ -240,6 +238,11 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                 availableMemory.updateAndGet(v -> v - memory.getMemoryInMB().get(0));
                                 return null;
                             }
+
+                            @Override
+                            public Void visit(GPUAllocation gpu) {
+                                return null;
+                            }
                         }));
                 updateSnapshot();
                 instanceInfoDB.updateInstanceState(appId, instanceId, instanceInfo);
@@ -326,6 +329,11 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                 availableMemory.updateAndGet(v -> v - memory.getMemoryInMB().get(0));
                                 return null;
                             }
+
+                            @Override
+                            public Void visit(GPUAllocation gpu) {
+                                return null;
+                            }
                         }));
                 updateSnapshot();
                 localServiceStateDB.updateInstanceState(serviceId, instanceId, instanceInfo);
@@ -360,6 +368,11 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                 availableMemory.updateAndGet(v -> v + memory.getMemoryInMB().get(0));
                 return null;
             }
+
+            @Override
+            public Void visit(GPUAllocation gpu) {
+                return null;
+            }
         }));
     }
 
@@ -371,6 +384,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                                        availableMemory.get()),
                                                                                 Map.of(1,
                                                                                        TOTAL_MEMORY - availableMemory.get())),
+                                                            new AvailableGPU(List.of(), List.of()),
                                                             new PhysicalLayout(Map.of(0,
                                                                                       availableCPUs,
                                                                                       1,
@@ -378,7 +392,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                                Map.of(0,
                                                                                       TOTAL_MEMORY,
                                                                                       1,
-                                                                                      TOTAL_MEMORY)));
+                                                                                      TOTAL_MEMORY), Set.of()));
         clusterResourcesDB.update(List.of(new ExecutorNodeData("localhost",
                                                                8080,
                                                                NodeTransportType.HTTP,

@@ -23,4 +23,6 @@ public interface ResourceRequirementVisitor<T> {
     T visit(CPURequirement cpuRequirement);
 
     T visit(MemoryRequirement memoryRequirement);
+
+    T visit(GPURequirement gpuRequirement);
 }

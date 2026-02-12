@@ -17,7 +17,8 @@
 package com.phonepe.drove.executor.managed;
 
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ExecutorResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaResourceLoader;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -32,22 +33,22 @@ import javax.inject.Singleton;
 @Order(0)
 public class ResourcePopulator implements Managed {
     private final ResourceManager resourceDB;
-    private final ResourceLoader resourceLoader;
+    private final ExecutorResourceLoader executorResourceLoader;
 
     @Inject
     public ResourcePopulator(
             ResourceManager resourceDB,
-            ResourceLoader resourceLoader) {
+            ExecutorResourceLoader numaResourceLoader) {
         this.resourceDB = resourceDB;
-        this.resourceLoader = resourceLoader;
+        this.executorResourceLoader = numaResourceLoader;
     }
 
     @Override
     public void start() throws Exception {
-        val resources = resourceLoader.loadSystemResources();
-        if (!resources.isEmpty()) {
+        val resources = executorResourceLoader.loadResources();
+        if (!resources.getNumaNodeToResource().isEmpty()) {
             log.info("Found resources:");
-            resources.forEach((id, info) -> {
+            resources.getNumaNodeToResource().forEach((id, info) -> {
                 log.info("    Node {} : Physical Cores {} Memory (MB): {}",
                          id,
                          info.getPhysicalCores().stream().sorted().toList(),

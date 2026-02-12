@@ -47,7 +47,9 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.statemachine.ExecutorActionBase;
 import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
+import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
@@ -289,13 +291,14 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
 
 
     private boolean lockRequiredResources(DeploymentUnitSpec spec) {
-        val resourceUsage = new HashMap<Integer, ResourceManager.NodeInfo>();
+        val computeResourceUsage = new HashMap<Integer, ResourceManager.NodeInfo>();
+        val gpuResponse = new ArrayList<String>();
         spec.getResources()
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                     @Override
                     public Void visit(CPUAllocation cpu) {
                         cpu.getCores()
-                                .forEach((node, allocCpus) -> resourceUsage.compute(node, (nodeId, nodeInfo) -> {
+                                .forEach((node, allocCpus) -> computeResourceUsage.compute(node, (nodeId, nodeInfo) -> {
                                     val info = nodeInfo(nodeInfo);
                                     info.setAvailableCores(allocCpus);
                                     return info;
@@ -306,22 +309,29 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                     @Override
                     public Void visit(MemoryAllocation memory) {
                         memory.getMemoryInMB()
-                                .forEach((node, allocMem) -> resourceUsage.compute(node, (nodeId, nodeInfo) -> {
+                                .forEach((node, allocMem) -> computeResourceUsage.compute(node, (nodeId, nodeInfo) -> {
                                     val info = nodeInfo(nodeInfo);
                                     info.setMemoryInMB(allocMem);
                                     return info;
                                 }));
                         return null;
                     }
+
+                    @Override
+                    public Void visit(GPUAllocation gpu) {
+                        gpu.getGpuIds().forEach(id -> gpuResponse.add(id));
+                        return null;
+
+                    }
                 }));
         return resourceDB.lockResources(new ResourceManager.ResourceUsage(instanceId(spec),
                                                                           ResourceManager.ResourceLockType.HARD,
-                                                                          resourceUsage));
+                                                                          computeResourceUsage, gpuResponse));
     }
 
     private ResourceManager.NodeInfo nodeInfo(ResourceManager.NodeInfo nodeInfo) {
         return Objects.requireNonNullElse(nodeInfo,
-                                          new ResourceManager.NodeInfo(Set.of(), Map.of(), 0, new HashSet<>(), 0L));
+                                          new ResourceManager.NodeInfo(Set.of(), Map.of(),  0, new HashSet<>(), 0L));
     }
 
     @MonitoredFunction
