@@ -1,17 +1,17 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.executor.discovery;
@@ -48,10 +48,10 @@ public class ClusterClient {
 
     @Inject
     public ClusterClient(
-            ExecutorIdManager executorIdManager,
-            ManagedLeadershipObserver leadershipObserver,
-            ObjectMapper mapper,
-            @Named("ControllerHttpClient") CloseableHttpClient httpClient) {
+                         ExecutorIdManager executorIdManager,
+                         ManagedLeadershipObserver leadershipObserver,
+                         ObjectMapper mapper,
+                         @Named("ControllerHttpClient") CloseableHttpClient httpClient) {
         this.executorIdManager = executorIdManager;
         this.leadershipObserver = leadershipObserver;
         this.mapper = mapper;
@@ -66,6 +66,7 @@ public class ClusterClient {
         return readSnapshot("current");
     }
 
+    @SuppressWarnings("java:S1874") // False positive
     public LocalServiceInstanceResources reservedResources() throws ControllerCommunicationError {
         val leader = leadershipObserver.leader().orElse(null);
         if (null == leader) {
@@ -74,22 +75,26 @@ public class ClusterClient {
         try {
             val uri = String.format("%s://%s:%d/apis/v1/internal/cluster/resources/reserved",
                                     leader.getTransportType() == NodeTransportType.HTTP
-                                    ? "http"
-                                    : "https",
+                                            ? "http"
+                                            : "https",
                                     leader.getHostname(),
                                     leader.getPort());
             val request = new HttpGet(uri);
             val response = httpClient.execute(
-                    request,
-                    (HttpClientResponseHandler<ApiResponse<LocalServiceInstanceResources>>) callResponse -> {
-                        if (callResponse.getCode() == 200) {
-                            return mapper.readValue(EntityUtils.toByteArray(callResponse.getEntity()),
-                                                    new TypeReference<>() {
-                                                    });
-                        }
-                        throw ControllerCommunicationError.commError(
-                                callResponse.getCode(), EntityUtils.toString(callResponse.getEntity()));
-                    });
+                                              request,
+                                              (HttpClientResponseHandler<ApiResponse<LocalServiceInstanceResources>>) callResponse -> {
+                                                  if (callResponse.getCode() == 200) {
+                                                      return mapper.readValue(EntityUtils.toByteArray(callResponse
+                                                              .getEntity()),
+                                                                              new TypeReference<>() {
+                                                                              });
+                                                  }
+                                                  throw ControllerCommunicationError.commError(
+                                                                                               callResponse.getCode(),
+                                                                                               EntityUtils.toString(
+                                                                                                                    callResponse
+                                                                                                                            .getEntity()));
+                                              });
             if (null == response.getData()) {
                 return LocalServiceInstanceResources.EMPTY;
             }
@@ -103,6 +108,7 @@ public class ClusterClient {
         }
     }
 
+    @SuppressWarnings("java:S1874") // False positive
     private KnownInstancesData readSnapshot(String from) throws ControllerCommunicationError {
         val executorId = executorIdManager.executorId().orElse(null);
         if (null == executorId) {
@@ -115,26 +121,27 @@ public class ClusterClient {
             return KnownInstancesData.EMPTY;
         }
         try {
-            val uri =
-                    String.format("%s://%s:%d/apis/v1/internal/cluster/executors/" + executorId + "/instances/" + from,
-                                  leader.getTransportType() == NodeTransportType.HTTP
-                                  ? "http"
-                                  : "https",
-                                  leader.getHostname(),
-                                  leader.getPort());
+            val uri = String.format("%s://%s:%d/apis/v1/internal/cluster/executors/" + executorId + "/instances/"
+                    + from,
+                                    leader.getTransportType() == NodeTransportType.HTTP
+                                            ? "http"
+                                            : "https",
+                                    leader.getHostname(),
+                                    leader.getPort());
             val request = new HttpGet(uri);
             val response = httpClient.execute(request,
                                               (HttpClientResponseHandler<ApiResponse<KnownInstancesData>>) callResponse -> {
                                                   if (callResponse.getCode() == 200) {
-                                                      return mapper.readValue(EntityUtils.toByteArray(callResponse.getEntity()),
+                                                      return mapper.readValue(EntityUtils.toByteArray(callResponse
+                                                              .getEntity()),
                                                                               new TypeReference<>() {
                                                                               });
                                                   }
                                                   log.error(
-                                                          "Error fetching last known status from leader. Received" +
-                                                                  " response: [{}] {}",
-                                                          callResponse.getCode(),
-                                                          EntityUtils.toString(callResponse.getEntity()));
+                                                            "Error fetching last known status from leader. Received" +
+                                                                    " response: [{}] {}",
+                                                            callResponse.getCode(),
+                                                            EntityUtils.toString(callResponse.getEntity()));
                                                   return null;
                                               });
             if (null == response || null == response.getData()) {
