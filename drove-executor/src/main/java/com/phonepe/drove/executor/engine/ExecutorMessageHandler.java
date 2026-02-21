@@ -21,6 +21,8 @@ import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -56,6 +58,10 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
         if (applicationInstanceEngine.exists(instanceId)) {
             return new MessageResponse(startInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
+        if (!ensureRequiredState(ExecutorState.ACTIVE)) {
+            log.error("Cannot start application instance {} since executor is not in ACTIVE state", instanceId);
+            return new MessageResponse(startInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
         try {
             log.info("Starting application instance {}", instanceId);
             return new MessageResponse(startInstanceMessage.getHeader(),
@@ -89,6 +95,10 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     public MessageResponse visit(StartTaskMessage startTaskMessage) {
         val instanceId = CommonUtils.instanceId(startTaskMessage.getSpec());
         if (applicationInstanceEngine.exists(instanceId)) {
+            return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
+        if (!ensureRequiredState(ExecutorState.ACTIVE)) {
+            log.error("Cannot start task {} since executor is not in ACTIVE state", instanceId);
             return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
@@ -148,6 +158,10 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
         if (applicationInstanceEngine.exists(instanceId)) {
             return new MessageResponse(startLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
+        if (!ensureRequiredState(ExecutorState.ACTIVE)) {
+            log.error("Cannot start local service instance {} since executor is not in ACTIVE state");
+            return new MessageResponse(startLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
         try {
             log.info("Starting local service instance {}", instanceId);
             return new MessageResponse(startLocalServiceInstanceMessage.getHeader(),
@@ -175,5 +189,14 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
             log.error("Could not stop local service instance: ", e);
             return new MessageResponse(stopLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
+    }
+
+    private boolean ensureRequiredState(final ExecutorState requiredState) {
+        final val currentState = executorStateManager.currentState();
+        if (currentState != requiredState) {
+            log.warn("Current state is {}, required state is {}", currentState, requiredState);
+            return false;
+        }
+        return true;
     }
 }

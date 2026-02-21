@@ -25,6 +25,7 @@ import com.phonepe.drove.common.model.executor.StopInstanceMessage;
 import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.engine.ExecutorMessageHandler;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.SneakyThrows;
@@ -38,6 +39,7 @@ import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
 import static com.phonepe.drove.models.instance.InstanceState.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -59,7 +61,9 @@ class ContainerStatsObserverTest extends AbstractExecutorEngineEnabledTestBase {
         val startInstanceMessage = new StartInstanceMessage(MessageHeader.controllerRequest(),
                                                             executorAddress,
                                                             spec);
-        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, localServiceInstanceEngine, null);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
+        val messageHandler = new ExecutorMessageHandler(applicationInstanceEngine, taskInstanceEngine, localServiceInstanceEngine, executorStateManager);
         val startResponse = startInstanceMessage.accept(messageHandler);
         try {
             assertEquals(MessageDeliveryStatus.ACCEPTED, startResponse.getStatus());

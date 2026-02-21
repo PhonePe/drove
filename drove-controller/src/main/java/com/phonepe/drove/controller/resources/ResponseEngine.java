@@ -576,7 +576,7 @@ public class ResponseEngine {
                                                                                          .getTransportType())));
                         if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
                             clusterResourcesDB.markBlacklisted(executorId);
-                            log.info("Executors {} have been marked as blacklisted. Moving running instances",
+                            log.info("Executor {} has been marked as blacklisted. Moving running instances",
                                      executorId);
                             eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
                             return true;

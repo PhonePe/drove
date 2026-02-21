@@ -17,16 +17,28 @@
 package com.phonepe.drove.executor.engine;
 
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
+import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
+import com.phonepe.drove.common.model.executor.StartLocalServiceInstanceMessage;
+import com.phonepe.drove.common.model.executor.StartTaskMessage;
 import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopLocalServiceInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopTaskMessage;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static com.phonepe.drove.common.CommonTestUtils.executor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,167 +46,175 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import java.util.stream.Stream;
+
 /**
  *
  */
 class ExecutorMessageHandlerTest {
 
-    @Test
-    void testCreateInstanceMessage() {
+    @ParameterizedTest
+    @MethodSource("startMessageProvider")
+    void testCreateInstanceMessage(final ExecutorMessage message) {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
         when(applicationEngine.exists(anyString())).thenReturn(false);
         when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(true);
-        assertEquals(MessageDeliveryStatus.ACCEPTED,
-                     mh.visit(new StartInstanceMessage(MessageHeader.controllerRequest(),
-                                                       executor(),
-                                                       ExecutorTestingUtils.testAppInstanceSpec()))
-                             .getStatus());
+        when(taskEngine.exists(anyString())).thenReturn(false);
+        when(taskEngine.startInstance(any(TaskInstanceSpec.class))).thenReturn(true);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+        when(localserviceInstanceEngine.startInstance(any(LocalServiceInstanceSpec.class))).thenReturn(true);
+        assertEquals(MessageDeliveryStatus.ACCEPTED, message.accept(mh).getStatus());
     }
 
-    @Test
-    void testCreateInstanceMessageExists() {
+    @ParameterizedTest
+    @MethodSource("startMessageProvider")
+    void testCreateInstanceMessageStateFail(final ExecutorMessage message) {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.UNREADY);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
+        when(applicationEngine.exists(anyString())).thenReturn(false);
+        when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(true);
+        when(taskEngine.exists(anyString())).thenReturn(false);
+        when(taskEngine.startInstance(any(TaskInstanceSpec.class))).thenReturn(true);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+        when(localserviceInstanceEngine.startInstance(any(LocalServiceInstanceSpec.class))).thenReturn(true);
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
+    }
 
+    @ParameterizedTest
+    @MethodSource("startMessageProvider")
+    void testCreateInstanceMessageExists(final ExecutorMessage message) {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         when(applicationEngine.exists(anyString())).thenReturn(true);
-        assertEquals(MessageDeliveryStatus.FAILED,
-                     mh.visit(new StartInstanceMessage(MessageHeader.controllerRequest(),
-                                                       executor(),
-                                                       ExecutorTestingUtils.testAppInstanceSpec()))
-                             .getStatus());
-    }
-
-    @Test
-    void testCreateInstanceMessageFail() {
-        val applicationEngine = mock(ApplicationInstanceEngine.class);
-        val taskEngine = mock(TaskInstanceEngine.class);
-        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        when(taskEngine.exists(anyString())).thenReturn(true);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(true);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
 
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("startMessageProvider")
+    void testCreateInstanceMessageFail(final ExecutorMessage message) {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         when(applicationEngine.exists(anyString())).thenReturn(false);
         when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenReturn(false);
-        assertEquals(MessageDeliveryStatus.FAILED,
-                     mh.visit(new StartInstanceMessage(MessageHeader.controllerRequest(),
-                                                       executor(),
-                                                       ExecutorTestingUtils.testAppInstanceSpec()))
-                             .getStatus());
+        when(taskEngine.exists(anyString())).thenReturn(false);
+        when(taskEngine.startInstance(any(TaskInstanceSpec.class))).thenReturn(false);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+        when(localserviceInstanceEngine.startInstance(any(LocalServiceInstanceSpec.class))).thenReturn(false);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                taskEngine,
+                localserviceInstanceEngine,
+                executorStateManager);
+
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
     }
 
-    @Test
-    void testCreateInstanceMessageException() {
+    @ParameterizedTest
+    @MethodSource("startMessageProvider")
+    void testCreateInstanceMessageException(final ExecutorMessage message) {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine,
-                                            taskEngine,
-                                            localserviceInstanceEngine,
-                                            blacklistingManager);
-
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         when(applicationEngine.exists(anyString())).thenReturn(false);
-        when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class))).thenThrow(new IllegalStateException(
-                "Forced failure"));
-        assertEquals(MessageDeliveryStatus.FAILED,
-                     mh.visit(new StartInstanceMessage(MessageHeader.controllerRequest(),
-                                                       executor(),
-                                                       ExecutorTestingUtils.testAppInstanceSpec()))
-                             .getStatus());
+        when(applicationEngine.startInstance(any(ApplicationInstanceSpec.class)))
+            .thenThrow(new IllegalStateException("Forced failure"));
+        when(taskEngine.exists(anyString())).thenReturn(false);
+        when(taskEngine.startInstance(any(TaskInstanceSpec.class)))
+            .thenThrow(new IllegalStateException("Forced failure"));
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+        when(localserviceInstanceEngine.startInstance(any(LocalServiceInstanceSpec.class)))
+            .thenThrow(new IllegalStateException("Forced failure"));
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                taskEngine,
+                localserviceInstanceEngine,
+                executorStateManager);
+
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
     }
 
-    @Test
-    void testStopInstanceMessage() {
+    @ParameterizedTest
+    @MethodSource("stopMessageProvider")
+    void testStopInstanceMessage(final ExecutorMessage message) {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine,
-                                            taskEngine,
-                                            localserviceInstanceEngine,
-                                            blacklistingManager);
-
-        when(applicationEngine.exists(anyString())).thenReturn(true);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         when(applicationEngine.stopInstance(anyString())).thenReturn(true);
-        assertEquals(MessageDeliveryStatus.ACCEPTED,
-                     mh.visit(new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                      executor(),
-                                                      "blah"))
-                             .getStatus());
+        when(taskEngine.stopInstance(anyString())).thenReturn(true);
+        when(localserviceInstanceEngine.stopInstance(anyString())).thenReturn(true);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                taskEngine,
+                localserviceInstanceEngine,
+                executorStateManager);
+
+        assertEquals(MessageDeliveryStatus.ACCEPTED, message.accept(mh).getStatus());
     }
 
-    @Test
-    void testStopInstanceMessageWrongId() {
+    @ParameterizedTest
+    @MethodSource("stopMessageProvider")
+    void testStopMessageWrongFail(final ExecutorMessage message) {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine,
-                                            taskEngine,
-                                            localserviceInstanceEngine,
-                                            blacklistingManager);
-
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         when(applicationEngine.stopInstance(anyString())).thenReturn(false);
-        assertEquals(MessageDeliveryStatus.FAILED,
-                     mh.visit(new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                      executor(),
-                                                      "blah"))
-                             .getStatus());
-    }
-
-    @Test
-    void testStopInstanceMessageFail() {
-        val applicationEngine = mock(ApplicationInstanceEngine.class);
-        val taskEngine = mock(TaskInstanceEngine.class);
-        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        when(taskEngine.stopInstance(anyString())).thenReturn(false);
+        when(localserviceInstanceEngine.stopInstance(anyString())).thenReturn(false);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
-
-        when(applicationEngine.exists(anyString())).thenReturn(true);
-        when(applicationEngine.stopInstance(anyString())).thenReturn(false);
-        assertEquals(MessageDeliveryStatus.FAILED,
-                     mh.visit(new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                      executor(),
-                                                      "blah"))
-                             .getStatus());
+                                            executorStateManager);
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
     }
 
-    @Test
-    void testStopInstanceMessageThrow() {
+    @ParameterizedTest
+    @MethodSource("stopMessageProvider")
+    void testStopInstanceMessageThrow(final ExecutorMessage message) {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
-        val mh = new ExecutorMessageHandler(applicationEngine,
-                                            taskEngine,
-                                            localserviceInstanceEngine,
-                                            blacklistingManager);
-
-        when(applicationEngine.exists(anyString())).thenReturn(true);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         when(applicationEngine.stopInstance(anyString())).thenThrow(new IllegalArgumentException("Forced fail"));
-        assertEquals(MessageDeliveryStatus.FAILED,
-                     mh.visit(new StopInstanceMessage(MessageHeader.controllerRequest(),
-                                                      executor(),
-                                                      "blah"))
-                             .getStatus());
+        when(taskEngine.stopInstance(anyString())).thenThrow(new IllegalArgumentException("Forced fail"));
+        when(localserviceInstanceEngine.stopInstance(anyString())).thenThrow(new IllegalArgumentException("Forced fail"));
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
     }
 
     @Test
@@ -202,11 +222,12 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
 
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      mh.visit(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
@@ -218,13 +239,14 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
 
-        doThrow(new IllegalArgumentException()).when(blacklistingManager).blacklist();
+        doThrow(new IllegalArgumentException()).when(executorStateManager).blacklist();
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                            executor())).getStatus());
@@ -235,11 +257,12 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
 
         assertEquals(MessageDeliveryStatus.ACCEPTED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
@@ -251,15 +274,43 @@ class ExecutorMessageHandlerTest {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
-        val blacklistingManager = mock(ExecutorStateManager.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
-                                            blacklistingManager);
+                                            executorStateManager);
 
-        doThrow(new IllegalArgumentException()).when(blacklistingManager).unblacklist();
+        doThrow(new IllegalArgumentException()).when(executorStateManager).unblacklist();
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                              executor())).getStatus());
     }
+
+    private static Stream<Arguments> startMessageProvider() {
+        return Stream.of(
+                Arguments.of(new StartInstanceMessage(MessageHeader.controllerRequest(),
+                                                     executor(),
+                                                     ExecutorTestingUtils.testAppInstanceSpec())),
+                Arguments.of(new StartTaskMessage(MessageHeader.controllerRequest(),
+                                                                                         executor(),
+                                                                                         ExecutorTestingUtils.testTaskInstanceSpec())),
+                Arguments.of(new  StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                                                                 executor(),
+                                                                                                 ExecutorTestingUtils.testLocalServiceInstanceSpec()))
+        );
+    }
+
+    private static Stream<Arguments> stopMessageProvider() {
+        return Stream.of(
+                Arguments.of(new StopInstanceMessage(MessageHeader.controllerRequest(),
+                                                     executor(),
+                                                     "instanceId")),
+                Arguments.of(new StopTaskMessage(MessageHeader.controllerRequest(),
+                                                     executor(),"taskInstanceId")),
+                Arguments.of(new StopLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                     executor(),"localServiceInstanceId"))
+        );
+    }
+
 }

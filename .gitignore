@@ -90,3 +90,5 @@ out
 dep
 *.patch
 *.rej
+.factorypath
+.classpath

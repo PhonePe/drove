@@ -56,7 +56,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             val status = eldest.getValue()
                     .getNodeData()
                     .getUpdated()
-                    .after(Date.from(Instant.now().plus(MAX_REMOVED_NODE_RETENTION_WINDOW)));
+                    .before(Date.from(Instant.now().minus(MAX_REMOVED_NODE_RETENTION_WINDOW)));
             if (status) {
                 log.warn("Removed executor data for {} will be permanently deleted",
                          eldest.getValue().getExecutorId());
@@ -507,13 +507,12 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     private Set<String> liveExecutorsUnsafe() {
         // Remove nodes that have been blacklisted locally as well as those that are not in ACTIVE state
         // ie maybe marked as blacklisted before or removed
-        final var outOfRotationNodes = nodes.values()
+        return nodes.values()
                 .stream()
                 .filter(node -> !blackListedNodes.contains(node.getExecutorId()))
-                .filter(entry -> !ExecutorState.ACTIVE.equals(entry.getNodeData().getExecutorState()))
+                .filter(entry -> ExecutorState.ACTIVE.equals(entry.getNodeData().getExecutorState()))
                 .map(ExecutorHostInfo::getExecutorId)
-                .collect(Collectors.toSet());
-        return Set.copyOf(Sets.difference(nodes.keySet(), outOfRotationNodes));
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private boolean checkOffDuty(boolean skipOffDutyNodes, ExecutorHostInfo node) {
