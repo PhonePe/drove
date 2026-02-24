@@ -25,7 +25,6 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingCluster;
 import org.junit.jupiter.api.Test;
@@ -70,7 +69,7 @@ class ZkUtilsTest extends AbstractTestBase {
 
             //Restart the server again
             cluster.restartServer(instance);
-            CommonTestUtils.waitUntil(() -> curator.getState().equals(CuratorFrameworkState.STARTED));
+            CommonTestUtils.waitUntil(() -> curator.getZookeeperClient().isConnected());
 
             assertTrue(exists(curator, "/tnode"));
             assertFalse(exists(curator, "/tnode1"));
@@ -109,7 +108,7 @@ class ZkUtilsTest extends AbstractTestBase {
 
             //Restart the server again
             cluster.restartServer(instance);
-            CommonTestUtils.waitUntil(() -> curator.getState().equals(CuratorFrameworkState.STARTED));
+            CommonTestUtils.waitUntil(() -> curator.getZookeeperClient().isConnected());
             assertEquals(input, readChildren(curator, "/parent")
                     .stream()
                     .sorted(Comparator.comparing(TestData::getValue))
@@ -138,6 +137,7 @@ class ZkUtilsTest extends AbstractTestBase {
                 .namespace("DTEST")
                 .retryPolicy(new RetryNTimes(0, 10))
                 .sessionTimeoutMs(10)
+                .connectionTimeoutMs(500)
                 .build();
     }
 

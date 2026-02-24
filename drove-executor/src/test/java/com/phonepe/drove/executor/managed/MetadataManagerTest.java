@@ -31,6 +31,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -114,7 +115,7 @@ class MetadataManagerTest {
 
         mm.start();
         if (timeWaitInMillis > 0) {
-            Thread.sleep(timeWaitInMillis);
+            CommonTestUtils.delay(Duration.ofMillis(timeWaitInMillis));
         }
         val res = mm.fetchMetadata();
         assertEquals(output.keySet(), res.keySet(), "TESTCASE:" + testDescription);

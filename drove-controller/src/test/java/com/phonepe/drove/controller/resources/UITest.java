@@ -31,10 +31,12 @@ import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import lombok.val;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import ru.vyarus.guicey.gsp.views.template.TemplateContext;
 
 import javax.ws.rs.WebApplicationException;
@@ -63,11 +65,22 @@ class UITest {
                                               ControllerOptions.DEFAULT,
                                               installationMetadata);
 
+    private static MockedStatic<TemplateContext> mockedTemplateContext;
+
     @BeforeAll
     static void initializeTemplate() {
         val tc = mock(TemplateContext.class);
         when(tc.lookupTemplatePath(anyString())).thenReturn("/");
         mockStatic(TemplateContext.class).when(TemplateContext::getInstance).thenReturn(tc);
+        mockedTemplateContext = mockStatic(TemplateContext.class);
+        mockedTemplateContext.when(TemplateContext::getInstance).thenReturn(tc);
+    }
+
+    @AfterAll
+    static void tearDownTemplate() {
+        if (mockedTemplateContext != null) {
+            mockedTemplateContext.close();
+        }
     }
 
     @AfterEach

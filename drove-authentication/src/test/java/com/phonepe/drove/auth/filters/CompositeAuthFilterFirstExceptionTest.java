@@ -42,24 +42,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @ExtendWith(DropwizardExtensionsSupport.class)
 class CompositeAuthFilterFirstExceptionTest extends AbstractAuthTestBase {
+    private static final TestAuthFilter.State FILTER_STATE = new TestAuthFilter.State();
     private static final ResourceExtension EXT = ResourceExtension.builder()
             .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
             .addResource(new TestResource())
             .addProvider(new AuthDynamicFeature(new CompositeAuthFilter<>(List.of(
-                    new TestAuthFilter(),
-                    new TestAuthFilter()), false, Set.of("POST"))))
+                    new TestAuthFilter(FILTER_STATE),
+                    new TestAuthFilter(FILTER_STATE)), false, Set.of("POST"))))
             .addProvider(RolesAllowedDynamicFeature.class)
             .addProvider(new AuthValueFactoryProvider.Binder<>(DroveUser.class))
             .build();
 
     @AfterEach
     void resetCount() {
-        TestAuthFilter.resetCount();
+        FILTER_STATE.resetCount();
     }
 
     @Test
     void testSuccess() {
-        TestAuthFilter.failureThreshold(999);
+        FILTER_STATE.failureThreshold(999);
         val client = ClientBuilder.newBuilder()
                 .register(HttpAuthenticationFeature.basicBuilder()
                                   .nonPreemptive()
@@ -75,7 +76,7 @@ class CompositeAuthFilterFirstExceptionTest extends AbstractAuthTestBase {
 
     @Test
     void testLastFailure() {
-        TestAuthFilter.failureThreshold(0);
+        FILTER_STATE.failureThreshold(0);
         val client = ClientBuilder.newBuilder()
                 .register(HttpAuthenticationFeature.basicBuilder()
                                   .nonPreemptive()

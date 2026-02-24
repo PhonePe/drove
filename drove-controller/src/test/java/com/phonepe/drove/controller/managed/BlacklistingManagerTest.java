@@ -39,7 +39,6 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -95,6 +94,7 @@ class BlacklistingManagerTest {
                                           Executors.newSingleThreadExecutor(),
                                           100);
         bmm.start();
+        CommonTestUtils.delay(Duration.ofMillis(100));
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
 
@@ -185,6 +185,7 @@ class BlacklistingManagerTest {
                                           Executors.newSingleThreadExecutor(),
                                           100);
         bmm.start();
+        CommonTestUtils.delay(Duration.ofMillis(100));
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
 
@@ -229,6 +230,7 @@ class BlacklistingManagerTest {
                                           Executors.newSingleThreadExecutor(),
                                           100);
         bmm.start();
+        CommonTestUtils.delay(Duration.ofMillis(100));
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
 
@@ -278,7 +280,7 @@ class BlacklistingManagerTest {
                                           Executors.newSingleThreadExecutor(),
                                           100);
         bmm.start();
-
+        CommonTestUtils.delay(Duration.ofMillis(100));
         bmm.moveApps(Set.of(executor.getExecutorId()));
 
         CommonTestUtils.waitUntil(called::get);
@@ -296,7 +298,6 @@ class BlacklistingManagerTest {
                 .withMaxAttempts(-1)
                 .withDelay(Duration.ofMillis(100))
                 .withMaxDuration(Duration.ofMinutes(3))
-                .withDelay(10, 30, ChronoUnit.SECONDS)
                 .build();
     }
 

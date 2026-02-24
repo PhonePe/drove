@@ -30,23 +30,45 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- *
+ * Per-instance state holder so that test classes running in parallel
+ * do not share mutable counter / threshold state.
  */
 @Slf4j
 class TestAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
-    private static int failureThreshold;
-    private static final AtomicInteger INVOCATION_COUNT = new AtomicInteger();
+
+    /**
+     * Holds the mutable invocation state for a group of {@link TestAuthFilter}
+     * instances that belong to the same test class.
+     */
+    static final class State {
+        private volatile int failureThreshold;
+        private final AtomicInteger invocationCount = new AtomicInteger();
+
+        void failureThreshold(int count) {
+            this.failureThreshold = count;
+        }
+
+        void resetCount() {
+            invocationCount.set(0);
+        }
+    }
+
+    private final State state;
 
     private final DummyAuthFilter upstream = new DummyAuthFilter.Builder()
             .setAuthenticator(new DummyAuthFilter.DummyAuthenticator())
             .setAuthorizer(new DroveAuthorizer())
             .buildAuthFilter();
 
+    TestAuthFilter(State state) {
+        this.state = state;
+    }
+
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         try {
-            if (INVOCATION_COUNT.get() >= failureThreshold) {
-                val message = "Failure " + INVOCATION_COUNT.get();
+            if (state.invocationCount.get() >= state.failureThreshold) {
+                val message = "Failure " + state.invocationCount.get();
                 log.error("Failure message: {}", message);
                 throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED)
                                                           .entity(message)
@@ -54,16 +76,8 @@ class TestAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
             }
         }
         finally {
-            INVOCATION_COUNT.incrementAndGet();
+            state.invocationCount.incrementAndGet();
         }
         upstream.filter(requestContext);
-    }
-
-    public static void failureThreshold(int count) {
-        failureThreshold = count;
-    }
-
-    public static void resetCount() {
-        INVOCATION_COUNT.set(0);
     }
 }
