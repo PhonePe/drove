@@ -224,14 +224,6 @@ public class BlacklistingManager implements Managed {
         return finallyUnblacklisted;
     }
 
-    private Set<String> findCurrentOverlappingUnblacklisted(final Set<String> successfullyMessageSent) {
-        return clusterResourcesDB.currentSnapshot(true)
-                .stream()
-                .filter(info -> successfullyMessageSent.contains(info.getExecutorId()))
-                .map(ExecutorHostInfo::getExecutorId)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
     @SneakyThrows
     public boolean moveApps(final Set<String> executorIds) {
         lock.lock();
@@ -362,6 +354,13 @@ public class BlacklistingManager implements Managed {
         checkAfterExecutorRefreshTimer.schedule(task, initialWaitTime);
     }
 
+    private Set<String> findCurrentOverlappingUnblacklisted(final Set<String> successfullyMessageSent) {
+        return clusterResourcesDB.currentSnapshot(true)
+                .stream()
+                .filter(info -> successfullyMessageSent.contains(info.getExecutorId()))
+                .map(ExecutorHostInfo::getExecutorId)
+                .collect(Collectors.toUnmodifiableSet());
+    }
 
     private void processQueuedElement() {
         while (true) {

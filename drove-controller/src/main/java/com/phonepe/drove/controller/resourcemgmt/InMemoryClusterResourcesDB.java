@@ -278,7 +278,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         val stamp = lock.readLock();
         try {
             return Optional.ofNullable(nodes.get(executorId))
-                    .map(node -> ExecutorState.ACTIVE.equals(node.getNodeData().getExecutorState()))
+                    .map(InMemoryClusterResourcesDB::isActiveInternal)
                     .orElse(false);
         }
         finally {
@@ -432,7 +432,11 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
 
     private static boolean checkOffDuty(boolean skipOffDutyNodes, ExecutorHostInfo node) {
         return !skipOffDutyNodes //If off duty nodes are needed, return everything
-                || !isBlackListedInternal(node);
+                || isActiveInternal(node);
+    }
+
+    private static boolean isActiveInternal(ExecutorHostInfo node) {
+        return ExecutorState.ACTIVE.equals(node.getNodeData().getExecutorState());
     }
 
     private static boolean isBlackListedInternal(ExecutorHostInfo node) {

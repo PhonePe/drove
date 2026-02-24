@@ -30,8 +30,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Per-instance state holder so that test classes running in parallel
- * do not share mutable counter / threshold state.
+ *
  */
 @Slf4j
 class TestAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
@@ -40,12 +39,12 @@ class TestAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
      * Holds the mutable invocation state for a group of {@link TestAuthFilter}
      * instances that belong to the same test class.
      */
-    static final class State {
-        private volatile int failureThreshold;
+    public static final class State {
+        private final AtomicInteger failureThreshold = new AtomicInteger(0);
         private final AtomicInteger invocationCount = new AtomicInteger();
 
         void failureThreshold(int count) {
-            this.failureThreshold = count;
+            this.failureThreshold.set(count);
         }
 
         void resetCount() {
@@ -67,7 +66,7 @@ class TestAuthFilter extends AuthFilter<BasicCredentials, DroveUser> {
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         try {
-            if (state.invocationCount.get() >= state.failureThreshold) {
+            if (state.invocationCount.get() >= state.failureThreshold.get()) {
                 val message = "Failure " + state.invocationCount.get();
                 log.error("Failure message: {}", message);
                 throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED)
