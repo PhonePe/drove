@@ -137,6 +137,7 @@
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <json-path.version>2.9.0</json-path.version>
         <findbugs.version>3.0.1</findbugs.version>
+        <test.console.disable>true</test.console.disable>
         <zookeeper.version>3.9.3</zookeeper.version>
         <sonar.organization>phonepe</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -312,7 +313,7 @@
                 <configuration>
                     <reportFormat>plain</reportFormat>
                     <consoleOutputReporter>
-                        <disable>true</disable>
+                        <disable>${test.console.disable}</disable>
                     </consoleOutputReporter>
                     <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter">
                         <printStacktraceOnError>true</printStacktraceOnError>
@@ -424,6 +425,12 @@
                     --add-opens java.base/java.net=ALL-UNNAMED
                     --add-opens java.base/sun.net=ALL-UNNAMED
                 </argLine>
+            </properties>
+        </profile>
+        <profile>
+            <id>verbose-tests</id>
+            <properties>
+                <test.console.disable>false</test.console.disable>
             </properties>
         </profile>
     </profiles>

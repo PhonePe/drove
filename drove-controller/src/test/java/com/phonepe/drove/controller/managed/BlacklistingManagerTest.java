@@ -17,9 +17,15 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
+import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.engine.ValidationStatus;
+import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -47,10 +53,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests {@link BlacklistingAppMovementManager}
+ * Tests {@link BlacklistingManager}
  */
 @Slf4j
-class BlacklistingAppMovementManagerTest {
+class BlacklistingManagerTest {
     @Test
     @SneakyThrows
     void testBasicFlow() {
@@ -75,15 +81,19 @@ class BlacklistingAppMovementManagerTest {
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
-
-        val bmm = new BlacklistingAppMovementManager(le,
-                                                     applicationEngine,
-                                                     clusterResourcesDB,
-                                                     opSubmissionPolicy(),
-                                                     checkPolicy(),
-                                                     clusterOpSpec(),
-                                                     Executors.newSingleThreadExecutor(),
-                                                     100);
+        val communicator = mock(ControllerCommunicator.class);
+        when(communicator.send(any(ExecutorMessage.class))).thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          opSubmissionPolicy(),
+                                          checkPolicy(),
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -118,14 +128,19 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le,
-                                                     applicationEngine,
-                                                     clusterResourcesDB,
-                                                     opSubmissionPolicy(),
-                                                     checkPolicy(),
-                                                     clusterOpSpec(),
-                                                     Executors.newSingleThreadExecutor(),
-                                                     100);
+        val communicator = mock(ControllerCommunicator.class);
+        when(communicator.send(any(ExecutorMessage.class))).thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          opSubmissionPolicy(),
+                                          checkPolicy(),
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
         bmm.start();
 
 //        bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -156,14 +171,19 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le,
-                                                     applicationEngine,
-                                                     clusterResourcesDB,
-                                                     opSubmissionPolicy(),
-                                                     checkPolicy(),
-                                                     clusterOpSpec(),
-                                                     Executors.newSingleThreadExecutor(),
-                                                     100);
+        val communicator = mock(ControllerCommunicator.class);
+        when(communicator.send(any(ExecutorMessage.class))).thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          opSubmissionPolicy(),
+                                          checkPolicy(),
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -195,14 +215,19 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le,
-                                                     applicationEngine,
-                                                     clusterResourcesDB,
-                                                     opSubmissionPolicy(),
-                                                     checkPolicy(),
-                                                     clusterOpSpec(),
-                                                     Executors.newSingleThreadExecutor(),
-                                                     100);
+        val communicator = mock(ControllerCommunicator.class);
+        when(communicator.send(any(ExecutorMessage.class))).thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          opSubmissionPolicy(),
+                                          checkPolicy(),
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));
@@ -239,14 +264,19 @@ class BlacklistingAppMovementManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
 
-        val bmm = new BlacklistingAppMovementManager(le,
-                                                     applicationEngine,
-                                                     clusterResourcesDB,
-                                                     opSubmissionPolicy(),
-                                                     checkPolicy(),
-                                                     clusterOpSpec(),
-                                                     Executors.newSingleThreadExecutor(),
-                                                     100);
+        val communicator = mock(ControllerCommunicator.class);
+        when(communicator.send(any(ExecutorMessage.class))).thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          opSubmissionPolicy(),
+                                          checkPolicy(),
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
         bmm.start();
 
         bmm.moveApps(Set.of(executor.getExecutorId()));

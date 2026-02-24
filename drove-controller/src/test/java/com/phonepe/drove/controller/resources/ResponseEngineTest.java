@@ -32,7 +32,7 @@ import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
-import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
+import com.phonepe.drove.controller.managed.BlacklistingManager;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -58,6 +58,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.mockito.stubbing.OngoingStubbing;
 
 import java.security.SecureRandom;
 import java.util.*;
@@ -93,8 +94,7 @@ class ResponseEngineTest {
     private final EventStore eventStore = mock(EventStore.class);
     private final ControllerCommunicator communicator = mock(ControllerCommunicator.class);
     private final DroveEventBus eventBus = mock(DroveEventBus.class);
-    private final BlacklistingAppMovementManager blacklistingAppMovementManager =
-            mock(BlacklistingAppMovementManager.class);
+    private final BlacklistingManager blacklistingManager = mock(BlacklistingManager.class);
     private final ResponseEngine re = new ResponseEngine(leadershipObserver,
                                                          appEngine,
                                                          applicationStateDB,
@@ -108,7 +108,7 @@ class ResponseEngineTest {
                                                          eventStore,
                                                          communicator,
                                                          eventBus,
-                                                         blacklistingAppMovementManager);
+                                                         blacklistingManager);
 
     @AfterEach
     void resetMocks() {
@@ -124,7 +124,7 @@ class ResponseEngineTest {
               eventBus,
               communicator,
               eventBus,
-              blacklistingAppMovementManager);
+              blacklistingManager);
     }
 
     @Test
@@ -573,7 +573,7 @@ class ResponseEngineTest {
                                     eventStore,
                                     communicator,
                                     eventBus,
-                                    blacklistingAppMovementManager);
+                                    blacklistingManager);
 
         val r = re.events(0, 10);
         assertEquals(SUCCESS, r.getStatus());
@@ -582,7 +582,8 @@ class ResponseEngineTest {
         assertEquals(event, r.getData().get(0));
     }
 
-    private void testBlacklistingMultiFunctionality(
+    @SuppressWarnings("unchecked")
+    private<T> void testBlacklistingMultiFunctionality(
             final BiFunction<ResponseEngine, Set<String>, ApiResponse<Map<String, Set<String>>>> func) {
         val executors = IntStream.rangeClosed(1, 10)
                 .mapToObj(i -> executorHost(i, 8080, List.of(), List.of(), List.of()))
@@ -594,11 +595,17 @@ class ResponseEngineTest {
                     return Optional.ofNullable(executors.get(eId));
                 });
         val success = new AtomicBoolean(true);
-        when(communicator.send(any(ExecutorMessage.class))).thenAnswer((Answer<MessageResponse>) invocationOnMock -> {
-            val header = invocationOnMock.getArgument(0, ExecutorMessage.class).getHeader();
+        when(blacklistingManager.blacklistExecutors(anySet())).thenAnswer((Answer<Set<String>>) invocationOnMock -> {
+            val response = invocationOnMock.getArgument(0);
             return success.get()
-                   ? new MessageResponse(header, MessageDeliveryStatus.ACCEPTED)
-                   : new MessageResponse(header, MessageDeliveryStatus.FAILED);
+                   ? (Set<String>)response
+                   : Set.of();
+        });
+        when(blacklistingManager.unblacklistExecutors(anySet())).thenAnswer((Answer<Set<String>>) invocationOnMock -> {
+            val response = invocationOnMock.getArgument(0);
+            return success.get()
+                   ? (Set<String>)response
+                   : Set.of();
         });
         val executorIds = executors.keySet();
         {
@@ -611,36 +618,6 @@ class ResponseEngineTest {
             val r = func.apply(re, executorIds);
             assertEquals(SUCCESS, r.getStatus());
             assertEquals(executorIds, r.getData().get("failed"));
-        }
-    }
-
-    private void testBlacklistingFunctionality(
-            final BiFunction<ResponseEngine, String, ApiResponse<Map<String,
-                    String>>> func) {
-        val executor = executorHost(8080);
-        when(clusterResourcesDB.currentSnapshot(executor.getExecutorId())).thenReturn(Optional.of(executor));
-
-        val success = new AtomicBoolean(true);
-        when(communicator.send(any(ExecutorMessage.class))).thenAnswer((Answer<MessageResponse>) invocationOnMock -> {
-            val header = invocationOnMock.getArgument(0, ExecutorMessage.class).getHeader();
-            return success.get()
-                   ? new MessageResponse(header, MessageDeliveryStatus.ACCEPTED)
-                   : new MessageResponse(header, MessageDeliveryStatus.FAILED);
-        });
-        {
-            val r = func.apply(re, executor.getExecutorId());
-            assertEquals(SUCCESS, r.getStatus());
-        }
-        {
-            success.set(false);
-            val r = func.apply(re, executor.getExecutorId());
-            assertEquals(FAILED, r.getStatus());
-//            assertEquals("Error sending remote message", r.getMessage());
-        }
-        {
-            val r = func.apply(re, "invalid-exec");
-            assertEquals(FAILED, r.getStatus());
-//            assertEquals("Failed to blacklist executor. Check logs for error details", r.getMessage());
         }
     }
 

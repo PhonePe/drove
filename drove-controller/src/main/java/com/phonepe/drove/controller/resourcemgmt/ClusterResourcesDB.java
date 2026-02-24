@@ -90,6 +90,8 @@ public abstract class ClusterResourcesDB {
 
     public abstract void unmarkBlacklisted(String executorId);
 
+    public abstract Set<String> blacklistedNodes();
+
     protected final void raiseEvent(
             Set<String> addedExecutors,
             Set<String> removedExecutors,
