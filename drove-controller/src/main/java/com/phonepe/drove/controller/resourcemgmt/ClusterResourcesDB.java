@@ -86,10 +86,6 @@ public abstract class ClusterResourcesDB {
     @MonitoredFunction
     public abstract boolean isActive(String executorId);
 
-    public abstract void markBlacklisted(String executorId);
-
-    public abstract void unmarkBlacklisted(String executorId);
-
     public abstract Set<String> blacklistedNodes();
 
     protected final void raiseEvent(

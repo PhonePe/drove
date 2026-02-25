@@ -286,18 +286,6 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         }
     }
 
-    @Override
-    @MonitoredFunction
-    public void markBlacklisted(String executorId) {
-        //TODO::REMOVE CALLS
-    }
-
-    @Override
-    @MonitoredFunction
-    public void unmarkBlacklisted(String executorId) {
-        //TODO::REMOVE CALLS
-    }
-
     private static boolean inRequiredState(ExecutorHostInfo node, Set<ExecutorState> allowedStates) {
         return allowedStates.contains(node.nodeData.getExecutorState());
     }

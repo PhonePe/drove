@@ -273,7 +273,6 @@ public class BlacklistingManager implements Managed {
                                     executor.getNodeData()
                                     .getTransportType())));
                     if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                        // clusterResourcesDB.markBlacklisted(executorId);
                         log.info("Executor {} has been marked as blacklisted. Moving running instances",
                                 executorId);
                         eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));

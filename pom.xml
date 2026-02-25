@@ -94,7 +94,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <lombok.version>1.18.38</lombok.version>
+        <lombok.version>1.18.42</lombok.version>
         <dropwizard.version>2.1.12</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
         <junit.version>5.8.2</junit.version>
@@ -239,6 +239,13 @@
                     <target>17</target>
                     <compilerArgument>-parameters</compilerArgument>
                     <release>17</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.42</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
