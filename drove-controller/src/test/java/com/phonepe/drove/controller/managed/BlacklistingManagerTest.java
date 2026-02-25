@@ -20,13 +20,18 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
+import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
+import com.phonepe.drove.controller.testsupport.InMemoryClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
@@ -45,8 +50,13 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -56,6 +66,67 @@ import static org.mockito.Mockito.when;
  */
 @Slf4j
 class BlacklistingManagerTest {
+    @Test
+    @SneakyThrows
+    void testTopLevel() {
+        val numExecutors = 5;
+        val le = mock(LeadershipEnsurer.class);
+        val s = new ConsumingSyncSignal<Boolean>();
+        when(le.onLeadershipStateChanged()).thenReturn(s);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val clusterResourcesDB = new InMemoryClusterResourcesDB();
+        val communicator = mock(ControllerCommunicator.class);
+        val acceptedCount = new AtomicInteger(0);
+        when(communicator.send(any(ExecutorMessage.class)))
+            .thenAnswer(param -> {
+                val message = param.getArgument(0, ExecutorMessage.class);
+                if(message instanceof BlacklistExecutorMessage) {
+                    if(5 == acceptedCount.incrementAndGet()) {
+                        clusterResourcesDB.update(IntStream.range(0, numExecutors)
+                                .mapToObj(i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), true))
+                                .toList());
+                    }
+                }
+                if(message instanceof UnBlacklistExecutorMessage) {
+                    if(0 == acceptedCount.decrementAndGet()) {
+                        clusterResourcesDB.update(IntStream.range(0, numExecutors)
+                                .mapToObj(i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false))
+                                .toList());
+                    }
+                }
+                return new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED);
+            });
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          opSubmissionPolicy(),
+                                          checkPolicy(),
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
+        val unblackListedExecutors = IntStream.range(0, 5)
+                .mapToObj(i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false))
+                .toList();
+        clusterResourcesDB.update(unblackListedExecutors);
+        bmm.start();
+        CommonTestUtils.delay(Duration.ofMillis(100));
+        assertTrue(clusterResourcesDB.blacklistedNodes().isEmpty());
+        val executorIds = unblackListedExecutors.stream()
+            .map(node -> node.getState().getExecutorId())
+            .collect(Collectors.toUnmodifiableSet());
+        val blacklistedIds = bmm.blacklistExecutors(executorIds);
+        assertEquals(5, blacklistedIds.size());
+        assertEquals(blacklistedIds, clusterResourcesDB.blacklistedNodes());
+
+        val unblacklistedIds = bmm.unblacklistExecutors(executorIds);
+        assertEquals(5, unblacklistedIds.size());
+        assertTrue(clusterResourcesDB.blacklistedNodes().isEmpty());
+        bmm.stop();
+    }
+
     @Test
     @SneakyThrows
     void testBasicFlow() {
