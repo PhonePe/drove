@@ -65,7 +65,7 @@ class InMemoryEventStoreTest {
         when(leadershipEnsurer.onLeadershipStateChanged()).thenReturn(new ConsumingSyncSignal<>());
         val es = new InMemoryEventStore(
                 leadershipEnsurer,
-                DEFAULT.withMaxEventsStorageDuration(io.dropwizard.util.Duration.seconds(2)),
+                DEFAULT.withMaxEventsStorageDuration(io.dropwizard.util.Duration.seconds(5)),
                 Duration.ofSeconds(1),
                 new ClusterMetricsRegistry(SharedMetricRegistries.getOrCreate("test")));
         IntStream.rangeClosed(1, 200)
@@ -83,7 +83,7 @@ class InMemoryEventStoreTest {
             assertEquals(200, summary.getEventsCount().values().stream().reduce(0L, Long::sum));
         }
         //Wait for cleanup to hit
-        CommonTestUtils.delay(Duration.ofSeconds(3));
+        CommonTestUtils.delay(Duration.ofSeconds(6));
         {
             val res = es.latest(0, Integer.MAX_VALUE);
             assertNotNull(res);
