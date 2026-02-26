@@ -167,13 +167,13 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             nodeData.forEach(this::updateExecutorNodeDataUnsafe);
             val liveExecutorIds = liveExecutorsUnsafe();
             val newNodes = Sets.difference(liveExecutorIds, existingExecutorIds);
-            val removedNodes = Sets.difference(existingExecutorIds, liveExecutorIds);
+            val missingNodes = Sets.difference(existingExecutorIds, liveExecutorIds);
             log.debug("After update, before update: {} live executors are {}, new executors are {}, removed executors are {}",
-                    existingExecutorIds, liveExecutorIds, newNodes, removedNodes);
-            if (!newNodes.isEmpty() || !removedNodes.isEmpty()) {
+                    existingExecutorIds, liveExecutorIds, newNodes, missingNodes);
+            if (!newNodes.isEmpty() || !missingNodes.isEmpty()) {
                 log.info("Cluster topology changed. New executors: {}, out-of-rotation executors: {}",
-                        newNodes, removedNodes);
-                raiseEvent(Set.copyOf(newNodes), Set.copyOf(removedNodes), liveExecutorIds);
+                        newNodes, missingNodes);
+                raiseEvent(Set.copyOf(newNodes), Set.copyOf(missingNodes), liveExecutorIds);
             }
         }
         finally {

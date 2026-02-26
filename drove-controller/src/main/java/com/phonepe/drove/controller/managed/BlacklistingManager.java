@@ -21,6 +21,7 @@ import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -56,6 +58,8 @@ import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
 import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -108,9 +112,6 @@ public class BlacklistingManager implements Managed {
     private final ControllerCommunicator communicator;
     private final DroveEventBus eventBus;
 
-    private final RetryPolicy<ValidationStatus> opSubmissionPolicy;
-
-    private final RetryPolicy<Boolean> noInstanceEnsurerPolicy;
     private final ClusterOpSpec defaultClusterOpSpec;
     private final long initialWaitTime;
     private final Future<?> future;
@@ -131,17 +132,6 @@ public class BlacklistingManager implements Managed {
              clusterResourcesDB,
              communicator,
              eventBus,
-             DEFAULT_COMMAND_POLICY,
-             RetryPolicy.<Boolean>builder()
-                     .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
-                     .handleResult(false)
-                     .withMaxAttempts(-1)
-                     .withMaxDuration(defaultClusterOpSpec.getTimeout()
-                                              .toJavaDuration()
-                                              .plus(Duration.ofSeconds(30))) //Wait for max app operation timeout and
-                     // then some
-                     .withDelay(10, 30, ChronoUnit.SECONDS)
-                     .build(), //
              defaultClusterOpSpec,
              appMovementExecutor,
              Constants.EXECUTOR_REFRESH_INTERVAL.toMillis() * 2 + 5); //Wait till whole cluster refreshes at least once
@@ -155,8 +145,6 @@ public class BlacklistingManager implements Managed {
             ClusterResourcesDB clusterResourcesDB,
             ControllerCommunicator communicator,
             DroveEventBus eventBus,
-            RetryPolicy<ValidationStatus> opSubmissionPolicy,
-            RetryPolicy<Boolean> noInstanceEnsurerPolicy,
             ClusterOpSpec defaultClusterOpSpec,
             ExecutorService appMovementExecutor,
             long initialWaitTime) {
@@ -165,8 +153,6 @@ public class BlacklistingManager implements Managed {
         this.clusterResourcesDB = clusterResourcesDB;
         this.communicator = communicator;
         this.eventBus = eventBus;
-        this.opSubmissionPolicy = opSubmissionPolicy;
-        this.noInstanceEnsurerPolicy = noInstanceEnsurerPolicy;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
         this.initialWaitTime = initialWaitTime;
         this.future = queuePollingExecutor.submit(this::processQueuedElement);
@@ -235,13 +221,35 @@ public class BlacklistingManager implements Managed {
         }
     }
 
+    @Override
+    public void start() {
+        log.info("Blacklisting manager started");
+    }
+
+    @Override
+    public void stop() throws Exception {
+        future.cancel(true);
+        queuePollingExecutor.shutdown();
+        log.info("Blacklisting manager stopped");
+    }
+
     private static RetryPolicy<Set<String>> blacklistingRelatedWaitPolicy(final Set<String> targetExecutorIds) {
         return RetryPolicy.<Set<String>>builder()
             .onFailedAttempt(event -> log.warn("Waiting for blacklising to reflect in cluster resources DB. Attempt: {}", event.getAttemptCount()))
             .handleResultIf(result -> !result.containsAll(targetExecutorIds))
             .withMaxAttempts(-1)
             .withMaxDuration(Duration.ofMinutes(1))
-            .withDelay(5, 15, ChronoUnit.SECONDS)
+            .withDelay(1, 5, ChronoUnit.SECONDS)
+            .build();
+    }
+
+    private static RetryPolicy<Boolean> allAppInstancesMovedWaitPolicy(long timeout) {
+        return RetryPolicy.<Boolean>builder()
+            .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
+            .handleResult(false)
+            .withMaxAttempts(-1)
+            .withMaxDuration(Duration.ofMillis(timeout))
+            .withDelay(10, 30, ChronoUnit.SECONDS) //Will wait 15 minutes for the app to move
             .build();
     }
 
@@ -257,7 +265,7 @@ public class BlacklistingManager implements Managed {
     }
 
     private Set<String> blacklistExecutorsInternal(Set<String> executorIds) {
-        final var successfullyBlacklistCalled = executorIds.stream()
+        val successfullyBlacklistCalled = executorIds.stream()
             .filter(executorId -> {
                 if (clusterResourcesDB.isBlacklisted(executorId)) {
                     log.warn("Executor {} is set to blacklisted already. We are going to skip this.", executorId);
@@ -393,6 +401,16 @@ public class BlacklistingManager implements Managed {
         }
     }
 
+    private static RetryPolicy<ValidationStatus> appMovementWaitPolicy(long timeout) {
+        return RetryPolicy.<ValidationStatus>builder()
+            .onFailedAttempt(event -> log.warn("Command submission attempt: {}", event.getAttemptCount()))
+            .handleResult(ValidationStatus.FAILURE)
+            .withMaxAttempts(-1)
+            .withMaxDuration(Duration.ofMillis(timeout + 30_000)) // We add a buffer
+            .withDelay(10, 30, ChronoUnit.SECONDS)  //Will try for 5 minutes to get the command accepted
+            .build();
+    }
+
     private void moveAppsFromExecutors(final Set<String> executorIds) {
         val healthyInstances = healthyInstances(executorIds);
         if (healthyInstances.isEmpty()) {
@@ -403,34 +421,30 @@ public class BlacklistingManager implements Managed {
         //Raise replacement request for multiple apps in parallel
         //Wait for all apps to submit successfully
         //Then poll for executors to have become empty
-        val futures = healthyInstances.entrySet()
-                .stream()
-                .map(entry -> {
-                    val appId = entry.getKey();
-                    val instances = entry.getValue();
-                    return completionService.submit(() -> {
-                        try {
-                            val finalStatus = Failsafe.with(opSubmissionPolicy)
-                                    .get(() -> {
-                                        val res = applicationEngine.handleOperation(
-                                                new ApplicationReplaceInstancesOperation(appId,
-                                                                                         instances,
-                                                                                         false,
-                                                                                         defaultClusterOpSpec));
-                                        log.info("Instances to be replaced for {}: {}. command acceptance status: {}",
-                                                appId, instances, res);
-                                        return res.getStatus();
-                                    });
-                            return new Pair<>(appId, finalStatus == ValidationStatus.SUCCESS);
-                        }
-                        catch (FailsafeException e) {
-                            log.info("Failed to send command for app movement for: " + appId, e);
-                        }
-                        return new Pair<>(appId, false);
-                    });
-                })
-                .toList();
-
+        val defaultTimeout = defaultClusterOpSpec.getTimeout().toMilliseconds();
+        val parallelism = defaultClusterOpSpec.getParallelism();
+        val futures = new ArrayList<Future<Pair<String, Boolean>>>();
+        val maxTimeToWait = new AtomicLong(0);
+        for(val entry : healthyInstances.entrySet()) {
+            val appId = entry.getKey();
+            val instances = entry.getValue();
+            val timeoutMultiplier = Math.max(1, instances.size() / parallelism);
+            val computedTimeout = applicationEngine.getStateDB()
+                     .application(appId)
+                     .map(ApplicationInfo::getSpec)
+                     .map(spec -> timeoutMultiplier * (ControllerUtils.maxStartTimeout(spec) + ControllerUtils .maxStopTimeout(spec)))
+                     .orElse(defaultTimeout);
+            val opTimeout = Math.max(defaultTimeout, computedTimeout);
+            maxTimeToWait.updateAndGet(current -> Math.max(current, opTimeout));
+            log.debug("Calculated timeout for app {} with {} instances is {} ms. Default: {} ms. Computed: {} ms. Parallelism: {}. Timeout multipler: {}",
+                    appId, instances, opTimeout, defaultTimeout, computedTimeout, parallelism, timeoutMultiplier);
+            val waitTime = opTimeout + 30_000; //Adding some buffer to the wait time
+            val future = completionService.submit(() -> issueReplaceCommand(waitTime,
+                                                                            appId,
+                                                                            instances,
+                                                                            opTimeout));
+            futures.add(future);
+        }
         val failedApps = futures.stream()
                 .map(f -> {
                     try {
@@ -450,13 +464,13 @@ public class BlacklistingManager implements Managed {
                 .collect(Collectors.toUnmodifiableSet());
         if (!failedApps.isEmpty()) {
             log.error("Could not shut down instances on {}. Failed apps: {}. Check log for details.",
-                      executorIds,
-                      failedApps);
+                      executorIds, failedApps);
         }
         else {
-            log.info("Commands accepted for all relevant app instances to be moved");
+            val totalWait = maxTimeToWait.get();
+            log.info("Commands accepted for all relevant app instances to be moved. Will wait for {}ms to ensure completion.", totalWait);
             try {
-                val allClear = waitForAction(noInstanceEnsurerPolicy,
+                val allClear = waitForAction(allAppInstancesMovedWaitPolicy(totalWait),
                                              () -> healthyInstances(executorIds).isEmpty());
                 if (allClear) {
                     log.info("All app instances moved from executors {}", executorIds);
@@ -469,6 +483,33 @@ public class BlacklistingManager implements Managed {
                 log.error("Failed to ensure all instances have been moved from executors " + executorIds, e);
             }
         }
+    }
+
+    private Pair<String, Boolean> issueReplaceCommand(
+                                            final long waitTime,
+                                            final String appId,
+                                            final Set<String> instances,
+                                            final long opTimeout) {
+        try {
+            val finalStatus = Failsafe.with(List.of(appMovementWaitPolicy(waitTime)))
+                    .get(() -> {
+                        val res = applicationEngine.handleOperation(
+                                                                    new ApplicationReplaceInstancesOperation(appId,
+                                                                                                             instances,
+                                                                                                             false,
+                                                                                                             defaultClusterOpSpec
+                                                                                                                     .withTimeout(io.dropwizard.util.Duration
+                                                                                                                             .milliseconds(opTimeout))));
+                        log.info("Instances to be replaced for {}: {}. command acceptance status: {}. Timeout: {} ms",
+                                appId, instances, res, opTimeout);
+                        return res.getStatus();
+                    });
+            return new Pair<>(appId, finalStatus == ValidationStatus.SUCCESS);
+        }
+        catch (FailsafeException e) {
+            log.info("Failed to send command for app movement for: " + appId, e);
+        }
+        return new Pair<>(appId, false);
     }
 
     private Map<String, Set<String>> healthyInstances(final Set<String> executorIds) {
@@ -484,15 +525,4 @@ public class BlacklistingManager implements Managed {
                                                Collectors.mapping(Pair::getSecond, Collectors.toUnmodifiableSet())));
     }
 
-    @Override
-    public void start() {
-        log.info("Blacklisting manager started");
-    }
-
-    @Override
-    public void stop() throws Exception {
-        future.cancel(true);
-        queuePollingExecutor.shutdown();
-        log.info("Blacklisting manager stopped");
-    }
 }

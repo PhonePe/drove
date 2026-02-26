@@ -34,6 +34,7 @@ import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
@@ -1008,6 +1009,65 @@ public class ControllerUtils {
             }
         });
         return timeoutMS;
+    }
+
+    public static long maxStartTimeout(final DeploymentSpec spec) {
+        var timeoutMS = spec.getExecutable()
+                .accept(dockerCoordinates -> Objects.requireNonNullElse(dockerCoordinates.getDockerPullTimeout(),
+                                                                        DockerCoordinates.DEFAULT_PULL_TIMEOUT))
+                .toMilliseconds();
+        //Apps and LS become healthy once readiness check passes and one healthcheck passes
+        timeoutMS += spec.accept(new DeploymentSpecVisitor<Long>() {
+
+            @Override
+            public Long visit(ApplicationSpec applicationSpec) {
+                return timeoutMS(applicationSpec.getHealthcheck())
+                        + timeoutMS(applicationSpec.getReadiness());
+            }
+
+            @Override
+            public Long visit(TaskSpec taskSpec) {
+                return 0L;
+            }
+
+            @Override
+            public Long visit(LocalServiceSpec localServiceSpec) {
+                return timeoutMS(localServiceSpec.getHealthcheck())
+                        + timeoutMS(localServiceSpec.getReadiness());
+            }
+        });
+        return timeoutMS;
+    }
+
+    public static long maxStopTimeout(final DeploymentSpec spec) {
+        return spec.accept(new DeploymentSpecVisitor<Long>(){
+
+            @Override
+            public Long visit(ApplicationSpec applicationSpec) {
+                return waitTime(applicationSpec.getPreShutdown());
+            }
+
+            @Override
+            public Long visit(TaskSpec taskSpec) {
+                return 0l;
+            }
+
+            @Override
+            public Long visit(LocalServiceSpec localServiceSpec) {
+                return waitTime(localServiceSpec.getPreShutdown());
+            }
+        });
+    }
+
+    public static long waitTime(final PreShutdownSpec ps) {
+        if(null == ps) {
+            return 0L;
+        }
+        val waitTime = ps.getWaitBeforeKill();
+        if(null == waitTime) {
+            return 0L;
+        }
+        return waitTime.toMilliseconds();
     }
 
     public static long timeoutMS(final CheckSpec checkSpec) {

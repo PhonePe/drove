@@ -16,32 +16,16 @@
 
 package com.phonepe.drove.controller.managed;
 
-import com.phonepe.drove.common.CommonTestUtils;
-import com.phonepe.drove.common.model.MessageDeliveryStatus;
-import com.phonepe.drove.common.model.MessageHeader;
-import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
-import com.phonepe.drove.common.model.executor.ExecutorMessage;
-import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
-import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
-import com.phonepe.drove.controller.engine.ControllerCommunicator;
-import com.phonepe.drove.controller.engine.ValidationResult;
-import com.phonepe.drove.controller.engine.ValidationStatus;
-import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
-import com.phonepe.drove.controller.testsupport.InMemoryClusterStateDB;
-import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.operation.ClusterOpSpec;
-import com.phonepe.drove.models.operation.deploy.FailureStrategy;
-import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
-import dev.failsafe.RetryPolicy;
-import io.appform.signals.signals.ConsumingSyncSignal;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.junit.jupiter.api.Test;
+import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
+import static com.phonepe.drove.controller.ControllerTestUtils.executorHost;
+import static com.phonepe.drove.controller.ControllerTestUtils.generateInstanceInfo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.List;
@@ -53,13 +37,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.controller.ControllerTestUtils.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
+import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
+import com.phonepe.drove.common.model.executor.ExecutorMessage;
+import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
+import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.ControllerCommunicator;
+import com.phonepe.drove.controller.engine.ValidationResult;
+import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.operation.deploy.FailureStrategy;
+import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
+
+import org.junit.jupiter.api.Test;
+
+import io.appform.signals.signals.ConsumingSyncSignal;
+import lombok.SneakyThrows;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Tests {@link BlacklistingManager}
@@ -102,8 +106,6 @@ class BlacklistingManagerTest {
                                           clusterResourcesDB,
                                           communicator,
                                           eventBus,
-                                          opSubmissionPolicy(),
-                                          checkPolicy(),
                                           clusterOpSpec(),
                                           Executors.newSingleThreadExecutor(),
                                           100);
@@ -148,19 +150,22 @@ class BlacklistingManagerTest {
                     called.set(true);
                     return ValidationResult.success();
                 });
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationEngine.getStateDB()).thenReturn(applicationStateDB);
+        when(applicationStateDB.application(anyString()))
+            .thenReturn(Optional.of(new ApplicationInfo(instance.getAppId(), spec, 1, null, null)));
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
         val communicator = mock(ControllerCommunicator.class);
-        when(communicator.send(any(ExecutorMessage.class))).thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
+        when(communicator.send(any(ExecutorMessage.class)))
+            .thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.ACCEPTED));
         val eventBus = new DroveEventBus();
         val bmm = new BlacklistingManager(le,
                                           applicationEngine,
                                           clusterResourcesDB,
                                           communicator,
                                           eventBus,
-                                          opSubmissionPolicy(),
-                                          checkPolicy(),
                                           clusterOpSpec(),
                                           Executors.newSingleThreadExecutor(),
                                           100);
@@ -195,6 +200,10 @@ class BlacklistingManagerTest {
                     called.set(true);
                     return ValidationResult.success();
                 });
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationEngine.getStateDB()).thenReturn(applicationStateDB);
+        when(applicationStateDB.application(anyString()))
+            .thenReturn(Optional.of(new ApplicationInfo(instance.getAppId(), spec, 1, null, null)));
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
@@ -207,14 +216,11 @@ class BlacklistingManagerTest {
                                           clusterResourcesDB,
                                           communicator,
                                           eventBus,
-                                          opSubmissionPolicy(),
-                                          checkPolicy(),
                                           clusterOpSpec(),
                                           Executors.newSingleThreadExecutor(),
                                           100);
         bmm.start();
 
-//        bmm.moveApps(Set.of(executor.getExecutorId()));
         le.onLeadershipStateChanged().dispatch(true);
         CommonTestUtils.waitUntil(called::get);
         bmm.stop();
@@ -238,6 +244,10 @@ class BlacklistingManagerTest {
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
                 .thenReturn(ValidationResult.success());
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationEngine.getStateDB()).thenReturn(applicationStateDB);
+        when(applicationStateDB.application(anyString()))
+            .thenReturn(Optional.of(new ApplicationInfo(instance.getAppId(), spec, 1, null, null)));
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
@@ -250,8 +260,6 @@ class BlacklistingManagerTest {
                                           clusterResourcesDB,
                                           communicator,
                                           eventBus,
-                                          opSubmissionPolicy(),
-                                          checkPolicy(),
                                           clusterOpSpec(),
                                           Executors.newSingleThreadExecutor(),
                                           100);
@@ -273,6 +281,9 @@ class BlacklistingManagerTest {
         val called = new AtomicInteger();
 
         val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val asDB = mock(ApplicationStateDB.class);
+        when(applicationEngine.getStateDB()).thenReturn(asDB);
+        when(asDB.application(anyString())).thenReturn(Optional.of(new ApplicationInfo(instance.getAppId(), spec, 1, null, null)));
         val clusterResourcesDB = mock(ClusterResourcesDB.class);
         when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationMock ->
                                                                    {
@@ -283,6 +294,10 @@ class BlacklistingManagerTest {
 
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
                 .thenReturn(ValidationResult.success());
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationEngine.getStateDB()).thenReturn(applicationStateDB);
+        when(applicationStateDB.application(anyString()))
+            .thenReturn(Optional.of(new ApplicationInfo(instance.getAppId(), spec, 1, null, null)));
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
@@ -295,8 +310,6 @@ class BlacklistingManagerTest {
                                           clusterResourcesDB,
                                           communicator,
                                           eventBus,
-                                          opSubmissionPolicy(),
-                                          checkPolicy(),
                                           clusterOpSpec(),
                                           Executors.newSingleThreadExecutor(),
                                           100);
@@ -333,6 +346,10 @@ class BlacklistingManagerTest {
                     }
                     return ValidationResult.failure("Test failure");
                 });
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationEngine.getStateDB()).thenReturn(applicationStateDB);
+        when(applicationStateDB.application(anyString()))
+            .thenReturn(Optional.of(new ApplicationInfo(instance.getAppId(), spec, 1, null, null)));
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
@@ -345,8 +362,6 @@ class BlacklistingManagerTest {
                                           clusterResourcesDB,
                                           communicator,
                                           eventBus,
-                                          opSubmissionPolicy(),
-                                          checkPolicy(),
                                           clusterOpSpec(),
                                           Executors.newSingleThreadExecutor(),
                                           100);
@@ -362,24 +377,4 @@ class BlacklistingManagerTest {
         return new ClusterOpSpec(io.dropwizard.util.Duration.milliseconds(100), 1, FailureStrategy.STOP);
     }
 
-    private static RetryPolicy<Boolean> checkPolicy() {
-        return RetryPolicy.<Boolean>builder()
-                .onFailedAttempt(event -> log.warn("Executor check attempt: {}", event.getAttemptCount()))
-                .handleResult(false)
-                .withMaxAttempts(-1)
-                .withDelay(Duration.ofMillis(100))
-                .withMaxDuration(Duration.ofMinutes(3))
-                .build();
-    }
-
-    private static RetryPolicy<ValidationStatus> opSubmissionPolicy() {
-        return RetryPolicy.<ValidationStatus>builder()
-                .onFailedAttempt(event -> log.warn(
-                        "Command submission attempt: {}",
-                        event.getAttemptCount()))
-                .handleResult(ValidationStatus.FAILURE)
-                .withMaxAttempts(10)
-                .withDelay(Duration.ofMillis(100))
-                .build();
-    }
 }

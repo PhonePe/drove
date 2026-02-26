@@ -40,6 +40,7 @@ import com.phonepe.drove.statemachine.ActionFactory;
 import com.phonepe.drove.statemachine.StateData;
 import com.phonepe.drove.statemachine.StateMachine;
 import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
 import lombok.val;
 
 import javax.inject.Inject;
@@ -62,6 +63,7 @@ public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleMan
         ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
         ApplicationOperation>> {
 
+    @Getter
     private final ApplicationStateDB stateDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
 
