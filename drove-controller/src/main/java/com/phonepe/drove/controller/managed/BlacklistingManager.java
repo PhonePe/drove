@@ -439,11 +439,11 @@ public class BlacklistingManager implements Managed {
             log.debug("Calculated timeout for app {} with {} instances is {} ms. Default: {} ms. Computed: {} ms. Parallelism: {}. Timeout multipler: {}",
                     appId, instances, opTimeout, defaultTimeout, computedTimeout, parallelism, timeoutMultiplier);
             val waitTime = opTimeout + 30_000; //Adding some buffer to the wait time
-            val future = completionService.submit(() -> issueReplaceCommand(waitTime,
+            val replaceCommandFuture = completionService.submit(() -> issueReplaceCommand(waitTime,
                                                                             appId,
                                                                             instances,
                                                                             opTimeout));
-            futures.add(future);
+            futures.add(replaceCommandFuture);
         }
         val failedApps = futures.stream()
                 .map(f -> {
