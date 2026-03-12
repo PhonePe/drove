@@ -7,5 +7,6 @@ public class GPUInfo {
     String gpuId;
     String gpuProvider;
     String gpuModel;
+    Integer numaNodeAffinity;
     boolean available;
 }

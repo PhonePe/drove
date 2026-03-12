@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.models.application.requirements.*;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
@@ -46,7 +47,16 @@ import java.util.stream.Collectors;
 public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     private static final Duration MAX_REMOVED_NODE_RETENTION_WINDOW = Duration.ofDays(2);
 
+    private final ExecutorResourceAllocator executorResourceAllocator;
     private final Map<String, ExecutorHostInfo> nodes = new HashMap<>();
+
+    public InMemoryClusterResourcesDB() {
+        this(new GpuAwareNumaExecutorResourceAllocator());
+    }
+
+    public InMemoryClusterResourcesDB(ExecutorResourceAllocator executorResourceAllocator) {
+        this.executorResourceAllocator = executorResourceAllocator;
+    }
     private final Map<String, ExecutorHostInfo> removedNodes = new LinkedHashMap<>() {
 
         @Override
@@ -195,10 +205,21 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             List<ResourceRequirement> requirements,
             Set<ExecutorState> allowedExecutorState,
             Predicate<AllocatedExecutorNode> filter) {
+        return selectNodes(requirements, allowedExecutorState, filter, true);
+    }
+
+    @VisibleForTesting
+    public Optional<AllocatedExecutorNode> selectNodes(
+            List<ResourceRequirement> requirements,
+            Set<ExecutorState> allowedExecutorState,
+            Predicate<AllocatedExecutorNode> filter,
+            boolean shouldShuffle) {
         val stamp = lock.writeLock();
         try {
             val rawNodes = new ArrayList<>(nodes.values());
-            Collections.shuffle(rawNodes);
+            if(shouldShuffle) {
+                Collections.shuffle(rawNodes);
+            }
             return rawNodes
                     .stream()
                     .filter(node -> inRequiredState(node, allowedExecutorState))
@@ -391,48 +412,70 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     private Optional<AllocatedExecutorNode> ensureResource(
             final ExecutorHostInfo hostInfo,
             final List<ResourceRequirement> resources) {
-        val cpus =
-                resources.stream()
-                        .mapToLong(req -> req.accept(new ResourceRequirementVisitor<>() {
+        val cpus = extractCpuRequirement(resources);
+        val memory = extractMemoryRequirement(resources);
+        val gpus = extractGpuRequirement(resources);
 
-                            @Override
-                            public Long visit(CPURequirement cpuRequirement) {
-                                return cpuRequirement.getCount();
-                            }
+        // Early-exit if there aren't enough free GPUs in total across all NUMA nodes
+        if (gpus > 0) {
+            val totalFreeGpus = hostInfo.getGpuInfo().getGpus().values().stream()
+                    .filter(state -> state.equals(ExecutorHostInfo.CoreState.FREE))
+                    .count();
+            if (totalFreeGpus < gpus) {
+                return Optional.empty();
+            }
+        }
 
-                            @Override
-                            public Long visit(MemoryRequirement memoryRequirement) {
-                                return 0L;
-                            }
+        // Candidate evaluation + selection + allocation are delegated to the allocator strategy.
+        return executorResourceAllocator.selectAndAllocate(hostInfo, cpus, memory, gpus);
+    }
 
-                            @Override
-                            public Long visit(GPURequirement gpuRequirement) {
-                                return 0L;
-                            }
-                        }))
-                        .sum();
-        val memory =
-                resources.stream()
-                        .mapToLong(req -> req.accept(new ResourceRequirementVisitor<>() {
 
-                            @Override
-                            public Long visit(CPURequirement cpuRequirement) {
-                                return 0L;
-                            }
+    private long extractCpuRequirement(List<ResourceRequirement> resources) {
+        return resources.stream()
+                .mapToLong(req -> req.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return cpuRequirement.getCount();
+                    }
 
-                            @Override
-                            public Long visit(MemoryRequirement memoryRequirement) {
-                                return memoryRequirement.getSizeInMB();
-                            }
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return 0L;
+                    }
 
-                            @Override
-                            public Long visit(GPURequirement gpuRequirement) {
-                                return 0L;
-                            }
-                        }))
-                        .sum();
-        val gpus = resources.stream()
-                .mapToLong(req -> req.accept(new ResourceRequirementVisitor<Long>() {
+                    @Override
+                    public Long visit(GPURequirement gpuRequirement) {
+                        return 0L;
+                    }
+                }))
+                .sum();
+    }
+
+    private long extractMemoryRequirement(List<ResourceRequirement> resources) {
+        return resources.stream()
+                .mapToLong(req -> req.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Long visit(CPURequirement cpuRequirement) {
+                        return 0L;
+                    }
+
+                    @Override
+                    public Long visit(MemoryRequirement memoryRequirement) {
+                        return memoryRequirement.getSizeInMB();
+                    }
+
+                    @Override
+                    public Long visit(GPURequirement gpuRequirement) {
+                        return 0L;
+                    }
+                }))
+                .sum();
+    }
+
+    private long extractGpuRequirement(List<ResourceRequirement> resources) {
+        return resources.stream()
+                .mapToLong(req -> req.accept(new ResourceRequirementVisitor<>() {
                     @Override
                     public Long visit(CPURequirement cpuRequirement) {
                         return 0L;
@@ -447,81 +490,44 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                     public Long visit(GPURequirement gpuRequirement) {
                         return gpuRequirement.getCount();
                     }
-                })).sum();
-        val gpuAllocation = allocateGPUs(hostInfo.getGpuInfo(), gpus);
-        if(!gpuAllocation.isPresent()) {
-            return Optional.empty();
-        }
-
-        //NOTE: THis ensures everything is on the SAME numa node for performance
-        return hostInfo.getNodes()
-                .entrySet()
-                .stream()
-                .filter(entry -> freeCoresForNode(entry.getValue()) >= cpus && entry.getValue().getMemory()
-                        .getAvailable() >= memory)
-                .map(node -> new AllocatedExecutorNode(hostInfo.getExecutorId(),
-                                                       hostInfo.getNodeData().getHostname(),
-                                                       hostInfo.getNodeData().getPort(),
-                                                       hostInfo.getNodeData().getTransportType(),
-                                                       allocateCPUs(node, cpus),
-                                                       new MemoryAllocation(
-                                                               Collections.singletonMap(node.getKey(), memory)),
-                                                       gpuAllocation.get(),
-                                                       Objects.requireNonNullElse(hostInfo.getNodeData().getTags(),
-                                                                                  Set.of()),
-                                                       Objects.requireNonNullElse(hostInfo.getNodeData().getMetadata(),
-                                                                                  Map.of()),
-                                                       hostInfo.getNodeData().getExecutorState()))
-                .findAny();
+                }))
+                .sum();
     }
 
-    private Optional<GPUAllocation> allocateGPUs(ExecutorHostInfo.HostGPUInfo gpuInfo, long gpus) {
-        if(gpus == 0) {
-            return Optional.of(new GPUAllocation(Set.of()));
-        }
-        val freeGpus =gpuInfo.getGpus().entrySet().stream()
-                .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
-                .map(Map.Entry::getKey)
-                .limit(gpus)
-                .collect(Collectors.toUnmodifiableSet());
-        if (freeGpus.size() < gpus) {
-            return Optional.empty();
-        }
-        return Optional.of(new GPUAllocation(freeGpus));
+
+    private ExecutorHostInfo convertState(final ExecutorNodeData node) {
+        val snapshot = node.getState();
+        return new ExecutorHostInfo(snapshot.getExecutorId(), node, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
     }
+
+    private ExecutorHostInfo convertState(final ExecutorHostInfo node, final ExecutorResourceSnapshot snapshot) {
+        val nodeData = ExecutorNodeData.from(node.getNodeData(),
+                                             snapshot,
+                                             node.getNodeData().getInstances(),
+                                             node.getNodeData().getTasks(),
+                                             node.getNodeData().getServiceInstances(),
+                                             node.getNodeData().getTags(),
+                                             node.getNodeData().getExecutorState(),
+                                             node.getNodeData().getMetadata());
+        return new ExecutorHostInfo(snapshot.getExecutorId(), nodeData, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
+    }
+
     private ExecutorHostInfo.HostGPUInfo convertToGpuInfo(ExecutorResourceSnapshot resourceSnapshot) {
         val gpuInfo = new ExecutorHostInfo.HostGPUInfo();
         resourceSnapshot.getGpus().getFreeGpus().forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.FREE));
         resourceSnapshot.getGpus().getUsedGpus().forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.IN_USE));
         return gpuInfo;
     }
-    /**
-     * Allocate free CPUs as per requirement
-     *
-     * @param nodeInfo     current node
-     * @param requiredCPUs number of CPUs needed
-     * @return Set of allocated CPU cores on same numa node
-     */
-    private CPUAllocation allocateCPUs(
-            final Map.Entry<Integer, ExecutorHostInfo.NumaNodeInfo> nodeInfo,
-            long requiredCPUs) {
-        return new CPUAllocation(Map.of(nodeInfo.getKey(),
-                                        nodeInfo.getValue()
-                                                .getCores()
-                                                .entrySet()
-                                                .stream()
-                                                .filter(entry -> entry.getValue()
-                                                        .equals(ExecutorHostInfo.CoreState.FREE))
-                                                .map(Map.Entry::getKey)
-                                                .limit(requiredCPUs)
-                                                .collect(Collectors.toUnmodifiableSet())));
-    }
 
+    /**
+     * Convert ExecutorResourceSnapshot into NUMA node information map
+     */
     private Map<Integer, ExecutorHostInfo.NumaNodeInfo> convertToNodeInfo(final ExecutorResourceSnapshot resourceSnapshot) {
         val numaNodes = new HashMap<Integer, ExecutorHostInfo.NumaNodeInfo>();
         val cpus = resourceSnapshot.getCpus();
         val memory = resourceSnapshot.getMemory();
         //TODO(gabber12): Check the nuance of allocated vs free
+
         cpus.getFreeCores()
                 .forEach((key, freeCores) -> {
                     val nodeInfo = numaNodes.computeIfAbsent(key, k -> new ExecutorHostInfo.NumaNodeInfo());
@@ -550,22 +556,6 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         return numaNodes;
     }
 
-    private long freeCoresForNode(final ExecutorHostInfo.NumaNodeInfo node) {
-        return node.getCores()
-                .entrySet()
-                .stream()
-                .filter(e -> e.getValue()
-                        .equals(ExecutorHostInfo.CoreState.FREE)).count();
-    }
-
-    private ExecutorHostInfo convertState(final ExecutorNodeData node) {
-        val snapshot = node.getState();
-        return new ExecutorHostInfo(snapshot.getExecutorId(), node, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
-    }
-
-    private ExecutorHostInfo convertState(final ExecutorHostInfo node, final ExecutorResourceSnapshot snapshot) {
-        return new ExecutorHostInfo(snapshot.getExecutorId(), node.getNodeData(), convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
-    }
 
     private Set<String> liveExecutorsUnsafe() {
         // Remove nodes that have been blacklisted locally as well as those that are not in ACTIVE state

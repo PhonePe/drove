@@ -121,7 +121,7 @@ class ZkNodeDataStoreTest {
                             Collections.singletonMap(0, 1024L)),
                     new AvailableGPU(List.of("1"),List.of( "2")),
                     new PhysicalLayout(Collections.singletonMap(0, Collections.singleton(1)),
-                            Collections.singletonMap(0, 1024L), Set.of(new GPUInfo("1", "NVIDIA", "H100", true), new GPUInfo("2", "NVIDIA","H100", false))));
+                            Collections.singletonMap(0, 1024L), Set.of(new GPUInfo("1", "NVIDIA", "H100", null,true), new GPUInfo("2", "NVIDIA","H100", null,false))));
             val nodeData = new ExecutorNodeData("localhost",
                     8080,
                     NodeTransportType.HTTP,

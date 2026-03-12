@@ -46,14 +46,14 @@ class ResourcePopulatorTest extends AbstractExecutorEngineEnabledTestBase {
         val availableCores0 = Set.of(1, 2, 3, 4);
         val discoveredNodeInfo = ResourceManager.NodeInfo.from(availableCores0, 1000);
         val resource = new ResourceManager.ExecutorResources(Map.of(0,
-                              discoveredNodeInfo), Set.of(new GPUInfo("gpuId", "nvidia", "h100", true)));
+                              discoveredNodeInfo), Set.of(new GPUInfo("gpuId", "nvidia", "h100", null,true)));
         Mockito.when(resourceLoader.loadResources()).thenReturn(resource);
 
         val resourcePopulator = new ResourcePopulator(resourceDB, resourceLoader);
         resourcePopulator.start();
         Mockito.verify(resourceDB, Mockito.times(1))
                 .populateResources(new ResourceManager.ExecutorResources(Map.of(0,
-                        discoveredNodeInfo), Set.of(new GPUInfo("gpuId", "nvidia", "h100",true))));
+                        discoveredNodeInfo), Set.of(new GPUInfo("gpuId", "nvidia", "h100",null,true))));
         resourcePopulator.stop();
     }
 

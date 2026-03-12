@@ -128,7 +128,7 @@ public class ResourceManager {
             val gpuAllocation = currentGpus.stream().filter(g -> g.equals(gpu)).findFirst();
             currentGpus.remove(gpuAllocation.get());
         });
-        //TODO(gabber12): revisit
+
         val currNodes = new HashMap<>(nodes);
         resourceRequirements
                 .forEach((node, requirement)
@@ -157,7 +157,7 @@ public class ResourceManager {
         val currNodes = new HashMap<>(nodes);
         val currentGpus = new ArrayList<>(gpus);
         val resourceRequirements = usage.getUsedResources();
-        //TODO(gabber12): revisit
+
         resourceRequirements
                 .forEach((node, requirement)
                                  -> currNodes.computeIfPresent(
@@ -209,17 +209,17 @@ public class ResourceManager {
                         .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Long::sum));
 
-        val gpus = this.gpus.stream()
+        val curr_gpus = this.gpus.stream()
                 .toList();
         val usedGpus = resourceLocks.values()
                 .stream()
                 .map(ResourceUsage::getUsedGPUs)
                 .flatMap(Collection::stream)
                 .toList();
-        //TODO(gabber12): gpu info
+
         return new ResourceInfo(new AvailableCPU(cpus, usedCores),
                                 new AvailableMemory(memory, usedMemory),
-                                new AvailableGPU(gpus, usedGpus),
+                                new AvailableGPU(curr_gpus, usedGpus),
                                 physicalLayout);
     }
 

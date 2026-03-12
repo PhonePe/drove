@@ -147,7 +147,7 @@ public class EventUtils {
 
                     @Override
                     public Void visit(GPURequirement gpuRequirement) {
-                        //TODO(gabber12): GPU local services if needed can also be added here
+                        // Local services dont support gpus
                         return null;
                     }
                 }));

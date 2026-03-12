@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import lombok.AllArgsConstructor;
 import lombok.Data;

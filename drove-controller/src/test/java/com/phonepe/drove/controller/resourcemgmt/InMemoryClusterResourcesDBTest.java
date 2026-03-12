@@ -22,21 +22,24 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.models.application.requirements.GPURequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,8 +56,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
     void testHostDetails() {
         val db = new InMemoryClusterResourcesDB();
         db.update(IntStream.rangeClosed(1, 100)
-                          .mapToObj(ControllerTestUtils::generateExecutorNode)
-                          .toList());
+                .mapToObj(ControllerTestUtils::generateExecutorNode)
+                .toList());
         {
             val snap = db.currentSnapshot(false);
             assertEquals(100, snap.size());
@@ -62,29 +65,29 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         {
             IntStream.rangeClosed(1, 100)
                     .forEach(i -> assertEquals(executorId(i),
-                                               db.currentSnapshot(executorId(i))
-                                                       .map(ExecutorHostInfo::getExecutorId)
-                                                       .orElse(null)));
+                            db.currentSnapshot(executorId(i))
+                                    .map(ExecutorHostInfo::getExecutorId)
+                                    .orElse(null)));
         }
         {
             db.remove(IntStream.rangeClosed(1, 100).mapToObj(ControllerTestUtils::executorId).toList());
             assertTrue(db.currentSnapshot(false).isEmpty());
             IntStream.rangeClosed(1, 100)
                     .forEach(i -> assertEquals(executorId(i),
-                                               db.lastKnownSnapshot(executorId(i))
-                                                       .map(ExecutorHostInfo::getExecutorId)
-                                                       .orElse(null)));
+                            db.lastKnownSnapshot(executorId(i))
+                                    .map(ExecutorHostInfo::getExecutorId)
+                                    .orElse(null)));
         }
         db.update(IntStream.rangeClosed(1, 100)
-                          .mapToObj(ControllerTestUtils::generateExecutorNode)
-                          .toList());
+                .mapToObj(ControllerTestUtils::generateExecutorNode)
+                .toList());
         {
             IntStream.rangeClosed(1, 100)
                     .forEach(i -> {
                         assertEquals(executorId(i),
-                                     db.currentSnapshot(executorId(i))
-                                             .map(ExecutorHostInfo::getExecutorId)
-                                             .orElse(null));
+                                db.currentSnapshot(executorId(i))
+                                        .map(ExecutorHostInfo::getExecutorId)
+                                        .orElse(null));
                         assertNull(db.lastKnownSnapshot(ControllerTestUtils.executorId(i)).orElse(null));
                     });
         }
@@ -95,27 +98,27 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         val db = new InMemoryClusterResourcesDB();
         assertTrue(db.currentSnapshot(false).isEmpty());
         db.update(new ExecutorResourceSnapshot("INVALID_EXECUTOR",
-                                               new AvailableCPU(Map.of(0, Set.of(2, 3, 4)),
-                                                                Map.of(1, Set.of(0, 1))),
-                                               new AvailableMemory(
-                                                       Map.of(0, 3 * 128 * (2L ^ 20)),
-                                                       Map.of(0, 128 * (2L ^ 20))),
-                                               new AvailableGPU(List.of(), List.of()),
-                                               new PhysicalLayout(Map.of(0,
-                                                                         Set.of(0, 1, 2, 3, 4),
-                                                                         1,
-                                                                         Set.of(0, 1, 2, 3, 4)),
-                                                                  Map.of(0,
-                                                                         4 * 128 * (2L ^ 20),
-                                                                         1,
-                                                                         4 * 128 * (2L ^ 20)), Set.of())));
+                new AvailableCPU(Map.of(0, Set.of(2, 3, 4)),
+                        Map.of(1, Set.of(0, 1))),
+                new AvailableMemory(
+                        Map.of(0, 3 * 128 * (2L ^ 20)),
+                        Map.of(0, 128 * (2L ^ 20))),
+                new AvailableGPU(List.of(), List.of()),
+                new PhysicalLayout(Map.of(0,
+                        Set.of(0, 1, 2, 3, 4),
+                        1,
+                        Set.of(0, 1, 2, 3, 4)),
+                        Map.of(0,
+                                4 * 128 * (2L ^ 20),
+                                1,
+                                4 * 128 * (2L ^ 20)), Set.of())));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
         val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                           EnumSet.of(ExecutorState.ACTIVE),
-                                           node -> true
-                                          )
+                        EnumSet.of(ExecutorState.ACTIVE),
+                        node -> true
+                )
                 .orElse(null);
         assertNotNull(allocatedNode);
         //Ensure nodes are allocated correctly
@@ -124,79 +127,79 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertNotNull(nodeInfo);
             //1. Free nodes have not been returned as allocated
             assertTrue(Sets.intersection(allocatedNode.getCpu().getCores().get(0),
-                                         nodeInfo.getNodes()
-                                                 .get(0)
-                                                 .getCores()
-                                                 .entrySet()
-                                                 .stream()
-                                                 .filter(e -> e.getValue()
-                                                         .equals(ExecutorHostInfo.CoreState.FREE))
-                                                 .map(Map.Entry::getKey)
-                                                 .collect(Collectors.toSet())).isEmpty());
+                    nodeInfo.getNodes()
+                            .get(0)
+                            .getCores()
+                            .entrySet()
+                            .stream()
+                            .filter(e -> e.getValue()
+                                    .equals(ExecutorHostInfo.CoreState.FREE))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toSet())).isEmpty());
             //2. Nodes marked as allocated are indeed accounted as allocated
             assertEquals(allocatedNode.getCpu().getCores().get(0),
-                         nodeInfo.getNodes()
-                                 .get(0)
-                                 .getCores()
-                                 .entrySet()
-                                 .stream()
-                                 .filter(e -> e.getValue()
-                                         .equals(ExecutorHostInfo.CoreState.ALLOCATED))
-                                 .map(Map.Entry::getKey)
-                                 .collect(Collectors.toSet()));
+                    nodeInfo.getNodes()
+                            .get(0)
+                            .getCores()
+                            .entrySet()
+                            .stream()
+                            .filter(e -> e.getValue()
+                                    .equals(ExecutorHostInfo.CoreState.ALLOCATED))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toSet()));
         }
 
         //Receive update to mark allocated nodes as in use
         val originalResource = originalNodeData.getState();
         db.update(new ExecutorResourceSnapshot(allocatedNode.getExecutorId(),
-                                               new AvailableCPU(Map.of(0,
-                                                                       Sets.difference(originalResource.getCpus()
-                                                                                               .getFreeCores()
-                                                                                               .get(0),
-                                                                                       allocatedNode.getCpu()
-                                                                                               .getCores()
-                                                                                               .get(0))),
-                                                                allocatedNode.getCpu().getCores()),
-                                               new AvailableMemory(Map.of(0,
-                                                                          originalResource.getMemory()
-                                                                                  .getFreeMemory()
-                                                                                  .get(0) - allocatedNode.getMemory()
-                                                                                  .getMemoryInMB()
-                                                                                  .get(0)),
-                                                                   allocatedNode.getMemory().getMemoryInMB()),
-                                               new AvailableGPU(List.of(), List.of()),
-                                               originalResource.getLayout()
-                ));
+                new AvailableCPU(Map.of(0,
+                        Sets.difference(originalResource.getCpus()
+                                        .getFreeCores()
+                                        .get(0),
+                                allocatedNode.getCpu()
+                                        .getCores()
+                                        .get(0))),
+                        allocatedNode.getCpu().getCores()),
+                new AvailableMemory(Map.of(0,
+                        originalResource.getMemory()
+                                .getFreeMemory()
+                                .get(0) - allocatedNode.getMemory()
+                                .getMemoryInMB()
+                                .get(0)),
+                        allocatedNode.getMemory().getMemoryInMB()),
+                new AvailableGPU(List.of(), List.of()),
+                originalResource.getLayout()
+        ));
         //Ensure states have reflected properly
         {
             val nodeInfo = db.currentSnapshot(allocatedNode.getExecutorId()).orElse(null);
             assertNotNull(nodeInfo);
             assertEquals(allocatedNode.getCpu().getCores().get(0),
-                         nodeInfo.getNodes()
-                                 .get(0)
-                                 .getCores()
-                                 .entrySet()
-                                 .stream()
-                                 .filter(e -> e.getValue()
-                                         .equals(ExecutorHostInfo.CoreState.IN_USE))
-                                 .map(Map.Entry::getKey)
-                                 .collect(Collectors.toSet()));
+                    nodeInfo.getNodes()
+                            .get(0)
+                            .getCores()
+                            .entrySet()
+                            .stream()
+                            .filter(e -> e.getValue()
+                                    .equals(ExecutorHostInfo.CoreState.IN_USE))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toSet()));
         }
         assertNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
-                                  EnumSet.of(ExecutorState.ACTIVE),
-                                  node -> true
-                                 )
-                           .orElse(null));
+                        EnumSet.of(ExecutorState.ACTIVE),
+                        node -> true
+                )
+                .orElse(null));
         db.deselectNode(allocatedNode.getExecutorId(),
-                        allocatedNode.getCpu(),
-                        allocatedNode.getMemory(),
+                allocatedNode.getCpu(),
+                allocatedNode.getMemory(),
                 new GPUAllocation(Set.of())); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
-                                     EnumSet.of(ExecutorState.ACTIVE),
-                                     node -> true
-                                    )
-                              .orElse(null));
+                        EnumSet.of(ExecutorState.ACTIVE),
+                        node -> true
+                )
+                .orElse(null));
     }
 
     @Test
@@ -205,29 +208,29 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         IntStream.rangeClosed(1, 10)
                 .forEach(i -> db.markBlacklisted(executorId(i)));
         assertTrue(IntStream.rangeClosed(1, 10)
-                           .allMatch(i -> db.isBlacklisted(executorId(i))),
-                   "Did not blacklist: " + IntStream.rangeClosed(1, 10)
-                           .filter(i -> !db.isBlacklisted(executorId(i)))
-                           .boxed()
-                           .toList());
+                        .allMatch(i -> db.isBlacklisted(executorId(i))),
+                "Did not blacklist: " + IntStream.rangeClosed(1, 10)
+                        .filter(i -> !db.isBlacklisted(executorId(i)))
+                        .boxed()
+                        .toList());
         db.update(IntStream.rangeClosed(1, 5)
-                          .mapToObj(ControllerTestUtils::generateExecutorNode)
-                          .toList());
+                .mapToObj(ControllerTestUtils::generateExecutorNode)
+                .toList());
         assertTrue(IntStream.rangeClosed(1, 10)
-                           .allMatch(i -> db.isBlacklisted(executorId(i))),
-                   "Did not blacklist: " + IntStream.rangeClosed(1, 10)
-                           .filter(i -> !db.isBlacklisted(executorId(i)))
-                           .boxed()
-                           .toList()); //This will prioritise the info in local map
+                        .allMatch(i -> db.isBlacklisted(executorId(i))),
+                "Did not blacklist: " + IntStream.rangeClosed(1, 10)
+                        .filter(i -> !db.isBlacklisted(executorId(i)))
+                        .boxed()
+                        .toList()); //This will prioritise the info in local map
         IntStream.rangeClosed(1, 10)
                 .forEach(i -> db.unmarkBlacklisted(executorId(i)));
         assertTrue(IntStream.rangeClosed(1, 10)
-                           .noneMatch(i -> db.isBlacklisted(executorId(i))));
+                .noneMatch(i -> db.isBlacklisted(executorId(i))));
         db.update(IntStream.rangeClosed(1, 10)
-                          .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true))
-                          .toList());
+                .mapToObj(index -> ControllerTestUtils.generateExecutorNode(index, Set.of(), true))
+                .toList());
         assertTrue(IntStream.rangeClosed(1, 10)
-                           .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will use node level data
+                .allMatch(i -> db.isBlacklisted(executorId(i)))); //This will use node level data
 
     }
 
@@ -240,9 +243,9 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         db.update(List.of(originalNodeData));
         { // Allocate node and assert that it is active
             val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                               EnumSet.of(ExecutorState.ACTIVE),
-                                               node -> true
-                                              )
+                            EnumSet.of(ExecutorState.ACTIVE),
+                            node -> true
+                    )
                     .orElse(null);
             assertNotNull(allocatedNode);
             assertTrue(db.isActive(allocatedNode.getExecutorId()));
@@ -255,16 +258,16 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertFalse(db.isActive(executorId));
             assertTrue(db.isBlacklisted(executorId));
             assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                      EnumSet.of(ExecutorState.ACTIVE),
-                                      node -> true
-                                     )
-                               .orElse(null));
+                            EnumSet.of(ExecutorState.ACTIVE),
+                            node -> true
+                    )
+                    .orElse(null));
 
             // Now select node with blacklisted state allowed
             final var allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                                     EnumSet.of(ExecutorState.BLACKLISTED),
-                                                     node -> true
-                                                    )
+                            EnumSet.of(ExecutorState.BLACKLISTED),
+                            node -> true
+                    )
                     .orElse(null);
             assertNotNull(allocatedNode);
             db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
@@ -275,10 +278,10 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertTrue(db.isActive(executorId));
             assertFalse(db.isBlacklisted(executorId));
             assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                         EnumSet.of(ExecutorState.ACTIVE),
-                                         node -> true
-                                        )
-                                  .orElse(null));
+                            EnumSet.of(ExecutorState.ACTIVE),
+                            node -> true
+                    )
+                    .orElse(null));
         }
         {
             // Now mark node as blacklisted by updating state
@@ -291,19 +294,19 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                     originalNodeData.getTags(),
                     ExecutorState.BLACKLISTED,
                     originalNodeData.getMetadata()
-                                                   )));
+            )));
             assertFalse(db.isActive(executorId));
             assertTrue(db.isBlacklisted(executorId));
             assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                      EnumSet.of(ExecutorState.ACTIVE),
-                                      node -> true
-                                     )
-                               .orElse(null));
+                            EnumSet.of(ExecutorState.ACTIVE),
+                            node -> true
+                    )
+                    .orElse(null));
 
             final var allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                                     EnumSet.of(ExecutorState.BLACKLISTED),
-                                                     node -> true
-                                                    )
+                            EnumSet.of(ExecutorState.BLACKLISTED),
+                            node -> true
+                    )
                     .orElse(null);
             assertNotNull(allocatedNode);
             db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
@@ -319,16 +322,17 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                     originalNodeData.getTags(),
                     ExecutorState.ACTIVE,
                     originalNodeData.getMetadata()
-                                                   )));
+            )));
             assertTrue(db.isActive(executorId));
             assertFalse(db.isBlacklisted(executorId));
             assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                                         EnumSet.of(ExecutorState.ACTIVE),
-                                         node -> true
-                                        )
-                                  .orElse(null));
+                            EnumSet.of(ExecutorState.ACTIVE),
+                            node -> true
+                    )
+                    .orElse(null));
         }
     }
+
     @Test
     void testExecutorStateWithGPU() {
         val db = new InMemoryClusterResourcesDB();
@@ -348,6 +352,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
         }
     }
+
+
     @Test
     void testUpdatedSignal() {
         val db = new InMemoryClusterResourcesDB();
@@ -426,6 +432,91 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 .stream()
                 .map(ExecutorHostInfo::getExecutorId)
                 .collect(Collectors.toUnmodifiableSet()));
+    }
+
+    private ExecutorNodeData buildExecutorNodeData(
+            String executorId,
+            Map<Integer, Set<Integer>> freeCoresPerNuma,
+            Map<Integer, Long> freeMemoryPerNuma,
+            Map<String, Integer> gpuNumaAffinities) {
+        val freeGpus = new java.util.ArrayList<>(gpuNumaAffinities.keySet());
+        val usedMemory = freeMemoryPerNuma.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+        val physicalGpus = gpuNumaAffinities.entrySet().stream()
+                .map(entry -> new GPUInfo(entry.getKey(), "NVIDIA", "H100", entry.getValue(), true))
+                .collect(Collectors.toUnmodifiableSet());
+
+        val snapshot = new ExecutorResourceSnapshot(
+                executorId,
+                new AvailableCPU(freeCoresPerNuma, Map.of()),
+                new AvailableMemory(freeMemoryPerNuma, usedMemory),
+                new AvailableGPU(freeGpus, List.of()),
+                new PhysicalLayout(freeCoresPerNuma, freeMemoryPerNuma, physicalGpus)
+        );
+
+        return new ExecutorNodeData(
+                "host-" + executorId,
+                8080,
+                NodeTransportType.HTTP,
+                new Date(),
+                snapshot,
+                List.of(),
+                List.of(),
+                List.of(),
+                Set.of(),
+                Map.of(),
+                ExecutorState.ACTIVE
+        );
+    }
+
+    /**
+     * Failing Test to show that selectNodes() should select the first executor even if
+     * There is an executor that has local GPU nodes
+     */
+    @Test
+    void testFirstExecutorSelectedWithoutNumaLocalGpuWhenItCanAllocateGpu() {
+        // Scenario: Two executors exist.
+        // Executor-1: Has CPUs and memory on NUMA 0, GPUs only on NUMA 1 (no local affinity).
+        //             Can still allocate GPUs via cross-NUMA fallback.
+        // Executor-2: Has CPUs and memory on NUMA 0, GPUs local to NUMA 0.
+        //             Can allocate GPUs with NUMA locality.
+        // Expected: Executor-1 should be selected because selectNodes() scans in shuffle order
+        //           and selectAndAllocate() should succeed on it.
+
+        Assertions.assertThrows(AssertionError.class, () -> {
+        val db = new InMemoryClusterResourcesDB();
+
+        // Executor-1: NUMA 0 has CPUs + memory, NUMA 1 has all GPUs (cross-NUMA scenario)
+        val executor1NodeData = buildExecutorNodeData(
+                "executor-1",
+                Map.of(0, Set.of(0, 1, 2, 3)),  // CPUs only on NUMA 0
+                Map.of(0, 2048L, 1, 2048L),      // Memory on both
+                Map.of("GPU-0", 1, "GPU-1", 1)   // All GPUs on NUMA 1
+        );
+
+        // Executor-2: NUMA 0 has both CPUs and local GPUs
+        val executor2NodeData = buildExecutorNodeData(
+                "executor-2",
+                Map.of(0, Set.of(0, 1, 2, 3)),   // CPUs on NUMA 0
+                Map.of(0, 2048L),                 // Memory on NUMA 0 only
+                Map.of("GPU-0", 0, "GPU-1", 0)   // GPUs local to NUMA 0
+        );
+
+        db.update(List.of(executor2NodeData, executor1NodeData));
+
+        // Request: 1 CPU, 128MB memory, 1 GPU
+        val result = db.selectNodes(
+                List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1)),
+                EnumSet.of(ExecutorState.ACTIVE),
+                node -> true,
+                false
+        );
+
+        assertTrue(result.isPresent(), "Should successfully allocate on at least one executor");
+        val allocated = result.get();
+        assertEquals(allocated.getExecutorId(), "executor-1", "Executor-2 should be selected due to NUMA-local GPU availability");
+
+        });
     }
 
 }

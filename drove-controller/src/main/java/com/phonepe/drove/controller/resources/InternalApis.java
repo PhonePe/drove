@@ -97,7 +97,6 @@ public class InternalApis {
                     .orElse(LocalServiceState.DESTROYED);
             val spec = localServiceInfo.getSpec();
             if(LocalServiceState.RESOURCE_USING_STATES.contains(currState)) {
-                //TODO(gabber12): GPU reservation for local services if needed can also be added here
                 val instancesPerNode = localServiceInfo.getInstancesPerHost();
                 requiredCPU += ControllerUtils.totalCPU(spec, instancesPerNode);
                 requiredMemory+= ControllerUtils.totalMemory(spec, instancesPerNode);
