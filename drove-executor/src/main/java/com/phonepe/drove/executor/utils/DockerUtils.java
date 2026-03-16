@@ -396,6 +396,14 @@ public class DockerUtils {
 
                     @Override
                     public Void visit(GPUAllocation gpu) {
+                        val gpuIds = gpu.getGpuIds().stream()
+                                .filter(Objects::nonNull)
+                                .map(String::trim)
+                                .filter(id -> !id.isEmpty())
+                                .toList();
+                        if (gpuIds.isEmpty()) {
+                            return null;
+                        }
 
                         var deviceRequests = hostConfig.getDeviceRequests();
                         if (Objects.isNull(deviceRequests)) {
@@ -403,7 +411,8 @@ public class DockerUtils {
                             hostConfig.withDeviceRequests(deviceRequests);
                         }
                         deviceRequests.add(new DeviceRequest()
-                                                     .withDeviceIds(new ArrayList<>(gpu.getGpuIds()))
+                                                     .withDriver("nvidia")
+                                                     .withDeviceIds(new ArrayList<>(gpuIds))
                                                      .withCapabilities(List.of(List.of("gpu")))
                                                      );
                         return null;

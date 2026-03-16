@@ -1,7 +1,7 @@
 package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
+import com.google.common.base.Strings;
 import com.phonepe.drove.models.info.GPUInfo;
-import io.vavr.Tuple3;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -22,9 +22,9 @@ import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUti
 
 @Slf4j
 public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
+    private record GpuDescriptor(String gpuId, String productName, String productBrand, Integer gpuIndex) {}
 
-
-    private List<Tuple3<String, String, String>> fetchGpuResourcesWithNvidiaSMI() throws Exception {
+    private List<GpuDescriptor> fetchGpuResourcesWithNvidiaSMI() throws Exception {
         var xmlOutput = "";
         try {
             xmlOutput = queryNvidiaSMI();
@@ -49,9 +49,10 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         int gpuCount = doc.getElementsByTagName("gpu").getLength();
         val gpuList = IntStream.range(0, gpuCount).mapToObj(i -> {
             val gpuDoc = doc.getElementsByTagName("gpu").item(i);
-            val gpuId = gpuDoc.getAttributes().getNamedItem("id").getTextContent();
-            var productName = "Unknown GPU";
-            var productBrand = "Unknown Brand";
+            String gpuId = null;
+            String productName = null;
+            String productBrand = null;
+            Integer gpuIndex = null;
             for (int j = 0; j < gpuDoc.getChildNodes().getLength(); j++) {
                 val gpuPropDoc = gpuDoc.getChildNodes().item(j);
                 if (gpuPropDoc.getNodeName().equalsIgnoreCase("product_name")) {
@@ -60,8 +61,24 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
                 if (gpuPropDoc.getNodeName().equalsIgnoreCase("product_brand")) {
                     productBrand = gpuPropDoc.getTextContent();
                 }
+                if (gpuPropDoc.getNodeName().equalsIgnoreCase("uuid")
+                        && !gpuPropDoc.getTextContent().isBlank()) {
+                    // UUID is the stable GPU identity accepted by NVIDIA runtime and Docker device requests.
+                    gpuId = gpuPropDoc.getTextContent().trim();
+                }
+                if (gpuPropDoc.getNodeName().equalsIgnoreCase("minor_number")) {
+                    try {
+                        gpuIndex = Integer.parseInt(gpuPropDoc.getTextContent().trim());
+                    }
+                    catch (Exception ignored) {
+                        log.warn("Could not parse minor_number for GPU");
+                    }
+                }
             }
-            return new Tuple3<>(gpuId, productName, productBrand);
+            if(Strings.isNullOrEmpty(gpuId) || gpuIndex == null) {
+                throw new RuntimeException("Unable to parse GPU information from nvidia-smi output. Missing required fields id: %s index: %d".formatted(gpuId, gpuIndex));
+            }
+            return new GpuDescriptor(gpuId, productName, productBrand, gpuIndex);
         }).toList();
         log.info("Found {} GPU(s) in the system", gpuList.size());
         return gpuList;
@@ -129,12 +146,13 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         }
         val numaAffinityMap = fetchNumaAffinityMap();
         val result = new HashSet<GPUInfo>();
-        for (int i = 0; i < gpuList.size(); i++) {
-            val tup = gpuList.get(i);
-            val gpuId = tup._1;
-            val gpuModel = tup._2;
-            val gpuBrand = tup._3;
-            val numaAffinity = numaAffinityMap.get(i);
+        for (val gpuDescriptor : gpuList) {
+            val gpuId = gpuDescriptor.gpuId();
+            val gpuModel = gpuDescriptor.productName();
+            val gpuBrand = gpuDescriptor.productBrand();
+            val numaAffinity = Optional.ofNullable(gpuDescriptor.gpuIndex())
+                    .map(numaAffinityMap::get)
+                    .orElse(null);
             log.info("Detected GPU - ID: {}, Brand: {}, Model: {}, NUMA Affinity: {}",
                      gpuId, gpuBrand, gpuModel, numaAffinity);
             result.add(new GPUInfo(gpuId, gpuBrand, gpuModel, numaAffinity, true));

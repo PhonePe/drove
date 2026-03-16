@@ -49,6 +49,7 @@ class NVIDIASMIGPUResourceLoaderTest {
         assertEquals(8, gpus.size());
         for (val gpu : gpus) {
             assertNotNull(gpu.getGpuId());
+            assertTrue(gpu.getGpuId().startsWith("GPU-"));
             assertNotNull(gpu.getGpuModel());
             assertEquals("NVIDIA", gpu.getGpuProvider());
             assertNotNull(gpu.getNumaNodeAffinity());
@@ -145,5 +146,47 @@ class NVIDIASMIGPUResourceLoaderTest {
         for (val gpu : gpus) {
             assertNull(gpu.getNumaNodeAffinity());
         }
+    }
+
+    @Test
+    void testGPULoadMapsNumaByMinorNumberNotXmlOrder() {
+        val underTest = new NVIDIASMIGPUResourceLoader() {
+            @NotNull
+            @Override
+            protected String queryNvidiaSMI() {
+                return """
+                        <nvidia_smi_log>
+                          <gpu id=\"00000000:0A:00.0\">
+                            <product_name>H100</product_name>
+                            <product_brand>NVIDIA</product_brand>
+                            <uuid>GPU-SECOND</uuid>
+                            <minor_number>1</minor_number>
+                          </gpu>
+                          <gpu id=\"00000000:0B:00.0\">
+                            <product_name>H100</product_name>
+                            <product_brand>NVIDIA</product_brand>
+                            <uuid>GPU-FIRST</uuid>
+                            <minor_number>0</minor_number>
+                          </gpu>
+                        </nvidia_smi_log>
+                        """;
+            }
+
+            @NotNull
+            @Override
+            protected String queryNvidiaSMITopo() {
+                return """
+                        GPU0\tGPU1\tCPU Affinity\tNUMA Affinity
+                        GPU0\t X \tNV18\t0-15\t0
+                        GPU1\tNV18\t X \t16-31\t1
+                        """;
+            }
+        };
+
+        val gpusById = underTest.loadGPUInfo().stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(GPUInfo::getGpuId, gpu -> gpu));
+        assertEquals(2, gpusById.size());
+        assertEquals(0, gpusById.get("GPU-FIRST").getNumaNodeAffinity());
+        assertEquals(1, gpusById.get("GPU-SECOND").getNumaNodeAffinity());
     }
 }
