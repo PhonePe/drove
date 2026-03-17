@@ -490,7 +490,6 @@ public class ResponseEngine {
                 .count();
         val cpus = totalCPU(spec, knownInstances);
         val memory = totalMemory(spec, knownInstances);
-        //TODO(gabber12): GPU info for local services if needed
         return new LocalServiceSummary(info.getServiceId(),
                                        spec.getName(),
                                        info.getInstancesPerHost(),

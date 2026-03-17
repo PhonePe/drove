@@ -228,6 +228,119 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         assertTrue(result.isEmpty(), "Should fail when total free GPUs insufficient");
     }
 
+    @Test
+    void testGpuAllocationWhenSomeGpuAffinityCouldNotBeCalculated() {
+        // Scenario: Some GPUs have NUMA affinity, others have null affinity
+        // GPU-0 and GPU-1 have affinity, GPU-2 does not (affinity = null)
+        // When allocating, the allocator should:
+        // 1. Exclude GPU-2 from affinity mapping (not in gpuNumaAffinities)
+        // 2. Try to allocate from GPUs with known affinity first
+        // 3. Fall back to GPUs without affinity if needed
+        
+        val freeMemory = new LinkedHashMap<Integer, Long>();
+        freeMemory.put(0, 1024L);
+        freeMemory.put(1, 1024L);
+
+        val freeCores = new LinkedHashMap<Integer, Set<Integer>>();
+        freeCores.put(0, Set.of(0, 1));
+        freeCores.put(1, Set.of(2, 3));
+
+        val hostInfo = createCustomHostInfoWithPartialAffinities(
+                freeCores,
+                freeMemory,
+                // GPUs with affinity
+                Map.of("GPU-0", 0, "GPU-1", 1),
+                // GPU IDs without affinity (affinity = null)
+                Set.of("GPU-2")
+        );
+
+        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+
+        // Should succeed and allocate 2 GPUs
+        assertTrue(result.isPresent(), "Should allocate GPUs even when some GPUs lack affinity info");
+        val allocated = result.get();
+        assertEquals(2, allocated.getGpu().getGpuIds().size(), "Should allocate exactly 2 GPUs");
+        
+        // Check that GPUs with known affinity are preferred
+        val gpuNumaById = getGpuNumaAffinities(hostInfo);
+        val allocatedGpus = allocated.getGpu().getGpuIds();
+        
+        // GPU-0 and GPU-1 have affinity, GPU-2 does not
+        // We should prefer GPU-0 and GPU-1 first
+        val gpusWithAffinity = allocatedGpus.stream()
+                .filter(gpuNumaById::containsKey)
+                .count();
+        
+        // At least one GPU with known affinity should be allocated
+        assertTrue(gpusWithAffinity >= 1, "Should prefer allocating GPUs with known affinity");
+    }
+
+    @Test
+    void testGpuAllocationOnlyFallsBackToUnknownAffinityGpuWhenNecessary() {
+        // Scenario: NUMA 0 has only 1 GPU with affinity, NUMA 1 has none with affinity
+        // When requesting 2 GPUs and both must be allocated on NUMA 0,
+        // the allocator should use the 1 GPU with affinity and fall back to GPU without affinity
+        
+        val freeMemory = new LinkedHashMap<Integer, Long>();
+        freeMemory.put(0, 1024L);
+        freeMemory.put(1, 1024L);
+
+        val freeCores = new LinkedHashMap<Integer, Set<Integer>>();
+        freeCores.put(0, Set.of(0, 1));
+        freeCores.put(1, Set.of());  // No CPUs on NUMA 1, forcing allocation on NUMA 0
+
+        // GPU-0 has affinity to NUMA 0, GPU-1 doesn't have affinity
+        val hostInfo = createCustomHostInfoWithPartialAffinities(
+                freeCores,
+                freeMemory,
+                Map.of("GPU-0", 0),
+                Set.of("GPU-1")
+        );
+
+        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+
+        assertTrue(result.isPresent(), "Should succeed with fallback to unknown-affinity GPU");
+        val allocated = result.get();
+        assertEquals(2, allocated.getGpu().getGpuIds().size());
+        
+        val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
+        assertEquals(0, cpuNumaNode, "CPU should be on NUMA 0");
+        
+        // Should have GPU-0 (with affinity) and GPU-1 (fallback)
+        val allocatedGpuIds = allocated.getGpu().getGpuIds();
+        assertTrue(allocatedGpuIds.contains("GPU-0"), "Should allocate GPU-0 (has affinity)");
+        assertTrue(allocatedGpuIds.contains("GPU-1"), "Should allocate GPU-1 as fallback (no affinity)");
+    }
+
+    @Test
+    void testGpuAllocationWhenAllGpusLackAffinity() {
+        // Scenario: All free GPUs have null affinity (allocation info is incomplete)
+        // The allocator should still be able to allocate GPUs, treating them all equally
+        
+        val freeMemory = new LinkedHashMap<Integer, Long>();
+        freeMemory.put(0, 1024L);
+        freeMemory.put(1, 1024L);
+
+        val freeCores = new LinkedHashMap<Integer, Set<Integer>>();
+        freeCores.put(0, Set.of(0, 1));
+        freeCores.put(1, Set.of(2, 3));
+
+        // All GPUs lack affinity
+        val hostInfo = createCustomHostInfoWithPartialAffinities(
+                freeCores,
+                freeMemory,
+                Map.of(),  // No GPUs with affinity
+                Set.of("GPU-0", "GPU-1", "GPU-2")  // All lack affinity
+        );
+
+        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+
+        // Should succeed by falling back to any available GPU
+        assertTrue(result.isPresent(), "Should allocate even when all GPUs lack affinity");
+        val allocated = result.get();
+        assertEquals(2, allocated.getGpu().getGpuIds().size(), "Should allocate 2 GPUs");
+    }
+
     private ExecutorHostInfo createHostInfoWithGpuTopology(Map<String, Integer> gpuNumaAffinities) {
         val freeMemory = new LinkedHashMap<Integer, Long>();
         freeMemory.put(0, 1024L);
@@ -262,6 +375,47 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(new ArrayList<>(gpuNumaAffinities.keySet()), List.of()),
                 new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+        );
+
+        val nodeData = new ExecutorNodeData(
+                "test-host",
+                8080,
+                NodeTransportType.HTTP,
+                new Date(),
+                snapshot,
+                List.of(),
+                List.of(),
+                List.of(),
+                Set.of(),
+                Map.of(),
+                com.phonepe.drove.models.info.nodedata.ExecutorState.ACTIVE
+        );
+
+        return new ExecutorHostInfo("TEST_EXECUTOR", nodeData, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
+    }
+
+    private ExecutorHostInfo createCustomHostInfoWithPartialAffinities(
+            Map<Integer, Set<Integer>> freeCores,
+            Map<Integer, Long> freeMemory,
+            Map<String, Integer> gpuNumaAffinities,  // GPUs with known affinity
+            Set<String> unknownAffinityGpus         // GPU IDs without affinity (null)
+    ) {
+        val usedMemory = freeMemory.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+        val physicalGpus = gpuNumaAffinities.entrySet().stream()
+                .map(entry -> new GPUInfo(entry.getKey(), "NVIDIA", "H100", entry.getValue(), true))
+                .collect(Collectors.toUnmodifiableSet());
+
+        // Add GPUs without affinity as "unknown" (null affinity)
+        val physicalGpusWithUnknowns = new HashSet<>(physicalGpus);
+        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.add(new GPUInfo(gpuId, "NVIDIA", "H100", null, true)));
+
+        val snapshot = new ExecutorResourceSnapshot(
+                "TEST_EXECUTOR",
+                new AvailableCPU(freeCores, Map.of()),
+                new AvailableMemory(freeMemory, usedMemory),
+                new AvailableGPU(new ArrayList<>(gpuNumaAffinities.keySet()), List.of()),
+                new PhysicalLayout(freeCores, freeMemory, physicalGpusWithUnknowns)
         );
 
         val nodeData = new ExecutorNodeData(
@@ -330,9 +484,19 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 .forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.FREE));
         resourceSnapshot.getGpus().getUsedGpus()
                 .forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.IN_USE));
+        
+        // Also include GPUs from the physical layout that aren't in the available list
+        resourceSnapshot.getLayout().getGpus().stream()
+                .map(GPUInfo::getGpuId)
+                .filter(gpuId -> !gpuInfo.getGpus().containsKey(gpuId))
+                .forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.FREE));
+        
         return gpuInfo;
     }
 }
+
+
+
 
 
 

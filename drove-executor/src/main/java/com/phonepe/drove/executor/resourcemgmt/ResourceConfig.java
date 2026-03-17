@@ -17,6 +17,7 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
 import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
+import io.dropwizard.validation.ValidationMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -67,4 +68,9 @@ public class ResourceConfig {
 
     @Builder.Default
     private OverProvisioning overProvisioning = OverProvisioning.DEFAULT;
+
+    @ValidationMethod(message = "If enableNvidiaGpu is true, nvidiaGPULoaderConfig must be non-null and enabled")
+    public boolean isValid() {
+        return !enableNvidiaGpu || (nvidiaGPULoaderConfig != null && nvidiaGPULoaderConfig.isEnabled());
+    }
 }

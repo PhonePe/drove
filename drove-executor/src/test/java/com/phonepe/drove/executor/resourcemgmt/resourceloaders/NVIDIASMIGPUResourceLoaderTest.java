@@ -24,6 +24,21 @@ class NVIDIASMIGPUResourceLoaderTest {
     }
 
     @Test
+    void testNvidiaSMICommandNotFoundReturnsEmptyGPUList() throws IOException, InterruptedException {
+        val underTest = new NVIDIASMIGPUResourceLoader() {
+            @NotNull
+            @Override
+            protected String queryNvidiaSMI() throws InterruptedException, IOException {
+                // Simulate error=2 (ENOENT - No such file or directory)
+                throw new IOException("Cannot run program \"nvidia-smi\": error=2, No such file or directory");
+            }
+        };
+        val gpus = underTest.loadGPUInfo();
+        assertNotNull(gpus);
+        assertTrue(gpus.isEmpty(), "Should return empty GPU list when nvidia-smi is not available");
+    }
+
+    @Test
     void testGPUloadOnSystemWithNvidiaSMI() {
         val underTest = new NVIDIASMIGPUResourceLoader() {
             @NotNull

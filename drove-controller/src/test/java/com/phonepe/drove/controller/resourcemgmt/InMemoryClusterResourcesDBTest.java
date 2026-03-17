@@ -34,10 +34,7 @@ import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,6 +48,25 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  */
 class InMemoryClusterResourcesDBTest extends ControllerTestBase {
+
+    private static class RecordingSelector implements ExecutorSelector {
+        private final AtomicInteger invocations = new AtomicInteger();
+        private final ExecutorSelector delegate;
+
+        private RecordingSelector(ExecutorSelector delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Optional<AllocatedExecutorNode> select(
+                List<ExecutorHostInfo> nodes,
+                java.util.function.Predicate<ExecutorHostInfo> nodeFilter,
+                java.util.function.Function<ExecutorHostInfo, Optional<AllocatedExecutorNode>> allocator,
+                java.util.function.Predicate<AllocatedExecutorNode> allocationFilter) {
+            invocations.incrementAndGet();
+            return delegate.select(nodes, nodeFilter, allocator, allocationFilter);
+        }
+    }
 
     @Test
     void testHostDetails() {
@@ -434,6 +450,52 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 .collect(Collectors.toUnmodifiableSet()));
     }
 
+    @Test
+    void testCpuMemRequestsUseDefaultSelector() {
+        val defaultSelector = new RecordingSelector(new FirstFitExecutorSelector());
+        val gpuSelector = new RecordingSelector(new GpuAwareExecutorSelector());
+        val db = new InMemoryClusterResourcesDB(new GpuAwareNumaExecutorResourceAllocator(),
+                defaultSelector,
+                gpuSelector);
+
+        db.update(List.of(ControllerTestUtils.generateExecutorNode(1)));
+
+        val result = db.selectNodes(
+                List.of(new CPURequirement(1), new MemoryRequirement(128)),
+                EnumSet.of(ExecutorState.ACTIVE),
+                node -> true,
+                false);
+
+        assertTrue(result.isPresent());
+        assertEquals(1, defaultSelector.invocations.get());
+        assertEquals(0, gpuSelector.invocations.get());
+    }
+
+    @Test
+    void testGpuRequestsUseGpuAwareSelector() {
+        val defaultSelector = new RecordingSelector(new FirstFitExecutorSelector());
+        val gpuSelector = new RecordingSelector(new GpuAwareExecutorSelector());
+        val db = new InMemoryClusterResourcesDB(new GpuAwareNumaExecutorResourceAllocator(),
+                defaultSelector,
+                gpuSelector);
+
+        db.update(List.of(buildExecutorNodeData(
+                "executor-1",
+                Map.of(0, Set.of(0, 1, 2, 3)),
+                Map.of(0, 2048L),
+                Map.of("GPU-0", 0))));
+
+        val result = db.selectNodes(
+                List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1)),
+                EnumSet.of(ExecutorState.ACTIVE),
+                node -> true,
+                false);
+
+        assertTrue(result.isPresent());
+        assertEquals(0, defaultSelector.invocations.get());
+        assertEquals(1, gpuSelector.invocations.get());
+    }
+
     private ExecutorNodeData buildExecutorNodeData(
             String executorId,
             Map<Integer, Set<Integer>> freeCoresPerNuma,
@@ -469,21 +531,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         );
     }
 
-    /**
-     * Failing Test to show that selectNodes() should select the first executor even if
-     * There is an executor that has local GPU nodes
-     */
     @Test
-    void testFirstExecutorSelectedWithoutNumaLocalGpuWhenItCanAllocateGpu() {
-        // Scenario: Two executors exist.
-        // Executor-1: Has CPUs and memory on NUMA 0, GPUs only on NUMA 1 (no local affinity).
-        //             Can still allocate GPUs via cross-NUMA fallback.
-        // Executor-2: Has CPUs and memory on NUMA 0, GPUs local to NUMA 0.
-        //             Can allocate GPUs with NUMA locality.
-        // Expected: Executor-1 should be selected because selectNodes() scans in shuffle order
-        //           and selectAndAllocate() should succeed on it.
-
-        Assertions.assertThrows(AssertionError.class, () -> {
+    void testGpuSelectionPrefersExecutorWithNumaLocalGpu() {
         val db = new InMemoryClusterResourcesDB();
 
         // Executor-1: NUMA 0 has CPUs + memory, NUMA 1 has all GPUs (cross-NUMA scenario)
@@ -502,7 +551,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 Map.of("GPU-0", 0, "GPU-1", 0)   // GPUs local to NUMA 0
         );
 
-        db.update(List.of(executor2NodeData, executor1NodeData));
+        db.update(List.of(executor1NodeData, executor2NodeData));
 
         // Request: 1 CPU, 128MB memory, 1 GPU
         val result = db.selectNodes(
@@ -514,9 +563,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
         assertTrue(result.isPresent(), "Should successfully allocate on at least one executor");
         val allocated = result.get();
-        assertEquals(allocated.getExecutorId(), "executor-1", "Executor-2 should be selected due to NUMA-local GPU availability");
-
-        });
+        assertEquals("executor-2", allocated.getExecutorId(),
+                "Executor with NUMA-local GPU allocation should be preferred over cross-NUMA fallback");
     }
 
 }

@@ -44,7 +44,7 @@ public class CommandUtils {
             if (!runWithShell) {
                 cmdArgsArray = commandWithArgs.split("[ ]+");
             } else {
-                cmdArgsArray = new String[]{"/bin/zsh", "-c", commandWithArgs};
+                cmdArgsArray = new String[]{"/bin/sh", "-c", commandWithArgs};
             }
             String cmdString = Joiner.on(" ").join(cmdArgsArray);
             log.info("Running the following command: {}", cmdString);

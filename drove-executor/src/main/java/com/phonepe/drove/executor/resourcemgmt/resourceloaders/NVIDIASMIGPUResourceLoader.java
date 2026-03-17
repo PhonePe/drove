@@ -24,6 +24,7 @@ import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUti
 public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
     private record GpuDescriptor(String gpuId, String productName, String productBrand, Integer gpuIndex) {}
 
+    @SuppressWarnings({"java:S3776", "java:S112"})
     private List<GpuDescriptor> fetchGpuResourcesWithNvidiaSMI() throws Exception {
         var xmlOutput = "";
         try {

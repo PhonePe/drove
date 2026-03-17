@@ -209,7 +209,7 @@ public class ResourceManager {
                         .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Long::sum));
 
-        val curr_gpus = this.gpus.stream()
+        val currGpus = this.gpus.stream()
                 .toList();
         val usedGpus = resourceLocks.values()
                 .stream()
@@ -219,7 +219,7 @@ public class ResourceManager {
 
         return new ResourceInfo(new AvailableCPU(cpus, usedCores),
                                 new AvailableMemory(memory, usedMemory),
-                                new AvailableGPU(curr_gpus, usedGpus),
+                                new AvailableGPU(currGpus, usedGpus),
                                 physicalLayout);
     }
 
