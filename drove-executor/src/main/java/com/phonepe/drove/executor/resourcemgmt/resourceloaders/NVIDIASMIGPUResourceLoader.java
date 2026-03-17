@@ -14,6 +14,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
@@ -99,32 +100,50 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
     @SuppressWarnings("java:S135")
     Map<Integer, Integer> parseNumaAffinityFromTopoOutput(final String topoOutput) {
         val result = new LinkedHashMap<Integer, Integer>();
-        boolean headerFound = false;
+        Integer numaAffinityColIndex = null;
         for (val line : topoOutput.split("\n")) {
-            if (!headerFound) {
-                if (line.contains("NUMA Affinity")) {
-                    headerFound = true;
-                }
+            if (numaAffinityColIndex == null) {
+                numaAffinityColIndex = findNumaAffinityColumnIndex(line).orElse(null);
                 continue;
             }
             val trimmed = line.trim();
             if (trimmed.isEmpty() || trimmed.startsWith("Legend")) {
                 break;
             }
-            if (!trimmed.matches("GPU\\d+\\s+.*")) {
+            val cols = splitTopoColumns(trimmed);
+            if (cols.isEmpty() || !cols.get(0).matches("GPU\\d+")) {
                 continue;
             }
-            val parts = trimmed.split("\\s+");
             try {
-                val gpuIndex = Integer.parseInt(parts[0].substring(3)); // strip "GPU" prefix
-                val numaStr = parts[parts.length - 1];
-                val numaAffinity = Integer.parseInt(numaStr);
+                val gpuIndex = Integer.parseInt(cols.get(0).substring(3)); // strip "GPU" prefix
+                val numaAffinity = Integer.parseInt(cols.get(numaAffinityColIndex));
                 result.put(gpuIndex, numaAffinity);
-            } catch (NumberFormatException e) {
+            } catch (Exception e) {
                 log.warn("Could not parse NUMA affinity from topo line: {}", line);
             }
         }
         return result;
+    }
+
+    private Optional<Integer> findNumaAffinityColumnIndex(String headerLine) {
+        if (!headerLine.contains("NUMA Affinity")) {
+            return Optional.empty();
+        }
+        val gpuColumnCount = Pattern.compile("\\bGPU\\d+\\b")
+                .matcher(headerLine)
+                .results()
+                .count();
+        if (gpuColumnCount == 0) {
+            return Optional.empty();
+        }
+        // Row format: GPU<row> + <GPU relation columns> + CPU Affinity + NUMA Affinity [+ GPU NUMA ID]
+        return Optional.of((int) gpuColumnCount + 2);
+    }
+
+    private List<String> splitTopoColumns(String line) {
+        return Arrays.stream(line.trim().split("\\s+"))
+                .filter(col -> !col.isEmpty())
+                .toList();
     }
 
     private Map<Integer, Integer> fetchNumaAffinityMap() throws InterruptedException {

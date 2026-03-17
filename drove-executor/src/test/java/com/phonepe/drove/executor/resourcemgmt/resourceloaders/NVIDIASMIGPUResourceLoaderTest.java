@@ -204,4 +204,19 @@ class NVIDIASMIGPUResourceLoaderTest {
         assertEquals(0, gpusById.get("GPU-FIRST").getNumaNodeAffinity());
         assertEquals(1, gpusById.get("GPU-SECOND").getNumaNodeAffinity());
     }
+
+    @Test
+    void testParseNumaAffinityFromTopoOutputWithGpuNumaIdColumn() {
+        val loader = new NVIDIASMIGPUResourceLoader();
+        val topoOutput = """
+                	GPU0	GPU1	CPU Affinity	NUMA Affinity	GPU NUMA ID
+                GPU0	 X 	PHB	0-15	0	N/A
+                GPU1	PHB	 X 	16-31	1	N/A
+
+                Legend:
+                  X    = Self
+                """;
+        val result = loader.parseNumaAffinityFromTopoOutput(topoOutput);
+        assertEquals(Map.of(0, 0, 1, 1), result);
+    }
 }

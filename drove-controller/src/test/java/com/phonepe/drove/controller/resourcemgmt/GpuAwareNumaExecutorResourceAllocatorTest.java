@@ -47,7 +47,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1)
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -72,7 +72,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1)  // Both NUMA nodes have 1 GPU each
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 1);
+        val result = selector.allocate(hostInfo, 1, 128, 1);
 
         assertTrue(result.isPresent());
         // Should pick NUMA 0 (lowest ID) when GPU counts are equal
@@ -88,7 +88,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1, "GPU-3", 2, "GPU-4", 2, "GPU-5", 2)
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 3);
+        val result = selector.allocate(hostInfo, 1, 128, 3);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -114,7 +114,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1)
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 1);
+        val result = selector.allocate(hostInfo, 1, 128, 1);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -142,7 +142,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
 
         val hostInfoNoCpuOnNuma1 = createCustomHostInfo(freeCores, freeMemory, Map.of("GPU-0", 1));
 
-        val result = selector.selectAndAllocate(hostInfoNoCpuOnNuma1, 1, 128, 1);
+        val result = selector.allocate(hostInfoNoCpuOnNuma1, 1, 128, 1);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -171,7 +171,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         freeCores.put(1, Set.of());  // Keep NUMA 1 ineligible for CPU allocation
 
         val hostInfo = createCustomHostInfo(freeCores, freeMemory, Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1));
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -198,7 +198,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1)
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -223,7 +223,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0)  // Only 1 GPU total
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);  // Request 2 GPUs
+        val result = selector.allocate(hostInfo, 1, 128, 2);  // Request 2 GPUs
 
         assertTrue(result.isEmpty(), "Should fail when total free GPUs insufficient");
     }
@@ -254,7 +254,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Set.of("GPU-2")
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2);
 
         // Should succeed and allocate 2 GPUs
         assertTrue(result.isPresent(), "Should allocate GPUs even when some GPUs lack affinity info");
@@ -297,7 +297,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Set.of("GPU-1")
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2);
 
         assertTrue(result.isPresent(), "Should succeed with fallback to unknown-affinity GPU");
         val allocated = result.get();
@@ -333,7 +333,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Set.of("GPU-0", "GPU-1", "GPU-2")  // All lack affinity
         );
 
-        val result = selector.selectAndAllocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2);
 
         // Should succeed by falling back to any available GPU
         assertTrue(result.isPresent(), "Should allocate even when all GPUs lack affinity");

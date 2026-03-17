@@ -432,7 +432,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         val gpus = extractGpuRequirement(resources);
 
 
-        return executorResourceAllocator.selectAndAllocate(hostInfo, cpus, memory, gpus);
+        return executorResourceAllocator.allocate(hostInfo, cpus, memory, gpus);
     }
 
 

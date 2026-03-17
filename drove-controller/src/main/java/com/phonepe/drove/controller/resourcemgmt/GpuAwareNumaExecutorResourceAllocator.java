@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class GpuAwareNumaExecutorResourceAllocator extends AbstractNumaExecutorResourceAllocator {
 
     @Override
-    public Optional<AllocatedExecutorNode> selectAndAllocate(
+    public Optional<AllocatedExecutorNode> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,

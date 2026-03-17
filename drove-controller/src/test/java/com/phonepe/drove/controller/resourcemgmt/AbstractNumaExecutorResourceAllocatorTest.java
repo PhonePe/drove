@@ -47,7 +47,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
      */
     private static class FirstCandidateAllocatorExecutor extends AbstractNumaExecutorResourceAllocator {
         @Override
-        public Optional<AllocatedExecutorNode> selectAndAllocate(
+        public Optional<AllocatedExecutorNode> allocate(
                 ExecutorHostInfo hostInfo,
                 long requiredCpus,
                 long requiredMemory,
@@ -73,7 +73,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testAllocateCPUsSelectsExactlyRequiredCores() {
         val hostInfo = buildHostInfo(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 2048L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 2, 128, 0);
+        val result = allocator.allocate(hostInfo, 2, 128, 0);
 
         assertTrue(result.isPresent());
         val coreSets = result.get().getCpu().getCores();
@@ -94,7 +94,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
         val gpuInfo = new ExecutorHostInfo.HostGPUInfo();
         val hostInfo = new ExecutorHostInfo("EX-1", buildNodeData(), Map.of(0, numaNodeInfo), gpuInfo);
 
-        val result = allocator.selectAndAllocate(hostInfo, 1, 128, 0);
+        val result = allocator.allocate(hostInfo, 1, 128, 0);
 
         assertTrue(result.isPresent());
         val allocatedCores = result.get().getCpu().getCores().get(0);
@@ -107,7 +107,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testAllocateCPUsRespectsRequestedCount() {
         val hostInfo = buildHostInfo(Map.of(0, Set.of(10, 20, 30, 40, 50)), Map.of(0, 2048L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 3, 128, 0);
+        val result = allocator.allocate(hostInfo, 3, 128, 0);
 
         assertTrue(result.isPresent());
         assertEquals(3, result.get().getCpu().getCores().get(0).size(),
@@ -124,7 +124,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
                 Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
                 Map.of(0, 256L, 1, 2048L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 1, 512, 0);
+        val result = allocator.allocate(hostInfo, 1, 512, 0);
 
         assertTrue(result.isPresent());
         val memAlloc = result.get().getMemory().getMemoryInMB();
@@ -138,7 +138,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testAllocateMemoryUsesExactRequestedAmount() {
         val hostInfo = buildHostInfo(Map.of(0, Set.of(0, 1)), Map.of(0, 4096L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 1, 1234, 0);
+        val result = allocator.allocate(hostInfo, 1, 1234, 0);
 
         assertTrue(result.isPresent());
         assertEquals(1234L, result.get().getMemory().getMemoryInMB().get(0));
@@ -152,7 +152,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testBuildAllocatedNodePopulatesExecutorMetadata() {
         val hostInfo = buildHostInfo(Map.of(0, Set.of(0, 1)), Map.of(0, 2048L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 1, 128, 0);
+        val result = allocator.allocate(hostInfo, 1, 128, 0);
 
         assertTrue(result.isPresent());
         val node = result.get();
@@ -167,7 +167,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testBuildAllocatedNodeHasEmptyGpuAllocationWhenNoGpuRequired() {
         val hostInfo = buildHostInfo(Map.of(0, Set.of(0, 1)), Map.of(0, 2048L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 1, 128, 0);
+        val result = allocator.allocate(hostInfo, 1, 128, 0);
 
         assertTrue(result.isPresent());
         assertTrue(result.get().getGpu().getGpuIds().isEmpty(),
@@ -178,7 +178,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testBuildAllocatedNodeReturnsEmptyWhenNoEligibleNumaNode() {
         val hostInfo = buildHostInfo(Map.of(0, Set.of(0, 1)), Map.of(0, 2048L));
 
-        val result = allocator.selectAndAllocate(hostInfo, 3, 128, 0);
+        val result = allocator.allocate(hostInfo, 3, 128, 0);
 
         assertTrue(result.isEmpty(), "Should return empty when no NUMA node satisfies CPU/memory requirements");
     }
@@ -191,7 +191,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
     void testSelectNumaNodeWhenNoGpuRequested() {
         val hostInfo = buildHostInfoWithGpuTopology(Map.of("GPU-0", 0, "GPU-1", 1));
 
-        val result = allocator.selectAndAllocate(hostInfo, 1, 128, 0);
+        val result = allocator.allocate(hostInfo, 1, 128, 0);
 
         assertTrue(result.isPresent());
         // Stub always picks first candidate; CPU should land on NUMA 0

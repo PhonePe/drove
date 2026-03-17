@@ -33,7 +33,7 @@ public interface ExecutorResourceAllocator {
      * @return Optional containing the AllocatedExecutorNode with all resources allocated,
      *         or empty if no suitable candidate found
      */
-    Optional<AllocatedExecutorNode> selectAndAllocate(
+    Optional<AllocatedExecutorNode> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,
