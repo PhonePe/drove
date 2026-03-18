@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;

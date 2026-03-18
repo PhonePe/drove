@@ -14,8 +14,10 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.resourcemgmt;
+package com.phonepe.drove.controller.resourcemgmt.allocator;
 
+import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.GPUInfo;
@@ -50,7 +52,7 @@ public class GpuAwareNumaExecutorResourceAllocator extends AbstractNumaExecutorR
                     candidateNumaNodeIds.get(0),
                     requiredCpus,
                     requiredMemory,
-                    new GPUAllocation(Set.of())));
+                    new GPUAllocation(Set.of(), 0)));
         }
 
         val totalFreeGpus = hostInfo.getGpuInfo().getGpus().values().stream()
@@ -119,6 +121,7 @@ public class GpuAwareNumaExecutorResourceAllocator extends AbstractNumaExecutorR
 
     /**
      * Allocate GPUs preferring those local to the selected NUMA node, falling back to cross-NUMA if needed.
+     * Returns a GPUAllocation with localGpuCount set to the number of NUMA-local GPUs allocated.
      */
     private Optional<GPUAllocation> allocateGPUs(
             long requiredGpus,
@@ -126,7 +129,7 @@ public class GpuAwareNumaExecutorResourceAllocator extends AbstractNumaExecutorR
             Set<String> freeGpuIds,
             Map<String, Integer> gpuNumaAffinities) {
         if (requiredGpus == 0) {
-            return Optional.of(new GPUAllocation(Set.of()));
+            return Optional.of(new GPUAllocation(Set.of(), 0));
         }
 
         if (freeGpuIds.size() < requiredGpus) {
@@ -140,13 +143,16 @@ public class GpuAwareNumaExecutorResourceAllocator extends AbstractNumaExecutorR
                 .collect(Collectors.toUnmodifiableSet());
 
         if (numaLocalGpus.size() == requiredGpus) {
-            return Optional.of(new GPUAllocation(numaLocalGpus));
+            // All allocated GPUs are NUMA-local
+            return Optional.of(new GPUAllocation(numaLocalGpus, numaLocalGpus.size()));
         }
 
         // Not enough NUMA-local GPUs; fall back to any free GPUs
-        return Optional.of(new GPUAllocation(freeGpuIds.stream()
-                                                     .limit(requiredGpus)
-                                                     .collect(Collectors.toUnmodifiableSet())));
+        // localGpuCount is still the number of NUMA-local GPUs we managed to allocate
+        val allocatedGpus = freeGpuIds.stream()
+                .limit(requiredGpus)
+                .collect(Collectors.toUnmodifiableSet());
+        return Optional.of(new GPUAllocation(allocatedGpus, numaLocalGpus.size()));
     }
 
 }

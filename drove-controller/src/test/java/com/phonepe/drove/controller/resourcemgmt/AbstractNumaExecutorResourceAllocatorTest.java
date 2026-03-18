@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.controller.resourcemgmt.allocator.AbstractNumaExecutorResourceAllocator;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -59,7 +60,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
             val numaNodeId = candidateNumaNodeIds.get(0);
             return Optional.of(buildAllocatedNode(
                     hostInfo, numaNodeId, requiredCpus, requiredMemory,
-                    new GPUAllocation(Set.of())));
+                    new GPUAllocation(Set.of(), 0)));
         }
     }
 

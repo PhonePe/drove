@@ -20,9 +20,15 @@ import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
+import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -61,10 +67,10 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         public Optional<AllocatedExecutorNode> select(
                 List<ExecutorHostInfo> nodes,
                 java.util.function.Predicate<ExecutorHostInfo> nodeFilter,
-                java.util.function.Function<ExecutorHostInfo, Optional<AllocatedExecutorNode>> allocator,
+                List<ResourceRequirement> requirements,
                 java.util.function.Predicate<AllocatedExecutorNode> allocationFilter) {
             invocations.incrementAndGet();
-            return delegate.select(nodes, nodeFilter, allocator, allocationFilter);
+            return delegate.select(nodes, nodeFilter, requirements, allocationFilter);
         }
     }
 
@@ -209,7 +215,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         db.deselectNode(allocatedNode.getExecutorId(),
                 allocatedNode.getCpu(),
                 allocatedNode.getMemory(),
-                new GPUAllocation(Set.of())); // Free up cores
+                new GPUAllocation(Set.of(), 0)); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
                         EnumSet.of(ExecutorState.ACTIVE),
@@ -266,7 +272,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertNotNull(allocatedNode);
             assertTrue(db.isActive(allocatedNode.getExecutorId()));
             assertFalse(db.isBlacklisted(allocatedNode.getExecutorId()));
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of(), 0));
         }
         {
             // Now blacklist node and assert that node is not allocated
@@ -286,7 +292,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                     )
                     .orElse(null);
             assertNotNull(allocatedNode);
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of(), 0));
         }
         {
             // Now unblacklist node and assert that node is allocated
@@ -325,7 +331,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                     )
                     .orElse(null);
             assertNotNull(allocatedNode);
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of(), 0));
         }
         {
             // Now mark node as active by updating state
@@ -365,7 +371,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertNotNull(allocatedNode);
             assertTrue(db.isActive(allocatedNode.getExecutorId()));
             assertFalse(db.isBlacklisted(allocatedNode.getExecutorId()));
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of(), 0));
         }
     }
 
@@ -452,11 +458,11 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testCpuMemRequestsUseDefaultSelector() {
-        val defaultSelector = new RecordingSelector(new FirstFitExecutorSelector());
-        val gpuSelector = new RecordingSelector(new GpuAwareExecutorSelector());
-        val db = new InMemoryClusterResourcesDB(new GpuAwareNumaExecutorResourceAllocator(),
-                defaultSelector,
-                gpuSelector);
+        val allocator = new GpuAwareNumaExecutorResourceAllocator();
+        val recordingDefaultSelector = new RecordingSelector(new FirstFitExecutorSelector(allocator));
+        val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator));
+        val compositeSelector = new CompositeExecutorSelector(recordingDefaultSelector, recordingGpuSelector);
+        val db = new InMemoryClusterResourcesDB(compositeSelector);
 
         db.update(List.of(ControllerTestUtils.generateExecutorNode(1)));
 
@@ -467,17 +473,17 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 false);
 
         assertTrue(result.isPresent());
-        assertEquals(1, defaultSelector.invocations.get());
-        assertEquals(0, gpuSelector.invocations.get());
+        assertEquals(1, recordingDefaultSelector.invocations.get());
+        assertEquals(0, recordingGpuSelector.invocations.get());
     }
 
     @Test
     void testGpuRequestsUseGpuAwareSelector() {
-        val defaultSelector = new RecordingSelector(new FirstFitExecutorSelector());
-        val gpuSelector = new RecordingSelector(new GpuAwareExecutorSelector());
-        val db = new InMemoryClusterResourcesDB(new GpuAwareNumaExecutorResourceAllocator(),
-                defaultSelector,
-                gpuSelector);
+        val allocator = new GpuAwareNumaExecutorResourceAllocator();
+        val recordingDefaultSelector = new RecordingSelector(new FirstFitExecutorSelector(allocator));
+        val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator));
+        val compositeSelector = new CompositeExecutorSelector(recordingDefaultSelector, recordingGpuSelector);
+        val db = new InMemoryClusterResourcesDB(compositeSelector);
 
         db.update(List.of(buildExecutorNodeData(
                 "executor-1",
@@ -492,8 +498,8 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 false);
 
         assertTrue(result.isPresent());
-        assertEquals(0, defaultSelector.invocations.get());
-        assertEquals(1, gpuSelector.invocations.get());
+        assertEquals(0, recordingDefaultSelector.invocations.get());
+        assertEquals(1, recordingGpuSelector.invocations.get());
     }
 
     private ExecutorNodeData buildExecutorNodeData(

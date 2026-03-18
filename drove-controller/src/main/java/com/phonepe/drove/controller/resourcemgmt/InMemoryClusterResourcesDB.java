@@ -18,6 +18,11 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.requirements.*;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -30,6 +35,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,29 +53,22 @@ import java.util.stream.Collectors;
 public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     private static final Duration MAX_REMOVED_NODE_RETENTION_WINDOW = Duration.ofDays(2);
 
-    private final ExecutorResourceAllocator executorResourceAllocator;
-    private final ExecutorSelector defaultExecutorSelector;
-    private final ExecutorSelector gpuExecutorSelector;
+    private final ExecutorSelector selector;
     private final Map<String, ExecutorHostInfo> nodes = new HashMap<>();
 
-    public InMemoryClusterResourcesDB() {
-        this(new GpuAwareNumaExecutorResourceAllocator(),
-                new FirstFitExecutorSelector(),
-                new GpuAwareExecutorSelector());
+    @Inject
+    public InMemoryClusterResourcesDB(ExecutorSelector selector) {
+        this.selector = selector;
     }
 
-    public InMemoryClusterResourcesDB(ExecutorResourceAllocator executorResourceAllocator) {
-        this(executorResourceAllocator, new FirstFitExecutorSelector(), new GpuAwareExecutorSelector());
+    public InMemoryClusterResourcesDB() {
+        this(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator())));
     }
 
     @VisibleForTesting
-    InMemoryClusterResourcesDB(
-            ExecutorResourceAllocator executorResourceAllocator,
-            ExecutorSelector defaultExecutorSelector,
-            ExecutorSelector gpuExecutorSelector) {
-        this.executorResourceAllocator = executorResourceAllocator;
-        this.defaultExecutorSelector = defaultExecutorSelector;
-        this.gpuExecutorSelector = gpuExecutorSelector;
+    InMemoryClusterResourcesDB(ExecutorSelector selector, Map<String, ExecutorHostInfo> nodes) {
+        this.selector = selector;
+        this.nodes.putAll(nodes);
     }
 
     private final Map<String, ExecutorHostInfo> removedNodes = new LinkedHashMap<>() {
@@ -235,12 +234,9 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             if(shouldShuffle) {
                 Collections.shuffle(rawNodes);
             }
-            val selector = extractGpuRequirement(requirements) > 0
-                    ? gpuExecutorSelector
-                    : defaultExecutorSelector;
             val selectedNode = selector.select(rawNodes,
                     node -> inRequiredState(node, allowedExecutorState),
-                    node -> ensureResource(node, requirements),
+                    requirements,
                     filter);
             selectedNode.ifPresent(this::softLockResources);
             return selectedNode;
@@ -424,35 +420,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         });
     }
 
-    private Optional<AllocatedExecutorNode> ensureResource(
-            final ExecutorHostInfo hostInfo,
-            final List<ResourceRequirement> resources) {
-        val cpus = extractCpuRequirement(resources);
-        val memory = extractMemoryRequirement(resources);
-        val gpus = extractGpuRequirement(resources);
 
-
-        return executorResourceAllocator.allocate(hostInfo, cpus, memory, gpus);
-    }
-
-
-    private long extractCpuRequirement(List<ResourceRequirement> resources) {
-        return ((CPURequirement)extractRequirement(resources, ResourceType.CPU)).getCount();
-    }
-
-    private long extractMemoryRequirement(List<ResourceRequirement> resources) {
-        return ((MemoryRequirement)extractRequirement(resources, ResourceType.MEMORY)).getSizeInMB();
-    }
-
-    private long extractGpuRequirement(List<ResourceRequirement> resources) {
-        return ((GPURequirement)extractRequirement(resources, ResourceType.GPU)).getCount();
-    }
-    private static ResourceRequirement extractRequirement(List<ResourceRequirement> resources, ResourceType type) {
-        return resources.stream()
-                .filter(req -> req.getType() == type)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Resource requirement of type " + type + " is required"));
-    }
 
     private ExecutorHostInfo convertState(final ExecutorNodeData node) {
         val snapshot = node.getState();

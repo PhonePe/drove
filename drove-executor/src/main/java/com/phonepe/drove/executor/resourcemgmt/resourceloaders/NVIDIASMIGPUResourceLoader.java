@@ -14,7 +14,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
@@ -129,15 +128,13 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         if (!headerLine.contains("NUMA Affinity")) {
             return Optional.empty();
         }
-        val gpuColumnCount = Pattern.compile("\\bGPU\\d+\\b")
-                .matcher(headerLine)
-                .results()
-                .count();
-        if (gpuColumnCount == 0) {
-            return Optional.empty();
-        }
-        // Row format: GPU<row> + <GPU relation columns> + CPU Affinity + NUMA Affinity [+ GPU NUMA ID]
-        return Optional.of((int) gpuColumnCount + 2);
+        // Both header and data rows use the same \s+ tokenization, so the index
+        // of the "NUMA" token in the header equals the NUMA value index in data rows.
+        val cols = splitTopoColumns(headerLine);
+        return IntStream.range(0, cols.size())
+                .filter(i -> cols.get(i).equalsIgnoreCase("NUMA"))
+                .boxed()
+                .findFirst();
     }
 
     private List<String> splitTopoColumns(String line) {

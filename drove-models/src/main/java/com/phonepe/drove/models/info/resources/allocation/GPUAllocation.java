@@ -15,10 +15,12 @@ import java.util.Set;
 @Builder
 public class GPUAllocation extends ResourceAllocation{
     Set<String> gpuIds;
+    long localGpuCount;
 
-    public GPUAllocation(Set<String> gpuIds) {
+    public GPUAllocation(Set<String> gpuIds, long localGpuCount) {
         super(ResourceType.GPU);
         this.gpuIds = gpuIds;
+        this.localGpuCount = localGpuCount;
     }
 
     @Override

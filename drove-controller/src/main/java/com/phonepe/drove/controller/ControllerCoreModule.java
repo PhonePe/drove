@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller;
 
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
@@ -30,8 +29,6 @@ import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
-import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
@@ -46,6 +43,12 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
 import com.phonepe.drove.controller.rule.RuleEvalStrategy;
 import com.phonepe.drove.controller.rule.hope.HopeRuleStrategy;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleStrategy;
@@ -64,6 +67,7 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
+import io.appform.hope.core.functions.impl.arr.In;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
@@ -72,12 +76,13 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
@@ -183,14 +188,6 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    @Named("MvelRuleAllowedImportPackages")
-    public List<String> mvelAllowedImportPackages(final ControllerOptions controllerOptions) {
-        return Objects.requireNonNullElse(controllerOptions.getAllowedRuleImportPackages(),
-                ControllerOptions.DEFAULT_RULE_ALLOWED_IMPORT_PACKAGES);
-    }
-
-    @Provides
-    @Singleton
     public CloseableHttpClient httpClient() {
         return CommonUtils.createHttpClient(false);
     }
@@ -208,11 +205,29 @@ public class ControllerCoreModule extends AbstractModule {
         return environment.getObjectMapper();
     }
 
+
+
     @Provides
     @Singleton
-    public MetricRegistry metricRegistry(final Environment environment) {
-        return environment.metrics();
+    public FirstFitExecutorSelector firstFitExecutorSelector(ExecutorResourceAllocator allocator) {
+        return new FirstFitExecutorSelector(allocator);
     }
+
+    @Provides
+    @Singleton
+    public ScoredExecutorSelector scoredExecutorSelector(ExecutorResourceAllocator allocator) {
+        return new ScoredExecutorSelector(allocator);
+    }
+
+    @Provides
+    @Singleton
+    public CompositeExecutorSelector compositeExecutorSelector(
+            FirstFitExecutorSelector firstFitSelector,
+            ScoredExecutorSelector scoredSelector) {
+        return new CompositeExecutorSelector(firstFitSelector, scoredSelector);
+    }
+
+
 
     @Override
     protected void configure() {
@@ -246,7 +261,8 @@ public class ControllerCoreModule extends AbstractModule {
                 LocalServiceOperation>>>() {
         }).to(InjectingLocalServiceActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
-        bind(LeadershipObserver.class).to(ZkLeadershipObserver.class);
+        bind(ExecutorResourceAllocator.class).to(GpuAwareNumaExecutorResourceAllocator.class).in(Singleton.class);
+        bind(ExecutorSelector.class).to(CompositeExecutorSelector.class).in(Singleton.class);
     }
 
     @Provides
@@ -309,5 +325,4 @@ public class ControllerCoreModule extends AbstractModule {
         }
         return "DEV_VERSION";
     }
-
 }
