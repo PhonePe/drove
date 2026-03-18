@@ -30,6 +30,7 @@ import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.metrics.*;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
@@ -51,6 +52,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -72,6 +74,7 @@ public class ContainerStatsObserver implements Managed {
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ScheduledSignal statsChecker;
     private final DockerClient client;
+    private final NvidiaGpuMetricsCollector nvidiaGpuMetricsCollector;
 
     @Value
     private static class SignalData<T> {
@@ -86,8 +89,14 @@ public class ContainerStatsObserver implements Managed {
             MetricRegistry metricRegistry,
             ApplicationInstanceEngine instanceEngine,
             LocalServiceInstanceEngine localServiceInstanceEngine,
-            DockerClient client) {
-        this(metricRegistry, instanceEngine, localServiceInstanceEngine, client, Duration.ofSeconds(30));
+            DockerClient client,
+            NvidiaGpuMetricsCollector nvidiaGpuMetricsCollector) {
+        this(metricRegistry,
+             instanceEngine,
+             localServiceInstanceEngine,
+             client,
+             nvidiaGpuMetricsCollector,
+             Duration.ofSeconds(30));
     }
 
     public ContainerStatsObserver(
@@ -96,11 +105,22 @@ public class ContainerStatsObserver implements Managed {
             LocalServiceInstanceEngine localServiceInstanceEngine,
             DockerClient client,
             Duration refreshDuration) {
+        this(metricRegistry, instanceEngine, localServiceInstanceEngine, client, null, refreshDuration);
+    }
+
+    public ContainerStatsObserver(
+            MetricRegistry metricRegistry,
+            ApplicationInstanceEngine instanceEngine,
+            LocalServiceInstanceEngine localServiceInstanceEngine,
+            DockerClient client,
+            NvidiaGpuMetricsCollector nvidiaGpuMetricsCollector,
+            Duration refreshDuration) {
         this.metricRegistry = metricRegistry;
         this.instanceEngine = instanceEngine;
         this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.statsChecker = new ScheduledSignal(refreshDuration);
         this.client = client;
+        this.nvidiaGpuMetricsCollector = nvidiaGpuMetricsCollector;
     }
 
     @Override
@@ -155,7 +175,7 @@ public class ContainerStatsObserver implements Managed {
             }
             val dockerId = containers.get(0).getId();
             log.info("Instance {} has docker id: {}", instanceId, dockerId);
-            val data = new InstanceData(instanceInfo, dockerId);
+            val data = new InstanceData(instanceInfo, dockerId, allocatedGpus(instanceInfo));
             data.getDataReceived()
                     .connect(gauge(
                             "nr_throttled",
@@ -269,6 +289,23 @@ public class ContainerStatsObserver implements Managed {
                                            .sum()));
             data.getPidStatsReceived()
                     .connect(gauge("current_pid_usage", instanceInfo, SignalData::getData));
+            data.getGpuStatsReceived()
+                    .connect(gauge("gpu_devices_allocated_count", instanceInfo, gpu -> gpu.getData().getAllocatedDeviceCount()))
+                    .connect(gauge("gpu_devices_observed_count", instanceInfo, gpu -> gpu.getData().getObservedDeviceCount()))
+                    .connect(doubleGauge("gpu_utilization_average_percentage",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getUtilizationAvgPercentage()))
+                    .connect(gauge("gpu_memory_used_total_bytes", instanceInfo, gpu -> gpu.getData().getMemoryUsedTotalBytes()))
+                    .connect(gauge("gpu_memory_total_total_bytes", instanceInfo, gpu -> gpu.getData().getMemoryTotalTotalBytes()))
+                    .connect(doubleGauge("gpu_memory_utilization_average_percentage",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getMemoryUtilizationAvgPercentage()))
+                    .connect(doubleGauge("gpu_temperature_average_celsius",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getTemperatureAvgCelsius()))
+                    .connect(doubleGauge("gpu_power_draw_total_watts",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getPowerDrawTotalWatts()));
             return data;
         });
         reportStatsForInstance(instanceId);
@@ -306,6 +343,32 @@ public class ContainerStatsObserver implements Managed {
                 .orElse(1);
     }
 
+    private Set<String> allocatedGpus(final DeployedInstanceInfo instanceInfo) {
+        return instanceInfo.accept(new DeployedInstanceInfoVisitor<List<ResourceAllocation>>() {
+                    @Override
+                    public List<ResourceAllocation> visit(InstanceInfo applicationInstanceInfo) {
+                        return applicationInstanceInfo.getResources();
+                    }
+
+                    @Override
+                    public List<ResourceAllocation> visit(TaskInfo taskInfo) {
+                        return taskInfo.getResources();
+                    }
+
+                    @Override
+                    public List<ResourceAllocation> visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
+                        return localServiceInstanceInfo.getResources();
+                    }
+                })
+                .stream()
+                .filter(r -> r.getType().equals(ResourceType.GPU))
+                .map(r -> (GPUAllocation) r)
+                .map(GPUAllocation::getGpuIds)
+                .filter(Objects::nonNull)
+                .flatMap(Set::stream)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
     private void reportStats(final Date now) {
         instances.keySet().forEach(this::reportStatsForInstance);
     }
@@ -316,6 +379,12 @@ public class ContainerStatsObserver implements Managed {
             client.statsCmd(instanceData.getDockerId()).exec(callback);
             try {
                 instanceData.getDataReceived().dispatch(callback.awaitResult());
+                val snapshot = nvidiaGpuMetricsCollector == null
+                        ? new NvidiaGpuMetricsCollector.Snapshot(List.of())
+                        : nvidiaGpuMetricsCollector.latestSnapshot();
+                instanceData.getGpuStatsReceived().dispatch(new SignalData<>(
+                        instanceData.getInstanceInfo(),
+                        aggregateGpuMetrics(instanceData.getAllocatedGpuIds(), snapshot)));
             }
             catch (NotFoundException e) {
                 log.warn("Looks like the container {} being tracked is not available anymore. Time to disconnect..",
@@ -367,20 +436,71 @@ public class ContainerStatsObserver implements Managed {
                                        });
     }
 
+    private <T> io.appform.signals.signalhandlers.SignalConsumer<T> doubleGauge(
+            final String name,
+            final DeployedInstanceInfo instanceInfo,
+            final ToDoubleFunction<T> generator) {
+        val metricName = metricName(instanceInfo, name);
+        val gauge = new java.util.concurrent.atomic.AtomicReference<>(0D);
+        metricRegistry.register(metricName, (com.codahale.metrics.Gauge<Double>) gauge::get);
+        return data -> gauge.set(generator.applyAsDouble(data));
+    }
+
+    static InstanceGpuMetrics aggregateGpuMetrics(
+            final Set<String> allocatedGpuIds,
+            final NvidiaGpuMetricsCollector.Snapshot snapshot) {
+        if (allocatedGpuIds == null || allocatedGpuIds.isEmpty()) {
+            return InstanceGpuMetrics.ZERO;
+        }
+        val samples = snapshot.gpus()
+                .stream()
+                .filter(sample -> allocatedGpuIds.contains(sample.gpuId()))
+                .toList();
+        if (samples.isEmpty()) {
+            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0L, 0L, 0D, 0D, 0D);
+        }
+        val memoryUtilAvg = samples.stream()
+                .mapToDouble(sample -> {
+                    if (sample.memoryUsedBytes() == null || sample.memoryTotalBytes() == null || sample.memoryTotalBytes() <= 0) {
+                        return 0D;
+                    }
+                    return (sample.memoryUsedBytes() * 100D) / sample.memoryTotalBytes();
+                })
+                .average()
+                .orElse(0D);
+        return new InstanceGpuMetrics(
+                allocatedGpuIds.size(),
+                samples.size(),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::gpuUtilizationPct).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryUsedBytes).filter(Objects::nonNull)
+                        .mapToLong(Long::longValue).sum(),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryTotalBytes).filter(Objects::nonNull)
+                        .mapToLong(Long::longValue).sum(),
+                memoryUtilAvg,
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::temperatureC).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::powerDrawWatts).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).sum());
+    }
+
     @Value
     private static class InstanceData {
         DeployedInstanceInfo instanceInfo;
         String dockerId;
+        Set<String> allocatedGpuIds;
         ConsumingSyncSignal<Statistics> dataReceived = new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<MemoryStatsConfig>> memoryStatsReceived = new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<Collection<StatisticNetworksConfig>>> networkStatsReceived =
                 new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<Collection<BlkioStatEntry>>> ioStatsReceived = new ConsumingSyncSignal<>();
         ConsumingSyncSignal<SignalData<Long>> pidStatsReceived = new ConsumingSyncSignal<>();
+        ConsumingSyncSignal<SignalData<InstanceGpuMetrics>> gpuStatsReceived = new ConsumingSyncSignal<>();
 
-        public InstanceData(DeployedInstanceInfo instanceInfo, String dockerId) {
+        public InstanceData(DeployedInstanceInfo instanceInfo, String dockerId, Set<String> allocatedGpuIds) {
             this.instanceInfo = instanceInfo;
             this.dockerId = dockerId;
+            this.allocatedGpuIds = allocatedGpuIds;
             this.dataReceived.connect(this::handleStats);
         }
 
@@ -419,6 +539,19 @@ public class ContainerStatsObserver implements Managed {
                 }
             }
         }
+    }
+
+    @Value
+    static class InstanceGpuMetrics {
+        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D, 0L, 0L, 0D, 0D, 0D);
+        long allocatedDeviceCount;
+        long observedDeviceCount;
+        double utilizationAvgPercentage;
+        long memoryUsedTotalBytes;
+        long memoryTotalTotalBytes;
+        double memoryUtilizationAvgPercentage;
+        double temperatureAvgCelsius;
+        double powerDrawTotalWatts;
     }
 
     private static String metricName(final DeployedInstanceInfo instanceInfo, String name) {
