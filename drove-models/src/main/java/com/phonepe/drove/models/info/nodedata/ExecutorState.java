@@ -21,7 +21,13 @@ package com.phonepe.drove.models.info.nodedata;
  */
 public enum ExecutorState {
     ACTIVE,
+    BLACKLIST_REQUESTED,
     BLACKLISTED,
     UNREADY,
-    REMOVED
+    REMOVED,
+    ;
+
+    public boolean isBlacklisted() {
+        return this == BLACKLISTED || this == BLACKLIST_REQUESTED;
+    }
 }

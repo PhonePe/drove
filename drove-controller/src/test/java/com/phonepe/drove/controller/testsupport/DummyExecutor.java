@@ -274,6 +274,11 @@ public class DummyExecutor implements Runnable, AutoCloseable {
             }
 
             @Override
+            public Void visit(BlacklistExecutorFinalizeMessage blacklistExecutorFinalizeMessage) {
+                return null;
+            }
+
+            @Override
             public Void visit(UnBlacklistExecutorMessage unBlacklistExecutorMessage) {
                 return null;
             }

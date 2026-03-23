@@ -21,6 +21,7 @@ import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorFinalizeMessage;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.model.executor.StartInstanceMessage;
@@ -246,11 +247,15 @@ class ExecutorMessageHandlerTest {
                                             localserviceInstanceEngine,
                                             executorStateManager);
 
-        doThrow(new IllegalArgumentException()).when(executorStateManager).blacklist();
+        doThrow(new IllegalArgumentException()).when(executorStateManager).requestBlacklist();
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                            executor())).getStatus());
-    }
+        doThrow(new IllegalArgumentException()).when(executorStateManager).markBlacklisted();
+        assertEquals(MessageDeliveryStatus.FAILED,
+                     mh.visit(new BlacklistExecutorFinalizeMessage(MessageHeader.controllerRequest(),
+                                                           executor())).getStatus());
+     }
 
     @Test
     void testUnBlacklist() {

@@ -133,12 +133,23 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(BlacklistExecutorMessage blacklistExecutorMessage) {
         try {
-            executorStateManager.blacklist();
+            executorStateManager.requestBlacklist();
         }
         catch (Exception e) {
             return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         return new MessageResponse(blacklistExecutorMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
+    }
+
+    @Override
+    public MessageResponse visit(BlacklistExecutorFinalizeMessage blacklistExecutorFinalizeMessage) {
+        try {
+            executorStateManager.markBlacklisted();
+        }
+        catch (Exception e) {
+            return new MessageResponse(blacklistExecutorFinalizeMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
+        return new MessageResponse(blacklistExecutorFinalizeMessage.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 
     @Override

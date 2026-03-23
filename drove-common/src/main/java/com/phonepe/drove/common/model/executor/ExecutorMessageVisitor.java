@@ -35,4 +35,6 @@ public interface ExecutorMessageVisitor<T> {
     T visit(StartLocalServiceInstanceMessage startLocalServiceInstanceMessage);
 
     T visit(StopLocalServiceInstanceMessage stopLocalServiceInstanceMessage);
+
+    T visit(BlacklistExecutorFinalizeMessage blacklistExecutorFinalizeMessage);
 }

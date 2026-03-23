@@ -28,12 +28,12 @@ import lombok.Value;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class BlacklistExecutorMessage extends ExecutorMessage {
+public class BlacklistExecutorFinalizeMessage extends ExecutorMessage {
 
-    public BlacklistExecutorMessage(
+    public BlacklistExecutorFinalizeMessage(
             MessageHeader header,
             ExecutorAddress address) {
-        super(ExecutorMessageType.BLACKLIST_REQUESTED, header, address);
+        super(ExecutorMessageType.BLACKLIST, header, address);
     }
 
     @Override

@@ -428,7 +428,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     }
 
     private static boolean isBlackListedInternal(ExecutorHostInfo node) {
-        return ExecutorState.BLACKLISTED.equals(node.getNodeData().getExecutorState());
+        return node.getNodeData().getExecutorState().isBlacklisted();
     }
 
     private Set<String> liveExecutorsUnsafe() {

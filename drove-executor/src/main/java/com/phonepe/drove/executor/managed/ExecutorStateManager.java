@@ -67,7 +67,11 @@ public class ExecutorStateManager implements Managed {
         this.clusterClient = clusterClient;
     }
 
-    public void blacklist() {
+    public void requestBlacklist() {
+        updateState(ExecutorState.BLACKLIST_REQUESTED);
+    }
+
+    public void markBlacklisted() {
         updateState(ExecutorState.BLACKLISTED);
     }
 

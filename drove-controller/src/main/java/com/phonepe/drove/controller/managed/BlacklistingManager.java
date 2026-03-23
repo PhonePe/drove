@@ -46,8 +46,10 @@ import javax.inject.Singleton;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.discovery.Constants;
+import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorFinalizeMessage;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
@@ -62,6 +64,7 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
 import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
@@ -267,31 +270,14 @@ public class BlacklistingManager implements Managed {
     private Set<String> blacklistExecutorsInternal(Set<String> executorIds) {
         val successfullyBlacklistCalled = executorIds.stream()
             .filter(executorId -> {
-                if (clusterResourcesDB.isBlacklisted(executorId)) {
-                    log.warn("Executor {} is set to blacklisted already. We are going to skip this.", executorId);
-                    return false;
-                }
                 val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
                 if (null != executor) {
-                    val msgResponse = communicator.send(
-                            new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                new ExecutorAddress(executor.getExecutorId(),
-                                    executor.getNodeData().getHostname(),
-                                    executor.getNodeData().getPort(),
-                                    executor.getNodeData()
-                                    .getTransportType())));
-                    if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                        log.info("Executor {} has been marked as blacklisted. Moving running instances",
-                                executorId);
-                        eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
-                        return true;
+                    if (executor.getNodeData().getExecutorState().equals(ExecutorState.BLACKLISTED)) {
+                        log.warn("Executor {} is blacklisted already. We are going to skip this.", executorId);
+                        return false;
                     }
-                    else {
-                        log.error("Error sending blacklist message to executor {}. Status: {}",
-                                executorId,
-                                msgResponse.getStatus());
-                    }
-                }
+                    return sendExecutorMessage(executor, ExecutorMessageType.BLACKLIST_REQUESTED);
+               }
                 return false;
             })
         .collect(Collectors.toUnmodifiableSet());
@@ -318,6 +304,34 @@ public class BlacklistingManager implements Managed {
         val status = moveApps(finallyBlacklisted);
         log.info("App movement manager acceptance status for executors {} is {}", successfullyBlacklistCalled, status);
         return finallyBlacklisted;
+    }
+
+    private boolean sendExecutorMessage(ExecutorHostInfo executor, ExecutorMessageType messageType) {
+        val address = new ExecutorAddress(executor.getExecutorId(),
+                                          executor.getNodeData().getHostname(),
+                                          executor.getNodeData().getPort(),
+                                          executor.getNodeData()
+                                                  .getTransportType());
+        val message = switch (messageType) {
+            case BLACKLIST_REQUESTED -> new BlacklistExecutorMessage(MessageHeader.controllerRequest(), address);
+            case BLACKLIST -> new BlacklistExecutorFinalizeMessage(MessageHeader.controllerRequest(), address);
+            case UNBLACKLIST -> new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(), address);
+            default -> throw new IllegalArgumentException("Unsupported message type for blacklisting flow: "
+                    + messageType);
+        };
+        val msgResponse = communicator.send(message);
+        if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
+            log.info("Executor {} has accepted message of type: {}", messageType, executor.getExecutorId());
+            eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
+            return true;
+        }
+        else {
+            log.error("Error sending {} message to executor {}. Status: {}",
+                      messageType,
+                      executor.getExecutorId(),
+                      msgResponse.getStatus());
+        }
+        return false;
     }
 
     private void handleLeadershipChanged(boolean isLeader) {
@@ -383,7 +397,7 @@ public class BlacklistingManager implements Managed {
                     }
                 }
                 log.info("Moving app instances from executors: {}", processing);
-                moveAppsFromExecutors(processing);
+                handleMovement(processing);
                 processing.clear();
                 log.info("Apps moved");
             }
@@ -411,12 +425,30 @@ public class BlacklistingManager implements Managed {
             .build();
     }
 
-    private void moveAppsFromExecutors(final Set<String> executorIds) {
+    private void handleMovement(final Set<String> executorIds) {
         val healthyInstances = healthyInstances(executorIds);
         if (healthyInstances.isEmpty()) {
             log.info("Nothing to do as no app instances need to be moved from executors: {}", executorIds);
-            return;
         }
+        else {
+            log.info("Moving app instances from executors: {}", executorIds);
+            try {
+                moveAppsFromExecutors(executorIds, healthyInstances);
+            }
+            catch (Exception e) {
+                log.error("Error moving apps from executors " + executorIds, e);
+            }
+        }
+        executorIds.forEach(executorId -> {
+            val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+            if (null != executor) {
+                sendExecutorMessage(executor, ExecutorMessageType.BLACKLIST);
+            }
+        });
+        log.info("Finished processing app movement for executors: {}", executorIds);
+    }
+
+    private void moveAppsFromExecutors(final Set<String> executorIds, Map<String, Set<String>> healthyInstances) {
         val completionService = new ExecutorCompletionService<Pair<String, Boolean>>(appMovementExecutor);
         //Raise replacement request for multiple apps in parallel
         //Wait for all apps to submit successfully

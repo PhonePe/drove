@@ -48,7 +48,7 @@ class ExecutorCommunicatorTest extends AbstractTestBase {
         when(messageHandler.visit(any(BlacklistExecutorMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) mock -> {
                     val param = (ExecutorMessage) mock.getArguments()[0];
-                    assertEquals(ExecutorMessageType.BLACKLIST, param.getType());
+                    assertEquals(ExecutorMessageType.BLACKLIST_REQUESTED, param.getType());
                     return new MessageResponse(param.getHeader(), MessageDeliveryStatus.ACCEPTED);
                 });
 

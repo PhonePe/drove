@@ -541,15 +541,17 @@
     function executorStateToHtml(state) {
         switch(state) {
             case 'ACTIVE':
-                return '<span class="badge bg-success fw-bold">ACTIVE</span>';
+                return '<span class="badge bg-success fw-bold">Active</span>';
             case 'UNREADY':
-                return '<span class="badge bg-warning fw-bold">UNREADY</span>';
-            case 'BLACKLISTED':
-                return '<span class="badge bg-danger fw-bold">BLACKLISTED</span>';
+                return '<span class="badge bg-warning fw-bold">Unready</span>';
+            case 'BLACKLIST_REQUESTED':
+                return '<span class="badge bg-warning fw-bold">Blacklisting Underway</span>';
+             case 'BLACKLISTED':
+                return '<span class="badge bg-danger fw-bold">Blacklisted</span>';
             case 'REMOVED':
-                return '<span class="badge bg-danger fw-bold">REMOVED</span>';
+                return '<span class="badge bg-danger fw-bold">Removed</span>';
             default:
-                return '<span class="badge bg-secondary fw-bold">UNKNOWN</span>';
+                return '<span class="badge bg-secondary fw-bold">Unknown</span>';
         }
     }
 

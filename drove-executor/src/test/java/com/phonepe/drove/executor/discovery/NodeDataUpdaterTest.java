@@ -123,7 +123,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         rdb.reclaimResources("test");
         validateSteadyState(updateCounter, nds, 3);
 
-        blm.blacklist();
+        blm.markBlacklisted();
         {
             waitUntil(() -> updateCounter.get() == 4);
             val nodes = nds.nodes(NodeType.EXECUTOR);
