@@ -321,7 +321,13 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
             if (null != data) {
                 val instanceId = ExecutorUtils.instanceId(data);
                 resourceDB.reclaimResources(instanceId);
-                stateMachines.remove(instanceId);
+                val stamp = lock.writeLock();
+                try {
+                    stateMachines.remove(instanceId);
+                }
+                finally {
+                    lock.unlockWrite(stamp);
+                }
                 log.info("State machine {} has been successfully terminated", instanceId);
             }
             else {
