@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +42,26 @@ import static org.mockito.Mockito.when;
  * Test {@link ExecutorStateManager}
  */
 class ExecutorStateManagerTest {
+
+    @Test
+    void testBlacklist() {
+        val lsie = mock(LocalServiceInstanceEngine.class);
+        val clusterClient = mock(ClusterClient.class);
+        val exSM = new ExecutorStateManager(lsie, clusterClient);
+
+        exSM.requestBlacklist();
+        assertEquals(ExecutorState.BLACKLIST_REQUESTED, exSM.currentState());
+    }
+
+    @Test
+    void testBlacklistFinalize() {
+        val lsie = mock(LocalServiceInstanceEngine.class);
+        val clusterClient = mock(ClusterClient.class);
+        val exSM = new ExecutorStateManager(lsie, clusterClient);
+
+        exSM.markBlacklisted();
+        assertEquals(ExecutorState.BLACKLISTED, exSM.currentState());
+    }
 
     @Test
     @SneakyThrows
