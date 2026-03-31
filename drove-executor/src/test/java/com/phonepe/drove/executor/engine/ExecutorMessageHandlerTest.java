@@ -236,6 +236,23 @@ class ExecutorMessageHandlerTest {
     }
 
     @Test
+    void testBlacklistFinalize() {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+
+        assertEquals(MessageDeliveryStatus.ACCEPTED,
+                     mh.visit(new BlacklistExecutorFinalizeMessage(MessageHeader.controllerRequest(),
+                                                                   executor())).getStatus());
+    }
+
+    @Test
     void testBlacklistException() {
         val applicationEngine = mock(ApplicationInstanceEngine.class);
         val taskEngine = mock(TaskInstanceEngine.class);
