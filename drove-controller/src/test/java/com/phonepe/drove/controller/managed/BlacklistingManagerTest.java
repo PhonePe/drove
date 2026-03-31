@@ -373,6 +373,85 @@ class BlacklistingManagerTest {
         bmm.stop();
     }
 
+    @Test
+    @SneakyThrows
+    void testSendExecutorMessageFail() {
+        val executor = executorHost(8080);
+        val le = mock(LeadershipEnsurer.class);
+        val s = new ConsumingSyncSignal<Boolean>();
+        when(le.onLeadershipStateChanged()).thenReturn(s);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
+        val communicator = mock(ControllerCommunicator.class);
+        when(communicator.send(any(ExecutorMessage.class)))
+                .thenReturn(new MessageResponse(MessageHeader.controllerRequest(), MessageDeliveryStatus.FAILED));
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
+        bmm.start();
+        val result = bmm.blacklistExecutors(Set.of(executor.getExecutorId()));
+        assertTrue(result.isEmpty());
+        bmm.stop();
+    }
+
+    @Test
+    @SneakyThrows
+    void testBlacklistAlreadyBlacklisted() {
+        val executor = executorHost(1, 8080, List.of(), List.of(), List.of(), true);
+        val le = mock(LeadershipEnsurer.class);
+        val s = new ConsumingSyncSignal<Boolean>();
+        when(le.onLeadershipStateChanged()).thenReturn(s);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
+        val communicator = mock(ControllerCommunicator.class);
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
+        bmm.start();
+        val result = bmm.blacklistExecutors(Set.of(executor.getExecutorId()));
+        assertTrue(result.isEmpty());
+        bmm.stop();
+    }
+
+    @Test
+    @SneakyThrows
+    void testBlacklistExecutorNotFound() {
+        val le = mock(LeadershipEnsurer.class);
+        val s = new ConsumingSyncSignal<Boolean>();
+        when(le.onLeadershipStateChanged()).thenReturn(s);
+        val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.empty());
+        val communicator = mock(ControllerCommunicator.class);
+        val eventBus = new DroveEventBus();
+        val bmm = new BlacklistingManager(le,
+                                          applicationEngine,
+                                          clusterResourcesDB,
+                                          communicator,
+                                          eventBus,
+                                          clusterOpSpec(),
+                                          Executors.newSingleThreadExecutor(),
+                                          100);
+        bmm.start();
+        val result = bmm.blacklistExecutors(Set.of("unknown-executor"));
+        assertTrue(result.isEmpty());
+        bmm.stop();
+    }
+
     private static ClusterOpSpec clusterOpSpec() {
         return new ClusterOpSpec(io.dropwizard.util.Duration.milliseconds(100), 1, FailureStrategy.STOP);
     }
