@@ -53,6 +53,11 @@ public abstract class DroveEventVisitorAdapter<T> implements DroveEventVisitor<T
     }
 
     @Override
+    public T visit(DroveExecutorBlacklistRequestedEvent executorBlacklistRequested) {
+        return defaultValue;
+    }
+
+    @Override
     public T visit(DroveExecutorBlacklistedEvent executorBlacklisted) {
         return defaultValue;
     }

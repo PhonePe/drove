@@ -30,6 +30,8 @@ public interface DroveEventVisitor<T> {
 
     T visit(DroveExecutorRemovedEvent executorRemoved);
 
+    T visit(DroveExecutorBlacklistRequestedEvent executorBlacklistRequested);
+
     T visit(DroveExecutorBlacklistedEvent executorBlacklisted);
 
     T visit(DroveExecutorUnblacklistedEvent executorUnBlacklisted);

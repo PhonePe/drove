@@ -64,7 +64,9 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.BlacklistOperationResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.events.events.DroveExecutorBlacklistRequestedEvent;
 import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
+import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -364,16 +366,21 @@ public class BlacklistingManager implements Managed {
         };
         val msgResponse = communicator.send(message);
         if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-            log.info("Executor {} has accepted message of type: {}", messageType, executor.getExecutorId());
-            eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
+            log.info("Executor {} has accepted message of type: {}", executor.getExecutorId(), messageType);
+            val event = switch (messageType) {
+                case BLACKLIST_REQUESTED -> new DroveExecutorBlacklistRequestedEvent(executorMetadata(executor.getNodeData()));
+                case BLACKLIST -> new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData()));
+                case UNBLACKLIST -> new DroveExecutorUnblacklistedEvent(executorMetadata(executor.getNodeData()));
+                default -> throw new IllegalArgumentException("Unsupported message type for blacklisting flow: "
+                        + messageType);
+            };
+            eventBus.publish(event);
             return true;
         }
-        else {
-            log.error("Error sending {} message to executor {}. Status: {}",
-                      messageType,
-                      executor.getExecutorId(),
-                      msgResponse.getStatus());
-        }
+        log.error("Error sending {} message to executor {}. Status: {}",
+                  messageType,
+                  executor.getExecutorId(),
+                  msgResponse.getStatus());
         return false;
     }
 

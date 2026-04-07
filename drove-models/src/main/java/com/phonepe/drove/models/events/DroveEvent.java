@@ -39,6 +39,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(name = "TASK_STATE_CHANGE", value = DroveTaskStateChangeEvent.class),
         @JsonSubTypes.Type(name = "EXECUTOR_ADDED", value = DroveExecutorAddedEvent.class),
         @JsonSubTypes.Type(name = "EXECUTOR_REMOVED", value = DroveExecutorRemovedEvent.class),
+        @JsonSubTypes.Type(name = "EXECUTOR_BLACKLIST_REQUESTED", value = DroveExecutorBlacklistRequestedEvent.class),
         @JsonSubTypes.Type(name = "EXECUTOR_BLACKLISTED", value = DroveExecutorBlacklistedEvent.class),
         @JsonSubTypes.Type(name = "EXECUTOR_UN_BLACKLISTED", value = DroveExecutorUnblacklistedEvent.class),
         @JsonSubTypes.Type(name = "MAINTENANCE_MODE_SET", value = DroveClusterMaintenanceModeSetEvent.class),
