@@ -463,7 +463,7 @@ public class Apis {
     @Path("/cluster/executors/{id}/blacklist")
     @Timed
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
-    public ApiResponse<Map<String, Set<String>>> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
+    public ApiResponse<BlacklistOperationResponse> blacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.blacklistExecutors(Set.of(executorId));
     }
 
@@ -471,7 +471,7 @@ public class Apis {
     @Path("/cluster/executors/blacklist")
     @Timed
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
-    public ApiResponse<Map<String, Set<String>>> blacklistExecutors(
+    public ApiResponse<BlacklistOperationResponse> blacklistExecutors(
             @QueryParam("id") @NotEmpty final Set<String> executorIds) {
         return responseEngine.blacklistExecutors(executorIds);
     }
@@ -480,7 +480,7 @@ public class Apis {
     @Path("/cluster/executors/{id}/unblacklist")
     @Timed
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
-    public ApiResponse<Map<String, Set<String>>> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
+    public ApiResponse<BlacklistOperationResponse> unblacklistExecutor(@PathParam("id") @NotEmpty final String executorId) {
         return responseEngine.unblacklistExecutors(Set.of(executorId));
     }
 
@@ -488,7 +488,7 @@ public class Apis {
     @Path("/cluster/executors/unblacklist")
     @Timed
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
-    public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(
+    public ApiResponse<BlacklistOperationResponse> unblacklistExecutors(
             @QueryParam("id") @NotEmpty final Set<String> executorIds) {
         return responseEngine.unblacklistExecutors(executorIds);
     }

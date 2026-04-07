@@ -919,7 +919,6 @@ class ApisTest {
     void deleteTaskInstance() {
         val spec = taskSpec();
 
-        val instance = ControllerTestUtils.generateTaskInfo(spec, 1);
         when(responseEngine.taskDelete(spec.getSourceAppName(), spec.getTaskId()))
                 .thenReturn(ApiResponse.success(Map.of("deleted", true)));
         {
@@ -1000,13 +999,13 @@ class ApisTest {
         val executorId = ControllerTestUtils.executorId(1);
         val executorIds = Set.of(executorId);
         when(responseEngine.blacklistExecutors(executorIds))
-                .thenReturn(ApiResponse.success(Map.of("successful", executorIds)));
+                .thenReturn(ApiResponse.success(BlacklistOperationResponse.builder().successful(executorIds).build()));
         val r = EXT.target("/v1/cluster/executors/" + executorId + "/blacklist")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
+                .post(Entity.json(null), new GenericType<ApiResponse<BlacklistOperationResponse>>() {
                 });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
-        assertTrue(r.getData().get("successful").contains(executorId));
+        assertTrue(r.getData().getSuccessful().contains(executorId));
     }
 
     @Test
@@ -1014,41 +1013,41 @@ class ApisTest {
         val executorId = ControllerTestUtils.executorId(1);
         val executorIds = Set.of(executorId);
         when(responseEngine.blacklistExecutors(executorIds))
-                .thenReturn(ApiResponse.success(Map.of("successful", executorIds)));
+                .thenReturn(ApiResponse.success(BlacklistOperationResponse.builder().successful(executorIds).build()));
         val r = EXT.target("/v1/cluster/executors/blacklist")
                 .queryParam("id", executorId)
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
+                .post(Entity.json(null), new GenericType<ApiResponse<BlacklistOperationResponse>>() {
                 });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
-        assertTrue(r.getData().get("successful").contains(executorId));
+        assertTrue(r.getData().getSuccessful().contains(executorId));
     }
 
     @Test
     void unblacklistExecutor() {
         val executorId = ControllerTestUtils.executorId(1);
         when(responseEngine.unblacklistExecutors(Set.of(executorId)))
-                .thenReturn(ApiResponse.success(Map.of("successful", Set.of(executorId))));
+                .thenReturn(ApiResponse.success(BlacklistOperationResponse.builder().successful(Set.of(executorId)).build()));
         val r = EXT.target("/v1/cluster/executors/" + executorId + "/unblacklist")
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
+                .post(Entity.json(null), new GenericType<ApiResponse<BlacklistOperationResponse>>() {
                 });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
-        assertTrue(r.getData().get("successful").contains(executorId));
+        assertTrue(r.getData().getSuccessful().contains(executorId));
     }
 
     @Test
     void unblacklistExecutors() {
         val executorId = ControllerTestUtils.executorId(1);
         when(responseEngine.unblacklistExecutors(Set.of(executorId)))
-                .thenReturn(ApiResponse.success(Map.of("successful", Set.of(executorId))));
+                .thenReturn(ApiResponse.success(BlacklistOperationResponse.builder().successful(Set.of(executorId)).build()));
         val r = EXT.target("/v1/cluster/executors/unblacklist")
                 .queryParam("id", executorId)
                 .request()
-                .post(Entity.json(null), new GenericType<ApiResponse<Map<String, Set<String>>>>() {
+                .post(Entity.json(null), new GenericType<ApiResponse<BlacklistOperationResponse>>() {
                 });
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
-        assertTrue(r.getData().get("successful").contains(executorId));
+        assertTrue(r.getData().getSuccessful().contains(executorId));
     }
 
     @Test

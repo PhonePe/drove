@@ -16,13 +16,43 @@
 
 package com.phonepe.drove.controller.resources;
 
+import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
+import static com.phonepe.drove.controller.ControllerTestUtils.executorHost;
+import static com.phonepe.drove.controller.ControllerTestUtils.generateInstanceInfo;
+import static com.phonepe.drove.controller.ControllerTestUtils.localServiceSpec;
+import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
+import static com.phonepe.drove.models.api.ApiErrorCode.FAILED;
+import static com.phonepe.drove.models.api.ApiErrorCode.SUCCESS;
+import static com.phonepe.drove.models.info.nodedata.NodeTransportType.HTTP;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
+
+import java.security.SecureRandom;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Maps;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
-import com.phonepe.drove.common.model.MessageDeliveryStatus;
-import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
@@ -37,10 +67,15 @@ import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.*;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.api.BlacklistOperationResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.common.ClusterState;
@@ -52,29 +87,14 @@ import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
-import io.appform.signals.signals.ConsumingSyncSignal;
-import lombok.val;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.mockito.stubbing.OngoingStubbing;
 
-import java.security.SecureRandom;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-
-import static com.phonepe.drove.controller.ControllerTestUtils.*;
-import static com.phonepe.drove.models.api.ApiErrorCode.FAILED;
-import static com.phonepe.drove.models.api.ApiErrorCode.SUCCESS;
-import static com.phonepe.drove.models.info.nodedata.NodeTransportType.HTTP;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import io.appform.signals.signals.ConsumingSyncSignal;
+import lombok.val;
 
 /**
  *
@@ -498,6 +518,7 @@ class ResponseEngineTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void testEndpointsForApp() {
         val apps = IntStream.rangeClosed(1, 100)
                 .mapToObj(i -> createApp(i, 10))
@@ -584,42 +605,58 @@ class ResponseEngineTest {
 
     @SuppressWarnings("unchecked")
     private<T> void testBlacklistingMultiFunctionality(
-            final BiFunction<ResponseEngine, Set<String>, ApiResponse<Map<String, Set<String>>>> func) {
+            final BiFunction<ResponseEngine, Set<String>, ApiResponse<BlacklistOperationResponse>> func) {
         val executors = IntStream.rangeClosed(1, 10)
-                .mapToObj(i -> executorHost(i, 8080, List.of(), List.of(), List.of()))
-                .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, Function.identity()));
+            .mapToObj(i -> executorHost(i, 8080, List.of(), List.of(), List.of()))
+            .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, Function.identity()));
         when(clusterResourcesDB.currentSnapshot(false)).thenReturn(List.copyOf(executors.values()));
         when(clusterResourcesDB.currentSnapshot(anyString()))
-                .thenAnswer(invocationOnMock -> {
-                    val eId = invocationOnMock.getArgument(0, String.class);
-                    return Optional.ofNullable(executors.get(eId));
-                });
+            .thenAnswer(invocationOnMock -> {
+                val eId = invocationOnMock.getArgument(0, String.class);
+                return Optional.ofNullable(executors.get(eId));
+            });
         val success = new AtomicBoolean(true);
-        when(blacklistingManager.blacklistExecutors(anySet())).thenAnswer((Answer<Set<String>>) invocationOnMock -> {
-            val response = invocationOnMock.getArgument(0);
-            return success.get()
-                   ? (Set<String>)response
-                   : Set.of();
-        });
-        when(blacklistingManager.unblacklistExecutors(anySet())).thenAnswer((Answer<Set<String>>) invocationOnMock -> {
-            val response = invocationOnMock.getArgument(0);
-            return success.get()
-                   ? (Set<String>)response
-                   : Set.of();
-        });
+        when(blacklistingManager.blacklistExecutors(anySet()))
+            .thenAnswer((Answer<BlacklistOperationResponse>) invocationOnMock -> {
+                val response = invocationOnMock.getArgument(0);
+                return success.get()
+                    ? BlacklistOperationResponse.builder()
+                    .successful(Set.copyOf((Set<String>)response))
+                    .failed(Set.of())
+                    .approxCompletionTimeMs(1000)
+                    .build()
+                    : BlacklistOperationResponse.builder()
+                    .successful(Set.of())
+                    .failed(Set.copyOf((Set<String>)response))
+                    .build();
+            });
+        when(blacklistingManager.unblacklistExecutors(anySet()))
+            .thenAnswer((Answer<BlacklistOperationResponse>) invocationOnMock -> {
+                val response = invocationOnMock.getArgument(0);
+                return success.get()
+                    ? BlacklistOperationResponse.builder()
+                    .successful(Set.copyOf((Set<String>)response))
+                    .failed(Set.of())
+                    .approxCompletionTimeMs(1000)
+                    .build()
+                    : BlacklistOperationResponse.builder()
+                    .successful(Set.of())
+                    .failed(Set.copyOf((Set<String>)response))
+                    .build();
+            });
         val executorIds = executors.keySet();
         {
             val r = func.apply(re, executorIds);
             assertEquals(SUCCESS, r.getStatus());
-            assertEquals(executorIds, r.getData().get("successful"));
+            assertEquals(executorIds, r.getData().getSuccessful());
         }
         {
             success.set(false);
             val r = func.apply(re, executorIds);
             assertEquals(SUCCESS, r.getStatus());
-            assertEquals(executorIds, r.getData().get("failed"));
+            assertEquals(executorIds, r.getData().getFailed());
         }
-    }
+            }
 
     private void testMaintenanceFunctionality(
             final ClusterState state,

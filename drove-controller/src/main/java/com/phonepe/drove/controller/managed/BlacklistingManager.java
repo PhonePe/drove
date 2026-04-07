@@ -22,7 +22,6 @@ import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,6 +45,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
@@ -61,9 +62,9 @@ import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.api.BlacklistOperationResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
-import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -73,7 +74,6 @@ import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeException;
 import dev.failsafe.RetryPolicy;
 import io.dropwizard.lifecycle.Managed;
-import lombok.SneakyThrows;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
@@ -101,9 +101,18 @@ public class BlacklistingManager implements Managed {
             .withDelay(10, 30, ChronoUnit.SECONDS) //Will wait 15 minutes for the app to move
             .build();
 
+    //Response for moveApps() API.
+    public record MoveOutResponse(boolean status, long maxWaitTimeMs){}
+
+    //Data required to move out instances of an app from blacklisted executors
+    private record ReplacementDetails(String appId, Set<String> instances, long waitTime, long operationTimeout) {}
+
+    //The executors and the relevant app instance details that are being processed for movement currently
+    private record MovementDetails(Set<String> executorIds, List<ReplacementDetails> replacementDetails) {}
+
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
-    private final Set<String> processing = new HashSet<>();
+    private final AtomicReference<MovementDetails> processing = new AtomicReference<>(null);
 
     //The following needs to be single threaded. Parallel blacklisting will lead to command
     // rejections due to app being busy for existing blacklisting
@@ -162,11 +171,10 @@ public class BlacklistingManager implements Managed {
         leadershipEnsurer.onLeadershipStateChanged().connect(this::handleLeadershipChanged);
     }
 
-    public Set<String> blacklistExecutors(Set<String> executorIds) {
-        boolean isFree = lock.tryLock();
-        if (!isFree) {
-            log.warn("Blacklisting underway already. Will not accept new requests");
-            return Set.of();
+    public BlacklistOperationResponse blacklistExecutors(Set<String> executorIds) {
+        val locked = lock.tryLock();
+        if (!locked) {
+            return reject(executorIds);
         }
         try {
             return blacklistExecutorsInternal(executorIds);
@@ -176,48 +184,47 @@ public class BlacklistingManager implements Managed {
         }
     }
 
-    public Set<String> unblacklistExecutors(final Set<String> executorIds) {
-        val successfullyMessageSent = executorIds.stream()
-                .filter(executorId -> {
-                    val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-                    if (null != executor) {
-                        val msgResponse = communicator.send(
-                                new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                               new ExecutorAddress(executor.getExecutorId(),
-                                                                                   executor.getNodeData().getHostname(),
-                                                                                   executor.getNodeData().getPort(),
-                                                                                   executor.getNodeData()
-                                                                                           .getTransportType())));
-                        if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                            log.debug("Executor {} marked unblacklisted.", executorId);
-                            eventBus.publish(new DroveExecutorUnblacklistedEvent(executorMetadata(executor.getNodeData())));
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                .collect(Collectors.toUnmodifiableSet());
-        val waitpolicy = blacklistingRelatedWaitPolicy(successfullyMessageSent);
+    public BlacklistOperationResponse unblacklistExecutors(Set<String> executorIds) {
+        val locked = lock.tryLock();
+        if (!locked) {
+            return reject(executorIds);
+        }
         try {
-            Failsafe.with(List.of(waitpolicy))
-                .get(() -> findCurrentOverlappingUnblacklisted(successfullyMessageSent));
+            val unblacklisted = unblacklistExecutorsInternal(executorIds);
+            val failed = Sets.difference(executorIds, unblacklisted);
+            return BlacklistOperationResponse.builder()
+                .successful(unblacklisted)
+                .failed(Set.copyOf(failed))
+                .message(failed.isEmpty()
+                        ? "Unblacklisting successful for all executors"
+                        : "Unblacklisting successful for some executors. Check logs for details.")
+                .build();
         }
-        catch (FailsafeException e) {
-            log.error("Blacklisting did not reflect in cluster resources DB for executors: " + successfullyMessageSent, e);
+        finally{
+            lock.unlock();
         }
-        val finallyUnblacklisted = findCurrentOverlappingUnblacklisted(successfullyMessageSent);
-        if(finallyUnblacklisted.isEmpty()) {
-            log.error("Unlacklisting did not reflect in cluster resources DB for executors: {}", successfullyMessageSent);
-            return Set.of();
-        }
-        return finallyUnblacklisted;
     }
 
-    @SneakyThrows
-    public boolean moveApps(final Set<String> executorIds) {
+    public MoveOutResponse moveApps(Set<String> executorIds) {
         lock.lock();
         try {
-            return moveAppsInternal(executorIds);
+            val defaultTimeout = defaultClusterOpSpec.getTimeout().toMilliseconds();
+            val replacementDetails = calculateReplacementDetails(healthyInstances(executorIds), defaultTimeout);
+            val maxTimeToWait = replacementDetails.stream()
+                .mapToLong(ReplacementDetails::operationTimeout)
+                .max()
+                .orElseGet(() -> replacementDetails.isEmpty() ? 0L : defaultTimeout);
+            if (replacementDetails.isEmpty()) {
+                log.info("No healthy instances found on executors: {}. No movement is necessary", executorIds);
+                return new MoveOutResponse(false, 0L);
+            }
+            processing.set(new MovementDetails(executorIds, replacementDetails));
+            condition.signalAll();
+            return new MoveOutResponse(true, maxTimeToWait);
+        }
+        catch(Exception e) {
+            log.error("Could not schedule app movement from executors: ".formatted(executorIds), e);
+            return new MoveOutResponse(false, 0L);
         }
         finally {
             lock.unlock();
@@ -256,18 +263,22 @@ public class BlacklistingManager implements Managed {
             .build();
     }
 
-    private boolean moveAppsInternal(final Set<String> executorIds) {
-        val status = processing.addAll(executorIds);
-            if (status) {
-                condition.signalAll();
-            }
-            else {
-                log.info("Did not schedule executors for app movement. Looks like app movement is already underway.");
-            }
-            return status;
+    private static BlacklistOperationResponse reject(Set<String> executorIds) {
+        log.warn("Blacklisting underway already. Will not accept new requests");
+        return failed(executorIds, "A blacklisting related operation is underway already. Will not accept new requests");
     }
 
-    private Set<String> blacklistExecutorsInternal(Set<String> executorIds) {
+
+    private static BlacklistOperationResponse failed(final Set<String> executorIds, String message) {
+        return BlacklistOperationResponse.builder()
+                .successful(Set.of())
+                .failed(executorIds)
+                .approxCompletionTimeMs(0L)
+                .message(message)
+                .build();
+    }
+
+    private BlacklistOperationResponse blacklistExecutorsInternal(Set<String> executorIds) {
         val successfullyBlacklistCalled = executorIds.stream()
             .filter(executorId -> {
                 val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
@@ -282,8 +293,8 @@ public class BlacklistingManager implements Managed {
             })
         .collect(Collectors.toUnmodifiableSet());
         if (successfullyBlacklistCalled.isEmpty()) {
-            log.warn("No executor has been blacklisted. No apps to move.");
-            return Set.of();
+            log.error("Blacklisting messages could not be sent to any of the executors: {}", executorIds);
+            return failed(executorIds, "Blacklisting messages could not be sent to any of the executors.");
         }
         val waitpolicy = blacklistingRelatedWaitPolicy(successfullyBlacklistCalled);
         try {
@@ -294,16 +305,48 @@ public class BlacklistingManager implements Managed {
             log.error("Blacklisting did not reflect in cluster resources DB for executors: " + successfullyBlacklistCalled, e);
         }
         val currentBlackListed = clusterResourcesDB.blacklistedNodes();
-        val finallyBlacklisted = successfullyBlacklistCalled.stream()
-            .filter(currentBlackListed::contains)
-            .collect(Collectors.toUnmodifiableSet());
+        val finallyBlacklisted = Sets.intersection(executorIds, currentBlackListed);
         if(finallyBlacklisted.isEmpty()) {
             log.error("Blacklisting did not reflect in cluster resources DB for executors: {}", successfullyBlacklistCalled);
+            return failed(executorIds, "Blacklisting did not reflect in cluster resources DB for any of the executors.");
+        }
+        val response = moveApps(finallyBlacklisted);
+        log.info("App movement manager acceptance status for executors {} is {}", successfullyBlacklistCalled, response.status());
+        val message = response.status()
+            ? "Blacklisting successful and app movement scheduled"
+            : "Blacklisting successful but app movement scheduling failed";
+        return BlacklistOperationResponse.builder()
+                .successful(Set.copyOf(finallyBlacklisted))
+                .failed(Set.copyOf(Sets.difference(executorIds, finallyBlacklisted)))
+                .approxCompletionTimeMs(response.maxWaitTimeMs())
+                .message(message)
+                .build();
+    }
+
+    private Set<String> unblacklistExecutorsInternal(final Set<String> executorIds) {
+        val successfullyMessageSent = executorIds.stream()
+                .filter(executorId -> {
+                    val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+                    if (null != executor) {
+                        return sendExecutorMessage(executor, ExecutorMessageType.UNBLACKLIST);
+                    }
+                    return false;
+                })
+                .collect(Collectors.toUnmodifiableSet());
+        val waitpolicy = blacklistingRelatedWaitPolicy(successfullyMessageSent);
+        try {
+            Failsafe.with(List.of(waitpolicy))
+                .get(() -> findCurrentOverlappingUnblacklisted(successfullyMessageSent));
+        }
+        catch (FailsafeException e) {
+            log.error("Blacklisting did not reflect in cluster resources DB for executors: " + successfullyMessageSent, e);
+        }
+        val finallyUnblacklisted = findCurrentOverlappingUnblacklisted(successfullyMessageSent);
+        if(finallyUnblacklisted.isEmpty()) {
+            log.error("Unlacklisting did not reflect in cluster resources DB for executors: {}", successfullyMessageSent);
             return Set.of();
         }
-        val status = moveApps(finallyBlacklisted);
-        log.info("App movement manager acceptance status for executors {} is {}", successfullyBlacklistCalled, status);
-        return finallyBlacklisted;
+        return finallyUnblacklisted;
     }
 
     private boolean sendExecutorMessage(ExecutorHostInfo executor, ExecutorMessageType messageType) {
@@ -362,8 +405,8 @@ public class BlacklistingManager implements Managed {
                         })
                         .collect(Collectors.toUnmodifiableSet());
                 if (!eligibleExecutors.isEmpty()) {
-                    val status = moveApps(eligibleExecutors);
-                    log.info("Executor {} blacklisting movement queuing status: {}", eligibleExecutors, status);
+                    val status = moveApps(eligibleExecutors).status();
+                    log.info("Executor {} blacklisting app movement queuing status: {}", eligibleExecutors, status);
                 }
                 else {
                     log.info("No blacklisted node on the cluster");
@@ -389,7 +432,7 @@ public class BlacklistingManager implements Managed {
             try {
                 while (true) {
                     condition.await();
-                    if (processing.isEmpty()) {
+                    if (processing.get() == null) {
                         log.debug("Spurious wakeup. No new executor to be scheduled for app movement");
                     }
                     else {
@@ -397,8 +440,8 @@ public class BlacklistingManager implements Managed {
                     }
                 }
                 log.info("Moving app instances from executors: {}", processing);
-                handleMovement(processing);
-                processing.clear();
+                handleMovement(processing.get());
+                processing.set(null);
                 log.info("Apps moved");
             }
             catch (InterruptedException e) {
@@ -425,15 +468,18 @@ public class BlacklistingManager implements Managed {
             .build();
     }
 
-    private void handleMovement(final Set<String> executorIds) {
-        val healthyInstances = healthyInstances(executorIds);
-        if (healthyInstances.isEmpty()) {
+    private void handleMovement(final MovementDetails movementDetails) {
+        val hasHealthyInstances = movementDetails.replacementDetails()
+            .stream()
+            .anyMatch(replacementData -> !replacementData.instances().isEmpty());
+        val executorIds = movementDetails.executorIds();
+        if (!hasHealthyInstances) {
             log.info("Nothing to do as no app instances need to be moved from executors: {}", executorIds);
         }
         else {
             log.info("Moving app instances from executors: {}", executorIds);
             try {
-                moveAppsFromExecutors(executorIds, healthyInstances);
+                moveAppsFromExecutors(executorIds, movementDetails.replacementDetails());
             }
             catch (Exception e) {
                 log.error("Error moving apps from executors " + executorIds, e);
@@ -448,35 +494,43 @@ public class BlacklistingManager implements Managed {
         log.info("Finished processing app movement for executors: {}", executorIds);
     }
 
-    private void moveAppsFromExecutors(final Set<String> executorIds, Map<String, Set<String>> healthyInstances) {
+    private List<ReplacementDetails> calculateReplacementDetails(Map<String, Set<String>> healthyInstances, long defaultTimeout) {
+        return healthyInstances.entrySet()
+                .stream()
+                .map(entry -> {
+                    val appId = entry.getKey();
+                    val instances = entry.getValue();
+                    val timeoutMultiplier = Math.max(1, instances.size() / defaultClusterOpSpec.getParallelism());
+                    val computedTimeout = applicationEngine.getStateDB()
+                            .application(appId)
+                            .map(ApplicationInfo::getSpec)
+                            .map(spec -> timeoutMultiplier * (ControllerUtils.maxStartTimeout(spec) + ControllerUtils.maxStopTimeout(spec)))
+                            .orElse(defaultTimeout);
+                    val opTimeout = Math.max(defaultTimeout, computedTimeout);
+                    log.debug("Calculated timeout for app {} with {} instances is {} ms. Default: {} ms. Computed: {} ms. Parallelism: {}. Timeout multipler: {}",
+                            appId, instances, opTimeout, defaultTimeout, computedTimeout, defaultClusterOpSpec.getParallelism(), timeoutMultiplier);
+                    val waitTime = opTimeout + 30_000; //Adding some buffer to the wait time
+                    return new ReplacementDetails(appId, instances, waitTime, opTimeout);
+                })
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    private void moveAppsFromExecutors(final Set<String> executorIds, List<ReplacementDetails> replacementDetails) {
         val completionService = new ExecutorCompletionService<Pair<String, Boolean>>(appMovementExecutor);
         //Raise replacement request for multiple apps in parallel
         //Wait for all apps to submit successfully
         //Then poll for executors to have become empty
-        val defaultTimeout = defaultClusterOpSpec.getTimeout().toMilliseconds();
-        val parallelism = defaultClusterOpSpec.getParallelism();
         val futures = new ArrayList<Future<Pair<String, Boolean>>>();
         val maxTimeToWait = new AtomicLong(0);
-        for(val entry : healthyInstances.entrySet()) {
-            val appId = entry.getKey();
-            val instances = entry.getValue();
-            val timeoutMultiplier = Math.max(1, instances.size() / parallelism);
-            val computedTimeout = applicationEngine.getStateDB()
-                     .application(appId)
-                     .map(ApplicationInfo::getSpec)
-                     .map(spec -> timeoutMultiplier * (ControllerUtils.maxStartTimeout(spec) + ControllerUtils .maxStopTimeout(spec)))
-                     .orElse(defaultTimeout);
-            val opTimeout = Math.max(defaultTimeout, computedTimeout);
-            maxTimeToWait.updateAndGet(current -> Math.max(current, opTimeout));
-            log.debug("Calculated timeout for app {} with {} instances is {} ms. Default: {} ms. Computed: {} ms. Parallelism: {}. Timeout multipler: {}",
-                    appId, instances, opTimeout, defaultTimeout, computedTimeout, parallelism, timeoutMultiplier);
-            val waitTime = opTimeout + 30_000; //Adding some buffer to the wait time
-            val replaceCommandFuture = completionService.submit(() -> issueReplaceCommand(waitTime,
-                                                                            appId,
-                                                                            instances,
-                                                                            opTimeout));
-            futures.add(replaceCommandFuture);
-        }
+        replacementDetails
+            .forEach(replacement -> {
+                    val future = completionService.submit(() -> issueReplaceCommand(replacement.waitTime(),
+                                                                       replacement.appId(),
+                                                                       replacement.instances(),
+                                                                       replacement.operationTimeout()));
+                    futures.add(future);
+                    maxTimeToWait.updateAndGet(current -> Math.max(current, replacement.operationTimeout()));
+                });
         val failedApps = futures.stream()
                 .map(f -> {
                     try {
@@ -500,7 +554,7 @@ public class BlacklistingManager implements Managed {
         }
         else {
             val totalWait = maxTimeToWait.get();
-            log.info("Commands accepted for all relevant app instances to be moved. Will wait for {}ms to ensure completion.", totalWait);
+            log.info("Commands accepted for all relevant app instances to be moved. Will wait for {} ms to ensure completion.", totalWait);
             try {
                 val allClear = waitForAction(allAppInstancesMovedWaitPolicy(totalWait),
                                              () -> healthyInstances(executorIds).isEmpty());
@@ -523,6 +577,8 @@ public class BlacklistingManager implements Managed {
                                             final Set<String> instances,
                                             final long opTimeout) {
         try {
+            log.info("Issuing replace command for app {} for instances {} with timeout {} ms. Will wait up to {} ms for command acceptance",
+                    appId, instances, opTimeout, waitTime);
             val finalStatus = Failsafe.with(List.of(appMovementWaitPolicy(waitTime)))
                     .get(() -> {
                         val res = applicationEngine.handleOperation(

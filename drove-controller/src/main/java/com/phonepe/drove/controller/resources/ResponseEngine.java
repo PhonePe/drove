@@ -344,23 +344,18 @@ public class ResponseEngine {
                                .toList());
     }
 
-    public ApiResponse<Map<String, Set<String>>> blacklistExecutors(final Set<String> executorIds) {
+    public ApiResponse<BlacklistOperationResponse> blacklistExecutors(final Set<String> executorIds) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ApiResponse.failure("Cluster is in maintenance mode");
         }
-        val successfullyBlacklisted = blacklistingManager.blacklistExecutors(executorIds);
-        return success(Map.of("successful", successfullyBlacklisted,
-                              "failed", Sets.difference(executorIds, successfullyBlacklisted)));
+        return ApiResponse.success(blacklistingManager.blacklistExecutors(executorIds));
     }
 
-    public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(final Set<String> executorIds) {
+    public ApiResponse<BlacklistOperationResponse> unblacklistExecutors(final Set<String> executorIds) {
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return ApiResponse.failure("Cluster is in maintenance mode");
         }
-        val successfullyUnblacklisted = blacklistingManager.unblacklistExecutors(executorIds);
-        return success(Map.of("successful", successfullyUnblacklisted,
-                              "failed", Sets.difference(executorIds, successfullyUnblacklisted)));
-
+        return ApiResponse.success(blacklistingManager.unblacklistExecutors(executorIds));
     }
 
     public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {

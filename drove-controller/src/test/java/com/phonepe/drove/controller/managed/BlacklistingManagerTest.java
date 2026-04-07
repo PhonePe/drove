@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
@@ -58,8 +59,10 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.appform.functionmetrics.FunctionMetricsManager;
 import io.appform.signals.signals.ConsumingSyncSignal;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -70,6 +73,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 class BlacklistingManagerTest {
+    @BeforeAll
+    static void setup() {
+        FunctionMetricsManager.initialize(BlacklistingManagerTest.class.getPackageName(), SharedMetricRegistries.getOrCreate("test"));
+    }
+
     @Test
     @SneakyThrows
     void testTopLevel() {
@@ -119,12 +127,18 @@ class BlacklistingManagerTest {
         val executorIds = unblackListedExecutors.stream()
             .map(node -> node.getState().getExecutorId())
             .collect(Collectors.toUnmodifiableSet());
-        val blacklistedIds = bmm.blacklistExecutors(executorIds);
+        val blacklistedIds = bmm.blacklistExecutors(executorIds).getSuccessful();
         assertEquals(5, blacklistedIds.size());
         assertEquals(blacklistedIds, clusterResourcesDB.blacklistedNodes());
 
-        val unblacklistedIds = bmm.unblacklistExecutors(executorIds);
-        assertEquals(5, unblacklistedIds.size());
+        CommonTestUtils.waitUntil(() -> {
+            val unblacklistedIds = bmm.unblacklistExecutors(executorIds).getSuccessful();
+            if(null != unblacklistedIds) {
+                assertEquals(5, unblacklistedIds.size());
+                return true;
+            }
+            return false;
+        });
         assertTrue(clusterResourcesDB.blacklistedNodes().isEmpty());
         bmm.stop();
     }
@@ -397,7 +411,7 @@ class BlacklistingManagerTest {
                                           100);
         bmm.start();
         val result = bmm.blacklistExecutors(Set.of(executor.getExecutorId()));
-        assertTrue(result.isEmpty());
+        assertTrue(result.getSuccessful().isEmpty());
         bmm.stop();
     }
 
@@ -423,7 +437,7 @@ class BlacklistingManagerTest {
                                           100);
         bmm.start();
         val result = bmm.blacklistExecutors(Set.of(executor.getExecutorId()));
-        assertTrue(result.isEmpty());
+        assertTrue(result.getSuccessful().isEmpty());
         bmm.stop();
     }
 
@@ -448,7 +462,7 @@ class BlacklistingManagerTest {
                                           100);
         bmm.start();
         val result = bmm.blacklistExecutors(Set.of("unknown-executor"));
-        assertTrue(result.isEmpty());
+        assertTrue(result.getSuccessful().isEmpty());
         bmm.stop();
     }
 
