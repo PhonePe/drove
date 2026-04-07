@@ -27,6 +27,7 @@ import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
@@ -106,7 +107,7 @@ class ExecutorLogFileApisTest {
                 List.of(instanceInfo),
                 List.of(taskInfo),
                 List.of(lsInfo),
-                false);
+                ExecutorState.ACTIVE);
         when(clusterResourcesDB.lastKnownSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
         when(clusterResourcesDB.currentSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
 
@@ -176,7 +177,8 @@ class ExecutorLogFileApisTest {
                 executor.getHttpPort(),
                 List.of(instanceInfo),
                 List.of(taskInfo),
-                List.of(lsInfo), false);
+                List.of(lsInfo),
+                ExecutorState.ACTIVE);
         when(clusterResourcesDB.lastKnownSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
         when(clusterResourcesDB.currentSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
 
@@ -261,7 +263,7 @@ class ExecutorLogFileApisTest {
                 List.of(instanceInfo),
                 List.of(taskInfo),
                 List.of(lsInfo),
-                false);
+                ExecutorState.ACTIVE);
         when(clusterResourcesDB.lastKnownSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
         when(clusterResourcesDB.currentSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
 
@@ -484,7 +486,8 @@ class ExecutorLogFileApisTest {
                 executor.getHttpPort(),
                 List.of(instanceInfo),
                 List.of(taskInfo),
-                List.of(lsInfo), false);
+                List.of(lsInfo),
+                ExecutorState.ACTIVE);
         when(clusterResourcesDB.lastKnownSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
         when(clusterResourcesDB.currentSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
 

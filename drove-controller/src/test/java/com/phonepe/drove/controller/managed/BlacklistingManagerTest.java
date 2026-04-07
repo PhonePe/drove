@@ -55,6 +55,7 @@ import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
@@ -197,8 +198,8 @@ class BlacklistingManagerTest {
     void testLeadershipChanged() {
         val spec = appSpec(1);
         val instance = generateInstanceInfo(ControllerUtils.deployableObjectId(spec), spec, 0);
-        val executor = executorHost(1, 8080, List.of(instance), List.of(), List.of(), true);
-        val noInstanceEx = executorHost(1, 8080, List.of(), List.of(), List.of(), true);
+        val executor = executorHost(1, 8080, List.of(instance), List.of(), List.of(), ExecutorState.BLACKLIST_REQUESTED);
+        val noInstanceEx = executorHost(1, 8080, List.of(), List.of(), List.of(), ExecutorState.BLACKLIST_REQUESTED);
         val called = new AtomicBoolean();
 
         val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
@@ -208,7 +209,6 @@ class BlacklistingManagerTest {
                                               ? List.of(noInstanceEx)
                                               : List.of(executor));
         when(clusterResourcesDB.currentSnapshot(anyString())).thenReturn(Optional.of(executor));
-        when(clusterResourcesDB.isBlacklisted(executor.getExecutorId())).thenReturn(true);
         when(applicationEngine.handleOperation(any(ApplicationReplaceInstancesOperation.class)))
                 .thenAnswer(invocationMock -> {
                     called.set(true);
@@ -418,7 +418,7 @@ class BlacklistingManagerTest {
     @Test
     @SneakyThrows
     void testBlacklistAlreadyBlacklisted() {
-        val executor = executorHost(1, 8080, List.of(), List.of(), List.of(), true);
+        val executor = executorHost(1, 8080, List.of(), List.of(), List.of(), ExecutorState.BLACKLISTED);
         val le = mock(LeadershipEnsurer.class);
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);

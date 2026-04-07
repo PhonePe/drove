@@ -240,7 +240,7 @@ public class ControllerTestUtils {
             final List<InstanceInfo> appInstances,
             final List<TaskInfo> taskInstances,
             final List<LocalServiceInstanceInfo> serviceInstances) {
-        return executorHost(index, port, appInstances, taskInstances, serviceInstances, false);
+        return executorHost(index, port, appInstances, taskInstances, serviceInstances, ExecutorState.ACTIVE);
     }
 
     public static ExecutorHostInfo executorHost(
@@ -249,14 +249,14 @@ public class ControllerTestUtils {
             final List<InstanceInfo> appInstances,
             final List<TaskInfo> taskInstances,
             final List<LocalServiceInstanceInfo> serviceInstances,
-            boolean blacklisted) {
+            ExecutorState executorState) {
         return executorHost("Ex" + index,
                             index,
                             port,
                             appInstances,
                             taskInstances,
                             serviceInstances,
-                            blacklisted);
+                            executorState);
     }
 
     public static ExecutorHostInfo executorHost(
@@ -266,7 +266,7 @@ public class ControllerTestUtils {
             final List<InstanceInfo> appInstances,
             final List<TaskInfo> taskInstances,
             List<LocalServiceInstanceInfo> serviceInstances,
-            boolean blacklisted) {
+            ExecutorState executorState) {
         return new ExecutorHostInfo(
                 "Ex" + index,
                 new ExecutorNodeData(hostname,
@@ -292,7 +292,7 @@ public class ControllerTestUtils {
                                      serviceInstances,
                                      Set.of(),
                                      Map.of(),
-                                     blacklisted ? ExecutorState.BLACKLISTED : ExecutorState.ACTIVE),
+                                     executorState),
                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
     }
 

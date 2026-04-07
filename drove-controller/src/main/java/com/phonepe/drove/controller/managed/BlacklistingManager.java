@@ -216,10 +216,6 @@ public class BlacklistingManager implements Managed {
                 .mapToLong(ReplacementDetails::operationTimeout)
                 .max()
                 .orElseGet(() -> replacementDetails.isEmpty() ? 0L : defaultTimeout);
-            if (replacementDetails.isEmpty()) {
-                log.info("No healthy instances found on executors: {}. No movement is necessary", executorIds);
-                return new MoveOutResponse(false, 0L);
-            }
             processing.set(new MovementDetails(executorIds, replacementDetails));
             condition.signalAll();
             return new MoveOutResponse(true, maxTimeToWait);
@@ -397,21 +393,12 @@ public class BlacklistingManager implements Managed {
                 log.info("Node became leader, checking if any instances need to be moved from blacklisted nodes");
                 val eligibleExecutors = clusterResourcesDB.currentSnapshot(false)
                         .stream()
-                        .filter(info -> clusterResourcesDB.isBlacklisted(info.getExecutorId()))
-                        .filter(info -> info.getNodeData()
-                                .getInstances()
-                                .stream()
-                                .anyMatch(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY)))
-                        .map(info -> {
-                            val executorId = info.getExecutorId();
-                            log.info(
-                                    "Looks like executor {} was blacklisted but apps did not get moved. Moving them " +
-                                            "now",
-                                    executorId);
-                            return executorId;
-                        })
+                        .filter(info -> info.getNodeData().getExecutorState().equals(ExecutorState.BLACKLIST_REQUESTED))
+                        .map(ExecutorHostInfo::getExecutorId)
                         .collect(Collectors.toUnmodifiableSet());
                 if (!eligibleExecutors.isEmpty()) {
+                    log.info("Found executors in blacklisting requested state. Scheduling app movement for them: {}",
+                            eligibleExecutors);
                     val status = moveApps(eligibleExecutors).status();
                     log.info("Executor {} blacklisting app movement queuing status: {}", eligibleExecutors, status);
                 }
@@ -447,9 +434,18 @@ public class BlacklistingManager implements Managed {
                     }
                 }
                 log.info("Moving app instances from executors: {}", processing);
-                handleMovement(processing.get());
+                val movementDetails = processing.get();
+                handleMovement(movementDetails);
                 processing.set(null);
-                log.info("Apps moved");
+                log.info("Apps moved. Blacklisting can proceed for executors: {}", movementDetails.executorIds());
+                movementDetails.executorIds()
+                        .forEach(executorId -> {
+                            val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
+                            if (null != executor) {
+                                sendExecutorMessage(executor, ExecutorMessageType.BLACKLIST);
+                            }
+                        });
+                log.info("Blacklisting complete for executors: {}", movementDetails.executorIds());
             }
             catch (InterruptedException e) {
                 log.info("Blacklist manager interrupted");
@@ -492,12 +488,6 @@ public class BlacklistingManager implements Managed {
                 log.error("Error moving apps from executors " + executorIds, e);
             }
         }
-        executorIds.forEach(executorId -> {
-            val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-            if (null != executor) {
-                sendExecutorMessage(executor, ExecutorMessageType.BLACKLIST);
-            }
-        });
         log.info("Finished processing app movement for executors: {}", executorIds);
     }
 
@@ -513,11 +503,10 @@ public class BlacklistingManager implements Managed {
                             .map(ApplicationInfo::getSpec)
                             .map(spec -> timeoutMultiplier * (ControllerUtils.maxStartTimeout(spec) + ControllerUtils.maxStopTimeout(spec)))
                             .orElse(defaultTimeout);
-                    val opTimeout = Math.max(defaultTimeout, computedTimeout);
-                    log.debug("Calculated timeout for app {} with {} instances is {} ms. Default: {} ms. Computed: {} ms. Parallelism: {}. Timeout multipler: {}",
-                            appId, instances, opTimeout, defaultTimeout, computedTimeout, defaultClusterOpSpec.getParallelism(), timeoutMultiplier);
-                    val waitTime = opTimeout + 30_000; //Adding some buffer to the wait time
-                    return new ReplacementDetails(appId, instances, waitTime, opTimeout);
+                    log.debug("Calculated timeout for app {} with {} instances is {} ms. Default: {} ms. Parallelism: {}. Timeout multipler: {}",
+                            appId, instances, computedTimeout, defaultTimeout, defaultClusterOpSpec.getParallelism(), timeoutMultiplier);
+                    val waitTime = computedTimeout + 30_000; //Adding some buffer to the wait time
+                    return new ReplacementDetails(appId, instances, waitTime, computedTimeout);
                 })
                 .collect(Collectors.toUnmodifiableList());
     }
