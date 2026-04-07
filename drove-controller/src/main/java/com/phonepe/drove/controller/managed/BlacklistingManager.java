@@ -223,7 +223,7 @@ public class BlacklistingManager implements Managed {
             return new MoveOutResponse(true, maxTimeToWait);
         }
         catch(Exception e) {
-            log.error("Could not schedule app movement from executors: ".formatted(executorIds), e);
+            log.error("Could not schedule app movement from executors: %s".formatted(executorIds), e);
             return new MoveOutResponse(false, 0L);
         }
         finally {
@@ -524,11 +524,11 @@ public class BlacklistingManager implements Managed {
         val maxTimeToWait = new AtomicLong(0);
         replacementDetails
             .forEach(replacement -> {
-                    val future = completionService.submit(() -> issueReplaceCommand(replacement.waitTime(),
+                    val replacementFuture = completionService.submit(() -> issueReplaceCommand(replacement.waitTime(),
                                                                        replacement.appId(),
                                                                        replacement.instances(),
                                                                        replacement.operationTimeout()));
-                    futures.add(future);
+                    futures.add(replacementFuture);
                     maxTimeToWait.updateAndGet(current -> Math.max(current, replacement.operationTimeout()));
                 });
         val failedApps = futures.stream()
