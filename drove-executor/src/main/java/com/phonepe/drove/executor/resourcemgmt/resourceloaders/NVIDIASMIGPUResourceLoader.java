@@ -1,12 +1,15 @@
 package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.google.common.base.Strings;
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.GPUInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -19,10 +22,10 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
 
 
-
+@SuppressWarnings("java:S135")
 @Slf4j
 public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
-    private record GpuDescriptor(String gpuId, String productName, String productBrand, Integer gpuIndex) {}
+    private record GpuDescriptor(String gpuId, String productName, Integer gpuIndex, boolean migDevice) {}
 
     @SuppressWarnings({"java:S3776", "java:S112"})
     private List<GpuDescriptor> fetchGpuResourcesWithNvidiaSMI() throws Exception {
@@ -48,19 +51,17 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(new InputSource(new StringReader(xmlOutput)));
         int gpuCount = doc.getElementsByTagName("gpu").getLength();
-        val gpuList = IntStream.range(0, gpuCount).mapToObj(i -> {
+        val gpuList = IntStream.range(0, gpuCount).boxed().flatMap(i -> {
             val gpuDoc = doc.getElementsByTagName("gpu").item(i);
             String gpuId = null;
             String productName = null;
-            String productBrand = null;
             Integer gpuIndex = null;
+            boolean migEnabled = false;
+            val migDescriptors = new ArrayList<GpuDescriptor>();
             for (int j = 0; j < gpuDoc.getChildNodes().getLength(); j++) {
                 val gpuPropDoc = gpuDoc.getChildNodes().item(j);
                 if (gpuPropDoc.getNodeName().equalsIgnoreCase("product_name")) {
                     productName = gpuPropDoc.getTextContent();
-                }
-                if (gpuPropDoc.getNodeName().equalsIgnoreCase("product_brand")) {
-                    productBrand = gpuPropDoc.getTextContent();
                 }
                 if (gpuPropDoc.getNodeName().equalsIgnoreCase("uuid")
                         && !gpuPropDoc.getTextContent().isBlank()) {
@@ -75,14 +76,59 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
                         log.warn("Could not parse minor_number for GPU");
                     }
                 }
+                if (gpuPropDoc.getNodeName().equalsIgnoreCase("mig_mode")) {
+                    migEnabled = isMigEnabled(gpuPropDoc);
+                }
+                if (gpuPropDoc.getNodeName().equalsIgnoreCase("mig_devices")) {
+                    migDescriptors.addAll(parseMigDevices(gpuPropDoc, productName, gpuIndex));
+                }
             }
             if(Strings.isNullOrEmpty(gpuId) || gpuIndex == null) {
                 throw new RuntimeException("Unable to parse GPU information from nvidia-smi output. Missing required fields id: %s index: %d".formatted(gpuId, gpuIndex));
             }
-            return new GpuDescriptor(gpuId, productName, productBrand, gpuIndex);
+            if (migEnabled && !migDescriptors.isEmpty()) {
+                return migDescriptors.stream();
+            }
+            return List.of(new GpuDescriptor(gpuId, productName, gpuIndex, false)).stream();
         }).toList();
         log.info("Found {} GPU(s) in the system", gpuList.size());
         return gpuList;
+    }
+
+    private boolean isMigEnabled(Node migModeNode) {
+        for (int i = 0; i < migModeNode.getChildNodes().getLength(); i++) {
+            val modeProp = migModeNode.getChildNodes().item(i);
+            if (modeProp.getNodeName().equalsIgnoreCase("current_mig")) {
+                return "enabled".equalsIgnoreCase(modeProp.getTextContent().trim());
+            }
+        }
+        return false;
+    }
+
+    private List<GpuDescriptor> parseMigDevices(Node migDevicesNode, String productName, Integer gpuIndex) {
+        val descriptors = new ArrayList<GpuDescriptor>();
+        for (int i = 0; i < migDevicesNode.getChildNodes().getLength(); i++) {
+            val child = migDevicesNode.getChildNodes().item(i);
+            if (!child.getNodeName().equalsIgnoreCase("mig_device")) {
+                continue;
+            }
+            for (int j = 0; j < child.getChildNodes().getLength(); j++) {
+                val migProp = child.getChildNodes().item(j);
+                if (!migProp.getNodeName().equalsIgnoreCase("uuid")) {
+                    continue;
+                }
+                val migUuid = migProp.getTextContent();
+                if (migUuid == null || migUuid.isBlank()) {
+                    continue;
+                }
+                descriptors.add(new GpuDescriptor(
+                        migUuid.trim(),
+                        "MIG " + Strings.nullToEmpty(productName).trim(),
+                        gpuIndex,
+                        true));
+            }
+        }
+        return descriptors;
     }
 
     @NotNull
@@ -166,13 +212,12 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         for (val gpuDescriptor : gpuList) {
             val gpuId = gpuDescriptor.gpuId();
             val gpuModel = gpuDescriptor.productName();
-            val gpuBrand = gpuDescriptor.productBrand();
             val numaAffinity = Optional.ofNullable(gpuDescriptor.gpuIndex())
                     .map(numaAffinityMap::get)
                     .orElse(null);
-            log.info("Detected GPU - ID: {}, Brand: {}, Model: {}, NUMA Affinity: {}",
-                     gpuId, gpuBrand, gpuModel, numaAffinity);
-            result.add(new GPUInfo(gpuId, gpuBrand, gpuModel, numaAffinity, true));
+            log.info("Detected {} GPU - ID: {}, Vendor: {}, Model: {}, NUMA Affinity: {}",
+                     gpuDescriptor.migDevice() ? "MIG" : "physical", gpuId, GpuVendor.NVIDIA, gpuModel, numaAffinity);
+            result.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, CommonUtils.normalizeGPUModel(gpuModel), numaAffinity, true));
         }
         return result;
     }

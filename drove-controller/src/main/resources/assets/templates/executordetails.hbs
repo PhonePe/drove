@@ -251,14 +251,16 @@
             return;
         }
 
-        const providerCounts = allGpus.reduce((acc, gpu) => {
-            const provider = gpu.gpuProvider || 'N/A';
-            acc[provider] = (acc[provider] || 0) + 1;
+        const typeCounts = allGpus.reduce((acc, gpu) => {
+            const vendor = gpu.gpuProvider || 'N/A';
+            const model = gpu.gpuModel || 'Unknown';
+            const key = vendor + ' ' + model;
+            acc[key] = (acc[key] || 0) + 1;
             return acc;
         }, {});
 
-        const gpuProviderCounts = Object.entries(providerCounts).map(([provider, count]) => {
-            return `<span class="badge bg-info text-dark me-1">${provider}: ${count}</span>`;
+        const gpuProviderCounts = Object.entries(typeCounts).map(([type, count]) => {
+            return `<span class="badge bg-info text-dark me-1">${type}: ${count}</span>`;
         }).join(" ");
 
         const isGpuFree = (gpu) => (free || []).some(freeGpu => freeGpu === gpu.gpuId);
@@ -267,8 +269,12 @@
 
         const gpuBadges = allGpus.map(gpu => {
             const isFree = isGpuFree(gpu);
-            return '<span class="core-display {0} fw-bold" title="Provider: {2}">{1}</span>'
-                .format(isFree ? 'text-success' : 'text-danger', gpu.gpuId, gpu.gpuProvider || 'N/A');
+            const vendor = gpu.gpuProvider || 'N/A';
+            const model = gpu.gpuModel || 'Unknown';
+            const numa = gpu.numaNodeAffinity != null ? gpu.numaNodeAffinity : 'N/A';
+            const tooltip = 'Vendor: ' + vendor + ' | Model: ' + model + ' | NUMA: ' + numa;
+            return '<span class="core-display {0} fw-bold" title="{2}">{1}</span>'
+                .format(isFree ? 'text-success' : 'text-danger', gpu.gpuId, tooltip);
         }).join(" ");
 
         gpuStatus.append(renderTemplateHtml('gpuStatusTemplate', [{ gpuProviderCounts, gpuBadges }]));

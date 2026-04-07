@@ -414,10 +414,12 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                             val memInfo = e.getValue().getMemory();
                             memInfo.setAvailable(memUpdater.applyAsLong(memInfo.getAvailable(), allocMem));
                         }));
-        gpuAllocation.getGpuIds().forEach(gpuId -> {
-            val gpuInfo = nodes.get(executorId).getGpuInfo();
-            gpuInfo.getGpus().put(gpuId,  gpuNewState);
-        });
+        if(gpuAllocation != null) {
+            gpuAllocation.getGpuIds().forEach(gpuId -> {
+                val gpuInfo = nodes.get(executorId).getGpuInfo();
+                gpuInfo.getGpus().put(gpuId, gpuNewState);
+            });
+        }
     }
 
 

@@ -46,9 +46,10 @@ public class CompositeExecutorSelector implements ExecutorSelector {
             Predicate<AllocatedExecutorNode> allocationFilter) {
         
         // Choose selector based on GPU requirement
-        ExecutorSelector selector = ExecutorSelector.extractGpuRequirement(requirements) > 0
-                ? gpuSelector
-                : defaultSelector;
+        ExecutorSelector selector = ExecutorSelector.findGpuRequirement(requirements)
+                .filter(r -> r.getCount() > 0)
+                .map(r -> gpuSelector)
+                .orElse(defaultSelector);
         
         return selector.select(nodes, nodeFilter, requirements, allocationFilter);
     }

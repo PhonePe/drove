@@ -3,10 +3,12 @@ package com.phonepe.drove.controller.resourcemgmt.selector;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
+import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import lombok.val;
 
 /**
  * Chooses the feasible executor whose allocation has the most NUMA-local GPUs.
@@ -33,7 +35,9 @@ public class ScoredExecutorSelector implements ExecutorSelector {
         
         long cpus = ExecutorSelector.extractCpuRequirement(requirements);
         long memory = ExecutorSelector.extractMemoryRequirement(requirements);
-        long gpus = ExecutorSelector.extractGpuRequirement(requirements);
+        val gpuReq = ExecutorSelector.findGpuRequirement(requirements).orElse(null);
+        long gpus = gpuReq != null ? gpuReq.getCount() : 0;
+        GpuType gpuType = gpuReq != null ? gpuReq.getGpuType() : null;
         
         Optional<AllocatedExecutorNode> selected = Optional.empty();
         long maxScore = -1;
@@ -44,7 +48,7 @@ public class ScoredExecutorSelector implements ExecutorSelector {
                 continue;
             }
             
-            Optional<AllocatedExecutorNode> allocation = allocator.allocate(node, cpus, memory, gpus);
+            Optional<AllocatedExecutorNode> allocation = allocator.allocate(node, cpus, memory, gpus, gpuType);
             
             if (allocation.isPresent() && allocationFilter.test(allocation.get())) {
                 // Use the pre-calculated localGpuCount from the allocation

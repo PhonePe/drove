@@ -54,17 +54,23 @@ import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
-import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
-import org.apache.hc.client5.http.ssl.TlsSocketStrategy;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.URIScheme;
+import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
-import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
@@ -75,6 +81,7 @@ import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -83,6 +90,7 @@ import java.util.function.BooleanSupplier;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtils {
     private static final String DEFAULT_NAMESPACE = "drove";
+    private static final Pattern NON_ALNUM_NON_DASH = Pattern.compile("[^a-z0-9-]+");
 
     @IgnoreInJacocoGeneratedReport
     @SuppressWarnings("deprecation")
@@ -219,7 +227,13 @@ public class CommonUtils {
         val cmBuilder = PoolingHttpClientConnectionManagerBuilder.create();
         if (insecure) {
             log.debug("Creating insecure http client");
-            cmBuilder.setTlsSocketStrategy(buildInsecureTlsStrategy());
+            cmBuilder.setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create()
+                                                  .setSslContext(
+                                                          SSLContextBuilder.create()
+                                                                  .loadTrustMaterial(TrustAllStrategy.INSTANCE)
+                                                                  .build())
+                                                  .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                                                  .build());
         }
         val connectionManager = cmBuilder.build();
         connectionManager.setDefaultMaxPerRoute(100);
@@ -247,36 +261,49 @@ public class CommonUtils {
                 Objects.requireNonNullElse(httpSpec.getConnectionTimeout(),
                                            io.dropwizard.util.Duration.seconds(1))
                         .toMilliseconds());
-
-        val cmBuilder = PoolingHttpClientConnectionManagerBuilder.create()
-                .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
-                .setConnPoolPolicy(PoolReusePolicy.LIFO);
-
+        val socketFactoryBuilder = SSLConnectionSocketFactoryBuilder.create();
         if (httpSpec.isInsecure()) {
-            log.debug("Creating insecure http client for internal check");
-            cmBuilder.setTlsSocketStrategy(buildInsecureTlsStrategy());
+            socketFactoryBuilder.setSslContext(
+                            SSLContextBuilder.create()
+                                    .loadTrustMaterial(TrustAllStrategy.INSTANCE)
+                                    .build())
+                    .setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
         }
 
-        val connManager = cmBuilder.build();
-        
+        val socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
+                .register(URIScheme.HTTPS.id, socketFactoryBuilder.build())
+                .build();
+        val connManager = new PoolingHttpClientConnectionManager(
+                socketFactoryRegistry, PoolConcurrencyPolicy.STRICT, PoolReusePolicy.LIFO, TimeValue.ofMinutes(5));
         connManager.setDefaultConnectionConfig(ConnectionConfig.custom()
-                .setConnectTimeout(Timeout.of(connectionTimeout))
-                .setSocketTimeout(Timeout.of(connectionTimeout))
-                .setValidateAfterInactivity(TimeValue.ofSeconds(10))
-                .setTimeToLive(TimeValue.ofHours(1))
-                .build());
-
+                                                       .setConnectTimeout(Timeout.of(connectionTimeout))
+                                                       .setSocketTimeout(Timeout.of(connectionTimeout))
+                                                       .setValidateAfterInactivity(TimeValue.ofSeconds(10))
+                                                       .setTimeToLive(TimeValue.ofHours(1))
+                                                       .build());
         val rc = RequestConfig.custom()
                 .setResponseTimeout(Timeout.of(requestTimeOut))
                 .build();
-
         return HttpClients.custom()
-                .disableRedirectHandling() 
+                .setRedirectStrategy(new RedirectStrategy() {
+
+                    @Override
+                    @IgnoreInJacocoGeneratedReport
+                    public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context) {
+                        return false;
+                    }
+
+                    @Override
+                    @IgnoreInJacocoGeneratedReport
+                    public URI getLocationURI(HttpRequest request, HttpResponse response, HttpContext context) {
+                        return null;
+                    }
+                })
                 .setConnectionManager(connManager)
                 .setDefaultRequestConfig(rc)
                 .build();
     }
-
 
     public static HttpUriRequestBase buildRequest(
             HTTPVerb verb,
@@ -326,16 +353,13 @@ public class CommonUtils {
         return !Strings.isNullOrEmpty(osName) && osName.toLowerCase().contains("mac");
     }
 
-    @SneakyThrows
-    private static TlsSocketStrategy buildInsecureTlsStrategy() {
-        val sslContext = SSLContexts.custom()
-                .loadTrustMaterial(new TrustAllStrategy())
-                .build();
-        return ClientTlsStrategyBuilder.create()
-                .setSslContext(sslContext)
-                .setHostVerificationPolicy(HostnameVerificationPolicy.CLIENT)
-                .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                .buildClassic();
-    }
+    public static String normalizeGPUModel(String value) {
+        if (value == null) {
+            return null;
+        }
 
+        return NON_ALNUM_NON_DASH.matcher(value.toLowerCase(Locale.ROOT).trim())
+                .replaceAll(" ")
+                .trim().replaceAll("\\s+", " ");
+    }
 }

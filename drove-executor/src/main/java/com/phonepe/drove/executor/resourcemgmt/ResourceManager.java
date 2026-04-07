@@ -55,11 +55,15 @@ public class ResourceManager {
         Map<Integer, NodeInfo> usedResources;
         List<String> usedGPUs;
     }
-    @Data
-    @AllArgsConstructor
+    @Value
     public static class ExecutorResources {
         Map<Integer, NodeInfo> numaNodeToResource;
         Set<GPUInfo> gpuInfos;
+
+        public ExecutorResources(Map<Integer, NodeInfo> numaNodeToResource, Set<GPUInfo> gpuInfos) {
+            this.numaNodeToResource = Collections.unmodifiableMap(new LinkedHashMap<>(numaNodeToResource));
+            this.gpuInfos = Collections.unmodifiableSet(new LinkedHashSet<>(gpuInfos));
+        }
     }
     @Data
     @AllArgsConstructor
@@ -87,11 +91,13 @@ public class ResourceManager {
             .build();
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
     private List<String> gpus = Collections.emptyList();
+    private Set<GPUInfo> gpuInfoSet = Collections.emptySet();
     private PhysicalLayout physicalLayout = null;
 
     @MonitoredFunction
     public synchronized void populateResources(ExecutorResources resources) {
         this.nodes = Map.copyOf(resources.getNumaNodeToResource());
+        this.gpuInfoSet = Set.copyOf(resources.getGpuInfos());
         this.gpus = List.copyOf(resources.getGpuInfos().stream().map(GPUInfo::getGpuId).collect(Collectors.toList()));
         val cores = new HashMap<Integer, Set<Integer>>();
         val memory = new HashMap<Integer, Long>();
@@ -125,8 +131,10 @@ public class ResourceManager {
         }
         val currentGpus = new ArrayList<>(gpus);
         usage.getUsedGPUs().forEach(gpu -> {
-            val gpuAllocation = currentGpus.stream().filter(g -> g.equals(gpu)).findFirst();
-            currentGpus.remove(gpuAllocation.get());
+            boolean removed = currentGpus.remove(gpu);
+            if (!removed) {
+                log.error("Attempted to release GPU '{}' that is not currently tracked as available. Usage: {}", gpu, usage);
+            }
         });
 
         val currNodes = new HashMap<>(nodes);
@@ -182,6 +190,14 @@ public class ResourceManager {
 
     public ConsumingFireForgetSignal<ResourceInfo> onResourceUpdated() {
         return resourceUpdated;
+    }
+
+    /**
+     * Returns the full {@link GPUInfo} metadata for all GPUs known to this executor.
+     * Unlike the internal GPU-ID list used for lock/reclaim, this preserves vendor, model, and NUMA affinity.
+     */
+    public synchronized Set<GPUInfo> getGpuInfoSet() {
+        return gpuInfoSet;
     }
 
     private ResourceInfo calculateResources() {

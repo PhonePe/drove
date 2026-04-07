@@ -76,8 +76,24 @@ public class ExecutorCoreModule extends AbstractModule {
         bind(NumaResourceLoader.class).annotatedWith(Names.named(ResourceLoaderIdentifiers.OVER_PROVISIONING_RESOURCE_LOADER))
                 .to(OverProvisioningNumaResourceLoader.class);
         bind(NumaResourceLoader.class).to(NumaActivationNumaResourceLoader.class);
-        bind(GPUResourceLoader.class).to(NVIDIASMIGPUResourceLoader.class);
         bind(ExecutorResourceLoader.class).to(ExecutorResourceLoaderImpl.class);
+    }
+
+    @Provides
+    @Singleton
+    public GPUResourceLoader gpuResourceLoader(final ResourceConfig resourceConfig) {
+        val loaders = new java.util.ArrayList<GPUResourceLoader>();
+
+        // NVIDIA GPU discovery
+        val nvidiaConfig = resourceConfig.getNvidiaGPULoaderConfig();
+        if (nvidiaConfig != null && nvidiaConfig.isEnabled()) {
+            loaders.add(new NVIDIASMIGPUResourceLoader());
+        }
+
+        if (loaders.isEmpty()) {
+            return new NoOpGPUResourceLoader();
+        }
+        return new CompositeGPUResourceLoader(loaders);
     }
 
 

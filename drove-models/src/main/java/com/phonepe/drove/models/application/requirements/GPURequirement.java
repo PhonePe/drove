@@ -6,6 +6,8 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.Objects;
+
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -13,10 +15,12 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 public class GPURequirement extends ResourceRequirement{
     long count;
+    GpuType gpuType;
 
-    public GPURequirement(long count) {
+    public GPURequirement(long count, GpuType gpuType) {
         super(ResourceType.GPU);
         this.count = count;
+        this.gpuType = Objects.requireNonNull(gpuType, "GPU type is mandatory");
     }
 
     @Override

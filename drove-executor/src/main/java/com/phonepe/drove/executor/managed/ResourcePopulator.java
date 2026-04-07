@@ -18,7 +18,6 @@ package com.phonepe.drove.executor.managed;
 
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ExecutorResourceLoader;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaResourceLoader;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -38,9 +37,9 @@ public class ResourcePopulator implements Managed {
     @Inject
     public ResourcePopulator(
             ResourceManager resourceDB,
-            ExecutorResourceLoader numaResourceLoader) {
+            ExecutorResourceLoader executorResourceLoader) {
         this.resourceDB = resourceDB;
-        this.executorResourceLoader = numaResourceLoader;
+        this.executorResourceLoader = executorResourceLoader;
     }
 
     @Override

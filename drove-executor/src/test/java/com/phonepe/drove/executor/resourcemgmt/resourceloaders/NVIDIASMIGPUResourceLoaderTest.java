@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.GPUInfo;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -66,7 +67,7 @@ class NVIDIASMIGPUResourceLoaderTest {
             assertNotNull(gpu.getGpuId());
             assertTrue(gpu.getGpuId().startsWith("GPU-"));
             assertNotNull(gpu.getGpuModel());
-            assertEquals("NVIDIA", gpu.getGpuProvider());
+            assertEquals(GpuVendor.NVIDIA, gpu.getGpuVendor());
             assertNotNull(gpu.getNumaNodeAffinity());
         }
         // GPUs 0-3 are on NUMA 0, GPUs 4-7 are on NUMA 1
@@ -218,5 +219,57 @@ class NVIDIASMIGPUResourceLoaderTest {
                 """;
         val result = loader.parseNumaAffinityFromTopoOutput(topoOutput);
         assertEquals(Map.of(0, 0, 1, 1), result);
+    }
+
+    @Test
+    void testGPULoadRecognizesMigDevicesWhenMigEnabled() {
+        val underTest = new NVIDIASMIGPUResourceLoader() {
+            @NotNull
+            @Override
+            protected String queryNvidiaSMI() {
+                return """
+                        <nvidia_smi_log>
+                          <gpu id=\"00000000:01:00.0\">
+                            <product_name>NVIDIA H100 80GB HBM3</product_name>
+                            <product_brand>NVIDIA</product_brand>
+                            <mig_mode>
+                              <current_mig>Enabled</current_mig>
+                              <pending_mig>Enabled</pending_mig>
+                            </mig_mode>
+                            <uuid>GPU-PARENT</uuid>
+                            <minor_number>0</minor_number>
+                            <mig_devices>
+                              <mig_device>
+                                <index>0</index>
+                                <uuid>MIG-1111</uuid>
+                              </mig_device>
+                              <mig_device>
+                                <index>1</index>
+                                <uuid>MIG-2222</uuid>
+                              </mig_device>
+                            </mig_devices>
+                          </gpu>
+                        </nvidia_smi_log>
+                        """;
+            }
+
+            @NotNull
+            @Override
+            protected String queryNvidiaSMITopo() {
+                // Single-GPU header: tokens = [GPU0, CPU, Affinity, NUMA, Affinity]
+                // "NUMA" is at index 3. Data row tokens = [GPU0, X, 0-15, 0] -> index 3 = "0"
+                return "\tGPU0\tCPU Affinity\tNUMA Affinity\n"
+                        + "GPU0\t X \t0-15\t0\n";
+            }
+        };
+
+        val gpusById = underTest.loadGPUInfo().stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(GPUInfo::getGpuId, gpu -> gpu));
+        assertEquals(2, gpusById.size());
+        assertTrue(gpusById.containsKey("MIG-1111"));
+        assertTrue(gpusById.containsKey("MIG-2222"));
+        assertFalse(gpusById.containsKey("GPU-PARENT"));
+        assertTrue(gpusById.get("MIG-1111").getGpuModel().toLowerCase().contains("mig"));
+        assertEquals(0, gpusById.get("MIG-1111").getNumaNodeAffinity());
     }
 }

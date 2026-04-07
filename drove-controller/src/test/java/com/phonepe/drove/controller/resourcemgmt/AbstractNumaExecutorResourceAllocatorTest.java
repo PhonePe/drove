@@ -16,14 +16,14 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.controller.resourcemgmt.allocator.AbstractNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
-import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
@@ -36,35 +36,12 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for AbstractNumaResourceAllocator verifying that CPU allocation,
- * memory allocation, and node assembly work correctly regardless of the GPU strategy
- * used by a concrete subclass.
+ * Unit tests for NUMA resource allocation verifying that CPU allocation,
+ * memory allocation, and node assembly work correctly when no GPUs are requested.
  */
 class AbstractNumaExecutorResourceAllocatorTest {
 
-    /**
-     * Minimal concrete stub: always picks the first candidate NUMA node and
-     * delegates entirely to the base-class helpers. Contains no GPU logic.
-     */
-    private static class FirstCandidateAllocatorExecutor extends AbstractNumaExecutorResourceAllocator {
-        @Override
-        public Optional<AllocatedExecutorNode> allocate(
-                ExecutorHostInfo hostInfo,
-                long requiredCpus,
-                long requiredMemory,
-                long requiredGpus) {
-            val candidateNumaNodeIds = candidateNumaNodeIds(hostInfo, requiredCpus, requiredMemory);
-            if (candidateNumaNodeIds.isEmpty()) {
-                return Optional.empty();
-            }
-            val numaNodeId = candidateNumaNodeIds.get(0);
-            return Optional.of(buildAllocatedNode(
-                    hostInfo, numaNodeId, requiredCpus, requiredMemory,
-                    new GPUAllocation(Set.of(), 0)));
-        }
-    }
-
-    private final FirstCandidateAllocatorExecutor allocator = new FirstCandidateAllocatorExecutor();
+    private final GpuAwareNumaExecutorResourceAllocator allocator = new GpuAwareNumaExecutorResourceAllocator();
 
     // -------------------------------------------------------------------------
     // CPU allocation
@@ -235,7 +212,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(e -> new GPUInfo(e.getKey(), "NVIDIA", "H100", e.getValue(), true))
+                .map(e -> new GPUInfo(e.getKey(), GpuVendor.NVIDIA, "H100", e.getValue(), true))
                 .collect(Collectors.toUnmodifiableSet());
 
         val snapshot = new ExecutorResourceSnapshot(

@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.info.resources.allocation;
 
+import com.google.common.base.Preconditions;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -19,6 +20,9 @@ public class GPUAllocation extends ResourceAllocation{
 
     public GPUAllocation(Set<String> gpuIds, long localGpuCount) {
         super(ResourceType.GPU);
+        Preconditions.checkArgument(gpuIds != null && localGpuCount<= gpuIds.size());
+        Preconditions.checkArgument(localGpuCount >= 0);
+
         this.gpuIds = gpuIds;
         this.localGpuCount = localGpuCount;
     }

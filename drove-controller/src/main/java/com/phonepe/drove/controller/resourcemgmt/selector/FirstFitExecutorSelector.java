@@ -3,10 +3,12 @@ package com.phonepe.drove.controller.resourcemgmt.selector;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
+import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+import lombok.val;
 
 /**
  * Preserves current first-fit executor selection semantics.
@@ -29,12 +31,14 @@ public class FirstFitExecutorSelector implements ExecutorSelector {
 		
 		long cpus = ExecutorSelector.extractCpuRequirement(requirements);
 		long memory = ExecutorSelector.extractMemoryRequirement(requirements);
-		long gpus = ExecutorSelector.extractGpuRequirement(requirements);
+		val gpuReq = ExecutorSelector.findGpuRequirement(requirements).orElse(null);
+		long gpus = gpuReq != null ? gpuReq.getCount() : 0;
+		GpuType gpuType = gpuReq != null ? gpuReq.getGpuType() : null;
 		
 		// Single pass: apply nodeFilter, allocate, apply allocationFilter inline
 		return nodes.stream()
 				.filter(nodeFilter)
-				.map(node -> allocator.allocate(node, cpus, memory, gpus))
+				.map(node -> allocator.allocate(node, cpus, memory, gpus, gpuType))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.filter(allocationFilter)

@@ -2,10 +2,7 @@ package com.phonepe.drove.controller.resourcemgmt.selector;
 
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.GPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import com.phonepe.drove.models.application.requirements.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,31 +35,36 @@ public interface ExecutorSelector {
 	 * Utility method to extract CPU requirement count from resource requirements list.
 	 */
 	static long extractCpuRequirement(List<ResourceRequirement> resources) {
-		return ((CPURequirement) extractRequirement(resources, "CPU")).getCount();
+		return ((CPURequirement) extractRequirement(resources, ResourceType.CPU)).getCount();
 	}
 
 	/**
 	 * Utility method to extract memory requirement in MB from resource requirements list.
 	 */
 	static long extractMemoryRequirement(List<ResourceRequirement> resources) {
-		return ((MemoryRequirement) extractRequirement(resources, "MEMORY")).getSizeInMB();
+		return ((MemoryRequirement) extractRequirement(resources, ResourceType.MEMORY)).getSizeInMB();
 	}
 
+
+
 	/**
-	 * Utility method to extract GPU requirement count from resource requirements list.
+	 * Utility method to find the GPU requirement, returning empty if none is present.
 	 */
-	static long extractGpuRequirement(List<ResourceRequirement> resources) {
-		return ((GPURequirement) extractRequirement(resources, "GPU")).getCount();
+	static Optional<GPURequirement> findGpuRequirement(List<ResourceRequirement> resources) {
+		return resources.stream()
+				.filter(req -> req.getType() == ResourceType.GPU)
+				.map(GPURequirement.class::cast)
+				.findFirst();
 	}
 
 	/**
 	 * Utility method to extract specific resource requirement from the list.
 	 */
-	static ResourceRequirement extractRequirement(List<ResourceRequirement> resources, String typeName) {
+	static ResourceRequirement extractRequirement(List<ResourceRequirement> resources, ResourceType type) {
 		return resources.stream()
-				.filter(req -> req.getType().name().equals(typeName))
+				.filter(req -> req.getType() == type)
 				.findFirst()
-				.orElseThrow(() -> new IllegalArgumentException("Resource requirement of type " + typeName + " is required"));
+				.orElseThrow(() -> new IllegalArgumentException("Resource requirement of type " + type + " is required"));
 	}
 }
 

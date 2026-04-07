@@ -30,6 +30,7 @@ import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
@@ -55,6 +56,7 @@ import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
@@ -99,6 +101,7 @@ import lombok.val;
 import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
@@ -711,6 +714,30 @@ public class ControllerUtils {
                     }
                 }))
                 .sum();
+        val requiredGpuTypes = spec.getResources()
+                .stream()
+                .map(r -> r.accept(new ResourceRequirementVisitor<GpuType>() {
+                    @Override
+                    public GpuType visit(CPURequirement cpuRequirement) {
+                        return null;
+                    }
+
+                    @Override
+                    public GpuType visit(MemoryRequirement memoryRequirement) {
+                        return null;
+                    }
+
+                    @Override
+                    public GpuType visit(GPURequirement gpuRequirement) {
+                        return gpuRequirement.getGpuType();
+                    }
+                }))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if(requiredGpuTypes.size() > 1) {
+            errors.add("Multiple GPU types specified in resource requirements. This is currently not supported.");
+        }
+        val requiredGpuTypePerInstance = requiredGpuTypes.isEmpty() ? null : requiredGpuTypes.iterator().next();
         if (requiredCores > freeCores) {
             errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
                                "Available: " + freeCores);
@@ -731,16 +758,20 @@ public class ControllerUtils {
                                "NUMA node in the cluster. Required: " + requiredCores
                                + " Max: " + maxAvailablePhysicalCoresPerNode);
         }
-        val maxAvailableGpuCountPerNode = executors.stream()
-                .map(e -> e.getNodeData().getState().getLayout())
-                .filter(Objects::nonNull)
-                .mapToInt(physicalLayout -> physicalLayout.getGpus().size())
-                .max()
-                .orElse(Integer.MAX_VALUE);
-        if(maxAvailableGpuCountPerNode < requiredGpuPerInstance) {
-            errors.add("Required GPU count exceeds the maximum GPU count available on a single " +
-                               "executor in the cluster. Required: " + requiredGpuPerInstance
-                               + " Max: " + maxAvailableGpuCountPerNode);
+        if(requiredGpuTypePerInstance != null) {
+            val maxAvailableGpuCountPerNode = executors.stream()
+                    .map(e -> e.getNodeData().getState().getLayout())
+                    .filter(Objects::nonNull)
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().stream()
+                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
+                            .count())
+                    .max()
+                    .orElse(Integer.MAX_VALUE);
+            if (maxAvailableGpuCountPerNode < requiredGpuPerInstance) {
+                errors.add("Required GPU count exceeds the maximum GPU count available on a single " +
+                        "executor in the cluster. Required: " + requiredGpuPerInstance
+                        + " Max: " + maxAvailableGpuCountPerNode);
+            }
         }
     }
 

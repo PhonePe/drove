@@ -32,6 +32,7 @@ import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolic
 import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
@@ -133,11 +134,8 @@ public class ControllerTestUtils {
                                    null,
                                    null);
     }
-    public static <T extends DeploymentSpec> T withGPU(T spec, int gpuCount) {
-
-
-        spec.getResources().add(new GPURequirement(gpuCount));
-
+    public static <T extends DeploymentSpec> T withGPU(T spec, int gpuCount, GpuType gpuType) {
+        spec.getResources().add(new GPURequirement(gpuCount, gpuType));
         return spec;
     }
     public static TaskSpec taskSpec() {

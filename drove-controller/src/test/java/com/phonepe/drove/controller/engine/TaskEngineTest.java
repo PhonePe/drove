@@ -33,6 +33,8 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -778,7 +780,7 @@ class TaskEngineTest extends ControllerTestBase {
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
                                 ControllerOptions.DEFAULT,
                                 httpCaller());
-        val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.withGPU(ControllerTestUtils.taskSpec(), 1),
+        val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.withGPU(ControllerTestUtils.taskSpec(), 1, new GpuType(GpuVendor.NVIDIA, "h100")),
                                                         ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertEquals(3, r.getMessages().size());

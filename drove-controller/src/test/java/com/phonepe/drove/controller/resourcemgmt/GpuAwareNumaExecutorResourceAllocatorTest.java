@@ -17,6 +17,8 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.models.application.requirements.GpuType;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -40,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GpuAwareNumaExecutorResourceAllocatorTest {
 
     private GpuAwareNumaExecutorResourceAllocator selector = new GpuAwareNumaExecutorResourceAllocator();
+    private static final GpuType NVIDIA_H100 = new GpuType(GpuVendor.NVIDIA, "H100");
 
     @Test
     void testSelectNumaNodeWithMostLocalGpus() {
@@ -48,7 +51,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1)
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -73,7 +76,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1)  // Both NUMA nodes have 1 GPU each
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 1);
+        val result = selector.allocate(hostInfo, 1, 128, 1, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         // Should pick NUMA 0 (lowest ID) when GPU counts are equal
@@ -89,7 +92,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1, "GPU-3", 2, "GPU-4", 2, "GPU-5", 2)
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 3);
+        val result = selector.allocate(hostInfo, 1, 128, 3, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -115,7 +118,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1)
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 1);
+        val result = selector.allocate(hostInfo, 1, 128, 1, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -143,7 +146,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
 
         val hostInfoNoCpuOnNuma1 = createCustomHostInfo(freeCores, freeMemory, Map.of("GPU-0", 1));
 
-        val result = selector.allocate(hostInfoNoCpuOnNuma1, 1, 128, 1);
+        val result = selector.allocate(hostInfoNoCpuOnNuma1, 1, 128, 1, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -172,7 +175,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         freeCores.put(1, Set.of());  // Keep NUMA 1 ineligible for CPU allocation
 
         val hostInfo = createCustomHostInfo(freeCores, freeMemory, Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1));
-        val result = selector.allocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -199,7 +202,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0, "GPU-1", 1, "GPU-2", 1)
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
         val allocated = result.get();
@@ -224,7 +227,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of("GPU-0", 0)  // Only 1 GPU total
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 2);  // Request 2 GPUs
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);  // Request 2 GPUs
 
         assertTrue(result.isEmpty(), "Should fail when total free GPUs insufficient");
     }
@@ -255,7 +258,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Set.of("GPU-2")
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         // Should succeed and allocate 2 GPUs
         assertTrue(result.isPresent(), "Should allocate GPUs even when some GPUs lack affinity info");
@@ -298,7 +301,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Set.of("GPU-1")
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent(), "Should succeed with fallback to unknown-affinity GPU");
         val allocated = result.get();
@@ -334,12 +337,43 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Set.of("GPU-0", "GPU-1", "GPU-2")  // All lack affinity
         );
 
-        val result = selector.allocate(hostInfo, 1, 128, 2);
+        val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         // Should succeed by falling back to any available GPU
         assertTrue(result.isPresent(), "Should allocate even when all GPUs lack affinity");
         val allocated = result.get();
         assertEquals(2, allocated.getGpu().getGpuIds().size(), "Should allocate 2 GPUs");
+    }
+
+    @Test
+    void testGpuAllocationMatchesRequestedGpuType() {
+        val hostInfo = createCustomHostInfoWithTypedGpus(
+                Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
+                Map.of(0, 1024L, 1, 1024L),
+                Set.of(
+                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0, true),
+                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1, true)
+                )
+        );
+
+        val result = selector.allocate(hostInfo, 1, 128, 1, new GpuType(GpuVendor.AMD, "mi300x"));
+        assertTrue(result.isPresent(), "Allocation should succeed for matching GPU type");
+        assertEquals(Set.of("GPU-MI300"), result.get().getGpu().getGpuIds());
+    }
+
+    @Test
+    void testGpuAllocationFailsWhenRequestedGpuTypeNotAvailable() {
+        val hostInfo = createCustomHostInfoWithTypedGpus(
+                Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
+                Map.of(0, 1024L, 1, 1024L),
+                Set.of(
+                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0, true),
+                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1, true)
+                )
+        );
+
+        val result = selector.allocate(hostInfo, 1, 128, 1, new GpuType(GpuVendor.NVIDIA, "h200"));
+        assertTrue(result.isEmpty(), "Allocation should fail if requested GPU type does not exist");
     }
 
     private ExecutorHostInfo createHostInfoWithGpuTopology(Map<String, Integer> gpuNumaAffinities) {
@@ -367,7 +401,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), "NVIDIA", "H100", entry.getValue(), true))
+                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
                 .collect(Collectors.toUnmodifiableSet());
 
         val snapshot = new ExecutorResourceSnapshot(
@@ -376,6 +410,39 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(new ArrayList<>(gpuNumaAffinities.keySet()), List.of()),
                 new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+        );
+
+        val nodeData = new ExecutorNodeData(
+                "test-host",
+                8080,
+                NodeTransportType.HTTP,
+                new Date(),
+                snapshot,
+                List.of(),
+                List.of(),
+                List.of(),
+                Set.of(),
+                Map.of(),
+                com.phonepe.drove.models.info.nodedata.ExecutorState.ACTIVE
+        );
+
+        return new ExecutorHostInfo("TEST_EXECUTOR", nodeData, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
+    }
+
+    private ExecutorHostInfo createCustomHostInfoWithTypedGpus(
+            Map<Integer, Set<Integer>> freeCores,
+            Map<Integer, Long> freeMemory,
+            Set<GPUInfo> typedGpus) {
+        val usedMemory = freeMemory.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+
+        val freeGpuIds = typedGpus.stream().map(GPUInfo::getGpuId).toList();
+        val snapshot = new ExecutorResourceSnapshot(
+                "TEST_EXECUTOR",
+                new AvailableCPU(freeCores, Map.of()),
+                new AvailableMemory(freeMemory, usedMemory),
+                new AvailableGPU(freeGpuIds, List.of()),
+                new PhysicalLayout(freeCores, freeMemory, typedGpus)
         );
 
         val nodeData = new ExecutorNodeData(
@@ -404,12 +471,12 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), "NVIDIA", "H100", entry.getValue(), true))
+                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
                 .collect(Collectors.toUnmodifiableSet());
 
         // Add GPUs without affinity as "unknown" (null affinity)
         val physicalGpusWithUnknowns = new HashSet<>(physicalGpus);
-        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.add(new GPUInfo(gpuId, "NVIDIA", "H100", null, true)));
+        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null, true)));
 
         val snapshot = new ExecutorResourceSnapshot(
                 "TEST_EXECUTOR",
@@ -495,6 +562,8 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         return gpuInfo;
     }
 }
+
+
 
 
 

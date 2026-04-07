@@ -26,6 +26,8 @@ import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
 import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
 import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
@@ -492,7 +494,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 Map.of("GPU-0", 0))));
 
         val result = db.selectNodes(
-                List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1)),
+                List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
                 false);
@@ -511,7 +513,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         val usedMemory = freeMemoryPerNuma.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), "NVIDIA", "H100", entry.getValue(), true))
+                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
                 .collect(Collectors.toUnmodifiableSet());
 
         val snapshot = new ExecutorResourceSnapshot(
@@ -561,7 +563,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
         // Request: 1 CPU, 128MB memory, 1 GPU
         val result = db.selectNodes(
-                List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1)),
+                List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
                 false

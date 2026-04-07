@@ -17,7 +17,6 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
 import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
-import io.dropwizard.validation.ValidationMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -52,14 +51,26 @@ public class ResourceConfig {
     private boolean disableNUMAPinning = false;
 
     /**
-     * This setting makes all available Nvidia GPUs on the current executor machine available for any container running on this executor.
-     * GPU resources are not discovered on the executor, managed and rationed between containers.
-     * Needs to be used in conjunction with tagging to ensure only the applications which require a GPU end up on the executor with GPUs.
+     * <b>Legacy GPU pass-through mode.</b>
+     * When true, all available NVIDIA GPUs are exposed to <em>every</em> container via Docker's {@code --gpus all}.
+     * GPUs are <b>not</b> discovered, managed, or rationed between containers.
+     * Use in conjunction with executor tagging to ensure only GPU-requiring applications land here.
+     * <p>
+     * This is independent of {@link #nvidiaGPULoaderConfig} which controls managed GPU discovery and allocation.
+     * Both can be used independently; prefer {@link #nvidiaGPULoaderConfig} for new deployments.
      */
     @Builder.Default
     private boolean enableNvidiaGpu = false;
 
+    /**
+     * <b>Managed GPU discovery and allocation.</b>
+     * When non-null and enabled, the executor discovers NVIDIA GPUs via {@code nvidia-smi} (including MIG slices),
+     * registers them with the resource manager, and allocates them per-container on demand.
+     * <p>
+     * This is independent of {@link #enableNvidiaGpu} (legacy pass-through mode).
+     */
     private NvidiaGPULoaderConfig nvidiaGPULoaderConfig;
+
     @Builder.Default
     private Set<String> tags = Collections.emptySet();
 
@@ -68,9 +79,4 @@ public class ResourceConfig {
 
     @Builder.Default
     private OverProvisioning overProvisioning = OverProvisioning.DEFAULT;
-
-    @ValidationMethod(message = "If enableNvidiaGpu is true, nvidiaGPULoaderConfig must be non-null and enabled")
-    public boolean isValid() {
-        return !enableNvidiaGpu || (nvidiaGPULoaderConfig != null && nvidiaGPULoaderConfig.isEnabled());
-    }
 }
