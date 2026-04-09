@@ -82,7 +82,7 @@ class ExecutorMessageHandlerTest {
         val taskEngine = mock(TaskInstanceEngine.class);
         val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
         val executorStateManager = mock(ExecutorStateManager.class);
-        when(executorStateManager.currentState()).thenReturn(ExecutorState.UNREADY);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.BLACKLISTED);
         val mh = new ExecutorMessageHandler(applicationEngine,
                                             taskEngine,
                                             localserviceInstanceEngine,
@@ -307,6 +307,108 @@ class ExecutorMessageHandlerTest {
         assertEquals(MessageDeliveryStatus.FAILED,
                      mh.visit(new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
                                                              executor())).getStatus());
+    }
+
+    @Test
+    void testStartTaskChecksTaskEngine() {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+        when(taskEngine.exists(anyString())).thenReturn(true);
+        when(applicationEngine.exists(anyString())).thenReturn(false);
+
+        val message = new StartTaskMessage(MessageHeader.controllerRequest(),
+                                           executor(),
+                                           ExecutorTestingUtils.testTaskInstanceSpec());
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
+        verify(taskEngine).exists(anyString());
+        verify(applicationEngine, never()).exists(anyString());
+    }
+
+    @Test
+    void testStartLocalServiceChecksLocalServiceEngine() {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.ACTIVE);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(true);
+        when(applicationEngine.exists(anyString())).thenReturn(false);
+
+        val message = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                           executor(),
+                                                           ExecutorTestingUtils.testLocalServiceInstanceSpec());
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
+        verify(localserviceInstanceEngine).exists(anyString());
+        verify(applicationEngine, never()).exists(anyString());
+    }
+
+    @Test
+    void testStartLocalServiceSucceedsWhenUnready() {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.UNREADY);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+        when(localserviceInstanceEngine.startInstance(any(LocalServiceInstanceSpec.class))).thenReturn(true);
+
+        val message = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                           executor(),
+                                                           ExecutorTestingUtils.testLocalServiceInstanceSpec());
+        assertEquals(MessageDeliveryStatus.ACCEPTED, message.accept(mh).getStatus());
+    }
+
+    @Test
+    void testStartLocalServiceFailsWhenBlacklisted() {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.BLACKLISTED);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+
+        val message = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                           executor(),
+                                                           ExecutorTestingUtils.testLocalServiceInstanceSpec());
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
+    }
+
+    @Test
+    void testStartLocalServiceFailsWhenBlacklistRequested() {
+        val applicationEngine = mock(ApplicationInstanceEngine.class);
+        val taskEngine = mock(TaskInstanceEngine.class);
+        val localserviceInstanceEngine = mock(LocalServiceInstanceEngine.class);
+        val executorStateManager = mock(ExecutorStateManager.class);
+        when(executorStateManager.currentState()).thenReturn(ExecutorState.BLACKLIST_REQUESTED);
+        val mh = new ExecutorMessageHandler(applicationEngine,
+                                            taskEngine,
+                                            localserviceInstanceEngine,
+                                            executorStateManager);
+        when(localserviceInstanceEngine.exists(anyString())).thenReturn(false);
+
+        val message = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
+                                                           executor(),
+                                                           ExecutorTestingUtils.testLocalServiceInstanceSpec());
+        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
     }
 
     private static Stream<Arguments> startMessageProvider() {
