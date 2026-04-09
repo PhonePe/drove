@@ -16,18 +16,29 @@
 
 package com.phonepe.drove.executor.engine;
 
-import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.model.MessageDeliveryStatus;
-import com.phonepe.drove.common.model.MessageResponse;
-import com.phonepe.drove.common.model.executor.*;
-import com.phonepe.drove.executor.managed.ExecutorStateManager;
-import com.phonepe.drove.models.info.nodedata.ExecutorState;
-
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.model.MessageDeliveryStatus;
+import com.phonepe.drove.common.model.MessageResponse;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorFinalizeMessage;
+import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
+import com.phonepe.drove.common.model.executor.ExecutorMessageVisitor;
+import com.phonepe.drove.common.model.executor.StartInstanceMessage;
+import com.phonepe.drove.common.model.executor.StartLocalServiceInstanceMessage;
+import com.phonepe.drove.common.model.executor.StartTaskMessage;
+import com.phonepe.drove.common.model.executor.StopInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopLocalServiceInstanceMessage;
+import com.phonepe.drove.common.model.executor.StopTaskMessage;
+import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -94,7 +105,7 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(StartTaskMessage startTaskMessage) {
         val instanceId = CommonUtils.instanceId(startTaskMessage.getSpec());
-        if (applicationInstanceEngine.exists(instanceId)) {
+        if (taskInstanceEngine.exists(instanceId)) {
             return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         if (!ensureRequiredState(ExecutorState.ACTIVE)) {
@@ -166,11 +177,11 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
     @Override
     public MessageResponse visit(StartLocalServiceInstanceMessage startLocalServiceInstanceMessage) {
         val instanceId = startLocalServiceInstanceMessage.getSpec().getInstanceId();
-        if (applicationInstanceEngine.exists(instanceId)) {
+        if (localServiceInstanceEngine.exists(instanceId)) {
             return new MessageResponse(startLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
-        if (!ensureRequiredState(ExecutorState.ACTIVE)) {
-            log.error("Cannot start local service instance {} since executor is not in ACTIVE state");
+        if (!ensureRequiredState(ExecutorState.ACTIVE, ExecutorState.UNREADY)) {
+            log.error("Cannot start local service instance {} since executor is not in required state", instanceId);
             return new MessageResponse(startLocalServiceInstanceMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
         try {
@@ -202,10 +213,11 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
         }
     }
 
-    private boolean ensureRequiredState(final ExecutorState requiredState) {
+    private boolean ensureRequiredState(final ExecutorState... requiredStates) {
+        final var lookup = Set.of(requiredStates);
         final val currentState = executorStateManager.currentState();
-        if (currentState != requiredState) {
-            log.warn("Current state is {}, required state is {}", currentState, requiredState);
+        if (!lookup.contains(currentState)) {
+            log.warn("Current state is {}, required state is {}", currentState, lookup);
             return false;
         }
         return true;
