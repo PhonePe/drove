@@ -18,8 +18,10 @@ package com.phonepe.drove.controller.resourcemgmt.selector;
 
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 
+import javax.inject.Named;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -30,10 +32,12 @@ import java.util.function.Predicate;
  */
 public class CompositeExecutorSelector implements ExecutorSelector {
 
+    public static final String FIRST_FIT_EXEC_SELECTOR = "FIRST_FIT_EXEC_SELECTOR";
+    public static final String SCORED_EXEC_SELECTOR = "SCORED_EXEC_SELECTOR";
     private final ExecutorSelector defaultSelector;
     private final ExecutorSelector gpuSelector;
 
-    public CompositeExecutorSelector(ExecutorSelector defaultSelector, ExecutorSelector gpuSelector) {
+    public CompositeExecutorSelector(@Named(FIRST_FIT_EXEC_SELECTOR) ExecutorSelector defaultSelector, @Named(SCORED_EXEC_SELECTOR) ExecutorSelector gpuSelector) {
         this.defaultSelector = defaultSelector;
         this.gpuSelector = gpuSelector;
     }
@@ -46,7 +50,7 @@ public class CompositeExecutorSelector implements ExecutorSelector {
             Predicate<AllocatedExecutorNode> allocationFilter) {
         
         // Choose selector based on GPU requirement
-        ExecutorSelector selector = ExecutorSelector.findGpuRequirement(requirements)
+        ExecutorSelector selector = ControllerUtils.findGpuRequirement(requirements)
                 .filter(r -> r.getCount() > 0)
                 .map(r -> gpuSelector)
                 .orElse(defaultSelector);

@@ -1,8 +1,10 @@
-package com.phonepe.drove.controller.resourcemgmt.selector;
+package com.phonepe.drove.controller.resourcemgmt.selector.scored;
 
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import java.util.List;
@@ -21,9 +23,10 @@ import lombok.val;
 public class ScoredExecutorSelector implements ExecutorSelector {
 
     private final ExecutorResourceAllocator allocator;
-
-    public ScoredExecutorSelector(ExecutorResourceAllocator allocator) {
+    private final AllocatedExecutorNodeScorer scorer;
+    public ScoredExecutorSelector(ExecutorResourceAllocator allocator, AllocatedExecutorNodeScorer scorer) {
         this.allocator = allocator;
+        this.scorer = scorer;
     }
 
     @Override
@@ -33,9 +36,9 @@ public class ScoredExecutorSelector implements ExecutorSelector {
             List<ResourceRequirement> requirements,
             Predicate<AllocatedExecutorNode> allocationFilter) {
         
-        long cpus = ExecutorSelector.extractCpuRequirement(requirements);
-        long memory = ExecutorSelector.extractMemoryRequirement(requirements);
-        val gpuReq = ExecutorSelector.findGpuRequirement(requirements).orElse(null);
+        long cpus = ControllerUtils.extractCpuRequirement(requirements);
+        long memory = ControllerUtils.extractMemoryRequirement(requirements);
+        val gpuReq = ControllerUtils.findGpuRequirement(requirements).orElse(null);
         long gpus = gpuReq != null ? gpuReq.getCount() : 0;
         GpuType gpuType = gpuReq != null ? gpuReq.getGpuType() : null;
         
@@ -52,13 +55,13 @@ public class ScoredExecutorSelector implements ExecutorSelector {
             
             if (allocation.isPresent() && allocationFilter.test(allocation.get())) {
                 // Use the pre-calculated localGpuCount from the allocation
-                long score = allocation.get().getGpu().getLocalGpuCount();
-                if (score > maxScore) {
-                    maxScore = score;
+                val score = scorer.getScore(allocation.get());
+                if (score.score() > maxScore) {
+                    maxScore = score.score();
                     selected = allocation;
                     // Short-circuit: if we found allocation with max possible score, return immediately
-                    if (score == allocation.get().getGpu().getGpuIds().size()) {
-                        return selected;
+                    if (score.isMax()) {
+                        break;
                     }
                 }
             }

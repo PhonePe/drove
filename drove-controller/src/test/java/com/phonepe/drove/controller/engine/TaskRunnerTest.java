@@ -45,6 +45,11 @@ import com.phonepe.drove.common.model.executor.StopTaskMessage;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
@@ -68,7 +73,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testTaskRun() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val inst = new AtomicReference<TaskInstanceSpec>();
@@ -153,7 +158,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testTaskRunFail() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
 

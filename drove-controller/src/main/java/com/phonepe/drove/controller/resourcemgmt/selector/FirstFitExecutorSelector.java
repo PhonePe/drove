@@ -3,6 +3,7 @@ package com.phonepe.drove.controller.resourcemgmt.selector;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import java.util.List;
@@ -29,9 +30,9 @@ public class FirstFitExecutorSelector implements ExecutorSelector {
 			List<ResourceRequirement> requirements,
 			Predicate<AllocatedExecutorNode> allocationFilter) {
 		
-		long cpus = ExecutorSelector.extractCpuRequirement(requirements);
-		long memory = ExecutorSelector.extractMemoryRequirement(requirements);
-		val gpuReq = ExecutorSelector.findGpuRequirement(requirements).orElse(null);
+		long cpus = ControllerUtils.extractCpuRequirement(requirements);
+		long memory = ControllerUtils.extractMemoryRequirement(requirements);
+		val gpuReq = ControllerUtils.findGpuRequirement(requirements).orElse(null);
 		long gpus = gpuReq != null ? gpuReq.getCount() : 0;
 		GpuType gpuType = gpuReq != null ? gpuReq.getGpuType() : null;
 		

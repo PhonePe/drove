@@ -18,6 +18,11 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
@@ -49,7 +54,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testScheduling() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
@@ -71,7 +76,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testOnePerHostPlacementPolicy() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new OnePerHostPlacementPolicy());
@@ -91,7 +96,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testMaxNPerHostPlacementPolicy() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
@@ -111,7 +116,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testRuleBasedPolicyForSpecificNode() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj( i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i))).toList());
@@ -127,7 +132,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testRuleBasedPolicyFromSpecialNodes() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj( i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i))).toList());
@@ -147,7 +152,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testMatchTagPlacementPolicyNormal() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MatchTagPlacementPolicy("test"));
@@ -168,7 +173,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testNoTagPlacementPolicy() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new NoTagPlacementPolicy());
@@ -189,7 +194,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCompositePlacementPolicyAnd() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec
@@ -213,7 +218,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCompositePlacementPolicyOR() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new CompositePlacementPolicy(
@@ -239,7 +244,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testMultiSessionAllocation() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
@@ -268,7 +273,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testBlacklistSkipping() {
-        val rdb = new InMemoryClusterResourcesDB();
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 

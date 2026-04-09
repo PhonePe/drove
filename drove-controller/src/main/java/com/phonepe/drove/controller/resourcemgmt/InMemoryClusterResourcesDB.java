@@ -18,11 +18,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
 import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.requirements.*;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -61,9 +57,6 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         this.selector = selector;
     }
 
-    public InMemoryClusterResourcesDB() {
-        this(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator())));
-    }
 
     @VisibleForTesting
     InMemoryClusterResourcesDB(ExecutorSelector selector, Map<String, ExecutorHostInfo> nodes) {

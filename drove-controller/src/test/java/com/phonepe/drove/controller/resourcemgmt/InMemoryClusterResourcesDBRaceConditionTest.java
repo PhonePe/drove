@@ -1,20 +1,21 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.google.common.collect.Sets;
-import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
-import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
@@ -23,11 +24,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -85,7 +84,7 @@ class InMemoryClusterResourcesDBRaceConditionTest {
             ExecutorState.ACTIVE
         );
 
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         db.update(List.of(nodeData));
         return db;
     }

@@ -27,6 +27,11 @@ import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryClusterStateDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -51,7 +56,7 @@ import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.val;
-import org.checkerframework.checker.units.qual.A;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -75,7 +80,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunStartStop() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -161,7 +166,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunAutoStop() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -237,7 +242,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunTaskLoss() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -314,7 +319,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunZombieKill() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -391,7 +396,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testRunRecovery() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -466,7 +471,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskStartFailIdCollision() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -517,7 +522,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskStartFailNoResource() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -564,9 +569,14 @@ class TaskEngineTest extends ControllerTestBase {
         assertEquals("Cluster does not have enough CPU. Required: 10000 Available: 25", r.getMessages().get(0));
     }
 
+    @NotNull
+    private static InMemoryClusterResourcesDB getCdb() {
+        return new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+    }
+
     @Test
     void testTaskStartFailNoWhitelisting() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -617,7 +627,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     @SuppressWarnings("unchecked")
     void testTaskStartSchedFail() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -649,7 +659,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskKillFail() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val le = mock(LeadershipEnsurer.class);
@@ -683,7 +693,7 @@ class TaskEngineTest extends ControllerTestBase {
     @Test
     @SuppressWarnings("unchecked")
     void testTaskKillSchedFail() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         var taskDB = mock(TaskDB.class);
 
@@ -740,7 +750,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testResourceCrunch() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(List.of(new ExecutorNodeData("poor-host",
                                                 8080,

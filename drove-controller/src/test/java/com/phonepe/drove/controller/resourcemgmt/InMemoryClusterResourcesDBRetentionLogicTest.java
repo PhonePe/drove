@@ -1,10 +1,11 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.google.common.collect.ImmutableMap;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
-import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
@@ -15,7 +16,6 @@ import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.lang.reflect.Field;
 import java.time.Duration;
 
@@ -51,7 +51,7 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
          */
         
         // Use reflection to access the removedNodes LinkedHashMap
-        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB();
+        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         
         // Get the removedNodes map via reflection
         Field removedNodesField = InMemoryClusterResourcesDB.class.getDeclaredField("removedNodes");
@@ -120,7 +120,7 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
          * Expected: Allow configuration via constructor or system property
          */
         
-        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB();
+        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         
         // After fix, there should be a way to configure:
         // - Constructor parameter
@@ -150,7 +150,7 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
          * EXPECTED: Node should remain in removedNodes cache
          */
          
-        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB();
+        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
          
         Field removedNodesField;
         try {
@@ -189,7 +189,7 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
          * EXPECTED: Only recent ones (within retention) should remain
          */
          
-        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB();
+        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
          
         Field removedNodesField;
         try {

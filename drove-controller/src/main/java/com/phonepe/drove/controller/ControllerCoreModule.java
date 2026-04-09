@@ -45,10 +45,10 @@ import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.*;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.AllocatedExecutorNodeScorer;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.rule.RuleEvalStrategy;
 import com.phonepe.drove.controller.rule.hope.HopeRuleStrategy;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleStrategy;
@@ -67,7 +67,6 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
-import io.appform.hope.core.functions.impl.arr.In;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
@@ -206,27 +205,19 @@ public class ControllerCoreModule extends AbstractModule {
     }
 
 
-
     @Provides
     @Singleton
+    @Named(CompositeExecutorSelector.FIRST_FIT_EXEC_SELECTOR)
     public FirstFitExecutorSelector firstFitExecutorSelector(ExecutorResourceAllocator allocator) {
         return new FirstFitExecutorSelector(allocator);
     }
 
     @Provides
     @Singleton
-    public ScoredExecutorSelector scoredExecutorSelector(ExecutorResourceAllocator allocator) {
-        return new ScoredExecutorSelector(allocator);
+    @Named(CompositeExecutorSelector.SCORED_EXEC_SELECTOR)
+    public ExecutorSelector scoredExecutorSelector(ExecutorResourceAllocator allocator, AllocatedExecutorNodeScorer scorer) {
+        return new ScoredExecutorSelector(allocator, scorer);
     }
-
-    @Provides
-    @Singleton
-    public CompositeExecutorSelector compositeExecutorSelector(
-            FirstFitExecutorSelector firstFitSelector,
-            ScoredExecutorSelector scoredSelector) {
-        return new CompositeExecutorSelector(firstFitSelector, scoredSelector);
-    }
-
 
 
     @Override
@@ -263,6 +254,7 @@ public class ControllerCoreModule extends AbstractModule {
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
         bind(ExecutorResourceAllocator.class).to(GpuAwareNumaExecutorResourceAllocator.class).in(Singleton.class);
         bind(ExecutorSelector.class).to(CompositeExecutorSelector.class).in(Singleton.class);
+        bind(AllocatedExecutorNodeScorer.class).to(MaxGpuNumaLocalAllocation.class).in(Singleton.class);
     }
 
     @Provides

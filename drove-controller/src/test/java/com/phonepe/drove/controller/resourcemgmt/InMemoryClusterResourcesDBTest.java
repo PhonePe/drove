@@ -21,10 +21,9 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.ScoredExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.*;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
@@ -78,7 +77,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testHostDetails() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         db.update(IntStream.rangeClosed(1, 100)
                 .mapToObj(ControllerTestUtils::generateExecutorNode)
                 .toList());
@@ -119,7 +118,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testResources() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         assertTrue(db.currentSnapshot(false).isEmpty());
         db.update(new ExecutorResourceSnapshot("INVALID_EXECUTOR",
                 new AvailableCPU(Map.of(0, Set.of(2, 3, 4)),
@@ -228,7 +227,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testBlacklisting() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         IntStream.rangeClosed(1, 10)
                 .forEach(i -> db.markBlacklisted(executorId(i)));
         assertTrue(IntStream.rangeClosed(1, 10)
@@ -260,7 +259,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testExecutorState() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         val executorId = originalNodeData.getState().getExecutorId();
 
@@ -359,7 +358,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testExecutorStateWithGPU() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         val executorId = originalNodeData.getState().getExecutorId();
 
@@ -380,7 +379,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testUpdatedSignal() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val changesReceived = new AtomicInteger(0);
         final var testHandler = "TEST_HANDLER";
         db.onTopologyChange().connect(testHandler, changes -> {
@@ -462,7 +461,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
     void testCpuMemRequestsUseDefaultSelector() {
         val allocator = new GpuAwareNumaExecutorResourceAllocator();
         val recordingDefaultSelector = new RecordingSelector(new FirstFitExecutorSelector(allocator));
-        val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator));
+        val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator, new MaxGpuNumaLocalAllocation()));
         val compositeSelector = new CompositeExecutorSelector(recordingDefaultSelector, recordingGpuSelector);
         val db = new InMemoryClusterResourcesDB(compositeSelector);
 
@@ -483,7 +482,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
     void testGpuRequestsUseGpuAwareSelector() {
         val allocator = new GpuAwareNumaExecutorResourceAllocator();
         val recordingDefaultSelector = new RecordingSelector(new FirstFitExecutorSelector(allocator));
-        val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator));
+        val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator, new MaxGpuNumaLocalAllocation()));
         val compositeSelector = new CompositeExecutorSelector(recordingDefaultSelector, recordingGpuSelector);
         val db = new InMemoryClusterResourcesDB(compositeSelector);
 
@@ -541,7 +540,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testGpuSelectionPrefersExecutorWithNumaLocalGpu() {
-        val db = new InMemoryClusterResourcesDB();
+        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
 
         // Executor-1: NUMA 0 has CPUs + memory, NUMA 1 has all GPUs (cross-NUMA scenario)
         val executor1NodeData = buildExecutorNodeData(
