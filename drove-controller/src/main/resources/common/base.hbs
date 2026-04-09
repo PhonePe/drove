@@ -251,14 +251,14 @@
     </span>
 </footer>
 <script type="text/template" data-template="progress">
-    <div class="progress" role="progressbar" aria-valuenow="${currentValue}" aria-valuemin="${minValue}" aria-valuemax="${maxValue}">
+    <div class="progress" role="progressbar" aria-label="${currentValue} of ${maxValue}" aria-valuenow="${currentValue}" aria-valuemin="0" aria-valuemax="${maxValue}">
         <div class="progress-bar bg-${theme} overflow-visible " style="width: ${percentage}%">${currentValue}/${maxValue}</div>
     </div>
 </script>
 <script type="text/template" data-template="progress-with-description-text">
     <div class="row">
         <div class="col">
-            <div class="progress" role="progressbar" aria-valuenow="${currentValue}" aria-valuemin="${minValue}" aria-valuemax="${maxValue}">
+            <div class="progress" role="progressbar" aria-label="${message}" aria-valuenow="${currentValue}" aria-valuemin="0" aria-valuemax="${maxValue}">
                 <div class="progress-bar bg-${theme}" style="width: ${percentage}%"></div>
             </div>
         </div>
@@ -270,7 +270,7 @@
     </div>
 </script>
 <script type="text/template" data-template="progress-with-text">
-    <div class="progress  position-relative" role="progressbar" aria-valuenow="${currentValue}" aria-valuemin="${minValue}" aria-valuemax="${maxValue}" style="font-size: smaller">
+    <div class="progress  position-relative" role="progressbar" aria-label="${message}" aria-valuenow="${currentValue}" aria-valuemin="0" aria-valuemax="${maxValue}" style="font-size: smaller">
         <div class="progress-bar  bg-${theme}" style="width: ${percentage}%"></div>
         <small class="justify-content-center d-flex position-absolute w-100  text-body fw-bold">${message}</small>
     </div>

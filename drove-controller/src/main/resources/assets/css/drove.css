@@ -2,12 +2,20 @@ header {
   margin-bottom: 1rem;
 }
 
+body {
+  font-family: monospace !important;
+}
+
+small, .small {
+  font-size: 0.875rem !important;
+}
+
 section {
   margin-bottom: 1rem;
 }
 
 a {
-  color: #4b7bc5;
+  color: #6e9fd6;
 }
 
 .nowrap {
@@ -64,7 +72,7 @@ a {
 }
 
 .footer-font {
-  font-size: small !important;
+  font-size: 0.875rem !important;
 }
 
 .footer-link {
@@ -73,6 +81,31 @@ a {
 
 div.dataTables_wrapper div.dataTables_filter {
     text-align: inherit;
+}
+
+.badge.bg-success {
+  background-color: #2e7d50 !important;
+}
+
+.badge.bg-info {
+  background-color: #1a7fa0 !important;
+}
+
+.badge.bg-primary, .bg-primary {
+  background-color: #006e93 !important;
+}
+
+.table {
+  --bs-table-border-color: color-mix(in srgb, currentColor 40%, transparent);
+  border-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.table > :not(caption) > * {
+  border-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.table > :not(caption) > * > * {
+  border-color: color-mix(in srgb, currentColor 40%, transparent);
 }
 
 .core-display {
@@ -90,4 +123,12 @@ div.dataTables_wrapper div.dataTables_filter {
   --bs-border-opacity: 1;
   border-color: rgba(var(--bs-dark-rgb),var(--bs-border-opacity)) !important;
 
+}
+
+.progress .small,
+.progress small {
+  font-size: 0.7rem !important;
+  line-height: 1 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
 }
