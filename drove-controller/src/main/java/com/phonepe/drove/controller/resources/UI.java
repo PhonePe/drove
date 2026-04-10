@@ -90,6 +90,30 @@ public class UI {
     }
 
     @GET
+    @Path("/tasks")
+    public TasksPageView tasksPage() {
+        return new TasksPageView(installationMetadata);
+    }
+
+    @GET
+    @Path("/localservices")
+    public LocalServicesPageView localServicesPage() {
+        return new LocalServicesPageView(installationMetadata);
+    }
+
+    @GET
+    @Path("/cluster")
+    public ClusterPageView clusterPage() {
+        return new ClusterPageView(installationMetadata);
+    }
+
+    @GET
+    @Path("/applications")
+    public ApplicationsPageView applicationsPage() {
+        return new ApplicationsPageView(installationMetadata);
+    }
+
+    @GET
     @Path("/applications/{id}")
     public ApplicationDetailsPageView applicationDetails(@PathParam("id") final String appId) {
         if (Strings.isNullOrEmpty(appId) || applicationStateDB.application(appId).isEmpty()) {

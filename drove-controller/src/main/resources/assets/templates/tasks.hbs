@@ -1,0 +1,101 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col">
+                <h4 class="fw-bold">Tasks</h4>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <table class="table table-bordered" id="tasks" title="Tasks" style="width: 100%">
+                    <thead>
+                    <tr>
+                        <th>Source App</th>
+                        <th>Task ID</th>
+                        <th>State</th>
+                        <th>Cores</th>
+                        <th>Memory</th>
+                        <th>Running For</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="fw-bold">Find a Task</h5>
+                <form method="post" action="/apis/v1/tasks/search">
+                    <div class="row mb-2">
+                        <label for="taskSearchAppName" class="col-sm-4 col-form-label">Source App Name</label>
+                        <div class="col">
+                            <input type="text" class="form-control" id="taskSearchAppName"
+                                   name="taskSearchAppName" pattern="[a-zA-Z\d\-_]*" required
+                                   placeholder="Source app name for the task">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <label for="taskSearchTaskID" class="col-sm-4 col-form-label">Task ID</label>
+                        <div class="col">
+                            <input type="text" class="form-control" id="taskSearchTaskID"
+                                   name="taskSearchTaskID" pattern="[a-zA-Z\d\-_]*" required
+                                   placeholder="Task ID used to start the task">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                                </svg>
+                                Find
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+{{/partial}}
+
+{{#partial "page_js"}}
+    const tasks = $('#tasks').DataTable({
+        processing: true,
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
+            {
+                className: 'text-center text-wrap',
+                targets: '_all'
+            }
+        ],
+        columns: [
+            { data: 'sourceAppName' },
+            { data: 'taskId' },
+            { data: 'state', render: tableTaskStateText },
+            { data: 'usedCores' },
+            { data: 'usedMemory', render: tableBytesText },
+            { data: 'created', render: tableAgeText },
+            {
+                data: 'logStream',
+                render: function(data, type, row, meta) {
+                    return '<a href="/tasks/' + row.sourceAppName + '/' + row.taskId + '" class="fw-bold">Details</a>';
+                }
+            }
+        ],
+        order: [[5, 'desc']],
+        ajax: {
+            url: '/apis/v1/tasks',
+            dataSrc: res => updateResourceUsage((!res || !res.data) ? [] : res.data)
+        }
+    });
+
+    setInterval(() => {
+        tasks.ajax.reload(null, false);
+    }, 5000);
+{{/partial}}
+{{> common/base}}

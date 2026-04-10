@@ -31,7 +31,7 @@
 
     <nav class="navbar navbar-expand-lg" id="topbar">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand me-4" href="/">
                 <svg width="35" height="35"  fill="currentColor" alt="" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                      viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
                     <g>
@@ -125,12 +125,24 @@
                     {{installationMetadata.installation.label}}
                 </span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
-                    aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
+            <div class="collapse navbar-collapse justify-content-between" id="navbarNavDropdown">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/" id="nav-home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/applications" id="nav-applications">Applications</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tasks" id="nav-tasks">Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/localservices" id="nav-localservices">Local Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cluster" id="nav-cluster">Cluster</a>
+                    </li>
+                </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
@@ -339,6 +351,26 @@
 
 
     $(document).ready(function() {
+    // Highlight active nav link based on current path
+    (function() {
+        var path = window.location.pathname;
+        var navMap = {
+            '/applications': '#nav-applications',
+            '/tasks': '#nav-tasks',
+            '/localservices': '#nav-localservices',
+            '/cluster': '#nav-cluster'
+        };
+        var matched = false;
+        Object.keys(navMap).forEach(function(key) {
+            if (path === key || path.startsWith(key + '/')) {
+                $(navMap[key]).addClass('active').attr('aria-current', 'page');
+                matched = true;
+            }
+        });
+        if (!matched) {
+            $('#nav-home').addClass('active').attr('aria-current', 'page');
+        }
+    })();
     {{#block "page_js"}}
 
     {{/block}}

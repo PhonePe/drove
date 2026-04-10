@@ -1,0 +1,67 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col">
+                <h4 class="fw-bold">Applications</h4>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <table class="table table-bordered" id="applications" title="Applications" style="width: 100%">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>State</th>
+                        <th>Expected Instances</th>
+                        <th>Healthy Instances</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </section>
+{{/partial}}
+
+{{#partial "page_js"}}
+    const applications = $('#applications').DataTable({
+        processing: true,
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
+            {
+                className: 'text-center text-wrap',
+                targets: '_all'
+            }
+        ],
+        columns: [
+            {
+                data: 'id',
+                render: function(data, type, row, meta) {
+                    return '<a href="/applications/' + data + '" class="fw-bold">' + data + '</a>';
+                }
+            },
+            { data: 'name' },
+            { data: 'state', render: tableAppStateText },
+            { data: 'requiredInstances' },
+            { data: 'healthyInstances' },
+            { data: 'totalCPUs' },
+            { data: 'totalMemory', render: tableBytesText }
+        ],
+        ajax: {
+            url: '/apis/v1/applications',
+            dataSrc: function(res) {
+                return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
+            }
+        }
+    });
+
+    setInterval(() => {
+        applications.ajax.reload(null, false);
+    }, 5000);
+{{/partial}}
+{{> common/base}}

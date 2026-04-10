@@ -1,0 +1,70 @@
+{{#partial "content"}}
+    <section>
+        <div class="row">
+            <div class="col">
+                <h4 class="fw-bold">Local Services</h4>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <table class="table table-bordered" id="localservices" title="localservices" style="width: 100%">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>State</th>
+                        <th>Instances Per Host</th>
+                        <th>Healthy Instances</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
+                        <th>Activation State</th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </section>
+{{/partial}}
+
+{{#partial "page_js"}}
+    const localservices = $('#localservices').DataTable({
+        processing: true,
+        ajax: {
+            url: '/apis/v1/localservices',
+            dataSrc: function(res) {
+                return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
+            }
+        },
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
+            {
+                className: 'text-center text-wrap',
+                targets: '_all'
+            }
+        ],
+        columns: [
+            {
+                data: 'id',
+                render: function(data, type, row, meta) {
+                    if(type === 'display') {
+                        return '<a href="/localservices/' + data + '"  class="fw-bold">' + data + '</a>';
+                    }
+                    return data;
+                }
+            },
+            { data: 'state', render: tableLocalServiceStateText },
+            { data: 'instancesPerHost' },
+            { data: 'healthyInstances' },
+            { data: 'totalCPUs' },
+            { data: 'totalMemory', render: tableBytesText },
+            { data: 'activationState' }
+        ]
+    });
+
+    setInterval(() => {
+        localservices.ajax.reload(null, false);
+    }, 5000);
+{{/partial}}
+{{> common/base}}

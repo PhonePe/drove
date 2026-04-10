@@ -97,6 +97,26 @@ class UITest {
     }
 
     @Test
+    void testTasksPage() {
+        assertNotNull(resource.tasksPage());
+    }
+
+    @Test
+    void testLocalServicesPage() {
+        assertNotNull(resource.localServicesPage());
+    }
+
+    @Test
+    void testClusterPage() {
+        assertNotNull(resource.clusterPage());
+    }
+
+    @Test
+    void testApplicationsPage() {
+        assertNotNull(resource.applicationsPage());
+    }
+
+    @Test
     void testApplicationDetails() {
         when(applicationStateDB.application("TEST_APP"))
                 .thenReturn(Optional.of(new ApplicationInfo("TEST_APP",
