@@ -101,6 +101,11 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
                             while (!wake.get()) {
                                 checkCondition.await();
                             }
+                            if (stateMachine.getContext().getAlreadyStopped().get()) {
+                                log.info("State machine for app {} was woken by stop(); exiting monitor loop.",
+                                         deployableId);
+                                break;
+                            }
                             log.info("State machine resumed for app: {}", deployableId);
                         }
                         finally {
@@ -138,6 +143,14 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
     public void stop() {
         if (null != currentState) {
             stateMachine.stop();
+            checkLock.lock();
+            try {
+                wake.set(true);
+                checkCondition.signalAll();
+            }
+            finally {
+                checkLock.unlock();
+            }
             val retryPolicy = CommonUtils.<Boolean>policy(retrySpecFactory.appStateMachineRetrySpec(), r -> !r);
             try {
                 val status = waitForAction(retryPolicy,
