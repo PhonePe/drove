@@ -10,8 +10,8 @@
     <url>http://maven.apache.org</url>
 
     <properties>
-        <ignite.version>2.16.0</ignite.version>
-        <log4j.version>2.23.1</log4j.version>
+        <ignite.version>2.17.0</ignite.version>
+        <log4j.version>2.25.3</log4j.version>
         <argLine>
             --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
             --add-opens=java.base/sun.nio.ch=ALL-UNNAMED

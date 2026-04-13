@@ -92,7 +92,7 @@ class DroveIgniteTcpDiscoveryTest {
 
     @Test
     @SneakyThrows
-    void testGetNodeAddresses() {
+    void testGetAllNodeAddresses() {
         val config = DroveIgniteConfig.builder()
                 .discoveryPortName("discovery")
                 .droveEndpoint("localhost")
@@ -110,7 +110,7 @@ class DroveIgniteTcpDiscoveryTest {
         val tcpDiscoveryNode = new TcpDiscoveryNode();
         val extAddress = List.of(new InetSocketAddress(HOST_ADDRESS, HOST_PORT));
         tcpDiscoveryNode.setAttributes(Map.of(droveTcpDiscovery.getName() + "." + ATTR_EXT_ADDRS, extAddress));
-        val nodeAddresses = droveTcpDiscovery.getNodeAddresses(tcpDiscoveryNode)
+        val nodeAddresses = droveTcpDiscovery.getAllNodeAddresses(tcpDiscoveryNode)
                 .stream().findFirst().orElse(null);
         Assertions.assertNotNull(nodeAddresses);
         Assertions.assertEquals(extAddress.get(0), nodeAddresses);
@@ -118,7 +118,7 @@ class DroveIgniteTcpDiscoveryTest {
 
     @Test
     @SneakyThrows
-    void testGetNodeAddressesWithSameHost() {
+    void testGetEffectiveNodeAddressesWithSameHost() {
         val config = DroveIgniteConfig.builder()
                 .discoveryPortName("discovery")
                 .droveEndpoint("localhost")
@@ -140,7 +140,7 @@ class DroveIgniteTcpDiscoveryTest {
         val lastSuccessfulAddress = new InetSocketAddress(HOST_ADDRESS, 10000);
         tcpDiscoveryNode.lastSuccessfulAddress(lastSuccessfulAddress);
 
-        val nodeAddresses = droveTcpDiscovery.getNodeAddresses(tcpDiscoveryNode, true);
+        val nodeAddresses = droveTcpDiscovery.getEffectiveNodeAddresses(tcpDiscoveryNode, true);
         Assertions.assertEquals(2, nodeAddresses.size());
 
         Assertions.assertTrue(nodeAddresses.stream().anyMatch(nodeAddress -> nodeAddress == lastSuccessfulAddress));

@@ -58,18 +58,17 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.protocol.RedirectStrategy;
-import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
-import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.HttpsSupport;
 import org.apache.hc.core5.http.HttpResponse;
-import org.apache.hc.core5.http.URIScheme;
-import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
@@ -284,14 +283,17 @@ public class ExecutorUtils {
                 .findAny()
                 .map(ClusterAuthenticationConfig.SecretConfig::getSecret)
                 .orElse(null);
-        val socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
-                .register(URIScheme.HTTPS.id, SSLConnectionSocketFactory.getSocketFactory())
+        val tlsStrategy = ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .setHostnameVerifier(HttpsSupport.getDefaultHostnameVerifier())
+                .buildClassic();
+        val connManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setTlsSocketStrategy(tlsStrategy)
+                .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+                .setConnPoolPolicy(PoolReusePolicy.LIFO)
+                .setDefaultConnectionConfig(ConnectionConfig.custom()
+                        .setTimeToLive(TimeValue.ofMinutes(5)).build())
                 .build();
-        val connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry,
-                                                                 PoolConcurrencyPolicy.STRICT,
-                                                                 PoolReusePolicy.LIFO,
-                                                                 TimeValue.ofMinutes(5));
         connManager.setDefaultSocketConfig(SocketConfig.custom()
                                                    .setTcpNoDelay(true)
                                                    .setSoTimeout(Timeout.of(responseTimeout))

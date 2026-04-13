@@ -97,25 +97,24 @@
         <lombok.version>1.18.42</lombok.version>
         <dropwizard.version>2.1.12</dropwizard.version>
         <slf4j-api.version>1.7.32</slf4j-api.version>
-        <junit.version>5.8.2</junit.version>
+        <junit.version>5.14.3</junit.version>
         <signals.version>1.4</signals.version>
         <function-metrics.version>1.0.16</function-metrics.version>
-        <awaitility.version>4.2.0</awaitility.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <guice.version>6.0.0</guice.version>
         <dw-guicey.version>5.10.2</dw-guicey.version>
-        <curator.version>5.4.0</curator.version>
+        <curator.version>5.9.0</curator.version>
         <metrics-core.version>4.2.13</metrics-core.version>
-        <logback.version>1.2.11</logback.version>
-        <httpclient.version>5.2.1</httpclient.version>
-        <aspectj.version>1.9.9.1</aspectj.version>
+        <logback.version>1.2.13</logback.version>
+        <httpclient.version>5.6</httpclient.version>
+        <aspectj.version>1.9.25.1</aspectj.version>
         <failsafe.version>3.3.2</failsafe.version>
-        <junit.version>5.8.2</junit.version>
-        <mockito.version>4.4.0</mockito.version>
-        <wiremock.version>3.3.1</wiremock.version>
+        <mockito.version>5.2.0</mockito.version>
+        <wiremock.version>3.13.2</wiremock.version>
         <maven.deploy.skip>false</maven.deploy.skip>
-        <maven-javadoc-plugin.version>3.8.0</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
-        <commons-validator.version>1.4.1</commons-validator.version>
+        <commons-validator.version>1.10.1</commons-validator.version>
         <sonar.exclusions>
             **/*.hbs,
             **/*.js,
@@ -138,7 +137,22 @@
         <json-path.version>2.9.0</json-path.version>
         <findbugs.version>3.0.1</findbugs.version>
         <test.console.disable>true</test.console.disable>
-        <zookeeper.version>3.9.3</zookeeper.version>
+        <zookeeper.version>3.9.5</zookeeper.version>
+        <commons-beanutils.version>1.11.0</commons-beanutils.version>
+        <snakeyaml.version>1.33</snakeyaml.version>
+        <jose4j.version>0.9.6</jose4j.version>
+        <snappy-java.version>1.1.10.8</snappy-java.version>
+        <netty-handler.version>4.1.127.Final</netty-handler.version>
+        <json-smart.version>2.6.0</json-smart.version>
+        <google-oauth-client.version>1.36.0</google-oauth-client.version>
+        <netty-codec.version>4.1.130.Final</netty-codec.version>
+        <commons-lang.version>2.6.1</commons-lang.version>
+        <okio-jvm.version>3.16.2</okio-jvm.version>
+        <commons-compress.version>1.28.0</commons-compress.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
+        <bcprov-jdk18on.version>1.83</bcprov-jdk18on.version>
+        <jetty.version>9.4.59.v20251013</jetty.version>
+        <commons-configuration.version>1.10</commons-configuration.version>
         <sonar.organization>phonepe</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -161,6 +175,13 @@
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
                 <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-parent</artifactId>
+                <version>${logback.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -193,6 +214,106 @@
                 <groupId>com.google.code.findbugs</groupId>
                 <artifactId>annotations</artifactId>
                 <version>${findbugs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlets</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bitbucket.b_c</groupId>
+                <artifactId>jose4j</artifactId>
+                <version>${jose4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty-handler.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.oauth-client</groupId>
+                <artifactId>google-oauth-client</artifactId>
+                <version>${google-oauth-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec</artifactId>
+                <version>${netty-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http</artifactId>
+                <version>${netty-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio-jvm</artifactId>
+                <version>${okio-jvm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-configuration</groupId>
+                <artifactId>commons-configuration</artifactId>
+                <version>${commons-configuration.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>${netty-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bcprov-jdk18on.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bcprov-jdk18on.version}</version>
             </dependency>
        </dependencies>
     </dependencyManagement>
@@ -233,7 +354,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.15.0</version>
                 <configuration>
                     <source>17</source>
                     <target>17</target>
@@ -309,12 +430,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>3.5.5</version>
                 <dependencies>
                     <dependency>
                         <groupId>me.fabriciorby</groupId>
                         <artifactId>maven-surefire-junit5-tree-reporter</artifactId>
-                        <version>1.3.0</version>
+                        <version>1.4.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -337,7 +458,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.9</version>
+                <version>0.8.14</version>
                 <executions>
                     <execution>
                         <goals>

@@ -63,7 +63,7 @@ public class DroveIgniteTcpDiscovery extends TcpDiscoverySpi {
 
     // Not adding local socket addresses here so that the connection can be made to external addresses only
     @Override
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
+    LinkedHashSet<InetSocketAddress> getAllNodeAddresses(TcpDiscoveryNode node) {
         val res = new LinkedHashSet<InetSocketAddress>();
         Collection<InetSocketAddress> extAddrs = getExtAddresses(node);
         if (extAddrs != null)
@@ -74,7 +74,7 @@ public class DroveIgniteTcpDiscovery extends TcpDiscoverySpi {
 
     // Not adding local socket addresses here so that the connection can be made to external addresses only
     @Override
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         val res = new LinkedHashSet<InetSocketAddress>();
         val lastAddr = node.lastSuccessfulAddress();
         if (lastAddr != null)
