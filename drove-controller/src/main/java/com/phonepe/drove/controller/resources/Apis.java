@@ -44,6 +44,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
+import com.phonepe.drove.models.operation.rule.RuleCheckResponse;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.Auth;
@@ -148,7 +149,10 @@ public class Apis {
             return ControllerUtils.ok(Map.of(
                     "status", false,
                     "checkResult", checkResponse.getError(),
-                    "evalResult", null));
+                    "evalResult", RuleCheckResponse.builder()
+                                        .status(RuleCallStatus.FAILURE)
+                                        .error("Not evaluated")
+                                    .build()));
         }
 
         val evalResponse = ruleEvaluator.evaluate(policy, schedulingInfo);

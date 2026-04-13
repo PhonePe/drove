@@ -41,7 +41,7 @@ public class HopeRuleStrategy extends CachingRuleEvalStrategy<Evaluatable> {
         this.objectMapper = objectMapper;
         engine = HopeLangEngine.builder()
                 .addPackage("io.appform.hope")
-                .autoFunctionDiscoveryEnabled(false)
+                .autoFunctionDiscoveryEnabled(true)
                 .build();
     }
 

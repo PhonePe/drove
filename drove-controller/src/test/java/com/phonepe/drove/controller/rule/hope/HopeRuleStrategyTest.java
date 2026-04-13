@@ -38,5 +38,7 @@ class HopeRuleStrategyTest extends AbstractTestBase {
         assertEquals(RuleCallStatus.SUCCESS, rs.evaluate("'/data' == 'XX'", new TestDataNode("SS")).getStatus());
         assertEquals(RuleCallStatus.FAILURE, rs.evaluate("'/data'", new TestDataNode("SS")).getStatus());
         assertEquals(RuleCallStatus.FAILURE, rs.evaluate("'/data' == 'SS'", new TestDataNode(null)).getStatus());
+        assertEquals(RuleCallStatus.SUCCESS, rs.evaluate("str.match('^s.*', '/data') == true", new TestDataNode("ss")).getStatus());
+        assertEquals(RuleCallStatus.FAILURE, rs.evaluate("str.match('^sas.*', '/data') == true", new TestDataNode("ss")).getStatus());
     }
 }

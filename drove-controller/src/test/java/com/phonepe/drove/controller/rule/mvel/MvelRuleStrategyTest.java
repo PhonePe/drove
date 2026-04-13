@@ -46,8 +46,11 @@ class MvelRuleStrategyTest {
         assertFalse(rs.evaluate("data == 'XX'", new TestDataNode("SS")).isResult());
         assertFalse(rs.evaluate("data == 'SS'", new TestDataNode(null)).isResult());
         assertEquals(RuleCallStatus.FAILURE, rs.evaluate("'ab cd", new TestDataNode("SS")).getStatus());
-    }
 
+        //Regex
+        assertTrue(rs.evaluate("data ~= '^s.*'", new TestDataNode("ss")).isResult());
+        assertFalse(rs.evaluate("data ~= '^s.*'", new TestDataNode("xx")).isResult());
+    }
 
     /**
      * Regression test for the staging stall (MVEL concurrency bugs).
@@ -146,7 +149,13 @@ class MvelRuleStrategyTest {
                 // ---- Thread/System etc ----
                 Arguments.of(RuleCallStatus.FAILURE, "Thread.currentThread()"),
                 Arguments.of(RuleCallStatus.FAILURE, "System.exit(0)"),
-                Arguments.of(RuleCallStatus.FAILURE, "System.getenv('PATH')")
+                Arguments.of(RuleCallStatus.FAILURE, "System.getenv('PATH')"),
+
+                // --- Regex cases --
+                Arguments.of(RuleCallStatus.SUCCESS, "data ~= '.*ss.*'"),
+                Arguments.of(RuleCallStatus.SUCCESS, "data ~= '^s[a-z]+'"),
+                Arguments.of(RuleCallStatus.SUCCESS, "data.matches('s.*')"),
+                Arguments.of(RuleCallStatus.SUCCESS, "Pattern.compile('^s.*').matcher(data).matches()")
         );
     }
 
