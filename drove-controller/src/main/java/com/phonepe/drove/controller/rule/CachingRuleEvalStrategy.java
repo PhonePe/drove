@@ -54,7 +54,6 @@ public abstract class CachingRuleEvalStrategy<C> implements RuleEvalStrategy {
 
     @Override
     public RuleEvalResponse evaluate(String rule, Object data) {
-        val compiled = compile(rule);
         try {
             val compiledRule = cachedExpr.get(rule);
             if (null != compiledRule) {
@@ -63,6 +62,12 @@ public abstract class CachingRuleEvalStrategy<C> implements RuleEvalStrategy {
                         .result(evaluateRule(compiledRule, data))
                         .build();
             }
+            // Cache loader returned null → compilation failed (already logged by the loader)
+            return RuleEvalResponse.builder()
+                    .status(RuleCallStatus.FAILURE)
+                    .result(false)
+                    .error("Rule compilation failed for: " + rule)
+                    .build();
         }
         catch (Exception e) {
             log.error("Failed to evaluate rule: {}, data: {}, exception: {}", rule, data, e.getMessage());
@@ -72,12 +77,6 @@ public abstract class CachingRuleEvalStrategy<C> implements RuleEvalStrategy {
                     .error(e.getMessage())
                     .build();
         }
-
-        return RuleEvalResponse.builder()
-                .status(RuleCallStatus.FAILURE)
-                .result(false)
-                .error(compiled.getFirst().getError())
-                .build();
     }
 
     protected final Pair<RuleCheckResponse, C> compile(final String rule) {
@@ -90,12 +89,22 @@ public abstract class CachingRuleEvalStrategy<C> implements RuleEvalStrategy {
                     evaluatable
             );
         }
+        catch (SecurityException e) {
+            log.warn("Failed to compile rule: {}, exception: {}", rule, e.getMessage());
+            return new Pair<>(
+                    RuleCheckResponse.builder()
+                            .status(RuleCallStatus.FAILURE)
+                            .error("Unsafe expression in the rule error: " + e.getMessage())
+                            .build(),
+                    null
+            );
+        }
         catch (Exception e) {
             log.warn("Failed to compile rule: {}, exception: {}", rule, e.getMessage());
             return new Pair<>(
                     RuleCheckResponse.builder()
                             .status(RuleCallStatus.FAILURE)
-                            .error("HopeLang Compilation error: " + e.getMessage())
+                            .error("Rule compilation error: " + e.getMessage())
                             .build(),
                     null
             );

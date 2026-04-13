@@ -74,6 +74,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -177,6 +178,14 @@ public class ControllerCoreModule extends AbstractModule {
     public Integer mvelRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
         return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
                 ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
+    }
+
+    @Provides
+    @Singleton
+    @Named("MvelRuleAllowedImportPackages")
+    public List<String> mvelAllowedImportPackages(final ControllerOptions controllerOptions) {
+        return Objects.requireNonNullElse(controllerOptions.getAllowedRuleImportPackages(),
+                ControllerOptions.DEFAULT_RULE_ALLOWED_IMPORT_PACKAGES);
     }
 
     @Provides

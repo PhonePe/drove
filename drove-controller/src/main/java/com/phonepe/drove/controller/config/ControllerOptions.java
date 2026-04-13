@@ -56,6 +56,7 @@ public class ControllerOptions {
     public static final List<String> DEFAULT_ALLOWED_MOUNT_DIRS = List.of();
     public static final int DEFAULT_COMPILED_RULE_CACHE_SIZE = 100;
     public static final Duration DEFAULT_STALE_EXECUTOR_AGE = Duration.seconds(45);
+    public static final List<String> DEFAULT_RULE_ALLOWED_IMPORT_PACKAGES = List.of();
 
     public static final ControllerOptions DEFAULT = new ControllerOptions(
             DEFAULT_STALE_CHECK_INTERVAL,
@@ -76,6 +77,7 @@ public class ControllerOptions {
             false,
             false,
             DEFAULT_COMPILED_RULE_CACHE_SIZE,
+            DEFAULT_RULE_ALLOWED_IMPORT_PACKAGES,
             DEFAULT_STALE_EXECUTOR_AGE
     );
 
@@ -127,6 +129,8 @@ public class ControllerOptions {
 
     @Range(min = 0, max = 1000)
     Integer compiledRuleCacheCount;
+
+    List<String> allowedRuleImportPackages;
 
     @DurationRange(min = 10, max = 3_600, unit = TimeUnit.SECONDS)
     Duration staleExecutorAge;

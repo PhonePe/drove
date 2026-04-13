@@ -7,16 +7,26 @@
  *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 package com.phonepe.drove.controller.rule.mvel;
 
 import lombok.experimental.UtilityClass;
 
+import java.util.List;
+
 @UtilityClass
 public class MvelRuleInstance {
     public static MvelRuleStrategy create() {
-        return new MvelRuleStrategy(2);
+        return create(2);
+    }
+
+    public static MvelRuleStrategy create(int cacheSize) {
+        return new MvelRuleStrategy(cacheSize, new SafeMvel(List.of()));
     }
 }

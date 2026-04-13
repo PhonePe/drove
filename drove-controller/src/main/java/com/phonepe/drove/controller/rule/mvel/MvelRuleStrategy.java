@@ -16,9 +16,7 @@ package com.phonepe.drove.controller.rule.mvel;
 
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.rule.CachingRuleEvalStrategy;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.mvel2.MVEL;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -27,24 +25,25 @@ import java.io.Serializable;
 import java.util.Objects;
 
 
-@Slf4j
 @Singleton
 public class MvelRuleStrategy extends CachingRuleEvalStrategy<Serializable> {
 
+    private final SafeMvel safeMvel;
+
     @Inject
-    public MvelRuleStrategy(final @Named("MvelRuleCompiledCacheSize") Integer cacheSize) {
+    public MvelRuleStrategy(@Named("MvelRuleCompiledCacheSize") final Integer cacheSize, SafeMvel safeMvel) {
         super(Objects.requireNonNullElse(cacheSize, ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE));
+        this.safeMvel = safeMvel;
     }
 
     @Override
     protected Serializable compileRule(String rule) {
-        return MVEL.compileExpression(rule);
+        return safeMvel.compile(rule);
     }
 
     @Override
     protected boolean evaluateRule(Serializable evaluatable, Object data) {
-        val result = MVEL.executeExpression(evaluatable, data);
+        val result = safeMvel.execute(evaluatable, data);
         return result instanceof Boolean boolResult && boolResult;
     }
-
 }
