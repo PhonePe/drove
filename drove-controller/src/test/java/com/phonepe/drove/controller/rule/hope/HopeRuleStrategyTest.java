@@ -22,7 +22,7 @@ import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link HopeRuleStrategy}
@@ -38,7 +38,14 @@ class HopeRuleStrategyTest extends AbstractTestBase {
         assertEquals(RuleCallStatus.SUCCESS, rs.evaluate("'/data' == 'XX'", new TestDataNode("SS")).getStatus());
         assertEquals(RuleCallStatus.FAILURE, rs.evaluate("'/data'", new TestDataNode("SS")).getStatus());
         assertEquals(RuleCallStatus.FAILURE, rs.evaluate("'/data' == 'SS'", new TestDataNode(null)).getStatus());
+
+        // Regex test cases
         assertEquals(RuleCallStatus.SUCCESS, rs.evaluate("str.match('^s.*', '/data') == true", new TestDataNode("ss")).getStatus());
-        assertEquals(RuleCallStatus.FAILURE, rs.evaluate("str.match('^sas.*', '/data') == true", new TestDataNode("ss")).getStatus());
+        {
+            val res = rs.evaluate("str.match('^sas.*', '/data') == true", new TestDataNode("ss"));
+            assertEquals(RuleCallStatus.SUCCESS, res.getStatus());
+            assertFalse(res.isResult());
+        }
+
     }
 }
