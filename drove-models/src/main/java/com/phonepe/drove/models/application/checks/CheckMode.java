@@ -16,10 +16,15 @@
 
 package com.phonepe.drove.models.application.checks;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Available check modes for health/readiness checks
  */
+@Schema(description = "Available check modes for health and readiness checks")
 public enum CheckMode {
+    @Schema(description = "HTTP-based check that calls an HTTP endpoint")
     HTTP,
+    @Schema(description = "Command-based check that executes a command inside the container")
     CMD,
 }

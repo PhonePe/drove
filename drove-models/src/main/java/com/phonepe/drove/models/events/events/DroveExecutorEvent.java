@@ -20,12 +20,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.models.events.events.datatags.ExecutorEventDataTag;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Map;
 
 /**
- *
+ * Base class for executor-related events
  */
+@Schema(description = "Base class for executor-related events")
 public abstract class  DroveExecutorEvent extends DroveEvent<ExecutorEventDataTag> {
     protected DroveExecutorEvent(
             DroveEventType type,

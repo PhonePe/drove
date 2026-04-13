@@ -16,11 +16,17 @@
 
 package com.phonepe.drove.models.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Type of job/workload being deployed
  */
+@Schema(description = "Type of job/workload being deployed in the cluster")
 public enum JobType {
+    @Schema(description = "Long-running service application that runs continuously")
     SERVICE,
+    @Schema(description = "One-time computation task that runs to completion")
     COMPUTATION,
+    @Schema(description = "Service running locally on executor nodes")
     LOCAL_SERVICE
 }

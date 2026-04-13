@@ -16,10 +16,15 @@
 
 package com.phonepe.drove.models.application.exposure;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Mode for exposing application instances to load balancer
  */
+@Schema(description = "Mode for exposing application instances to the load balancer")
 public enum ExposureMode {
+    @Schema(description = "Expose all healthy instances to the load balancer")
     ALL,
+    @Schema(description = "Expose only one instance (useful for active-passive setups)")
     ONE
 }

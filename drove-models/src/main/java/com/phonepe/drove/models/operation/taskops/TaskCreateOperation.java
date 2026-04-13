@@ -21,6 +21,7 @@ import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationType;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.task.TaskSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,21 +32,24 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to create and run a new task.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to create and run a new task")
 public class TaskCreateOperation extends TaskOperation {
 
     @NotNull
     @Valid
+    @Schema(description = "Specification for the task to create", requiredMode = Schema.RequiredMode.REQUIRED)
     TaskSpec spec;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation specification with timeout settings", requiredMode = Schema.RequiredMode.REQUIRED)
     ClusterOpSpec opSpec;
 
     public TaskCreateOperation(TaskSpec spec, ClusterOpSpec opSpec) {

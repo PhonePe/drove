@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.application.logging;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -25,19 +26,23 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 
 /**
- *
+ * Remote rsyslog server logging configuration
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Remote rsyslog server logging configuration for centralized log collection")
 public class RsyslogLoggingSpec extends LoggingSpec {
     @NotEmpty(message = "- Rsyslog server url should be passed here")
+    @Schema(description = "Rsyslog server URL (host:port)", example = "rsyslog.example.com:514", requiredMode = Schema.RequiredMode.REQUIRED)
     String server;
 
+    @Schema(description = "Prefix to add to log tags for identification", example = "drove-")
     String tagPrefix;
 
+    @Schema(description = "Suffix to add to log tags for identification", example = "-prod")
     String tagSuffix;
 
     public RsyslogLoggingSpec(String server, String tagPrefix, String tagSuffix) {

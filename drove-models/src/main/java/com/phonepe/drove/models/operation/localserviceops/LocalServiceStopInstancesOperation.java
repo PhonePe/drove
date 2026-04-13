@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -29,7 +30,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- *
+ * Operation to stop specific instances of a local service.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -37,14 +38,18 @@ import java.util.Set;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to stop specific instances of a local service")
 public class LocalServiceStopInstancesOperation extends LocalServiceOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the local service", example = "MY_LOCAL_SERVICE", requiredMode = Schema.RequiredMode.REQUIRED)
     String serviceId;
 
     @NotEmpty
+    @Schema(description = "Set of instance IDs to stop", example = "[\"LSI-00a1b2c3-0001\"]", requiredMode = Schema.RequiredMode.REQUIRED)
     Set<String> instanceIds;
 
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings")
     ClusterOpSpec opSpec;
 
     public LocalServiceStopInstancesOperation(

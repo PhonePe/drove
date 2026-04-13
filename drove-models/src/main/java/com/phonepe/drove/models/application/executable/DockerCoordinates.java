@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.application.executable;
 
 import io.dropwizard.util.Duration;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -27,20 +28,25 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Docker container coordinates specifying the container image to deploy
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Docker container coordinates specifying the container image to deploy")
 public class DockerCoordinates extends ExecutableCoordinates {
     public static final Duration DEFAULT_PULL_TIMEOUT = Duration.minutes(15);
 
     @NotEmpty(message = "- Specify url for container")
+    @Schema(description = "Docker image URL/reference to pull and deploy",
+            example = "nginx:latest", requiredMode = Schema.RequiredMode.REQUIRED)
     String url;
 
     @NotNull(message = "- Specify container fetch (docker pull) timeout")
+    @Schema(description = "Timeout for pulling the Docker image", example = "15 minutes",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     Duration dockerPullTimeout;
 
     public DockerCoordinates(String url, Duration dockerPullTimeout) {

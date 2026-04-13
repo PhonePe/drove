@@ -19,13 +19,14 @@ package com.phonepe.drove.models.operation.ops;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
 
 /**
- *
+ * Operation to recover an application from a failed or stuck state.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -33,8 +34,10 @@ import javax.validation.constraints.NotEmpty;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to recover an application from a failed or stuck state")
 public class ApplicationRecoverOperation extends ApplicationOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the application to recover", example = "MY_APP-1", requiredMode = Schema.RequiredMode.REQUIRED)
     String appId;
     public ApplicationRecoverOperation(String appId) {
         super(ApplicationOperationType.RECOVER);

@@ -16,15 +16,22 @@
 
 package com.phonepe.drove.models.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
 /**
- *
+ * Generic API response wrapper
  */
 @Value
+@Schema(description = "Standard API response wrapper containing status, data payload, and message")
 public class ApiResponse<T> {
+    @Schema(description = "Response status code indicating success or failure", example = "SUCCESS")
     ApiErrorCode status;
+
+    @Schema(description = "Response data payload, type varies by endpoint")
     T data;
+
+    @Schema(description = "Human-readable message describing the response", example = "success")
     String message;
 
     public static <T> ApiResponse<T> success(T data) {

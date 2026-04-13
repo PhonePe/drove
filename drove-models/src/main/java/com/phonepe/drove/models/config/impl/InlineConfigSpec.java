@@ -20,6 +20,7 @@ import com.phonepe.drove.models.common.Mask;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecType;
 import com.phonepe.drove.models.config.ConfigSpecVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,16 +30,18 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 
 /**
- *
+ * Configuration provided inline in the spec
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString
+@Schema(description = "Configuration provided directly inline as base64-encoded data")
 public class InlineConfigSpec extends ConfigSpec {
 
     @Mask
     @NotEmpty
     @ToString.Exclude
+    @Schema(description = "Base64-encoded configuration data", requiredMode = Schema.RequiredMode.REQUIRED)
     byte []data;
 
     @Jacksonized

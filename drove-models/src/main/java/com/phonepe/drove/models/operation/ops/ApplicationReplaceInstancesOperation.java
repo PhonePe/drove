@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -30,7 +31,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- *
+ * Operation to replace specific instances of an application with new ones.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -38,16 +39,21 @@ import java.util.Set;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to replace specific instances of an application with new ones")
 public class ApplicationReplaceInstancesOperation extends ApplicationOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the application", example = "MY_APP-1", requiredMode = Schema.RequiredMode.REQUIRED)
     String appId;
 
+    @Schema(description = "Set of instance IDs to replace. If empty, all instances will be replaced", example = "[\"AI-00a1b2c3-0001\", \"AI-00a1b2c3-0002\"]")
     Set<String> instanceIds;
 
+    @Schema(description = "If true, old instances are stopped before new ones are started. If false, new instances are started first (rolling replacement)", example = "false", defaultValue = "false")
     boolean stopFirst;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings", requiredMode = Schema.RequiredMode.REQUIRED)
     ClusterOpSpec opSpec;
 
     public ApplicationReplaceInstancesOperation(String appId, Set<String> instanceIds,

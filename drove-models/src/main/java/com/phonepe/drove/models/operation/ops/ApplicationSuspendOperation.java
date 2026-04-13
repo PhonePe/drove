@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -27,7 +28,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to suspend an application, stopping all instances but keeping the application definition.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -35,13 +36,16 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to suspend an application, stopping all instances but keeping the application definition")
 public class ApplicationSuspendOperation extends ApplicationOperation {
     @NotNull
     @Valid
+    @Schema(description = "Unique identifier of the application to suspend", example = "MY_APP-1", requiredMode = Schema.RequiredMode.REQUIRED)
     String appId;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings", requiredMode = Schema.RequiredMode.REQUIRED)
     ClusterOpSpec opSpec;
 
     @Builder

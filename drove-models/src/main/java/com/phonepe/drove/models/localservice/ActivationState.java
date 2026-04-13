@@ -16,11 +16,17 @@
 
 package com.phonepe.drove.models.localservice;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Activation state of a local service.
  */
+@Schema(description = "Activation state of a local service")
 public enum ActivationState {
+    @Schema(description = "Service is active and running instances")
     ACTIVE,
+    @Schema(description = "Service is running in configuration testing mode")
     CONFIG_TESTING,
+    @Schema(description = "Service is inactive and not running")
     INACTIVE
 }

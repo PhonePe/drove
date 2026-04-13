@@ -16,12 +16,19 @@
 
 package com.phonepe.drove.models.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Protocol type for exposed ports
  */
+@Schema(description = "Protocol type for exposed ports")
 public enum PortType {
+    @Schema(description = "HTTP protocol port")
     HTTP,
+    @Schema(description = "HTTPS protocol port")
     HTTPS,
+    @Schema(description = "Raw TCP port")
     TCP,
+    @Schema(description = "UDP protocol port")
     UDP
 }

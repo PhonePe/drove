@@ -16,10 +16,15 @@
 
 package com.phonepe.drove.models.application.logging;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Type of logging configuration for containers
  */
+@Schema(description = "Type of logging configuration for container output")
 public enum LoggingType {
+    @Schema(description = "Local file-based logging with rotation")
     LOCAL,
+    @Schema(description = "Remote rsyslog server logging")
     RSYSLOG
 }

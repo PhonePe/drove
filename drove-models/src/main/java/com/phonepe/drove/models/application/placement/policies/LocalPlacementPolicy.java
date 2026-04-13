@@ -19,6 +19,7 @@ package com.phonepe.drove.models.application.placement.policies;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -26,14 +27,16 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- *
+ * Placement policy that targets the local executor node
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Placement policy that schedules containers on the local executor node (used for local services)")
 public class LocalPlacementPolicy extends PlacementPolicy {
+    @Schema(description = "Whether to consider host-level placement constraints", example = "false")
     boolean hostLevel;
 
     public LocalPlacementPolicy(boolean hostLevel) {

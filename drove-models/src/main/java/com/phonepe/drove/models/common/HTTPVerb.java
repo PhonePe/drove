@@ -16,11 +16,17 @@
 
 package com.phonepe.drove.models.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * HTTP methods/verbs for HTTP-based checks
  */
+@Schema(description = "HTTP methods/verbs for HTTP-based health checks")
 public enum HTTPVerb {
+    @Schema(description = "HTTP GET request")
     GET,
+    @Schema(description = "HTTP POST request")
     POST,
+    @Schema(description = "HTTP PUT request")
     PUT
 }

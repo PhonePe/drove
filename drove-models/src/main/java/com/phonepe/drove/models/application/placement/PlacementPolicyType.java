@@ -16,16 +16,27 @@
 
 package com.phonepe.drove.models.application.placement;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Type of placement policy for container scheduling
  */
+@Schema(description = "Type of placement policy for container scheduling")
 public enum PlacementPolicyType {
+    @Schema(description = "Only one instance per host")
     ONE_PER_HOST,
+    @Schema(description = "Maximum N instances per host")
     MAX_N_PER_HOST,
+    @Schema(description = "Place only on hosts with a specific tag")
     MATCH_TAG,
+    @Schema(description = "Place only on hosts without any tags")
     NO_TAG,
+    @Schema(description = "Use custom rules (HOPE or MVEL) for placement decisions")
     RULE_BASED,
+    @Schema(description = "Place on any available host")
     ANY,
+    @Schema(description = "Combine multiple placement policies with AND/OR logic")
     COMPOSITE,
+    @Schema(description = "Place on the local executor node")
     LOCAL
 }

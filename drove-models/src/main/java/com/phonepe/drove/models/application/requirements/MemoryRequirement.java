@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.application.requirements;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -23,14 +24,17 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- *
+ * Memory resource requirement specification
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Memory resource requirement specifying the amount of RAM needed by each instance")
 public class MemoryRequirement extends ResourceRequirement {
+
+    @Schema(description = "Amount of memory required in megabytes", example = "512", minimum = "1")
     long sizeInMB;
 
     public MemoryRequirement(long sizeInMB) {

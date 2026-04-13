@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -29,7 +30,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to scale application instances
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -37,17 +38,21 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Scale application to a specific number of instances")
 public class ApplicationScaleOperation extends ApplicationOperation {
     @NotNull
     @Valid
+    @Schema(description = "Application ID to scale", example = "my-service-1234abcd", required = true)
     String appId;
 
     @Min(0)
     @Max(2048)
+    @Schema(description = "Desired number of instances", example = "5", minimum = "0", maximum = "2048")
     long requiredInstances;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation parameters", required = true)
     ClusterOpSpec opSpec;
 
     public ApplicationScaleOperation(String appId, long requiredInstances, ClusterOpSpec opSpec) {

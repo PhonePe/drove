@@ -20,19 +20,32 @@ package com.phonepe.drove.models.events;
  *
  */
 public enum DroveEventType {
+    @Schema(description = "Application state has changed")
     APP_STATE_CHANGE,
+    @Schema(description = "Application instance state has changed")
     INSTANCE_STATE_CHANGE,
+    @Schema(description = "Task instance state has changed")
     TASK_STATE_CHANGE,
+    @Schema(description = "Local service state has changed")
     LOCAL_SERVICE_STATE_CHANGE,
+    @Schema(description = "Local service instance state has changed")
     LOCAL_SERVICE_INSTANCE_STATE_CHANGE,
+    @Schema(description = "New executor node added to the cluster")
     EXECUTOR_ADDED,
+    @Schema(description = "Executor node removed from the cluster")
     EXECUTOR_REMOVED,
     EXECUTOR_BLACKLIST_REQUESTED,
+    @Schema(description = "Executor node has been blacklisted")
     EXECUTOR_BLACKLISTED,
+    @Schema(description = "Executor node has been un-blacklisted")
     EXECUTOR_UN_BLACKLISTED,
+    @Schema(description = "Cluster has entered maintenance mode")
     MAINTENANCE_MODE_SET,
+    @Schema(description = "Cluster has exited maintenance mode")
     MAINTENANCE_MODE_REMOVED,
-
+ 
+    @Schema(description = "Controller has acquired leadership")
     LEADERSHIP_ACQUIRED,
+    @Schema(description = "Controller has lost leadership")
     LEADERSHIP_LOST
 }

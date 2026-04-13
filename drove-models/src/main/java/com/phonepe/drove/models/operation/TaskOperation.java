@@ -20,10 +20,12 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- *
+ * Base class for task operations. Tasks are one-time execution units that run to completion.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -31,7 +33,20 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "KILL", value = TaskKillOperation.class)
 })
 @Data
+@Schema(
+        description = "Base class for task operations. Tasks are one-time execution units that run to completion.",
+        discriminatorProperty = "type",
+        discriminatorMapping = {
+                @DiscriminatorMapping(value = "CREATE", schema = TaskCreateOperation.class),
+                @DiscriminatorMapping(value = "KILL", schema = TaskKillOperation.class)
+        },
+        subTypes = {
+                TaskCreateOperation.class,
+                TaskKillOperation.class
+        }
+)
 public abstract class TaskOperation {
+    @Schema(description = "Type of task operation", requiredMode = Schema.RequiredMode.REQUIRED)
     private final TaskOperationType type;
 
     protected TaskOperation(TaskOperationType type) {

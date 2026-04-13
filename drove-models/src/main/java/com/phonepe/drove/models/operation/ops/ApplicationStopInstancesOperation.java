@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -29,7 +30,7 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
- *
+ * Operation to stop specific instances of an application.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -37,17 +38,22 @@ import java.util.List;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to stop specific instances of an application")
 public class ApplicationStopInstancesOperation extends ApplicationOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the application", example = "MY_APP-1", requiredMode = Schema.RequiredMode.REQUIRED)
     String appId;
 
     @NotEmpty
+    @Schema(description = "List of instance IDs to stop", example = "[\"AI-00a1b2c3-0001\", \"AI-00a1b2c3-0002\"]", requiredMode = Schema.RequiredMode.REQUIRED)
     List<String> instanceIds;
 
+    @Schema(description = "If true, stopped instances will not be respawned automatically", example = "false", defaultValue = "false")
     boolean skipRespawn;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings", requiredMode = Schema.RequiredMode.REQUIRED)
     ClusterOpSpec opSpec;
 
     public ApplicationStopInstancesOperation(

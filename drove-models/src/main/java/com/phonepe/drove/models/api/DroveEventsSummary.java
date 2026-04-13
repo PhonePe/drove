@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.api;
 
 import com.phonepe.drove.models.events.DroveEventType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
 import java.util.Map;
@@ -25,7 +26,11 @@ import java.util.Map;
  * Response for events. The last sync time should be sent in the next events call
  */
 @Value
+@Schema(description = "Summary of cluster events with counts by type")
 public class DroveEventsSummary {
+    @Schema(description = "Map of event types to their occurrence counts")
     Map<DroveEventType, Long> eventsCount;
+
+    @Schema(description = "Timestamp to use for the next poll request", example = "1698765432100")
     long lastSyncTime;
 }

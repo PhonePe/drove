@@ -18,23 +18,44 @@ package com.phonepe.drove.models.api;
 
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
 import java.util.Set;
 
 /**
- *
+ * Summary view of an executor node
  */
 @Value
+@Schema(description = "Summary information about an executor node in the cluster")
 public class ExecutorSummary {
+    @Schema(description = "Unique executor identifier", example = "executor-1-abcd1234")
     String executorId;
+
+    @Schema(description = "Hostname of the executor node", example = "executor-1.example.com")
     String hostname;
+
+    @Schema(description = "Port on which the executor is listening", example = "3000")
     int port;
+
+    @Schema(description = "Transport protocol used by the executor")
     NodeTransportType transportType;
+
+    @Schema(description = "Number of unallocated CPU cores on this executor", example = "8")
     int freeCores;
+
+    @Schema(description = "Number of allocated CPU cores on this executor", example = "24")
     int usedCores;
+
+    @Schema(description = "Unallocated memory in bytes on this executor", example = "17179869184")
     long freeMemory;
+
+    @Schema(description = "Allocated memory in bytes on this executor", example = "51539607552")
     long usedMemory;
+
+    @Schema(description = "Tags assigned to this executor for placement policies")
     Set<String> tags;
+
+    @Schema(description = "Current state of the executor")
     ExecutorState state;
 }

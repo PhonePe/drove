@@ -16,10 +16,15 @@
 
 package com.phonepe.drove.models.operation.deploy;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Strategy to follow when an operation fails.
  */
+@Schema(description = "Strategy to follow when an operation fails")
 public enum FailureStrategy {
+    @Schema(description = "Stop the operation on failure")
     STOP,
+    @Schema(description = "Rollback to the previous state on failure")
     ROLLBACK
 }

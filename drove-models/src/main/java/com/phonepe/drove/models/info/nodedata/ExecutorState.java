@@ -16,18 +16,20 @@
 
 package com.phonepe.drove.models.info.nodedata;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * State of an executor node in the cluster.
  */
 public enum ExecutorState {
+    @Schema(description = "Executor is active and can receive new workloads")
     ACTIVE,
     BLACKLIST_REQUESTED,
+    @Schema(description = "Executor has been blacklisted and will not receive new workloads")
     BLACKLISTED,
+    @Schema(description = "Executor is not ready to receive workloads")
     UNREADY,
+    @Schema(description = "Executor has been removed from the cluster")
     REMOVED,
     ;
-
-    public boolean isBlacklisted() {
-        return this == BLACKLISTED || this == BLACKLIST_REQUESTED;
-    }
 }

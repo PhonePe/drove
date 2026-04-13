@@ -22,6 +22,8 @@ import com.phonepe.drove.models.config.impl.ControllerHttpFetchConfigSpec;
 import com.phonepe.drove.models.config.impl.ExecutorHttpFetchConfigSpec;
 import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Specification for configuration
+ * Specification for configuration injection into containers
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -40,11 +42,30 @@ import javax.validation.constraints.NotEmpty;
 })
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
+@Schema(
+    description = "Configuration specification for injecting config files into containers. " +
+                  "Supports inline data, local files, or HTTP-fetched content.",
+    discriminatorProperty = "type",
+    discriminatorMapping = {
+        @DiscriminatorMapping(value = "INLINE", schema = InlineConfigSpec.class),
+        @DiscriminatorMapping(value = "EXECUTOR_LOCAL_FILE", schema = ExecutorLocalFileConfigSpec.class),
+        @DiscriminatorMapping(value = "CONTROLLER_HTTP_FETCH", schema = ControllerHttpFetchConfigSpec.class),
+        @DiscriminatorMapping(value = "EXECUTOR_HTTP_FETCH", schema = ExecutorHttpFetchConfigSpec.class)
+    },
+    subTypes = {
+        InlineConfigSpec.class,
+        ExecutorLocalFileConfigSpec.class,
+        ControllerHttpFetchConfigSpec.class,
+        ExecutorHttpFetchConfigSpec.class
+    }
+)
 public abstract class ConfigSpec {
 
+    @Schema(description = "Type of configuration source", requiredMode = Schema.RequiredMode.REQUIRED)
     private final ConfigSpecType type;
 
     @NotEmpty
+    @Schema(description = "Filename to use when writing config inside the container", example = "config.yaml", requiredMode = Schema.RequiredMode.REQUIRED)
     private final String localFilename;
 
     public abstract <T> T accept(final ConfigSpecVisitor<T> visitor);

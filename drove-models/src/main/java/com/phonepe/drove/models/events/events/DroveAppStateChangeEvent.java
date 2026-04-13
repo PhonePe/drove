@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.models.events.events.datatags.AppEventDataTag;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,12 +30,13 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Map;
 
 /**
- *
+ * Event emitted when application state changes
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Schema(description = "Event emitted when an application's state changes (e.g., RUNNING, STOPPED)")
 public class DroveAppStateChangeEvent extends DroveEvent<AppEventDataTag> {
 
     @Builder

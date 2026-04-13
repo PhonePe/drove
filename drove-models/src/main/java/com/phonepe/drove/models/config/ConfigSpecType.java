@@ -16,16 +16,19 @@
 
 package com.phonepe.drove.models.config;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Source of configuration for the application or task instance
  */
+@Schema(description = "Source type for configuration data injection into containers")
 public enum ConfigSpecType {
-    // Sent as part of spec
+    @Schema(description = "Configuration data is provided inline in the spec")
     INLINE,
-    // Locally mounted file
+    @Schema(description = "Configuration is read from a local file on the executor host")
     EXECUTOR_LOCAL_FILE,
-    // Config is fetched by controller using http call and sent to instance
+    @Schema(description = "Configuration is fetched by controller via HTTP and sent to executor")
     CONTROLLER_HTTP_FETCH,
-    // Config is fetched by executor directly by making http call
+    @Schema(description = "Configuration is fetched by executor directly via HTTP at container startup")
     EXECUTOR_HTTP_FETCH
 }

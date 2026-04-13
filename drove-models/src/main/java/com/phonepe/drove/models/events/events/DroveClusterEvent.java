@@ -19,12 +19,14 @@ package com.phonepe.drove.models.events.events;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.models.events.events.datatags.ClusterEventDataTag;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Map;
 
 /**
- *
+ * Base class for cluster-wide events
  */
+@Schema(description = "Base class for cluster-wide events (maintenance, leadership)")
 public abstract class DroveClusterEvent extends DroveEvent<ClusterEventDataTag> {
 
     DroveClusterEvent(DroveEventType type, Map<ClusterEventDataTag, Object> metadata) {

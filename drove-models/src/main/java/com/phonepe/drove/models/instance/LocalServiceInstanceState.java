@@ -17,29 +17,46 @@
 package com.phonepe.drove.models.instance;
 
 import com.phonepe.drove.models.StateEnum;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 import java.util.Set;
 
 /**
- *
+ * State of a local service instance in its lifecycle.
  */
 @Getter
+@Schema(description = "State of a local service instance in its lifecycle")
 public enum LocalServiceInstanceState implements StateEnum {
+    @Schema(description = "Instance is pending creation")
     PENDING(false, false),
+    @Schema(description = "Instance is being provisioned")
     PROVISIONING(false, false),
+    @Schema(description = "Instance provisioning failed")
     PROVISIONING_FAILED(false, true),
+    @Schema(description = "Instance is starting")
     STARTING(false, false),
+    @Schema(description = "Instance failed to start")
     START_FAILED(false, true),
+    @Schema(description = "Instance started but not ready yet")
     UNREADY(false, false),
+    @Schema(description = "Instance readiness check failed")
     READINESS_CHECK_FAILED(false, true),
+    @Schema(description = "Instance is ready to serve traffic")
     READY(false, false),
+    @Schema(description = "Instance is healthy")
     HEALTHY(false, false),
+    @Schema(description = "Instance is unhealthy")
     UNHEALTHY(false, false),
+    @Schema(description = "Instance is being deprovisioned")
     DEPROVISIONING(false, false),
+    @Schema(description = "Instance is stopping")
     STOPPING(false, false),
+    @Schema(description = "Instance has stopped (terminal state)")
     STOPPED(true, false),
+    @Schema(description = "Instance was lost (terminal state)")
     LOST(true, false),
+    @Schema(description = "Instance state is unknown")
     UNKNOWN(false, false);
 
     public static final Set<LocalServiceInstanceState> ACTIVE_STATES = Set.of(

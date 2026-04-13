@@ -19,6 +19,7 @@ package com.phonepe.drove.models.application.checks;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
 import io.dropwizard.util.Duration;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -30,27 +31,46 @@ import javax.validation.constraints.NotNull;
 import java.util.Set;
 
 /**
- *
+ * HTTP-based health check specification
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "HTTP-based health check specification that calls an HTTP endpoint to verify instance health")
 public class HTTPCheckModeSpec extends CheckModeSpec {
 
+    @Schema(description = "Protocol to use for the HTTP check (defaults to HTTP)", example = "HTTP")
     Protocol protocol;
+
     @NotEmpty
+    @Schema(description = "Name of the port to use for the health check (must match a port name in PortSpec)",
+            example = "main", requiredMode = Schema.RequiredMode.REQUIRED)
     String portName;
+
     @NotEmpty
+    @Schema(description = "URL path to call for the health check", example = "/health",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     String path;
+
     @NotNull
+    @Schema(description = "HTTP verb to use for the health check request", requiredMode = Schema.RequiredMode.REQUIRED)
     HTTPVerb verb;
+
     @NotEmpty
     @NotNull
+    @Schema(description = "Set of HTTP status codes that indicate a healthy response",
+            example = "[200, 201, 204]", requiredMode = Schema.RequiredMode.REQUIRED)
     Set<Integer> successCodes;
+
+    @Schema(description = "Optional payload to send with the request (for POST/PUT verbs)")
     String payload;
+
+    @Schema(description = "Connection timeout for the HTTP request", example = "5 seconds")
     Duration connectionTimeout;
+
+    @Schema(description = "Whether to skip TLS certificate verification for HTTPS checks", example = "false")
     boolean insecure;
 
     @SuppressWarnings("java:S107")

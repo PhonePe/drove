@@ -1,0 +1,26 @@
+openapi: "3.0.3"
+info:
+  title: "Drove Controller API"
+  description: "REST API for Drove Container Orchestrator Controller"
+  version: "1.33.2"
+  contact:
+    name: "PhonePe"
+  license:
+    name: "Apache 2.0"
+    url: "https://www.apache.org/licenses/LICENSE-2.0"
+servers:
+  - url: "/apis"
+    description: "Drove Controller API Server"
+tags:
+  - name: "Applications"
+    description: "Application lifecycle management operations"
+  - name: "Local Services"
+    description: "Local service management operations"
+  - name: "Tasks"
+    description: "Task management operations"
+  - name: "Cluster"
+    description: "Cluster management and monitoring operations"
+  - name: "Endpoints"
+    description: "Exposed endpoint discovery operations"
+  - name: "Utility"
+    description: "Utility and health check operations"

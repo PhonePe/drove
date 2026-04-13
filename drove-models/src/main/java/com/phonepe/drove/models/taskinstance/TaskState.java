@@ -16,26 +16,49 @@
 
 package com.phonepe.drove.models.taskinstance;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 import java.util.EnumSet;
 import java.util.Set;
 
 /**
- *
+ * Task lifecycle states
  */
 @Getter
+@Schema(description = "Task lifecycle state")
 public enum TaskState {
+    @Schema(description = "Task is pending scheduling")
     PENDING(false, false),
+
+    @Schema(description = "Task is being provisioned on an executor")
     PROVISIONING(false, false),
+
+    @Schema(description = "Task provisioning failed")
     PROVISIONING_FAILED(false, true),
+
+    @Schema(description = "Task container is starting")
     STARTING(false, false),
+
+    @Schema(description = "Task is running")
     RUNNING(false, false),
+
+    @Schema(description = "Task run completed successfully")
     RUN_COMPLETED(false, false),
+
+    @Schema(description = "Task run failed")
     RUN_FAILED(false, true),
+
+    @Schema(description = "Task is being deprovisioned")
     DEPROVISIONING(false, false),
+
+    @Schema(description = "Task has stopped (terminal state)")
     STOPPED(true, false),
+
+    @Schema(description = "Task connection was lost (terminal state)")
     LOST(true, false),
+
+    @Schema(description = "Task state is unknown")
     UNKNOWN(false, false);
 
     public static final Set<TaskState> ACTIVE_STATES = Set.of(

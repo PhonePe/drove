@@ -18,6 +18,8 @@ package com.phonepe.drove.models.application.executable;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
@@ -32,7 +34,16 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "DOCKER", value = DockerCoordinates.class)
 })
 @Data
+@Schema(
+        description = "Coordinates to locate the executable (container image) to be deployed across the cluster",
+        discriminatorProperty = "type",
+        discriminatorMapping = {
+                @DiscriminatorMapping(value = "DOCKER", schema = DockerCoordinates.class)
+        },
+        subTypes = {DockerCoordinates.class}
+)
 public abstract class ExecutableCoordinates {
+    @Schema(description = "Type of executable coordinates", requiredMode = Schema.RequiredMode.REQUIRED)
     private final ExecutableType type;
 
     public abstract <T> T accept(final ExecutableTypeVisitor<T> visitor);

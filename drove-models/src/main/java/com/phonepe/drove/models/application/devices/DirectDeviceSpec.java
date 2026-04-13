@@ -16,25 +16,33 @@
 
 package com.phonepe.drove.models.application.devices;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Device is mapped directly. Equivalent to --device /dev/xx/dev/yy:rw
+ * Device is mapped directly. Equivalent to --device /dev/xx:/dev/yy:rw
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Schema(description = "Direct device mapping from host to container with optional permissions (equivalent to docker --device flag)")
 public class DirectDeviceSpec extends DeviceSpec {
 
     @Getter
+    @Schema(description = "Permission modes for device access")
     public enum DirectDevicePermissions {
+        @Schema(description = "Read-only access")
         READ_ONLY("r"),
+        @Schema(description = "Write-only access")
         WRITE_ONLY("w"),
+        @Schema(description = "mknod access only")
         MKNOD_ONLY("m"),
+        @Schema(description = "Full access (read, write, mknod)")
         ALL("rwm"),
+        @Schema(description = "Read and write access")
         READ_WRITE("rw")
         ;
 
@@ -46,10 +54,13 @@ public class DirectDeviceSpec extends DeviceSpec {
     }
 
     @NotEmpty
+    @Schema(description = "Path to the device on the host", example = "/dev/nvidia0", requiredMode = Schema.RequiredMode.REQUIRED)
     String pathOnHost;
 
+    @Schema(description = "Path where device will be available inside the container", example = "/dev/nvidia0")
     String pathInContainer;
 
+    @Schema(description = "Access permissions for the device")
     DirectDevicePermissions permissions;
 
     @Builder

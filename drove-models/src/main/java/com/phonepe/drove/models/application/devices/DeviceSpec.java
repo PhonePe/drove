@@ -18,12 +18,14 @@ package com.phonepe.drove.models.application.devices;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * Base class for device loading
+ * Base class for device loading specifications
  */
 @Getter
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
@@ -32,7 +34,18 @@ import lombok.Getter;
         @JsonSubTypes.Type(name = "DIRECT", value = DirectDeviceSpec.class),
         @JsonSubTypes.Type(name = "DETAILED", value = DetailedDeviceSpec.class),
 })
+@Schema(
+    description = "Device specification for mounting host devices into containers. " +
+                  "Supports direct device mapping or detailed configurations with drivers and capabilities.",
+    discriminatorProperty = "type",
+    discriminatorMapping = {
+        @DiscriminatorMapping(value = "DIRECT", schema = DirectDeviceSpec.class),
+        @DiscriminatorMapping(value = "DETAILED", schema = DetailedDeviceSpec.class)
+    },
+    subTypes = { DirectDeviceSpec.class, DetailedDeviceSpec.class }
+)
 public abstract class DeviceSpec {
+    @Schema(description = "Type of device specification", requiredMode = Schema.RequiredMode.REQUIRED)
     private final DeviceSpecType type;
 
     public abstract <T> T accept(final DeviceSpecVisitor<T> visitor);

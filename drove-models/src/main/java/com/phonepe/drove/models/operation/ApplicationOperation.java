@@ -19,10 +19,12 @@ package com.phonepe.drove.models.operation;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.phonepe.drove.models.operation.ops.*;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- *
+ * Base class for application operations
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -36,7 +38,30 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "RECOVER", value = ApplicationRecoverOperation.class),
 })
 @Data
+@Schema(description = "Application operation request. Discriminator: type",
+        discriminatorProperty = "type",
+        discriminatorMapping = {
+            @DiscriminatorMapping(value = "CREATE", schema = ApplicationCreateOperation.class),
+            @DiscriminatorMapping(value = "DESTROY", schema = ApplicationDestroyOperation.class),
+            @DiscriminatorMapping(value = "START_INSTANCES", schema = ApplicationStartInstancesOperation.class),
+            @DiscriminatorMapping(value = "STOP_INSTANCES", schema = ApplicationStopInstancesOperation.class),
+            @DiscriminatorMapping(value = "SCALE", schema = ApplicationScaleOperation.class),
+            @DiscriminatorMapping(value = "REPLACE_INSTANCES", schema = ApplicationReplaceInstancesOperation.class),
+            @DiscriminatorMapping(value = "SUSPEND", schema = ApplicationSuspendOperation.class),
+            @DiscriminatorMapping(value = "RECOVER", schema = ApplicationRecoverOperation.class)
+        },
+        subTypes = {
+            ApplicationCreateOperation.class,
+            ApplicationDestroyOperation.class,
+            ApplicationStartInstancesOperation.class,
+            ApplicationStopInstancesOperation.class,
+            ApplicationScaleOperation.class,
+            ApplicationReplaceInstancesOperation.class,
+            ApplicationSuspendOperation.class,
+            ApplicationRecoverOperation.class
+        })
 public abstract class ApplicationOperation {
+    @Schema(description = "Operation type discriminator", example = "CREATE")
     private final ApplicationOperationType type;
 
     public abstract <T> T accept(final ApplicationOperationVisitor<T> visitor);

@@ -16,9 +16,13 @@
 
 package com.phonepe.drove.models.application.executable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Type of executable deployment
  */
+@Schema(description = "Type of executable deployment mechanism")
 public enum ExecutableType {
+    @Schema(description = "Docker container-based deployment")
     DOCKER
 }

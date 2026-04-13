@@ -16,10 +16,16 @@
 
 package com.phonepe.drove.models.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * API response status codes
  */
+@Schema(description = "API response status code")
 public enum ApiErrorCode {
+    @Schema(description = "Operation completed successfully")
     SUCCESS,
+
+    @Schema(description = "Operation failed")
     FAILED
 }

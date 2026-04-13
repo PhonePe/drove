@@ -19,6 +19,7 @@ package com.phonepe.drove.models.application.placement.policies;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,23 +30,29 @@ import javax.validation.constraints.NotEmpty;
 import java.util.List;
 
 /**
- *
+ * Placement policy that combines multiple policies with logical operators
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Placement policy that combines multiple placement policies using AND/OR logical operators")
 public class CompositePlacementPolicy extends PlacementPolicy {
 
+    @Schema(description = "Logical operator for combining multiple placement policies")
     public enum CombinerType {
+        @Schema(description = "All policies must be satisfied")
         AND,
+        @Schema(description = "At least one policy must be satisfied")
         OR
     }
 
     @NotEmpty(message = "- Specify one or more policies to combine")
+    @Schema(description = "List of placement policies to combine", requiredMode = Schema.RequiredMode.REQUIRED)
     List<PlacementPolicy> policies;
 
+    @Schema(description = "Logical operator to combine policies (AND requires all, OR requires at least one)", example = "AND")
     CombinerType combiner;
 
     public CompositePlacementPolicy(

@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -28,7 +29,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to destroy an application
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -36,12 +37,15 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Destroy an application and all its instances")
 public class ApplicationDestroyOperation extends ApplicationOperation {
     @NotEmpty()
+    @Schema(description = "Application ID to destroy", example = "my-service-1234abcd", required = true)
     String appId;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation parameters", required = true)
     ClusterOpSpec opSpec;
 
     public ApplicationDestroyOperation(String appId, ClusterOpSpec opSpec) {

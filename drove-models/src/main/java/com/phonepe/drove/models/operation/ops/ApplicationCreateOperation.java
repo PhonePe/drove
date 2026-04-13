@@ -21,6 +21,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -34,7 +35,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to create a new application deployment
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -42,17 +43,21 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Create a new application deployment")
 public class ApplicationCreateOperation extends ApplicationOperation {
     @NotNull
     @Valid
+    @Schema(description = "Application deployment specification", required = true)
     ApplicationSpec spec;
 
     @Min(0)
     @Max(2048)
+    @Schema(description = "Initial number of instances to deploy", example = "3", minimum = "0", maximum = "2048")
     long instances;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation parameters", required = true)
     ClusterOpSpec opSpec;
 
     public ApplicationCreateOperation(ApplicationSpec spec, long instances, ClusterOpSpec opSpec) {

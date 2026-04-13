@@ -18,10 +18,12 @@ package com.phonepe.drove.models.application.requirements;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- *
+ * Base class for resource requirements
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -29,7 +31,17 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "MEMORY", value = MemoryRequirement.class),
 })
 @Data
+@Schema(
+        description = "Base specification for resource requirements needed by application instances",
+        discriminatorProperty = "type",
+        discriminatorMapping = {
+                @DiscriminatorMapping(value = "CPU", schema = CPURequirement.class),
+                @DiscriminatorMapping(value = "MEMORY", schema = MemoryRequirement.class)
+        },
+        subTypes = {CPURequirement.class, MemoryRequirement.class}
+)
 public abstract class ResourceRequirement {
+    @Schema(description = "Type of resource requirement", requiredMode = Schema.RequiredMode.REQUIRED)
     private final ResourceType type;
 
     public abstract <T> T accept(final ResourceRequirementVisitor<T> visitor);

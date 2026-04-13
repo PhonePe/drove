@@ -18,10 +18,12 @@ package com.phonepe.drove.models.application.logging;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- *
+ * Base class for logging configuration
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -29,7 +31,17 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "RSYSLOG", value = RsyslogLoggingSpec.class)
 })
 @Data
+@Schema(
+    description = "Logging configuration for container output. Supports local file logging or remote rsyslog.",
+    discriminatorProperty = "type",
+    discriminatorMapping = {
+        @DiscriminatorMapping(value = "LOCAL", schema = LocalLoggingSpec.class),
+        @DiscriminatorMapping(value = "RSYSLOG", schema = RsyslogLoggingSpec.class)
+    },
+    subTypes = { LocalLoggingSpec.class, RsyslogLoggingSpec.class }
+)
 public abstract class LoggingSpec {
+    @Schema(description = "Type of logging configuration", requiredMode = Schema.RequiredMode.REQUIRED)
     private final LoggingType type;
 
     protected LoggingSpec(LoggingType type) {

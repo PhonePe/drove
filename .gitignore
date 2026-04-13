@@ -92,3 +92,6 @@ dep
 *.rej
 .factorypath
 .classpath
+
+# Local SonarLint/SonarQube connected-mode config
+.sonarqube.json

@@ -16,11 +16,16 @@
 
 package com.phonepe.drove.models.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Cluster operation states
  */
-public
-enum ClusterState {
+@Schema(description = "Cluster operation state")
+public enum ClusterState {
+    @Schema(description = "Cluster is operating normally")
     NORMAL,
+
+    @Schema(description = "Cluster is in maintenance mode - new operations are blocked")
     MAINTENANCE
 }

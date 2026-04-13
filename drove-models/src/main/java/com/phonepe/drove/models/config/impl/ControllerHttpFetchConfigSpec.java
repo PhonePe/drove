@@ -20,6 +20,7 @@ import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecType;
 import com.phonepe.drove.models.config.ConfigSpecVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,13 +30,15 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotNull;
 
 /**
- * Controller fetches config by making HTTP calls and serve it to executor during spin-up
+ * Controller fetches config by making HTTP calls and serves it to executor during spin-up
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Schema(description = "Configuration fetched by the controller via HTTP and forwarded to the executor during container startup")
 public class ControllerHttpFetchConfigSpec extends ConfigSpec {
     @NotNull
+    @Schema(description = "HTTP call specification for fetching configuration", requiredMode = Schema.RequiredMode.REQUIRED)
     HTTPCallSpec http;
 
     @Jacksonized

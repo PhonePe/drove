@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -29,7 +30,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- *
+ * Operation to replace specific instances of a local service with new ones.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -37,15 +38,20 @@ import java.util.Set;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to replace specific instances of a local service with new ones")
 public class LocalServiceReplaceInstancesOperation extends LocalServiceOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the local service", example = "MY_LOCAL_SERVICE", requiredMode = Schema.RequiredMode.REQUIRED)
     String serviceId;
 
+    @Schema(description = "Set of instance IDs to replace. If empty, all instances will be replaced", example = "[\"LSI-00a1b2c3-0001\"]")
     Set<String> instanceIds;
 
+    @Schema(description = "If true, stops old instances before starting new ones. If false, starts new instances first (rolling replacement)", example = "false", defaultValue = "false")
     boolean stopFirst;
 
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings")
     ClusterOpSpec opSpec;
 
     public LocalServiceReplaceInstancesOperation(

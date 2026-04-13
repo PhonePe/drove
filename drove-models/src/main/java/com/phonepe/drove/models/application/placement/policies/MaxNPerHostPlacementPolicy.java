@@ -19,6 +19,7 @@ package com.phonepe.drove.models.application.placement.policies;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,16 +30,18 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 
 /**
- *
+ * Placement policy that limits instances per host
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Placement policy that limits the maximum number of container instances per executor host")
 public class MaxNPerHostPlacementPolicy extends PlacementPolicy {
     @Min(value = 1, message = "- Min one hose needs to be specified")
     @Max(value = 64, message = "- Maximum 64 containers can be specified per host")
+    @Schema(description = "Maximum number of instances allowed per host", example = "2", minimum = "1", maximum = "64")
     int max;
 
     public MaxNPerHostPlacementPolicy(int max) {

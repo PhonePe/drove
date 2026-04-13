@@ -16,23 +16,44 @@
 
 package com.phonepe.drove.models.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 import java.util.Set;
 
 /**
- *
+ * Application lifecycle states
  */
+@Schema(description = "Application lifecycle state")
 public enum ApplicationState {
+    @Schema(description = "Application is being initialized")
     INIT(false),
+
+    @Schema(description = "Application is being monitored for health")
     MONITORING(false),
+
+    @Schema(description = "Application is running normally with healthy instances")
     RUNNING(false),
+
+    @Schema(description = "Outage detected - some instances are unhealthy")
     OUTAGE_DETECTED(false),
+
+    @Schema(description = "Scaling operation has been requested")
     SCALING_REQUESTED(false),
+
+    @Schema(description = "Instance stop operation has been requested")
     STOP_INSTANCES_REQUESTED(false),
+
+    @Schema(description = "Instance replacement operation has been requested")
     REPLACE_INSTANCES_REQUESTED(false),
+
+    @Schema(description = "Application destruction has been requested")
     DESTROY_REQUESTED(false),
+
+    @Schema(description = "Application has been destroyed (terminal state)")
     DESTROYED(true),
+
+    @Schema(description = "Application has failed (terminal state)")
     FAILED(true);
 
     public static final Set<ApplicationState> ACTIVE_APP_STATES = Set.of(RUNNING,

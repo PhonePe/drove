@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationType;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,23 +32,27 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to kill (terminate) a running task.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to kill (terminate) a running task")
 public class TaskKillOperation extends TaskOperation {
 
     @NotEmpty
+    @Schema(description = "Name of the source application that owns the task", example = "MY_APP", requiredMode = Schema.RequiredMode.REQUIRED)
     String sourceAppName;
 
     @NotEmpty
+    @Schema(description = "Unique identifier of the task to kill", example = "T00001", requiredMode = Schema.RequiredMode.REQUIRED)
     String taskId;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation specification with timeout settings", requiredMode = Schema.RequiredMode.REQUIRED)
     ClusterOpSpec opSpec;
 
     public TaskKillOperation(String sourceAppName, String taskId, ClusterOpSpec opSpec) {

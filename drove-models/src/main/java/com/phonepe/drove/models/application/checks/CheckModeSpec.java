@@ -18,10 +18,12 @@ package com.phonepe.drove.models.application.checks;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- *
+ * Base class for check mode specifications
  */
 @JsonTypeInfo(use =  JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
@@ -29,7 +31,17 @@ import lombok.Data;
         @JsonSubTypes.Type(name = "CMD", value = CmdCheckModeSpec.class),
 })
 @Data
+@Schema(
+        description = "Base specification for check modes defining how health/readiness checks are performed",
+        discriminatorProperty = "type",
+        discriminatorMapping = {
+                @DiscriminatorMapping(value = "HTTP", schema = HTTPCheckModeSpec.class),
+                @DiscriminatorMapping(value = "CMD", schema = CmdCheckModeSpec.class)
+        },
+        subTypes = {HTTPCheckModeSpec.class, CmdCheckModeSpec.class}
+)
 public abstract class CheckModeSpec {
+    @Schema(description = "Type of check mode", requiredMode = Schema.RequiredMode.REQUIRED)
     private final CheckMode type;
 
     public abstract <T> T accept(final CheckModeSpecVisitor<T> visitor);

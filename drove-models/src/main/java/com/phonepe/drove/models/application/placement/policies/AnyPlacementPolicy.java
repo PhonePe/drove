@@ -19,16 +19,18 @@ package com.phonepe.drove.models.application.placement.policies;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
 
 /**
- *
+ * Placement policy that allows placement on any available host
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Schema(description = "Placement policy that allows container placement on any available executor host with sufficient resources")
 public class AnyPlacementPolicy extends PlacementPolicy {
     public AnyPlacementPolicy() {
         super(PlacementPolicyType.ANY);

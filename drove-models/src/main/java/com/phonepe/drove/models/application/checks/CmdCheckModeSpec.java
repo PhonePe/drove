@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.application.checks;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -25,17 +26,23 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 
 /**
- *
+ * Command-based health check specification
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Command-based health check that executes a command inside the container to verify instance health")
 public class CmdCheckModeSpec extends CheckModeSpec {
+
     @NotEmpty
+    @Schema(description = "Command to execute inside the container. Exit code 0 indicates healthy.",
+            example = "/app/health-check.sh", requiredMode = Schema.RequiredMode.REQUIRED)
     String command;
 
+    @Schema(description = "Whether to disable shell interpretation. If true, command is executed directly without shell.",
+            example = "false")
     boolean shellDisabled;
 
     public CmdCheckModeSpec(String command, boolean shellDisabled) {

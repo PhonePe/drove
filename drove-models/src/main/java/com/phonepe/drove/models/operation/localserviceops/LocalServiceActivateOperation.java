@@ -19,6 +19,7 @@ package com.phonepe.drove.models.operation.localserviceops;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -28,15 +29,17 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Destroy a stopped service on executor nodes
+ * Operation to activate a deactivated local service on executor nodes.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to activate a deactivated local service on executor nodes")
 public class LocalServiceActivateOperation extends LocalServiceOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the local service to activate", example = "MY_LOCAL_SERVICE", requiredMode = Schema.RequiredMode.REQUIRED)
     String serviceId;
 
     public LocalServiceActivateOperation(

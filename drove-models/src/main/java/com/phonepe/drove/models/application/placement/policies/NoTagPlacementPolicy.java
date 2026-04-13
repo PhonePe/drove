@@ -19,6 +19,7 @@ package com.phonepe.drove.models.application.placement.policies;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -26,13 +27,14 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- *
+ * Placement policy that targets hosts without any tags
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Placement policy that schedules containers only on executor hosts that have no tags assigned")
 public class NoTagPlacementPolicy extends PlacementPolicy {
     public NoTagPlacementPolicy() {
         super(PlacementPolicyType.NO_TAG);

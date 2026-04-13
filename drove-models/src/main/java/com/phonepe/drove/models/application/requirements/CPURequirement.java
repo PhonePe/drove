@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.application.requirements;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -23,14 +24,17 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- *
+ * CPU resource requirement specification
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "CPU resource requirement specifying the number of CPU cores needed by each instance")
 public class CPURequirement extends ResourceRequirement {
+
+    @Schema(description = "Number of CPU cores required per instance", example = "2", minimum = "1")
     long count;
 
     public CPURequirement(long count) {

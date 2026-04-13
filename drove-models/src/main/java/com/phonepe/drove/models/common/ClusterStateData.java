@@ -16,15 +16,20 @@
 
 package com.phonepe.drove.models.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
 import java.util.Date;
 
 /**
- *
+ * Current state of the cluster with timestamp
  */
 @Value
+@Schema(description = "Current cluster state with the timestamp of the last state change")
 public class ClusterStateData {
+    @Schema(description = "Current state of the cluster")
     ClusterState state;
+
+    @Schema(description = "Timestamp when the state was last updated")
     Date updated;
 }

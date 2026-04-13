@@ -16,24 +16,31 @@
 
 package com.phonepe.drove.models.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
 import javax.validation.constraints.*;
 
 /**
- *
+ * Specification for a port exposed by the container
  */
 @Value
+@Schema(description = "Specification for a port exposed by the container")
 public class PortSpec {
     @NotEmpty(message = "- Specify a human readable name for the port." +
             " This will be used as key in health-check/readiness checks etc")
     @Pattern(regexp = "[a-zA-Z0-9\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
+    @Schema(description = "Human readable name for the port, used as key in health-check/readiness checks",
+            example = "main", requiredMode = Schema.RequiredMode.REQUIRED)
     String name;
 
     @Min(value = 1, message = "- Port cannot be negative or 0")
     @Max(value = 65_535, message = "- Port cannot be more than 65K")
+    @Schema(description = "Port number inside the container (1-65535)", example = "8080",
+            minimum = "1", maximum = "65535", requiredMode = Schema.RequiredMode.REQUIRED)
     int port;
 
     @NotNull(message = "- Please specify port type [HTTP/TCP/UDP]")
+    @Schema(description = "Protocol type for the port", requiredMode = Schema.RequiredMode.REQUIRED)
     PortType type;
 }

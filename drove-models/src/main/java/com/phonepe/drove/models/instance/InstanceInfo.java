@@ -19,6 +19,7 @@ package com.phonepe.drove.models.instance;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
@@ -29,23 +30,45 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Information about an application instance
  */
 @Value
 @Jacksonized
 @Builder
 @AllArgsConstructor
+@Schema(description = "Detailed information about an application instance")
 public class InstanceInfo implements DeployedInstanceInfo {
+    @Schema(description = "Application ID", example = "my-service-1234abcd")
     String appId;
+
+    @Schema(description = "Application name", example = "my-service")
     String appName;
+
+    @Schema(description = "Unique instance identifier", example = "AI-my-service-1234abcd-001")
     String instanceId;
+
+    @Schema(description = "ID of the executor running this instance", example = "executor-1-abcd1234")
     String executorId;
+
+    @Schema(description = "Local networking information for the instance")
     LocalInstanceInfo localInfo;
+
+    @Schema(description = "Resources allocated to this instance")
     List<ResourceAllocation> resources;
+
+    @Schema(description = "Current instance lifecycle state")
     InstanceState state;
+
+    @Schema(description = "Additional metadata key-value pairs")
     Map<String, String> metadata;
+
+    @Schema(description = "Error message if instance is in an error state")
     String errorMessage;
+
+    @Schema(description = "Timestamp when the instance was created")
     Date created;
+
+    @Schema(description = "Timestamp of the last instance update")
     Date updated;
 
     @Override

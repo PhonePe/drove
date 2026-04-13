@@ -16,10 +16,15 @@
 
 package com.phonepe.drove.models.application.devices;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- * Types of device mounts
+ * Types of device mounts for containers
  */
+@Schema(description = "Type of device mount specification for containers")
 public enum DeviceSpecType {
+    @Schema(description = "Direct device mapping with simple path and permissions")
     DIRECT,
+    @Schema(description = "Detailed device configuration with drivers, capabilities, and options")
     DETAILED
 }

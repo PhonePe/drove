@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.application.devices;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,11 +32,21 @@ import java.util.Map;
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Schema(description = "Detailed device configuration for complex device setups with drivers, capabilities, and options (e.g., GPU devices)")
 public class DetailedDeviceSpec extends DeviceSpec {
+    @Schema(description = "Device driver name (e.g., 'nvidia')", example = "nvidia")
     String driver;
+
+    @Schema(description = "Number of devices to allocate", example = "1")
     Integer count;
+
+    @Schema(description = "Specific device IDs to use", example = "[\"GPU-abc123\"]")
     List<String> deviceIds;
+
+    @Schema(description = "Device capabilities required (e.g., [['gpu'], ['nvidia', 'compute']])")
     List<List<String>> capabilities;
+
+    @Schema(description = "Additional driver options as key-value pairs")
     Map<String, String> options;
 
     @Jacksonized

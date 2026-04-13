@@ -27,6 +27,7 @@ import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 import lombok.With;
 
@@ -39,70 +40,90 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Specification for deploying a long-running application on the Drove cluster.
  */
 @Value
 @With
+@Schema(description = "Specification for deploying a long-running application on the Drove cluster")
 public class ApplicationSpec implements DeploymentSpec {
     @NotEmpty(message = "- Application name is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
+    @Schema(description = "Unique name of the application. Only alphanumeric characters, hyphens, and underscores are allowed", example = "my-application", requiredMode = Schema.RequiredMode.REQUIRED, pattern = "[a-zA-Z\\d\\-_]*")
     String name;
 
     @NotEmpty(message = "- App version is mandatory")
     @Pattern(regexp = "[a-zA-Z\\d\\-_]*", message = "- Only characters, numbers, hyphen and underscore is allowed")
+    @Schema(description = "Version identifier for the application. Only alphanumeric characters, hyphens, and underscores are allowed", example = "v1-0-0", requiredMode = Schema.RequiredMode.REQUIRED, pattern = "[a-zA-Z\\d\\-_]*")
     String version;
 
     @NotNull(message = "- Executable details is required")
     @Valid
+    @Schema(description = "Coordinates for the executable (Docker image or other executable type)", requiredMode = Schema.RequiredMode.REQUIRED)
     ExecutableCoordinates executable;
 
     @NotEmpty(message = "- Port specifications are needed")
     @Valid
+    @Schema(description = "List of ports to expose from the container", requiredMode = Schema.RequiredMode.REQUIRED)
     List<PortSpec> exposedPorts;
 
     @Valid
+    @Schema(description = "List of volumes to mount into the container")
     List<MountedVolume> volumes;
 
     @Valid
+    @Schema(description = "Configuration specifications for the application")
     List<ConfigSpec> configs;
 
     @NotNull(message = "- Specify if job is a computation or a service")
+    @Schema(description = "Type of job - SERVICE for long-running services, COMPUTATION for batch jobs", requiredMode = Schema.RequiredMode.REQUIRED)
     JobType type;
 
     @Valid
+    @Schema(description = "Logging configuration for the application")
     LoggingSpec logging;
 
     @NotEmpty(message = "- CPU/Memory requirements must be specified")
     @Valid
+    @Schema(description = "Resource requirements (CPU, memory) for each instance", requiredMode = Schema.RequiredMode.REQUIRED)
     List<ResourceRequirement> resources;
 
     @Valid
+    @Schema(description = "Placement policy for scheduling instances on executor nodes")
     PlacementPolicy placementPolicy;
 
     @NotNull
     @Valid
+    @Schema(description = "Health check specification to determine instance health", requiredMode = Schema.RequiredMode.REQUIRED)
     CheckSpec healthcheck;
 
     @NotNull
     @Valid
+    @Schema(description = "Readiness check specification to determine when instance is ready to serve traffic", requiredMode = Schema.RequiredMode.REQUIRED)
     CheckSpec readiness;
 
+    @Schema(description = "Custom tags/labels for the application as key-value pairs", example = "{\"team\": \"platform\", \"environment\": \"production\"}")
     Map<String, String> tags;
 
+    @Schema(description = "Environment variables to set in the container as key-value pairs", example = "{\"LOG_LEVEL\": \"INFO\"}")
     Map<String, String> env;
 
     @Size(max = 2048)
+    @Schema(description = "Command-line arguments to pass to the container entrypoint", maxLength = 2048)
     List<String> args;
 
+    @Schema(description = "Device specifications for GPU or other hardware device access")
     List<DeviceSpec> devices;
 
     @Valid
+    @Schema(description = "Exposure specification for external access and load balancing")
     ExposureSpec exposureSpec;
 
     @Valid
+    @Schema(description = "Pre-shutdown hooks to execute before stopping an instance")
     PreShutdownSpec preShutdown;
 
     @Valid
+    @Schema(description = "User specification for running containers as non-root user")
     UserSpec userSpec;
 
     @Override

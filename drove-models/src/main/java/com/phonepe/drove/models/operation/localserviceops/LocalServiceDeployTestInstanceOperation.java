@@ -19,6 +19,7 @@ package com.phonepe.drove.models.operation.localserviceops;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -28,15 +29,17 @@ import lombok.extern.jackson.Jacksonized;
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Start a service on all executor nodes
+ * Operation to deploy a test instance of a local service for validation.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to deploy a test instance of a local service for validation purposes")
 public class LocalServiceDeployTestInstanceOperation extends LocalServiceOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the local service to deploy a test instance for", example = "MY_LOCAL_SERVICE", requiredMode = Schema.RequiredMode.REQUIRED)
     String serviceId;
 
     public LocalServiceDeployTestInstanceOperation(

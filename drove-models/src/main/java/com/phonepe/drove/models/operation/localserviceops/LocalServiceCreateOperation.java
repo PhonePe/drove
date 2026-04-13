@@ -20,6 +20,7 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,19 +32,22 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 /**
- * Start a service on all executor nodes
+ * Operation to create and start a local service on all executor nodes.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to create and start a local service on all executor nodes")
 public class LocalServiceCreateOperation extends LocalServiceOperation {
     @Valid
     @NotNull
+    @Schema(description = "Specification for the local service to create", requiredMode = Schema.RequiredMode.REQUIRED)
     LocalServiceSpec spec;
 
     @Range(min = 1, max = 256)
+    @Schema(description = "Number of instances to run on each executor host (1-256)", example = "1", minimum = "1", maximum = "256")
     int instancesPerHost;
 
     public LocalServiceCreateOperation(

@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.extern.jackson.Jacksonized;
 
@@ -30,7 +31,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 /**
- *
+ * Operation to start additional instances of an existing application.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -38,16 +39,20 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 @With
+@Schema(description = "Operation to start additional instances of an existing application")
 public class ApplicationStartInstancesOperation extends ApplicationOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the application", example = "MY_APP-1", requiredMode = Schema.RequiredMode.REQUIRED)
     String appId;
 
     @Min(0)
     @Max(1024)
+    @Schema(description = "Number of additional instances to start (0-1024)", example = "5", minimum = "0", maximum = "1024")
     long instances;
 
     @NotNull
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings", requiredMode = Schema.RequiredMode.REQUIRED)
     ClusterOpSpec opSpec;
 
     public ApplicationStartInstancesOperation(String appId, long instances, ClusterOpSpec opSpec) {

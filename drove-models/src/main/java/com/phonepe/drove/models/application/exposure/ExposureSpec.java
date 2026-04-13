@@ -16,18 +16,25 @@
 
 package com.phonepe.drove.models.application.exposure;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
 import javax.validation.constraints.NotEmpty;
 
 /**
- *
+ * Specification for exposing application to load balancer
  */
 @Value
+@Schema(description = "Configuration for exposing application instances to a load balancer via virtual host")
 public class ExposureSpec {
     @NotEmpty(message = "- Please provide virtual host name this app will be exposed as")
+    @Schema(description = "Virtual host name for load balancer routing", example = "myapp.example.com", requiredMode = Schema.RequiredMode.REQUIRED)
     String vhost;
+
     @NotEmpty(message = "- Name of the port that needs to be exposed")
+    @Schema(description = "Name of the port (from portMappings) to expose", example = "http", requiredMode = Schema.RequiredMode.REQUIRED)
     String portName;
+
+    @Schema(description = "Mode for instance exposure (ALL or ONE)", example = "ALL")
     ExposureMode mode;
 }

@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -30,20 +31,24 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Restart a service on executor nodes
+ * Operation to restart a local service on all executor nodes.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to restart a local service on all executor nodes")
 public class LocalServiceRestartOperation extends LocalServiceOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the local service to restart", example = "MY_LOCAL_SERVICE", requiredMode = Schema.RequiredMode.REQUIRED)
     String serviceId;
 
+    @Schema(description = "If true, stops old instances before starting new ones. If false, starts new instances first (rolling restart)", example = "false", defaultValue = "false")
     boolean stopFirst;
 
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings")
     ClusterOpSpec clusterOpSpec;
     public LocalServiceRestartOperation(
             String serviceId,

@@ -19,6 +19,7 @@ package com.phonepe.drove.models.config.impl;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecType;
 import com.phonepe.drove.models.config.ConfigSpecVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -26,13 +27,15 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 /**
- * File will be mounted from a path on executor directly
+ * Configuration mounted from a file on the executor host
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString
+@Schema(description = "Configuration read from a local file on the executor host filesystem")
 public class ExecutorLocalFileConfigSpec extends ConfigSpec {
 
+    @Schema(description = "Path to the configuration file on the executor host", example = "/etc/drove/configs/app-config.yaml")
     String filePathOnHost;
 
     @Jacksonized

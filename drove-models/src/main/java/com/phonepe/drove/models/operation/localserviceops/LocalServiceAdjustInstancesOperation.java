@@ -20,6 +20,7 @@ import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperationType;
 import com.phonepe.drove.models.operation.LocalServiceOperationVisitor;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -30,18 +31,21 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 
 /**
- * Scale number of service instances on executors
+ * Operation to adjust (scale) the number of local service instances on executor nodes.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
+@Schema(description = "Operation to adjust (scale) the number of local service instances on executor nodes")
 public class LocalServiceAdjustInstancesOperation extends LocalServiceOperation {
     @NotEmpty
+    @Schema(description = "Unique identifier of the local service to adjust", example = "MY_LOCAL_SERVICE", requiredMode = Schema.RequiredMode.REQUIRED)
     String serviceId;
 
     @Valid
+    @Schema(description = "Cluster operation specification with timeout and parallelism settings")
     ClusterOpSpec opSpec;
 
     public LocalServiceAdjustInstancesOperation(

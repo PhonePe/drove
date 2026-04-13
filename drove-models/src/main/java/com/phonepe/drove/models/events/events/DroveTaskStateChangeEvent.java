@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.models.events.events.datatags.TaskInstanceEventDataTag;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -29,12 +30,13 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.Map;
 
 /**
- *
+ * Event emitted when task instance state changes
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @Jacksonized
+@Schema(description = "Event emitted when a task instance's state changes (e.g., RUNNING, COMPLETED, FAILED)")
 public class DroveTaskStateChangeEvent extends DroveEvent<TaskInstanceEventDataTag> {
 
     @Builder

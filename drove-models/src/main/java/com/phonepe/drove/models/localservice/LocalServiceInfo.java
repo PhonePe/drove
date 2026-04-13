@@ -16,21 +16,34 @@
 
 package com.phonepe.drove.models.localservice;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 import lombok.With;
 
 import java.util.Date;
 
 /**
- *
+ * Information about a local service deployed in the cluster.
  */
 @Value
 @With
+@Schema(description = "Information about a local service deployed in the cluster")
 public class LocalServiceInfo {
+    @Schema(description = "Unique identifier of the local service", example = "MY_LOCAL_SERVICE")
     String serviceId;
+
+    @Schema(description = "Specification used to deploy this local service")
     LocalServiceSpec spec;
+
+    @Schema(description = "Number of instances running on each executor host", example = "1")
     int instancesPerHost;
+
+    @Schema(description = "Current activation state of the service")
     ActivationState activationState;
+
+    @Schema(description = "Timestamp when the service was created")
     Date created;
+
+    @Schema(description = "Timestamp when the service was last updated")
     Date updated;
 }

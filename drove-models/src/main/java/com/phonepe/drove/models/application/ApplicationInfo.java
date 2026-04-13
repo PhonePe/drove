@@ -16,20 +16,31 @@
 
 package com.phonepe.drove.models.application;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 import lombok.With;
 
 import java.util.Date;
 
 /**
- *
+ * Information about a deployed application in the cluster.
  */
 @Value
 @With
+@Schema(description = "Information about a deployed application in the cluster")
 public class ApplicationInfo {
+    @Schema(description = "Unique identifier of the application (name-version)", example = "MY_APP-1")
     String appId;
+
+    @Schema(description = "Specification used to deploy this application")
     ApplicationSpec spec;
+
+    @Schema(description = "Desired number of instances for this application", example = "3")
     long instances;
+
+    @Schema(description = "Timestamp when the application was created")
     Date created;
+
+    @Schema(description = "Timestamp when the application was last updated")
     Date updated;
 }

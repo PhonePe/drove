@@ -16,11 +16,11 @@
 
 package com.phonepe.drove.models.info.nodedata;
 
-import com.google.common.collect.Maps;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -30,19 +30,33 @@ import lombok.extern.jackson.Jacksonized;
 import java.util.*;
 
 /**
- *
+ * Data about an executor node in the Drove cluster.
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Schema(description = "Data about an executor node in the Drove cluster, including resource state and running instances")
 public class ExecutorNodeData extends NodeData {
 
+    @Schema(description = "Current resource snapshot of the executor (CPU, memory availability)")
     ExecutorResourceSnapshot state;
+
+    @Schema(description = "List of application instances running on this executor")
     List<InstanceInfo> instances;
+
+    @Schema(description = "List of tasks running on this executor")
     List<TaskInfo> tasks;
+
+    @Schema(description = "List of local service instances running on this executor")
     List<LocalServiceInstanceInfo> serviceInstances;
+
+    @Schema(description = "Tags associated with this executor for placement decisions", example = "[\"gpu\", \"high-memory\"]")
     Set<String> tags;
+
+    @Schema(description = "Custom metadata associated with this executor", example = "{\"rack\": \"r1\", \"dc\": \"dc1\"}")
     Map<String, String> metadata;
+
+    @Schema(description = "Current state of the executor node")
     ExecutorState executorState;
 
     @Jacksonized

@@ -31,6 +31,8 @@
         <handlebars.version>4.3.1</handlebars.version>
         <hope-lang.version>2.0.9</hope-lang.version>
         <mvel.version>2.5.0.Final</mvel.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <swagger.version>2.2.44</swagger.version>
     </properties>
 
     <dependencies>
@@ -122,6 +124,26 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <!-- OpenAPI/Swagger - provided scope as only needed at compile time for static spec generation -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-jaxrs2</artifactId>
+            <version>${swagger.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <!-- Exclude snakeyaml to prevent overriding the compile-scoped version from dropwizard -->
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.phonepe.drove</groupId>
@@ -274,6 +296,30 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+            <!-- OpenAPI spec generation plugin -->
+            <plugin>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-maven-plugin</artifactId>
+                <version>${swagger.version}</version>
+                <configuration>
+                    <outputFileName>openapi</outputFileName>
+                    <outputPath>${project.build.directory}/classes/assets/openapi</outputPath>
+                    <outputFormat>JSONANDYAML</outputFormat>
+                    <resourcePackages>
+                        <resourcePackage>com.phonepe.drove.controller.resources</resourcePackage>
+                    </resourcePackages>
+                    <prettyPrint>true</prettyPrint>
+                    <configurationFilePath>${project.basedir}/src/main/resources/openapi-config.yaml</configurationFilePath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>resolve</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

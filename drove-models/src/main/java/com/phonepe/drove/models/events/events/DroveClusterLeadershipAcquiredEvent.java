@@ -19,6 +19,7 @@ package com.phonepe.drove.models.events.events;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.phonepe.drove.models.events.DroveEventType;
 import com.phonepe.drove.models.events.events.datatags.ClusterEventDataTag;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
@@ -26,11 +27,12 @@ import lombok.Value;
 import java.util.Map;
 
 /**
- *
+ * Event emitted when a controller acquires leadership
  */
 @Value
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Schema(description = "Event emitted when a controller node acquires leadership of the cluster")
 public class DroveClusterLeadershipAcquiredEvent extends DroveClusterEvent {
     public DroveClusterLeadershipAcquiredEvent(@JsonProperty("metadata") Map<ClusterEventDataTag, Object> metadata) {
         super(DroveEventType.LEADERSHIP_ACQUIRED, metadata);

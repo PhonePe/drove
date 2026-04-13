@@ -16,11 +16,16 @@
 
 package com.phonepe.drove.models.common;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Network protocols for communication
  */
+@Schema(description = "Network protocols for HTTP-based communication")
 public enum Protocol {
+    @Schema(description = "Plain HTTP protocol")
     HTTP,
+    @Schema(description = "Secure HTTPS protocol with TLS")
     HTTPS;
 
     public String urlPrefix() {
