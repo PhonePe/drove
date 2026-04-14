@@ -1,17 +1,17 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.controller.resources;
@@ -95,7 +95,11 @@ class ExecutorLogFileApisTest {
         val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
         val appId = ControllerUtils.deployableObjectId(appSpec);
         val taskInfo = ControllerTestUtils.generateTaskInfo(
-                taskSpec, 0, TaskState.RUNNING, null, null);
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
         val instanceInfo = ControllerTestUtils.generateInstanceInfo(appId, appSpec, 1);
         val serviceSpec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
@@ -117,8 +121,8 @@ class ExecutorLogFileApisTest {
                     .thenReturn(Optional.of(instanceInfo));
             val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/list", appId, instanceInfo.getInstanceId());
             stubFor(get(executorApi)
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(jsonResponse(Map.of("files", List.of("output.log")), HttpStatus.OK_200)));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(jsonResponse(Map.of("files", List.of("output.log")), HttpStatus.OK_200)));
             val api = String.format("/v1/logfiles/applications/%s/%s/list", appId, instanceInfo.getInstanceId());
             val r = EXT.target(api)
                     .request()
@@ -131,8 +135,8 @@ class ExecutorLogFileApisTest {
             when(taskDB.task(appName, taskInfo.getTaskId())).thenReturn(Optional.of(taskInfo));
             val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/list", appName, taskInfo.getTaskId());
             stubFor(get(executorApi)
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(jsonResponse(Map.of("files", List.of("output.log")), HttpStatus.OK_200)));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(jsonResponse(Map.of("files", List.of("output.log")), HttpStatus.OK_200)));
             val api = String.format("/v1/logfiles/tasks/%s/%s/list", appName, taskInfo.getTaskId());
             val r = EXT.target(api)
                     .request()
@@ -146,8 +150,8 @@ class ExecutorLogFileApisTest {
                     .thenReturn(Optional.of(lsInfo));
             val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/list", serviceId, lsInfo.getInstanceId());
             stubFor(get(executorApi)
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(jsonResponse(Map.of("files", List.of("output.log")), HttpStatus.OK_200)));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(jsonResponse(Map.of("files", List.of("output.log")), HttpStatus.OK_200)));
             val api = String.format("/v1/logfiles/localservices/%s/%s/list", serviceId, lsInfo.getInstanceId());
             val r = EXT.target(api)
                     .request()
@@ -166,7 +170,11 @@ class ExecutorLogFileApisTest {
         val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
         val appId = ControllerUtils.deployableObjectId(appSpec);
         val taskInfo = ControllerTestUtils.generateTaskInfo(
-                taskSpec, 0, TaskState.RUNNING, null, null);
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
         val instanceInfo = ControllerTestUtils.generateInstanceInfo(appId, appSpec, 1);
         val serviceSpec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
@@ -190,8 +198,8 @@ class ExecutorLogFileApisTest {
                                             appId,
                                             instanceInfo.getInstanceId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(jsonResponse(Map.of("data", "TestData", "offset", 100), HttpStatus.OK_200)));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(jsonResponse(Map.of("data", "TestData", "offset", 100), HttpStatus.OK_200)));
             val api = String.format("/v1/logfiles/applications/%s/%s/read/output.log",
                                     appId,
                                     instanceInfo.getInstanceId());
@@ -210,8 +218,8 @@ class ExecutorLogFileApisTest {
                                             appName,
                                             taskInfo.getTaskId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(jsonResponse(Map.of("data", "TestData", "offset", 100), HttpStatus.OK_200)));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(jsonResponse(Map.of("data", "TestData", "offset", 100), HttpStatus.OK_200)));
             val api = String.format("/v1/logfiles/tasks/%s/%s/read/output.log", appName, taskInfo.getTaskId());
             val r = EXT.target(api)
                     .request()
@@ -226,12 +234,14 @@ class ExecutorLogFileApisTest {
             when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
                     .thenReturn(Optional.of(lsInfo));
             val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/read/output.log",
-                                            serviceId, lsInfo.getInstanceId());
+                                            serviceId,
+                                            lsInfo.getInstanceId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(jsonResponse(Map.of("data", "TestData", "offset", 100), HttpStatus.OK_200)));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(jsonResponse(Map.of("data", "TestData", "offset", 100), HttpStatus.OK_200)));
             val api = String.format("/v1/logfiles/localservices/%s/%s/read/output.log",
-                                    serviceId, lsInfo.getInstanceId());
+                                    serviceId,
+                                    lsInfo.getInstanceId());
             val r = EXT.target(api)
                     .request()
                     .get(new GenericType<Map<String, Object>>() {
@@ -251,7 +261,11 @@ class ExecutorLogFileApisTest {
         val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
         val appId = ControllerUtils.deployableObjectId(appSpec);
         val taskInfo = ControllerTestUtils.generateTaskInfo(
-                taskSpec, 0, TaskState.RUNNING, null, null);
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
         val instanceInfo = ControllerTestUtils.generateInstanceInfo(appId, appSpec, 1);
         val serviceSpec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
@@ -275,10 +289,10 @@ class ExecutorLogFileApisTest {
                                             appId,
                                             instanceInfo.getInstanceId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(ResponseDefinitionBuilder.responseDefinition()
-                                                .withStatus(HttpStatus.OK_200)
-                                                .withBodyFile("output.log")));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
             val api = String.format("/v1/logfiles/applications/%s/%s/download/output.log",
                                     appId,
                                     instanceInfo.getInstanceId());
@@ -298,10 +312,10 @@ class ExecutorLogFileApisTest {
                                             appName,
                                             taskInfo.getTaskId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(ResponseDefinitionBuilder.responseDefinition()
-                                                .withStatus(HttpStatus.OK_200)
-                                                .withBodyFile("output.log")));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
             val api = String.format("/v1/logfiles/tasks/%s/%s/download/output.log",
                                     appName,
                                     taskInfo.getTaskId());
@@ -320,14 +334,16 @@ class ExecutorLogFileApisTest {
             when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
                     .thenReturn(Optional.of(lsInfo));
             val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
-                                            serviceId, lsInfo.getInstanceId());
+                                            serviceId,
+                                            lsInfo.getInstanceId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(ResponseDefinitionBuilder.responseDefinition()
-                                                .withStatus(HttpStatus.OK_200)
-                                                .withBodyFile("output.log")));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
             val api = String.format("/v1/logfiles/localservices/%s/%s/download/output.log",
-                                    serviceId, lsInfo.getInstanceId());
+                                    serviceId,
+                                    lsInfo.getInstanceId());
             try (val r = EXT.target(api)
                     .request()
                     .get()) {
@@ -341,13 +357,256 @@ class ExecutorLogFileApisTest {
     }
 
     @Test
+    @SneakyThrows
+    void testLogfileDownloadRename(final WireMockRuntimeInfo executor) {
+        val appSpec = ControllerTestUtils.appSpec();
+        val appName = appSpec.getName();
+        val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
+        val appId = ControllerUtils.deployableObjectId(appSpec);
+        val taskInfo = ControllerTestUtils.generateTaskInfo(
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
+        val instanceInfo = ControllerTestUtils.generateInstanceInfo(appId, appSpec, 1);
+        val serviceSpec = ControllerTestUtils.localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
+        val lsInfo = ControllerTestUtils.generateLocalServiceInstanceInfo(serviceSpec);
+        val executorHostInfo = ControllerTestUtils.executorHost(
+                                                                "localhost",
+                                                                1,
+                                                                executor.getHttpPort(),
+                                                                List.of(instanceInfo),
+                                                                List.of(taskInfo),
+                                                                List.of(lsInfo),
+                                                                ExecutorState.ACTIVE);
+        when(clusterResourcesDB.lastKnownSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
+        when(clusterResourcesDB.currentSnapshot(EXECUTOR_ID)).thenReturn(Optional.of(executorHostInfo));
+
+        { //App: rename=true - filename contains appId_instanceId_output.log
+            when(instanceInfoDB.instance(appId, instanceInfo.getInstanceId()))
+                    .thenReturn(Optional.of(instanceInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            appId,
+                                            instanceInfo.getInstanceId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/applications/%s/%s/download/output.log",
+                                    appId,
+                                    instanceInfo.getInstanceId());
+            try (val r = EXT.target(api)
+                    .queryParam("rename", "true")
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                val disposition = r.getHeaderString("Content-Disposition");
+                assertNotNull(disposition);
+                assertTrue(disposition.startsWith(
+                                                  "attachment; filename=" + appId + "_" + instanceInfo.getInstanceId()
+                                                          + "_output.log-"),
+                           "Expected renamed filename, got: " + disposition);
+            }
+        }
+        { //App: rename=false - original filename
+            when(instanceInfoDB.instance(appId, instanceInfo.getInstanceId()))
+                    .thenReturn(Optional.of(instanceInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            appId,
+                                            instanceInfo.getInstanceId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/applications/%s/%s/download/output.log",
+                                    appId,
+                                    instanceInfo.getInstanceId());
+            try (val r = EXT.target(api)
+                    .queryParam("rename", "false")
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertEquals("attachment; filename=output.log", r.getHeaderString("Content-Disposition"));
+            }
+        }
+        { //App: rename not sent - defaults to false, original filename
+            when(instanceInfoDB.instance(appId, instanceInfo.getInstanceId()))
+                    .thenReturn(Optional.of(instanceInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            appId,
+                                            instanceInfo.getInstanceId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/applications/%s/%s/download/output.log",
+                                    appId,
+                                    instanceInfo.getInstanceId());
+            try (val r = EXT.target(api)
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertEquals("attachment; filename=output.log", r.getHeaderString("Content-Disposition"));
+            }
+        }
+
+        { //Task: rename=true - filename contains sourceAppName_taskId_output.log
+            when(taskDB.task(appName, taskInfo.getTaskId())).thenReturn(Optional.of(taskInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            appName,
+                                            taskInfo.getTaskId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/tasks/%s/%s/download/output.log",
+                                    appName,
+                                    taskInfo.getTaskId());
+            try (val r = EXT.target(api)
+                    .queryParam("rename", "true")
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                val disposition = r.getHeaderString("Content-Disposition");
+                assertNotNull(disposition);
+                assertTrue(disposition.startsWith(
+                                                  "attachment; filename=" + appName + "_" + taskInfo.getTaskId()
+                                                          + "_output.log-"),
+                           "Expected renamed filename, got: " + disposition);
+            }
+        }
+        { //Task: rename=false - original filename
+            when(taskDB.task(appName, taskInfo.getTaskId())).thenReturn(Optional.of(taskInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            appName,
+                                            taskInfo.getTaskId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/tasks/%s/%s/download/output.log",
+                                    appName,
+                                    taskInfo.getTaskId());
+            try (val r = EXT.target(api)
+                    .queryParam("rename", "false")
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertEquals("attachment; filename=output.log", r.getHeaderString("Content-Disposition"));
+            }
+        }
+        { //Task: rename not sent - defaults to false, original filename
+            when(taskDB.task(appName, taskInfo.getTaskId())).thenReturn(Optional.of(taskInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            appName,
+                                            taskInfo.getTaskId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/tasks/%s/%s/download/output.log",
+                                    appName,
+                                    taskInfo.getTaskId());
+            try (val r = EXT.target(api)
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertEquals("attachment; filename=output.log", r.getHeaderString("Content-Disposition"));
+            }
+        }
+
+        { //Local service: rename=true - filename contains serviceId_instanceId_output.log
+            when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
+                    .thenReturn(Optional.of(lsInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            serviceId,
+                                            lsInfo.getInstanceId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/localservices/%s/%s/download/output.log",
+                                    serviceId,
+                                    lsInfo.getInstanceId());
+            try (val r = EXT.target(api)
+                    .queryParam("rename", "true")
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                val disposition = r.getHeaderString("Content-Disposition");
+                assertNotNull(disposition);
+                assertTrue(disposition.startsWith(
+                                                  "attachment; filename=" + serviceId + "_" + lsInfo.getInstanceId()
+                                                          + "_output.log-"),
+                           "Expected renamed filename, got: " + disposition);
+            }
+        }
+        { //Local service: rename=false - original filename
+            when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
+                    .thenReturn(Optional.of(lsInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            serviceId,
+                                            lsInfo.getInstanceId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/localservices/%s/%s/download/output.log",
+                                    serviceId,
+                                    lsInfo.getInstanceId());
+            try (val r = EXT.target(api)
+                    .queryParam("rename", "false")
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertEquals("attachment; filename=output.log", r.getHeaderString("Content-Disposition"));
+            }
+        }
+        { //Local service: rename not sent - defaults to false, original filename
+            when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
+                    .thenReturn(Optional.of(lsInfo));
+            val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/download/output.log",
+                                            serviceId,
+                                            lsInfo.getInstanceId());
+            stubFor(get(urlPathEqualTo(executorApi))
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(ResponseDefinitionBuilder.responseDefinition()
+                            .withStatus(HttpStatus.OK_200)
+                            .withBodyFile("output.log")));
+            val api = String.format("/v1/logfiles/localservices/%s/%s/download/output.log",
+                                    serviceId,
+                                    lsInfo.getInstanceId());
+            try (val r = EXT.target(api)
+                    .request()
+                    .get()) {
+                assertEquals(HttpStatus.OK_200, r.getStatus());
+                assertEquals("attachment; filename=output.log", r.getHeaderString("Content-Disposition"));
+            }
+        }
+    }
+
+    @Test
     void testFailNoNode() {
         val appSpec = ControllerTestUtils.appSpec();
         val appName = appSpec.getName();
         val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
         val appId = ControllerUtils.deployableObjectId(appSpec);
         val taskInfo = ControllerTestUtils.generateTaskInfo(
-                taskSpec, 0, TaskState.RUNNING, null, null);
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
         val instanceInfo = ControllerTestUtils.generateInstanceInfo(appId, appSpec, 1);
         val serviceSpec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
@@ -361,50 +620,50 @@ class ExecutorLogFileApisTest {
                     .thenReturn(Optional.of(instanceInfo));
             val apiPrefix = String.format("/v1/logfiles/applications/%s/%s", appId, instanceInfo.getInstanceId());
             assertNull(EXT.target(apiPrefix + "/list")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target(apiPrefix + "/read/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target(apiPrefix + "/download/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
         }
         { //Task testing
             when(taskDB.task(appName, taskInfo.getTaskId())).thenReturn(Optional.of(taskInfo));
             val apiPrefix = String.format("/v1/logfiles/tasks/%s/%s", appName, taskInfo.getTaskId());
             assertNull(EXT.target(apiPrefix + "/list")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target(apiPrefix + "/read/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target(apiPrefix + "/download/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
         }
         { //Local service testing
             when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
                     .thenReturn(Optional.of(lsInfo));
             val apiPrefix = String.format("/v1/logfiles/localservices/%s/%s", serviceId, lsInfo.getInstanceId());
             assertNull(EXT.target(apiPrefix + "/list")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target(apiPrefix + "/read/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target(apiPrefix + "/download/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
         }
     }
 
@@ -414,9 +673,13 @@ class ExecutorLogFileApisTest {
         val appName = appSpec.getName();
         val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
         val taskInfo = ControllerTestUtils.generateTaskInfo(
-                taskSpec, 0, TaskState.RUNNING, null, null);
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
         val lsInfo = ControllerTestUtils.generateLocalServiceInstanceInfo(
-                ControllerTestUtils.localServiceSpec());
+                                                                          ControllerTestUtils.localServiceSpec());
 
         when(clusterResourcesDB.lastKnownSnapshot(EXECUTOR_ID)).thenReturn(Optional.empty());
         when(clusterResourcesDB.currentSnapshot(EXECUTOR_ID)).thenReturn(Optional.empty());
@@ -425,45 +688,45 @@ class ExecutorLogFileApisTest {
         when(localServiceDB.instance(anyString(), anyString())).thenReturn(Optional.of(lsInfo));
         { //App testing
             assertNull(EXT.target("/v1/logfiles/applications/wrong_app_id/wrong_instance_id/list")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target("/v1/logfiles/applications/wrong_app_id/wrong_instance_id/read/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target("/v1/logfiles/applications/wrong_app_id/wrong_instance_id/download/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
         }
         { //Task testing
             assertNull(EXT.target("/v1/logfiles/tasks/wrong_app_name/wrong_instance_id/list")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target("/v1/logfiles/tasks/wrong_app_name/wrong_instance_id/read/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target("/v1/logfiles/tasks/wrong_app_name/wrong_instance_id/download/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
         }
         { //Local Service testing
             assertNull(EXT.target("/v1/logfiles/localservices/wrong_app_id/wrong_instance_id/list")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target("/v1/logfiles/localservices/wrong_app_id/wrong_instance_id/read/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
             assertNull(EXT.target("/v1/logfiles/localservices/wrong_app_id/wrong_instance_id/download/output.log")
-                               .request()
-                               .get(new GenericType<Map<String, List<String>>>() {
-                               }));
+                    .request()
+                    .get(new GenericType<Map<String, List<String>>>() {
+                    }));
         }
     }
 
@@ -475,7 +738,11 @@ class ExecutorLogFileApisTest {
         val taskSpec = ControllerTestUtils.taskSpec(appName, 1);
         val appId = ControllerUtils.deployableObjectId(appSpec);
         val taskInfo = ControllerTestUtils.generateTaskInfo(
-                taskSpec, 0, TaskState.RUNNING, null, null);
+                                                            taskSpec,
+                                                            0,
+                                                            TaskState.RUNNING,
+                                                            null,
+                                                            null);
         val instanceInfo = ControllerTestUtils.generateInstanceInfo(appId, appSpec, 1);
         val serviceSpec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
@@ -499,8 +766,8 @@ class ExecutorLogFileApisTest {
                                             appId,
                                             instanceInfo.getInstanceId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(serverError().withBody("test error")));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(serverError().withBody("test error")));
             val api = String.format("/v1/logfiles/applications/%s/%s/list",
                                     appId,
                                     instanceInfo.getInstanceId());
@@ -520,8 +787,8 @@ class ExecutorLogFileApisTest {
                                             appName,
                                             taskInfo.getTaskId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(serverError().withBody("test error")));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(serverError().withBody("test error")));
             val api = String.format("/v1/logfiles/tasks/%s/%s/list",
                                     appName,
                                     taskInfo.getTaskId());
@@ -539,10 +806,11 @@ class ExecutorLogFileApisTest {
             when(localServiceDB.instance(serviceId, lsInfo.getInstanceId()))
                     .thenReturn(Optional.of(lsInfo));
             val executorApi = String.format("/apis/v1/logs/filestream/%s/%s/list",
-                                            serviceId, lsInfo.getInstanceId());
+                                            serviceId,
+                                            lsInfo.getInstanceId());
             stubFor(get(urlPathEqualTo(executorApi))
-                            .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
-                            .willReturn(serverError().withBody("test error")));
+                    .withHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION, equalTo("SuperSecret"))
+                    .willReturn(serverError().withBody("test error")));
             val api = String.format("/v1/logfiles/localservices/%s/%s/list", serviceId, lsInfo.getInstanceId());
             try (val r = EXT.target(api)
                     .request()

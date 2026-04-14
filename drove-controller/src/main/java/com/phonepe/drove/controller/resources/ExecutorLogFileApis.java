@@ -1,17 +1,17 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.controller.resources;
@@ -49,6 +49,11 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.OutputStream;
 import java.net.URLConnection;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,6 +73,8 @@ import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
 @Produces(MediaType.APPLICATION_JSON)
 @SuppressWarnings("java:S1075")
 public class ExecutorLogFileApis {
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+
     private static final String LIST_API_PATH = "/list";
     private static final String READ_API_PATH = "/read/";
     private static final String DOWNLOAD_API_PATH = "/download/";
@@ -85,11 +92,12 @@ public class ExecutorLogFileApis {
 
     @Inject
     public ExecutorLogFileApis(
-            ApplicationInstanceInfoDB instanceInfoDB,
-            TaskDB taskDB, LocalServiceStateDB localServiceStateDB,
-            ClusterResourcesDB clusterResourcesDB,
-            ClusterAuthenticationConfig config,
-            CloseableHttpClient httpClient) {
+                               ApplicationInstanceInfoDB instanceInfoDB,
+                               TaskDB taskDB,
+                               LocalServiceStateDB localServiceStateDB,
+                               ClusterResourcesDB clusterResourcesDB,
+                               ClusterAuthenticationConfig config,
+                               CloseableHttpClient httpClient) {
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.localServiceStateDB = localServiceStateDB;
@@ -107,8 +115,8 @@ public class ExecutorLogFileApis {
     @GET
     @Path("/applications/{appId}/{instanceId}/list")
     public Response listAppFiles(
-            @PathParam("appId") final String appId,
-            @PathParam("instanceId") final String instanceId) {
+                                 @PathParam("appId") final String appId,
+                                 @PathParam("instanceId") final String instanceId) {
         return callUpstreamForAppLogs(appId,
                                       instanceId,
                                       LIST_API_PATH,
@@ -120,11 +128,11 @@ public class ExecutorLogFileApis {
     @Path("/applications/{appId}/{instanceId}/read/{fileName}")
     @Metered
     public Response streamAppLogs(
-            @PathParam("appId") @NotEmpty final String appId,
-            @PathParam("instanceId") @NotEmpty final String instanceId,
-            @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
-            @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+                                  @PathParam("appId") @NotEmpty final String appId,
+                                  @PathParam("instanceId") @NotEmpty final String instanceId,
+                                  @PathParam("fileName") @NotEmpty final String fileName,
+                                  @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
+                                  @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForAppLogs(appId,
                                       instanceId,
                                       READ_API_PATH + fileName,
@@ -134,25 +142,29 @@ public class ExecutorLogFileApis {
 
     @GET
     @Path("/applications/{appId}/{instanceId}/download/{fileName}")
-    @Produces({MediaType.APPLICATION_OCTET_STREAM, "application/gzip", MediaType.TEXT_PLAIN})
+    @Produces({
+            MediaType.APPLICATION_OCTET_STREAM, "application/gzip", MediaType.TEXT_PLAIN
+    })
     @Metered
     public Response downloadAppLogFile(
-            @PathParam("appId") @NotEmpty final String appId,
-            @PathParam("instanceId") @NotEmpty final String instanceId,
-            @PathParam("fileName") @NotEmpty final String fileName) {
+                                       @PathParam("appId") @NotEmpty final String appId,
+                                       @PathParam("instanceId") @NotEmpty final String instanceId,
+                                       @PathParam("fileName") @NotEmpty final String fileName,
+                                       @QueryParam("rename") @DefaultValue("false") boolean rename) {
+        val logFileName = logFileName(rename, appId, instanceId, fileName);
         return callUpstreamForAppLogs(appId,
                                       instanceId,
                                       DOWNLOAD_API_PATH + fileName,
                                       Map.of(),
-                                      fileDownloadHeaders(fileName));
+                                      fileDownloadHeaders(logFileName));
     }
 
 
     @GET
     @Path("/tasks/{sourceAppName}/{taskId}/list")
     public Response listTaskLogFiles(
-            @PathParam("sourceAppName") final String sourceAppName,
-            @PathParam("taskId") final String taskId) {
+                                     @PathParam("sourceAppName") final String sourceAppName,
+                                     @PathParam("taskId") final String taskId) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
                                        LIST_API_PATH,
@@ -164,11 +176,11 @@ public class ExecutorLogFileApis {
     @Path("/tasks/{sourceAppName}/{taskId}/read/{fileName}")
     @Metered
     public Response streamTaskLogs(
-            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
-            @PathParam("taskId") @NotEmpty final String taskId,
-            @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
-            @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+                                   @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
+                                   @PathParam("taskId") @NotEmpty final String taskId,
+                                   @PathParam("fileName") @NotEmpty final String fileName,
+                                   @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
+                                   @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
                                        READ_API_PATH + fileName,
@@ -181,21 +193,23 @@ public class ExecutorLogFileApis {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Metered
     public Response downloadTaskLogFile(
-            @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
-            @PathParam("taskId") @NotEmpty final String taskId,
-            @PathParam("fileName") @NotEmpty final String fileName) {
+                                        @PathParam("sourceAppName") @NotEmpty final String sourceAppName,
+                                        @PathParam("taskId") @NotEmpty final String taskId,
+                                        @PathParam("fileName") @NotEmpty final String fileName,
+                                        @QueryParam("rename") @DefaultValue("false") boolean rename) {
+        val logFileName = logFileName(rename, sourceAppName, taskId, fileName);
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
                                        DOWNLOAD_API_PATH + fileName,
                                        Map.of(),
-                                       fileDownloadHeaders(fileName));
+                                       fileDownloadHeaders(logFileName));
     }
 
     @GET
     @Path("/localservices/{serviceId}/{instanceId}/list")
     public Response listLocalServiceFiles(
-            @PathParam("serviceId") final String serviceId,
-            @PathParam("instanceId") final String instanceId) {
+                                          @PathParam("serviceId") final String serviceId,
+                                          @PathParam("instanceId") final String instanceId) {
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
                                                LIST_API_PATH,
@@ -207,11 +221,11 @@ public class ExecutorLogFileApis {
     @Path("/localservices/{serviceId}/{instanceId}/read/{fileName}")
     @Metered
     public Response streamLocalServiceLogs(
-            @PathParam("serviceId") @NotEmpty final String serviceId,
-            @PathParam("instanceId") @NotEmpty final String instanceId,
-            @PathParam("fileName") @NotEmpty final String fileName,
-            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
-            @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+                                           @PathParam("serviceId") @NotEmpty final String serviceId,
+                                           @PathParam("instanceId") @NotEmpty final String instanceId,
+                                           @PathParam("fileName") @NotEmpty final String fileName,
+                                           @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
+                                           @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
                                                READ_API_PATH + fileName,
@@ -224,22 +238,24 @@ public class ExecutorLogFileApis {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Metered
     public Response downloadLocalServiceLogFile(
-            @PathParam("serviceId") @NotEmpty final String serviceId,
-            @PathParam("instanceId") @NotEmpty final String instanceId,
-            @PathParam("fileName") @NotEmpty final String fileName) {
+                                                @PathParam("serviceId") @NotEmpty final String serviceId,
+                                                @PathParam("instanceId") @NotEmpty final String instanceId,
+                                                @PathParam("fileName") @NotEmpty final String fileName,
+                                                @QueryParam("rename") @DefaultValue("false") boolean rename) {
+        val logFileName = logFileName(rename, serviceId, instanceId, fileName);
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
                                                DOWNLOAD_API_PATH + fileName,
                                                Map.of(),
-                                               fileDownloadHeaders(fileName));
+                                               fileDownloadHeaders(logFileName));
     }
 
     private Response callUpstreamForAppLogs(
-            String appId,
-            String instanceId,
-            String path,
-            Map<String, Object> queryParams,
-            Map<String, String> responseHeaders) {
+                                            String appId,
+                                            String instanceId,
+                                            String path,
+                                            Map<String, Object> queryParams,
+                                            Map<String, String> responseHeaders) {
         return executorNodeForApp(appId, instanceId)
                 .map(executorHostInfo -> callUpStream(appId,
                                                       instanceId,
@@ -251,11 +267,11 @@ public class ExecutorLogFileApis {
     }
 
     private Response callUpstreamForLocalServiceLogs(
-            String serviceId,
-            String instanceId,
-            String path,
-            Map<String, Object> queryParams,
-            Map<String, String> responseHeaders) {
+                                                     String serviceId,
+                                                     String instanceId,
+                                                     String path,
+                                                     Map<String, Object> queryParams,
+                                                     Map<String, String> responseHeaders) {
         return executorNodeForLocalService(serviceId, instanceId)
                 .map(executorHostInfo -> callUpStream(serviceId,
                                                       instanceId,
@@ -267,11 +283,11 @@ public class ExecutorLogFileApis {
     }
 
     private Response callUpstreamForTaskLogs(
-            String sourceAppName,
-            String taskId,
-            String path,
-            Map<String, Object> queryParams,
-            Map<String, String> responseHeaders) {
+                                             String sourceAppName,
+                                             String taskId,
+                                             String path,
+                                             Map<String, Object> queryParams,
+                                             Map<String, String> responseHeaders) {
         return executorNodeForTask(sourceAppName, taskId)
                 .map(executorHostInfo -> callUpStream(sourceAppName,
                                                       taskId,
@@ -304,16 +320,16 @@ public class ExecutorLogFileApis {
     }
 
     private Response callUpStream(
-            String appId,
-            String instanceId,
-            String path,
-            Map<String, Object> queryParams,
-            Map<String, String> responseHeaders,
-            ExecutorNodeData executorHostInfo) {
+                                  String appId,
+                                  String instanceId,
+                                  String path,
+                                  Map<String, Object> queryParams,
+                                  Map<String, String> responseHeaders,
+                                  ExecutorNodeData executorHostInfo) {
         val url = String.format("%s://%s:%d/apis/v1/logs/filestream/%s/%s%s",
                                 executorHostInfo.getTransportType() == NodeTransportType.HTTP
-                                ? "http"
-                                : "https",
+                                        ? "http"
+                                        : "https",
                                 executorHostInfo.getHostname(),
                                 executorHostInfo.getPort(),
                                 appId,
@@ -337,12 +353,14 @@ public class ExecutorLogFileApis {
                     if (statusCode != HttpStatus.OK_200) {
                         val body = EntityUtils.toString(r.getEntity());
                         log.error("Executor api {} returned error status: {}. Body: {}",
-                                  request.getRequestUri(), statusCode, body);
+                                  request.getRequestUri(),
+                                  statusCode,
+                                  body);
                         throw new WebApplicationException(Response.serverError()
-                                                                  .entity(Map.of("error",
-                                                                                 "Executor call returned: " + statusCode
-                                                                                         + " body: " + body))
-                                                                  .build());
+                                .entity(Map.of("error",
+                                               "Executor call returned: " + statusCode
+                                                       + " body: " + body))
+                                .build());
                     }
                     r.getEntity().getContent().transferTo(output);
                 }
@@ -355,9 +373,17 @@ public class ExecutorLogFileApis {
         return responseBuilder.build();
     }
 
+    private static String logFileName(boolean rename, String... parts) {
+        if (!rename) {
+            return parts[parts.length - 1];
+        }
+        return String.join("_", parts) + "-" + DATE_FORMAT.format(LocalDateTime.now());
+    }
+
     private static Map<String, String> fileDownloadHeaders(String fileName) {
         return Map.of(HttpHeaders.CONTENT_TYPE,
-                      Objects.requireNonNullElse(URLConnection.guessContentTypeFromName(fileName), MediaType.TEXT_PLAIN),
+                      Objects.requireNonNullElse(URLConnection.guessContentTypeFromName(fileName),
+                                                 MediaType.TEXT_PLAIN),
                       HttpHeaders.CONTENT_DISPOSITION,
                       "attachment; filename=" + fileName);
     }

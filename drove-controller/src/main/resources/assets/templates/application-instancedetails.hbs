@@ -152,7 +152,7 @@
         res.files.forEach( (fileName, i) => {
             const info = {};
             info['fileName'] = '<a href="/applications/{{appId}}/instances/{{instanceId}}/stream?logFileName=' + encodeURIComponent(fileName) + '" target="_blank">' + fileName + '</a>';
-            info['downloadLink'] = '<a href="/apis/v1/logfiles/applications/{{appId}}/{{instanceId}}/download/' + fileName + '">Download</a>';
+            info['downloadLink'] = '<a href="/apis/v1/logfiles/applications/{{appId}}/{{instanceId}}/download/' + fileName + '?rename=true">Download</a>';
             ret.push(info);
         });
         return ret;
