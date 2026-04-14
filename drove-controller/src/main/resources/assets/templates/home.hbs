@@ -203,6 +203,7 @@
             }
         },
         paging: false,
+        searching: false,
         info: false,
         columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
         columns: [
@@ -225,7 +226,8 @@
     const dashExecs = $('#dash-executors-table').DataTable({
         processing: true,
         ajax: '/apis/v1/cluster/executors',
-        paging: true,
+        paging: false,
+        searching: false,
         info: false,
         responsive: false,
         scrollX: true,
