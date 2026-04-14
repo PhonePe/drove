@@ -1,37 +1,143 @@
 {{#partial "content"}}
+    <section class="mt-3">
+        <div class="row g-3 mb-4" id="dash-stat-cards">
+            <!-- Cluster State -->
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">Cluster State</div>
+                        <div id="dash-state" class="fs-5 fw-bold">—</div>
+                        <div id="dash-leader" class="text-body-secondary mt-2" style="font-size:0.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title=""></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Executors -->
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">Executors</div>
+                        <div id="dash-executors" class="fs-3 fw-bold">—</div>
+                        <div class="text-body-secondary" style="font-size:0.72rem;">nodes</div>
+                    </div>
+                </div>
+            </div>
+            <!-- CPU -->
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">CPU Cores</div>
+                        <div id="dash-cpu-text" class="fs-5 fw-bold">—</div>
+                        <div class="px-1 mt-1">
+                            <div class="progress" style="height:6px;">
+                                <div id="dash-cpu-bar" class="progress-bar" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div id="dash-cpu-free" class="text-body-secondary mt-1" style="font-size:0.72rem;">— free</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Memory -->
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">Memory</div>
+                        <div id="dash-mem-text" class="fs-5 fw-bold">—</div>
+                        <div class="px-1 mt-1">
+                            <div class="progress" style="height:6px;">
+                                <div id="dash-mem-bar" class="progress-bar" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div id="dash-mem-free" class="text-body-secondary mt-1" style="font-size:0.72rem;">— free</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Applications -->
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">Applications</div>
+                        <div id="dash-apps-active" class="fs-3 fw-bold">—</div>
+                        <div id="dash-apps-total" class="text-body-secondary" style="font-size:0.72rem;">of — total</div>
+                        <div class="px-1 mt-1">
+                            <div class="progress" style="height:4px;">
+                                <div id="dash-apps-bar" class="progress-bar bg-info" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Tasks + Local Services -->
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">Tasks / Local Svc</div>
+                        <div class="d-flex justify-content-center align-items-end gap-3 mt-1">
+                            <div>
+                                <div id="dash-tasks" class="fs-3 fw-bold">—</div>
+                                <div class="text-body-secondary" style="font-size:0.72rem;">tasks</div>
+                            </div>
+                            <div class="text-body-secondary fs-5">|</div>
+                            <div>
+                                <div id="dash-svc-active" class="fs-3 fw-bold">—</div>
+                                <div id="dash-svc-total" class="text-body-secondary" style="font-size:0.72rem;">of — svc</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section>
+        <div class="row mb-2 align-items-center">
+            <div class="col">
+                <h5 class="fw-semibold mb-0">Applications</h5>
+            </div>
+            <div class="col-auto">
+                <a href="/applications" class="btn btn-sm btn-outline-secondary">View all →</a>
+            </div>
+        </div>
         <div class="row">
             <div class="col">
-                <table class="table table-bordered" id="clusterSummary">
+                <table class="table table-bordered table-hover" id="dash-applications" style="width:100%">
                     <thead>
                     <tr>
-                        <th class="text-center text-wrap col-1">Cluster State</th>
-                        <th class="text-center text-wrap col-1">Leader</th>
-                        <th class="text-center text-wrap col-1">Executors</th>
-                        <th class="text-center text-wrap col-3">CPU Cores</th>
-                        <th class="text-center text-wrap col-3">Memory</th>
-                        <th class="text-center text-wrap col-1">Applications</th>
-                        <th class="text-center text-wrap col-1">Tasks</th>
-                        <th class="text-center text-wrap col-1">Local Services</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>State</th>
+                        <th>Required</th>
+                        <th>Healthy</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
                     </tr>
                     </thead>
                 </table>
             </div>
         </div>
     </section>
-    <section>
+
+    <section class="mt-4">
+        <div class="row mb-2 align-items-center">
+            <div class="col">
+                <h5 class="fw-semibold mb-0">Executors</h5>
+            </div>
+            <div class="col-auto">
+                <a href="/cluster" class="btn btn-sm btn-outline-secondary">View all →</a>
+            </div>
+        </div>
         <div class="row">
             <div class="col">
-                <table class="table table-bordered" id="applications" title="Applications" style="width: 100%">
+                <table class="table table-bordered table-hover" id="dash-executors-table" style="width:100%">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Name</th>
+                        <th>Host</th>
                         <th>State</th>
-                        <th>Expected Instances</th>
-                        <th>Healthy Instances</th>
-                        <th>CPU</th>
-                        <th>Memory</th>
+                        <th>Free Cores</th>
+                        <th>Used Cores</th>
+                        <th>Free Memory</th>
+                        <th>Used Memory</th>
+                        <th>Tags</th>
                     </tr>
                     </thead>
                 </table>
@@ -41,68 +147,54 @@
 {{/partial}}
 
 {{#partial "page_js"}}
-    const cluster = $('#clusterSummary').DataTable({
-        processing: true,
-        ajax: {
-            url: '/apis/v1/cluster',
-            dataSrc: function(res) { return res.data ? [res.data] : []; }
-        },
-        paging: false,
-        searching: false,
-        ordering: false,
-        info: false,
-        columnDefs: [{ className: 'text-center text-nowrap', targets: '_all' }],
-        columns: [
-            {
-                data: 'state',
-                render: function(data, type, row, meta) {
-                    var tagStr = "";
-                    if(data === 'NORMAL') {
-                        return '<span class="badge fw-bold bg-success">Normal</span> ';
-                    }
-                    return '<span class="badge fw-bold bg-danger">Maintenance</span> ';
-                }
-            },
-            { data: 'leader' },
-            { data: 'numExecutors' },
-            {
-                data: 'freeCores',
-                render: function(data, type, row, meta) {
-                    return renderProgressHtml('progress-with-text', row.usedCores, 0, row.totalCores,
-                        "<b>{0} of {1} allocated ({2} free)</b>".format(row.usedCores, row.totalCores, row.freeCores));
-                }
-            },
-            {
-                data: 'freeMemory',
-                render: function(data, type, row, meta) {
-                    const free = bytesToString(row.freeMemory);
-                    const used = bytesToString(row.usedMemory);
-                    const total = bytesToString(row.totalMemory);
-                    return renderProgressHtml('progress-with-text', row.usedMemory, 0, row.totalMemory,
-                        "{0} of {1} allocated ({2} free)".format(used, total, free));
-                }
-            },
-            {
-                data: 'numActiveApplications',
-                render: function(data, type, row, meta) {
-                    return '{0} of {1} Active'.format(row.numActiveApplications, row.numApplications);
-                }
-            },
-            {
-                data: 'numActiveTasks',
-                render: function(data, type, row, meta) {
-                    return '{0} Active'.format(row.numActiveTasks);
-                }
-            },
-            {
-                data: 'numActiveLocalServices',
-                render: function(data, type, row, meta) {
-                    return '{0} of {1} Active'.format(row.numActiveLocalServices, row.numLocalServices);
-                }
-            }
-    ]
-    });
-    const applications = $('#applications').DataTable({
+    // ── Dashboard stat cards ────────────────────────────────────────────
+    function refreshDashboardCards() {
+        $.getJSON('/apis/v1/cluster', function(resp) {
+            if (!resp || resp.status !== 'SUCCESS') return;
+            const d = resp.data;
+
+            // Cluster state
+            const stateColors = { NORMAL: 'success', MAINTENANCE: 'warning', LOST: 'danger' };
+            const sc = stateColors[d.state] || 'secondary';
+            $('#dash-state').html('<span class="badge bg-' + sc + ' fw-bold fs-6">' + d.state + '</span>');
+            const leaderEl = $('#dash-leader');
+            leaderEl.text(d.leader).attr('title', d.leader);
+
+            // Executors
+            $('#dash-executors').text(d.numExecutors);
+
+            // CPU
+            const cpuPct = d.totalCores > 0 ? Math.round(d.usedCores / d.totalCores * 100) : 0;
+            const cpuTheme = cpuPct >= 80 ? 'danger' : cpuPct >= 60 ? 'warning' : 'success';
+            $('#dash-cpu-text').text(d.usedCores + ' / ' + d.totalCores);
+            $('#dash-cpu-bar').attr('class', 'progress-bar bg-' + cpuTheme).css('width', cpuPct + '%');
+            $('#dash-cpu-free').text(d.freeCores + ' free');
+
+            // Memory
+            const memPct = d.totalMemory > 0 ? Math.round(d.usedMemory / d.totalMemory * 100) : 0;
+            const memTheme = memPct >= 80 ? 'danger' : memPct >= 60 ? 'warning' : 'success';
+            $('#dash-mem-text').text(bytesToString(d.usedMemory) + ' / ' + bytesToString(d.totalMemory));
+            $('#dash-mem-bar').attr('class', 'progress-bar bg-' + memTheme).css('width', memPct + '%');
+            $('#dash-mem-free').text(bytesToString(d.freeMemory) + ' free');
+
+            // Applications
+            $('#dash-apps-active').text(d.numActiveApplications);
+            $('#dash-apps-total').text('of ' + d.numApplications + ' total');
+            const appPct = d.numApplications > 0 ? Math.round(d.numActiveApplications / d.numApplications * 100) : 0;
+            $('#dash-apps-bar').css('width', appPct + '%');
+
+            // Tasks
+            $('#dash-tasks').text(d.numActiveTasks);
+
+            // Local Services
+            $('#dash-svc-active').text(d.numActiveLocalServices);
+            $('#dash-svc-total').text('of ' + d.numLocalServices + ' svc');
+        });
+    }
+    refreshDashboardCards();
+
+    // ── Applications mini-table ─────────────────────────────────────────
+    const dashApps = $('#dash-applications').DataTable({
         processing: true,
         ajax: {
             url: '/apis/v1/applications',
@@ -110,14 +202,9 @@
                 return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
             }
         },
-        paging: true,
+        paging: false,
         info: false,
-        columnDefs: [
-            {
-                className: 'text-center text-wrap',
-                targets: '_all'
-            }
-        ],
+        columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
         columns: [
             {
                 data: 'id',
@@ -134,9 +221,50 @@
         ]
     });
 
-    setInterval(() => {
-        cluster.ajax.reload(null, false);
-        applications.ajax.reload(null, false);
-    }, 5000);
+    // ── Executors mini-table ────────────────────────────────────────────
+    const dashExecs = $('#dash-executors-table').DataTable({
+        processing: true,
+        ajax: '/apis/v1/cluster/executors',
+        paging: true,
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [{ className: 'text-center', targets: [2, 3, 4, 5, 6] }],
+        columns: [
+            {
+                data: 'executorId',
+                render: function(data, type, row, meta) {
+                    if (type === 'display') {
+                        const link = '<a href="/executors/{0}" class="fw-semibold">{1}</a>'.format(row.executorId, row.executorId);
+                        return (row.state === 'REMOVED' || row.state === 'BLACKLISTED')
+                            ? '<del>' + link + '</del>'
+                            : link;
+                    }
+                    return data;
+                }
+            },
+            { data: 'hostname' },
+            { data: 'state', render: tableExecutorStateText },
+            { data: 'freeCores' },
+            { data: 'usedCores' },
+            { data: 'freeMemory', render: tableBytesText },
+            { data: 'usedMemory', render: tableBytesText },
+            {
+                data: 'tags',
+                render: function(data, type, row, meta) {
+                    if (type === 'sort') return data ? data.join(',') : '';
+                    if (!data) return '';
+                    return data.sort().map(t => '<span class="badge bg-secondary text-wrap">' + t + '</span>').join(' ');
+                }
+            }
+        ]
+    });
+
+    // ── Auto-refresh every 10 s ─────────────────────────────────────────
+    setInterval(function() {
+        refreshDashboardCards();
+        dashApps.ajax.reload(null, false);
+        dashExecs.ajax.reload(null, false);
+    }, 10000);
 {{/partial}}
 {{> common/base}}

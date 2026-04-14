@@ -90,6 +90,12 @@ public class UI {
     }
 
     @GET
+    @Path("/dashboard")
+    public HomeView dashboardPage() {
+        return new HomeView(installationMetadata);
+    }
+
+    @GET
     @Path("/tasks")
     public TasksPageView tasksPage() {
         return new TasksPageView(installationMetadata);

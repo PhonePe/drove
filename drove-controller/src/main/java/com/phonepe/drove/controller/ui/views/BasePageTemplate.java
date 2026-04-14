@@ -20,8 +20,16 @@ import com.phonepe.drove.controller.config.InstallationMetadata;
 import lombok.Getter;
 import ru.vyarus.guicey.gsp.views.template.TemplateView;
 
+import java.util.Objects;
+
 /**
- * Base class for all view templates
+ * Base class for all view templates.
+ * <p>
+ * Provides a concrete equals/hashCode implementation based on {@code installationMetadata}
+ * so that Lombok {@code @EqualsAndHashCode(callSuper = true)} in subclasses has a proper
+ * parent implementation to delegate to (the {@link TemplateView} → {@code View} ancestry
+ * does not override Object identity equality).
+ * </p>
  */
 @Getter
 public abstract class BasePageTemplate extends TemplateView {
@@ -32,5 +40,20 @@ public abstract class BasePageTemplate extends TemplateView {
         this.installationMetadata = installationMetadata;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final BasePageTemplate that = (BasePageTemplate) o;
+        return Objects.equals(installationMetadata, that.installationMetadata);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(installationMetadata);
+    }
 }

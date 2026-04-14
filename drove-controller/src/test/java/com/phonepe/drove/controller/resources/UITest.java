@@ -97,6 +97,11 @@ class UITest {
     }
 
     @Test
+    void testDashboardPage() {
+        assertNotNull(resource.dashboardPage());
+    }
+
+    @Test
     void testTasksPage() {
         assertNotNull(resource.tasksPage());
     }

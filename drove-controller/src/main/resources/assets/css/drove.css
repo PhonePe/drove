@@ -72,7 +72,8 @@ a {
 }
 
 .footer-font {
-  font-size: 0.875rem !important;
+  font-size: 1rem !important;
+  min-height: 2.25rem;
 }
 
 .footer-link {
@@ -131,4 +132,25 @@ div.dataTables_wrapper div.dataTables_filter {
   line-height: 1 !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
+}
+
+/* ── Dashboard stat cards — flat style matching table borders ─────────── */
+.dash-stat-card {
+  box-shadow: none !important;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent) !important;
+}
+
+/* ── Footer cluster status ───────────────────────────────────────────── */
+.footer-cluster {
+  font-size: 0.92rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.15rem 0.5rem;
+}
+
+/* Progress bars inside the footer — use a slightly lighter track so they show on dark bg */
+.footer-cluster .progress {
+  background-color: rgba(255, 255, 255, 0.2);
 }

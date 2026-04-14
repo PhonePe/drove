@@ -31,7 +31,7 @@
 
     <nav class="navbar navbar-expand-lg" id="topbar">
         <div class="container-fluid">
-            <a class="navbar-brand me-4" href="/">
+            <a class="navbar-brand me-4" href="/dashboard">
                 <svg width="35" height="35"  fill="currentColor" alt="" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                      viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
                     <g>
@@ -126,21 +126,21 @@
                 </span>
             </a>
             <div class="collapse navbar-collapse justify-content-between" id="navbarNavDropdown">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto gap-2">
                     <li class="nav-item">
-                        <a class="nav-link" href="/" id="nav-home">Home</a>
+                        <a class="nav-link px-3" href="/dashboard" id="nav-dashboard">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/applications" id="nav-applications">Applications</a>
+                        <a class="nav-link px-3" href="/applications" id="nav-applications">Applications</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/tasks" id="nav-tasks">Tasks</a>
+                        <a class="nav-link px-3" href="/tasks" id="nav-tasks">Tasks</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/localservices" id="nav-localservices">Local Services</a>
+                        <a class="nav-link px-3" href="/localservices" id="nav-localservices">Local Services</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/cluster" id="nav-cluster">Cluster</a>
+                        <a class="nav-link px-3" href="/cluster" id="nav-cluster">Cluster</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
@@ -245,6 +245,7 @@
         </div>
     </nav>
 </header>
+
 <main role="main" class="container-fluid pb-6 mb-5">
     {{#if error}}
         <section>
@@ -257,11 +258,67 @@
 
     {{/block}}
 </main>
-<footer class="footer navbar fixed-bottom  footer-font pb-0 pt-0 justify-content-end">
-    <span class="badge bg-primary m-1">
-        <span class="fw-bold">Version:</span> {{installationMetadata.version}}
+<footer class="footer navbar fixed-bottom footer-font pb-0 pt-0 d-flex align-items-center px-2">
+    <!-- Cluster status — right-aligned via ms-auto, flush before version badge -->
+    <div class="footer-cluster ms-auto" id="footer-cluster">
+        <!-- State badge -->
+        <span id="fc-state" class="badge rounded-0 fw-bold me-1">—</span>
+        <!-- Executors -->
+        <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="Executors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-hdd-stack flex-shrink-0" viewBox="0 0 16 16">
+                <path d="M14 2a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM2 1a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm0 8a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1zm-1 1a2 2 0 0 1 2-2h12a2 2 0 1 1 0 4H2a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span id="fc-executors">—</span>
+        </span>
+        <!-- CPU -->
+        <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="CPU (used/total)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-cpu flex-shrink-0" viewBox="0 0 16 16">
+                <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14A2.5 2.5 0 0 1 11.5 14v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0m-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
+            </svg>
+            <div class="progress flex-shrink-0" id="fc-cpu-bar-wrap" style="width:60px;height:5px;">
+                <div id="fc-cpu-bar" class="progress-bar" style="width:0%"></div>
+            </div>
+            <span id="fc-cpu">—</span>
+        </span>
+        <!-- Memory -->
+        <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="Memory (used/total)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-memory flex-shrink-0" viewBox="0 0 16 16">
+                <path d="M1 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.586A2 2 0 0 0 7 12.414l.59-.59A1.5 1.5 0 0 1 8.672 11.5H11a.5.5 0 0 0 .5-.5V11h1v.5a.5.5 0 0 0 .5.5h1a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zm0 2h14v7H1zm1 1v1h3V6zm0 2v1h3V8zm0 2v1h3v-1zM5 6v1h1V6zm1 2H5v1h1zm-1 2v1h1v-1zm2-4v1h1V6zm1 2H7v1h1zm-1 2v1h1v-1zm2-4v1h1V6zm1 2h-1v1h1zm-1 2v1h1v-1zm2-4v1h1V6zm1 2h-1v1h1zm-1 2v1h1v-1z"/>
+            </svg>
+            <div class="progress flex-shrink-0" id="fc-mem-bar-wrap" style="width:60px;height:5px;">
+                <div id="fc-mem-bar" class="progress-bar" style="width:0%"></div>
+            </div>
+            <span id="fc-mem">—</span>
+        </span>
+        <!-- Apps -->
+        <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="Apps (active/total)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-grid flex-shrink-0" viewBox="0 0 16 16">
+                <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
+            </svg>
+            <span id="fc-apps">—</span>
+        </span>
+        <!-- Tasks -->
+        <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="Active Tasks">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-list-task flex-shrink-0" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5zM3 3H2v1h1zm2.854-.354a.5.5 0 0 1 0 .708l-1 1a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708l.146.147.646-.647a.5.5 0 0 1 .708 0M5 7.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5V8a.5.5 0 0 0-.5-.5zm.5 1.5H11v-1H5.5zM5 11.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm.5 1.5H11v-1H5.5zM2 6.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V7a.5.5 0 0 0-.5-.5zM3 7H2v1h1zm-1 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM3 11H2v1h1z"/>
+            </svg>
+            <span id="fc-tasks">—</span>
+        </span>
+        <!-- Local Services -->
+        <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="Local Services (active/total)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-diagram-3 flex-shrink-0" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5zM8.5 5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zm4.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5z"/>
+            </svg>
+            <span id="fc-svc">—</span>
+        </span>
+    </div>
+    <!-- Version badge — pinned to the right -->
+    <span class="badge bg-primary rounded-0 flex-shrink-0 ms-2">
+        <span class="fw-bold">v</span>{{installationMetadata.version}}
     </span>
 </footer>
+
+
 <script type="text/template" data-template="progress">
     <div class="progress" role="progressbar" aria-label="${currentValue} of ${maxValue}" aria-valuenow="${currentValue}" aria-valuemin="0" aria-valuemax="${maxValue}">
         <div class="progress-bar bg-${theme} overflow-visible " style="width: ${percentage}%">${currentValue}/${maxValue}</div>
@@ -355,6 +412,8 @@
     (function() {
         var path = window.location.pathname;
         var navMap = {
+            '/dashboard': '#nav-dashboard',
+            '/': '#nav-dashboard',
             '/applications': '#nav-applications',
             '/tasks': '#nav-tasks',
             '/localservices': '#nav-localservices',
@@ -368,13 +427,48 @@
             }
         });
         if (!matched) {
-            $('#nav-home').addClass('active').attr('aria-current', 'page');
+            $('#nav-dashboard').addClass('active').attr('aria-current', 'page');
         }
     })();
     {{#block "page_js"}}
 
     {{/block}}
-    // The following is lifted from: https://stackoverflow.com/questions/18673860/defining-a-html-template-to-append-using-jquery
+    // ── Footer cluster status update ──────────────────────────────────────
+    (function() {
+        function updateFooter(d) {
+            const stateColors = { NORMAL: 'success', MAINTENANCE: 'warning', LOST: 'danger' };
+            const sc = stateColors[d.state] || 'secondary';
+            $('#fc-state').attr('class', 'badge rounded-0 fw-bold bg-' + sc + ' me-1').text(d.state);
+            $('#fc-executors').text(d.numExecutors);
+
+            const cpuPct = d.totalCores > 0 ? Math.round(d.usedCores / d.totalCores * 100) : 0;
+            const cpuBarTheme = cpuPct >= 80 ? 'bg-danger' : cpuPct >= 60 ? 'bg-warning' : 'bg-success';
+            $('#fc-cpu-bar').attr('class', 'progress-bar ' + cpuBarTheme).css('width', cpuPct + '%');
+            $('#fc-cpu').text(d.usedCores + '/' + d.totalCores);
+
+            const memPct = d.totalMemory > 0 ? Math.round(d.usedMemory / d.totalMemory * 100) : 0;
+            const memBarTheme = memPct >= 80 ? 'bg-danger' : memPct >= 60 ? 'bg-warning' : 'bg-success';
+            $('#fc-mem-bar').attr('class', 'progress-bar ' + memBarTheme).css('width', memPct + '%');
+            $('#fc-mem').text(bytesToString(d.usedMemory) + '/' + bytesToString(d.totalMemory));
+
+            $('#fc-apps').text(d.numActiveApplications + '/' + d.numApplications);
+            $('#fc-tasks').text(d.numActiveTasks);
+            $('#fc-svc').text(d.numActiveLocalServices + '/' + d.numLocalServices);
+        }
+
+        function fetchAndUpdateFooter() {
+            $.getJSON('/apis/v1/cluster', function(resp) {
+                if (resp && resp.status === 'SUCCESS') { updateFooter(resp.data); }
+            });
+        }
+
+        fetchAndUpdateFooter();
+        setInterval(fetchAndUpdateFooter, 15000);
+        // Initialise Bootstrap tooltips on footer icon spans
+        $('[data-bs-toggle="tooltip"]').tooltip();
+    })();
+    // ─────────────────────────────────────────────────────────────────────
+
     // Don't want to introduce a full templating engine as of now
     // Begin
     //Convert map to array
