@@ -45,8 +45,8 @@ public class ClusterOpSpec {
     Duration timeout;
 
     @Min(1)
-    @Max(32)
-    @Schema(description = "Number of parallel operations to execute (1-32)", example = "1", minimum = "1", maximum = "32", defaultValue = "1")
+    @Max(512)
+    @Schema(description = "Number of parallel operations to execute (1-32)", example = "1", minimum = "1", maximum = "512", defaultValue = "1")
     int parallelism;
 
     @NotNull

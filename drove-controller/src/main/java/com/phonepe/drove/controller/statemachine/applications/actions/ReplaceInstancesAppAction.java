@@ -51,6 +51,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 
@@ -73,6 +74,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
     private final ThreadFactory threadFactory;
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
+    private final ClusterOpSpec defaultOpSpec;
 
     @Inject
     public ReplaceInstancesAppAction(
@@ -86,7 +88,8 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
-            HttpCaller httpCaller) {
+            HttpCaller httpCaller,
+            ClusterOpSpec defaultOpSpec) {
         super(jobExecutor, instanceInfoDB, List.of(new SchedulerSessionManagementPlugin<>(scheduler)));
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -98,6 +101,7 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
         this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
+        this.defaultOpSpec = defaultOpSpec;
     }
 
     @Override
@@ -117,12 +121,12 @@ public class ReplaceInstancesAppAction extends AppAsyncAction {
             log.info("Nothing done to replace instances for {}. No relevant instances found.", appId);
             return Optional.empty();
         }
-        val clusterOpSpec = restartOp.getOpSpec();
+        val clusterOpSpec = Objects.requireNonNullElse(restartOp.getOpSpec(), defaultOpSpec);
         val appSpec = applicationStateDB.application(appId).map(ApplicationInfo::getSpec).orElse(null);
         if (null == appSpec) {
             return Optional.empty();
         }
-        int parallelism = clusterOpSpec.getParallelism();
+        val parallelism = clusterOpSpec.getParallelism();
         val schedulingSessionId = context.getSchedulingSessionId();
 
         log.info("{} instances to be restarted with parallelism: {}. Sched session ID: {}",

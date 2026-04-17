@@ -33,6 +33,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationStopInstancesOperation;
 import io.appform.functionmetrics.MonitoredFunction;
 import com.phonepe.drove.statemachine.StateData;
@@ -41,6 +42,8 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 
@@ -58,6 +61,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final ThreadFactory threadFactory;
+    private final ClusterOpSpec defaultOpSpec;
 
     @Inject
     public StopAppInstancesAction(
@@ -68,7 +72,8 @@ public class StopAppInstancesAction extends AppAsyncAction {
             final InstanceScheduler scheduler,
             final ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
-            @Named("JobLevelThreadFactory") ThreadFactory threadFactory) {
+            @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
+            ClusterOpSpec defaultOpSpec) {
         super(jobExecutor, instanceInfoDB, null);
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -77,6 +82,7 @@ public class StopAppInstancesAction extends AppAsyncAction {
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.threadFactory = threadFactory;
+        this.defaultOpSpec = defaultOpSpec;
     }
 
     @Override
@@ -86,9 +92,10 @@ public class StopAppInstancesAction extends AppAsyncAction {
             StateData<ApplicationState, ApplicationInfo> currentState,
             ApplicationOperation operation) {
         val stopAction = safeCast(operation, ApplicationStopInstancesOperation.class);
+        val clusterOpSpec = Objects.requireNonNullElse(stopAction.getOpSpec(), defaultOpSpec);
         return Optional.of(JobTopology.<Boolean>builder()
                                    .withThreadFactory(threadFactory)
-                .addParallel(stopAction.getOpSpec().getParallelism(), stopAction.getInstanceIds()
+                .addParallel(clusterOpSpec.getParallelism(), stopAction.getInstanceIds()
                         .stream()
                         .map(instanceId -> (Job<Boolean>)new StopSingleInstanceJob(stopAction.getAppId(),
                                                                                    instanceId,

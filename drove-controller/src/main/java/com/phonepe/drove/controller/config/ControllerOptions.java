@@ -105,7 +105,7 @@ public class ControllerOptions {
     @DurationRange(min = 10, max = 1_800, unit = TimeUnit.SECONDS)
     Duration clusterOpTimeout;
 
-    @Range(max = 32)
+    @Range(max = 512)
     int clusterOpParallelism;
 
     @Range(min = 0, max = 32)

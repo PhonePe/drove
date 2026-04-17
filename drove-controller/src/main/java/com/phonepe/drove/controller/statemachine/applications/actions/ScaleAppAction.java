@@ -39,6 +39,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ApplicationOperation;
+import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
 import com.phonepe.drove.statemachine.StateData;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -50,6 +51,7 @@ import javax.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.LongStream;
@@ -72,6 +74,7 @@ public class ScaleAppAction extends AppAsyncAction {
 
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
+    private final ClusterOpSpec defaultOpSpec;
 
     @Inject
     public ScaleAppAction(
@@ -85,7 +88,8 @@ public class ScaleAppAction extends AppAsyncAction {
             InstanceIdGenerator instanceIdGenerator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
-            HttpCaller httpCaller) {
+            HttpCaller httpCaller,
+            ClusterOpSpec defaultOpSpec) {
         super(jobExecutor, instanceInfoDB, List.of(new SchedulerSessionManagementPlugin<>(scheduler)));
         this.applicationStateDB = applicationStateDB;
         this.instanceInfoDB = instanceInfoDB;
@@ -97,6 +101,7 @@ public class ScaleAppAction extends AppAsyncAction {
         this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
+        this.defaultOpSpec = defaultOpSpec;
     }
 
     @Override
@@ -115,7 +120,7 @@ public class ScaleAppAction extends AppAsyncAction {
             return Optional.empty();
         }
         val applicationSpec = context.getApplicationSpec();
-        val clusterOpSpec = scaleOp.getOpSpec();
+        val clusterOpSpec = Objects.requireNonNullElse(scaleOp.getOpSpec(), defaultOpSpec);
         val parallelism = clusterOpSpec.getParallelism();
         if (currentInstancesCount < required) {
             val numNew = required - currentInstancesCount;
