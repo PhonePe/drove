@@ -50,6 +50,7 @@ build_controller() {
     VERSIONSTR=$(echo -n "${1}"|sed 's/-SNAPSHOT/~snapshot/g')
     RELEASESTR=$(echo -n "${2}")
     echo  "Creating package dir for controller"
+    mkdir BUILD
     cp -rf drove-controller-template/* BUILD/
     mkdir -p BUILD/usr/share/java/
     cp ../drove-controller/target/drove-controller-${VERSION}.jar BUILD/usr/share/java/drove-controller.jar
@@ -70,6 +71,7 @@ build_executor() {
     VERSIONSTR=$(echo -n "${1}"|sed 's/-SNAPSHOT/~snapshot/g')
     RELEASESTR=$(echo -n "${2}")
     echo  "Creating package dir for executor"
+    mkdir BUILD
     cp -rf drove-executor-template/* BUILD/
     mkdir -p BUILD/usr/share/java/
     cp ../drove-executor/target/drove-executor-${VERSION}.jar BUILD/usr/share/java/drove-executor.jar
