@@ -154,7 +154,10 @@ public class RemoteLeadershipObserver implements LeadershipObserver {
                                       });
         }
         catch (Throwable t) {
-            log.error("Error calling endpoint %s".formatted(endpoint), t);
+            log.error("Error calling endpoint %s".formatted(endpoint));
+            if(log.isDebugEnabled()) {
+                log.debug("Ping error details: ", t);
+            }
         }
         return false;
     }

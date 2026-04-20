@@ -30,6 +30,6 @@ import lombok.Value;
 public class HomeView extends BasePageTemplate {
 
     public HomeView(InstallationMetadata installationMetadata) {
-        super("templates/home.hbs", installationMetadata);
+        super("templates/home.hbs", installationMetadata, false);
     }
 }

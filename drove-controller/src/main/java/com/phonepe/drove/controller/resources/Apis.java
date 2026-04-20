@@ -483,6 +483,15 @@ public class Apis {
     }
 
     @GET
+    @Path("/cluster/dashboard")
+    @Timed
+    @Operation(summary = "Get cluster dashboard data", description = "Get aggregated data for cluster")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cluster dashboard data")
+    public ApiResponse<DashboardData> clusterDashboard() {
+        return responseEngine.dashboardData();
+    }
+
+    @GET
     @Path("/cluster/executors")
     @Timed
     @Operation(summary = "List executors", description = "Get a list of all executor nodes in the cluster", tags = {"Cluster"})

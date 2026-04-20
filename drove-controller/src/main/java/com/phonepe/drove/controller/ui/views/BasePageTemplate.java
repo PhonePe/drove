@@ -34,10 +34,16 @@ import java.util.Objects;
 @Getter
 public abstract class BasePageTemplate extends TemplateView {
     private final InstallationMetadata installationMetadata;
+    private final boolean footerSummary;
 
     protected BasePageTemplate(String templatePath, InstallationMetadata installationMetadata) {
+        this(templatePath, installationMetadata, true);
+    }
+
+    protected BasePageTemplate(String templatePath, InstallationMetadata installationMetadata, boolean footerSummary) {
         super(templatePath);
         this.installationMetadata = installationMetadata;
+        this.footerSummary = footerSummary;
     }
 
     @Override

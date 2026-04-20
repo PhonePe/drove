@@ -64,6 +64,8 @@
     const tasks = $('#tasks').DataTable({
         processing: true,
         paging: true,
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         info: false,
         responsive: false,
         scrollX: true,

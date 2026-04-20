@@ -20,18 +20,28 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.api.AppSummary;
+import com.phonepe.drove.models.api.ClusterSummary;
+import com.phonepe.drove.models.api.LocalServiceSummary;
+import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PreShutdownSpec;
@@ -47,6 +57,8 @@ import com.phonepe.drove.models.application.placement.policies.*;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.common.ClusterState;
+import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecVisitorAdapter;
@@ -63,6 +75,7 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
@@ -1188,4 +1201,105 @@ public class ControllerUtils {
                 ? "Execution failed"
                 : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
+
+    public static AppSummary toAppSummary(
+            final ApplicationInfo info,
+            final ApplicationLifecycleManagementEngine applicationEngine,
+            final long healthyInstances) {
+        val spec = info.getSpec();
+        val instances = info.getInstances();
+        val cpus = totalCPU(spec, instances);
+        val memory = totalMemory(spec, instances);
+        return new AppSummary(info.getAppId(),
+                              spec.getName(),
+                              instances,
+                              healthyInstances,
+                              cpus,
+                              memory,
+                              spec.getTags(),
+                              applicationEngine.currentState(info.getAppId()).orElse(null),
+                              info.getCreated(),
+                              info.getUpdated());
+
+    }
+
+    public static LocalServiceSummary toLocalServiceSummary(
+            final LocalServiceInfo info,
+            final long knownInstances,
+            final long healthyInstances,
+            final LocalServiceLifecycleManagementEngine localServiceEngine) {
+        val spec = info.getSpec();
+        val cpus = totalCPU(spec, knownInstances);
+        val memory = totalMemory(spec, knownInstances);
+        return new LocalServiceSummary(info.getServiceId(),
+                                       spec.getName(),
+                                       info.getInstancesPerHost(),
+                                       healthyInstances,
+                                       cpus,
+                                       memory,
+                                       spec.getTags(),
+                                       info.getActivationState(),
+                                       localServiceEngine.currentState(info.getServiceId()).orElse(null),
+                                       info.getCreated(),
+                                       info.getUpdated());
+
+    }
+
+    public static ClusterSummary computeClusterSummary(
+            final LeadershipObserver leadershipObserver,
+            final ClusterStateDB clusterStateDB,
+            final List<ApplicationInfo> applications,
+            final List<TaskInfo> tasks,
+            final List<LocalServiceInfo> localServices,
+            final ApplicationLifecycleManagementEngine applicationEngine,
+            final LocalServiceLifecycleManagementEngine localServiceEngine,
+            final ClusterResourcesSummary resourceSummary) {
+        var liveApps = 0;
+        var allApps = 0;
+        for (val appInfo : applications) {
+            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(applicationEngine.currentState(appInfo.getAppId())
+                                                                            .orElse(ApplicationState.FAILED))
+                        ? 1
+                        : 0;
+            allApps++;
+        }
+        var liveTasks = 0;
+        for (val taskInfo : tasks) {
+            liveTasks += TaskState.ACTIVE_STATES.contains(taskInfo.getState())
+                         ? 1
+                         : 0;
+        }
+        var liveLocalServices = 0;
+        var allLocalServices = 0;
+        for (val localServiceInfo : localServices) {
+            liveLocalServices += LocalServiceState.RESOURCE_USING_STATES
+                                         .contains(localServiceEngine.currentState(localServiceInfo.getServiceId())
+                                                           .orElse(LocalServiceState.DESTROYED))
+                                 ? 1
+                                 : 0;
+            allLocalServices++;
+        }
+        return new ClusterSummary(
+                        leadershipObserver.leader()
+                                .map(node -> node.getHostname() + ":" + node.getPort())
+                                .orElse("Leader election underway"),
+                        clusterStateDB.currentState()
+                                .map(ClusterStateData::getState)
+                                .orElse(ClusterState.NORMAL),
+                        resourceSummary.getNumExecutors(),
+                        allApps,
+                        liveApps,
+                        liveTasks,
+                        allLocalServices,
+                        liveLocalServices,
+                        resourceSummary.getFreeCores(),
+                        resourceSummary.getUsedCores(),
+                        resourceSummary.getTotalCores(),
+                        resourceSummary.getFreeMemory(),
+                        resourceSummary.getUsedMemory(),
+                        resourceSummary.getTotalMemory());
+ 
+    }
+
+
 }

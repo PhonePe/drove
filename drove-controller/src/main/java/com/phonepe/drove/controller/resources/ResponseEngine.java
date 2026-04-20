@@ -16,7 +16,25 @@
 
 package com.phonepe.drove.controller.resources;
 
-import com.google.common.collect.Sets;
+import static com.phonepe.drove.controller.utils.ControllerUtils.totalCPU;
+import static com.phonepe.drove.controller.utils.ControllerUtils.totalMemory;
+import static com.phonepe.drove.models.api.ApiResponse.failure;
+import static com.phonepe.drove.models.api.ApiResponse.success;
+import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
@@ -29,10 +47,26 @@ import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.managed.BlacklistingManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.*;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.ui.support.DashboardDataSource;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
-import com.phonepe.drove.models.api.*;
+import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.api.AppDetails;
+import com.phonepe.drove.models.api.AppSummary;
+import com.phonepe.drove.models.api.BlacklistOperationResponse;
+import com.phonepe.drove.models.api.ClusterSummary;
+import com.phonepe.drove.models.api.DashboardData;
+import com.phonepe.drove.models.api.DroveEventsList;
+import com.phonepe.drove.models.api.DroveEventsSummary;
+import com.phonepe.drove.models.api.ExecutorSummary;
+import com.phonepe.drove.models.api.ExposedAppInfo;
+import com.phonepe.drove.models.api.LocalServiceSummary;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -54,19 +88,9 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
-import lombok.extern.slf4j.Slf4j;
+
 import lombok.val;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.phonepe.drove.controller.utils.ControllerUtils.totalCPU;
-import static com.phonepe.drove.controller.utils.ControllerUtils.totalMemory;
-import static com.phonepe.drove.models.api.ApiResponse.failure;
-import static com.phonepe.drove.models.api.ApiResponse.success;
-import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Returns responses for use in apis
@@ -89,6 +113,7 @@ public class ResponseEngine {
     private final ControllerCommunicator communicator;
     private final DroveEventBus eventBus;
     private final BlacklistingManager blacklistingManager;
+    private final DashboardDataSource dashboardDataSource;
 
     @Inject
     public ResponseEngine(
@@ -104,7 +129,8 @@ public class ResponseEngine {
             EventStore eventStore,
             ControllerCommunicator communicator,
             DroveEventBus eventBus,
-            BlacklistingManager blacklistingAppMovementManager) {
+            BlacklistingManager blacklistingAppMovementManager,
+            DashboardDataSource dashboardDataSource) {
         this.leadershipObserver = leadershipObserver;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
@@ -119,8 +145,14 @@ public class ResponseEngine {
         this.communicator = communicator;
         this.eventBus = eventBus;
         this.blacklistingManager = blacklistingAppMovementManager;
+        this.dashboardDataSource = dashboardDataSource;
     }
 
+    public ApiResponse<DashboardData> dashboardData() {
+        return dashboardDataSource.current()
+            .map(ApiResponse::success)
+            .orElseGet(() -> ApiResponse.failure("Could not fetch dashboard data"));
+    } 
 
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
         val apps = applicationStateDB.applications(from, size);
@@ -225,53 +257,17 @@ public class ResponseEngine {
     }
 
     public ApiResponse<ClusterSummary> cluster() {
-        var liveApps = 0;
-        var allApps = 0;
-        for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
-            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(applicationEngine.currentState(appInfo.getAppId())
-                                                                            .orElse(ApplicationState.FAILED))
-                        ? 1
-                        : 0;
-            allApps++;
-        }
-        var liveTasks = 0;
-        for (val taskInfo : taskEngine.tasks(EnumSet.allOf(TaskState.class))) {
-            liveTasks += TaskState.ACTIVE_STATES.contains(taskInfo.getState())
-                         ? 1
-                         : 0;
-        }
-        var liveLocalServices = 0;
-        var allLocalServices = 0;
-        for (val localServiceInfo : localServiceStateDB.services(0, Integer.MAX_VALUE)) {
-            liveLocalServices += LocalServiceState.RESOURCE_USING_STATES
-                                         .contains(localServiceEngine.currentState(localServiceInfo.getServiceId())
-                                                           .orElse(LocalServiceState.DESTROYED))
-                                 ? 1
-                                 : 0;
-            allLocalServices++;
-        }
-        val resourceSummary = ControllerUtils.summarizeResources(clusterResourcesDB.currentSnapshot(true));
-
         return success(
-                new ClusterSummary(
-                        leadershipObserver.leader()
-                                .map(node -> node.getHostname() + ":" + node.getPort())
-                                .orElse("Leader election underway"),
-                        clusterStateDB.currentState()
-                                .map(ClusterStateData::getState)
-                                .orElse(ClusterState.NORMAL),
-                        resourceSummary.getNumExecutors(),
-                        allApps,
-                        liveApps,
-                        liveTasks,
-                        allLocalServices,
-                        liveLocalServices,
-                        resourceSummary.getFreeCores(),
-                        resourceSummary.getUsedCores(),
-                        resourceSummary.getTotalCores(),
-                        resourceSummary.getFreeMemory(),
-                        resourceSummary.getUsedMemory(),
-                        resourceSummary.getTotalMemory()));
+                ControllerUtils.computeClusterSummary(
+                    leadershipObserver,
+                    clusterStateDB,
+                    applicationStateDB.applications(0, Integer.MAX_VALUE),
+                    taskEngine.tasks(EnumSet.allOf(TaskState.class)),
+                    localServiceStateDB.services(0, Integer.MAX_VALUE),
+                    applicationEngine,
+                    localServiceEngine,
+                    ControllerUtils.summarizeResources(
+                        clusterResourcesDB.currentSnapshot(true))));
     }
 
     public ApiResponse<List<ExecutorSummary>> nodes() {
@@ -420,52 +416,27 @@ public class ResponseEngine {
     }
 
     private AppSummary toAppSummary(final ApplicationInfo info, Map<String, Long> instanceCounts) {
-        val spec = info.getSpec();
-        val instances = info.getInstances();
-        val healthyInstances = instanceCounts.getOrDefault(info.getAppId(), 0L);
-        val cpus = totalCPU(spec, instances);
-        val memory = totalMemory(spec, instances);
-        return new AppSummary(info.getAppId(),
-                              spec.getName(),
-                              instances,
-                              healthyInstances,
-                              cpus,
-                              memory,
-                              spec.getTags(),
-                              applicationEngine.currentState(info.getAppId()).orElse(null),
-                              info.getCreated(),
-                              info.getUpdated());
-
+        return ControllerUtils.toAppSummary(info,
+                applicationEngine,
+                instanceCounts.getOrDefault(info.getAppId(), 0L));
     }
 
     private LocalServiceSummary toLocalServiceSummary(
             final LocalServiceInfo info,
             Map<String, List<LocalServiceInstanceInfo>> instancesPerExecutor) {
-        val spec = info.getSpec();
         val knownInstances = instancesPerExecutor.values()
-                .stream()
-                .flatMap(List::stream)
-                .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState()))
-                .count();
+                         .stream()
+                         .flatMap(List::stream)
+                         .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES
+                                 .contains(instanceInfo.getState()))
+                         .count();
         val healthyInstances = instancesPerExecutor.values()
-                .stream()
-                .flatMap(List::stream)
-                .filter(instanceInfo -> instanceInfo.getState().equals(LocalServiceInstanceState.HEALTHY))
-                .count();
-        val cpus = totalCPU(spec, knownInstances);
-        val memory = totalMemory(spec, knownInstances);
-        return new LocalServiceSummary(info.getServiceId(),
-                                       spec.getName(),
-                                       info.getInstancesPerHost(),
-                                       healthyInstances,
-                                       cpus,
-                                       memory,
-                                       spec.getTags(),
-                                       info.getActivationState(),
-                                       localServiceEngine.currentState(info.getServiceId()).orElse(null),
-                                       info.getCreated(),
-                                       info.getUpdated());
-
+                 .stream()
+                 .flatMap(List::stream)
+                 .filter(instanceInfo -> instanceInfo.getState()
+                         .equals(LocalServiceInstanceState.HEALTHY))
+                 .count();
+        return ControllerUtils.toLocalServiceSummary(info, knownInstances, healthyInstances, localServiceEngine);
     }
 
     private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo, boolean removed) {

@@ -1,6 +1,6 @@
 {{#partial "content"}}
-    <section class="mt-3">
-        <div class="row g-3 mb-4" id="dash-stat-cards">
+    <section>
+        <div class="row g-3" id="dash-stat-cards">
             <!-- Cluster State -->
             <div class="col-6 col-md-4 col-xl-2">
                 <div class="card h-100 text-center dash-stat-card">
@@ -73,7 +73,7 @@
                         <div class="text-body-secondary small mb-1 fw-bold">Tasks / Local Svc</div>
                         <div class="d-flex justify-content-center align-items-end gap-3 mt-1">
                             <div>
-                                <div id="dash-tasks" class="fs-3 fw-bold">—</div>
+                                <div id="dash-tasks-value" class="fs-3 fw-bold">—</div>
                                 <div class="text-body-secondary" style="font-size:0.72rem;">tasks</div>
                             </div>
                             <div class="text-body-secondary fs-5">|</div>
@@ -89,35 +89,153 @@
     </section>
 
     <section>
-        <div class="row mb-2 align-items-center">
-            <div class="col">
-                <h5 class="fw-semibold mb-0">Applications</h5>
+        <div class="row ">
+            <div class="col-4 pe-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="row">
+                            <div class="col-12 d-flex flex-column">
+                                <div class="row flex-fill text-center mb-2">
+                                    <div class="text-body-secondary mb-1 fw-bold fs-5">Applications</div>
+                                </div>
+                                <div class="row flex-fill align-items-center">
+                                    <div class="col-sm-12 col-md-6 small flex-fill dash-card-section" id="apps-by-state">
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 d-flex flex-column">
+                                        <div id="dash-app-instances-active" class="fs-3 fw-bold">—</div>
+                                        <div class="text-body-secondary" style="font-size:0.72rem;">healthy instances</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2 small">
+                            <div class="col">
+                                <div class="row">
+                                    <div class="col text-start">
+                                        <h6 class="fw-semibold mb-0">Top Applications</h6>
+                                    </div>
+                                    <div class="col-auto">
+                                        <a href="/applications" class="btn btn-sm btn-outline-secondary">View all →</a>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <table class="table table-bordered table-hover" id="dash-applications" style="width:100%">
+                                                <thead>
+                                                <tr>
+                                                <th>ID</th>
+                                                <th>Instances</th>
+                                                <th>CPU</th>
+                                                <th>Memory</th>
+                                            </tr>
+                                            </thead>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-auto">
-                <a href="/applications" class="btn btn-sm btn-outline-secondary">View all →</a>
+            <div class="col-4 ps-2 pe-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="row">
+                            <div class="col-12 d-flex flex-column">
+                                <div class="row flex-fill text-center mb-2">
+                                    <div class="text-body-secondary mb-1 fw-bold fs-5">Tasks</div>
+                                </div>
+                                <div class="row flex-fill align-items-center">
+                                    <div class="col-sm-12 col-md-6 small flex-fill dash-card-section"  id="tasks-by-state">
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 d-flex flex-column">
+                                        <div id="dash-tasks" class="fs-3 fw-bold">—</div>
+                                        <div class="text-body-secondary" style="font-size:0.72rem;">running</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col">
+                                <div class="row">
+                                    <div class="col text-start">
+                                        <h6 class="fw-semibold mb-0">Long Running Tasks</h6>
+                                    </div>
+                                    <div class="col-auto">
+                                        <a href="/tasks" class="btn btn-sm btn-outline-secondary">View all →</a>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <table class="table table-bordered" id="tasks" title="Tasks" style="width: 100%">
+                                        <thead>
+                                        <tr>
+                                            <th>TaskID</th>
+                                            <th>Cores</th>
+                                            <th>Memory</th>
+                                            <th>Running For</th>
+                                        </tr>
+                                        </thead>
+                                    </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <table class="table table-bordered table-hover" id="dash-applications" style="width:100%">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>State</th>
-                        <th>Required</th>
-                        <th>Healthy</th>
-                        <th>CPU</th>
-                        <th>Memory</th>
-                    </tr>
-                    </thead>
-                </table>
+            <div class="col-4 ps-2">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="row">
+                            <div class="col-12 d-flex flex-column">
+                                <div class="row flex-fill text-center mb-2">
+                                    <div class="text-body-secondary mb-1 fw-bold fs-5">Local Services</div>
+                                </div>
+                                <div class="row flex-fill align-items-center">
+                                    <div class="col-sm-12 col-md-6 small flex-fill dash-card-section" id="local-services-by-state">
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 d-flex flex-column">
+                                        <div id="dash-local-services" class="fs-3 fw-bold">—</div>
+                                        <div class="text-body-secondary" style="font-size:0.72rem;">active instances</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col">
+                                <div class="row">
+                                    <div class="col text-start">
+                                        <h6 class="fw-semibold mb-0">Top Services</h6>
+                                    </div>
+                                    <div class="col-auto">
+                                        <a href="/localservices" class="btn btn-sm btn-outline-secondary">View all →</a>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        <table class="table table-bordered" id="localservices" title="localservices" style="width: 100%">
+                                            <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Instances</th>
+                                                <th>CPU</th>
+                                                <th>Memory</th>
+                                            </tr>
+                                            </thead>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="mt-4">
-        <div class="row mb-2 align-items-center">
+    <section>
+        <div class="row align-items-center mb-3">
             <div class="col">
                 <h5 class="fw-semibold mb-0">Executors</h5>
             </div>
@@ -125,83 +243,335 @@
                 <a href="/cluster" class="btn btn-sm btn-outline-secondary">View all →</a>
             </div>
         </div>
-        <div class="row">
+        <div class="row align-items-center">
             <div class="col">
-                <table class="table table-bordered table-hover" id="dash-executors-table" style="width:100%">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Host</th>
-                        <th>State</th>
-                        <th>Free Cores</th>
-                        <th>Used Cores</th>
-                        <th>Free Memory</th>
-                        <th>Used Memory</th>
-                        <th>Tags</th>
-                    </tr>
-                    </thead>
-                </table>
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="row">
+                            <div class="col-12 d-flex flex-column">
+                                <div class="row flex-fill align-items-center">
+                                    <div class="col-sm-12 col-md-4 small flex-fill dash-card-section" id="executors-by-state">
+                                    </div>
+                                    <div class="col-sm-12 col-md-2 flex-fill dash-card-section">
+                                        <div id="dash-executor-balance" class="fs-3 fw-bold">—</div>
+                                        <div class="text-body-secondary" style="font-size:0.72rem;">Balance Factor</div>
+                                    </div>
+                                    <div class="col-sm-12 h-100 d-flex align-items-center col-md-2 flex-fill dash-card-section text-start">
+                                        <div class="text-body-secondary" style="font-size:0.72rem;">
+                                            <ul class="list-unstyled mb-0">
+                                                <li><b>0.0-0.1 - </b>Optimal</li>
+                                                <li><b>0.11-0.25 - </b>Nominal</li>
+                                                <li><b>0.26-0.50 - </b>Problematic (Noisy neighbour)</li>
+                                                <li><b>0.5+ - </b>Severe (Starvation risk)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-4 small flex-fill" id="executor-utilization">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
+
+<!-- Templates -->
+<script type="text/template" data-template="state-count">
+    <div class="row mb-2 fw-bold" id="element-by-state-row-${name}">
+        <div class="col-8 text-start">
+            <span class="text-${colour}">${displayText}</span>
+        </div>
+        <div class="col-4 text-end">
+            <span class="count-value">${count}</span>
+        </div>
+    </div>
+</script>
+
+<script type="text/template" data-template="executor-state">
+    <td class="fw-bold nowrap">
+        <div class="row">
+            <div class="col-8 text-start text-${colour}">
+                ${text}
+            </div>
+            <div class="col-4 text-end" id="executor-count-for-state-${state}">
+                ${count}
+            </div>
+        </div>
+    </td>
+</script>
+ 
 {{/partial}}
 
 {{#partial "page_js"}}
-    // ── Dashboard stat cards ────────────────────────────────────────────
-    function refreshDashboardCards() {
-        $.getJSON('/apis/v1/cluster', function(resp) {
-            if (!resp || resp.status !== 'SUCCESS') return;
-            const d = resp.data;
+    const FIXED_ROW_COUNT = 5;
 
-            // Cluster state
-            const stateColors = { NORMAL: 'success', MAINTENANCE: 'warning', LOST: 'danger' };
-            const sc = stateColors[d.state] || 'secondary';
-            $('#dash-state').html('<span class="badge bg-' + sc + ' fw-bold fs-6">' + d.state + '</span>');
-            const leaderEl = $('#dash-leader');
-            leaderEl.text(d.leader).attr('title', d.leader);
-
-            // Executors
-            $('#dash-executors').text(d.numExecutors);
-
-            // CPU
-            const cpuPct = d.totalCores > 0 ? Math.round(d.usedCores / d.totalCores * 100) : 0;
-            const cpuTheme = cpuPct >= 80 ? 'danger' : cpuPct >= 60 ? 'warning' : 'success';
-            $('#dash-cpu-text').text(d.usedCores + ' / ' + d.totalCores);
-            $('#dash-cpu-bar').attr('class', 'progress-bar bg-' + cpuTheme).css('width', cpuPct + '%');
-            $('#dash-cpu-free').text(d.freeCores + ' free');
-
-            // Memory
-            const memPct = d.totalMemory > 0 ? Math.round(d.usedMemory / d.totalMemory * 100) : 0;
-            const memTheme = memPct >= 80 ? 'danger' : memPct >= 60 ? 'warning' : 'success';
-            $('#dash-mem-text').text(bytesToString(d.usedMemory) + ' / ' + bytesToString(d.totalMemory));
-            $('#dash-mem-bar').attr('class', 'progress-bar bg-' + memTheme).css('width', memPct + '%');
-            $('#dash-mem-free').text(bytesToString(d.freeMemory) + ' free');
-
-            // Applications
-            $('#dash-apps-active').text(d.numActiveApplications);
-            $('#dash-apps-total').text('of ' + d.numApplications + ' total');
-            const appPct = d.numApplications > 0 ? Math.round(d.numActiveApplications / d.numApplications * 100) : 0;
-            $('#dash-apps-bar').css('width', appPct + '%');
-
-            // Tasks
-            $('#dash-tasks').text(d.numActiveTasks);
-
-            // Local Services
-            $('#dash-svc-active').text(d.numActiveLocalServices);
-            $('#dash-svc-total').text('of ' + d.numLocalServices + ' svc');
+    function refreshDashboard() {
+        $.getJSON('/apis/v1/cluster/dashboard', function(resp) {
+            if (!resp || resp.status !== 'SUCCESS') {
+                return;
+            }
+            refreshDashboardCards(resp.data.clusterSummary);
+            renderAppsSection(resp.data.appStats);
+            renderTasksSection(resp.data.taskStats);
+            renderLocalServicesSection(resp.data.serviceStats);
+            renderExecutorSection(resp.data.executorStats);
         });
     }
-    refreshDashboardCards();
 
-    // ── Applications mini-table ─────────────────────────────────────────
+    function refreshDashboardCards(d) {
+
+        // Cluster state
+        const sc = clusterStateColour(d.state);
+        $('#dash-state')
+            .html('<span class="badge bg-' + sc + ' fw-bold fs-6">' + d.state + '</span>');
+        const leaderEl = $('#dash-leader');
+        leaderEl.text(d.leader).attr('title', d.leader);
+
+        // Executors
+        $('#dash-executors').text(d.numExecutors);
+
+        // CPU
+        $('#dash-cpu-text').text(d.usedCores + ' / ' + d.totalCores);
+        updateProgress('#dash-cpu-bar', d.usedCores, 0, d.totalCores);
+        $('#dash-cpu-free').text(d.freeCores + ' free');
+
+        // Memory
+        $('#dash-mem-text').text(bytesToString(d.usedMemory) + ' / ' + bytesToString(d.totalMemory));
+        updateProgress('#dash-mem-bar', d.usedMemory, 0, d.totalMemory);
+        $('#dash-mem-free').text(bytesToString(d.freeMemory) + ' free');
+
+        // Applications
+        $('#dash-apps-active').text(d.numActiveApplications);
+        $('#dash-apps-total').text('of ' + d.numApplications + ' total');
+        const appPct = d.numApplications > 0 ? Math.round(d.numActiveApplications / d.numApplications * 100) : 0;
+        $('#dash-apps-bar').css('width', appPct + '%');
+
+        // Tasks
+        $('#dash-tasks').text(d.numActiveTasks);
+
+        // Local Services
+        $('#dash-svc-active').text(d.numActiveLocalServices);
+        $('#dash-svc-total').text('of ' + d.numLocalServices + ' svc');
+    }
+
+    function renderAppsSection(appStats) {
+        renderAppInstancesCounts(appStats);
+        renderAppsStateCount(appStats);
+        dashApps.clear().rows.add(appStats.topApps).draw();
+    }
+
+    function renderTasksSection(taskStats) {
+        renderTaskCount(taskStats);
+        renderTasksStateCount(taskStats);
+        dashTasks.clear().rows.add(updateResourceUsage(taskStats.topTasks)).draw();
+    }
+
+    function renderLocalServicesSection(svcStats) {
+        renderLocalServicesCount(svcStats);
+        renderLocalServicesStateCount(svcStats);
+        dashLocalServices.clear().rows.add(svcStats.topServices).draw();
+    }
+
+    function renderExecutorSection(executorStats) {
+        renderExecutorStateCount(executorStats);
+        const utilization = executorStats.utilization;
+        $('#dash-executor-balance')
+            .text(utilization.balanceScore.toFixed(2).toString());
+        renderExecutorUtilization(executorStats);
+    }
+
+    function zeroFillExecutorStateCount() {
+        const parent = $('#executors-by-state');
+        updateStateCount(parent, 'executor-total', '-', 'Total', 'body');
+        updateStateCount(parent, 'executor-active', '-', 'Active', 'success');
+        updateStateCount(parent, 'executor-blacklisting', '-', 'Blacklisting', 'warning');
+        updateStateCount(parent, 'executor-blacklisted', '-', 'Blacklisted', 'danger');
+        updateStateCount(parent, 'executor-unready', '-', 'Unready', 'info');
+        updateStateCount(parent, 'executor-removed', '-', 'Removed', 'secondary');
+    }
+
+    function renderExecutorStateCount(executorStats) {
+        const countByState = executorStats.executorCountByState;
+        const active = get(countByState, 'ACTIVE');
+        const blacklisting = get(countByState, 'BLACKLIST_REQUESTED');
+        const blacklisted = get(countByState, 'BLACKLISTED');
+        const unready = get(countByState, 'UNREADY');
+        const removed = get(countByState, 'REMOVED');
+        const total = Object.values(countByState).reduce((a, b) => a + b, 0);
+
+        const parent = $('#executors-by-state');
+        updateStateCount(parent, 'executor-total', total, 'Total', 'body');
+        updateStateCount(parent, 'executor-active', active, 'Active', 'success');
+        updateStateCount(parent, 'executor-blacklisting', blacklisting, 'Blacklisting', 'warning');
+        updateStateCount(parent, 'executor-blacklisted', blacklisted, 'Blacklisted', 'danger');
+        updateStateCount(parent, 'executor-unready', unready, 'Unready', 'info');
+        updateStateCount(parent, 'executor-removed', removed, 'Removed', 'secondary');
+    }
+
+    function zeroFillExecutorUtilization() {
+        const parent = $('#executor-utilization');
+        updateStateCount(parent, 'utilization-mean', '-', 'Average Utilization', 'body');
+        updateStateCount(parent, 'utilization-max', '-', 'Highest Utilization', 'body');
+        updateStateCount(parent, 'utilization-min', '-', 'Lowest Utilization', 'body');
+    }
+
+    function renderExecutorUtilization(executorStats) {
+        const utilization = executorStats.utilization;
+        const parent = $('#executor-utilization');
+        updateStateCount(parent, 'utilization-mean',
+            (utilization.averageUtilization * 100).toFixed(2) + '%', 'Average Utilization', 'body');
+        updateStateCount(parent, 'utilization-max',
+            (utilization.highestUtilization * 100).toFixed(2) + '%', 'Highest Utilization', 'body');
+        updateStateCount(parent, 'utilization-min',
+            (utilization.lowestUtilization * 100).toFixed(2) + '%', 'Lowest Utilization', 'body');
+    }
+
+    function renderAppInstancesCounts(appStats) {
+        $('#dash-app-instances-active').text(appStats.totalHealthyInstances.toString());
+    }
+
+    function renderTaskCount(taskStats) {
+        $('#dash-tasks').text(get(taskStats.taskCountByState, 'RUNNING').toString());
+    }
+
+    function renderLocalServicesCount(svcStats) {
+        $('#dash-local-services').text(svcStats.totalHealthyInstances.toString());
+    }
+
+    function zeroFillAppStateCount() {
+        const parent = $('#apps-by-state');
+        updateStateCount(parent, 'apps-total', '-', 'Total', 'body');
+        updateStateCount(parent, 'apps-running', '-', 'Running', 'success');
+        updateStateCount(parent, 'apps-outage', '-', 'Outage', 'danger');
+        updateStateCount(parent, 'apps-scaling', '-', 'Scaling', 'warning');
+        updateStateCount(parent, 'apps-restarting', '-', 'Restarting', 'info');
+        updateStateCount(parent, 'apps-paused', '-', 'Paused', 'secondary');
+    }
+
+    function renderAppsStateCount(appStats) {
+        const countByState = appStats.appCountByState;
+        const running = get(countByState, 'RUNNING');
+        const outage = get(countByState, 'OUTAGE_DETECTED');
+        const scaling = get(countByState, 'SCALING_REQUESTED')
+                + get(countByState, 'STOP_INSTANCES_REQUESTED')
+                + get(countByState, 'DESTROY_REQUESTED');
+        const restarting = get(countByState, 'REPLACE_INSTANCES_REQUESTED');
+        const paused = get(countByState, 'MONITORING') + get(countByState, 'INIT');
+        const total = Object.values(countByState).reduce((a, b) => a + b, 0);
+
+        const parent = $('#apps-by-state');
+        updateStateCount(parent, 'apps-total', total, 'Total', 'body');
+        updateStateCount(parent, 'apps-running', running, 'Running', 'success');
+        updateStateCount(parent, 'apps-outage', outage, 'Outage', 'danger');
+        updateStateCount(parent, 'apps-scaling', scaling, 'Scaling', 'warning');
+        updateStateCount(parent, 'apps-restarting', restarting, 'Restarting', 'info');
+        updateStateCount(parent, 'apps-paused', paused, 'Paused', 'secondary');
+    }
+
+    function zeroFillTaskStateCount() {
+        const parent = $('#tasks-by-state');
+        updateStateCount(parent, 'tasks-total', '-', 'Total', 'body');
+        updateStateCount(parent, 'tasks-running', '-', 'Running', 'success');
+        updateStateCount(parent, 'tasks-failed', '-', 'Failed', 'danger');
+        updateStateCount(parent, 'tasks-starting', '-', 'Starting', 'warning');
+        updateStateCount(parent, 'tasks-pending', '-', 'Pending', 'info');
+        updateStateCount(parent, 'tasks-completed', '-', 'Completed', 'secondary');
+    }
+
+    function renderTasksStateCount(taskStats) {
+        const countByState = taskStats.taskCountByState;
+        const running = get(countByState, 'RUNNING');
+        const pending = get(countByState, 'PENDING');
+        const starting = get(countByState, 'PROVISIONING')
+                + get(countByState, 'STARTING');
+        const completed = get(countByState, 'RUN_COMPLETED')
+                + get(countByState, 'DEPROVISIONING')
+                + get(countByState, 'STOPPED');
+        const failed = get(countByState, 'RUN_FAILED')
+                + get(countByState, 'PROVISIONING_FAILED')
+                + get(countByState, 'LOST');
+        const total = Object.values(countByState).reduce((a, b) => a + b, 0);
+        
+        const parent = $('#tasks-by-state');
+        updateStateCount(parent, 'tasks-total', total, 'Total', 'body');
+        updateStateCount(parent, 'tasks-running', running, 'Running', 'success');
+        updateStateCount(parent, 'tasks-failed', failed, 'Failed', 'danger');
+        updateStateCount(parent, 'tasks-starting', starting, 'Starting', 'warning');
+        updateStateCount(parent, 'tasks-pending', pending, 'Pending', 'info');
+        updateStateCount(parent, 'tasks-completed', completed, 'Completed', 'secondary');
+    }
+
+    function zeroFillLocalServicesStateCount() {
+        const parent = $('#local-services-by-state');
+        updateStateCount(parent, 'svc-total', '-', 'Total', 'body');
+        updateStateCount(parent, 'svc-active', '-', 'Active', 'success');
+        updateStateCount(parent, 'svc-testing', '-', 'Testing', 'primary');
+        updateStateCount(parent, 'svc-deploying', '-', 'Deploying', 'warning');
+        updateStateCount(parent, 'svc-stopping', '-', 'Stopping', 'info');
+        updateStateCount(parent, 'svc-inactive', '-', 'Inactive', 'secondary');
+    }
+
+    function renderLocalServicesStateCount(svcStats) {
+        const countByState = svcStats.serviceCountByState;
+        const active = get(countByState, 'ACTIVE')
+                + get(countByState, 'ACTIVATION_REQUESTED');
+        const testing = get(countByState, 'CONFIG_TESTING')
+                + get(countByState, 'CONFIG_TESTING_REQUESTED');
+        const deploying = get(countByState, 'ADJUSTING_INSTANCES')
+                + get(countByState, 'DEPLOYING_TEST_INSTANCE')
+                + get(countByState, 'REPLACING_INSTANCES')
+                + get(countByState, 'UPDATING_INSTANCES_COUNT');
+        const stopping = get(countByState, 'STOPPING_INSTANCES')
+                + get(countByState, 'EMERGENCY_DEACTIVATION_REQUESTED')
+                + get(countByState, 'DESTROY_REQUESTED')
+                + get(countByState, 'DESTROYED');
+        const inactive = get(countByState, 'INACTIVE')
+                + get(countByState, 'DEACTIVATION_REQUESTED')
+                + get(countByState, 'INIT');
+        const total = Object.values(countByState).reduce((a, b) => a + b, 0);
+
+        const parent = $('#local-services-by-state');
+        updateStateCount(parent, 'svc-total', total, 'Total', 'body');
+        updateStateCount(parent, 'svc-active', active, 'Active', 'success');
+        updateStateCount(parent, 'svc-testing', testing, 'Testing', 'primary');
+        updateStateCount(parent, 'svc-deploying', deploying, 'Deploying', 'warning');
+        updateStateCount(parent, 'svc-stopping', stopping, 'Stopping', 'info');
+        updateStateCount(parent, 'svc-inactive', inactive, 'Inactive', 'secondary');
+    }
+
+    function updateStateCount(parent, name, count, displayText, colour) {
+        if(parent.find('#element-by-state-row-' + name).length > 0) {
+            parent.find('#element-by-state-row-' + name + ' .count-value')
+            .text(count.toString());
+            return;
+        }
+        const row = renderTemplateHtml('state-count',
+            [{
+                name: name,
+                colour: colour,
+                displayText: displayText,
+                count: count.toString()
+            }]);
+        parent.append(row);
+    }
+
+    function get(map, key) {
+        return map[key] || 0;
+    } 
+
+    zeroFillAppStateCount();
+    zeroFillTaskStateCount();
+    zeroFillLocalServicesStateCount();
+    zeroFillExecutorStateCount();
+    zeroFillExecutorUtilization();
+
+    refreshDashboard();
+
     const dashApps = $('#dash-applications').DataTable({
+        ordering: false,
         processing: true,
-        ajax: {
-            url: '/apis/v1/applications',
-            dataSrc: function(res) {
-                return res.data ? Object.keys(res.data).map(key => res.data[key]) : [];
-            }
-        },
         paging: false,
         searching: false,
         info: false,
@@ -210,63 +580,99 @@
             {
                 data: 'id',
                 render: function(data, type, row, meta) {
-                    return '<a href="/applications/' + data + '" class="fw-bold">' + data + '</a>';
+                    if ( type !== 'display' ) {
+                        return data;
+                    }
+             
+                    const dataLink = "/applications/{0}".format(data);
+                    const colour = appStateColour(row.state);
+                    const classes = "fw-bold border-start border-4 px-2 border-{0}"
+                        .format(colour.colour);
+                    return ellipsizedHtml(data, 10, dataLink, classes);
                 }
             },
-            { data: 'name' },
-            { data: 'state', render: tableAppStateText },
-            { data: 'requiredInstances' },
-            { data: 'healthyInstances' },
+            {
+                data: 'requiredInstances',
+                render: function(data, type, row, meta) {
+                    const healthy = row.healthyInstances || 0;
+                    return healthy + ' / ' + data;
+                }
+            },
             { data: 'totalCPUs' },
             { data: 'totalMemory', render: tableBytesText }
-        ]
+        ],
+        drawCallback: function(settings) {
+            insertEmptyTable(settings, this, 5);
+        }
     });
 
-    // ── Executors mini-table ────────────────────────────────────────────
-    const dashExecs = $('#dash-executors-table').DataTable({
+    const dashTasks = $('#tasks').DataTable({
+        ordering: false,
         processing: true,
-        ajax: '/apis/v1/cluster/executors',
         paging: false,
         searching: false,
         info: false,
-        responsive: false,
-        scrollX: true,
-        columnDefs: [{ className: 'text-center', targets: [2, 3, 4, 5, 6] }],
+        columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
         columns: [
             {
-                data: 'executorId',
+                data: 'sourceAppName',
                 render: function(data, type, row, meta) {
-                    if (type === 'display') {
-                        const link = '<a href="/executors/{0}" class="fw-semibold">{1}</a>'.format(row.executorId, row.executorId);
-                        return (row.state === 'REMOVED' || row.state === 'BLACKLISTED')
-                            ? '<del>' + link + '</del>'
-                            : link;
+                    if ( type !== 'display' ) {
+                        return data;
                     }
-                    return data;
+             
+                    const dataLink = "/tasks/{0}/{1}"
+                        .format(row.sourceAppName, row.taskId);
+                    const colour = appStateColour(row.state);
+                    const classes = "fw-bold border-start border-4 px-2 border-{0}"
+                        .format(colour.colour);
+                    const text = row.sourceAppName + ' / ' + row.taskId;
+                    return ellipsizedHtml(text, 15, dataLink, classes);
                 }
             },
-            { data: 'hostname' },
-            { data: 'state', render: tableExecutorStateText },
-            { data: 'freeCores' },
             { data: 'usedCores' },
-            { data: 'freeMemory', render: tableBytesText },
             { data: 'usedMemory', render: tableBytesText },
-            {
-                data: 'tags',
-                render: function(data, type, row, meta) {
-                    if (type === 'sort') return data ? data.join(',') : '';
-                    if (!data) return '';
-                    return data.sort().map(t => '<span class="badge bg-secondary text-wrap">' + t + '</span>').join(' ');
-                }
-            }
-        ]
+            { data: 'created', render: tableAgeText }
+        ],
+        drawCallback: function(settings) {
+            insertEmptyTable(settings, this, 5);
+        }
     });
 
-    // ── Auto-refresh every 10 s ─────────────────────────────────────────
+    const dashLocalServices = $('#localservices').DataTable({
+        ordering: false,
+        processing: true,
+        paging: false,
+        searching: false,
+        info: false,
+        columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
+        columns: [
+            {
+                data: 'id',
+                render: function(data, type, row, meta) {
+                    if ( type !== 'display' ) {
+                        return data;
+                    }
+             
+                    const dataLink = "/localservices/{0}".format(data);
+                    const colour = localServiceStateColour(row.state);
+                    const classes = "fw-bold border-start border-4 px-2 border-{0}"
+                        .format(colour.colour);
+                    return ellipsizedHtml(data, 10, dataLink, classes);
+                }
+            },
+            { data: 'healthyInstances' },
+            { data: 'totalCPUs' },
+            { data: 'totalMemory', render: tableBytesText }
+        ],
+        drawCallback: function(settings) {
+            insertEmptyTable(settings, this, 5);
+        }
+    });
+
+    // Auto-refresh every 10 s
     setInterval(function() {
-        refreshDashboardCards();
-        dashApps.ajax.reload(null, false);
-        dashExecs.ajax.reload(null, false);
+       refreshDashboard();
     }, 10000);
 {{/partial}}
 {{> common/base}}

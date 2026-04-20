@@ -1117,4 +1117,57 @@ class ApisTest {
         assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
         assertEquals("pong", r.getData());
     }
+
+    @Test
+    void clusterDashboard() {
+        val dashboardData = DashboardData.builder()
+                .clusterSummary(new ClusterSummary(
+                        "testhost",
+                        ClusterState.NORMAL,
+                        100,
+                        10,
+                        5,
+                        1,
+                        2,
+                        1,
+                        50,
+                        100,
+                        1024,
+                        512_000,
+                        512_000,
+                        1024_000))
+                .appStats(DashboardData.AppStats.builder()
+                        .appCountByState(Map.of(ApplicationState.RUNNING, 5L))
+                        .topApps(List.of())
+                        .totalHealthyInstances(50)
+                        .build())
+                .taskStats(DashboardData.TaskStats.builder()
+                        .taskCountByState(Map.of())
+                        .topTasks(List.of())
+                        .build())
+                .serviceStats(DashboardData.ServiceStats.builder()
+                        .serviceCountByState(Map.of(LocalServiceState.ACTIVE, 3L))
+                        .serviceCountByActivationState(Map.of(ActivationState.ACTIVE, 3L))
+                        .topServices(List.of())
+                        .totalHealthyInstances(30)
+                        .build())
+                .executorStats(DashboardData.ExecutorStats.builder()
+                        .executorCountByState(Map.of(ExecutorState.ACTIVE, 10L))
+                        .utilization(DashboardData.UtilizationStats.builder()
+                                .averageUtilization(50.0)
+                                .highestUtilization(80.0)
+                                .lowestUtilization(20.0)
+                                .balanceScore(0.75)
+                                .build())
+                        .build())
+                .generatedAt(new Date())
+                .build();
+        when(responseEngine.dashboardData()).thenReturn(ApiResponse.success(dashboardData));
+        val r = EXT.target("/v1/cluster/dashboard")
+                .request()
+                .get(new GenericType<ApiResponse<DashboardData>>() {
+                });
+        assertEquals(ApiErrorCode.SUCCESS, r.getStatus());
+        assertEquals(dashboardData, r.getData());
+    }
 }

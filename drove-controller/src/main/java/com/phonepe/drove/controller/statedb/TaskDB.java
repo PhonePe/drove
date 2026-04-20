@@ -40,7 +40,7 @@ public abstract class TaskDB {
     }
 
     public abstract Map<String, List<TaskInfo>> tasks(
-            Collection<String> sourceAppIds, Set<TaskState> validStates, boolean skipStaleCheck);
+            Collection<String> sourceAppNames, Set<TaskState> validStates, boolean skipStaleCheck);
 
     public List<TaskInfo> tasks(Map<String, Set<String>> tasks, Set<TaskState> states) {
         return tasks(tasks.keySet(), states, true)

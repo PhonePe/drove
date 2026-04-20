@@ -72,6 +72,7 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.ui.support.DashboardDataSource;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.ApiResponse;
@@ -115,6 +116,7 @@ class ResponseEngineTest {
     private final ControllerCommunicator communicator = mock(ControllerCommunicator.class);
     private final DroveEventBus eventBus = mock(DroveEventBus.class);
     private final BlacklistingManager blacklistingManager = mock(BlacklistingManager.class);
+    private final DashboardDataSource dashboardDataSource = mock(DashboardDataSource.class);
     private final ResponseEngine re = new ResponseEngine(leadershipObserver,
                                                          appEngine,
                                                          applicationStateDB,
@@ -128,7 +130,8 @@ class ResponseEngineTest {
                                                          eventStore,
                                                          communicator,
                                                          eventBus,
-                                                         blacklistingManager);
+                                                         blacklistingManager,
+                                                         dashboardDataSource);
 
     @AfterEach
     void resetMocks() {
@@ -594,7 +597,8 @@ class ResponseEngineTest {
                                     eventStore,
                                     communicator,
                                     eventBus,
-                                    blacklistingManager);
+                                    blacklistingManager,
+                                    dashboardDataSource);
 
         val r = re.events(0, 10);
         assertEquals(SUCCESS, r.getStatus());
@@ -690,6 +694,71 @@ class ResponseEngineTest {
         val serviceSpec = localServiceSpec("TEST_SERVICE_" + i, 1);
         val serviceId = ControllerUtils.deployableObjectId(serviceSpec);
         return new LocalServiceInfo(serviceId, serviceSpec, instances, ActivationState.ACTIVE, new Date(), new Date());
+    }
+
+
+
+    @Test
+    void testDashboardData() {
+        val dashboardData = com.phonepe.drove.models.api.DashboardData.builder()
+                .clusterSummary(new com.phonepe.drove.models.api.ClusterSummary(
+                        "leader:8080",
+                        ClusterState.NORMAL,
+                        10,
+                        100,
+                        90,
+                        5,
+                        20,
+                        18,
+                        50,
+                        100,
+                        150,
+                        102400,
+                        51200,
+                        153600))
+                .appStats(com.phonepe.drove.models.api.DashboardData.AppStats.builder()
+                        .appCountByState(Map.of(ApplicationState.RUNNING, 90L))
+                        .topApps(List.of())
+                        .totalHealthyInstances(500)
+                        .build())
+                .taskStats(com.phonepe.drove.models.api.DashboardData.TaskStats.builder()
+                        .taskCountByState(Map.of())
+                        .topTasks(List.of())
+                        .build())
+                .serviceStats(com.phonepe.drove.models.api.DashboardData.ServiceStats.builder()
+                        .serviceCountByState(Map.of())
+                        .serviceCountByActivationState(Map.of())
+                        .topServices(List.of())
+                        .totalHealthyInstances(0)
+                        .build())
+                .executorStats(com.phonepe.drove.models.api.DashboardData.ExecutorStats.builder()
+                        .executorCountByState(Map.of())
+                        .utilization(com.phonepe.drove.models.api.DashboardData.UtilizationStats.builder()
+                                .averageUtilization(60.0)
+                                .highestUtilization(90.0)
+                                .lowestUtilization(30.0)
+                                .balanceScore(0.8)
+                                .build())
+                        .build())
+                .generatedAt(new Date())
+                .build();
+
+        when(dashboardDataSource.current()).thenReturn(Optional.of(dashboardData));
+
+        val res = re.dashboardData();
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals("success", res.getMessage());
+        assertEquals(dashboardData, res.getData());
+    }
+
+    @Test
+    void testDashboardDataNotAvailable() {
+        when(dashboardDataSource.current()).thenReturn(Optional.empty());
+
+        val res = re.dashboardData();
+        assertEquals(FAILED, res.getStatus());
+        assertEquals("Could not fetch dashboard data", res.getMessage());
+        assertNull(res.getData());
     }
 
 

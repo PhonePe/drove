@@ -136,6 +136,202 @@ class ControllerUtilsTest {
     }
 
     @Test
+    void testToAppSummary() {
+        val spec = ControllerTestUtils.appSpec("TEST_APP", 2);
+        val appId = ControllerUtils.deployableObjectId(spec);
+        val appInfo = new com.phonepe.drove.models.application.ApplicationInfo(
+                appId, spec, 5, new java.util.Date(), new java.util.Date());
+        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        when(appEngine.currentState(appId)).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.application.ApplicationState.RUNNING));
+
+        val summary = ControllerUtils.toAppSummary(appInfo, appEngine, 3);
+
+        assertEquals(appId, summary.getId());
+        assertEquals("TEST_APP", summary.getName());
+        assertEquals(5, summary.getRequiredInstances());
+        assertEquals(3, summary.getHealthyInstances());
+        assertEquals(5, summary.getTotalCPUs());
+        assertEquals(2560, summary.getTotalMemory());
+        assertEquals(spec.getTags(), summary.getTags());
+        assertEquals(com.phonepe.drove.models.application.ApplicationState.RUNNING, summary.getState());
+        assertEquals(appInfo.getCreated(), summary.getCreated());
+        assertEquals(appInfo.getUpdated(), summary.getUpdated());
+    }
+
+    @Test
+    void testToAppSummaryWithNoState() {
+        val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
+        val appId = ControllerUtils.deployableObjectId(spec);
+        val appInfo = new com.phonepe.drove.models.application.ApplicationInfo(
+                appId, spec, 2, new java.util.Date(), new java.util.Date());
+        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        when(appEngine.currentState(appId)).thenReturn(java.util.Optional.empty());
+
+        val summary = ControllerUtils.toAppSummary(appInfo, appEngine, 0);
+
+        assertEquals(appId, summary.getId());
+        assertEquals("TEST_APP", summary.getName());
+        assertEquals(2, summary.getRequiredInstances());
+        assertEquals(0, summary.getHealthyInstances());
+        assertNull(summary.getState());
+    }
+
+    @Test
+    void testToLocalServiceSummary() {
+        val spec = ControllerTestUtils.localServiceSpec("TEST_SERVICE", 1);
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val serviceInfo = new com.phonepe.drove.models.localservice.LocalServiceInfo(
+                serviceId, spec, 3, 
+                com.phonepe.drove.models.localservice.ActivationState.ACTIVE,
+                new java.util.Date(), new java.util.Date());
+        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        when(lsEngine.currentState(serviceId)).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE));
+
+        val summary = ControllerUtils.toLocalServiceSummary(serviceInfo, 10, 8, lsEngine);
+
+        assertEquals(serviceId, summary.getId());
+        assertEquals("TEST_SERVICE", summary.getName());
+        assertEquals(3, summary.getInstancesPerHost());
+        assertEquals(8, summary.getHealthyInstances());
+        assertEquals(10, summary.getTotalCPUs());
+        assertEquals(5120, summary.getTotalMemory());
+        assertEquals(spec.getTags(), summary.getTags());
+        assertEquals(com.phonepe.drove.models.localservice.ActivationState.ACTIVE, summary.getActivationState());
+        assertEquals(com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE, summary.getState());
+        assertEquals(serviceInfo.getCreated(), summary.getCreated());
+        assertEquals(serviceInfo.getUpdated(), summary.getUpdated());
+    }
+
+    @Test
+    void testToLocalServiceSummaryWithNoState() {
+        val spec = ControllerTestUtils.localServiceSpec("TEST_SERVICE", 1);
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        val serviceInfo = new com.phonepe.drove.models.localservice.LocalServiceInfo(
+                serviceId, spec, 2,
+                com.phonepe.drove.models.localservice.ActivationState.INACTIVE,
+                new java.util.Date(), new java.util.Date());
+        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        when(lsEngine.currentState(serviceId)).thenReturn(java.util.Optional.empty());
+
+        val summary = ControllerUtils.toLocalServiceSummary(serviceInfo, 5, 0, lsEngine);
+
+        assertEquals(serviceId, summary.getId());
+        assertEquals("TEST_SERVICE", summary.getName());
+        assertEquals(2, summary.getInstancesPerHost());
+        assertEquals(0, summary.getHealthyInstances());
+        assertEquals(com.phonepe.drove.models.localservice.ActivationState.INACTIVE, summary.getActivationState());
+        assertNull(summary.getState());
+    }
+
+    @Test
+    void testComputeClusterSummary() {
+        val leadershipObserver = mock(com.phonepe.drove.common.discovery.leadership.LeadershipObserver.class);
+        val leaderNode = new com.phonepe.drove.models.info.nodedata.ControllerNodeData(
+                "leader-host", 8080, com.phonepe.drove.models.info.nodedata.NodeTransportType.HTTP,
+                new java.util.Date(), true);
+        when(leadershipObserver.leader()).thenReturn(java.util.Optional.of(leaderNode));
+
+        val clusterStateDB = mock(com.phonepe.drove.controller.statedb.ClusterStateDB.class);
+        when(clusterStateDB.currentState()).thenReturn(java.util.Optional.of(
+                new com.phonepe.drove.models.common.ClusterStateData(
+                        com.phonepe.drove.models.common.ClusterState.NORMAL, new java.util.Date())));
+
+        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        when(appEngine.currentState("app1")).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.application.ApplicationState.RUNNING));
+        when(appEngine.currentState("app2")).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.application.ApplicationState.MONITORING));
+        when(appEngine.currentState("app3")).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.application.ApplicationState.FAILED));
+
+        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        when(lsEngine.currentState("ls1")).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE));
+        when(lsEngine.currentState("ls2")).thenReturn(java.util.Optional.of(
+                com.phonepe.drove.models.localservice.LocalServiceState.DESTROYED));
+
+        val applications = List.of(
+                new com.phonepe.drove.models.application.ApplicationInfo(
+                        "app1", ControllerTestUtils.appSpec("APP1", 1), 2, 
+                        new java.util.Date(), new java.util.Date()),
+                new com.phonepe.drove.models.application.ApplicationInfo(
+                        "app2", ControllerTestUtils.appSpec("APP2", 1), 3,
+                        new java.util.Date(), new java.util.Date()),
+                new com.phonepe.drove.models.application.ApplicationInfo(
+                        "app3", ControllerTestUtils.appSpec("APP3", 1), 1,
+                        new java.util.Date(), new java.util.Date())
+        );
+
+        val tasks = List.of(
+                ControllerTestUtils.generateTaskInfo(ControllerTestUtils.taskSpec("TASK1", "APP1"), 0, TaskState.RUNNING),
+                ControllerTestUtils.generateTaskInfo(ControllerTestUtils.taskSpec("TASK2", "APP1"), 1, TaskState.STOPPED)
+        );
+
+        val localServices = List.of(
+                new com.phonepe.drove.models.localservice.LocalServiceInfo(
+                        "ls1", ControllerTestUtils.localServiceSpec("LS1", 1), 2,
+                        com.phonepe.drove.models.localservice.ActivationState.ACTIVE,
+                        new java.util.Date(), new java.util.Date()),
+                new com.phonepe.drove.models.localservice.LocalServiceInfo(
+                        "ls2", ControllerTestUtils.localServiceSpec("LS2", 1), 1,
+                        com.phonepe.drove.models.localservice.ActivationState.INACTIVE,
+                        new java.util.Date(), new java.util.Date())
+        );
+
+        val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
+                10, 40, 20, 60, 102400, 51200, 153600);
+
+        val summary = ControllerUtils.computeClusterSummary(
+                leadershipObserver, clusterStateDB, applications, tasks, localServices,
+                appEngine, lsEngine, resourceSummary);
+
+        assertEquals("leader-host:8080", summary.getLeader());
+        assertEquals(com.phonepe.drove.models.common.ClusterState.NORMAL, summary.getState());
+        assertEquals(10, summary.getNumExecutors());
+        assertEquals(3, summary.getNumApplications());
+        assertEquals(1, summary.getNumActiveApplications());
+        assertEquals(1, summary.getNumActiveTasks());
+        assertEquals(2, summary.getNumLocalServices());
+        assertEquals(1, summary.getNumActiveLocalServices());
+        assertEquals(40, summary.getFreeCores());
+        assertEquals(20, summary.getUsedCores());
+        assertEquals(60, summary.getTotalCores());
+        assertEquals(102400, summary.getFreeMemory());
+        assertEquals(51200, summary.getUsedMemory());
+        assertEquals(153600, summary.getTotalMemory());
+    }
+
+    @Test
+    void testComputeClusterSummaryWithNoLeader() {
+        val leadershipObserver = mock(com.phonepe.drove.common.discovery.leadership.LeadershipObserver.class);
+        when(leadershipObserver.leader()).thenReturn(java.util.Optional.empty());
+
+        val clusterStateDB = mock(com.phonepe.drove.controller.statedb.ClusterStateDB.class);
+        when(clusterStateDB.currentState()).thenReturn(java.util.Optional.empty());
+
+        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+
+        val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
+                5, 10, 5, 15, 51200, 25600, 76800);
+
+        val summary = ControllerUtils.computeClusterSummary(
+                leadershipObserver, clusterStateDB, List.of(), List.of(), List.of(),
+                appEngine, lsEngine, resourceSummary);
+
+        assertEquals("Leader election underway", summary.getLeader());
+        assertEquals(com.phonepe.drove.models.common.ClusterState.NORMAL, summary.getState());
+        assertEquals(5, summary.getNumExecutors());
+        assertEquals(0, summary.getNumApplications());
+        assertEquals(0, summary.getNumActiveApplications());
+        assertEquals(0, summary.getNumActiveTasks());
+        assertEquals(0, summary.getNumLocalServices());
+        assertEquals(0, summary.getNumActiveLocalServices());
+    }
+
+    @Test
     void testMaxStartTimeoutForApplicationSpec() {
         val spec = ControllerTestUtils.appSpec();
         // Docker pull timeout: 100s = 100_000ms

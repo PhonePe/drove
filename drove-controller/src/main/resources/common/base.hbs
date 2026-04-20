@@ -7,11 +7,13 @@
     <meta name="author" content="Santanu Sinha">
     <meta name="viewport" content="width=device-width" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#262626" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <!--meta http-equiv="Content-Security-Policy" content="font-src 'self' data:;"-->
 
     <title>D R O V E</title>
 
     <link href="/css/bootstrap.min.css" rel="stylesheet">
-<!--    <link href="/css/bootstrap-icons.min.css" rel="stylesheet">-->
     <link href="/css/datatables.min.css" rel="stylesheet">
 
     {{#block "page_css_includes"}}
@@ -25,6 +27,29 @@
 
     {{/block}}
     </style>
+
+    <!-- Theme initialization script — run before loading Bootstrap to prevent
+         flashbang when loading dark theme -->
+    <script>
+      (function() {
+        'use strict';
+        // Get stored theme or detect system preference
+        const stored = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Determine theme (handles auto/light/dark)
+        let theme;
+        if (stored === 'auto' || !stored) {
+          theme = prefersDark ? 'dark' : 'light';
+        } else {
+          theme = stored === 'dark' || stored === 'light' ? stored : (prefersDark ? 'dark' : 'light');
+        }
+        
+        // Apply theme IMMEDIATELY (before body renders)
+        document.documentElement.setAttribute('data-bs-theme', theme);
+      })();
+    </script>
+
 </head>
 <body>
 <header>
@@ -259,6 +284,7 @@
     {{/block}}
 </main>
 <footer class="footer navbar fixed-bottom footer-font pb-0 pt-0 d-flex align-items-center px-2">
+    {{#if footerSummary}}
     <!-- Cluster status — right-aligned via ms-auto, flush before version badge -->
     <div class="footer-cluster ms-auto" id="footer-cluster">
         <!-- State badge -->
@@ -312,11 +338,17 @@
             <span id="fc-svc">—</span>
         </span>
     </div>
-    <!-- Version badge — pinned to the right -->
-    <span class="badge bg-primary rounded-0 flex-shrink-0 ms-2">
-        <span class="fw-bold">v</span>{{installationMetadata.version}}
+    <span class="badge bg-primary rounded-0 flex-shrink-0 ms-2 float-end">
+        <span class="fw-bold">Version: </span>{{installationMetadata.version}}
     </span>
 </footer>
+{{else}}
+<footer class="footer navbar fixed-bottom footer-font pb-0 pt-0 d-flex px-2 justify-content-end">
+    <span class="badge bg-primary rounded-0 flex-shrink-0 ms-2 float-end">
+        <span class="fw-bold">Version: </span> {{installationMetadata.version}}
+    </span>
+</footer>
+{{/if}}
 
 
 <script type="text/template" data-template="progress">
@@ -367,44 +399,66 @@
 <script src="/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="/js/datatables.min.js"></script>
 <script src="/js/cookies.min.js"></script>
-<script src="/js/toggler.min.js"></script>
+    <!-- Full toggler script for UI interactions (theme switcher dropdown) -->
+    <script src="/js/toggler.min.js"></script>
 
 {{#block "page_js_includes"}}
 
 {{/block}}
 <script language="JavaScript">
     (function() {
-      'use strict';
-      $.fn.dataTable.ext.errMode = 'none';
+        'use strict';
+        $.fn.dataTable.ext.errMode = 'none';
 
         $('#table').on( 'error.dt', function ( e, settings, techNote, message ) {
             console.log( 'An error has been reported by DataTables: ', message );
         } ) ;
 
-      window.addEventListener( "pageshow", function ( event ) {
-        const historyTraversal = event.persisted ||
-                               ( typeof window.performance != "undefined" &&
-                                    window.performance.navigation.type === 2 );
-        if ( historyTraversal ) {
-          // Handle page restore.
-          window.location.reload();
-        }
-      });
+        window.addEventListener( "pageshow", function ( event ) {
+            const historyTraversal = event.persisted ||
+                                   ( typeof window.performance != "undefined" &&
+                                        window.performance.navigation.type === 2 );
+            if ( historyTraversal ) {
+              // Handle page restore.
+              window.location.reload();
+            }
+        });
 
     })();
 
 
     $.extend( $.fn.DataTable.defaults, {
-            processing: false,
-            responsive: true,
-            layout: {
-                'top1' : [
-                    'search',
-                    'paging',
-                    'pageLength'
-                ]
+        processing: false,
+        responsive: true,
+        layout: {
+            'top1' : [
+                'search',
+                'paging',
+                'pageLength'
+            ]
+        }
+    });
+
+
+
+    DataTable.render.ellipsis = function ( cutoff, link, extraClasses, wordbreak) {
+        var esc = function ( t ) {
+            return t
+                .replace( /&/g, '&amp;' )
+                .replace( /</g, '&lt;' )
+                .replace( />/g, '&gt;' )
+                .replace( /"/g, '&quot;' );
+        };
+     
+        return function ( d, type, row ) {
+            // Order, search and type get the original data
+            if ( type !== 'display' ) {
+                return d;
             }
-        })
+     
+            return ellipsizedHtml( d, cutoff, link, extraClasses, wordbreak );
+        };
+    };
 
 
     $(document).ready(function() {
@@ -433,22 +487,22 @@
     {{#block "page_js"}}
 
     {{/block}}
+
+    {{#if footerSummary}}
     // ── Footer cluster status update ──────────────────────────────────────
     (function() {
         function updateFooter(d) {
-            const stateColors = { NORMAL: 'success', MAINTENANCE: 'warning', LOST: 'danger' };
-            const sc = stateColors[d.state] || 'secondary';
-            $('#fc-state').attr('class', 'badge rounded-0 fw-bold bg-' + sc + ' me-1').text(d.state);
+            const sc = clusterStateColour(d.state);
+            $('#fc-state')
+                .attr('class', 'badge rounded-0 fw-bold bg-' + sc + ' me-1')
+                .text(d.state);
+
             $('#fc-executors').text(d.numExecutors);
 
-            const cpuPct = d.totalCores > 0 ? Math.round(d.usedCores / d.totalCores * 100) : 0;
-            const cpuBarTheme = cpuPct >= 80 ? 'bg-danger' : cpuPct >= 60 ? 'bg-warning' : 'bg-success';
-            $('#fc-cpu-bar').attr('class', 'progress-bar ' + cpuBarTheme).css('width', cpuPct + '%');
+            updateProgress('#fc-cpu-bar', d.usedCores, 0, d.totalCores);
             $('#fc-cpu').text(d.usedCores + '/' + d.totalCores);
 
-            const memPct = d.totalMemory > 0 ? Math.round(d.usedMemory / d.totalMemory * 100) : 0;
-            const memBarTheme = memPct >= 80 ? 'bg-danger' : memPct >= 60 ? 'bg-warning' : 'bg-success';
-            $('#fc-mem-bar').attr('class', 'progress-bar ' + memBarTheme).css('width', memPct + '%');
+            updateProgress('#fc-mem-bar', d.usedMemory, 0, d.totalMemory);
             $('#fc-mem').text(bytesToString(d.usedMemory) + '/' + bytesToString(d.totalMemory));
 
             $('#fc-apps').text(d.numActiveApplications + '/' + d.numApplications);
@@ -468,7 +522,24 @@
         $('[data-bs-toggle="tooltip"]').tooltip();
     })();
     // ─────────────────────────────────────────────────────────────────────
+    {{/if}}
 
+    function clusterStateColour(state) {
+        const stateColors = {
+            NORMAL: 'success',
+            MAINTENANCE: 'warning'
+        };
+        return stateColors[state] || 'secondary';
+    }
+
+    function updateProgress(progressbarId, value, min, max, displayText) {
+        const pct = max > min ? Math.round((value - min) / (max - min) * 100) : 0;
+        const theme = pct >= 80 ? 'danger' : pct >= 60 ? 'warning' : 'success';
+        $(progressbarId).attr('class', 'progress-bar bg-' + theme)
+            .css('width', pct + '%');
+    }
+
+   
     // Don't want to introduce a full templating engine as of now
     // Begin
     //Convert map to array
@@ -496,6 +567,45 @@
                 return typeof args[number] != 'undefined' ? args[number] : match;
             });
         };
+    }
+
+    function escapeHtml(t) {
+        return t
+            .replace( /&/g, '&amp;' )
+            .replace( /</g, '&lt;' )
+            .replace( />/g, '&gt;' )
+            .replace( /"/g, '&quot;' );
+    }
+
+    function ellipsizedHtml( d, cutoff, link, extraClasses, wordbreak ) {
+            if ( typeof d !== 'number' && typeof d !== 'string' ) {
+                return d;
+            }
+     
+            d = d.toString(); // cast numbers
+     
+            if ( d.length < cutoff ) {
+                return d;
+            }
+     
+            var shortened = d.substr(0, cutoff-1);
+     
+            // Find the last white space character in the string
+            if ( wordbreak ) {
+                shortened = shortened.replace(/\s([^\s]*)$/, '');
+            }
+     
+            shortened = escapeHtml(shortened) + '&#8230;'; 
+            const classes = 'ellipsis ' + (extraClasses ? extraClasses : '');
+
+            if (link) {
+                shortened = '<a href="{0}">{1}</a>'.format(link, shortened);
+            }
+
+            const tooltip = escapeHtml(d);
+
+            return '<span class="{0}" title="{1}">{2}</span>'
+                    .format(classes, tooltip, shortened);
     }
 
     function renderProgressHtml(templateName, currentValue, minValue, maxValue, message) {
@@ -538,6 +648,10 @@
         return renderCopyableText(data);
     }
 
+    function tableDataTooltip(td, cellData, rowData, row, col) {
+        $(td).attr('title', cellData);
+    }
+
     function tableDateText(data, type, row, meta) {
         return new Date(data).toLocaleString();
     }
@@ -550,8 +664,16 @@
         return appStateToHtml(data);
     }
 
+    function tableAppStateColouredText(data, type, row, meta) {
+        return appStateColouredText(data);
+    }
+
     function tableLocalServiceStateText(data, type, row, meta) {
         return localServiceStateToHtml(data)
+    }
+
+    function tableLocalServiceStateColouredText(data, type, row, meta) {
+        return localServiceStateToColuredText(data)
     }
 
     function tableInstanceStateText(data, type, row, meta) {
@@ -592,38 +714,71 @@
     }
 
     //Transformers
+    function genBadge(colourData) {
+        return '<span class="badge fw-bold bg-{0}">{1}</span>'
+            .format(colourData.colour, colourData.text);
+    }
+
+    function genTextBadge(colourData) {
+        return '<span class="m-2 fw-bold text-{0}">{1}</span>'
+            .format(colourData.colour, colourData.text);
+    }
+
     function appStateToHtml(state) {
+        const colorData = appStateColour(state);
+        return genBadge(colorData);
+    }
+
+    function appStateColouredText(state) {
+        const colorData = appStateColour(state);
+        return genTextBadge(colorData);
+    }
+
+    function appStateColour(state) {
         switch(state) {
-            case 'INIT' : return '<span class="badge fw-bold bg-primary">Initializing</span>';
-            case 'MONITORING' : return '<span class="badge fw-bold bg-info">Monitoring</span>';
-            case 'RUNNING' : return '<span class="badge fw-bold bg-success">Running</span>';
-            case 'OUTAGE_DETECTED' : return '<span class="badge fw-bold bg-danger">Outage Detected</span>';
-            case 'SCALING_REQUESTED' : return '<span class="badge fw-bold bg-warning">Scaling</span>';
-            case 'STOP_INSTANCES_REQUESTED' : return '<span class="badge fw-bold bg-warning">Stopping instances</span>';
-            case 'REPLACE_INSTANCES_REQUESTED' : return '<span class="badge fw-bold bg-warning">Restarting</span>';
-            case 'DESTROY_REQUESTED' : return '<span class="badge fw-bold bg-danger">Destruction Underway</span>';
-            case 'DESTROYED' : return '<span class="badge fw-bold bg-danger">Destroyed</span>';
-            case 'FAILED' : return '<span class="badge fw-bold bg-secondary">Failed</span>';
+            case 'INIT' : return { "colour" : "primary", "text": "Initializing" };
+            case 'MONITORING' : return { "colour" : "info", "text": "Monitoring" };
+            case 'RUNNING' : return { "colour" : "success", "text": "Running" };
+            case 'OUTAGE_DETECTED' : return { "colour" : "danger", "text": "Outage Detected" };
+            case 'SCALING_REQUESTED' : return { "colour" : "warning", "text": "Scaling" };
+            case 'STOP_INSTANCES_REQUESTED' : return { "colour" : "warning", "text": "Stopping instances" };
+            case 'REPLACE_INSTANCES_REQUESTED' : return { "colour" : "warning", "text": "Restarting" };
+            case 'DESTROY_REQUESTED' : return { "colour" : "danger", "text": "Destruction Underway" };
+            case 'DESTROYED' : return { "colour" : "danger", "text": "Destroyed" };
+            case 'FAILED' : return { "colour" : "secondary", "text": "Failed" };
         }
     }
 
     function localServiceStateToHtml(state) {
-        switch(state) {
-            case 'INIT' : return '<span class="badge fw-bold bg-primary">Initializing</span>';
-            case 'INACTIVE' : return '<span class="badge fw-bold bg-secondary">Inactive</span>';
-            case 'CONFIG_TESTING' : return '<span class="badge fw-bold bg-info">Config Testing</span>';
-            case 'ACTIVE' : return '<span class="badge fw-bold bg-success">Active</span>';
-            case 'ACTIVATION_REQUESTED' : return '<span class="badge fw-bold bg-warning">Activation Requested</span>';
-            case 'CONFIG_TESTING_REQUESTED' : return '<span class="badge fw-bold bg-warning"> Config Test Requested</span>';
-            case 'DEACTIVATION_REQUESTED' : return '<span class="badge fw-bold bg-warning">Deactivation Requested</span>';
-            case 'ADJUSTING_INSTANCES' : return '<span class="badge fw-bold bg-warning">Adjusting Instances</span>';
-            case 'REPLACING_INSTANCES' : return '<span class="badge fw-bold bg-warning">Replacing Instances</span>';
-            case 'STOPPING_INSTANCES' : return '<span class="badge fw-bold bg-warning">Stopping Instances</span>';
-            case 'DESTROY_REQUESTED' : return '<span class="badge fw-bold bg-danger">Destruction Underway</span>';
-            case 'DESTROYED' : return '<span class="badge fw-bold bg-danger">Destroyed</span>';
-        }
+        const colorData = localServiceStateColour(state);
+        return genBadge(colorData);
     }
 
+    function localServiceStateToColuredText(state) {
+        const colorData = localServiceStateColour(state);
+        return genTextBadge(colorData);
+    }
+
+    function localServiceStateColour(state) {
+        switch(state) {
+            case 'INIT' : return { "colour" : "primary", "text" : "Initializing" };
+            case 'ACTIVATION_REQUESTED' : return { "colour" : "warning", "text" : "Activation Requested" };
+            case 'CONFIG_TESTING_REQUESTED' : return { "colour" : "warning", "text" : " Config Test Requested" };
+            case 'DEACTIVATION_REQUESTED' : return { "colour" : "warning", "text" : "Deactivation Requested" };
+            case 'EMERGENCY_DEACTIVATION_REQUESTED' : return { "colour" : "danger", "text" : "Emergency Deactivation Requested" };
+            case 'INACTIVE' : return { "colour" : "primary", "text" : "Inactive" };
+            case 'ACTIVE' : return { "colour" : "success", "text" : "Active" };
+            case 'CONFIG_TESTING' : return { "colour" : "info", "text" : "Config Testing" };
+            case 'ADJUSTING_INSTANCES' : return { "colour" : "warning", "text" : "Adjusting Instances" };
+            case 'DEPLOYING_TEST_INSTANCE' : return { "colour" : "warning", "text" : " Config Test Requested" };
+            case 'REPLACING_INSTANCES' : return { "colour" : "warning", "text" : "Replacing Instances" };
+            case 'UPDATING_INSTANCES_COUNT' : return { "colour" : "warning", "text" : "Updating Instances Count" };
+            case 'STOPPING_INSTANCES' : return { "colour" : "warning", "text" : "Stopping Instances" };
+            case 'DESTROY_REQUESTED' : return { "colour" : "danger", "text" : "Destruction Underway" };
+            case 'DESTROYED' : return { "colour" : "secondary", "text" : "Destroyed" };
+        }
+    }
+    
     function instanceStateToHtml(state) {
         switch(state) {
             case 'PENDING' : return '<span class="badge fw-bold bg-primary">Pending</span>';
@@ -645,39 +800,49 @@
     }
 
     function taskStateToHtml(state) {
+        const colorData = taskStateColour(state);
+        return genBadge(colorData);
+    }
+
+    function taskStateColour(state) {
         switch(state) {
-            case 'PENDING' : return '<span class="badge fw-bold bg-primary">Pending</span>';
-            case 'PROVISIONING' : return '<span class="badge fw-bold bg-warning">Provisioning</span>';
-            case 'PROVISIONING_FAILED' : return '<span class="badge fw-bold bg-danger">Provisioning Failed</span>';
-            case 'STARTING' : return '<span class="badge fw-bold bg-warning">Starting</span>';
-            case 'STARTING_FAILED' : return '<span class="badge fw-bold bg-danger">Start Failed</span>';
-            case 'RUNNING' : return '<span class="badge fw-bold bg-success">Running</span>';
-            case 'RUN_FAILED' : return '<span class="badge fw-bold bg-danger">Run Failed</span>';
-            case 'RUN_TIMEOUT' : return '<span class="badge fw-bold bg-success">Run Timed Out</span>';
-            case 'RUN_COMPLETED' : return '<span class="badge fw-bold bg-danger">Run Completed</span>';
-            case 'RUN_CANCELLED' : return '<span class="badge fw-bold bg-warning">Run Cancelled</span>';
-            case 'DEPROVISIONING' : return '<span class="badge fw-bold bg-warning">Deprovisioning</span>';
-            case 'STOPPING' : return '<span class="badge fw-bold bg-warning">Stopping</span>';
-            case 'STOPPED' : return '<span class="badge fw-bold bg-secondary">Stopped</span>';
-            case 'LOST' : return '<span class="badge fw-bold bg-secondary">Lost</span>';
-            case 'UNKNOWN' : return '<span class="badge fw-bold bg-danger">UNKNOWN</span>';
+            case 'PENDING' : return { colour: 'primary', text: 'Pending' };
+            case 'PROVISIONING' : return { colour: 'warning', text: 'Provisioning' };
+            case 'PROVISIONING_FAILED' : return { colour: 'danger', text: 'Provisioning Failed' };
+            case 'STARTING' : return { colour: 'warning', text: 'Starting' };
+            case 'STARTING_FAILED' : return { colour: 'danger', text: 'Start Failed' };
+            case 'RUNNING' : return { colour: 'success', text: 'Running' };
+            case 'RUN_FAILED' : return { colour: 'danger', text: 'Run Failed' };
+            case 'RUN_TIMEOUT' : return { colour: 'danger', text: 'Run Timed Out' };
+            case 'RUN_COMPLETED' : return { colour: 'success', text: 'Run Completed' };
+            case 'RUN_CANCELLED' : return { colour: 'warning', text: 'Run Cancelled' };
+            case 'DEPROVISIONING' : return { colour: 'warning', text: 'Deprovisioning' };
+            case 'STOPPING' : return { colour: 'warning', text: 'Stopping' };
+            case 'STOPPED' : return { colour: 'secondary', text: 'Stopped' };
+            case 'LOST' : return { colour: 'secondary', text: 'Lost' };
+            case 'UNKNOWN' : return { colour: 'danger', text: 'UNKNOWN' };
         }
     }
 
     function executorStateToHtml(state) {
+        const colorData = executorStateColour(state);
+        return genBadge(colorData);
+    }
+
+    function executorStateColour(state) {
         switch(state) {
             case 'ACTIVE':
-                return '<span class="badge bg-success fw-bold">Active</span>';
+                return { colour: 'success', text: 'Active' };
             case 'UNREADY':
-                return '<span class="badge bg-warning fw-bold">Unready</span>';
+                return { colour: 'warning', text: 'Unready' };
             case 'BLACKLIST_REQUESTED':
-                return '<span class="badge bg-warning fw-bold">Blacklisting Underway</span>';
+                return { colour: 'warning', text: 'Blacklisting Underway' };
              case 'BLACKLISTED':
-                return '<span class="badge bg-danger fw-bold">Blacklisted</span>';
+                return { colour: 'danger', text: 'Blacklisted' };
             case 'REMOVED':
-                return '<span class="badge bg-danger fw-bold">Removed</span>';
+                return { colour: 'danger', text: 'Removed' };
             default:
-                return '<span class="badge bg-secondary fw-bold">Unknown</span>';
+                return { colour: 'secondary', text: 'Unknown' };
         }
     }
 
@@ -747,6 +912,25 @@
         const i = Math.floor(Math.log(bytes) / Math.log(k));
 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function insertEmptyTable(settings, table, count) {
+        const api = table.api();
+        const currentRows = api.rows().count();
+        const columns = api.columns().count();
+        const $tbody = $(table).find('tbody');
+
+        if (currentRows < count) {
+            const diff = count - currentRows;
+            for (let i = 0; i < diff; i++) {
+                let rowHtml = '<tr class="filler-row">';
+                for (let j = 0; j < columns; j++) {
+                    rowHtml += '<td>&nbsp;</td>';
+                }
+                rowHtml += '</tr>';
+                $tbody.append(rowHtml);
+            }
+        }
     }
 
     $(document).on('click', '.copy-button', function (e) {
