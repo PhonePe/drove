@@ -385,7 +385,7 @@ public class DashboardDataSource {
     }
 
     private DashboardData.TaskStats computeTaskStats(final List<TaskInfo> tasks) {
-        val taskCountByState = new HashMap<TaskState, Long>(
+        val taskCountByState = new EnumMap<TaskState, Long>(
                 EnumSet.allOf(TaskState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
