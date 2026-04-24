@@ -16,6 +16,29 @@
 
 package com.phonepe.drove.controller.ui.support;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
@@ -29,10 +52,15 @@ import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -40,18 +68,14 @@ import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import lombok.val;
 
 class DashboardDataSourceTest {
 
@@ -615,7 +639,7 @@ class DashboardDataSourceTest {
     }
 
     private ApplicationInfo createMockApplicationInfo(String appId, String appName) {
-        val spec = mock(com.phonepe.drove.models.application.ApplicationSpec.class);
+        val spec = mock(ApplicationSpec.class);
         when(spec.getName()).thenReturn(appName);
 
         val appInfo = mock(ApplicationInfo.class);
@@ -634,7 +658,7 @@ class DashboardDataSourceTest {
     }
 
     private LocalServiceInfo createMockLocalServiceInfo(String serviceId, String serviceName) {
-        val spec = mock(com.phonepe.drove.models.localservice.LocalServiceSpec.class);
+        val spec = mock(LocalServiceSpec.class);
         when(spec.getName()).thenReturn(serviceName);
 
         val serviceInfo = mock(LocalServiceInfo.class);
@@ -673,7 +697,7 @@ class DashboardDataSourceTest {
         when(nodeData.getExecutorState()).thenReturn(ExecutorState.ACTIVE);
         when(nodeData.getState()).thenReturn(resourceSnapshot);
         when(nodeData.accept(any())).thenAnswer(invocation -> {
-            val visitor = invocation.getArgument(0, com.phonepe.drove.models.info.nodedata.NodeDataVisitor.class);
+            val visitor = invocation.getArgument(0, NodeDataVisitor.class);
             return visitor.visit(nodeData);
         });
 
@@ -712,7 +736,7 @@ class DashboardDataSourceTest {
         when(nodeData.getExecutorState()).thenReturn(ExecutorState.ACTIVE);
         when(nodeData.getState()).thenReturn(resourceSnapshot);
         when(nodeData.accept(any())).thenAnswer(invocation -> {
-            val visitor = invocation.getArgument(0, com.phonepe.drove.models.info.nodedata.NodeDataVisitor.class);
+            val visitor = invocation.getArgument(0, NodeDataVisitor.class);
             return visitor.visit(nodeData);
         });
 
@@ -720,4 +744,151 @@ class DashboardDataSourceTest {
         when(executorInfo.getNodeData()).thenReturn(nodeData);
         return executorInfo;
     }
+
+    @Test
+    void testZeroInstanceAppsExcludedFromTopApps() throws Exception {
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+
+        val app1 = createMockApplicationInfo("app1", "App1");
+        when(app1.getInstances()).thenReturn(2L);
+
+        val app2 = createMockApplicationInfo("app2", "App2");
+        when(app2.getInstances()).thenReturn(0L);
+
+        val app3 = createMockApplicationInfo("app3", "App3");
+        when(app3.getInstances()).thenReturn(1L);
+
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationStateDB.applications(anyInt(), anyInt())).thenReturn(List.of(app1, app2, app3));
+
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        when(instanceInfoDB.healthyInstances(anyList())).thenReturn(Map.of());
+
+        val taskEngine = mock(TaskEngine.class);
+        when(taskEngine.tasks(any())).thenReturn(List.of());
+
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+        when(localServiceStateDB.services(anyInt(), anyInt())).thenReturn(List.of());
+
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyBoolean())).thenReturn(List.of());
+
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+
+        val dataSource = new DashboardDataSource(
+                applicationStateDB,
+                taskEngine,
+                localServiceStateDB,
+                appEngine,
+                clusterResourcesDB,
+                instanceInfoDB,
+                localServiceEngine,
+                leadershipEnsurer,
+                leadershipObserver,
+                clusterStateDB,
+                TEST_REFRESH_INTERVAL);
+
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+
+        val result = dataSource.current();
+        assertTrue(result.isPresent());
+        val topApps = result.get().getAppStats().getTopApps();
+        assertEquals(2, topApps.size());
+        assertTrue(topApps.stream().noneMatch(app -> app.getId().equals("app2")));
+    }
+
+    @Test
+    void testAppScoringWithScaledIntegers() throws Exception {
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+
+        val app1 = createMockApplicationInfoWithResources("app1", "App1", 2L, 8L, 8192L);
+        val app2 = createMockApplicationInfoWithResources("app2", "App2", 1L, 8L, 8192L);
+        val app3 = createMockApplicationInfoWithResources("app3", "App3", 1L, 4L, 4096L);
+
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationStateDB.applications(anyInt(), anyInt())).thenReturn(List.of(app1, app2, app3));
+
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        when(instanceInfoDB.healthyInstances(anyList())).thenReturn(Map.of());
+
+        val taskEngine = mock(TaskEngine.class);
+        when(taskEngine.tasks(any())).thenReturn(List.of());
+
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+        when(localServiceStateDB.services(anyInt(), anyInt())).thenReturn(List.of());
+
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyBoolean())).thenReturn(List.of());
+
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+
+        val dataSource = new DashboardDataSource(
+                applicationStateDB,
+                taskEngine,
+                localServiceStateDB,
+                appEngine,
+                clusterResourcesDB,
+                instanceInfoDB,
+                localServiceEngine,
+                leadershipEnsurer,
+                leadershipObserver,
+                clusterStateDB,
+                TEST_REFRESH_INTERVAL);
+
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+
+        val result = dataSource.current();
+        assertTrue(result.isPresent());
+        val topApps = result.get().getAppStats().getTopApps();
+        assertEquals(3, topApps.size());
+        assertEquals("app1", topApps.get(0).getId());
+        assertEquals("app2", topApps.get(1).getId());
+        assertEquals("app3", topApps.get(2).getId());
+    }
+
+    private ApplicationInfo createMockApplicationInfoWithResources(String appId,
+                                                                   String appName,
+                                                                   long instances,
+                                                                   long cpuCount,
+                                                                   long memoryMB) {
+        val cpuRequirement = mock(CPURequirement.class);
+        when(cpuRequirement.getCount()).thenReturn(cpuCount);
+        when(cpuRequirement.accept(any())).thenAnswer(invocation -> {
+            val visitor = invocation.getArgument(0,
+                                                 ResourceRequirementVisitor.class);
+            return visitor.visit(cpuRequirement);
+        });
+
+        val memoryRequirement = mock(MemoryRequirement.class);
+        when(memoryRequirement.getSizeInMB()).thenReturn(memoryMB);
+        when(memoryRequirement.accept(any())).thenAnswer(invocation -> {
+            val visitor = invocation.getArgument(0,
+                                                 ResourceRequirementVisitor.class);
+            return visitor.visit(memoryRequirement);
+        });
+
+        val spec = mock(ApplicationSpec.class);
+        when(spec.getName()).thenReturn(appName);
+        when(spec.getResources()).thenReturn(List.of(cpuRequirement, memoryRequirement));
+
+        val appInfo = mock(ApplicationInfo.class);
+        when(appInfo.getAppId()).thenReturn(appId);
+        when(appInfo.getSpec()).thenReturn(spec);
+        when(appInfo.getInstances()).thenReturn(instances);
+        return appInfo;
+    }
+
+
 }

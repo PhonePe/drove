@@ -623,7 +623,7 @@
              
                     const dataLink = "/tasks/{0}/{1}"
                         .format(row.sourceAppName, row.taskId);
-                    const colour = appStateColour(row.state);
+                    const colour = taskStateColour(row.state);
                     const classes = "fw-bold border-start border-4 px-2 border-{0}"
                         .format(colour.colour);
                     const text = row.sourceAppName + ' / ' + row.taskId;

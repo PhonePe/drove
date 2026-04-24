@@ -79,6 +79,7 @@ public class DashboardDataSource {
 
     private static final String DASHBOARD_REFRESHER_SIGNAL_HANDLER = "dashboard-refresher";
     private static final Duration DASHBOARD_REFRESH_INTERVAL = Duration.ofSeconds(30);
+    private static final int MAX_ELEMENTS_IN_TOP_LIST = 5;
 
     private final ApplicationLifecycleManagementEngine appEngine; 
     private final ApplicationStateDB applicationStateDB;
@@ -283,7 +284,11 @@ public class DashboardDataSource {
 
             appCountByState.compute(appState,
                     (state, count) -> Objects.requireNonNullElse(count, 0L) + 1);
-            scorables.add(Pair.of(app, score(app, clusterSummary)));
+
+            if(app.getInstances() > 0) {
+                scorables.add(Pair.of(app, score(app, clusterSummary)));
+            }
+
             appIds.add(app.getAppId());
             appNames.add(app.getSpec().getName());
         }
@@ -294,7 +299,7 @@ public class DashboardDataSource {
             .sum();
         val topApps = scorables.stream()
             .sorted((lhs, rhs) -> Long.compare(rhs.getSecond(), lhs.getSecond())) //descending 
-            .limit(10)
+            .limit(MAX_ELEMENTS_IN_TOP_LIST)
             .map(data -> ControllerUtils.toAppSummary(
                         data.getFirst(),
                         appEngine,
@@ -321,7 +326,7 @@ public class DashboardDataSource {
                 EnumSet.allOf(ActivationState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
-        val scorables = new ArrayList<Pair<LocalServiceInfo, Long>>(5);
+        val scorables = new ArrayList<Pair<LocalServiceInfo, Long>>(MAX_ELEMENTS_IN_TOP_LIST);
         for (val service : services) {
             val serviceState = localServiceEngine.currentState(service.getServiceId()).orElse(null);
             if (null == serviceState) {
@@ -349,7 +354,7 @@ public class DashboardDataSource {
                 .count();
         val topServices = scorables.stream()
                 .sorted((lhs, rhs) -> Long.compare(rhs.getSecond(), lhs.getSecond())) //descending 
-                .limit(5)
+                .limit(MAX_ELEMENTS_IN_TOP_LIST)
                 .map(data -> summarizeService(data.getFirst(), instancesForServices.getOrDefault(data.getFirst().getServiceId(), List.of())))
                 .toList();
         return DashboardData.ServiceStats.builder()
@@ -389,7 +394,7 @@ public class DashboardDataSource {
                 EnumSet.allOf(TaskState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
-        val scorables = new ArrayList<Pair<TaskInfo, Long>>(5);
+        val scorables = new ArrayList<Pair<TaskInfo, Long>>(MAX_ELEMENTS_IN_TOP_LIST);
         tasks.stream()
             .forEach(task -> {
                     taskCountByState.compute(task.getState(),
@@ -401,7 +406,7 @@ public class DashboardDataSource {
                 .taskCountByState(taskCountByState)
                 .topTasks(scorables.stream()
                                   .sorted((lhs, rhs) -> Long.compare(rhs.getSecond(), lhs.getSecond())) //descending 
-                                  .limit(5)
+                                  .limit(MAX_ELEMENTS_IN_TOP_LIST)
                                   .map(Pair::getFirst)
                                   .toList())
                 .build();
@@ -429,8 +434,8 @@ public class DashboardDataSource {
 
     //We use dominant resource fairness scoring
     private static long score(final DeploymentSpec spec, long instances, ClusterResourcesSummary clusterSummary) {
-        val totalCPU = ControllerUtils.totalCPU(spec, instances) / Math.max(1, clusterSummary.getTotalCores());
-        val totalMemory = ControllerUtils.totalMemory(spec, instances) / Math.max(1, clusterSummary.getTotalMemory());
+        val totalCPU = (ControllerUtils.totalCPU(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalCores());
+        val totalMemory = (ControllerUtils.totalMemory(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalMemory());
         return Math.max(totalCPU, totalMemory);
     }
         
