@@ -584,18 +584,16 @@
      
             d = d.toString(); // cast numbers
      
-            if ( d.length < cutoff ) {
-                return d;
-            }
-     
-            var shortened = d.substr(0, cutoff-1);
+            const needsEllipsis = d.length > cutoff;
+            const cutoffIndex = Math.min(cutoff, d.length);
+            let shortened = needsEllipsis ? d.substr(0, cutoffIndex - 1) : d;
      
             // Find the last white space character in the string
-            if ( wordbreak ) {
+            if ( needsEllipsis && wordbreak ) {
                 shortened = shortened.replace(/\s([^\s]*)$/, '');
             }
      
-            shortened = escapeHtml(shortened) + '&#8230;'; 
+            shortened = escapeHtml(shortened) + (needsEllipsis ? '&#8230;' : '');
             const classes = 'ellipsis ' + (extraClasses ? extraClasses : '');
 
             if (link) {

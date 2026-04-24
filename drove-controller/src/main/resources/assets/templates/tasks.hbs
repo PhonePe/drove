@@ -64,15 +64,19 @@
     const tasks = $('#tasks').DataTable({
         processing: true,
         paging: true,
-        pageLength: 25,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        pageLength: 20,
+        lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
         info: false,
         responsive: false,
         scrollX: true,
         columnDefs: [
             {
+                className: 'text-start text-nowrap',
+                targets: [0,1]
+            },
+            {
                 className: 'text-center text-wrap',
-                targets: '_all'
+                targets: [2,3,4,5,6]
             }
         ],
         columns: [

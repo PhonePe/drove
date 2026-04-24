@@ -31,15 +31,19 @@
         processing: true,
         ajax: '/apis/v1/cluster/executors',
         paging: true,
-        pageLength: 25,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        pageLength: 20,
+        lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
         info: false,
         responsive: false,
         scrollX: true,
         columnDefs: [
             {
-                className: 'text-center',
-                targets: [2, 3, 4, 5]
+                className: 'text-start text-nowrap',
+                targets: 0
+            },
+            {
+                className: 'text-center text-wrap',
+                targets: [1,2,3,4,5,6]
             }
         ],
         columns: [

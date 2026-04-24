@@ -575,7 +575,16 @@
         paging: false,
         searching: false,
         info: false,
-        columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
+        columnDefs: [
+            {
+                className: 'text-start text-nowrap',
+                targets: 0
+            },
+            {
+                className: 'text-center text-nowrap',
+                targets: [1,2,3]
+            }
+        ],
         columns: [
             {
                 data: 'id',
@@ -612,7 +621,16 @@
         paging: false,
         searching: false,
         info: false,
-        columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
+        columnDefs: [
+            {
+                className: 'text-start text-nowrap',
+                targets: 0
+            },
+            {
+                className: 'text-center text-nowrap',
+                targets: [1,2,3]
+            }
+        ],
         columns: [
             {
                 data: 'sourceAppName',
@@ -626,7 +644,7 @@
                     const colour = taskStateColour(row.state);
                     const classes = "fw-bold border-start border-4 px-2 border-{0}"
                         .format(colour.colour);
-                    const text = row.sourceAppName + ' / ' + row.taskId;
+                    const text = row.taskId;
                     return ellipsizedHtml(text, 15, dataLink, classes);
                 }
             },
@@ -645,7 +663,16 @@
         paging: false,
         searching: false,
         info: false,
-        columnDefs: [{ className: 'text-center text-wrap', targets: '_all' }],
+        columnDefs: [
+            {
+                className: 'text-start text-nowrap',
+                targets: 0
+            },
+            {
+                className: 'text-center text-nowrap',
+                targets: [1,2,3]
+            }
+        ],
         columns: [
             {
                 data: 'id',
