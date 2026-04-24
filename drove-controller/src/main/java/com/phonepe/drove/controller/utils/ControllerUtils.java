@@ -1245,6 +1245,7 @@ public class ControllerUtils {
 
     }
 
+    @SuppressWarnings("java:S107")
     public static ClusterSummary computeClusterSummary(
             final LeadershipObserver leadershipObserver,
             final ClusterStateDB clusterStateDB,

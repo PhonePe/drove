@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.ui.support;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -201,16 +202,15 @@ public class DashboardDataSource {
                                                       services,
                                                       clusterSummary))
                 .appStats(appStats.getFirst())
-                .taskStats(computeTaskStats(clusterSummary, tasks))
+                .taskStats(computeTaskStats(tasks))
                 .serviceStats(computeServiceStats(clusterSummary, services))
-                .executorStats(computeExecutorStats(clusterSummary, executors))
+                .executorStats(computeExecutorStats(executors))
                 .generatedAt(new Date())
                 .build());
     }
 
-    private ExecutorStats computeExecutorStats(ClusterResourcesSummary clusterSummary,
-                                                        List<ExecutorHostInfo> executors) {
-        val executorCountByState = new HashMap<ExecutorState, Long>(
+    private ExecutorStats computeExecutorStats(List<ExecutorHostInfo> executors) {
+        val executorCountByState = new EnumMap<ExecutorState, Long>(
                 EnumSet.allOf(ExecutorState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
@@ -268,7 +268,7 @@ public class DashboardDataSource {
             final ClusterResourcesSummary clusterSummary,
             final List<ApplicationInfo> applications) {
         val scorables = new ArrayList<Pair<ApplicationInfo, Long>>();
-        val appCountByState = new HashMap<ApplicationState, Long>(
+        val appCountByState = new EnumMap<ApplicationState, Long>(
                 EnumSet.allOf(ApplicationState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
@@ -313,11 +313,14 @@ public class DashboardDataSource {
     private DashboardData.ServiceStats computeServiceStats(
             final ClusterResourcesSummary clusterSummary,
             final List<LocalServiceInfo> services) {
-        val serviceCountByState = new HashMap<LocalServiceState, Long>(
+        val serviceCountByState = new EnumMap<LocalServiceState, Long>(
                 EnumSet.allOf(LocalServiceState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
-        val serviceCountByActivationState = new HashMap<ActivationState, Long>();
+        val serviceCountByActivationState = new EnumMap<ActivationState, Long>(
+                EnumSet.allOf(ActivationState.class)
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), state -> 0L)));
         val scorables = new ArrayList<Pair<LocalServiceInfo, Long>>(5);
         for (val service : services) {
             val serviceState = localServiceEngine.currentState(service.getServiceId()).orElse(null);
@@ -351,7 +354,7 @@ public class DashboardDataSource {
                 .toList();
         return DashboardData.ServiceStats.builder()
                 .serviceCountByState(serviceCountByState)
-                .serviceCountByActivationState(Map.copyOf(serviceCountByActivationState))
+                .serviceCountByActivationState(serviceCountByActivationState)
                 .topServices(List.copyOf(topServices))
                 .totalHealthyInstances(totalHealthyInstances)
                 .build();
@@ -381,9 +384,7 @@ public class DashboardDataSource {
                                                      localServiceEngine);
     }
 
-    private DashboardData.TaskStats computeTaskStats(
-            final ClusterResourcesSummary clusterSummary,
-            final List<TaskInfo> tasks) {
+    private DashboardData.TaskStats computeTaskStats(final List<TaskInfo> tasks) {
         val taskCountByState = new HashMap<TaskState, Long>(
                 EnumSet.allOf(TaskState.class)
                 .stream()

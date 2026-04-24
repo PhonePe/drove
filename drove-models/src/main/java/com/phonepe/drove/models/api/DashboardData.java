@@ -56,7 +56,6 @@ public final class DashboardData {
     public static final class ExecutorStats {
         @NonNull Map<ExecutorState, Long> executorCountByState;
         @NonNull UtilizationStats utilization;
-        //@NonNull List<ExecutorSummary> topExecutors;
     }
 
     @NonNull ClusterSummary clusterSummary;
