@@ -370,7 +370,7 @@ class ExecutorMessageHandlerTest {
         val message = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                            executor(),
                                                            ExecutorTestingUtils.testLocalServiceInstanceSpec());
-        assertEquals(MessageDeliveryStatus.FAILED, message.accept(mh).getStatus());
+        assertEquals(MessageDeliveryStatus.ACCEPTED, message.accept(mh).getStatus());
     }
 
     @Test

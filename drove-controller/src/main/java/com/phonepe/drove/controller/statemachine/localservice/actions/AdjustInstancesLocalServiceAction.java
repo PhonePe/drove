@@ -35,6 +35,7 @@ import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.jobexecutor.JobTopology;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
@@ -61,6 +62,8 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.safeCast;
  */
 @Slf4j
 public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
+
+    private static final Set<ExecutorState> ACCEPTABLE_EXECUTOR_STATES = Set.of(ExecutorState.ACTIVE, ExecutorState.UNREADY);
 
     private final ClusterResourcesDB clusterResourcesDB;
     private final InstanceScheduler scheduler;
@@ -109,7 +112,10 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
         val currInfo = currentState.getData();
         val instancesPerHost = currInfo.getInstancesPerHost();
-        val liveExecutors = clusterResourcesDB.currentSnapshot(true);
+        val liveExecutors = clusterResourcesDB.currentSnapshot(false)
+                .stream()
+                .filter(executorHostInfo -> ACCEPTABLE_EXECUTOR_STATES.contains(executorHostInfo.getNodeData().getExecutorState()))
+                .toList();
         val clusterOpSpec = Objects.requireNonNullElse(scaleOp.getOpSpec(), defaultClusterOpSpec);
         val schedulingSessionId = context.getSchedulingSessionId();
         // This is a benign operation, so we set this up regardless of new instances need to be created or not
