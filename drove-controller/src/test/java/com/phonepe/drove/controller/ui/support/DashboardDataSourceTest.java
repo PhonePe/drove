@@ -124,7 +124,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -211,7 +211,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -257,7 +257,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -306,7 +306,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -351,7 +351,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -398,7 +398,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -449,7 +449,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -501,7 +501,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -549,7 +549,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -794,7 +794,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -847,7 +847,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -937,7 +937,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
@@ -989,7 +989,7 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
         val result = dataSource.current();
         assertTrue(result.isPresent());
