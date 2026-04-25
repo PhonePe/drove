@@ -338,8 +338,10 @@ public class DashboardDataSource {
                                         (state, count) -> Objects.requireNonNullElse(count, 0L) + 1);
             serviceCountByActivationState.compute(service.getActivationState(),
                                                   (state, count) -> Objects.requireNonNullElse(count, 0L) + 1);
-            scorables.add(Pair.of(service,
+            if(LocalServiceState.RESOURCE_USING_STATES.contains(serviceState)) {
+                scorables.add(Pair.of(service,
                                   score(service.getSpec(), 1, clusterSummary))); //Instance count is irrelevant here
+            }
         }
         val instancesForServices = new HashMap<String, List<LocalServiceInstanceInfo>>();
         services.stream()
@@ -399,8 +401,10 @@ public class DashboardDataSource {
             .forEach(task -> {
                     taskCountByState.compute(task.getState(),
                                              (state, count) -> Objects.requireNonNullElse(count, 0L) + 1);
-                    val elapsdTime = System.currentTimeMillis() - task.getCreated().toInstant().toEpochMilli();
-                    scorables.add(Pair.of(task, elapsdTime));
+                    if(!task.getState().isTerminal()) {
+                        val elapsdTime = System.currentTimeMillis() - task.getCreated().toInstant().toEpochMilli();
+                        scorables.add(Pair.of(task, elapsdTime));
+                    }
                 });
         return DashboardData.TaskStats.builder()
                 .taskCountByState(taskCountByState)

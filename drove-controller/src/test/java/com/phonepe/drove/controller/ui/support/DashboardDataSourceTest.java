@@ -891,4 +891,144 @@ class DashboardDataSourceTest {
     }
 
 
+
+    @Test
+    void testServiceStatsOnlyIncludesResourceUsingStates() throws Exception {
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+
+        val activeService = createMockLocalServiceInfoWithResources("service1", "ActiveService", 2L, 4096L);
+        val inactiveService = createMockLocalServiceInfoWithResources("service2", "InactiveService", 2L, 4096L);
+        val configTestingService = createMockLocalServiceInfoWithResources("service3", "ConfigTestService", 1L, 2048L);
+
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+        when(localServiceStateDB.services(anyInt(), anyInt())).thenReturn(List.of(activeService, inactiveService, configTestingService));
+        when(localServiceStateDB.instances(anyString(), any(), anyBoolean())).thenReturn(List.of());
+
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+        when(localServiceEngine.currentState("service1")).thenReturn(Optional.of(LocalServiceState.ACTIVE));
+        when(localServiceEngine.currentState("service2")).thenReturn(Optional.of(LocalServiceState.INACTIVE));
+        when(localServiceEngine.currentState("service3")).thenReturn(Optional.of(LocalServiceState.CONFIG_TESTING));
+
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationStateDB.applications(anyInt(), anyInt())).thenReturn(List.of());
+
+        val taskEngine = mock(TaskEngine.class);
+        when(taskEngine.tasks(any())).thenReturn(List.of());
+
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyBoolean())).thenReturn(List.of());
+
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+
+        val dataSource = new DashboardDataSource(
+                applicationStateDB,
+                taskEngine,
+                localServiceStateDB,
+                appEngine,
+                clusterResourcesDB,
+                instanceInfoDB,
+                localServiceEngine,
+                leadershipEnsurer,
+                leadershipObserver,
+                clusterStateDB,
+                TEST_REFRESH_INTERVAL);
+
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+
+        val result = dataSource.current();
+        assertTrue(result.isPresent());
+        val topServices = result.get().getServiceStats().getTopServices();
+        assertEquals(2, topServices.size());
+        assertTrue(topServices.stream().anyMatch(svc -> svc.getId().equals("service1")));
+        assertTrue(topServices.stream().anyMatch(svc -> svc.getId().equals("service3")));
+        assertFalse(topServices.stream().anyMatch(svc -> svc.getId().equals("service2")));
+    }
+
+    @Test
+    void testTaskStatsExcludesTerminalTasks() throws Exception {
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+
+        val runningTask = createMockTaskInfo("task1", TaskState.RUNNING);
+        val stoppedTask = createMockTaskInfo("task2", TaskState.STOPPED);
+        val lostTask = createMockTaskInfo("task3", TaskState.LOST);
+        val pendingTask = createMockTaskInfo("task4", TaskState.PENDING);
+
+        val taskEngine = mock(TaskEngine.class);
+        when(taskEngine.tasks(any())).thenReturn(List.of(runningTask, stoppedTask, lostTask, pendingTask));
+
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationStateDB.applications(anyInt(), anyInt())).thenReturn(List.of());
+
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+        when(localServiceStateDB.services(anyInt(), anyInt())).thenReturn(List.of());
+
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyBoolean())).thenReturn(List.of());
+
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+
+        val dataSource = new DashboardDataSource(
+                applicationStateDB,
+                taskEngine,
+                localServiceStateDB,
+                appEngine,
+                clusterResourcesDB,
+                instanceInfoDB,
+                localServiceEngine,
+                leadershipEnsurer,
+                leadershipObserver,
+                clusterStateDB,
+                TEST_REFRESH_INTERVAL);
+
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent(), Duration.ofSeconds(5));
+
+        val result = dataSource.current();
+        assertTrue(result.isPresent());
+        val topTasks = result.get().getTaskStats().getTopTasks();
+        assertEquals(2, topTasks.size());
+        assertTrue(topTasks.stream().anyMatch(task -> task.getTaskId().equals("task1")));
+        assertTrue(topTasks.stream().anyMatch(task -> task.getTaskId().equals("task4")));
+        assertFalse(topTasks.stream().anyMatch(task -> task.getTaskId().equals("task2")));
+        assertFalse(topTasks.stream().anyMatch(task -> task.getTaskId().equals("task3")));
+    }
+
+    private LocalServiceInfo createMockLocalServiceInfoWithResources(String serviceId,
+                                                                      String serviceName,
+                                                                      long cpuCount,
+                                                                      long memoryMB) {
+        val cpuRequirement = mock(CPURequirement.class);
+        when(cpuRequirement.getCount()).thenReturn(cpuCount);
+        when(cpuRequirement.accept(any())).thenAnswer(invocation -> {
+            val visitor = invocation.getArgument(0, ResourceRequirementVisitor.class);
+            return visitor.visit(cpuRequirement);
+        });
+
+        val memoryRequirement = mock(MemoryRequirement.class);
+        when(memoryRequirement.getSizeInMB()).thenReturn(memoryMB);
+        when(memoryRequirement.accept(any())).thenAnswer(invocation -> {
+            val visitor = invocation.getArgument(0, ResourceRequirementVisitor.class);
+            return visitor.visit(memoryRequirement);
+        });
+
+        val spec = mock(LocalServiceSpec.class);
+        when(spec.getName()).thenReturn(serviceName);
+        when(spec.getResources()).thenReturn(List.of(cpuRequirement, memoryRequirement));
+
+        val serviceInfo = mock(LocalServiceInfo.class);
+        when(serviceInfo.getServiceId()).thenReturn(serviceId);
+        when(serviceInfo.getSpec()).thenReturn(spec);
+        when(serviceInfo.getActivationState()).thenReturn(ActivationState.ACTIVE);
+        return serviceInfo;
+    }
+
+
 }
