@@ -182,4 +182,160 @@ class TaskRunnerTest extends ControllerTestBase {
         assertTrue(pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId()).isEmpty());
         f.get();
     }
+
+    @Test
+    @SneakyThrows
+    void testStaleTaskDetection() {
+        val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+        cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+
+        val comm = mock(ControllerCommunicator.class);
+        val completedSignal = new ConsumingFireForgetSignal<TaskRunner>();
+        val taskSpec = taskSpec();
+        val tr = new TaskRunner(taskSpec.getSourceAppName(),
+                                taskSpec.getTaskId(),
+                                new JobExecutor<>(Executors.newSingleThreadExecutor()),
+                                pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                Executors.defaultThreadFactory(),
+                                completedSignal,
+                                httpCaller());
+
+        val staleDate = new Date(System.currentTimeMillis() - Duration.minutes(2).toMilliseconds());
+
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
+                                taskSpec.getTaskId(),
+                                new TaskInfo(taskSpec.getSourceAppName(),
+                                           taskSpec.getTaskId(),
+                                           "TI001",
+                                           "EXECUTOR_1",
+                                           "localhost",
+                                           taskSpec.getExecutable(),
+                                           null,
+                                           taskSpec.getVolumes(),
+                                           taskSpec.getLogging(),
+                                           taskSpec.getEnv(),
+                                           RUNNING,
+                                           Map.of(),
+                                           null,
+                                           "",
+                                           staleDate,
+                                           staleDate));
+
+        val state = tr.updateCurrentState();
+        assertTrue(state.isPresent());
+        assertEquals(LOST, state.get());
+        assertEquals(LOST, pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+                .map(TaskInfo::getState)
+                .orElse(UNKNOWN));
+    }
+
+    @Test
+    @SneakyThrows
+    void testStaleTaskDetectionForErrorStates() {
+        val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+        cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+
+        val comm = mock(ControllerCommunicator.class);
+        val completedSignal = new ConsumingFireForgetSignal<TaskRunner>();
+        val taskSpec = taskSpec();
+        val tr = new TaskRunner(taskSpec.getSourceAppName(),
+                                taskSpec.getTaskId(),
+                                new JobExecutor<>(Executors.newSingleThreadExecutor()),
+                                pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                Executors.defaultThreadFactory(),
+                                completedSignal,
+                                httpCaller());
+
+        val staleDate = new Date(System.currentTimeMillis() - Duration.minutes(2).toMilliseconds());
+
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
+                                taskSpec.getTaskId(),
+                                new TaskInfo(taskSpec.getSourceAppName(),
+                                           taskSpec.getTaskId(),
+                                           "TI001",
+                                           "EXECUTOR_1",
+                                           "localhost",
+                                           taskSpec.getExecutable(),
+                                           null,
+                                           taskSpec.getVolumes(),
+                                           taskSpec.getLogging(),
+                                           taskSpec.getEnv(),
+                                           RUN_FAILED,
+                                           Map.of(),
+                                           null,
+                                           "",
+                                           staleDate,
+                                           staleDate));
+
+        val state = tr.updateCurrentState();
+        assertTrue(state.isPresent());
+        assertEquals(LOST, state.get());
+        assertEquals(LOST, pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+                .map(TaskInfo::getState)
+                .orElse(UNKNOWN));
+    }
+
+    @Test
+    @SneakyThrows
+    void testNoStaleDetectionForTerminalStates() {
+        val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+        cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+
+        val comm = mock(ControllerCommunicator.class);
+        val completedSignal = new ConsumingFireForgetSignal<TaskRunner>();
+        val taskSpec = taskSpec();
+        val tr = new TaskRunner(taskSpec.getSourceAppName(),
+                                taskSpec.getTaskId(),
+                                new JobExecutor<>(Executors.newSingleThreadExecutor()),
+                                pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                Executors.defaultThreadFactory(),
+                                completedSignal,
+                                httpCaller());
+
+        val staleDate = new Date(System.currentTimeMillis() - Duration.minutes(2).toMilliseconds());
+
+        pair.getKey().updateTask(taskSpec.getSourceAppName(),
+                                taskSpec.getTaskId(),
+                                new TaskInfo(taskSpec.getSourceAppName(),
+                                           taskSpec.getTaskId(),
+                                           "TI001",
+                                           "EXECUTOR_1",
+                                           "localhost",
+                                           taskSpec.getExecutable(),
+                                           null,
+                                           taskSpec.getVolumes(),
+                                           taskSpec.getLogging(),
+                                           taskSpec.getEnv(),
+                                           STOPPED,
+                                           Map.of(),
+                                           new TaskResult(TaskResult.Status.SUCCESSFUL, 0),
+                                           "",
+                                           staleDate,
+                                           staleDate));
+
+        val state = tr.updateCurrentState();
+        assertTrue(state.isPresent());
+        assertEquals(STOPPED, state.get());
+        assertEquals(STOPPED, pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
+                .map(TaskInfo::getState)
+                .orElse(UNKNOWN));
+    }
 }

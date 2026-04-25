@@ -196,7 +196,45 @@ class StateMachineTest {
 
     }
 
+    @Test
+    void testDirectStateChange() {
+        FunctionMetricsManager.initialize("drove.test", SharedMetricRegistries.getOrCreate("test"));
+        val ctx = new TestSMContext();
+        val tm = new TestSM(ctx);
+        val states = new LinkedHashSet<TestSMState>();
+        tm.onStateChange().connect(sd -> {
+            log.info("CURR STATE: {}", sd.getState().name());
+            states.add(sd.getState());
+        });
 
+        val newStateData = StateData.from(tm.getCurrentState(), TestSMState.WORKING);
+        val resultState = tm.changeState(newStateData);
+
+        assertEquals(TestSMState.WORKING, resultState);
+        assertEquals(TestSMState.WORKING, tm.getCurrentState().getState());
+        assertEquals(Set.of(TestSMState.WORKING), states);
+    }
+
+    @Test
+    void testChangeStateWithErrorData() {
+        FunctionMetricsManager.initialize("drove.test", SharedMetricRegistries.getOrCreate("test"));
+        val ctx = new TestSMContext();
+        val tm = new TestSM(ctx);
+        val states = new LinkedHashSet<TestSMState>();
+        tm.onStateChange().connect(sd -> {
+            log.info("CURR STATE: {}, Error: {}", sd.getState().name(), sd.getError());
+            states.add(sd.getState());
+        });
+
+        val errorStateData = StateData.errorFrom(tm.getCurrentState(), TestSMState.FAILED, "Test error message");
+        val resultState = tm.changeState(errorStateData);
+
+        assertEquals(TestSMState.FAILED, resultState);
+        assertEquals(TestSMState.FAILED, tm.getCurrentState().getState());
+        assertFalse(tm.getCurrentState().getError().isEmpty());
+        assertEquals("Test error message", tm.getCurrentState().getError());
+        assertEquals(Set.of(TestSMState.FAILED), states);
+    }
 
     private static class TestSMRunner implements Runnable {
         private final TestSM tm;

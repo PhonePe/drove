@@ -161,11 +161,10 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
                         state = stateMachine.execute();
                     }
                     catch (Exception e) {
-                        state = lostState;
-                        log.error("Error in state machine execution: {}", e.getMessage(), e);
-                        handleStateChange(StateData.errorFrom(stateMachine.getCurrentState(),
+                        state = stateMachine.changeState(StateData.errorFrom(stateMachine.getCurrentState(),
                                                               lostState,
                                                               "SM Execution error: " + e.getMessage()));
+                        log.error("Error in state machine execution: {}", e.getMessage(), e);
                     }
                 } while (!isTerminal(state));
                 log.info(FINALIZE_SESSION_MARKER, "Completed");

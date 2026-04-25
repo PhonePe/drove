@@ -173,7 +173,7 @@ public class TaskRunner implements Runnable {
         if (null == instance) {
             return Optional.empty();
         }
-        if (ACTIVE_STATES.contains(instance.getState())
+        if (!instance.getState().isTerminal()
                 && instance.getUpdated().before(validUpdateDate)) {
             log.info("Stale instance detected: {}/{}", sourceAppName, taskId);
             val updateStatus = taskDB.updateTask(sourceAppName, taskId, convertToLost(instance));

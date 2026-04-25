@@ -106,9 +106,13 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         if (!transition.getTo().contains(newState)) {
             throw new IllegalStateException("No defined transitions from " + state.name() + " to " + newState.name());
         }
+        return changeState(newStateData);
+    }
+
+    public S changeState(StateData<S, T> newStateData) {
         currentState = newStateData;
         stateChanged.dispatch(newStateData);
-        return newState;
+        return newStateData.getState();
     }
 
     /**
