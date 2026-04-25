@@ -109,6 +109,13 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         return changeState(newStateData);
     }
 
+    /**
+     * Change state of the state machine.
+     * This will also trigger the state change signal.
+     *
+     * @param newStateData New state data to be set as current state
+     * @return State after transition
+     */
     public S changeState(StateData<S, T> newStateData) {
         currentState = newStateData;
         stateChanged.dispatch(newStateData);

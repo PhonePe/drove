@@ -16,13 +16,9 @@
 
 package com.phonepe.drove.statemachine;
 
-import com.codahale.metrics.SharedMetricRegistries;
-import io.appform.functionmetrics.FunctionMetricsManager;
-import lombok.SneakyThrows;
-import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.junit.jupiter.api.Test;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -37,8 +33,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import com.codahale.metrics.SharedMetricRegistries;
+
+import org.junit.jupiter.api.Test;
+
+import io.appform.functionmetrics.FunctionMetricsManager;
+import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -160,8 +163,6 @@ class StateMachineTest {
             }
             states.add(sd.getState());
         });
-        val l = new ReentrantLock();
-        val c = l.newCondition();
         val runner = new TestSMRunner(tm, ctx, Throwable::printStackTrace);
         runner.start();
         runner.sendCommand(TestSMState.WORKING);

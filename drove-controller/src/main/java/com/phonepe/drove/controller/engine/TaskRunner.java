@@ -50,7 +50,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.phonepe.drove.models.taskinstance.TaskState.ACTIVE_STATES;
 import static com.phonepe.drove.models.taskinstance.TaskState.LOST;
 import static java.lang.Boolean.TRUE;
 
