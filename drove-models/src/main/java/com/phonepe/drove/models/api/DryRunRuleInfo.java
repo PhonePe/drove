@@ -14,20 +14,27 @@ package com.phonepe.drove.models.api;
 
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotNull;
 
+/**
+ * Request payload for dry-run validation of placement rules
+ */
 @Value
 @Jacksonized
 @Builder
+@Schema(description = "Input data for dry-run validation of rule-based placement policies against scheduling information")
 public class DryRunRuleInfo {
 
+    @Schema(description = "Rule-based placement policy to validate, containing rules for executor selection and constraints")
     @NotNull
     RuleBasedPlacementPolicy ruleBasedPlacementPolicy;
 
+    @Schema(description = "Scheduling information containing resource requirements and constraints for the workload")
     @NotNull
     SchedulingInfo schedulingInfo;
 }
