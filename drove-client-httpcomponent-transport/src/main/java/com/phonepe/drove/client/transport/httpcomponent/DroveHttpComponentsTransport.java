@@ -16,25 +16,32 @@
 
 package com.phonepe.drove.client.transport.httpcomponent;
 
+import java.io.IOException;
+import java.net.URI;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.client.DroveClientConfig;
 import com.phonepe.drove.client.DroveHttpTransport;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.hc.client5.http.classic.methods.*;
+
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
-import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
-import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.URIScheme;
-import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -44,14 +51,9 @@ import org.apache.hc.core5.pool.PoolReusePolicy;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
-import java.io.IOException;
-import java.net.URI;
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import lombok.SneakyThrows;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -124,34 +126,31 @@ public class DroveHttpComponentsTransport implements DroveHttpTransport {
     }
 
     private static CloseableHttpClient buildClient(final DroveClientConfig clientConfig) {
-        val socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register(URIScheme.HTTP.id, PlainConnectionSocketFactory.getSocketFactory())
-                .register(URIScheme.HTTPS.id, SSLConnectionSocketFactory.getSocketFactory())
-                .build();
-        val connManager = new PoolingHttpClientConnectionManager(
-                socketFactoryRegistry, PoolConcurrencyPolicy.STRICT, PoolReusePolicy.LIFO, TimeValue.ofMinutes(5));
+        val operationTimeout = Timeout.of(Objects.requireNonNullElse(clientConfig.getOperationTimeout(),
+                                                                     Duration.ofSeconds(2)));
+        val connectionTimeout = Timeout.of(Objects.requireNonNullElse(clientConfig.getConnectionTimeout(),
+                                                                      Duration.ofSeconds(2)));
 
-        connManager.setDefaultSocketConfig(SocketConfig.custom()
-                                                   .setTcpNoDelay(true)
-                                                   .setSoTimeout(Timeout.of(Objects.requireNonNullElse(clientConfig.getOperationTimeout(),
-                                                                                                       Duration.ofSeconds(
-                                                                                                               2))))
-                                                   .build());
-        // Validate connections after 10 sec of inactivity
-        connManager.setDefaultConnectionConfig(ConnectionConfig.custom()
-                                                       .setConnectTimeout(Timeout.of(Objects.requireNonNullElse(
-                                                               clientConfig.getConnectionTimeout(),
-                                                               Duration.ofSeconds(2))))
-                                                       .setSocketTimeout(Timeout.of(Objects.requireNonNullElse(
-                                                               clientConfig.getOperationTimeout(),
-                                                               Duration.ofSeconds(2))))
-                                                       .setValidateAfterInactivity(TimeValue.ofSeconds(10))
-                                                       .setTimeToLive(TimeValue.ofHours(1))
-                                                       .build());
-        val rc = RequestConfig.custom()
-                .setResponseTimeout(Timeout.of(Objects.requireNonNullElse(clientConfig.getOperationTimeout(),
-                                                                          Duration.ofSeconds(2))))
+        val connManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+                .setConnPoolPolicy(PoolReusePolicy.LIFO)
+                .setTlsSocketStrategy(ClientTlsStrategyBuilder.create().buildClassic())
+                .setDefaultSocketConfig(SocketConfig.custom()
+                        .setTcpNoDelay(true)
+                        .setSoTimeout(operationTimeout)
+                        .build())
+                .setDefaultConnectionConfig(ConnectionConfig.custom()
+                        .setConnectTimeout(connectionTimeout)
+                        .setSocketTimeout(operationTimeout)
+                        .setValidateAfterInactivity(TimeValue.ofSeconds(10))
+                        .setTimeToLive(TimeValue.ofHours(1))
+                        .build())
                 .build();
+
+        val rc = RequestConfig.custom()
+                .setResponseTimeout(operationTimeout)
+                .build();
+
         return HttpClients.custom()
                 .setConnectionManager(connManager)
                 .setDefaultRequestConfig(rc)
