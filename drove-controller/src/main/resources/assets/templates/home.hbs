@@ -317,6 +317,7 @@
             renderTasksSection(resp.data.taskStats);
             renderLocalServicesSection(resp.data.serviceStats);
             renderExecutorSection(resp.data.executorStats);
+            $('#fc-updated').text(new Date(resp.data.generatedAt).toLocaleTimeString());
         });
     }
 
