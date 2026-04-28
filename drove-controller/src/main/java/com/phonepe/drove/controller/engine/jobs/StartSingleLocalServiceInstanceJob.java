@@ -159,29 +159,29 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         }
 
         val spec = new LocalServiceInstanceSpec(serviceId,
-                                                localServiceSpec.getName(),
-                                                instanceId,
-                                                localServiceSpec.getExecutable(),
-                                                List.of(node.getCpu(),
-                                                        node.getMemory()),
-                                                localServiceSpec.getExposedPorts(),
-                                                isHostLevelDeployable(localServiceSpec.getPlacementPolicy()),
-                                                localServiceSpec.getVolumes(),
-                                                translateConfigSpecs(
-                                                        localServiceSpec.getConfigs(),
-                                                        httpCaller),
-                                                localServiceSpec.getHealthcheck(),
-                                                localServiceSpec.getReadiness(),
-                                                localServiceSpec.getLogging(),
-                                                localServiceSpec.getEnv(),
-                                                localServiceSpec.getArgs(),
-                                                localServiceSpec.getDevices(),
-                                                localServiceSpec.getPreShutdown(),
-                                                localServiceSpec.getUserSpec(),
-                                                generateAppInstanceToken(
-                                                        node,
-                                                        serviceId,
-                                                        instanceId));
+                                                      localServiceSpec.getName(),
+                                                      instanceId,
+                                                      localServiceSpec.getExecutable(),
+                                                      List.of(node.getCpu(),
+                                                              node.getMemory()),
+                                                      localServiceSpec.getExposedPorts(),
+                                                              isHostLevelDeployable(localServiceSpec.getPlacementPolicy()),
+                                                      localServiceSpec.getVolumes(),
+                                                      translateConfigSpecs(
+                                                              localServiceSpec.getConfigs(),
+                                                              httpCaller),
+                                                      localServiceSpec.getHealthcheck(),
+                                                      localServiceSpec.getReadiness(),
+                                                      localServiceSpec.getLogging(),
+                                                      localServiceSpec.getEnv(),
+                                                      localServiceSpec.getArgs(),
+                                                      localServiceSpec.getDevices(),
+                                                      localServiceSpec.getPreShutdown(),
+                                                      localServiceSpec.getUserSpec(),
+                                                      generateAppInstanceToken(
+                                                              node,
+                                                              serviceId,
+                                                              instanceId));
 
         val startMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                                 new ExecutorAddress(node.getExecutorId(),

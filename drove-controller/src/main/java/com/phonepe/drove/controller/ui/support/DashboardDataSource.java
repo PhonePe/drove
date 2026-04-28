@@ -196,7 +196,7 @@ public class DashboardDataSource {
         val tasks = taskEngine.tasks(EnumSet.allOf(TaskState.class));
         val services = localServiceStateDB.services(0, Integer.MAX_VALUE);
         val appStats = computeAppStats(clusterSummary, applications);
-        val executors = clusterResourcesDB.currentSnapshot(true);
+        val executors = clusterResourcesDB.currentSnapshot(false);
         cachedDashboardData.set(DashboardData.builder()
                 .clusterSummary(computeClusterSummary(applications,
                                                       tasks,
@@ -242,17 +242,19 @@ public class DashboardDataSource {
             .mapToDouble(Double::doubleValue).average().orElse(0.0);
         // We define balance score as the coefficient of variation (stddev/mean) of executor utilizations.
         // A lower score means more balanced resource usage across executors.
-        val balaceScore = Math.sqrt(utilizations.stream()
-            .mapToDouble(util -> Math.pow(util - averageUtilization, 2))
-            .average()
-            .orElse(0.0)) / averageUtilization;
+        val balanceScore = executors.isEmpty()
+            ? 0.0
+            : ( Math.sqrt(utilizations.stream()
+                        .mapToDouble(util -> Math.pow(util - averageUtilization, 2))
+                        .average()
+                        .orElse(0.0)) / averageUtilization );
         return ExecutorStats.builder()
                 .executorCountByState(executorCountByState)
                 .utilization(DashboardData.UtilizationStats.builder()
                         .averageUtilization(averageUtilization)
                         .highestUtilization(maxUtilization)
                         .lowestUtilization(minUtilization)
-                        .balanceScore(balaceScore)
+                        .balanceScore(balanceScore)
                         .build())
                 .build();
     }

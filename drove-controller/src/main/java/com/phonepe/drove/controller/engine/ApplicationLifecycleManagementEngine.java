@@ -87,7 +87,7 @@ public class ApplicationLifecycleManagementEngine extends DeployableLifeCycleMan
     protected String deployableObjectId(ApplicationOperation operation) {
         return ControllerUtils.deployableObjectId(operation);
     }
- 
+
     @Override
     protected ApplicationOperation translateOp(
             ApplicationOperation original,

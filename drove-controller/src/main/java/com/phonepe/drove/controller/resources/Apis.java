@@ -515,7 +515,7 @@ public class Apis {
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     @Operation(summary = "Blacklist executor", description = "Add an executor to the blacklist, preventing new deployments", tags = {"Cluster"})
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Updated blacklist status")
-    public ApiResponse<Map<String, Set<String>>> blacklistExecutor(@PathParam("id") @NotEmpty @Parameter(description = "Executor ID") final String executorId) {
+    public ApiResponse<BlacklistOperationResponse> blacklistExecutor(@PathParam("id") @NotEmpty @Parameter(description = "Executor ID") final String executorId) {
         return responseEngine.blacklistExecutors(Set.of(executorId));
     }
 
@@ -536,7 +536,7 @@ public class Apis {
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_MAINTENANCE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     @Operation(summary = "Unblacklist executor", description = "Remove an executor from the blacklist, allowing new deployments", tags = {"Cluster"})
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Updated blacklist status")
-    public ApiResponse<Map<String, Set<String>>> unblacklistExecutor(@PathParam("id") @NotEmpty @Parameter(description = "Executor ID") final String executorId) {
+    public ApiResponse<BlacklistOperationResponse> unblacklistExecutor(@PathParam("id") @NotEmpty @Parameter(description = "Executor ID") final String executorId) {
         return responseEngine.unblacklistExecutors(Set.of(executorId));
     }
 

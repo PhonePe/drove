@@ -1,17 +1,17 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.controller.resources;
@@ -71,7 +71,6 @@ class UITest {
     static void initializeTemplate() {
         val tc = mock(TemplateContext.class);
         when(tc.lookupTemplatePath(anyString())).thenReturn("/");
-        mockStatic(TemplateContext.class).when(TemplateContext::getInstance).thenReturn(tc);
         mockedTemplateContext = mockStatic(TemplateContext.class);
         mockedTemplateContext.when(TemplateContext::getInstance).thenReturn(tc);
     }
@@ -132,7 +131,7 @@ class UITest {
         assertThrows(WebApplicationException.class,
                      () -> resource.applicationDetails(null));
         assertThrows(WebApplicationException.class,
-                     () ->resource.applicationDetails("WrongApp"));
+                     () -> resource.applicationDetails("WrongApp"));
         assertNotNull(resource.applicationDetails("TEST_APP"));
     }
 
@@ -154,7 +153,9 @@ class UITest {
                      () -> resource.applicationInstanceDetailsPage(null,
                                                                    "WrongApp",
                                                                    null));
-        assertNotNull(resource.applicationInstanceDetailsPage(new DroveExternalUser("BLAH", DroveUserRole.EXTERNAL_READ_ONLY, null),
+        assertNotNull(resource.applicationInstanceDetailsPage(new DroveExternalUser("BLAH",
+                                                                                    DroveUserRole.EXTERNAL_READ_ONLY,
+                                                                                    null),
                                                               "TEST_APP",
                                                               null));
     }
@@ -169,15 +170,15 @@ class UITest {
                                                             new Date())));
         assertThrows(WebApplicationException.class,
                      () -> resource.appLogPailerPage(null,
-                                                        null,
-                                                        null));
+                                                     null,
+                                                     null));
         assertThrows(WebApplicationException.class,
                      () -> resource.appLogPailerPage("WrongApp",
-                                                        null,
+                                                     null,
                                                      null));
         assertNotNull(resource.appLogPailerPage("TEST_APP",
-                                                   "TI",
-                                                   "test.log"));
+                                                "TI",
+                                                "test.log"));
     }
 
     @Test
@@ -187,15 +188,15 @@ class UITest {
                 .thenReturn(Optional.of(ti));
         assertThrows(WebApplicationException.class,
                      () -> resource.taskDetailsPage(null,
-                                                        null));
+                                                    null));
         assertThrows(WebApplicationException.class,
                      () -> resource.taskDetailsPage("WrongApp",
-                                                        null));
+                                                    null));
         assertThrows(WebApplicationException.class,
                      () -> resource.taskDetailsPage("TEST_APP",
-                                                        null));
+                                                    null));
         assertNotNull(resource.taskDetailsPage("TEST_APP",
-                                                   "TEST_TASK"));
+                                               "TEST_TASK"));
     }
 
     @Test
@@ -205,18 +206,18 @@ class UITest {
                 .thenReturn(Optional.of(ti));
         assertThrows(WebApplicationException.class,
                      () -> resource.taskLogPailerPage(null,
-                                                        null,
+                                                      null,
                                                       null));
         assertThrows(WebApplicationException.class,
                      () -> resource.taskLogPailerPage("WrongApp",
-                                                        null,
+                                                      null,
                                                       null));
         assertThrows(WebApplicationException.class,
                      () -> resource.taskLogPailerPage("TEST_APP",
-                                                        null,
+                                                      null,
                                                       null));
         assertNotNull(resource.taskLogPailerPage("TEST_APP",
-                                                   "TEST_TASK",
+                                                 "TEST_TASK",
                                                  "output.log"));
     }
 
@@ -239,7 +240,7 @@ class UITest {
         assertThrows(WebApplicationException.class,
                      () -> resource.localserviceDetails(null));
         assertThrows(WebApplicationException.class,
-                     () ->resource.localserviceDetails("WrongApp"));
+                     () -> resource.localserviceDetails("WrongApp"));
         assertNotNull(resource.localserviceDetails("TEST_SERVICE"));
     }
 
@@ -256,15 +257,17 @@ class UITest {
                                                              new Date())));
         assertThrows(WebApplicationException.class,
                      () -> resource.localServiceInstanceDetailsPage(null,
-                                                                   null,
-                                                                   null));
+                                                                    null,
+                                                                    null));
         assertThrows(WebApplicationException.class,
                      () -> resource.localServiceInstanceDetailsPage(null,
-                                                                   "WrongApp",
-                                                                   null));
-        assertNotNull(resource.localServiceInstanceDetailsPage(new DroveExternalUser("BLAH", DroveUserRole.EXTERNAL_READ_ONLY, null),
-                                                              "TEST_SERVICE",
-                                                              null));
+                                                                    "WrongApp",
+                                                                    null));
+        assertNotNull(resource.localServiceInstanceDetailsPage(new DroveExternalUser("BLAH",
+                                                                                     DroveUserRole.EXTERNAL_READ_ONLY,
+                                                                                     null),
+                                                               "TEST_SERVICE",
+                                                               null));
     }
 
     @Test
@@ -278,15 +281,15 @@ class UITest {
                                                              new Date())));
         assertThrows(WebApplicationException.class,
                      () -> resource.localServiceLogPailerPage(null,
-                                                     null,
-                                                     null));
+                                                              null,
+                                                              null));
         assertThrows(WebApplicationException.class,
                      () -> resource.localServiceLogPailerPage("WrongApp",
-                                                     null,
-                                                     null));
+                                                              null,
+                                                              null));
         assertNotNull(resource.localServiceLogPailerPage("TEST_SERVICE",
-                                                "TI",
-                                                "test.log"));
+                                                         "TI",
+                                                         "test.log"));
     }
 
 }

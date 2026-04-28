@@ -420,7 +420,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
 
     private static boolean checkOffDuty(boolean skipOffDutyNodes, ExecutorHostInfo node) {
         return !skipOffDutyNodes //If off duty nodes are needed, return everything
-                || !isBlackListedInternal(node);
+                || isActiveInternal(node);
     }
 
     private static boolean isActiveInternal(ExecutorHostInfo node) {

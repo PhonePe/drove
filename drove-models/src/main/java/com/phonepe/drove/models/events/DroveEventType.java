@@ -16,9 +16,12 @@
 
 package com.phonepe.drove.models.events;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
- *
+ * Types of events emitted by the Drove cluster
  */
+@Schema(description = "Type of event emitted by the Drove cluster")
 public enum DroveEventType {
     @Schema(description = "Application state has changed")
     APP_STATE_CHANGE,
@@ -34,6 +37,7 @@ public enum DroveEventType {
     EXECUTOR_ADDED,
     @Schema(description = "Executor node removed from the cluster")
     EXECUTOR_REMOVED,
+    @Schema(description = "Executor node has been requested to be blacklisted")
     EXECUTOR_BLACKLIST_REQUESTED,
     @Schema(description = "Executor node has been blacklisted")
     EXECUTOR_BLACKLISTED,
@@ -43,7 +47,7 @@ public enum DroveEventType {
     MAINTENANCE_MODE_SET,
     @Schema(description = "Cluster has exited maintenance mode")
     MAINTENANCE_MODE_REMOVED,
- 
+
     @Schema(description = "Controller has acquired leadership")
     LEADERSHIP_ACQUIRED,
     @Schema(description = "Controller has lost leadership")

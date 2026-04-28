@@ -117,7 +117,8 @@ class ZkUtilsTest extends AbstractTestBase {
             IntStream.rangeClosed(1, 10)
                     .forEach(i -> assertTrue(deleteNode(curator, "/parent/node_" + i)));
             assertTrue(readChildren(curator, "/parent").isEmpty());
-         }
+        }
+
     }
 
     private List<TestData> readChildren(CuratorFramework curator, String parentPath) throws Exception {

@@ -57,7 +57,6 @@ clusterAuth:
 #     password: "$2a$12$HO2EbvWNs.WOd9Csv3xtOuPGN.cEl/Co16oeL6oyk5stgKExXS6SO"
 ##      password: noread
 
-
 instanceAuth:
   secret: RandomSecret
 

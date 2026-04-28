@@ -23,7 +23,6 @@ import static com.phonepe.drove.controller.ControllerTestUtils.localServiceSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
 import static com.phonepe.drove.models.api.ApiErrorCode.FAILED;
 import static com.phonepe.drove.models.api.ApiErrorCode.SUCCESS;
-import static com.phonepe.drove.models.info.nodedata.NodeTransportType.HTTP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,12 +76,13 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.api.BlacklistOperationResponse;
+import com.phonepe.drove.models.api.ClusterSummary;
+import com.phonepe.drove.models.api.DashboardData;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
-import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -91,7 +91,6 @@ import com.phonepe.drove.models.localservice.LocalServiceInfo;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import io.appform.signals.signals.ConsumingSyncSignal;
@@ -399,65 +398,76 @@ class ResponseEngineTest {
 
     @Test
     void testCluster() {
-        when(leadershipObserver.leader()).thenReturn(Optional.of(new ControllerNodeData("test-controller",
-                                                                                        8080,
-                                                                                        HTTP,
-                                                                                        new Date(),
-                                                                                        true)));
-        when(clusterResourcesDB.currentSnapshot(true))
-                .thenReturn(IntStream.rangeClosed(1, 10)
-                                    .mapToObj(ControllerTestUtils::executorHost)
-                                    .toList());
-        when(applicationStateDB.applications(0, Integer.MAX_VALUE))
-                .thenReturn(IntStream.rangeClosed(1, 100)
-                                    .mapToObj(i -> createApp(i, 10))
-                                    .toList());
-        when(appEngine.currentState(anyString())).thenAnswer(new Answer<Optional<ApplicationState>>() {
-            int count = 0;
+        val clusterSummary = new com.phonepe.drove.models.api.ClusterSummary(
+                "leader:8080",
+                ClusterState.NORMAL,
+                10,
+                100,
+                90,
+                5,
+                20,
+                18,
+                50,
+                100,
+                150,
+                102400,
+                51200,
+                153600);
 
-            @Override
-            public Optional<ApplicationState> answer(InvocationOnMock invocationOnMock) {
-                return (++count) > 50 ? Optional.of(ApplicationState.RUNNING) : Optional.empty();
-            }
-        });
+        val dashboardData = com.phonepe.drove.models.api.DashboardData.builder()
+                .clusterSummary(clusterSummary)
+                .appStats(com.phonepe.drove.models.api.DashboardData.AppStats.builder()
+                        .appCountByState(Map.of(ApplicationState.RUNNING, 90L))
+                        .topApps(List.of())
+                        .totalHealthyInstances(500)
+                        .build())
+                .taskStats(com.phonepe.drove.models.api.DashboardData.TaskStats.builder()
+                        .taskCountByState(Map.of())
+                        .topTasks(List.of())
+                        .build())
+                .serviceStats(com.phonepe.drove.models.api.DashboardData.ServiceStats.builder()
+                        .serviceCountByState(Map.of())
+                        .serviceCountByActivationState(Map.of())
+                        .topServices(List.of())
+                        .totalHealthyInstances(0)
+                        .build())
+                .executorStats(com.phonepe.drove.models.api.DashboardData.ExecutorStats.builder()
+                        .executorCountByState(Map.of())
+                        .utilization(com.phonepe.drove.models.api.DashboardData.UtilizationStats.builder()
+                                .averageUtilization(60.0)
+                                .highestUtilization(90.0)
+                                .lowestUtilization(30.0)
+                                .balanceScore(0.8)
+                                .build())
+                        .build())
+                .generatedAt(new Date())
+                .build();
 
-        {
-            when(clusterStateDB.currentState()).thenReturn(Optional.of(new ClusterStateData(ClusterState.MAINTENANCE,
-                                                                                            new Date())));
-            val r = re.cluster();
-            assertEquals(SUCCESS, r.getStatus());
-            val c = r.getData();
-            assertNotNull(c);
-            assertEquals(ClusterState.MAINTENANCE, c.getState());
-            assertEquals(10, c.getNumExecutors());
-            assertEquals(100, c.getNumApplications());
-            assertEquals(50, c.getNumActiveApplications());
-            assertEquals(30, c.getFreeCores());
-            assertEquals(20, c.getUsedCores());
-            assertEquals(50, c.getTotalCores());
-            assertEquals(84480, c.getFreeMemory());
-            assertEquals(28160, c.getUsedMemory());
-            assertEquals(112640, c.getTotalMemory());
-            reset(clusterStateDB);
-        }
-        {
-            when(clusterStateDB.currentState()).thenReturn(Optional.empty());
-            val r = re.cluster();
-            assertEquals(SUCCESS, r.getStatus());
-            val c = r.getData();
-            assertNotNull(c);
-            assertEquals(ClusterState.NORMAL, c.getState());
-            assertEquals(10, c.getNumExecutors());
-            assertEquals(100, c.getNumApplications());
-            assertEquals(100, c.getNumActiveApplications());
-            assertEquals(30, c.getFreeCores());
-            assertEquals(20, c.getUsedCores());
-            assertEquals(50, c.getTotalCores());
-            assertEquals(84480, c.getFreeMemory());
-            assertEquals(28160, c.getUsedMemory());
-            assertEquals(112640, c.getTotalMemory());
-            reset(clusterStateDB);
-        }
+        when(dashboardDataSource.current()).thenReturn(Optional.of(dashboardData));
+
+        val r = re.cluster();
+        assertEquals(SUCCESS, r.getStatus());
+        assertEquals("success", r.getMessage());
+        val c = r.getData();
+        assertNotNull(c);
+        assertEquals(clusterSummary, c);
+        assertEquals(ClusterState.NORMAL, c.getState());
+        assertEquals(10, c.getNumExecutors());
+        assertEquals(100, c.getNumApplications());
+        assertEquals(90, c.getNumActiveApplications());
+        assertEquals(5, c.getNumActiveTasks());
+        assertEquals(20, c.getNumLocalServices());
+        assertEquals(18, c.getNumActiveLocalServices());
+    }
+
+    @Test
+    void testClusterNotAvailable() {
+        when(dashboardDataSource.current()).thenReturn(Optional.empty());
+
+        val r = re.cluster();
+        assertEquals(FAILED, r.getStatus());
+        assertEquals("Could not fetch cluster summary", r.getMessage());
+        assertNull(r.getData());
     }
 
     @Test
@@ -660,7 +670,7 @@ class ResponseEngineTest {
             assertEquals(SUCCESS, r.getStatus());
             assertEquals(executorIds, r.getData().getFailed());
         }
-            }
+    }
 
     private void testMaintenanceFunctionality(
             final ClusterState state,
@@ -700,8 +710,8 @@ class ResponseEngineTest {
 
     @Test
     void testDashboardData() {
-        val dashboardData = com.phonepe.drove.models.api.DashboardData.builder()
-                .clusterSummary(new com.phonepe.drove.models.api.ClusterSummary(
+        val dashboardData = DashboardData.builder()
+                .clusterSummary(new ClusterSummary(
                         "leader:8080",
                         ClusterState.NORMAL,
                         10,
@@ -716,24 +726,24 @@ class ResponseEngineTest {
                         102400,
                         51200,
                         153600))
-                .appStats(com.phonepe.drove.models.api.DashboardData.AppStats.builder()
+                .appStats(DashboardData.AppStats.builder()
                         .appCountByState(Map.of(ApplicationState.RUNNING, 90L))
                         .topApps(List.of())
                         .totalHealthyInstances(500)
                         .build())
-                .taskStats(com.phonepe.drove.models.api.DashboardData.TaskStats.builder()
+                .taskStats(DashboardData.TaskStats.builder()
                         .taskCountByState(Map.of())
                         .topTasks(List.of())
                         .build())
-                .serviceStats(com.phonepe.drove.models.api.DashboardData.ServiceStats.builder()
+                .serviceStats(DashboardData.ServiceStats.builder()
                         .serviceCountByState(Map.of())
                         .serviceCountByActivationState(Map.of())
                         .topServices(List.of())
                         .totalHealthyInstances(0)
                         .build())
-                .executorStats(com.phonepe.drove.models.api.DashboardData.ExecutorStats.builder()
+                .executorStats(DashboardData.ExecutorStats.builder()
                         .executorCountByState(Map.of())
-                        .utilization(com.phonepe.drove.models.api.DashboardData.UtilizationStats.builder()
+                        .utilization(DashboardData.UtilizationStats.builder()
                                 .averageUtilization(60.0)
                                 .highestUtilization(90.0)
                                 .lowestUtilization(30.0)

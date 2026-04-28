@@ -20,16 +20,18 @@ import com.phonepe.drove.executor.AbstractExecutorEngineEnabledTestBase;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ResourceLoader;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  *
  */
+@Slf4j
 class ResourcePopulatorTest extends AbstractExecutorEngineEnabledTestBase {
 
     @Test
@@ -48,6 +50,5 @@ class ResourcePopulatorTest extends AbstractExecutorEngineEnabledTestBase {
                 .populateResources(Map.of(0, discoveredNodeInfo));
         resourcePopulator.stop();
     }
-
 
 }

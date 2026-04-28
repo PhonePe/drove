@@ -613,6 +613,71 @@ class DashboardDataSourceTest {
         assertTrue(results.stream().allMatch(r -> r));
     }
 
+    @Test
+    void testDashboardDataWithNoExecutors() throws Exception {
+        val leadershipEnsurer = mock(LeadershipEnsurer.class);
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+
+        val clusterResourcesDB = mock(ClusterResourcesDB.class);
+        when(clusterResourcesDB.currentSnapshot(anyBoolean())).thenReturn(List.of());
+
+        val applicationStateDB = mock(ApplicationStateDB.class);
+        when(applicationStateDB.applications(anyInt(), anyInt())).thenReturn(List.of());
+
+        val taskEngine = mock(TaskEngine.class);
+        when(taskEngine.tasks(any())).thenReturn(List.of());
+
+        val localServiceStateDB = mock(LocalServiceStateDB.class);
+        when(localServiceStateDB.services(anyInt(), anyInt())).thenReturn(List.of());
+
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val localServiceEngine = mock(LocalServiceLifecycleManagementEngine.class);
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
+
+        val dataSource = new DashboardDataSource(
+                applicationStateDB,
+                taskEngine,
+                localServiceStateDB,
+                appEngine,
+                clusterResourcesDB,
+                instanceInfoDB,
+                localServiceEngine,
+                leadershipEnsurer,
+                leadershipObserver,
+                clusterStateDB,
+                TEST_REFRESH_INTERVAL);
+
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
+
+        val result = dataSource.current();
+        assertTrue(result.isPresent());
+
+        val clusterSummary = result.get().getClusterSummary();
+        assertNotNull(clusterSummary);
+        assertEquals(0, clusterSummary.getNumExecutors());
+        assertEquals(0, clusterSummary.getFreeCores());
+        assertEquals(0, clusterSummary.getUsedCores());
+        assertEquals(0, clusterSummary.getTotalCores());
+        assertEquals(0, clusterSummary.getFreeMemory());
+        assertEquals(0, clusterSummary.getUsedMemory());
+        assertEquals(0, clusterSummary.getTotalMemory());
+
+        val executorStats = result.get().getExecutorStats();
+        assertNotNull(executorStats);
+        assertNotNull(executorStats.getExecutorCountByState());
+        assertFalse(executorStats.getExecutorCountByState().isEmpty());
+        assertTrue(executorStats.getExecutorCountByState().values().stream().allMatch(count -> count == 0L));
+
+        val utilization = executorStats.getUtilization();
+        assertNotNull(utilization);
+        assertEquals(0.0, utilization.getAverageUtilization());
+        assertEquals(0.0, utilization.getHighestUtilization());
+        assertEquals(0.0, utilization.getLowestUtilization());
+        assertEquals(0.0, utilization.getBalanceScore());
+    }
+
     private DashboardDataSource createDataSource() {
         val applicationStateDB = mock(ApplicationStateDB.class);
         val taskEngine = mock(TaskEngine.class);

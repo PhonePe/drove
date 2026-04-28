@@ -257,17 +257,9 @@ public class ResponseEngine {
     }
 
     public ApiResponse<ClusterSummary> cluster() {
-        return success(
-                ControllerUtils.computeClusterSummary(
-                    leadershipObserver,
-                    clusterStateDB,
-                    applicationStateDB.applications(0, Integer.MAX_VALUE),
-                    taskEngine.tasks(EnumSet.allOf(TaskState.class)),
-                    localServiceStateDB.services(0, Integer.MAX_VALUE),
-                    applicationEngine,
-                    localServiceEngine,
-                    ControllerUtils.summarizeResources(
-                        clusterResourcesDB.currentSnapshot(true))));
+        return dashboardDataSource.current()
+                .map(data -> success(data.getClusterSummary()))
+                .orElseGet(() -> failure("Could not fetch cluster summary"));
     }
 
     public ApiResponse<List<ExecutorSummary>> nodes() {

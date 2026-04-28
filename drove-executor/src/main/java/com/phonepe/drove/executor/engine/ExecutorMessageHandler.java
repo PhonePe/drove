@@ -112,6 +112,10 @@ public class ExecutorMessageHandler implements ExecutorMessageVisitor<MessageRes
             log.error("Cannot start task {} since executor is not in ACTIVE state", instanceId);
             return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
         }
+        if (!ensureRequiredState(ExecutorState.ACTIVE)) {
+            log.error("Cannot start task {} since executor is not in ACTIVE state", instanceId);
+            return new MessageResponse(startTaskMessage.getHeader(), MessageDeliveryStatus.FAILED);
+        }
         try {
             log.info("Starting task instance {}", instanceId);
             return new MessageResponse(startTaskMessage.getHeader(),

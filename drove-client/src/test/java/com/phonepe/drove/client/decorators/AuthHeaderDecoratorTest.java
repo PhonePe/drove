@@ -45,7 +45,7 @@ class AuthHeaderDecoratorTest {
 
     @Test
     void testAuthHeaderFail(WireMockRuntimeInfo wm) {
-        runTest(wm,  "wrong", HttpStatus.SC_NOT_FOUND);
+        runTest(wm, "wrong", HttpStatus.SC_NOT_FOUND);
     }
 
     @Test

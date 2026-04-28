@@ -22,7 +22,7 @@
     <groupId>com.phonepe.drove</groupId>
     <artifactId>drove</artifactId>
     <packaging>pom</packaging>
-    <version>1.32.2</version>
+    <version>1.33.3</version>
     <name>Drove</name>
     <url>https://github.com/PhonePe/drove</url>
     <description>Distributed Container Orchestrator</description>
@@ -111,6 +111,7 @@
         <failsafe.version>3.3.2</failsafe.version>
         <mockito.version>5.2.0</mockito.version>
         <wiremock.version>3.13.2</wiremock.version>
+        <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <maven.deploy.skip>false</maven.deploy.skip>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
