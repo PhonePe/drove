@@ -1,9 +1,9 @@
 server:
   applicationConnectors:
     - type: http
-      port: 4000
+      port: 10000
 #    - type: https
-#      port: 4000
+#      port: 10000
 #      bindHost: ssdev.test
 #      keyStorePath: /home/santanu/certs/keystore.jks
 #      keyStorePassword: "password"
