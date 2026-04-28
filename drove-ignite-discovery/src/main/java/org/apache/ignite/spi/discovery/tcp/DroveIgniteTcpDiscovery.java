@@ -108,8 +108,7 @@ public class DroveIgniteTcpDiscovery extends TcpDiscoverySpi {
         assert locNodeVer == null;
 
         if (log.isDebugEnabled()) {
-            log.debug("Node attributes to set: " + attrs);
-            log.debug("Node version to set: " + ver);
+            log.debug("Node attributes to set: {}", attrs);
         }
 
         attrs.put("DroveIgniteTcpCommunication.comm.tcp.addrs", List.of());
