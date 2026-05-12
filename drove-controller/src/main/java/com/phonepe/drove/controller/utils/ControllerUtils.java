@@ -488,6 +488,27 @@ public class ControllerUtils {
                 });
     }
 
+    public static int freeGpus(ExecutorHostInfo executor, GpuType gpuType) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<>() {
+                    @Override
+                    public Integer visit(ControllerNodeData controllerData) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(ExecutorNodeData executorData) {
+                        val layout = executorData.getState().getLayout();
+                        if (layout == null || layout.getGpus() == null) {
+                            return 0;
+                        }
+                        return (int) layout.getGpus().stream()
+                                .filter(gpu -> GPUUtils.matches(gpu, gpuType))
+                                .count();
+                    }
+                });
+    }
+
     public static int usedCores(ExecutorHostInfo executor) {
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
@@ -720,6 +741,18 @@ public class ControllerUtils {
         if (requiredMem > freeMemory) {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
                                "Available: " + freeMemory);
+        }
+        // Cluster-wide GPU capacity check
+        if (requiredGpuTypePerInstance != null) {
+            var freeGpus = 0;
+            for (val exec : executors) {
+                freeGpus += ControllerUtils.freeGpus(exec, requiredGpuTypePerInstance);
+            }
+            val requiredGpu = requiredInstances * requiredGpuPerInstance;
+            if (requiredGpu > freeGpus) {
+                errors.add("Cluster does not have enough GPUs. Required: " + requiredGpu + " " +
+                        "Available: " + freeGpus);
+            }
         }
         val maxAvailablePhysicalCoresPerNode = executors.stream()
                 .map(e -> e.getNodeData().getState().getLayout())
