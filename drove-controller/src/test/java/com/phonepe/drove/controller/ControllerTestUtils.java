@@ -225,7 +225,7 @@ public class ControllerTestUtils {
                                          NodeTransportType.HTTP,
                                          new CPUAllocation(Collections.singletonMap(0, Collections.singleton(2))),
                                          new MemoryAllocation(Collections.singletonMap(0, 512L)),
-                                         new GPUAllocation(Set.of()),
+                                         new GPUAllocation(Set.of(), null),
                                          Collections.emptySet(),
                                          Map.of(),
                                          ExecutorState.ACTIVE);

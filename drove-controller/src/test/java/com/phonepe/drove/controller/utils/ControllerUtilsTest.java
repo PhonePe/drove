@@ -58,11 +58,11 @@ import com.phonepe.drove.models.application.placement.policies.OnePerHostPlaceme
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
-import com.phonepe.drove.models.info.resources.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
@@ -616,7 +616,7 @@ class ControllerUtilsTest {
     }
 
     private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {
-        val freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
+        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
         val freeMemory = Map.of(0, 1024L * 1024 * 1024);
         val physicalGpus = gpuModels.entrySet().stream()
                 .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0, true))

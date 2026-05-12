@@ -216,7 +216,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         db.deselectNode(allocatedNode.getExecutorId(),
                 allocatedNode.getCpu(),
                 allocatedNode.getMemory(),
-                new GPUAllocation(Set.of())); // Free up cores
+                new GPUAllocation(Set.of(), null)); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
                         EnumSet.of(ExecutorState.ACTIVE),
@@ -372,7 +372,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertNotNull(allocatedNode);
             assertTrue(db.isActive(allocatedNode.getExecutorId()));
             assertFalse(db.isBlacklisted(allocatedNode.getExecutorId()));
-            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of()));
+            db.deselectNode(executorId, allocatedNode.getCpu(), allocatedNode.getMemory(), new GPUAllocation(Set.of(), null));
         }
     }
 

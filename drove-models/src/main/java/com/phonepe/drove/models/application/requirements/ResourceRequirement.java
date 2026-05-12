@@ -37,9 +37,10 @@ import lombok.Data;
         discriminatorProperty = "type",
         discriminatorMapping = {
                 @DiscriminatorMapping(value = "CPU", schema = CPURequirement.class),
-                @DiscriminatorMapping(value = "MEMORY", schema = MemoryRequirement.class)
+                @DiscriminatorMapping(value = "MEMORY", schema = MemoryRequirement.class),
+                @DiscriminatorMapping(value = "GPU", schema = GPURequirement.class)
         },
-        subTypes = {CPURequirement.class, MemoryRequirement.class}
+        subTypes = {CPURequirement.class, MemoryRequirement.class, GPURequirement.class}
 )
 public abstract class ResourceRequirement {
     @Schema(description = "Type of resource requirement", requiredMode = Schema.RequiredMode.REQUIRED)

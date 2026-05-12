@@ -72,7 +72,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                     candidateNumaNodeIds.get(0),
                     requiredCpus,
                     requiredMemory,
-                    new GPUAllocation(Set.of())), new AllocationMetadata(0)));
+                    new GPUAllocation(Set.of(), requiredGpuType)), new AllocationMetadata(0)));
         }
 
         val gpuMetadata = getGpuMetadataById(hostInfo);
@@ -96,7 +96,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 .toList();
 
         for (Integer selectedNumaNodeId : sortedCandidates) {
-            val gpuAlloc = allocateGPUs(requiredGpus, selectedNumaNodeId, freeGpuIds, gpuNumaAffinities);
+            val gpuAlloc = allocateGPUs(requiredGpus, selectedNumaNodeId, freeGpuIds, gpuNumaAffinities, gpuMetadata);
             if (gpuAlloc.isEmpty()) {
                 continue;
             }
@@ -235,9 +235,10 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
             long requiredGpus,
             int preferredNumaNode,
             Set<String> freeGpuIds,
-            Map<String, Integer> gpuNumaAffinities) {
+            Map<String, Integer> gpuNumaAffinities,
+            Map<String, GPUInfo> gpuMetadata) {
         if (requiredGpus == 0) {
-            return Optional.of(new Tuple2<>(new GPUAllocation(Set.of()), 0));
+            return Optional.of(new Tuple2<>(new GPUAllocation(Set.of(), null), 0));
         }
 
         if (freeGpuIds.size() < requiredGpus) {
@@ -250,9 +251,11 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
 
+        val resolvedGpuType = resolveGpuType(numaLocalGpus, gpuMetadata);
+
         if (numaLocalGpus.size() == requiredGpus) {
             // All allocated GPUs are NUMA-local
-            return Optional.of( new Tuple2<>(new GPUAllocation(numaLocalGpus),numaLocalGpus.size()));
+            return Optional.of(new Tuple2<>(new GPUAllocation(numaLocalGpus, resolvedGpuType), numaLocalGpus.size()));
         }
 
         // Not enough NUMA-local GPUs; fall back to any free GPUs
@@ -260,7 +263,17 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         val allocatedGpus = freeGpuIds.stream()
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
-        return Optional.of(new Tuple2<>(new GPUAllocation(allocatedGpus), numaLocalGpus.size()));
+        val resolvedGpuTypeFallback = resolveGpuType(allocatedGpus, gpuMetadata);
+        return Optional.of(new Tuple2<>(new GPUAllocation(allocatedGpus, resolvedGpuTypeFallback), numaLocalGpus.size()));
+    }
+
+    private GpuType resolveGpuType(Set<String> allocatedGpuIds, Map<String, GPUInfo> gpuMetadata) {
+        return allocatedGpuIds.stream()
+                .map(gpuMetadata::get)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(info -> new GpuType(info.getGpuVendor(), info.getGpuModel()))
+                .orElse(null);
     }
 
 }

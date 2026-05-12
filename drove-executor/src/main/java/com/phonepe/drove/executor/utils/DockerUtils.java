@@ -44,6 +44,7 @@ import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
@@ -396,6 +397,13 @@ public class DockerUtils {
 
                     @Override
                     public Void visit(GPUAllocation gpu) {
+                        val gpuType = gpu.getGpuType();
+                        if (gpuType == null || gpuType.getVendor() != GpuVendor.NVIDIA) {
+                            throw new UnsupportedOperationException(
+                                    "GPU type " + (gpuType == null ? "null" : gpuType.getVendor())
+                                            + " is not yet supported by DockerUtils");
+                        }
+
                         val gpuIds = gpu.getGpuIds().stream()
                                 .filter(Objects::nonNull)
                                 .map(String::trim)
