@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
+import com.domain.Tuple;
 import com.google.common.base.Preconditions;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -28,6 +29,7 @@ import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import io.vavr.Tuple2;
 import lombok.val;
 
 import java.util.*;
@@ -42,7 +44,7 @@ import java.util.stream.Collectors;
  */
 public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAllocator {
 
-    public Optional<AllocatedExecutorNode> allocate(
+    public Optional<ExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,
@@ -52,7 +54,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
     }
 
     @Override
-    public Optional<AllocatedExecutorNode> allocate(
+    public Optional<ExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,
@@ -65,12 +67,12 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         }
 
         if(requiredGpus == 0) {
-            return Optional.of(buildAllocatedNode(
+            return Optional.of(new ExecutorAllocation(buildAllocatedNode(
                     hostInfo,
                     candidateNumaNodeIds.get(0),
                     requiredCpus,
                     requiredMemory,
-                    new GPUAllocation(Set.of(), 0)));
+                    new GPUAllocation(Set.of())), new AllocationMetadata(0)));
         }
 
         val gpuMetadata = getGpuMetadataById(hostInfo);
@@ -99,12 +101,12 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 continue;
             }
 
-            return Optional.of(buildAllocatedNode(
+            return Optional.of(new ExecutorAllocation(buildAllocatedNode(
                     hostInfo,
                     selectedNumaNodeId,
                     requiredCpus,
                     requiredMemory,
-                    gpuAlloc.get()));
+                    gpuAlloc.get()._1()), new AllocationMetadata(gpuAlloc.get()._2())));
         }
 
         return Optional.empty();
@@ -229,13 +231,13 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
      * Allocate GPUs preferring those local to the selected NUMA node, falling back to cross-NUMA if needed.
      * Returns a GPUAllocation with localGpuCount set to the number of NUMA-local GPUs allocated.
      */
-    private Optional<GPUAllocation> allocateGPUs(
+    private Optional<Tuple2<GPUAllocation, Integer>> allocateGPUs(
             long requiredGpus,
             int preferredNumaNode,
             Set<String> freeGpuIds,
             Map<String, Integer> gpuNumaAffinities) {
         if (requiredGpus == 0) {
-            return Optional.of(new GPUAllocation(Set.of(), 0));
+            return Optional.of(new Tuple2<>(new GPUAllocation(Set.of()), 0));
         }
 
         if (freeGpuIds.size() < requiredGpus) {
@@ -250,7 +252,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
 
         if (numaLocalGpus.size() == requiredGpus) {
             // All allocated GPUs are NUMA-local
-            return Optional.of(new GPUAllocation(numaLocalGpus, numaLocalGpus.size()));
+            return Optional.of( new Tuple2<>(new GPUAllocation(numaLocalGpus),numaLocalGpus.size()));
         }
 
         // Not enough NUMA-local GPUs; fall back to any free GPUs
@@ -258,7 +260,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         val allocatedGpus = freeGpuIds.stream()
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
-        return Optional.of(new GPUAllocation(allocatedGpus, numaLocalGpus.size()));
+        return Optional.of(new Tuple2<>(new GPUAllocation(allocatedGpus), numaLocalGpus.size()));
     }
 
 }

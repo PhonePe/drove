@@ -16,15 +16,10 @@ import java.util.Set;
 @Builder
 public class GPUAllocation extends ResourceAllocation{
     Set<String> gpuIds;
-    long localGpuCount;
 
-    public GPUAllocation(Set<String> gpuIds, long localGpuCount) {
+    public GPUAllocation(Set<String> gpuIds) {
         super(ResourceType.GPU);
-        Preconditions.checkArgument(gpuIds != null && localGpuCount<= gpuIds.size());
-        Preconditions.checkArgument(localGpuCount >= 0);
-
         this.gpuIds = gpuIds;
-        this.localGpuCount = localGpuCount;
     }
 
     @Override

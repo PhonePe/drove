@@ -54,7 +54,8 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
         val result = allocator.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
+        val allocationMeta = result.get().getMetadata();
 
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
         assertEquals(0, cpuNumaNode, "CPU should be on NUMA 0");
@@ -69,7 +70,7 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
         }
 
         assertEquals(2, allocated.getGpu().getGpuIds().size());
-        assertEquals(2, allocated.getGpu().getLocalGpuCount(), 
+        assertEquals(2, allocationMeta.getNumaLocalGpuCount(),
             "All 2 GPUs should be counted as local");
     }
 
@@ -129,11 +130,11 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
         val allocated = result.get();
 
         // CPU should be on NUMA 0 (has most CPUs)
-        val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
+        val cpuNumaNode = allocated.getAllocatedNode().getCpu().getCores().keySet().iterator().next();
         assertEquals(0, cpuNumaNode);
 
         // All GPUs should be cross-NUMA (NUMA 1)
-        val localGpuCount = allocated.getGpu().getLocalGpuCount();
+        val localGpuCount = allocated.getMetadata().getNumaLocalGpuCount();
         assertEquals(0, localGpuCount, 
             "Should have 0 local GPUs because CPU and GPUs are on different NUMA nodes");
     }
@@ -152,10 +153,10 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
         val result = allocator.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
 
         assertEquals(2, allocated.getGpu().getGpuIds().size());
-        assertEquals(2, allocated.getGpu().getLocalGpuCount(), 
+        assertEquals(2, result.get().getMetadata().getNumaLocalGpuCount(),
             "Both GPUs should be NUMA-local");
     }
 

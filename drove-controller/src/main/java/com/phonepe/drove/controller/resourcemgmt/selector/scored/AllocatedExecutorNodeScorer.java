@@ -1,9 +1,10 @@
 package com.phonepe.drove.controller.resourcemgmt.selector.scored;
 
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorAllocation;
 
 public interface AllocatedExecutorNodeScorer {
-    AllocationScore getScore(AllocatedExecutorNode node);
+    AllocationScore getScore(ExecutorAllocation node);
 
     record AllocationScore(long score, boolean isMax) {
     }

@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resourcemgmt.selector.scored;
 
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorAllocation;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -51,11 +52,11 @@ public class ScoredExecutorSelector implements ExecutorSelector {
                 continue;
             }
             
-            Optional<AllocatedExecutorNode> allocation = allocator.allocate(node, cpus, memory, gpus, gpuType);
-            
+            var allocationResult = allocator.allocate(node, cpus, memory, gpus, gpuType);
+            var allocation = allocationResult.map(ExecutorAllocation::getAllocatedNode);
             if (allocation.isPresent() && allocationFilter.test(allocation.get())) {
                 // Use the pre-calculated localGpuCount from the allocation
-                val score = scorer.getScore(allocation.get());
+                val score = scorer.getScore(allocationResult.get());
                 if (score.score() > maxScore) {
                     maxScore = score.score();
                     selected = allocation;

@@ -2,6 +2,7 @@ package com.phonepe.drove.controller.resourcemgmt.selector;
 
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorAllocation;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
@@ -42,6 +43,7 @@ public class FirstFitExecutorSelector implements ExecutorSelector {
 				.map(node -> allocator.allocate(node, cpus, memory, gpus, gpuType))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
+				.map(ExecutorAllocation::getAllocatedNode)
 				.filter(allocationFilter)
 				.findFirst();
 	}

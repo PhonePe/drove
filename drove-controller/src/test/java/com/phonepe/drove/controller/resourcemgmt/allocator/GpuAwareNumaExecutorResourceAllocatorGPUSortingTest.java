@@ -93,7 +93,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         );
 
         assertTrue(result.isPresent(), "Allocation should succeed when GPU type is available");
-        assertEquals(1, result.get().getGpu().getGpuIds().size());
+        assertEquals(1, result.get().getAllocatedNode().getGpu().getGpuIds().size());
     }
 
     @Test

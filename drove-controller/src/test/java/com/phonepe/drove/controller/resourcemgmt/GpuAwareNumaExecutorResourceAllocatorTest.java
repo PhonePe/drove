@@ -54,7 +54,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         
         // CPU should be on NUMA 1 because it has 2 local GPUs
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
@@ -80,7 +80,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
 
         assertTrue(result.isPresent());
         // Should pick NUMA 0 (lowest ID) when GPU counts are equal
-        val cpuNumaNode = result.get().getCpu().getCores().keySet().iterator().next();
+        val cpuNumaNode = result.get().getAllocatedNode().getCpu().getCores().keySet().iterator().next();
         assertEquals(0, cpuNumaNode);
     }
 
@@ -95,7 +95,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfo, 1, 128, 3, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         
         // CPU should be on NUMA 2 because it has the most local GPUs (3)
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
@@ -121,7 +121,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfo, 1, 128, 1, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
         val allocatedGpu = allocated.getGpu().getGpuIds().iterator().next();
@@ -149,7 +149,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfoNoCpuOnNuma1, 1, 128, 1, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
         assertEquals(0, cpuNumaNode);
@@ -178,7 +178,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         
         assertEquals(2, allocated.getGpu().getGpuIds().size());
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
@@ -205,7 +205,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent());
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         
         assertEquals(2, allocated.getGpu().getGpuIds().size());
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
@@ -262,7 +262,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
 
         // Should succeed and allocate 2 GPUs
         assertTrue(result.isPresent(), "Should allocate GPUs even when some GPUs lack affinity info");
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         assertEquals(2, allocated.getGpu().getGpuIds().size(), "Should allocate exactly 2 GPUs");
         
         // Check that GPUs with known affinity are preferred
@@ -304,7 +304,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val result = selector.allocate(hostInfo, 1, 128, 2, NVIDIA_H100);
 
         assertTrue(result.isPresent(), "Should succeed with fallback to unknown-affinity GPU");
-        val allocated = result.get();
+        val allocated = result.get().getAllocatedNode();
         assertEquals(2, allocated.getGpu().getGpuIds().size());
         
         val cpuNumaNode = allocated.getCpu().getCores().keySet().iterator().next();
@@ -342,7 +342,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         // Should succeed by falling back to any available GPU
         assertTrue(result.isPresent(), "Should allocate even when all GPUs lack affinity");
         val allocated = result.get();
-        assertEquals(2, allocated.getGpu().getGpuIds().size(), "Should allocate 2 GPUs");
+        assertEquals(2, allocated.getAllocatedNode().getGpu().getGpuIds().size(), "Should allocate 2 GPUs");
     }
 
     @Test
@@ -358,7 +358,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
 
         val result = selector.allocate(hostInfo, 1, 128, 1, new GpuType(GpuVendor.AMD, "mi300x"));
         assertTrue(result.isPresent(), "Allocation should succeed for matching GPU type");
-        assertEquals(Set.of("GPU-MI300"), result.get().getGpu().getGpuIds());
+        assertEquals(Set.of("GPU-MI300"), result.get().getAllocatedNode().getGpu().getGpuIds());
     }
 
     @Test
