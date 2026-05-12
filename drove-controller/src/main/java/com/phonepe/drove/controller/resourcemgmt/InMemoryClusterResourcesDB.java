@@ -71,7 +71,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             val status = eldest.getValue()
                     .getNodeData()
                     .getUpdated()
-                    .after(Date.from(Instant.now().plus(MAX_REMOVED_NODE_RETENTION_WINDOW)));
+                    .before(Date.from(Instant.now().minus(MAX_REMOVED_NODE_RETENTION_WINDOW)));
             if (status) {
                 log.warn("Removed executor data for {} will be permanently deleted",
                          eldest.getValue().getExecutorId());
@@ -79,8 +79,6 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             return status;
         }
     };
-
-    private final Set<String> blackListedNodes = new HashSet<>();
 
     private final StampedLock lock = new StampedLock();
 
@@ -154,14 +152,19 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     public void remove(Collection<String> executorIds) {
         val stamp = lock.writeLock();
         try {
-            executorIds.stream()
+            val actuallyRemoved = executorIds.stream()
                     .map(nodes::remove)
                     .filter(Objects::nonNull)
-                    .forEach(removedExecutor -> {
+                    .map(removedExecutor -> {
                         removedNodes.put(removedExecutor.getExecutorId(), removedExecutor);
-                        log.info("Executor {} is now out of the cluster", removedExecutor.getExecutorId());
-                    });
-            raiseEvent(Set.of(), Set.copyOf(executorIds), liveExecutorsUnsafe());
+                        log.debug("Executor {} is now out of the cluster", removedExecutor.getExecutorId());
+                        return removedExecutor.getExecutorId();
+                    })
+            .toList();
+            if(!actuallyRemoved.isEmpty()) {
+                log.info("Executors {} are removed from the cluster", actuallyRemoved);
+                raiseEvent(Set.of(), Set.copyOf(actuallyRemoved), liveExecutorsUnsafe());
+            }
         }
         finally {
             lock.unlockWrite(stamp);
@@ -174,13 +177,18 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     public void update(List<ExecutorNodeData> nodeData) {
         val stamp = lock.writeLock();
         try {
-            val newNodes = Set.copyOf(Sets.difference(nodeData.stream()
-                                                   .map(node -> node.getState().getExecutorId())
-                                                   .collect(Collectors.toUnmodifiableSet()),
-                                           nodes.keySet()));
-            nodeData.forEach(this::updateNodeDataUnsafe);
-            if (!newNodes.isEmpty()) {
-                raiseEvent(newNodes, Set.of(), liveExecutorsUnsafe());
+            val existingExecutorIds = liveExecutorsUnsafe();
+            log.debug("Existing IDs: {}", existingExecutorIds);
+            nodeData.forEach(this::updateExecutorNodeDataUnsafe);
+            val liveExecutorIds = liveExecutorsUnsafe();
+            val newNodes = Sets.difference(liveExecutorIds, existingExecutorIds);
+            val missingNodes = Sets.difference(existingExecutorIds, liveExecutorIds);
+            log.debug("After update, before update: {} live executors are {}, new executors are {}, removed executors are {}",
+                    existingExecutorIds, liveExecutorIds, newNodes, missingNodes);
+            if (!newNodes.isEmpty() || !missingNodes.isEmpty()) {
+                log.info("Cluster topology changed. New executors: {}, out-of-rotation executors: {}",
+                        newNodes, missingNodes);
+                raiseEvent(Set.copyOf(newNodes), Set.copyOf(missingNodes), liveExecutorIds);
             }
         }
         finally {
@@ -197,7 +205,10 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         try {
             val node = nodes.get(snapshot.getExecutorId());
             if (null != node) {
-                updateNodeDataUnsafe(convertState(node, snapshot));
+                val reAdded = updateExecutorHostInfoUnsafe(updateSnapshotInNode(node, snapshot));
+                if(reAdded) {
+                    raiseEvent(Set.of(snapshot.getExecutorId()), Set.of(), liveExecutorsUnsafe());
+                }
             }
         }
         finally {
@@ -260,123 +271,47 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     public boolean isBlacklisted(String executorId) {
         val stamp = lock.readLock();
         try {
-            return isBlackListedInternal(executorId);
+            return Optional.ofNullable(nodes.get(executorId))
+                .map(InMemoryClusterResourcesDB::isBlackListedInternal)
+                .orElse(false);
         }
         finally {
             lock.unlockRead(stamp);
         }
     }
 
+    @Override
+    @MonitoredFunction
+    public Set<String> blacklistedNodes() {
+        val stamp = lock.readLock();
+        try {
+            return nodes.values()
+                    .stream()
+                    .filter(InMemoryClusterResourcesDB::isBlackListedInternal)
+                    .map(ExecutorHostInfo::getExecutorId)
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
 
     @MonitoredFunction
     @Override
     public boolean isActive(String executorId) {
         val stamp = lock.readLock();
         try {
-            return isActiveInternal(executorId);
+            return Optional.ofNullable(nodes.get(executorId))
+                    .map(InMemoryClusterResourcesDB::isActiveInternal)
+                    .orElse(false);
         }
         finally {
             lock.unlockRead(stamp);
         }
     }
 
-    @Override
-    @MonitoredFunction
-    public void markBlacklisted(String executorId) {
-        val stamp = lock.writeLock();
-        try {
-            blackListedNodes.add(executorId);
-            raiseEvent(Set.of(), Set.of(executorId), liveExecutorsUnsafe());
-        }
-        finally {
-            lock.unlockWrite(stamp);
-        }
-    }
-
-    @Override
-    @MonitoredFunction
-    public void unmarkBlacklisted(String executorId) {
-        val stamp = lock.writeLock();
-        try {
-            blackListedNodes.remove(executorId);
-            raiseEvent(Set.of(executorId), Set.of(), liveExecutorsUnsafe());
-        }
-        finally {
-            lock.unlockWrite(stamp);
-        }
-    }
-
-    private void updateNodeDataUnsafe(ExecutorNodeData rawNodeData) {
-        val node = convertState(rawNodeData);
-        updateNodeDataUnsafe(node);
-    }
-
-    private void updateNodeDataUnsafe(ExecutorHostInfo node) {
-        val updated = nodes.compute(node.getExecutorId(), (eId, existing) -> {
-            if (null != existing
-                    && existing.getNodeData().getUpdated().after(node.getNodeData().getUpdated())) {
-                log.warn(
-                        "Ignored stale update for executor {} as existing data is from {} while update is " +
-                                "from {}",
-                        node.getExecutorId(),
-                        existing.getNodeData().getUpdated().getTime(),
-                        node.getNodeData().getUpdated().getTime());
-                return existing;
-            }
-            return node;
-        });
-        if (null != removedNodes.remove(updated.getExecutorId())) {
-            log.info("Executor {} is back in the cluster", updated.getExecutorId());
-        }
-    }
-
-    private boolean isBlackListedInternal(String executorId) {
-        // Consider nodes that are not locally blacklisted and ensure they are not in BLACKLISTED state
-        return Optional.ofNullable(nodes.get(executorId))
-                .map(node -> ExecutorState.BLACKLISTED.equals(node.getNodeData().getExecutorState()))
-                .orElse(false)
-                || blackListedNodes.contains(executorId);
-    }
-
-    private boolean inRequiredState(ExecutorHostInfo node, Set<ExecutorState> allowedStates) {
-        if (blackListedNodes.contains(node.getExecutorId())) {
-            // If node is blacklisted locally, only allow if BLACKLISTED state is allowed
-            return allowedStates.contains(ExecutorState.BLACKLISTED);
-        }
-        // Else check actual state and ensure it's in allowed states
+    private static boolean inRequiredState(ExecutorHostInfo node, Set<ExecutorState> allowedStates) {
         return allowedStates.contains(node.nodeData.getExecutorState());
-    }
-
-    private boolean isActiveInternal(String executorId) {
-        // Ensure node is not blacklisted locally and then check if it is in active state
-        return Optional.ofNullable(nodes.get(executorId))
-                .filter(node -> !blackListedNodes.contains(node.getExecutorId()))
-                .map(node -> ExecutorState.ACTIVE.equals(node.getNodeData().getExecutorState()))
-                .orElse(false);
-    }
-
-    private void softLockResources(AllocatedExecutorNode node) {
-        updateResources(node.getExecutorId(),
-                        node.getCpu(),
-                        node.getMemory(),
-                        ExecutorHostInfo.CoreState.ALLOCATED,
-                        node.getGpu(),
-                        ExecutorHostInfo.CoreState.ALLOCATED,
-                (av, alloc) -> av - alloc);
-    }
-
-    private void softUnlockResources(
-            String executorId,
-            CPUAllocation cpuAllocation,
-            MemoryAllocation memoryAllocation,
-            GPUAllocation gpuAllocation) {
-        updateResources(executorId,
-                        cpuAllocation,
-                        memoryAllocation,
-                        ExecutorHostInfo.CoreState.FREE,
-                        gpuAllocation,
-                        ExecutorHostInfo.CoreState.FREE,
-                        Long::sum);
     }
 
     private void updateResources(
@@ -434,20 +369,12 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         return new ExecutorHostInfo(snapshot.getExecutorId(), nodeData, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
     }
 
-    private ExecutorHostInfo.HostGPUInfo convertToGpuInfo(ExecutorResourceSnapshot resourceSnapshot) {
-        val gpuInfo = new ExecutorHostInfo.HostGPUInfo();
-        if(resourceSnapshot.getGpus() == null) {
-            return gpuInfo;
-        }
-        resourceSnapshot.getGpus().getFreeGpus().forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.FREE));
-        resourceSnapshot.getGpus().getUsedGpus().forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.IN_USE));
-        return gpuInfo;
-    }
+
 
     /**
      * Convert ExecutorResourceSnapshot into NUMA node information map
      */
-    private Map<Integer, ExecutorHostInfo.NumaNodeInfo> convertToNodeInfo(final ExecutorResourceSnapshot resourceSnapshot) {
+    private static Map<Integer, ExecutorHostInfo.NumaNodeInfo> convertToNodeInfo(final ExecutorResourceSnapshot resourceSnapshot) {
         val numaNodes = new HashMap<Integer, ExecutorHostInfo.NumaNodeInfo>();
         val cpus = resourceSnapshot.getCpus();
         val memory = resourceSnapshot.getMemory();
@@ -479,22 +406,99 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                 });
         return numaNodes;
     }
+    private static ExecutorHostInfo.HostGPUInfo convertToGpuInfo(ExecutorResourceSnapshot resourceSnapshot) {
+        val gpuInfo = new ExecutorHostInfo.HostGPUInfo();
+        if(resourceSnapshot.getGpus() == null) {
+            return gpuInfo;
+        }
+        resourceSnapshot.getGpus().getFreeGpus().forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.FREE));
+        resourceSnapshot.getGpus().getUsedGpus().forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.IN_USE));
+        return gpuInfo;
+    }
+    private static ExecutorHostInfo toHostInfo(final ExecutorNodeData node) {
+        val snapshot = node.getState();
+        return new ExecutorHostInfo(snapshot.getExecutorId(), node, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
+    }
 
+
+    private static ExecutorHostInfo updateSnapshotInNode(
+            final ExecutorHostInfo node,
+            final ExecutorResourceSnapshot snapshot) {
+        return new ExecutorHostInfo(snapshot.getExecutorId(), node.getNodeData(), convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
+    }
+    private static boolean checkOffDuty(boolean skipOffDutyNodes, ExecutorHostInfo node) {
+        return !skipOffDutyNodes //If off duty nodes are needed, return everything
+                || isActiveInternal(node);
+    }
+
+    private static boolean isActiveInternal(ExecutorHostInfo node) {
+        return ExecutorState.ACTIVE.equals(node.getNodeData().getExecutorState());
+    }
+
+    private static boolean isBlackListedInternal(ExecutorHostInfo node) {
+        return node.getNodeData().getExecutorState().isBlacklisted();
+    }
 
     private Set<String> liveExecutorsUnsafe() {
         // Remove nodes that have been blacklisted locally as well as those that are not in ACTIVE state
         // ie maybe marked as blacklisted before or removed
-        final var outOfRotationNodes = nodes.values()
+        return nodes.values()
                 .stream()
-                .filter(node -> !blackListedNodes.contains(node.getExecutorId()))
-                .filter(entry -> !ExecutorState.ACTIVE.equals(entry.getNodeData().getExecutorState()))
+                .filter(entry -> ExecutorState.ACTIVE.equals(entry.getNodeData().getExecutorState()))
                 .map(ExecutorHostInfo::getExecutorId)
-                .collect(Collectors.toSet());
-        return Set.copyOf(Sets.difference(nodes.keySet(), outOfRotationNodes));
+                .collect(Collectors.toUnmodifiableSet());
     }
 
-    private boolean checkOffDuty(boolean skipOffDutyNodes, ExecutorHostInfo node) {
-        return !skipOffDutyNodes //If off duty nodes are needed, return everything
-                || !isBlackListedInternal(node.getExecutorId());
+    private void softLockResources(AllocatedExecutorNode node) {
+        updateResources(node.getExecutorId(),
+                        node.getCpu(),
+                        node.getMemory(),
+                        ExecutorHostInfo.CoreState.ALLOCATED,
+                        node.getGpu(),
+                        ExecutorHostInfo.CoreState.ALLOCATED,
+                        (av, alloc) -> av - alloc);
     }
+
+    private void softUnlockResources(
+            String executorId,
+            CPUAllocation cpuAllocation,
+            MemoryAllocation memoryAllocation,
+            GPUAllocation gpuAllocation) {
+        updateResources(executorId,
+                        cpuAllocation,
+                        memoryAllocation,
+                        ExecutorHostInfo.CoreState.FREE,
+                        gpuAllocation,
+                        ExecutorHostInfo.CoreState.FREE,
+                        Long::sum);
+    }
+
+    private void updateExecutorNodeDataUnsafe(ExecutorNodeData rawNodeData) {
+        log.debug("Updating node data for executor {}", rawNodeData.getState().getExecutorId());
+        val node = toHostInfo(rawNodeData);
+        updateExecutorHostInfoUnsafe(node);
+    }
+
+    private boolean updateExecutorHostInfoUnsafe(ExecutorHostInfo node) {
+        log.debug("Updating host info for executor {}", node.getExecutorId());
+        val updated = nodes.compute(node.getExecutorId(), (eId, existing) -> {
+            if (null != existing
+                    && existing.getNodeData().getUpdated().after(node.getNodeData().getUpdated())) {
+                log.warn(
+                        "Ignored stale update for executor {} as existing data is from {} while update is " +
+                                "from {}",
+                        node.getExecutorId(),
+                        existing.getNodeData().getUpdated().getTime(),
+                        node.getNodeData().getUpdated().getTime());
+                return existing;
+            }
+            return node;
+        });
+        if (null != removedNodes.remove(updated.getExecutorId())) {
+            log.info("Executor {} is back in the cluster", updated.getExecutorId());
+            return true;
+        }
+        return false;
+    }
+
 }

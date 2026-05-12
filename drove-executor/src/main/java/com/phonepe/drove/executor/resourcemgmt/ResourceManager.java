@@ -130,12 +130,13 @@ public class ResourceManager {
             return false;
         }
         val currentGpus = new ArrayList<>(gpus);
-        usage.getUsedGPUs().forEach(gpu -> {
+        for (val gpu : usage.getUsedGPUs()) {
             boolean removed = currentGpus.remove(gpu);
             if (!removed) {
-                log.error("Attempted to release GPU '{}' that is not currently tracked as available. Usage: {}", gpu, usage);
+                log.error("GPU '{}' not available for allocation. Usage: {}", gpu, usage);
+                return false;
             }
-        });
+        }
 
         val currNodes = new HashMap<>(nodes);
         resourceRequirements

@@ -27,8 +27,8 @@ import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest
 @ExtendWith(SystemStubsExtension.class)
-@Ignore
+@Disabled("Temporarily disabled")
 class DroveIgniteInstanceHelperTest {
 
     @SystemStub

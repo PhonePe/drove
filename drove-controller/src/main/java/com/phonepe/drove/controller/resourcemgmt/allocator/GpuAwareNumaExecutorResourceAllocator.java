@@ -247,6 +247,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
 
         // Prefer GPUs on the same NUMA node as the CPU allocation
         val numaLocalGpus = freeGpuIds.stream()
+                .sorted()
                 .filter(gpuId -> Objects.equals(gpuNumaAffinities.get(gpuId), preferredNumaNode))
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
@@ -261,6 +262,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         // Not enough NUMA-local GPUs; fall back to any free GPUs
         // localGpuCount is still the number of NUMA-local GPUs we managed to allocate
         val allocatedGpus = freeGpuIds.stream()
+                .sorted()
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
         val resolvedGpuTypeFallback = resolveGpuType(allocatedGpus, gpuMetadata);

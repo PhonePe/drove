@@ -112,21 +112,22 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
             if (!child.getNodeName().equalsIgnoreCase("mig_device")) {
                 continue;
             }
+            String migUuid = null;
             for (int j = 0; j < child.getChildNodes().getLength(); j++) {
                 val migProp = child.getChildNodes().item(j);
-                if (!migProp.getNodeName().equalsIgnoreCase("uuid")) {
-                    continue;
+                if (migProp.getNodeName().equalsIgnoreCase("uuid")) {
+                    migUuid = migProp.getTextContent();
+                    break;
                 }
-                val migUuid = migProp.getTextContent();
-                if (migUuid == null || migUuid.isBlank()) {
-                    continue;
-                }
-                descriptors.add(new GpuDescriptor(
-                        migUuid.trim(),
-                        "MIG " + Strings.nullToEmpty(productName).trim(),
-                        gpuIndex,
-                        true));
             }
+            if (migUuid == null || migUuid.isBlank()) {
+                continue;
+            }
+            descriptors.add(new GpuDescriptor(
+                    migUuid.trim(),
+                    "MIG " + Strings.nullToEmpty(productName).trim(),
+                    gpuIndex,
+                    true));
         }
         return descriptors;
     }
