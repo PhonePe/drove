@@ -446,6 +446,7 @@ public class Apis {
     @DELETE
     @Path("/tasks/{sourceAppName}/instances/{taskId}")
     @Timed
+    @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
     @Operation(summary = "Delete task instance", description = "Delete a task instance from the system", tags = {"Tasks"})
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Task deletion result")
     public ApiResponse<Map<String, Boolean>> deleteTaskInstance(
