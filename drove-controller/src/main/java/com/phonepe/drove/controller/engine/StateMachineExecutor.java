@@ -96,11 +96,11 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
                     if (pausedStates.contains(state)) {
                         log.info("State machine is being suspended for app: {}", deployableId);
                         checkLock.lock();
-                        wake.set(false);
                         try {
                             while (!wake.get()) {
                                 checkCondition.await();
                             }
+                            wake.set(false);
                             log.info("State machine resumed for app: {}", deployableId);
                         }
                         finally {
