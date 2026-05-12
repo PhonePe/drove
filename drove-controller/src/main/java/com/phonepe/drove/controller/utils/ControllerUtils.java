@@ -504,7 +504,6 @@ public class ControllerUtils {
                             return 0;
                         }
                         return (int) layout.getGpus().stream()
-                                .filter(GPUInfo::isAvailable)
                                 .filter(gpu -> GPUUtils.matches(gpu, gpuType))
                                 .count();
                     }
@@ -773,7 +772,6 @@ public class ControllerUtils {
                     .map(e -> e.getNodeData().getState().getLayout())
                     .filter(Objects::nonNull)
                     .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().stream()
-                            .filter(GPUInfo::isAvailable)
                             .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
                             .count())
                     .max()

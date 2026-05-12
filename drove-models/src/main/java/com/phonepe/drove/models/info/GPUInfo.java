@@ -10,9 +10,8 @@ public class GPUInfo {
     GpuVendor gpuVendor;
     String gpuModel;
     Integer numaNodeAffinity;
-    boolean available;
 
-    public GPUInfo(String gpuId, GpuVendor gpuVendor, String gpuModel, Integer numaNodeAffinity, boolean available) {
+    public GPUInfo(String gpuId, GpuVendor gpuVendor, String gpuModel, Integer numaNodeAffinity) {
         Preconditions.checkNotNull(gpuVendor, "GPU vendor cannot be null");
         Preconditions.checkNotNull(gpuId, "GPUId cannot be null");
         Preconditions.checkNotNull(gpuModel, "GPU Model cannot be null");
@@ -20,6 +19,5 @@ public class GPUInfo {
         this.gpuVendor = gpuVendor;
         this.gpuModel = gpuModel;
         this.numaNodeAffinity = numaNodeAffinity;
-        this.available = available;
     }
 }
