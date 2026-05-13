@@ -203,6 +203,9 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
             ExecutorHostInfo hostInfo,
             Map<String, GPUInfo> gpuMetadata,
             GpuType requiredGpuType) {
+        if(hostInfo.getGpuInfo() == null) {
+            return Set.of();
+        }
         return hostInfo.getGpuInfo().getGpus().entrySet().stream()
                 .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
                 .filter(entry -> GPUUtils.matches(gpuMetadata.get(entry.getKey()), requiredGpuType))

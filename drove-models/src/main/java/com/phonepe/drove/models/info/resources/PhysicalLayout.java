@@ -17,11 +17,13 @@
 package com.phonepe.drove.models.info.resources;
 
 import com.phonepe.drove.models.info.GPUInfo;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,8 +34,15 @@ import java.util.Set;
 @Jacksonized
 @AllArgsConstructor
 @Builder
+@Schema(description = "Physical layout of the executor host describing NUMA topology with CPU cores and memory per NUMA node")
 public class PhysicalLayout {
+    @Schema(description = "Map of NUMA node ID to set of CPU core IDs on that node", example = "{0: [0,1,2,3], 1: [4,5,6,7]}")
     Map<Integer, Set<Integer>> cores;
+
+    @Schema(description = "Map of NUMA node ID to available memory in bytes on that node", example = "{0: 17179869184, 1: 17179869184}")
     Map<Integer, Long> memory;
-    Set<GPUInfo> gpus;
+
+    @Schema(description = "Set of GPUs available in the host")
+    @Builder.Default
+    Set<GPUInfo> gpus = new HashSet<>();
 }

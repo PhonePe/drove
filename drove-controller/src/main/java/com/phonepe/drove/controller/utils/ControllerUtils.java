@@ -500,7 +500,7 @@ public class ControllerUtils {
                     @Override
                     public Integer visit(ExecutorNodeData executorData) {
                         val layout = executorData.getState().getLayout();
-                        if (layout == null || layout.getGpus() == null) {
+                        if (layout == null || layout.getGpus() == null || executorData.getState().getGpus() == null) {
                             return 0;
                         }
                         val freeGPUs = executorData.getState().getGpus().getFreeGpus();

@@ -36,6 +36,7 @@ import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -43,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import dev.failsafe.TimeoutExceededException;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -146,13 +148,18 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                      ControllerUtils.deployableObjectId(applicationSpec));
             return false;
         }
+        val resources = new ArrayList<ResourceAllocation>();
+        resources.add(node.getCpu());
+        resources.add(node.getMemory());
+        //Below check is to make sure upgrades can be done easily
+        if (node.getGpu() != null && !node.getGpu().getGpuIds().isEmpty()) {
+            resources.add(node.getGpu());
+        }
         val spec = new ApplicationInstanceSpec(appId,
                                                      applicationSpec.getName(),
                                                      instanceId,
                                                      applicationSpec.getExecutable(),
-                                                     List.of(node.getCpu(),
-                                                             node.getMemory(),
-                                                             node.getGpu()),
+                                                     resources,
                                                      applicationSpec.getExposedPorts(),
                                                      applicationSpec.getVolumes(),
                                                      translateConfigSpecs(applicationSpec.getConfigs(),

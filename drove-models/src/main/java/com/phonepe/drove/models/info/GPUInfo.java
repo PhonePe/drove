@@ -2,9 +2,13 @@ package com.phonepe.drove.models.info;
 
 import com.google.common.base.Preconditions;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
+import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
+@Jacksonized
+@Builder
 public class GPUInfo {
     String gpuId;
     GpuVendor gpuVendor;
