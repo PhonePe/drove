@@ -14,10 +14,10 @@ import java.util.Objects;
 @Jacksonized
 @Builder
 public class GPURequirement extends ResourceRequirement{
-    long count;
+    int count;
     GpuType gpuType;
 
-    public GPURequirement(long count, GpuType gpuType) {
+    public GPURequirement(int count, GpuType gpuType) {
         super(ResourceType.GPU);
         this.count = count;
         this.gpuType = Objects.requireNonNull(gpuType, "GPU type is mandatory");

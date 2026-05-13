@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest(httpPort = 8878)
 @ExtendWith(SystemStubsExtension.class)
-@Disabled("Temporarily disabled")
 class DiscoveryTest {
 
     @SystemStub

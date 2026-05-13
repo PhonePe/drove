@@ -1,5 +1,6 @@
 package com.phonepe.drove.models.info.resources.allocation;
 
+import com.google.common.base.Preconditions;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import lombok.Builder;
@@ -20,6 +21,7 @@ public class GPUAllocation extends ResourceAllocation{
 
     public GPUAllocation(Set<String> gpuIds, GpuType gpuType) {
         super(ResourceType.GPU);
+        Preconditions.checkNotNull(gpuIds, "GPU IDs cannot be null");
         this.gpuIds = gpuIds;
         this.gpuType = gpuType;
     }

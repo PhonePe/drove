@@ -16,28 +16,55 @@
 
 package com.phonepe.drove.controller.resources;
 
-import com.google.common.collect.Sets;
+import static com.phonepe.drove.controller.utils.ControllerUtils.*;
+import static com.phonepe.drove.models.api.ApiResponse.failure;
+import static com.phonepe.drove.models.api.ApiResponse.success;
+import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.model.MessageDeliveryStatus;
-import com.phonepe.drove.common.model.MessageHeader;
-import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;
-import com.phonepe.drove.common.model.executor.ExecutorAddress;
-import com.phonepe.drove.common.model.executor.UnBlacklistExecutorMessage;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.event.EventStore;
-import com.phonepe.drove.controller.managed.BlacklistingAppMovementManager;
+import com.phonepe.drove.controller.managed.BlacklistingManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.statedb.*;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ApplicationStateDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.ui.support.DashboardDataSource;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
-import com.phonepe.drove.models.api.*;
+import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.api.AppDetails;
+import com.phonepe.drove.models.api.AppSummary;
+import com.phonepe.drove.models.api.BlacklistOperationResponse;
+import com.phonepe.drove.models.api.ClusterSummary;
+import com.phonepe.drove.models.api.DashboardData;
+import com.phonepe.drove.models.api.DroveEventsList;
+import com.phonepe.drove.models.api.DroveEventsSummary;
+import com.phonepe.drove.models.api.ExecutorSummary;
+import com.phonepe.drove.models.api.ExposedAppInfo;
+import com.phonepe.drove.models.api.LocalServiceSummary;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -46,8 +73,6 @@ import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeRemovedEvent;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
-import com.phonepe.drove.models.events.events.DroveExecutorBlacklistedEvent;
-import com.phonepe.drove.models.events.events.DroveExecutorUnblacklistedEvent;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
@@ -58,22 +83,12 @@ import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
-import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
-import com.phonepe.drove.models.taskinstance.TaskState;
-import lombok.extern.slf4j.Slf4j;
+
 import lombok.val;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.*;
-import java.util.stream.Collectors;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.*;
-import static com.phonepe.drove.controller.utils.EventUtils.executorMetadata;
-import static com.phonepe.drove.models.api.ApiResponse.failure;
-import static com.phonepe.drove.models.api.ApiResponse.success;
-import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Returns responses for use in apis
@@ -95,7 +110,8 @@ public class ResponseEngine {
     private final EventStore eventStore;
     private final ControllerCommunicator communicator;
     private final DroveEventBus eventBus;
-    private final BlacklistingAppMovementManager blacklistingAppMovementManager;
+    private final BlacklistingManager blacklistingManager;
+    private final DashboardDataSource dashboardDataSource;
 
     @Inject
     public ResponseEngine(
@@ -111,7 +127,8 @@ public class ResponseEngine {
             EventStore eventStore,
             ControllerCommunicator communicator,
             DroveEventBus eventBus,
-            BlacklistingAppMovementManager blacklistingAppMovementManager) {
+            BlacklistingManager blacklistingAppMovementManager,
+            DashboardDataSource dashboardDataSource) {
         this.leadershipObserver = leadershipObserver;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
@@ -125,17 +142,23 @@ public class ResponseEngine {
         this.eventStore = eventStore;
         this.communicator = communicator;
         this.eventBus = eventBus;
-        this.blacklistingAppMovementManager = blacklistingAppMovementManager;
+        this.blacklistingManager = blacklistingAppMovementManager;
+        this.dashboardDataSource = dashboardDataSource;
     }
 
+    public ApiResponse<DashboardData> dashboardData() {
+        return dashboardDataSource.current()
+                .map(ApiResponse::success)
+                .orElseGet(() -> ApiResponse.failure("Could not fetch dashboard data"));
+    }
 
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
         val apps = applicationStateDB.applications(from, size);
         val appIds = apps.stream().map(ApplicationInfo::getAppId).toList();
         val instanceCounts = instanceInfoDB.instanceCount(appIds, HEALTHY);
         return success(apps.stream()
-                               .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
-                                                                     info -> toAppSummary(info, instanceCounts))));
+                .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
+                        info -> toAppSummary(info, instanceCounts))));
     }
 
 
@@ -153,12 +176,12 @@ public class ResponseEngine {
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                          ? InstanceState.ACTIVE_STATES
-                          : state;
+                ? InstanceState.ACTIVE_STATES
+                : state;
         return success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
-                               .stream()
-                               .filter(info -> checkStates.contains(info.getState()))
-                               .toList());
+                .stream()
+                .filter(info -> checkStates.contains(info.getState()))
+                .toList());
     }
 
     public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
@@ -179,17 +202,17 @@ public class ResponseEngine {
 
     public ApiResponse<Map<String, Boolean>> taskDelete(final String sourceAppName, final String taskId) {
         return taskDB.deleteTask(sourceAppName, taskId)
-               ? ApiResponse.success(Map.of("deleted", true))
-               : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
+                ? ApiResponse.success(Map.of("deleted", true))
+                : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
     }
 
     public ApiResponse<Map<String, LocalServiceSummary>> localServices(final int from, final int size) {
         val services = localServiceStateDB.services(from, size);
         return success(services.stream()
-                               .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
-                                                                     info -> toLocalServiceSummary(info,
-                                                                                                   instancesForService(
-                                                                                                           info.getServiceId())))));
+                .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
+                        info -> toLocalServiceSummary(info,
+                                instancesForService(
+                                        info.getServiceId())))));
     }
 
     public ApiResponse<LocalServiceSummary> localService(final String serviceId) {
@@ -211,12 +234,12 @@ public class ResponseEngine {
             final String serviceId,
             final Set<LocalServiceInstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                          ? LocalServiceInstanceState.ACTIVE_STATES
-                          : state;
+                ? LocalServiceInstanceState.ACTIVE_STATES
+                : state;
         return success(localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
-                               .stream()
-                               .filter(info -> checkStates.contains(info.getState()))
-                               .toList());
+                .stream()
+                .filter(info -> checkStates.contains(info.getState()))
+                .toList());
     }
 
     public ApiResponse<LocalServiceInstanceInfo> localServiceInstanceDetails(
@@ -232,53 +255,9 @@ public class ResponseEngine {
     }
 
     public ApiResponse<ClusterSummary> cluster() {
-        var liveApps = 0;
-        var allApps = 0;
-        for (val appInfo : applicationStateDB.applications(0, Integer.MAX_VALUE)) {
-            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(applicationEngine.currentState(appInfo.getAppId())
-                                                                            .orElse(ApplicationState.FAILED))
-                        ? 1
-                        : 0;
-            allApps++;
-        }
-        var liveTasks = 0;
-        for (val taskInfo : taskEngine.tasks(EnumSet.allOf(TaskState.class))) {
-            liveTasks += TaskState.ACTIVE_STATES.contains(taskInfo.getState())
-                         ? 1
-                         : 0;
-        }
-        var liveLocalServices = 0;
-        var allLocalServices = 0;
-        for (val localServiceInfo : localServiceStateDB.services(0, Integer.MAX_VALUE)) {
-            liveLocalServices += LocalServiceState.RESOURCE_USING_STATES
-                                         .contains(localServiceEngine.currentState(localServiceInfo.getServiceId())
-                                                           .orElse(LocalServiceState.DESTROYED))
-                                 ? 1
-                                 : 0;
-            allLocalServices++;
-        }
-        val resourceSummary = ControllerUtils.summarizeResources(clusterResourcesDB.currentSnapshot(true));
-
-        return success(
-                new ClusterSummary(
-                        leadershipObserver.leader()
-                                .map(node -> node.getHostname() + ":" + node.getPort())
-                                .orElse("Leader election underway"),
-                        clusterStateDB.currentState()
-                                .map(ClusterStateData::getState)
-                                .orElse(ClusterState.NORMAL),
-                        resourceSummary.getNumExecutors(),
-                        allApps,
-                        liveApps,
-                        liveTasks,
-                        allLocalServices,
-                        liveLocalServices,
-                        resourceSummary.getFreeCores(),
-                        resourceSummary.getUsedCores(),
-                        resourceSummary.getTotalCores(),
-                        resourceSummary.getFreeMemory(),
-                        resourceSummary.getUsedMemory(),
-                        resourceSummary.getTotalMemory()));
+        return dashboardDataSource.current()
+                .map(data -> success(data.getClusterSummary()))
+                .orElseGet(() -> failure("Could not fetch cluster summary"));
     }
 
     public ApiResponse<List<ExecutorSummary>> nodes() {
@@ -321,73 +300,48 @@ public class ResponseEngine {
         //Skip stale check if cluster is in maintenance mode
         val instances = instanceInfoDB.instances(appIds, Set.of(HEALTHY), isInMaintenanceWindow());
         return success(apps.stream()
-                               .map(app -> {
-                                   val spec = app.getSpec().getExposureSpec();
-                                   return new ExposedAppInfo(app.getSpec().getName(),
-                                                             app.getAppId(),
-                                                             spec.getVhost(),
-                                                             app.getSpec().getTags(),
-                                                             instances.getOrDefault(app.getAppId(), List.of())
-                                                                     .stream()
-                                                                     .sorted(Comparator.comparing(
-                                                                             InstanceInfo::getCreated)) //Reduce chaos
-                                                                     .filter(instanceInfo -> instanceInfo.getLocalInfo()
-                                                                             .getPorts()
-                                                                             .containsKey(spec.getPortName())) //Has
-                                                                     // the specified port exposed
-                                                                     .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
-                                                                             instanceInfo.getLocalInfo()
-                                                                                     .getHostname(),
-                                                                             instanceInfo.getLocalInfo()
-                                                                                     .getPorts()
-                                                                                     .get(spec.getPortName())
-                                                                                     .getHostPort(),
-                                                                             instanceInfo.getLocalInfo()
-                                                                                     .getPorts()
-                                                                                     .get(spec.getPortName())
-                                                                                     .getPortType()))
-                                                                     .toList());
-                               })
-                               .toList());
-    }
-
-    public ApiResponse<Map<String, Set<String>>> blacklistExecutors(final Set<String> executorIds) {
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure("Cluster is in maintenance mode");
-        }
-        val successfullyBlacklisted = blacklistExecutorsInternal(executorIds);
-        return success(Map.of("successful", successfullyBlacklisted,
-                              "failed", Sets.difference(executorIds, successfullyBlacklisted)));
-    }
-
-    public ApiResponse<Map<String, Set<String>>> unblacklistExecutors(final Set<String> executorIds) {
-        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure("Cluster is in maintenance mode");
-        }
-        val successfullyUnblacklisted = executorIds.stream()
-                .filter(executorId -> {
-                    val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-                    if (null != executor) {
-                        val msgResponse = communicator.send(
-                                new UnBlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                               new ExecutorAddress(executor.getExecutorId(),
-                                                                                   executor.getNodeData().getHostname(),
-                                                                                   executor.getNodeData().getPort(),
-                                                                                   executor.getNodeData()
-                                                                                           .getTransportType())));
-                        if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                            clusterResourcesDB.unmarkBlacklisted(executorId);
-                            log.debug("Executor {} marked unblacklisted.", executorId);
-                            eventBus.publish(new DroveExecutorUnblacklistedEvent(executorMetadata(executor.getNodeData())));
-                            return true;
-                        }
-                    }
-                    return false;
+                .map(app -> {
+                    val spec = app.getSpec().getExposureSpec();
+                    return new ExposedAppInfo(app.getSpec().getName(),
+                            app.getAppId(),
+                            spec.getVhost(),
+                            app.getSpec().getTags(),
+                            instances.getOrDefault(app.getAppId(), List.of())
+                                    .stream()
+                                    .sorted(Comparator.comparing(
+                                            InstanceInfo::getCreated)) //Reduce chaos
+                                    .filter(instanceInfo -> instanceInfo.getLocalInfo()
+                                            .getPorts()
+                                            .containsKey(spec.getPortName())) //Has
+                                    // the specified port exposed
+                                    .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
+                                            instanceInfo.getLocalInfo()
+                                                    .getHostname(),
+                                            instanceInfo.getLocalInfo()
+                                                    .getPorts()
+                                                    .get(spec.getPortName())
+                                                    .getHostPort(),
+                                            instanceInfo.getLocalInfo()
+                                                    .getPorts()
+                                                    .get(spec.getPortName())
+                                                    .getPortType()))
+                                    .toList());
                 })
-                .collect(Collectors.toUnmodifiableSet());
-        return success(Map.of("successful", successfullyUnblacklisted,
-                              "failed", Sets.difference(executorIds, successfullyUnblacklisted)));
+                .toList());
+    }
 
+    public ApiResponse<BlacklistOperationResponse> blacklistExecutors(final Set<String> executorIds) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ApiResponse.failure("Cluster is in maintenance mode");
+        }
+        return ApiResponse.success(blacklistingManager.blacklistExecutors(executorIds));
+    }
+
+    public ApiResponse<BlacklistOperationResponse> unblacklistExecutors(final Set<String> executorIds) {
+        if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
+            return ApiResponse.failure("Cluster is in maintenance mode");
+        }
+        return ApiResponse.success(blacklistingManager.unblacklistExecutors(executorIds));
     }
 
     public ApiResponse<ClusterStateData> setClusterMaintenanceMode() {
@@ -438,70 +392,43 @@ public class ResponseEngine {
         val memory = totalMemory(spec, requiredInstances);
         val gpus = totalGPU(spec, requiredInstances);
         return new AppDetails(info.getAppId(),
-                              spec,
-                              requiredInstances,
-                              instances.stream()
-                                      .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
-                                      .count(),
-                              cpus,
-                              memory,
-                              gpus,
-                              instances,
-                              applicationEngine.currentState(info.getAppId()).orElse(null),
-                              info.getCreated(),
-                              info.getUpdated());
+                spec,
+                requiredInstances,
+                instances.stream()
+                        .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
+                        .count(),
+                cpus,
+                memory,
+                gpus,
+                instances,
+                applicationEngine.currentState(info.getAppId()).orElse(null),
+                info.getCreated(),
+                info.getUpdated());
 
     }
 
     private AppSummary toAppSummary(final ApplicationInfo info, Map<String, Long> instanceCounts) {
-        val spec = info.getSpec();
-        val instances = info.getInstances();
-        val healthyInstances = instanceCounts.getOrDefault(info.getAppId(), 0L);
-        val cpus = totalCPU(spec, instances);
-        val memory = totalMemory(spec, instances);
-        val gpus = totalGPU(spec, instances);
-        return new AppSummary(info.getAppId(),
-                              spec.getName(),
-                              instances,
-                              healthyInstances,
-                              cpus,
-                              memory,
-                              gpus,
-                              spec.getTags(),
-                              applicationEngine.currentState(info.getAppId()).orElse(null),
-                              info.getCreated(),
-                              info.getUpdated());
-
+        return ControllerUtils.toAppSummary(info,
+                applicationEngine,
+                instanceCounts.getOrDefault(info.getAppId(), 0L));
     }
 
     private LocalServiceSummary toLocalServiceSummary(
             final LocalServiceInfo info,
             Map<String, List<LocalServiceInstanceInfo>> instancesPerExecutor) {
-        val spec = info.getSpec();
         val knownInstances = instancesPerExecutor.values()
                 .stream()
                 .flatMap(List::stream)
-                .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState()))
+                .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES
+                        .contains(instanceInfo.getState()))
                 .count();
         val healthyInstances = instancesPerExecutor.values()
                 .stream()
                 .flatMap(List::stream)
-                .filter(instanceInfo -> instanceInfo.getState().equals(LocalServiceInstanceState.HEALTHY))
+                .filter(instanceInfo -> instanceInfo.getState()
+                        .equals(LocalServiceInstanceState.HEALTHY))
                 .count();
-        val cpus = totalCPU(spec, knownInstances);
-        val memory = totalMemory(spec, knownInstances);
-        return new LocalServiceSummary(info.getServiceId(),
-                                       spec.getName(),
-                                       info.getInstancesPerHost(),
-                                       healthyInstances,
-                                       cpus,
-                                       memory,
-                                       spec.getTags(),
-                                       info.getActivationState(),
-                                       localServiceEngine.currentState(info.getServiceId()).orElse(null),
-                                       info.getCreated(),
-                                       info.getUpdated());
-
+        return ControllerUtils.toLocalServiceSummary(info, knownInstances, healthyInstances, localServiceEngine);
     }
 
     private Optional<ExecutorSummary> toExecutorSummary(final ExecutorHostInfo hostInfo, boolean removed) {
@@ -514,93 +441,49 @@ public class ResponseEngine {
 
                     @Override
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
-                        val backlistedState = clusterResourcesDB.isBlacklisted(hostInfo.getExecutorId())
-                                              ? ExecutorState.BLACKLISTED
-                                              : executorData.getExecutorState();
+                        val backlistedState = executorData.getExecutorState();
                         val executorState = removed ? ExecutorState.REMOVED
-                                                    : backlistedState;
+                                : backlistedState;
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
-                                                               hostInfo.getNodeData().getHostname(),
-                                                               hostInfo.getNodeData().getPort(),
-                                                               hostInfo.getNodeData().getTransportType(),
-                                                               executorData.getState()
-                                                                       .getCpus()
-                                                                       .getFreeCores()
-                                                                       .values()
-                                                                       .stream()
-                                                                       .mapToInt(Set::size)
-                                                                       .sum(),
-                                                               executorData.getState()
-                                                                       .getCpus()
-                                                                       .getUsedCores()
-                                                                       .values()
-                                                                       .stream()
-                                                                       .mapToInt(Set::size)
-                                                                       .sum(),
-                                                               executorData.getState()
-                                                                       .getMemory()
-                                                                       .getFreeMemory()
-                                                                       .values()
-                                                                       .stream()
-                                                                       .mapToLong(v -> v)
-                                                                       .sum(),
-                                                               executorData.getState()
-                                                                       .getMemory()
-                                                                       .getUsedMemory()
-                                                                       .values()
-                                                                       .stream()
-                                                                       .mapToLong(v -> v)
-                                                                       .sum(),
-                                                               executorData.getTags(),
-                                                               executorState));
+                                hostInfo.getNodeData().getHostname(),
+                                hostInfo.getNodeData().getPort(),
+                                hostInfo.getNodeData().getTransportType(),
+                                executorData.getState()
+                                        .getCpus()
+                                        .getFreeCores()
+                                        .values()
+                                        .stream()
+                                        .mapToInt(Set::size)
+                                        .sum(),
+                                executorData.getState()
+                                        .getCpus()
+                                        .getUsedCores()
+                                        .values()
+                                        .stream()
+                                        .mapToInt(Set::size)
+                                        .sum(),
+                                executorData.getState()
+                                        .getMemory()
+                                        .getFreeMemory()
+                                        .values()
+                                        .stream()
+                                        .mapToLong(v -> v)
+                                        .sum(),
+                                executorData.getState()
+                                        .getMemory()
+                                        .getUsedMemory()
+                                        .values()
+                                        .stream()
+                                        .mapToLong(v -> v)
+                                        .sum(),
+                                executorData.getTags(),
+                                executorState));
                     }
                 });
     }
 
     private boolean isInMaintenanceWindow() {
         return CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null));
-    }
-
-    private Set<String> blacklistExecutorsInternal(Set<String> executorIds) {
-        final var successfullyBlacklisted = executorIds.stream()
-                .filter(executorId -> {
-                    if (clusterResourcesDB.isBlacklisted(executorId)) {
-                        log.warn("Executor {} is set to blacklisted already. We are going to skip this.", executorId);
-                        return false;
-                    }
-                    val executor = clusterResourcesDB.currentSnapshot(executorId).orElse(null);
-                    if (null != executor) {
-                        val msgResponse = communicator.send(
-                                new BlacklistExecutorMessage(MessageHeader.controllerRequest(),
-                                                             new ExecutorAddress(executor.getExecutorId(),
-                                                                                 executor.getNodeData().getHostname(),
-                                                                                 executor.getNodeData().getPort(),
-                                                                                 executor.getNodeData()
-                                                                                         .getTransportType())));
-                        if (msgResponse.getStatus().equals(MessageDeliveryStatus.ACCEPTED)) {
-                            clusterResourcesDB.markBlacklisted(executorId);
-                            log.info("Executors {} have been marked as blacklisted. Moving running instances",
-                                     executorId);
-                            eventBus.publish(new DroveExecutorBlacklistedEvent(executorMetadata(executor.getNodeData())));
-                            return true;
-                        }
-                        else {
-                            log.error("Error sending blacklist message to executor {}. Status: {}",
-                                      executorId,
-                                      msgResponse.getStatus());
-                        }
-                    }
-                    return false;
-                })
-                .collect(Collectors.toUnmodifiableSet());
-        if (successfullyBlacklisted.isEmpty()) {
-            log.warn("No executor has been blacklisted. No apps to move.");
-        }
-        else {
-            val status = blacklistingAppMovementManager.moveApps(successfullyBlacklisted);
-            log.info("App movement manager acceptance status for executors {} is {}", successfullyBlacklisted, status);
-        }
-        return successfullyBlacklisted;
     }
 
     private Map<String, List<LocalServiceInstanceInfo>> instancesForService(String serviceId) {

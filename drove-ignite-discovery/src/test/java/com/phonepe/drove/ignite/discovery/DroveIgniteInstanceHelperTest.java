@@ -56,7 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest
 @ExtendWith(SystemStubsExtension.class)
-@Disabled("Temporarily disabled")
 class DroveIgniteInstanceHelperTest {
 
     @SystemStub

@@ -503,8 +503,10 @@ public class ControllerUtils {
                         if (layout == null || layout.getGpus() == null) {
                             return 0;
                         }
+                        val freeGPUs = executorData.getState().getGpus().getFreeGpus();
                         return (int) layout.getGpus().stream()
                                 .filter(gpu -> GPUUtils.matches(gpu, gpuType))
+                                .filter(gpu -> freeGPUs.contains(gpu.getGpuId()))
                                 .count();
                     }
                 });
@@ -694,19 +696,19 @@ public class ControllerUtils {
 
         val requiredGpuPerInstance = spec.getResources()
                 .stream()
-                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
+                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
                     @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return 0L;
+                    public Integer visit(CPURequirement cpuRequirement) {
+                        return 0;
                     }
 
                     @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return 0L;
+                    public Integer visit(MemoryRequirement memoryRequirement) {
+                        return 0;
                     }
 
                     @Override
-                    public Long visit(GPURequirement gpuRequirement) {
+                    public Integer visit(GPURequirement gpuRequirement) {
                         return gpuRequirement.getCount();
                     }
                 }))
@@ -743,18 +745,7 @@ public class ControllerUtils {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
                                "Available: " + freeMemory);
         }
-        // Cluster-wide GPU capacity check
-        if (requiredGpuTypePerInstance != null) {
-            var freeGpus = 0;
-            for (val exec : executors) {
-                freeGpus += ControllerUtils.freeGpus(exec, requiredGpuTypePerInstance);
-            }
-            val requiredGpu = requiredInstances * requiredGpuPerInstance;
-            if (requiredGpu > freeGpus) {
-                errors.add("Cluster does not have enough GPUs. Required: " + requiredGpu + " " +
-                        "Available: " + freeGpus);
-            }
-        }
+
         val maxAvailablePhysicalCoresPerNode = executors.stream()
                 .map(e -> e.getNodeData().getState().getLayout())
                 .filter(Objects::nonNull)

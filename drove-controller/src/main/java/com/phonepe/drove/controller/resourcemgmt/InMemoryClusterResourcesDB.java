@@ -350,27 +350,6 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         }
     }
 
-
-
-    private ExecutorHostInfo convertState(final ExecutorNodeData node) {
-        val snapshot = node.getState();
-        return new ExecutorHostInfo(snapshot.getExecutorId(), node, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
-    }
-
-    private ExecutorHostInfo convertState(final ExecutorHostInfo node, final ExecutorResourceSnapshot snapshot) {
-        val nodeData = ExecutorNodeData.from(node.getNodeData(),
-                                             snapshot,
-                                             node.getNodeData().getInstances(),
-                                             node.getNodeData().getTasks(),
-                                             node.getNodeData().getServiceInstances(),
-                                             node.getNodeData().getTags(),
-                                             node.getNodeData().getExecutorState(),
-                                             node.getNodeData().getMetadata());
-        return new ExecutorHostInfo(snapshot.getExecutorId(), nodeData, convertToNodeInfo(snapshot), convertToGpuInfo(snapshot));
-    }
-
-
-
     /**
      * Convert ExecutorResourceSnapshot into NUMA node information map
      */

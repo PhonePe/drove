@@ -46,7 +46,6 @@ public class ScoredExecutorSelector implements ExecutorSelector {
         Optional<AllocatedExecutorNode> selected = Optional.empty();
         long maxScore = -1;
         
-        // Single pass: apply nodeFilter, allocate, apply allocationFilter, score inline
         for (ExecutorHostInfo node : nodes) {
             if (!nodeFilter.test(node)) {
                 continue;
