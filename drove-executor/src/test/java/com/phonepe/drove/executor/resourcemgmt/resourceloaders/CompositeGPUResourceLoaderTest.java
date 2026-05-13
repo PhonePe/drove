@@ -22,7 +22,7 @@ class CompositeGPUResourceLoaderTest {
     @Test
     void testSingleDelegateReturnsItsGpus() {
         val nvidiaLoader = Mockito.mock(GPUResourceLoader.class);
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0);
         Mockito.when(nvidiaLoader.loadGPUInfo()).thenReturn(Set.of(gpu));
 
         val composite = new CompositeGPUResourceLoader(List.of(nvidiaLoader));
@@ -35,8 +35,8 @@ class CompositeGPUResourceLoaderTest {
     void testMultipleDelegatesAggregateResults() {
         val nvidiaLoader = Mockito.mock(GPUResourceLoader.class);
         val amdLoader = Mockito.mock(GPUResourceLoader.class);
-        val nvidiaGpu = new GPUInfo("GPU-NV1", GpuVendor.NVIDIA, "H100", 0, true);
-        val amdGpu = new GPUInfo("GPU-AMD1", GpuVendor.AMD, "MI300X", 1, true);
+        val nvidiaGpu = new GPUInfo("GPU-NV1", GpuVendor.NVIDIA, "H100", 0);
+        val amdGpu = new GPUInfo("GPU-AMD1", GpuVendor.AMD, "MI300X", 1);
         Mockito.when(nvidiaLoader.loadGPUInfo()).thenReturn(Set.of(nvidiaGpu));
         Mockito.when(amdLoader.loadGPUInfo()).thenReturn(Set.of(amdGpu));
 
@@ -51,7 +51,7 @@ class CompositeGPUResourceLoaderTest {
     void testFailingDelegateDoesNotAffectOthers() {
         val nvidiaLoader = Mockito.mock(GPUResourceLoader.class);
         val amdLoader = Mockito.mock(GPUResourceLoader.class);
-        val amdGpu = new GPUInfo("GPU-AMD1", GpuVendor.AMD, "MI300X", 1, true);
+        val amdGpu = new GPUInfo("GPU-AMD1", GpuVendor.AMD, "MI300X", 1);
         Mockito.when(nvidiaLoader.loadGPUInfo()).thenThrow(new RuntimeException("nvidia-smi crashed"));
         Mockito.when(amdLoader.loadGPUInfo()).thenReturn(Set.of(amdGpu));
 
@@ -75,12 +75,12 @@ class CompositeGPUResourceLoaderTest {
     @Test
     void testResultSetIsUnmodifiable() {
         val nvidiaLoader = Mockito.mock(GPUResourceLoader.class);
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0);
         Mockito.when(nvidiaLoader.loadGPUInfo()).thenReturn(Set.of(gpu));
 
         val composite = new CompositeGPUResourceLoader(List.of(nvidiaLoader));
         val result = composite.loadGPUInfo();
         assertThrows(UnsupportedOperationException.class,
-                () -> result.add(new GPUInfo("GPU-2", GpuVendor.AMD, "MI300X", 1, true)));
+                () -> result.add(new GPUInfo("GPU-2", GpuVendor.AMD, "MI300X", 1)));
     }
 }

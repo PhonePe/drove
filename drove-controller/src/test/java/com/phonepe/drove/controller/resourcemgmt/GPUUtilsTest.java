@@ -28,7 +28,7 @@ class GPUUtilsTest {
 
     @Test
     void testNullRequestedTypeMatchesAnyGpu() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0);
         assertTrue(GPUUtils.matches(gpu, null));
     }
 
@@ -40,14 +40,14 @@ class GPUUtilsTest {
 
     @Test
     void testVendorMismatchDoesNotMatch() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0);
         val requested = new GpuType(GpuVendor.AMD, "H100");
         assertFalse(GPUUtils.matches(gpu, requested));
     }
 
     @Test
     void testExactModelMatch() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0);
         val requested = new GpuType(GpuVendor.NVIDIA, "H100");
         assertTrue(GPUUtils.matches(gpu, requested));
     }
@@ -57,28 +57,28 @@ class GPUUtilsTest {
 
     @Test
     void testNonAlphanumericCharactersNormalized() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.AMD, "MI300X", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.AMD, "MI300X", 0);
         val requested = new GpuType(GpuVendor.AMD, "mi300x");
         assertTrue(GPUUtils.matches(gpu, requested));
     }
 
     @Test
     void testModelTokenNotFoundDoesNotMatch() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100", 0);
         val requested = new GpuType(GpuVendor.NVIDIA, "H200");
         assertFalse(GPUUtils.matches(gpu, requested));
     }
 
     @Test
     void testEmptyGpuModelDoesNotMatch() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "", 0);
         val requested = new GpuType(GpuVendor.NVIDIA, "H100");
         assertFalse(GPUUtils.matches(gpu, requested));
     }
 
     @Test
     void testMultiTokenRequestFailsIfOneTokenMissing() {
-        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "NVIDIA H100 80GB HBM3", 0, true);
+        val gpu = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "NVIDIA H100 80GB HBM3", 0);
         // "H100 HBM4" → "HBM4" does not appear in the model
         val requested = new GpuType(GpuVendor.NVIDIA, "H100 HBM4");
         assertFalse(GPUUtils.matches(gpu, requested));

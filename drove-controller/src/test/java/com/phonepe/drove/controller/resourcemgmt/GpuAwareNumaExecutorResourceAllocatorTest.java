@@ -351,8 +351,8 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
                 Map.of(0, 1024L, 1, 1024L),
                 Set.of(
-                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0, true),
-                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1, true)
+                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0),
+                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1)
                 )
         );
 
@@ -367,8 +367,8 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
                 Map.of(0, 1024L, 1, 1024L),
                 Set.of(
-                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0, true),
-                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1, true)
+                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0),
+                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1)
                 )
         );
 
@@ -401,7 +401,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
+                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
                 .collect(Collectors.toUnmodifiableSet());
 
         val snapshot = new ExecutorResourceSnapshot(
@@ -471,12 +471,12 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
+                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
                 .collect(Collectors.toUnmodifiableSet());
 
         // Add GPUs without affinity as "unknown" (null affinity)
         val physicalGpusWithUnknowns = new HashSet<>(physicalGpus);
-        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null, true)));
+        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null)));
 
         val snapshot = new ExecutorResourceSnapshot(
                 "TEST_EXECUTOR",

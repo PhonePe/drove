@@ -48,7 +48,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
             Set.of(
-                new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0, true)
+                new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0)
             )
         );
 
@@ -80,7 +80,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
             Set.of(
-                new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0, true)
+                new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0)
             )
         );
 
@@ -106,10 +106,10 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
             Set.of(
-                new GPUInfo("GPU-MI300-1", GpuVendor.AMD, "MI300X", 0, true),
-                new GPUInfo("GPU-MI300-2", GpuVendor.AMD, "MI300X", 0, true),
-                new GPUInfo("GPU-MI300-3", GpuVendor.AMD, "MI300X", 0, true),
-                new GPUInfo("GPU-MI300-4", GpuVendor.AMD, "MI300X", 0, true)
+                new GPUInfo("GPU-MI300-1", GpuVendor.AMD, "MI300X", 0),
+                new GPUInfo("GPU-MI300-2", GpuVendor.AMD, "MI300X", 0),
+                new GPUInfo("GPU-MI300-3", GpuVendor.AMD, "MI300X", 0),
+                new GPUInfo("GPU-MI300-4", GpuVendor.AMD, "MI300X", 0)
             )
         );
 
@@ -161,7 +161,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
             Set.of(
-                new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0, true)
+                new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0)
             )
         );
 
@@ -190,7 +190,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
             Set.of(
-                new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0, true)
+                new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0)
             )
         );
 

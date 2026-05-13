@@ -199,7 +199,7 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
             .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
+            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
             .collect(Collectors.toUnmodifiableSet());
 
         val snapshot = new ExecutorResourceSnapshot(
@@ -247,12 +247,12 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
             .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue(), true))
+            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
             .collect(Collectors.toSet());
 
         // Add GPUs without affinity
         unknownAffinityGpus.forEach(gpuId -> 
-            physicalGpus.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null, true)));
+            physicalGpus.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null)));
 
         val snapshot = new ExecutorResourceSnapshot(
             "TEST_EXECUTOR",

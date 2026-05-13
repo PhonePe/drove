@@ -218,7 +218,7 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
                     .orElse(null);
             log.info("Detected {} GPU - ID: {}, Vendor: {}, Model: {}, NUMA Affinity: {}",
                      gpuDescriptor.migDevice() ? "MIG" : "physical", gpuId, GpuVendor.NVIDIA, gpuModel, numaAffinity);
-            result.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, CommonUtils.normalizeGPUModel(gpuModel), numaAffinity, true));
+            result.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, CommonUtils.normalizeGPUModel(gpuModel), numaAffinity));
         }
         return result;
     }

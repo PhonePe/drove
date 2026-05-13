@@ -50,7 +50,7 @@ class ExecutorResourceLoaderImplTest {
     void testGpuLoaderResultsPreserved() {
         val numaResourceLoader = Mockito.mock(NumaResourceLoader.class);
         val gpuResourceLoader = Mockito.mock(GPUResourceLoader.class);
-        val gpuInfo = new GPUInfo("GPU-123", GpuVendor.NVIDIA, "H100", 0, true);
+        val gpuInfo = new GPUInfo("GPU-123", GpuVendor.NVIDIA, "H100", 0);
         Mockito.when(numaResourceLoader.loadSystemResources()).thenReturn(Map.of());
         Mockito.when(gpuResourceLoader.loadGPUInfo()).thenReturn(Set.of(gpuInfo));
 

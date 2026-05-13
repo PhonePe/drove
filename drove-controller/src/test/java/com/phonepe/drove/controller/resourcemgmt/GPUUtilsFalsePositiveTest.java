@@ -34,7 +34,7 @@ class GPUUtilsFalsePositiveTest {
          * Expected: Should NOT match because H200 ≠ H100
          */
         
-        val gpuH200 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H200", 0, true);
+        val gpuH200 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H200", 0);
         val requestedH100 = new GpuType(GpuVendor.NVIDIA, "H100");
 
         boolean matches = GPUUtils.matches(gpuH200, requestedH100);
@@ -54,7 +54,7 @@ class GPUUtilsFalsePositiveTest {
          * "A10" contains "10" (from "H100")
          */
         
-        val gpuA10 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "A10", 0, true);
+        val gpuA10 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "A10", 0);
         val requestedH100 = new GpuType(GpuVendor.NVIDIA, "H100");
 
         boolean matches = GPUUtils.matches(gpuA10, requestedH100);
@@ -71,7 +71,7 @@ class GPUUtilsFalsePositiveTest {
          * "H10" contains "H10" (from "H100")
          */
         
-        val gpuH10 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H10", 0, true);
+        val gpuH10 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H10", 0);
         val requestedH100 = new GpuType(GpuVendor.NVIDIA, "H100");
 
         boolean matches = GPUUtils.matches(gpuH10, requestedH100);
@@ -91,7 +91,7 @@ class GPUUtilsFalsePositiveTest {
          * Expected: Should have option for exact match vs. prefix match
          */
         
-        val gpuMI300XPCIe = new GPUInfo("GPU-0", GpuVendor.AMD, "MI300X-PCIe", 0, true);
+        val gpuMI300XPCIe = new GPUInfo("GPU-0", GpuVendor.AMD, "MI300X-PCIe", 0);
         val requestedMI300X = new GpuType(GpuVendor.AMD, "MI300X");
 
         boolean matches = GPUUtils.matches(gpuMI300XPCIe, requestedMI300X);
@@ -127,7 +127,7 @@ class GPUUtilsFalsePositiveTest {
             String requestedType = (String) testCase[1];
             boolean shouldMatch = (boolean) testCase[2];
 
-            val gpu = new GPUInfo("GPU-0", GpuVendor.NVIDIA, gpuModel, 0, true);
+            val gpu = new GPUInfo("GPU-0", GpuVendor.NVIDIA, gpuModel, 0);
             val requested = new GpuType(GpuVendor.NVIDIA, requestedType);
 
             boolean matches = GPUUtils.matches(gpu, requested);
@@ -146,9 +146,9 @@ class GPUUtilsFalsePositiveTest {
          * SCENARIO: "H100" vs "H100S" vs "H100XM" - should be distinct GPUs
          */
         
-        val gpuH100 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0, true);
-        val gpuH100S = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100S", 0, true);
-        val gpuH100XM = new GPUInfo("GPU-2", GpuVendor.NVIDIA, "H100XM", 0, true);
+        val gpuH100 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0);
+        val gpuH100S = new GPUInfo("GPU-1", GpuVendor.NVIDIA, "H100S", 0);
+        val gpuH100XM = new GPUInfo("GPU-2", GpuVendor.NVIDIA, "H100XM", 0);
 
         val requestedH100 = new GpuType(GpuVendor.NVIDIA, "H100");
 
@@ -174,8 +174,8 @@ class GPUUtilsFalsePositiveTest {
          * This test verifies that vendor mismatch correctly prevents matching
          */
         
-        val gpuNVIDIAH100 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0, true);
-        val gpuAMDH100 = new GPUInfo("GPU-1", GpuVendor.AMD, "H100", 0, true);  // Hypothetical AMD H100
+        val gpuNVIDIAH100 = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0);
+        val gpuAMDH100 = new GPUInfo("GPU-1", GpuVendor.AMD, "H100", 0);  // Hypothetical AMD H100
 
         val requestedNVIDIAH100 = new GpuType(GpuVendor.NVIDIA, "H100");
 
@@ -200,7 +200,7 @@ class GPUUtilsFalsePositiveTest {
          * - No common tokens → no match
          */
         
-        val gpu = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H200 141GB HBM3", 0, true);
+        val gpu = new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H200 141GB HBM3", 0);
         val requested = new GpuType(GpuVendor.NVIDIA, "H100 80GB HBM3");
 
         boolean matches = GPUUtils.matches(gpu, requested);

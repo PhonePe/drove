@@ -767,10 +767,24 @@ public class ControllerUtils {
                             .count())
                     .max()
                     .orElse(Integer.MAX_VALUE);
+
+            val totalAvailableGpuCount = executors.stream()
+                    .map(e -> e.getNodeData().getState().getLayout())
+                    .filter(Objects::nonNull)
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().stream()
+                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
+                            .count())
+                    .sum();
+
             if (maxAvailableGpuCountPerNode < requiredGpuPerInstance) {
                 errors.add("Required GPU count exceeds the maximum GPU count available on a single " +
                         "executor in the cluster. Required: " + requiredGpuPerInstance
                         + " Max: " + maxAvailableGpuCountPerNode);
+            }
+
+            if(totalAvailableGpuCount < requiredGpuPerInstance * requiredInstances) {
+                errors.add("Cluster does not have enough GPUs of required type. Required: " + (requiredGpuPerInstance * requiredInstances)
+                        + " Available: " + totalAvailableGpuCount);
             }
         }
     }
@@ -884,19 +898,19 @@ public class ControllerUtils {
     }
 
     public static long totalGPU(DeploymentSpec spec, long instances) {
-        return instances * spec.getResources().stream().mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
+        return instances * spec.getResources().stream().mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
                     @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return 0L;
+                    public Integer visit(CPURequirement cpuRequirement) {
+                        return 0;
                     }
 
                     @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return 0L;
+                    public Integer visit(MemoryRequirement memoryRequirement) {
+                        return 0;
                     }
 
                     @Override
-                    public Long visit(GPURequirement gpuRequirement) {
+                    public Integer visit(GPURequirement gpuRequirement) {
                         return gpuRequirement.getCount();
                     }
                 }))

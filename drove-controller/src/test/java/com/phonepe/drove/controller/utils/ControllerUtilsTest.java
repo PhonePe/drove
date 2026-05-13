@@ -619,7 +619,7 @@ class ControllerUtilsTest {
         Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
         val freeMemory = Map.of(0, 1024L * 1024 * 1024);
         val physicalGpus = gpuModels.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0, true))
+                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0))
                 .collect(Collectors.toUnmodifiableSet());
 
         val usedMemory = freeMemory.keySet().stream()
