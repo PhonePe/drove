@@ -57,7 +57,7 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L), Set.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L), Map.of())));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
@@ -81,7 +81,7 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
@@ -112,7 +112,7 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),

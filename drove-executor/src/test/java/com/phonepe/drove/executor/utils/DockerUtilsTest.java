@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
@@ -64,8 +65,8 @@ class DockerUtilsTest {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
-        val httpCaller = mock(HttpCaller.class);
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+        pullImage(spec);
         val containerId = DockerUtils.createContainer(
                 resourceConfig,
                 DOCKER_CLIENT,
@@ -87,10 +88,11 @@ class DockerUtilsTest {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Set.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
         val httpCaller = mock(HttpCaller.class);
         val spec = ExecutorTestingUtils.testTaskInstanceSpec()
                 .withEnv(Map.of("ITERATIONS", "10000", "LOOP_SLEEP", "5"));
+        pullImage(spec);
         val containerId = DockerUtils.createContainer(
                 ResourceConfig.DEFAULT,
                 DOCKER_CLIENT,
@@ -111,6 +113,17 @@ class DockerUtilsTest {
         }
         finally {
             DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
+    private static void pullImage(TaskInstanceSpec spec) {
+        try {
+            val imageId = DockerUtils.pullImage(DOCKER_CLIENT, null, spec, Function.identity());
+            assertNotNull(DOCKER_CLIENT.inspectImageCmd(imageId).exec());
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Assertions.fail("Pull Interrupted", e);
         }
     }
 
@@ -171,33 +184,4 @@ class DockerUtilsTest {
                              executorOptions));
     }
 
-    @Test
-    void parseDockerImageUri() {
-        DockerUtils.DockerImageComponents result;
-        result = DockerUtils.parseDockerImageUri("abc.com/def/ghi:tag-123");
-        Assertions.assertEquals("abc.com", result.host().get());
-        Assertions.assertTrue(result.port().isEmpty());
-        Assertions.assertEquals("def/ghi", result.repository());
-        Assertions.assertEquals("tag-123", result.tag().get());
-        result = DockerUtils.parseDockerImageUri("abc.com:443/ghi:tag-123");
-        Assertions.assertEquals("abc.com", result.host().get());
-        Assertions.assertEquals(443, result.port().get());
-        Assertions.assertEquals("ghi", result.repository());
-        Assertions.assertEquals("tag-123", result.tag().get());
-        result = DockerUtils.parseDockerImageUri("abc.com:443/ghi");
-        Assertions.assertEquals("abc.com", result.host().get());
-        Assertions.assertEquals(443, result.port().get());
-        Assertions.assertEquals("ghi", result.repository());
-        Assertions.assertTrue(result.tag().isEmpty());
-        result = DockerUtils.parseDockerImageUri("ghi");
-        Assertions.assertTrue(result.host().isEmpty());
-        Assertions.assertTrue(result.port().isEmpty());
-        Assertions.assertEquals("ghi", result.repository());
-        Assertions.assertTrue(result.tag().isEmpty());
-        result = DockerUtils.parseDockerImageUri("abc/def/ghi/jkl/lmn:123-450-SNAPSHOT");
-        Assertions.assertTrue(result.host().isEmpty());
-        Assertions.assertTrue(result.port().isEmpty());
-        Assertions.assertEquals("abc/def/ghi/jkl/lmn", result.repository());
-        Assertions.assertEquals("123-450-SNAPSHOT", result.tag().get());
-    }
 }

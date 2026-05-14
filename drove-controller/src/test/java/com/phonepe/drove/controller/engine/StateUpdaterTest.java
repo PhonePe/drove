@@ -190,7 +190,7 @@ class StateUpdaterTest {
                                                           new AvailableCPU(Map.of(), Map.of()),
                                                           new AvailableMemory(Map.of(), Map.of()),
                                                           new AvailableGPU(List.of(), List.of()),
-                                                          new PhysicalLayout(Map.of(), Map.of(), Set.of()));
+                                                           new PhysicalLayout(Map.of(), Map.of(), Map.of()));
         su.updateSingle(resourceSnapshot, appInstance);
         su.updateSingle(resourceSnapshot, taskInstance);
         su.updateSingle(resourceSnapshot, serviceInstance);

@@ -212,8 +212,9 @@ class AbstractNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(e -> new GPUInfo(e.getKey(), GpuVendor.NVIDIA, "H100", e.getValue()))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        e -> new GPUInfo(e.getKey(), GpuVendor.NVIDIA, "H100", e.getValue())));
 
         val snapshot = new ExecutorResourceSnapshot(
                 "EX-1",
@@ -249,7 +250,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
                 new AvailableCPU(freeCores, Map.of()),
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(List.of(), List.of()),
-                new PhysicalLayout(freeCores, freeMemory, Set.of()));
+                new PhysicalLayout(freeCores, freeMemory, Map.of()));
         return new ExecutorNodeData(
                 "test-host", 8080, NodeTransportType.HTTP, new Date(),
                 snapshot, List.of(), List.of(), List.of(),

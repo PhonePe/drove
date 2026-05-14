@@ -350,9 +350,9 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val hostInfo = createCustomHostInfoWithTypedGpus(
                 Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
                 Map.of(0, 1024L, 1, 1024L),
-                Set.of(
-                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0),
-                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1)
+                Map.of(
+                        "GPU-H100", new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0),
+                        "GPU-MI300", new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1)
                 )
         );
 
@@ -366,9 +366,9 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val hostInfo = createCustomHostInfoWithTypedGpus(
                 Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
                 Map.of(0, 1024L, 1, 1024L),
-                Set.of(
-                        new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0),
-                        new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1)
+                Map.of(
+                        "GPU-H100", new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0),
+                        "GPU-MI300", new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 1)
                 )
         );
 
@@ -401,8 +401,9 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue())));
 
         val snapshot = new ExecutorResourceSnapshot(
                 "TEST_EXECUTOR",
@@ -432,11 +433,11 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
     private ExecutorHostInfo createCustomHostInfoWithTypedGpus(
             Map<Integer, Set<Integer>> freeCores,
             Map<Integer, Long> freeMemory,
-            Set<GPUInfo> typedGpus) {
+            Map<String, GPUInfo> typedGpus) {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
-        val freeGpuIds = typedGpus.stream().map(GPUInfo::getGpuId).toList();
+        val freeGpuIds = typedGpus.keySet().stream().toList();
         val snapshot = new ExecutorResourceSnapshot(
                 "TEST_EXECUTOR",
                 new AvailableCPU(freeCores, Map.of()),
@@ -471,12 +472,13 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
         val usedMemory = freeMemory.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue())));
 
         // Add GPUs without affinity as "unknown" (null affinity)
-        val physicalGpusWithUnknowns = new HashSet<>(physicalGpus);
-        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null)));
+        val physicalGpusWithUnknowns = new HashMap<>(physicalGpus);
+        unknownAffinityGpus.forEach(gpuId -> physicalGpusWithUnknowns.put(gpuId, new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null)));
 
         val snapshot = new ExecutorResourceSnapshot(
                 "TEST_EXECUTOR",
@@ -504,7 +506,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
     }
 
     private Map<String, Integer> getGpuNumaAffinities(ExecutorHostInfo hostInfo) {
-        return hostInfo.getNodeData().getState().getLayout().getGpus().stream()
+        return hostInfo.getNodeData().getState().getLayout().getGpus().values().stream()
                 .filter(gpu -> gpu.getNumaNodeAffinity() != null)
                 .collect(Collectors.toUnmodifiableMap(
                         GPUInfo::getGpuId,
@@ -554,7 +556,7 @@ class GpuAwareNumaExecutorResourceAllocatorTest {
                 .forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.IN_USE));
         
         // Also include GPUs from the physical layout that aren't in the available list
-        resourceSnapshot.getLayout().getGpus().stream()
+        resourceSnapshot.getLayout().getGpus().values().stream()
                 .map(GPUInfo::getGpuId)
                 .filter(gpuId -> !gpuInfo.getGpus().containsKey(gpuId))
                 .forEach(gpuId -> gpuInfo.getGpus().put(gpuId, ExecutorHostInfo.CoreState.FREE));

@@ -244,7 +244,7 @@
         gpuStatus.empty();
 
         const { free, used } = transposeGpus(gpuState);
-        const allGpus = gpuLayout
+        const allGpus = Object.values(gpuLayout || {});
 
         if(allGpus.length === 0) {
             gpuStatus.append('<div class="col"><small class="text-muted">No GPUs reported</small></div>');

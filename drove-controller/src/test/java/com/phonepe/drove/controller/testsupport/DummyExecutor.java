@@ -392,7 +392,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                                Map.of(0,
                                                                                       TOTAL_MEMORY,
                                                                                       1,
-                                                                                      TOTAL_MEMORY), Set.of()));
+                                                                                      TOTAL_MEMORY), Map.of()));
         clusterResourcesDB.update(List.of(new ExecutorNodeData("localhost",
                                                                8080,
                                                                NodeTransportType.HTTP,

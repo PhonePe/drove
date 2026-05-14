@@ -47,8 +47,8 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
-            Set.of(
-                new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0)
+            Map.of(
+                "GPU-MI300", new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0)
             )
         );
 
@@ -79,8 +79,8 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
-            Set.of(
-                new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0)
+            Map.of(
+                "GPU-H100", new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0)
             )
         );
 
@@ -105,11 +105,11 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
-            Set.of(
-                new GPUInfo("GPU-MI300-1", GpuVendor.AMD, "MI300X", 0),
-                new GPUInfo("GPU-MI300-2", GpuVendor.AMD, "MI300X", 0),
-                new GPUInfo("GPU-MI300-3", GpuVendor.AMD, "MI300X", 0),
-                new GPUInfo("GPU-MI300-4", GpuVendor.AMD, "MI300X", 0)
+            Map.of(
+                "GPU-MI300-1", new GPUInfo("GPU-MI300-1", GpuVendor.AMD, "MI300X", 0),
+                "GPU-MI300-2", new GPUInfo("GPU-MI300-2", GpuVendor.AMD, "MI300X", 0),
+                "GPU-MI300-3", new GPUInfo("GPU-MI300-3", GpuVendor.AMD, "MI300X", 0),
+                "GPU-MI300-4", new GPUInfo("GPU-MI300-4", GpuVendor.AMD, "MI300X", 0)
             )
         );
 
@@ -135,7 +135,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
-            Set.of()  // No GPUs at all
+            Map.of()  // No GPUs at all
         );
 
         val result = allocator.allocate(
@@ -160,8 +160,8 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
-            Set.of(
-                new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0)
+            Map.of(
+                "GPU-MI300", new GPUInfo("GPU-MI300", GpuVendor.AMD, "MI300X", 0)
             )
         );
 
@@ -189,8 +189,8 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),
             Map.of(0, 2048L),
-            Set.of(
-                new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0)
+            Map.of(
+                "GPU-H100", new GPUInfo("GPU-H100", GpuVendor.NVIDIA, "H100", 0)
             )
         );
 
@@ -210,12 +210,12 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
     private ExecutorHostInfo createHostInfoWithTypedGpus(
         Map<Integer, Set<Integer>> freeCores,
         Map<Integer, Long> freeMemory,
-        Set<GPUInfo> typedGpus
+        Map<String, GPUInfo> typedGpus
     ) {
         val usedMemory = freeMemory.keySet().stream()
             .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
-        val freeGpuIds = typedGpus.stream().map(GPUInfo::getGpuId).toList();
+        val freeGpuIds = typedGpus.keySet().stream().toList();
         val snapshot = new ExecutorResourceSnapshot(
             "TEST_EXECUTOR",
             new AvailableCPU(freeCores, Map.of()),
@@ -246,7 +246,7 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         });
 
         val gpuInfo = new ExecutorHostInfo.HostGPUInfo();
-        typedGpus.forEach(gpu -> gpuInfo.getGpus().put(gpu.getGpuId(), ExecutorHostInfo.CoreState.FREE));
+        typedGpus.values().forEach(gpu -> gpuInfo.getGpus().put(gpu.getGpuId(), ExecutorHostInfo.CoreState.FREE));
 
         return new ExecutorHostInfo("TEST_EXECUTOR", nodeData, numaNodes, gpuInfo);
     }

@@ -23,7 +23,7 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,7 +42,7 @@ public class PhysicalLayout {
     @Schema(description = "Map of NUMA node ID to available memory in bytes on that node", example = "{0: 17179869184, 1: 17179869184}")
     Map<Integer, Long> memory;
 
-    @Schema(description = "Set of GPUs available in the host")
+    @Schema(description = "Map of GPU ID to GPU info for GPUs available in the host")
     @Builder.Default
-    Set<GPUInfo> gpus = new HashSet<>();
+    Map<String, GPUInfo> gpus = new HashMap<>();
 }

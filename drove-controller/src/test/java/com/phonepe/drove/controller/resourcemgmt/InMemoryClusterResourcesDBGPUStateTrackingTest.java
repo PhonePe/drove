@@ -62,7 +62,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             new AvailableCPU(freeCores, Map.of()),
             new AvailableMemory(freeMemory, usedMemory),
             new AvailableGPU(List.of("GPU-0"), List.of()),
-            new PhysicalLayout(freeCores, freeMemory, Set.of(gpuInfo))
+            new PhysicalLayout(freeCores, freeMemory, Map.of("GPU-0", gpuInfo))
         );
 
         val nodeData = new ExecutorNodeData(
@@ -152,7 +152,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             new AvailableMemory(Map.of(), Map.of(0, 128L)),
             new AvailableGPU(List.of(), List.of("GPU-0")),  // GPU now in use
             new PhysicalLayout(Map.of(0, Set.of(0)), Map.of(0, 128L), 
-                             Set.of(new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)))
+                             Map.of("GPU-0", new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)))
         );
 
         db.update(executorResourceSnapshot);
@@ -192,7 +192,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             new AvailableMemory(Map.of(), Map.of(0, 128L)),
             new AvailableGPU(List.of(), List.of("GPU-0")),
             new PhysicalLayout(Map.of(0, Set.of(0)), Map.of(0, 128L), 
-                             Set.of(new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)))
+                             Map.of("GPU-0", new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)))
         );
         db.update(inUseSnapshot);
 
@@ -259,9 +259,10 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             new AvailableGPU(List.of(), inUseGpus),
             new PhysicalLayout(Map.of(0, Set.of(0)), Map.of(0, 128L),
                              gpuMap.keySet().stream()
-                                .map(id -> new GPUInfo(id, GpuVendor.NVIDIA, "H100", 
-                                                      gpuMap.get(id)))
-                                .collect(Collectors.toUnmodifiableSet()))
+                                 .collect(Collectors.toUnmodifiableMap(
+                                     id -> id,
+                                     id -> new GPUInfo(id, GpuVendor.NVIDIA, "H100", 
+                                                       gpuMap.get(id)))))
         );
         db.update(inUseSnapshot);
 
@@ -359,7 +360,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             new AvailableMemory(Map.of(), Map.of(0, 128L)),
             new AvailableGPU(List.of(), List.of("GPU-0")),
             new PhysicalLayout(Map.of(0, Set.of(0)), Map.of(0, 128L), 
-                             Set.of(new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)))
+                             Map.of("GPU-0", new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)))
         );
         db.update(executorUpdate);
 
@@ -387,9 +388,10 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
         val usedMemory = Map.of(0, 0L);
 
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", 
-                                     entry.getValue()))
-            .collect(Collectors.toUnmodifiableSet());
+            .collect(Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", 
+                                     entry.getValue())));
 
         val freeGpuIds = new ArrayList<>(gpuNumaAffinities.keySet());
 

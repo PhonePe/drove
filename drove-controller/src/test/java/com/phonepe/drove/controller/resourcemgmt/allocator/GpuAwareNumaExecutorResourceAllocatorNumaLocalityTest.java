@@ -199,8 +199,9 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
             .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
-            .collect(Collectors.toUnmodifiableSet());
+            .collect(Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue())));
 
         val snapshot = new ExecutorResourceSnapshot(
             "TEST_EXECUTOR",
@@ -246,13 +247,14 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
         val usedMemory = freeMemory.keySet().stream()
             .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
-        val physicalGpus = gpuNumaAffinities.entrySet().stream()
-            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
-            .collect(Collectors.toSet());
+        val physicalGpus = new HashMap<>(gpuNumaAffinities.entrySet().stream()
+            .collect(Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))));
 
         // Add GPUs without affinity
         unknownAffinityGpus.forEach(gpuId -> 
-            physicalGpus.add(new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null)));
+            physicalGpus.put(gpuId, new GPUInfo(gpuId, GpuVendor.NVIDIA, "H100", null)));
 
         val snapshot = new ExecutorResourceSnapshot(
             "TEST_EXECUTOR",
@@ -291,7 +293,7 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
     }
 
     private Map<String, Integer> getGpuNumaAffinities(ExecutorHostInfo hostInfo) {
-        return hostInfo.getNodeData().getState().getLayout().getGpus().stream()
+        return hostInfo.getNodeData().getState().getLayout().getGpus().values().stream()
             .filter(gpu -> gpu.getNumaNodeAffinity() != null)
             .collect(Collectors.toUnmodifiableMap(
                 GPUInfo::getGpuId,

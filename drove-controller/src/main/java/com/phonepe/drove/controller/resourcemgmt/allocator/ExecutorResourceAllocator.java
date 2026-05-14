@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.application.requirements.GpuType;
 

@@ -134,7 +134,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                         Map.of(0,
                                 4 * 128 * (2L ^ 20),
                                 1,
-                                4 * 128 * (2L ^ 20)), Set.of())));
+                                4 * 128 * (2L ^ 20)), Map.of())));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
@@ -512,8 +512,9 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         val usedMemory = freeMemoryPerNuma.keySet().stream()
                 .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-                .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue())));
 
         val snapshot = new ExecutorResourceSnapshot(
                 executorId,

@@ -65,6 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
+import static com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA;
 
 /**
  *
@@ -398,34 +399,39 @@ public class DockerUtils {
                     @Override
                     public Void visit(GPUAllocation gpu) {
                         val gpuType = gpu.getGpuType();
-                        if (gpuType == null || gpuType.getVendor() != GpuVendor.NVIDIA) {
+
+                        if (gpuType != null && gpuType.getVendor().equals(NVIDIA)) {
+                            addNVIDIAGpuDeviceRequest(hostConfig, gpu);
+                        } else {
                             throw new UnsupportedOperationException(
                                     "GPU type " + (gpuType == null ? "null" : gpuType.getVendor())
                                             + " is not yet supported by DockerUtils");
                         }
-
-                        val gpuIds = gpu.getGpuIds().stream()
-                                .filter(Objects::nonNull)
-                                .map(String::trim)
-                                .filter(id -> !id.isEmpty())
-                                .toList();
-                        if (gpuIds.isEmpty()) {
-                            return null;
-                        }
-
-                        var deviceRequests = hostConfig.getDeviceRequests();
-                        if (Objects.isNull(deviceRequests)) {
-                            deviceRequests = new ArrayList<>();
-                            hostConfig.withDeviceRequests(deviceRequests);
-                        }
-                        deviceRequests.add(new DeviceRequest()
-                                                     .withDriver("nvidia")
-                                                     .withDeviceIds(new ArrayList<>(gpuIds))
-                                                     .withCapabilities(List.of(List.of("gpu")))
-                                                     );
                         return null;
                     }
                 }));
+    }
+
+    private static void addNVIDIAGpuDeviceRequest(HostConfig hostConfig, GPUAllocation gpu) {
+        val gpuIds = gpu.getGpuIds().stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .toList();
+        if (gpuIds.isEmpty()) {
+            return;
+        }
+
+        var deviceRequests = hostConfig.getDeviceRequests();
+        if (Objects.isNull(deviceRequests)) {
+            deviceRequests = new ArrayList<>();
+            hostConfig.withDeviceRequests(deviceRequests);
+        }
+
+        deviceRequests.add(new DeviceRequest()
+                                   .withDriver("nvidia")
+                                   .withDeviceIds(new ArrayList<>(gpuIds))
+                                   .withCapabilities(List.of(List.of("gpu"))));
     }
 
     private static void populateSystemResources(

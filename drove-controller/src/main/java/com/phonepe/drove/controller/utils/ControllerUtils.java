@@ -504,7 +504,7 @@ public class ControllerUtils {
                             return 0;
                         }
                         val freeGPUs = executorData.getState().getGpus().getFreeGpus();
-                        return (int) layout.getGpus().stream()
+                        return (int) layout.getGpus().values().stream()
                                 .filter(gpu -> GPUUtils.matches(gpu, gpuType))
                                 .filter(gpu -> freeGPUs.contains(gpu.getGpuId()))
                                 .count();
@@ -762,7 +762,7 @@ public class ControllerUtils {
             val maxAvailableGpuCountPerNode = executors.stream()
                     .map(e -> e.getNodeData().getState().getLayout())
                     .filter(Objects::nonNull)
-                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().stream()
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
                             .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
                             .count())
                     .max()
@@ -771,7 +771,7 @@ public class ControllerUtils {
             val totalAvailableGpuCount = executors.stream()
                     .map(e -> e.getNodeData().getState().getLayout())
                     .filter(Objects::nonNull)
-                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().stream()
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
                             .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
                             .count())
                     .sum();

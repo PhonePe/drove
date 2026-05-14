@@ -105,7 +105,11 @@ public class ResourceManager {
             cores.put(numaNode, info.getPhysicalCores());
             memory.put(numaNode, info.getPhysicalMemoryInMB());
         });
-        this.physicalLayout = new PhysicalLayout(cores, memory, resources.getGpuInfos().stream().collect(Collectors.toUnmodifiableSet()));
+        this.physicalLayout = new PhysicalLayout(cores, memory,
+            resources.getGpuInfos().stream().collect(Collectors.toUnmodifiableMap(
+                GPUInfo::getGpuId,
+                g -> g,
+                (left, right) -> left)));
     }
 
     @MonitoredFunction

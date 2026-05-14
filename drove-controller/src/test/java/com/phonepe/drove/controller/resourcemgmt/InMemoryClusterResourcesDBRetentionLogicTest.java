@@ -261,7 +261,7 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
             new PhysicalLayout(
                 Map.of(0, Set.of(0, 1)), 
                 Map.of(0, 2048L), 
-                Set.of()
+                Map.of()
             )
         );
 

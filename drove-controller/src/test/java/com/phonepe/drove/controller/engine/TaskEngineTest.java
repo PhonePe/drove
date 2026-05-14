@@ -763,7 +763,7 @@ class TaskEngineTest extends ControllerTestBase {
                                                                                      Map.of(),
                                                                                      Map.of()),
                                                                              new AvailableGPU(List.of(), List.of()),
-                                                                             new PhysicalLayout(Map.of(), Map.of(), Set.of())),
+                                                                              new PhysicalLayout(Map.of(), Map.of(), Map.of())),
                                                 List.of(),
                                                 List.of(),
                                                 List.of(),
@@ -798,7 +798,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @Test
     void testTaskValidation() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = getCdb();
         val pair = createDefaultInstanceScheduler(cdb);
 
         // Setup 2 nodes:
@@ -815,8 +815,9 @@ class TaskEngineTest extends ControllerTestBase {
                                                                   new AvailableMemory(
                                                                           Map.of(0, 2048L),
                                                                           Map.of(0, 0L)),
-                                                                  new PhysicalLayout(Map.of(0, Set.of(0, 1)),
-                                                                                     Map.of(0, 2048L))),
+                                                                  new AvailableGPU(List.of("GPU-1"), List.of("GPU-2")),
+                                                                   new PhysicalLayout(Map.of(0, Set.of(0, 1)),
+                                                                                      Map.of(0, 2048L), Map.of())),
                                      List.of(),
                                      List.of(),
                                      List.of(),
@@ -833,8 +834,10 @@ class TaskEngineTest extends ControllerTestBase {
                                                                   new AvailableMemory(
                                                                           Map.of(0, 16384L),
                                                                           Map.of(0, 0L)),
-                                                                  new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                                     Map.of(0, 16384L))),
+                                                                  new AvailableGPU(List.of("GPU-1"),
+                                                                                   List.of("GPU-2")),
+                                                                   new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                                      Map.of(0, 16384L), Map.of())),
                                      List.of(),
                                      List.of(),
                                      List.of(),

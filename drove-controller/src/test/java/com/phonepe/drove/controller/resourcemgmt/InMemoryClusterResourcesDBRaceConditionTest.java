@@ -57,8 +57,9 @@ class InMemoryClusterResourcesDBRaceConditionTest {
             .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
 
         val physicalGpus = gpuNumaAffinities.entrySet().stream()
-            .map(entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue()))
-            .collect(Collectors.toUnmodifiableSet());
+            .collect(Collectors.toUnmodifiableMap(
+                Map.Entry::getKey,
+                entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, "H100", entry.getValue())));
 
         val freeGpuIds = new ArrayList<>(gpuNumaAffinities.keySet());
 

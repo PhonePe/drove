@@ -60,13 +60,14 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
             long requiredMemory,
             long requiredGpus,
             GpuType requiredGpuType) {
-        Preconditions.checkArgument(requiredGpus== 0 || requiredGpuType != null, "GPU type must be specified when GPU count is greater than 0");
+        Preconditions.checkArgument(requiredGpus == 0 || requiredGpuType != null,
+                "GPU type must be specified when GPU count is greater than 0");
         val candidateNumaNodeIds = candidateNumaNodeIds(hostInfo, requiredCpus, requiredMemory);
         if (candidateNumaNodeIds.isEmpty()) {
             return Optional.empty();
         }
 
-        if(requiredGpus == 0) {
+        if (requiredGpus == 0) {
             return Optional.of(new ExecutorAllocation(buildAllocatedNode(
                     hostInfo,
                     candidateNumaNodeIds.get(0),
@@ -75,28 +76,30 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                     new GPUAllocation(Set.of(), requiredGpuType)), new AllocationMetadata(0)));
         }
 
-        val gpuMetadata = getGpuMetadataById(hostInfo);
-        val freeGpuIds = getFreeGpuIds(hostInfo, gpuMetadata, requiredGpuType);
+        val layoutGpus = getLayoutGpus(hostInfo);
+        val freeGpuIds = getFreeGpuIds(hostInfo, layoutGpus, requiredGpuType);
 
         val totalFreeGpus = freeGpuIds.size();
         if (totalFreeGpus < requiredGpus) {
             return Optional.empty();
         }
 
-        val gpuNumaAffinities = getGpuNumaAffinities(hostInfo);
-
+        // Count free GPUs per NUMA node by reading GPUInfo directly from layout
         val localFreeGpuCountByNuma = freeGpuIds.stream()
-                .filter(gpuNumaAffinities::containsKey)
-                .collect(Collectors.groupingBy(gpuNumaAffinities::get, Collectors.counting()));
+                .map(layoutGpus::get)
+                .filter(Objects::nonNull)
+                .filter(gpu -> gpu.getNumaNodeAffinity() != null)
+                .collect(Collectors.groupingBy(GPUInfo::getNumaNodeAffinity, Collectors.counting()));
 
         val sortedCandidates = candidateNumaNodeIds.stream()
-                .sorted(Comparator.comparingLong((Integer numaId) -> localFreeGpuCountByNuma.getOrDefault(numaId, 0L))
-                                .reversed()
-                                .thenComparingInt(numaId -> numaId))
+                .sorted(Comparator.comparingLong((Integer numaId) ->
+                                localFreeGpuCountByNuma.getOrDefault(numaId, 0L))
+                        .reversed()
+                        .thenComparingInt(numaId -> numaId))
                 .toList();
 
         for (Integer selectedNumaNodeId : sortedCandidates) {
-            val gpuAlloc = allocateGPUs(requiredGpus, selectedNumaNodeId, freeGpuIds, gpuNumaAffinities, gpuMetadata);
+            val gpuAlloc = allocateGPUs(requiredGpus, selectedNumaNodeId, freeGpuIds, layoutGpus);
             if (gpuAlloc.isEmpty()) {
                 continue;
             }
@@ -183,17 +186,12 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
     // GPU metadata and allocation helpers
     // -------------------------------------------------------------------------
 
-    private Map<String, GPUInfo> getGpuMetadataById(ExecutorHostInfo hostInfo) {
+    private Map<String, GPUInfo> getLayoutGpus(ExecutorHostInfo hostInfo) {
         return Optional.ofNullable(hostInfo.getNodeData())
                 .map(ExecutorNodeData::getState)
                 .map(ExecutorResourceSnapshot::getLayout)
                 .map(PhysicalLayout::getGpus)
-                .orElse(Set.of())
-                .stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        GPUInfo::getGpuId,
-                        gpu -> gpu,
-                        (left, right) -> left));
+                .orElse(Map.of());
     }
 
     /**
@@ -201,33 +199,16 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
      */
     private Set<String> getFreeGpuIds(
             ExecutorHostInfo hostInfo,
-            Map<String, GPUInfo> gpuMetadata,
+            Map<String, GPUInfo> layoutGpus,
             GpuType requiredGpuType) {
-        if(hostInfo.getGpuInfo() == null) {
+        if (hostInfo.getGpuInfo() == null) {
             return Set.of();
         }
         return hostInfo.getGpuInfo().getGpus().entrySet().stream()
                 .filter(entry -> entry.getValue().equals(ExecutorHostInfo.CoreState.FREE))
-                .filter(entry -> GPUUtils.matches(gpuMetadata.get(entry.getKey()), requiredGpuType))
+                .filter(entry -> GPUUtils.matches(layoutGpus.get(entry.getKey()), requiredGpuType))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toUnmodifiableSet());
-    }
-
-    /**
-     * Extract GPU ID to NUMA node affinity mapping from the executor's physical layout.
-     */
-    private Map<String, Integer> getGpuNumaAffinities(ExecutorHostInfo hostInfo) {
-        return Optional.ofNullable(hostInfo.getNodeData())
-                .map(ExecutorNodeData::getState)
-                .map(ExecutorResourceSnapshot::getLayout)
-                .map(PhysicalLayout::getGpus)
-                .orElse(Set.of())
-                .stream()
-                .filter(gpu -> gpu.getNumaNodeAffinity() != null)
-                .collect(Collectors.toUnmodifiableMap(
-                        GPUInfo::getGpuId,
-                        GPUInfo::getNumaNodeAffinity,
-                        (left, right) -> left));
     }
 
     /**
@@ -238,8 +219,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
             long requiredGpus,
             int preferredNumaNode,
             Set<String> freeGpuIds,
-            Map<String, Integer> gpuNumaAffinities,
-            Map<String, GPUInfo> gpuMetadata) {
+            Map<String, GPUInfo> layoutGpus) {
         if (requiredGpus == 0) {
             return Optional.of(new Tuple2<>(new GPUAllocation(Set.of(), null), 0));
         }
@@ -251,14 +231,18 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         // Prefer GPUs on the same NUMA node as the CPU allocation
         val numaLocalGpus = freeGpuIds.stream()
                 .sorted()
-                .filter(gpuId -> Objects.equals(gpuNumaAffinities.get(gpuId), preferredNumaNode))
+                .filter(gpuId -> Objects.equals(
+                        Optional.ofNullable(layoutGpus.get(gpuId))
+                                .map(GPUInfo::getNumaNodeAffinity)
+                                .orElse(null),
+                        preferredNumaNode))
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
 
-        val resolvedGpuType = resolveGpuType(numaLocalGpus, gpuMetadata);
 
         if (numaLocalGpus.size() == requiredGpus) {
             // All allocated GPUs are NUMA-local
+            val resolvedGpuType = resolveGpuType(numaLocalGpus, layoutGpus);
             return Optional.of(new Tuple2<>(new GPUAllocation(numaLocalGpus, resolvedGpuType), numaLocalGpus.size()));
         }
 
@@ -268,13 +252,13 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 .sorted()
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
-        val resolvedGpuTypeFallback = resolveGpuType(allocatedGpus, gpuMetadata);
+        val resolvedGpuTypeFallback = resolveGpuType(allocatedGpus, layoutGpus);
         return Optional.of(new Tuple2<>(new GPUAllocation(allocatedGpus, resolvedGpuTypeFallback), numaLocalGpus.size()));
     }
 
-    private GpuType resolveGpuType(Set<String> allocatedGpuIds, Map<String, GPUInfo> gpuMetadata) {
+    private GpuType resolveGpuType(Set<String> allocatedGpuIds, Map<String, GPUInfo> layoutGpus) {
         return allocatedGpuIds.stream()
-                .map(gpuMetadata::get)
+                .map(layoutGpus::get)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .map(info -> new GpuType(info.getGpuVendor(), info.getGpuModel()))
