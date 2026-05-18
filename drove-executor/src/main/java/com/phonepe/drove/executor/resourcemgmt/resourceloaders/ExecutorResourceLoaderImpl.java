@@ -2,6 +2,7 @@ package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 
 import com.google.inject.Inject;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.models.info.GPUInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +32,7 @@ public class ExecutorResourceLoaderImpl implements ExecutorResourceLoader {
         return new ResourceManager.ExecutorResources(numaResources, gpuInfos);
     }
 
-    private Set<com.phonepe.drove.models.info.GPUInfo> loadGPUInfoSafely() {
+    private Set<GPUInfo> loadGPUInfoSafely() {
         try {
             return gpuResourceLoader.loadGPUInfo();
         }

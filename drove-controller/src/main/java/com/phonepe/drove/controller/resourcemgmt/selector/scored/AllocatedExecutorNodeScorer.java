@@ -1,6 +1,6 @@
 package com.phonepe.drove.controller.resourcemgmt.selector.scored;
 
-import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorAllocation;
+import com.phonepe.drove.controller.resourcemgmt.allocator.CandidateExecutorAllocation;
 
 /**
  * Scores an executor allocation to enable comparison-based selection.
@@ -14,7 +14,7 @@ public interface AllocatedExecutorNodeScorer {
      * @param allocation the executor allocation to score
      * @return an {@link AllocationScore} containing the numeric score and whether it is the maximum possible
      */
-    AllocationScore getScore(ExecutorAllocation allocation);
+    AllocationScore getScore(CandidateExecutorAllocation allocation);
 
     /**
      * Represents the result of scoring an allocation.

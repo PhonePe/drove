@@ -266,9 +266,7 @@ public class ControllerCoreModule extends AbstractModule {
         bind(LeadershipObserver.class).to(ZkLeadershipObserver.class);
         bind(ExecutorResourceAllocator.class).to(GpuAwareNumaExecutorResourceAllocator.class).in(Singleton.class);
         bind(ExecutorSelector.class).to(CompositeExecutorSelector.class).in(Singleton.class);
-               bind(AllocatedExecutorNodeScorer.class).to(MaxGpuNumaLocalAllocation.class).in(Singleton.class);
-
-
+        bind(AllocatedExecutorNodeScorer.class).to(MaxGpuNumaLocalAllocation.class).in(Singleton.class);
     }
 
     @Provides

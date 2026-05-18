@@ -20,6 +20,16 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 
 import java.util.Map;
 
+/**
+ * Loads NUMA topology and resource information from the underlying system.
+ * Implementations discover available CPU cores, memory, and other resources per NUMA node.
+ */
 public interface NumaResourceLoader {
+
+    /**
+     * Discovers and returns the resource information for each NUMA node on the system.
+     *
+     * @return map of NUMA node ID to its resource information
+     */
     Map<Integer, ResourceManager.NodeInfo> loadSystemResources();
 }

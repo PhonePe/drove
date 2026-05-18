@@ -42,6 +42,7 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.statemachine.StateData;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.Map;
@@ -53,6 +54,7 @@ import java.util.Optional;
  *
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class EventUtils {
     public static Map<AppEventDataTag, Object> appMetadata(
             final String appId,
@@ -147,7 +149,8 @@ public class EventUtils {
 
                     @Override
                     public Void visit(GPURequirement gpuRequirement) {
-                        // Local services dont support gpus
+                        log.warn("GPU requirements are not supported for local services. Ignoring GPU requirement " +
+                                "for local service {}.", serviceId);
                         return null;
                     }
                 }));

@@ -20,6 +20,7 @@ import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -52,7 +53,7 @@ public class CompositeExecutorSelector implements ExecutorSelector {
             Predicate<AllocatedExecutorNode> allocationFilter) {
         
         // Choose selector based on GPU requirement
-        ExecutorSelector selector = ControllerUtils.findGpuRequirement(requirements)
+        val selector = ControllerUtils.findGpuRequirement(requirements)
                 .filter(r -> r.getCount() > 0)
                 .map(r -> gpuSelector)
                 .orElse(defaultSelector);

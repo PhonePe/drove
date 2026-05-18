@@ -197,14 +197,6 @@ public class ResourceManager {
         return resourceUpdated;
     }
 
-    /**
-     * Returns the full {@link GPUInfo} metadata for all GPUs known to this executor.
-     * Unlike the internal GPU-ID list used for lock/reclaim, this preserves vendor, model, and NUMA affinity.
-     */
-    public synchronized Set<GPUInfo> getGpuInfoSet() {
-        return gpuInfoSet;
-    }
-
     private ResourceInfo calculateResources() {
         val cpus = nodes.entrySet()
                 .stream()

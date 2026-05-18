@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
-import com.domain.Tuple;
 import com.google.common.base.Preconditions;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -44,7 +43,7 @@ import java.util.stream.Collectors;
  */
 public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAllocator {
 
-    public Optional<ExecutorAllocation> allocate(
+    public Optional<CandidateExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,
@@ -54,7 +53,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
     }
 
     @Override
-    public Optional<ExecutorAllocation> allocate(
+    public Optional<CandidateExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,
@@ -68,12 +67,12 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         }
 
         if (requiredGpus == 0) {
-            return Optional.of(new ExecutorAllocation(buildAllocatedNode(
+            return Optional.of(new CandidateExecutorAllocation(buildAllocatedNode(
                     hostInfo,
                     candidateNumaNodeIds.get(0),
                     requiredCpus,
                     requiredMemory,
-                    new GPUAllocation(Set.of(), requiredGpuType)), new AllocationMetadata(0)));
+                    new GPUAllocation(Set.of(), requiredGpuType)), new CandidateAllocationMetadata(0)));
         }
 
         val layoutGpus = getLayoutGpus(hostInfo);
@@ -104,12 +103,12 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 continue;
             }
 
-            return Optional.of(new ExecutorAllocation(buildAllocatedNode(
+            return Optional.of(new CandidateExecutorAllocation(buildAllocatedNode(
                     hostInfo,
                     selectedNumaNodeId,
                     requiredCpus,
                     requiredMemory,
-                    gpuAlloc.get()._1()), new AllocationMetadata(gpuAlloc.get()._2())));
+                    gpuAlloc.get()._1()), new CandidateAllocationMetadata(gpuAlloc.get()._2())));
         }
 
         return Optional.empty();

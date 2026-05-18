@@ -20,6 +20,8 @@ import com.google.common.base.Joiner;
 import com.phonepe.drove.controller.config.ViewOptions;
 import com.phonepe.drove.models.info.resources.allocation.*;
 
+import java.util.Collections;
+
 /**
  *
  */
@@ -61,7 +63,10 @@ public class CustomHelpers {
 
             @Override
             public CharSequence visit(GPUAllocation gpu) {
-                return "<b>GPU Allocation</b>: " + gpu.getGpuIds().size() + " GPU(s) allocated";
+                if(gpu == null || gpu.getGpuIds() == null || gpu.getGpuIds().isEmpty()) {
+                    return "<b>GPU Allocation</b> No GPUs allocated";
+                }
+                return "<b>GPU Allocation</b>: "+ gpu.getGpuType().getVendor() + " | "+ gpu.getGpuType().getVendor() + gpu.getGpuIds().size() + " GPU(s) allocated";
             }
         });
     }

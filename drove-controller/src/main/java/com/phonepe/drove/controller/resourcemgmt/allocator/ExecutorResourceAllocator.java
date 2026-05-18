@@ -27,16 +27,17 @@ import java.util.Optional;
  */
 public interface ExecutorResourceAllocator {
     /**
-     * Select the best NUMA node and allocate resources on it.
+     * Attempt to allocate the requested resources on the given executor.
      *
-     * @param hostInfo        executor host information containing topology and resource state
-     * @param requiredCpus    number of CPUs requested
-     * @param requiredMemory  memory in MB requested
-     * @param requiredGpus    number of GPUs requested (0 if no GPUs needed)
-     * @return Optional containing the AllocatedExecutorNode with all resources allocated,
-     *         or empty if no suitable candidate found
+     * @param hostInfo         executor host information containing topology and resource state
+     * @param requiredCpus     number of CPUs requested
+     * @param requiredMemory   memory in MB requested
+     * @param requiredGpus     number of GPUs requested (0 if no GPUs needed)
+     * @param requiredGpuType  type of GPU required (null if no GPUs needed)
+     * @return Optional containing the candidate allocation with metadata,
+     *         or empty if the executor cannot satisfy the request
      */
-    Optional<ExecutorAllocation> allocate(
+    Optional<CandidateExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
             long requiredMemory,
