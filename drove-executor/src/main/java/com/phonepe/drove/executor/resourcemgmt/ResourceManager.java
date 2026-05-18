@@ -91,13 +91,11 @@ public class ResourceManager {
             .build();
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
     private List<String> gpus = Collections.emptyList();
-    private Set<GPUInfo> gpuInfoSet = Collections.emptySet();
     private PhysicalLayout physicalLayout = null;
 
     @MonitoredFunction
     public synchronized void populateResources(ExecutorResources resources) {
         this.nodes = Map.copyOf(resources.getNumaNodeToResource());
-        this.gpuInfoSet = Set.copyOf(resources.getGpuInfos());
         this.gpus = List.copyOf(resources.getGpuInfos().stream().map(GPUInfo::getGpuId).collect(Collectors.toList()));
         val cores = new HashMap<Integer, Set<Integer>>();
         val memory = new HashMap<Integer, Long>();

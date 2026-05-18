@@ -220,7 +220,6 @@ public class CommonUtils {
         });
     }
 
-
     @SneakyThrows
     public static CloseableHttpClient createHttpClient(boolean insecure) {
         val connectionTimeout = Duration.ofSeconds(1);
@@ -360,6 +359,6 @@ public class CommonUtils {
 
         return NON_ALNUM_NON_DASH.matcher(value.toLowerCase().trim())
                 .replaceAll(" ")
-                .trim().replaceAll("\\s+", " ");
+                .trim().replaceAll("\\s+", "_");
     }
 }

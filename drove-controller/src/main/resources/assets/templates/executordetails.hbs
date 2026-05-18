@@ -252,7 +252,7 @@
         }
 
         const typeCounts = allGpus.reduce((acc, gpu) => {
-            const vendor = gpu.gpuProvider || 'N/A';
+            const vendor = gpu.gpuVendor || 'N/A';
             const model = gpu.gpuModel || 'Unknown';
             const key = vendor + ' ' + model;
             acc[key] = (acc[key] || 0) + 1;
@@ -260,7 +260,7 @@
         }, {});
 
         const gpuProviderCounts = Object.entries(typeCounts).map(([type, count]) => {
-            return `<span class="badge bg-info text-dark me-1">${type}: ${count}</span>`;
+            return `2`;
         }).join(" ");
 
         const isGpuFree = (gpu) => (free || []).some(freeGpu => freeGpu === gpu.gpuId);
