@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import lombok.val;
 
+import javax.inject.Inject;
+
 /**
  * Chooses the feasible executor whose allocation has the most NUMA-local GPUs.
  * The localGpuCount is pre-calculated by the ResourceAllocator and stored in GPUAllocation.
@@ -23,6 +25,8 @@ public class ScoredExecutorSelector implements ExecutorSelector {
 
     private final ExecutorResourceAllocator allocator;
     private final AllocatedExecutorNodeScorer scorer;
+
+    @Inject
     public ScoredExecutorSelector(ExecutorResourceAllocator allocator, AllocatedExecutorNodeScorer scorer) {
         this.allocator = allocator;
         this.scorer = scorer;

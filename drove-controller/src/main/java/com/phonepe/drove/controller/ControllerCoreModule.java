@@ -29,6 +29,8 @@ import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.discovery.ZkNodeDataStore;
+import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
+import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
@@ -79,6 +81,7 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -187,6 +190,14 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    @Named("MvelRuleAllowedImportPackages")
+    public List<String> mvelAllowedImportPackages(final ControllerOptions controllerOptions) {
+        return Objects.requireNonNullElse(controllerOptions.getAllowedRuleImportPackages(),
+                ControllerOptions.DEFAULT_RULE_ALLOWED_IMPORT_PACKAGES);
+    }
+
+    @Provides
+    @Singleton
     public CloseableHttpClient httpClient() {
         return CommonUtils.createHttpClient(false);
     }
@@ -208,7 +219,7 @@ public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
     @Named(CompositeExecutorSelector.FIRST_FIT_EXEC_SELECTOR)
-    public FirstFitExecutorSelector firstFitExecutorSelector(ExecutorResourceAllocator allocator) {
+    public ExecutorSelector firstFitExecutorSelector(ExecutorResourceAllocator allocator) {
         return new FirstFitExecutorSelector(allocator);
     }
 
@@ -252,9 +263,12 @@ public class ControllerCoreModule extends AbstractModule {
                 LocalServiceOperation>>>() {
         }).to(InjectingLocalServiceActionFactory.class);
         bind(ControllerRetrySpecFactory.class).to(DefaultControllerRetrySpecFactory.class);
+        bind(LeadershipObserver.class).to(ZkLeadershipObserver.class);
         bind(ExecutorResourceAllocator.class).to(GpuAwareNumaExecutorResourceAllocator.class).in(Singleton.class);
         bind(ExecutorSelector.class).to(CompositeExecutorSelector.class).in(Singleton.class);
-        bind(AllocatedExecutorNodeScorer.class).to(MaxGpuNumaLocalAllocation.class).in(Singleton.class);
+               bind(AllocatedExecutorNodeScorer.class).to(MaxGpuNumaLocalAllocation.class).in(Singleton.class);
+
+
     }
 
     @Provides

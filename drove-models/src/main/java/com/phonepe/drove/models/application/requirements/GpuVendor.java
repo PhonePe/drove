@@ -14,7 +14,7 @@ public enum GpuVendor {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("GPU vendor must be provided");
         }
-        return GpuVendor.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        return GpuVendor.valueOf(value.trim().toUpperCase());
     }
 }
 

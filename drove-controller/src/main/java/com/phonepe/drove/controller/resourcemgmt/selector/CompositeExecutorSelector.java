@@ -21,6 +21,7 @@ import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +38,7 @@ public class CompositeExecutorSelector implements ExecutorSelector {
     private final ExecutorSelector defaultSelector;
     private final ExecutorSelector gpuSelector;
 
+    @Inject
     public CompositeExecutorSelector(@Named(FIRST_FIT_EXEC_SELECTOR) ExecutorSelector defaultSelector, @Named(SCORED_EXEC_SELECTOR) ExecutorSelector gpuSelector) {
         this.defaultSelector = defaultSelector;
         this.gpuSelector = gpuSelector;

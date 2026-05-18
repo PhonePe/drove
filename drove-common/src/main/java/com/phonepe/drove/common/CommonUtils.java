@@ -358,7 +358,7 @@ public class CommonUtils {
             return null;
         }
 
-        return NON_ALNUM_NON_DASH.matcher(value.toLowerCase(Locale.ROOT).trim())
+        return NON_ALNUM_NON_DASH.matcher(value.toLowerCase().trim())
                 .replaceAll(" ")
                 .trim().replaceAll("\\s+", " ");
     }

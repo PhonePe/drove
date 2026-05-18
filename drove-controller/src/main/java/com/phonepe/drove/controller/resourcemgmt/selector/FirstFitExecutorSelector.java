@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import lombok.val;
 
+import javax.inject.Inject;
+
 /**
  * Preserves current first-fit executor selection semantics.
  * Applies both nodeFilter and allocationFilter inline during a single pass.
@@ -20,6 +22,7 @@ public class FirstFitExecutorSelector implements ExecutorSelector {
 
 	private final ExecutorResourceAllocator allocator;
 
+	@Inject
 	public FirstFitExecutorSelector(ExecutorResourceAllocator allocator) {
 		this.allocator = allocator;
 	}
