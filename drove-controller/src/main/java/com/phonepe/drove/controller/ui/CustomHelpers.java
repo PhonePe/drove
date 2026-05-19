@@ -38,7 +38,7 @@ public class CustomHelpers {
                                       .entrySet()
                                       .stream()
                                       .map(entry -> String.format(
-                                              "<b>NUMA Node: </b> <span class=\"core-display text-info fw-bold\">%s</span> &nbsp; &nbsp;<b>Allocated Cores:</b> %s",
+                                              " <b>NUMA Node: </b> <span class=\"core-display text-info fw-bold\">%s</span> &nbsp; &nbsp;<b>Allocated Cores:</b> %s",
                                               entry.getKey(),
                                               Joiner.on("&nbsp;")
                                                       .join(entry.getValue()
@@ -55,7 +55,7 @@ public class CustomHelpers {
                                       .entrySet()
                                       .stream()
                                       .map(e -> String.format(
-                                              "<b>NUMA Node:</b> <span class=\"core-display text-info fw-bold\">%s</span>  &nbsp; &nbsp;<b>Allocated Memory:</b> %d MB",
+                                              " <b>NUMA Node:</b> <span class=\"core-display text-info fw-bold\">%s</span>  &nbsp; &nbsp;<b>Allocated Memory:</b> %d MB",
                                               e.getKey(),
                                               e.getValue()))
                                       .toList());
@@ -66,7 +66,9 @@ public class CustomHelpers {
                 if(gpu == null || gpu.getGpuIds() == null || gpu.getGpuIds().isEmpty()) {
                     return "<b>GPU Allocation</b> No GPUs allocated";
                 }
-                return "<b>GPU Allocation</b>: "+ gpu.getGpuType().getVendor() + " | "+ gpu.getGpuType().getVendor() + gpu.getGpuIds().size() + " GPU(s) allocated";
+                return " <span class=\"core-display text-info fw-bold\" >"
+                        + gpu.getGpuType().getVendor() + "</span> | "
+                        + gpu.getGpuType().getModel() + " " + gpu.getGpuIds().size() + " GPU(s) allocated";
             }
         });
     }
