@@ -77,9 +77,6 @@ public class CommandUtils {
         } catch (ExecutionException e) {
             log.error("Failed to read command output for: [{}]", commandWithArgs, e);
             throw new IOException("Failed to read command output", e);
-        } catch (IOException e) {
-            log.error("Encountered exception while running command: [{}]", commandWithArgs, e);
-            throw e;
         } catch (InterruptedException e) {
             log.warn("Command run is interrupted");
             Thread.currentThread().interrupt();

@@ -57,7 +57,12 @@ public class ResourcePopulator implements Managed {
                          info.getAvailableCores().stream().sorted().toList(),
                          info.getMemoryInMB());
             });
-            resources.getGpuInfos().forEach( gpuInfo -> log.info("GPU {} : Vendor: {} Model: {}",
+
+            log.info("GPU resources:");
+            if(resources.getGpuInfos().isEmpty()) {
+               log.info("    No GPU resources found");
+            }
+            resources.getGpuInfos().forEach( gpuInfo -> log.info("    GPU {} : Vendor: {} Model: {}",
                     gpuInfo.getGpuId(),
                      gpuInfo.getGpuVendor(),
                      gpuInfo.getGpuModel()));

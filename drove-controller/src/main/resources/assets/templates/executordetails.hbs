@@ -260,7 +260,7 @@
         }, {});
 
         const gpuProviderCounts = Object.entries(typeCounts).map(([type, count]) => {
-            return `2`;
+            return `<span class="badge bg-info text-dark me-1">${type}: ${count}</span>`;
         }).join(" ");
 
         const isGpuFree = (gpu) => (free || []).some(freeGpu => freeGpu === gpu.gpuId);
@@ -269,7 +269,7 @@
 
         const gpuBadges = allGpus.map(gpu => {
             const isFree = isGpuFree(gpu);
-            const vendor = gpu.gpuProvider || 'N/A';
+            const vendor = gpu.gpuVendor || 'N/A';
             const model = gpu.gpuModel || 'Unknown';
             const numa = gpu.numaNodeAffinity != null ? gpu.numaNodeAffinity : 'N/A';
             const tooltip = 'Vendor: ' + vendor + ' | Model: ' + model + ' | NUMA: ' + numa;

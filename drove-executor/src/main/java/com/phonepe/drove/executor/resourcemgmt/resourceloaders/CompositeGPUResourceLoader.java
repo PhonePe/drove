@@ -41,7 +41,7 @@ public class CompositeGPUResourceLoader implements GPUResourceLoader {
                 result.addAll(loader.loadGPUInfo());
             }
             catch (Exception e) {
-                log.warn("GPU resource loader {} failed; skipping: {}",
+                log.warn("GPU resource loader {} failed; skipping GPU discovery: {}",
                         loader.getClass().getSimpleName(), e.getMessage(), e);
             }
         }

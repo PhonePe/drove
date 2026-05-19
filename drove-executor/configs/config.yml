@@ -97,5 +97,5 @@ controllers:
   endpoints:
     - http://host-1:10000
     - http://host-2:10010
-
+    - http://localhost:10000
 
