@@ -290,22 +290,34 @@ public class ContainerStatsObserver implements Managed {
             data.getPidStatsReceived()
                     .connect(gauge("current_pid_usage", instanceInfo, SignalData::getData));
             data.getGpuStatsReceived()
-                    .connect(gauge("gpu_devices_allocated_count", instanceInfo, gpu -> gpu.getData().getAllocatedDeviceCount()))
-                    .connect(gauge("gpu_devices_observed_count", instanceInfo, gpu -> gpu.getData().getObservedDeviceCount()))
-                    .connect(doubleGauge("gpu_utilization_average_percentage",
+                    .connect(gauge("gpu_devices_allocated", instanceInfo, gpu -> gpu.getData().getAllocatedDeviceCount()))
+                    .connect(gauge("gpu_devices_observed", instanceInfo, gpu -> gpu.getData().getObservedDeviceCount()))
+                    .connect(doubleGauge("gpu_utilization_percentage",
                                          instanceInfo,
                                          gpu -> gpu.getData().getUtilizationAvgPercentage()))
-                    .connect(gauge("gpu_memory_used_total_bytes", instanceInfo, gpu -> gpu.getData().getMemoryUsedTotalBytes()))
-                    .connect(gauge("gpu_memory_total_total_bytes", instanceInfo, gpu -> gpu.getData().getMemoryTotalTotalBytes()))
-                    .connect(doubleGauge("gpu_memory_utilization_average_percentage",
+                    .connect(gauge("gpu_memory_used_bytes", instanceInfo, gpu -> gpu.getData().getMemoryUsedTotalBytes()))
+                    .connect(gauge("gpu_memory_total_bytes", instanceInfo, gpu -> gpu.getData().getMemoryTotalTotalBytes()))
+                    .connect(doubleGauge("gpu_memory_utilization_percentage",
                                          instanceInfo,
                                          gpu -> gpu.getData().getMemoryUtilizationAvgPercentage()))
-                    .connect(doubleGauge("gpu_temperature_average_celsius",
+                    .connect(doubleGauge("gpu_temperature_celsius",
                                          instanceInfo,
                                          gpu -> gpu.getData().getTemperatureAvgCelsius()))
-                    .connect(doubleGauge("gpu_power_draw_total_watts",
+                    .connect(doubleGauge("gpu_power_draw_watts",
                                          instanceInfo,
-                                         gpu -> gpu.getData().getPowerDrawTotalWatts()));
+                                         gpu -> gpu.getData().getPowerDrawTotalWatts()))
+                    .connect(doubleGauge("gpu_memory_temperature_celsius",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getMemoryTempAvgCelsius()))
+                    .connect(doubleGauge("gpu_sm_clock_mhz",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getSmClockAvgMhz()))
+                    .connect(doubleGauge("gpu_memory_controller_utilization_percentage",
+                                         instanceInfo,
+                                         gpu -> gpu.getData().getMemoryControllerUtilizationAvgPercentage()))
+                    .connect(gauge("gpu_thermal_throttle_count",
+                                   instanceInfo,
+                                   gpu -> gpu.getData().getThermalThrottleCount()));
             return data;
         });
         reportStatsForInstance(instanceId);
@@ -379,12 +391,14 @@ public class ContainerStatsObserver implements Managed {
             client.statsCmd(instanceData.getDockerId()).exec(callback);
             try {
                 instanceData.getDataReceived().dispatch(callback.awaitResult());
-                val snapshot = nvidiaGpuMetricsCollector == null
-                        ? new NvidiaGpuMetricsCollector.Snapshot(List.of())
-                        : nvidiaGpuMetricsCollector.latestSnapshot();
-                instanceData.getGpuStatsReceived().dispatch(new SignalData<>(
-                        instanceData.getInstanceInfo(),
-                        aggregateGpuMetrics(instanceData.getAllocatedGpuIds(), snapshot)));
+                if (!instanceData.getAllocatedGpuIds().isEmpty()) {
+                    val snapshot = nvidiaGpuMetricsCollector == null
+                            ? new NvidiaGpuMetricsCollector.Snapshot(List.of())
+                            : nvidiaGpuMetricsCollector.latestSnapshot();
+                    instanceData.getGpuStatsReceived().dispatch(new SignalData<>(
+                            instanceData.getInstanceInfo(),
+                            aggregateGpuMetrics(instanceData.getAllocatedGpuIds(), snapshot)));
+                }
             }
             catch (NotFoundException e) {
                 log.warn("Looks like the container {} being tracked is not available anymore. Time to disconnect..",
@@ -457,7 +471,7 @@ public class ContainerStatsObserver implements Managed {
                 .filter(sample -> allocatedGpuIds.contains(sample.gpuId()))
                 .toList();
         if (samples.isEmpty()) {
-            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0L, 0L, 0D, 0D, 0D);
+            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
         }
         val memoryUtilAvg = samples.stream()
                 .mapToDouble(sample -> {
@@ -481,7 +495,15 @@ public class ContainerStatsObserver implements Managed {
                 samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::temperatureC).filter(Objects::nonNull)
                         .mapToDouble(Double::doubleValue).average().orElse(0D),
                 samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::powerDrawWatts).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).sum());
+                        .mapToDouble(Double::doubleValue).sum(),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryTempC).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::smClockMhz).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryControllerUtilizationPct).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::thermalThrottled).filter(Objects::nonNull)
+                        .mapToLong(Long::longValue).sum());
     }
 
     @Value
@@ -543,7 +565,7 @@ public class ContainerStatsObserver implements Managed {
 
     @Value
     static class InstanceGpuMetrics {
-        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D, 0L, 0L, 0D, 0D, 0D);
+        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
         long allocatedDeviceCount;
         long observedDeviceCount;
         double utilizationAvgPercentage;
@@ -552,6 +574,10 @@ public class ContainerStatsObserver implements Managed {
         double memoryUtilizationAvgPercentage;
         double temperatureAvgCelsius;
         double powerDrawTotalWatts;
+        double memoryTempAvgCelsius;
+        double smClockAvgMhz;
+        double memoryControllerUtilizationAvgPercentage;
+        long thermalThrottleCount;
     }
 
     private static String metricName(final DeployedInstanceInfo instanceInfo, String name) {
