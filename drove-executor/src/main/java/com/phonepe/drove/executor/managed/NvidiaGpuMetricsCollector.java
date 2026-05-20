@@ -193,6 +193,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
             result.add(new GpuSample(
                     gpuId,
                     parseDouble(findNestedText(gpuNode, "utilization", "gpu_util")),
+                    parseDouble(findNestedText(gpuNode, "utilization", "memory_util")),
                     parseSizeInBytes(findNestedText(gpuNode, "fb_memory_usage", "used")),
                     parseSizeInBytes(findNestedText(gpuNode, "fb_memory_usage", "total")),
                     parseDouble(findNestedText(gpuNode, "temperature", "gpu_temp")),
@@ -352,6 +353,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
 
     record GpuSample(String gpuId,
                      Double gpuUtilizationPct,
+                     Double memoryBandwidthUtilizationPct,
                      Long memoryUsedBytes,
                      Long memoryTotalBytes,
                      Double temperatureC,

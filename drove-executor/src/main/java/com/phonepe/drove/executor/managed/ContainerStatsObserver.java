@@ -92,11 +92,11 @@ public class ContainerStatsObserver implements Managed {
             DockerClient client,
             NvidiaGpuMetricsCollector nvidiaGpuMetricsCollector) {
         this(metricRegistry,
-             instanceEngine,
-             localServiceInstanceEngine,
-             client,
-             nvidiaGpuMetricsCollector,
-             Duration.ofSeconds(30));
+                instanceEngine,
+                localServiceInstanceEngine,
+                client,
+                nvidiaGpuMetricsCollector,
+                Duration.ofSeconds(30));
     }
 
     public ContainerStatsObserver(
@@ -130,8 +130,7 @@ public class ContainerStatsObserver implements Managed {
                     if (instanceInfo.getState().equals(InstanceState.HEALTHY)) {
                         registerTrackedContainer(instanceInfo.getInstanceId(), instanceInfo);
                         log.info("Starting to track application instance: {}", instanceInfo.getInstanceId());
-                    }
-                    else {
+                    } else {
                         if (!ACTIVE_STATES.contains(instanceInfo.getState())) {
                             unregisterTrackedContainer(instanceInfo.getInstanceId());
                             log.info("Stopped tracking application instance: {}", instanceInfo.getInstanceId());
@@ -143,8 +142,7 @@ public class ContainerStatsObserver implements Managed {
                     if (instanceInfo.getState().equals(LocalServiceInstanceState.HEALTHY)) {
                         registerTrackedContainer(instanceInfo.getInstanceId(), instanceInfo);
                         log.info("Starting to track local service instance: {}", instanceInfo.getInstanceId());
-                    }
-                    else {
+                    } else {
                         if (!LocalServiceInstanceState.ACTIVE_STATES.contains(instanceInfo.getState())) {
                             unregisterTrackedContainer(instanceInfo.getInstanceId());
                             log.info("Stopped tracking local service instance: {}", instanceInfo.getInstanceId());
@@ -181,143 +179,146 @@ public class ContainerStatsObserver implements Managed {
                             "nr_throttled",
                             instanceInfo,
                             statistics -> null != statistics
-                                                  && null != statistics.getCpuStats()
-                                                  && null != statistics.getCpuStats().getThrottlingData()
-                                                  && null != statistics.getCpuStats()
+                                    && null != statistics.getCpuStats()
+                                    && null != statistics.getCpuStats().getThrottlingData()
+                                    && null != statistics.getCpuStats()
                                     .getThrottlingData()
                                     .getThrottledPeriods()
-                                          ? statistics.getCpuStats().getThrottlingData().getThrottledPeriods()
-                                          : 0L))
+                                    ? statistics.getCpuStats().getThrottlingData().getThrottledPeriods()
+                                    : 0L))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_cores_allocated"),
-                                                     new LongGauge<>() {
-                                                         @Override
-                                                         public void consume(Statistics data) {
-                                                             setValue(allocatedCpus); //This is a fixed value
-                                                         }
-                                                     }))
+                            new LongGauge<>() {
+                                @Override
+                                public void consume(Statistics data) {
+                                    setValue(allocatedCpus); //This is a fixed value
+                                }
+                            }))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_per_core"),
-                                                     new PerCoreCpuUsageGauge(allocatedCpus)))
+                            new PerCoreCpuUsageGauge(allocatedCpus)))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_percentage_overall"),
-                                                     new OverallCpuUsageGauge()))
+                            new OverallCpuUsageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "cpu_absolute_per_ms"),
-                                                     new AverageCpuUsageGauge()))
+                            new AverageCpuUsageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "memory_usage"),
-                                                     new MemoryUsageGauge()))
+                            new MemoryUsageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "memory_usage_percentage"),
-                                                     new MemoryUsagePercentageGauge()))
+                            new MemoryUsagePercentageGauge()))
                     .connect(metricRegistry.register(metricName(instanceInfo, "memory_allocated"),
-                                                     new MemoryAllocatedGauge()));
+                            new MemoryAllocatedGauge()));
 
             data.getMemoryStatsReceived()
                     .connect(gauge("memory_usage_max",
-                                   instanceInfo,
-                                   mem -> Objects.requireNonNullElse(mem.getData().getMaxUsage(), 0L)))
+                            instanceInfo,
+                            mem -> Objects.requireNonNullElse(mem.getData().getMaxUsage(), 0L)))
                     .connect(gauge("memory_usage_limit",
-                                   instanceInfo,
-                                   mem -> Objects.requireNonNullElse(mem.getData().getLimit(), 0L)));
+                            instanceInfo,
+                            mem -> Objects.requireNonNullElse(mem.getData().getLimit(), 0L)));
             data.getNetworkStatsReceived()
                     .connect(gauge("network_tx_bytes",
-                                   instanceInfo,
-                                   net -> net.getData()
-                                           .stream()
-                                           .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getTxBytes(), 0L))
-                                           .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getTxBytes(), 0L))
+                                    .sum()))
                     .connect(diffGauge("network_tx_per_sec_bytes",
-                                       instanceInfo,
-                                       net -> net.getData()
-                                               .stream()
-                                               .filter(Objects::nonNull)
-                                               .mapToLong(n -> Objects.requireNonNullElse(n.getTxBytes(), 0L))
-                                               .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getTxBytes(), 0L))
+                                    .sum()))
                     .connect(gauge("network_tx_errors",
-                                   instanceInfo,
-                                   net -> net.getData()
-                                           .stream()
-                                           .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getTxErrors(), 0L))
-                                           .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getTxErrors(), 0L))
+                                    .sum()))
                     .connect(gauge("network_tx_dropped",
-                                   instanceInfo,
-                                   net -> net.getData()
-                                           .stream()
-                                           .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getTxDropped(), 0L))
-                                           .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getTxDropped(), 0L))
+                                    .sum()))
                     .connect(gauge("network_rx_bytes",
-                                   instanceInfo,
-                                   net -> net.getData()
-                                           .stream()
-                                           .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
-                                           .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
+                                    .sum()))
                     .connect(diffGauge("network_rx_per_sec_bytes",
-                                       instanceInfo,
-                                       net -> net.getData()
-                                               .stream()
-                                               .filter(Objects::nonNull)
-                                               .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
-                                               .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getRxBytes(), 0L))
+                                    .sum()))
                     .connect(gauge("network_rx_errors",
-                                   instanceInfo,
-                                   net -> net.getData()
-                                           .stream()
-                                           .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getRxErrors(), 0L))
-                                           .sum()))
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getRxErrors(), 0L))
+                                    .sum()))
                     .connect(gauge("network_rx_dropped",
-                                   instanceInfo,
-                                   net -> net.getData()
-                                           .stream()
-                                           .filter(Objects::nonNull)
-                                           .mapToLong(n -> Objects.requireNonNullElse(n.getRxDropped(), 0L))
-                                           .sum()));
+                            instanceInfo,
+                            net -> net.getData()
+                                    .stream()
+                                    .filter(Objects::nonNull)
+                                    .mapToLong(n -> Objects.requireNonNullElse(n.getRxDropped(), 0L))
+                                    .sum()));
             data.getIoStatsReceived()
                     .connect(gauge("block_io_read_bytes",
-                                   instanceInfo,
-                                   ioData -> ioData.getData()
-                                           .stream()
-                                           .filter(entry -> entry.getOp().equals("read"))
-                                           .mapToLong(entry -> entry.getMajor() + entry.getMinor())
-                                           .sum()))
+                            instanceInfo,
+                            ioData -> ioData.getData()
+                                    .stream()
+                                    .filter(entry -> entry.getOp().equals("read"))
+                                    .mapToLong(entry -> entry.getMajor() + entry.getMinor())
+                                    .sum()))
                     .connect(gauge("block_io_write_bytes",
-                                   instanceInfo,
-                                   ioData -> ioData.getData()
-                                           .stream()
-                                           .filter(entry -> entry.getOp().equals("write"))
-                                           .mapToLong(entry -> entry.getMajor() + entry.getMinor())
-                                           .sum()));
+                            instanceInfo,
+                            ioData -> ioData.getData()
+                                    .stream()
+                                    .filter(entry -> entry.getOp().equals("write"))
+                                    .mapToLong(entry -> entry.getMajor() + entry.getMinor())
+                                    .sum()));
             data.getPidStatsReceived()
                     .connect(gauge("current_pid_usage", instanceInfo, SignalData::getData));
             data.getGpuStatsReceived()
                     .connect(gauge("gpu_devices_allocated", instanceInfo, gpu -> gpu.getData().getAllocatedDeviceCount()))
                     .connect(gauge("gpu_devices_observed", instanceInfo, gpu -> gpu.getData().getObservedDeviceCount()))
                     .connect(doubleGauge("gpu_utilization_percentage",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getUtilizationAvgPercentage()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getUtilizationAvgPercentage()))
+                    .connect(doubleGauge("gpu_mem_bandwidth_utilization_percentage",
+                            instanceInfo,
+                            gpu -> gpu.getData().getMemoryBandwidthUtilizationAvgPercentage()))
                     .connect(gauge("gpu_memory_used_bytes", instanceInfo, gpu -> gpu.getData().getMemoryUsedTotalBytes()))
                     .connect(gauge("gpu_memory_total_bytes", instanceInfo, gpu -> gpu.getData().getMemoryTotalTotalBytes()))
                     .connect(doubleGauge("gpu_memory_utilization_percentage",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getMemoryUtilizationAvgPercentage()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getMemoryUtilizationAvgPercentage()))
                     .connect(doubleGauge("gpu_temperature_celsius",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getTemperatureAvgCelsius()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getTemperatureAvgCelsius()))
                     .connect(doubleGauge("gpu_power_draw_watts",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getPowerDrawTotalWatts()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getPowerDrawTotalWatts()))
                     .connect(doubleGauge("gpu_memory_temperature_celsius",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getMemoryTempAvgCelsius()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getMemoryTempAvgCelsius()))
                     .connect(doubleGauge("gpu_sm_clock_mhz",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getSmClockAvgMhz()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getSmClockAvgMhz()))
                     .connect(doubleGauge("gpu_memory_controller_utilization_percentage",
-                                         instanceInfo,
-                                         gpu -> gpu.getData().getMemoryControllerUtilizationAvgPercentage()))
+                            instanceInfo,
+                            gpu -> gpu.getData().getMemoryControllerUtilizationAvgPercentage()))
                     .connect(gauge("gpu_thermal_throttle_count",
-                                   instanceInfo,
-                                   gpu -> gpu.getData().getThermalThrottleCount()));
+                            instanceInfo,
+                            gpu -> gpu.getData().getThermalThrottleCount()));
             return data;
         });
         reportStatsForInstance(instanceId);
@@ -399,27 +400,22 @@ public class ContainerStatsObserver implements Managed {
                             instanceData.getInstanceInfo(),
                             aggregateGpuMetrics(instanceData.getAllocatedGpuIds(), snapshot)));
                 }
-            }
-            catch (NotFoundException e) {
+            } catch (NotFoundException e) {
                 log.warn("Looks like the container {} being tracked is not available anymore. Time to disconnect..",
-                         instanceData.getInstanceInfo().name());
+                        instanceData.getInstanceInfo().name());
                 unregisterTrackedContainer(instanceId);
                 instances.remove(instanceId);
-            }
-            catch (RuntimeException e) {
+            } catch (RuntimeException e) {
                 if (e.getCause() instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                     log.info("Stats call interrupted");
-                }
-                else {
+                } else {
                     log.error("Error running ", e);
                 }
-            }
-            finally {
+            } finally {
                 try {
                     callback.close();
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     log.error("Error closing callback: ", e);
                 }
             }
@@ -431,23 +427,23 @@ public class ContainerStatsObserver implements Managed {
     private <T> TimeDiffGauge<T> diffGauge(final String name, DeployedInstanceInfo instanceInfo, ToLongFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
         return metricRegistry.register(metricName,
-                                       new TimeDiffGauge<T>() {
-                                           @Override
-                                           public void consume(T data) {
-                                               setValue(generator.applyAsLong(data));
-                                           }
-                                       });
+                new TimeDiffGauge<T>() {
+                    @Override
+                    public void consume(T data) {
+                        setValue(generator.applyAsLong(data));
+                    }
+                });
     }
 
     private <T> LongGauge<T> gauge(final String name, DeployedInstanceInfo instanceInfo, ToLongFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
         return metricRegistry.register(metricName,
-                                       new LongGauge<T>() {
-                                           @Override
-                                           public void consume(T data) {
-                                               setValue(generator.applyAsLong(data));
-                                           }
-                                       });
+                new LongGauge<T>() {
+                    @Override
+                    public void consume(T data) {
+                        setValue(generator.applyAsLong(data));
+                    }
+                });
     }
 
     private <T> io.appform.signals.signalhandlers.SignalConsumer<T> doubleGauge(
@@ -471,7 +467,7 @@ public class ContainerStatsObserver implements Managed {
                 .filter(sample -> allocatedGpuIds.contains(sample.gpuId()))
                 .toList();
         if (samples.isEmpty()) {
-            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
+            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
         }
         val memoryUtilAvg = samples.stream()
                 .mapToDouble(sample -> {
@@ -485,7 +481,11 @@ public class ContainerStatsObserver implements Managed {
         return new InstanceGpuMetrics(
                 allocatedGpuIds.size(),
                 samples.size(),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::gpuUtilizationPct).filter(Objects::nonNull)
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::
+                                gpuUtilizationPct).filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::
+                                memoryBandwidthUtilizationPct).filter(Objects::nonNull)
                         .mapToDouble(Double::doubleValue).average().orElse(0D),
                 samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryUsedBytes).filter(Objects::nonNull)
                         .mapToLong(Long::longValue).sum(),
@@ -538,25 +538,25 @@ public class ContainerStatsObserver implements Managed {
                         = Objects.<Map<String, StatisticNetworksConfig>>requireNonNullElse(
                         data.getNetworks(), Collections.emptyMap());
                 networkStatsReceived.dispatch(new SignalData<>(instanceInfo,
-                                                               networkData
-                                                                       .values()
-                                                                       .stream()
-                                                                       .filter(Objects::nonNull)
-                                                                       .toList()));
+                        networkData
+                                .values()
+                                .stream()
+                                .filter(Objects::nonNull)
+                                .toList()));
             }
             if (null != data.getBlkioStats()) {
                 val ioData = Objects.requireNonNullElse(data.getBlkioStats().getIoServiceBytesRecursive(),
-                                                        List.<BlkioStatEntry>of());
+                        List.<BlkioStatEntry>of());
                 if (!ioData.isEmpty()) {
                     ioStatsReceived.dispatch(new SignalData<>(instanceInfo,
-                                                              ioData.stream()
-                                                                      .filter(Objects::nonNull)
-                                                                      .toList()));
+                            ioData.stream()
+                                    .filter(Objects::nonNull)
+                                    .toList()));
                 }
             }
             if (null != data.getPidsStats()) {
                 val pidCount = Objects.requireNonNullElse(data.getPidsStats().getCurrent(), -1L);
-                if(pidCount > 0) {
+                if (pidCount > 0) {
                     pidStatsReceived.dispatch(new SignalData<>(instanceInfo, pidCount));
                 }
             }
@@ -565,10 +565,11 @@ public class ContainerStatsObserver implements Managed {
 
     @Value
     static class InstanceGpuMetrics {
-        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
+        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D,0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
         long allocatedDeviceCount;
         long observedDeviceCount;
         double utilizationAvgPercentage;
+        double memoryBandwidthUtilizationAvgPercentage;
         long memoryUsedTotalBytes;
         long memoryTotalTotalBytes;
         double memoryUtilizationAvgPercentage;
@@ -585,14 +586,14 @@ public class ContainerStatsObserver implements Managed {
             @Override
             public String visit(InstanceInfo applicationInstanceInfo) {
                 return name("com",
-                            "phonepe",
-                            "drove",
-                            "executor",
-                            "applications",
-                            applicationInstanceInfo.getAppName(),
-                            "instance",
-                            applicationInstanceInfo.getInstanceId(),
-                            name);
+                        "phonepe",
+                        "drove",
+                        "executor",
+                        "applications",
+                        applicationInstanceInfo.getAppName(),
+                        "instance",
+                        applicationInstanceInfo.getInstanceId(),
+                        name);
             }
 
             @Override
@@ -603,14 +604,14 @@ public class ContainerStatsObserver implements Managed {
             @Override
             public String visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
                 return name("com",
-                            "phonepe",
-                            "drove",
-                            "executor",
-                            "localservices",
-                            localServiceInstanceInfo.getServiceName(),
-                            "instance",
-                            localServiceInstanceInfo.getInstanceId(),
-                            name);
+                        "phonepe",
+                        "drove",
+                        "executor",
+                        "localservices",
+                        localServiceInstanceInfo.getServiceName(),
+                        "instance",
+                        localServiceInstanceInfo.getInstanceId(),
+                        name);
             }
         });
 

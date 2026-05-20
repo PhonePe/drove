@@ -131,8 +131,8 @@ class NvidiaGpuMetricsCollectorTest {
                 new NvidiaGpuMetricsCollector(metricRegistry, config, resourceManager, Duration.ofSeconds(30));
 
         collector.publish(new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1111-AAAA", 70D, 100L, 1000L, 55D, 200D, 60D, 1400D, 40D, 0L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2222-BBBB", 30D, 200L, 2000L, 52D, 150D, 58D, 1350D, 25D, 1L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1111-AAAA", 70D, 10D,100L, 1000L, 55D, 200D, 60D, 1400D, 40D, 0L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2222-BBBB", 30D, 60D,200L, 2000L, 52D, 150D, 58D, 1350D, 25D, 1L)
         )));
 
         assertEquals(2L, metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.count").getValue());

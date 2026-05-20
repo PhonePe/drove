@@ -28,9 +28,9 @@ class ContainerStatsObserverGpuMetricsTest {
     @Test
     void testAggregateGpuMetricsForAllocatedDevices() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 0L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 250L, 1000L, 60D, 140D, 55D, 1380D, 30D, 0L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-3", 10D, 100L, 1000L, 50D, 90D, 48D, 1200D, 15D, 1L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 80D,500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 0L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 30D,250L, 1000L, 60D, 140D, 55D, 1380D, 30D, 0L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-3", 10D, 20D,100L, 1000L, 50D, 90D, 48D, 1200D, 15D, 1L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -72,7 +72,7 @@ class ContainerStatsObserverGpuMetricsTest {
     @Test
     void testAggregateGpuMetricsWhenAllocatedNotObserved() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-10", 80D, 100L, 1000L, 65D, 220D, 70D, 1400D, 60D, 0L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-10", 80D, 10D,100L, 1000L, 65D, 220D, 70D, 1400D, 60D, 0L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -95,8 +95,8 @@ class ContainerStatsObserverGpuMetricsTest {
     @Test
     void testAggregateGpuMetricsWithThermalThrottle() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 1L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 250L, 1000L, 60D, 140D, 55D, 1380D, 30D, 1L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 10D,500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 1L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 25D,250L, 1000L, 60D, 140D, 55D, 1380D, 30D, 1L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
