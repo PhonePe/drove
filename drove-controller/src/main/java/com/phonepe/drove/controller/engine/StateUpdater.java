@@ -66,7 +66,9 @@ public class StateUpdater {
     private final DroveEventBus droveEventBus;
 
     private final PriorityBlockingQueue<UpdateData> updates
-            = new PriorityBlockingQueue<>(1024, Comparator.comparing(d -> d.getPriority().getValue()));
+            = new PriorityBlockingQueue<>(1024,
+                    Comparator.comparingInt(d -> ((UpdateData)d).getPriority().getValue())
+                            .thenComparingLong(d -> ((UpdateData)d).getIncrementalTime()));
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -96,6 +98,7 @@ public class StateUpdater {
 
         private final String id;
         private final Priority priority;
+        private final long incrementalTime = System.nanoTime();
 
         abstract <T> T accept(final UpdateDataVisitor<T> visitor);
 

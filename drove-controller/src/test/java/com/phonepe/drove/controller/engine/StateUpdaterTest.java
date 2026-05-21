@@ -36,6 +36,8 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -201,5 +203,44 @@ class StateUpdaterTest {
         su.updateSingle(resourceSnapshot, serviceInstance);
         CommonTestUtils.waitUntil(() -> counter.get() == 6);
         assertEquals(6, counter.get());
+    }
+
+    @Test
+    void testFifoOrderingWithinSamePriority() {
+        val cDB = mock(ClusterResourcesDB.class);
+        val taskDB = mock(TaskDB.class);
+        val iiDB = mock(ApplicationInstanceInfoDB.class);
+        val lsDB = mock(LocalServiceStateDB.class);
+        val nds = mock(NodeDataStore.class);
+        val droveEventBus = mock(DroveEventBus.class);
+
+        val appSpec = appSpec(1);
+        val appId = deployableObjectId(appSpec);
+        val resourceSnapshot = new ExecutorResourceSnapshot(EXECUTOR_ID,
+                                                          new AvailableCPU(Map.of(), Map.of()),
+                                                          new AvailableMemory(Map.of(), Map.of()),
+                                                          new PhysicalLayout(Map.of(), Map.of()));
+
+        val processedOrder = Collections.synchronizedList(new ArrayList<String>());
+        doAnswer(invocation -> {
+            val instanceId = invocation.getArgument(1, String.class);
+            processedOrder.add(instanceId);
+            return true;
+        }).when(iiDB).updateInstanceState(anyString(), anyString(), any(InstanceInfo.class));
+
+        val instance0 = generateInstanceInfo(appId, appSpec, 0);
+        val instance1 = generateInstanceInfo(appId, appSpec, 1);
+        val instance2 = generateInstanceInfo(appId, appSpec, 2);
+
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus);
+        su.updateSingle(resourceSnapshot, instance0);
+        su.updateSingle(resourceSnapshot, instance1);
+        su.updateSingle(resourceSnapshot, instance2);
+
+        CommonTestUtils.waitUntil(() -> processedOrder.size() == 3);
+
+        assertEquals(instance0.getInstanceId(), processedOrder.get(0));
+        assertEquals(instance1.getInstanceId(), processedOrder.get(1));
+        assertEquals(instance2.getInstanceId(), processedOrder.get(2));
     }
 }
