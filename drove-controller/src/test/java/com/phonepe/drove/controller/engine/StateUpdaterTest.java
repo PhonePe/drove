@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.engine;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.controller.ControllerTestUtils;
@@ -96,7 +97,7 @@ class StateUpdaterTest {
             return true;
         }).when(lsDB).updateInstanceState(anyString(), anyString(), any(LocalServiceInstanceInfo.class));
         val droveEventBus = mock(DroveEventBus.class);
-        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus, SharedMetricRegistries.getOrCreate("test"));
         su.updateClusterResources(nodes);
         su.updateClusterResources(List.of());
         CommonTestUtils.waitUntil(() -> counter.get() == 3);
@@ -139,7 +140,7 @@ class StateUpdaterTest {
         }).when(iiDB).deleteInstanceState(anyString(), anyString());
         val droveEventBus = mock(DroveEventBus.class);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus, SharedMetricRegistries.getOrCreate("test"));
         su.remove(List.of(executor.getExecutorId()));
         CommonTestUtils.waitUntil(() -> count.get() == 2);
         assertEquals(2, count.get());
@@ -193,7 +194,7 @@ class StateUpdaterTest {
         }).when(lsDB).updateInstanceState(anyString(), anyString(), any(LocalServiceInstanceInfo.class));
         val droveEventBus = mock(DroveEventBus.class);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus, SharedMetricRegistries.getOrCreate("test"));
         val resourceSnapshot = new ExecutorResourceSnapshot(EXECUTOR_ID,
                                                           new AvailableCPU(Map.of(), Map.of()),
                                                           new AvailableMemory(Map.of(), Map.of()),
@@ -232,7 +233,7 @@ class StateUpdaterTest {
         val instance1 = generateInstanceInfo(appId, appSpec, 1);
         val instance2 = generateInstanceInfo(appId, appSpec, 2);
 
-        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus);
+        val su = new StateUpdater(cDB, taskDB, iiDB, lsDB, nds, droveEventBus, SharedMetricRegistries.getOrCreate("test"));
         su.updateSingle(resourceSnapshot, instance0);
         su.updateSingle(resourceSnapshot, instance1);
         su.updateSingle(resourceSnapshot, instance2);

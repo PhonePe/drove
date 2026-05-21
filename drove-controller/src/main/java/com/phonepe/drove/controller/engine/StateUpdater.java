@@ -16,29 +16,8 @@
 
 package com.phonepe.drove.controller.engine;
 
-import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.controller.event.DroveEventBus;
-import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
-import com.phonepe.drove.models.events.events.DroveInstanceStateChangeEvent;
-import com.phonepe.drove.models.events.events.DroveLocalServiceInstanceStateChangeEvent;
-import com.phonepe.drove.models.events.events.DroveTaskStateChangeEvent;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.TaskDB;
-import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
-import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
-import com.phonepe.drove.models.instance.InstanceInfo;
-import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
-import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
-import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
-import com.phonepe.drove.models.taskinstance.TaskInfo;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import static com.phonepe.drove.controller.utils.EventUtils.instanceMetadata;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -47,9 +26,37 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.phonepe.drove.controller.utils.EventUtils.instanceMetadata;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.phonepe.drove.common.discovery.NodeDataStore;
+import com.phonepe.drove.controller.event.DroveEventBus;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.controller.statedb.TaskDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.events.events.DroveInstanceStateChangeEvent;
+import com.phonepe.drove.models.events.events.DroveLocalServiceInstanceStateChangeEvent;
+import com.phonepe.drove.models.events.events.DroveTaskStateChangeEvent;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.instance.InstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
+import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.taskinstance.TaskInfo;
+
+import lombok.Getter;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  *
@@ -71,6 +78,7 @@ public class StateUpdater {
                             .thenComparingLong(d -> ((UpdateData)d).getIncrementalTime()));
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Timer updateDeliveryDelayTimer;
 
     @Getter
     private abstract class UpdateData {
@@ -255,6 +263,9 @@ public class StateUpdater {
                 val update = new AtomicReference<UpdateData>();
                 try {
                     update.set(updates.take());
+                    val processingDelay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - update.get().getIncrementalTime());
+                    log.debug("Update pickup delay for {} ms", processingDelay);
+                    updateDeliveryDelayTimer.update(processingDelay, TimeUnit.MILLISECONDS);
                     val updateStatus = update.get().accept(this);
                     log.trace("Update status for {}: {}", update.get().getId(), updateStatus);
                 }
@@ -359,13 +370,17 @@ public class StateUpdater {
             ApplicationInstanceInfoDB instanceInfoDB,
             LocalServiceStateDB localServiceStateDB,
             NodeDataStore nodeDataStore,
-            DroveEventBus droveEventBus) {
+            DroveEventBus droveEventBus,
+            MetricRegistry metricRegistry) {
         this.resourcesDB = resourcesDB;
         this.taskDB = taskDB;
         this.instanceInfoDB = instanceInfoDB;
         this.localServiceStateDB = localServiceStateDB;
         this.nodeDataStore = nodeDataStore;
         this.droveEventBus = droveEventBus;
+        this.updateDeliveryDelayTimer = metricRegistry.timer(
+                name( "com", "phonepe", "drove", "controller", "stateUpdater", "updateDeliveryDelay"));
+
         this.executor.submit(new UpdateHandler());
     }
 
