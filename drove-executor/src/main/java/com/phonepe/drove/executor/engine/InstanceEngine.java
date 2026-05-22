@@ -292,7 +292,7 @@ public abstract class InstanceEngine<E extends DeployedExecutionObjectInfo, S ex
 
     private boolean lockRequiredResources(DeploymentUnitSpec spec) {
         val computeResourceUsage = new HashMap<Integer, ResourceManager.NodeInfo>();
-        val gpuResponse = new ArrayList<String>();
+        val gpuResponse = new HashSet<String>();
         spec.getResources()
                 .forEach(resourceRequirement -> resourceRequirement.accept(new ResourceAllocationVisitor<Void>() {
                     @Override

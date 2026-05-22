@@ -19,7 +19,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
-import com.phonepe.drove.models.application.requirements.*;
+import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;

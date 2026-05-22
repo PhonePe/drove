@@ -84,7 +84,7 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
                 }
             }
             if(Strings.isNullOrEmpty(gpuId) || gpuIndex == null) {
-                throw new RuntimeException("Unable to parse GPU information from nvidia-smi output. Missing required fields id: %s index: %d".formatted(gpuId, gpuIndex));
+                throw new RuntimeException("Unable to parse GPU information from nvidia-smi output. Missing required fields id: %s index: %s".formatted(gpuId, gpuIndex));
             }
             if (migEnabled && !migDescriptors.isEmpty()) {
                 return migDescriptors.stream();

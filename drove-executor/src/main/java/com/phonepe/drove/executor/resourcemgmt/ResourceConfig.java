@@ -23,6 +23,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.jackson.Jacksonized;
 
+import io.dropwizard.validation.ValidationMethod;
+
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import java.util.Collections;
@@ -79,4 +81,9 @@ public class ResourceConfig {
 
     @Builder.Default
     private OverProvisioning overProvisioning = OverProvisioning.DEFAULT;
+
+    @ValidationMethod(message = "enableNvidiaGpu (legacy pass-through) and nvidiaGPULoaderConfig (managed GPU) cannot both be enabled simultaneously")
+    public boolean isGpuConfigValid() {
+        return !(enableNvidiaGpu && nvidiaGPULoaderConfig != null && nvidiaGPULoaderConfig.isEnabled());
+    }
 }

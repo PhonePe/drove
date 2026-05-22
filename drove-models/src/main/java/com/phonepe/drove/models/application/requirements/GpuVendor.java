@@ -7,7 +7,9 @@ import java.util.Locale;
 public enum GpuVendor {
     NVIDIA,
     AMD,
-    INTEL;
+    INTEL,
+    GOOGLE_TPU,
+    CEREBRAS;
 
     @JsonCreator
     public static GpuVendor fromValue(String value) {

@@ -33,7 +33,6 @@ class CommandUtilsThreadLeakTest {
          * 
          * SCENARIO: A command times out, causing an exception.
          * EXPECTED: ExecutorService.ioReaderPool should be properly shutdown in finally block.
-         * CURRENT BUG: Under certain failure conditions, threads may not be properly cleaned up.
          */
         
         // CommandUtils has only static methods, so we call the static method directly

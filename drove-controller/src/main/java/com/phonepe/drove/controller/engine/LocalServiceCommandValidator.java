@@ -120,7 +120,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             errs.add("Memory requirements are mandatory");
         }
         if(reqs.containsKey(ResourceType.GPU)) {
-            errs.add("GPU resources are not supported for local services at the moment");
+            errs.add("GPU resources are not supported for local services");
         }
         errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
         errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));

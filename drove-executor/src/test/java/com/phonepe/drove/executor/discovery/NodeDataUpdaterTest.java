@@ -98,7 +98,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                                                                                    .boxed()
                                                                                                                    .collect(
                                                                                                                            Collectors.toUnmodifiableSet()),
-                                                                                                           128_000_000)), List.of())));
+                                                                                                           128_000_000)), Set.of())));
         {
             waitUntil(() -> updateCounter.get() == 2);
             val nodes = nds.nodes(NodeType.EXECUTOR);

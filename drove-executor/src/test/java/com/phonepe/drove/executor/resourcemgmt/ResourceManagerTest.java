@@ -45,23 +45,23 @@ class ResourceManagerTest extends AbstractTestBase {
         assertTrue(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), Set.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), Set.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), Set.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail-2", ResourceManager.ResourceLockType.HARD,
-                        Map.of(2, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
+                        Map.of(2, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), Set.of())));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail-3", ResourceManager.ResourceLockType.HARD,
-                        Map.of(0, ResourceManager.NodeInfo.from(set(3, 33), 2 ^ 10)), List.of())));
+                        Map.of(0, ResourceManager.NodeInfo.from(set(3, 33), 2 ^ 10)), Set.of())));
         testAllocatedState(rm.currentState());
         assertTrue(rm.reclaimResources("test-usage"));
         assertFalse(rm.reclaimResources("test-usage-fail"));
@@ -80,7 +80,7 @@ class ResourceManagerTest extends AbstractTestBase {
         assertTrue(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
-                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
+                        Map.of(1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), Set.of())));
     }
 
     @Test
@@ -94,18 +94,18 @@ class ResourceManagerTest extends AbstractTestBase {
                 .forEach(i -> assertTrue(rm.lockResources(
                         new ResourceManager.ResourceUsage(
                                 "test-usage-" + i, ResourceManager.ResourceLockType.HARD,
-                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20)), List.of()))));
+                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20)), Set.of()))));
         assertFalse(rm.lockResources(
                 new ResourceManager.ResourceUsage(
                         "test-usage-fail", ResourceManager.ResourceLockType.HARD,
-                        Map.of(0, ResourceManager.NodeInfo.from(set(2,9), (2 ^ 16) / 20)), List.of())));
+                        Map.of(0, ResourceManager.NodeInfo.from(set(2,9), (2 ^ 16) / 20)), Set.of())));
         IntStream.range(5, 10)
                 .forEach(i -> rm.reclaimResources("test-usage-" + i));
         IntStream.range(5, 10)
                 .forEach(i -> assertTrue(rm.lockResources(
                         new ResourceManager.ResourceUsage(
                                 "test-usage-at2-" + i, ResourceManager.ResourceLockType.HARD,
-                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20)), List.of()))));
+                                Map.of(0, ResourceManager.NodeInfo.from(Set.of(i), (2 ^ 16) / 20)), Set.of()))));
 
 
     }
@@ -121,7 +121,7 @@ class ResourceManagerTest extends AbstractTestBase {
                 new ResourceManager.ResourceUsage(
                         "test-usage", ResourceManager.ResourceLockType.HARD,
                         Map.of(0, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10),
-                               1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), List.of())));
+                               1, ResourceManager.NodeInfo.from(set(3, 12), 2 ^ 10)), Set.of())));
         val info = rm.currentState();
         val freeCores = info.getCpu().getFreeCores();
         assertFalse(freeCores.isEmpty());

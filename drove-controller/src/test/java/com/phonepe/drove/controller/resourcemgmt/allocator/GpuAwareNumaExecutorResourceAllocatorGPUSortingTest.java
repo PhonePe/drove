@@ -42,7 +42,6 @@ class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
         /**
          * SCENARIO: Request H100 GPUs but only MI300X GPUs are available
          * EXPECTED: Return empty Optional with clear indication that H100 is unavailable
-         * CURRENT BUG: Silent failure - allocates no GPUs but doesn't fail properly
          */
         val hostInfo = createHostInfoWithTypedGpus(
             Map.of(0, Set.of(0, 1, 2, 3)),

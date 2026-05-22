@@ -53,7 +53,7 @@ public class ResourceManager {
         String id;
         ResourceLockType type;
         Map<Integer, NodeInfo> usedResources;
-        List<String> usedGPUs;
+        Set<String> usedGPUs;
     }
     @Value
     public static class ExecutorResources {
@@ -90,13 +90,13 @@ public class ResourceManager {
             .executorService(Executors.newSingleThreadExecutor())
             .build();
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
-    private List<String> gpus = Collections.emptyList();
+    private Set<String> gpus = Collections.emptySet();
     private PhysicalLayout physicalLayout = null;
 
     @MonitoredFunction
     public synchronized void populateResources(ExecutorResources resources) {
         this.nodes = Map.copyOf(resources.getNumaNodeToResource());
-        this.gpus = List.copyOf(resources.getGpuInfos().stream().map(GPUInfo::getGpuId).collect(Collectors.toList()));
+        this.gpus = Set.copyOf(resources.getGpuInfos().stream().map(GPUInfo::getGpuId).collect(Collectors.toSet()));
         val cores = new HashMap<Integer, Set<Integer>>();
         val memory = new HashMap<Integer, Long>();
         resources.getNumaNodeToResource().forEach((numaNode, info) -> {
@@ -131,7 +131,7 @@ public class ResourceManager {
             log.error("Provided gpu requirement not available. Usage Info: {}", usage);
             return false;
         }
-        val currentGpus = new ArrayList<>(gpus);
+        val currentGpus = new HashSet<>(gpus);
         for (val gpu : usage.getUsedGPUs()) {
             boolean removed = currentGpus.remove(gpu);
             if (!removed) {
@@ -150,7 +150,7 @@ public class ResourceManager {
                                 old.getPhysicalMemoryInMB(),
                                 Set.copyOf(Sets.difference(old.getAvailableCores(), requirement.getAvailableCores())),
                                 old.getMemoryInMB() - requirement.getMemoryInMB())));
-        gpus = List.copyOf(currentGpus);
+        gpus = Set.copyOf(currentGpus);
         nodes = Map.copyOf(currNodes);
         resourceLocks.put(usage.getId(), usage);
         resourceUpdated.dispatch(calculateResources());
@@ -166,7 +166,7 @@ public class ResourceManager {
 
         val usage = resourceLocks.get(id);
         val currNodes = new HashMap<>(nodes);
-        val currentGpus = new ArrayList<>(gpus);
+        val currentGpus = new HashSet<>(gpus);
         val resourceRequirements = usage.getUsedResources();
 
         resourceRequirements
@@ -179,7 +179,7 @@ public class ResourceManager {
                                 Set.copyOf(Sets.union(old.getAvailableCores(), requirement.getAvailableCores())),
                                 old.getMemoryInMB() + requirement.getMemoryInMB())));
         currentGpus.addAll(usage.getUsedGPUs());
-        gpus = List.copyOf(currentGpus);
+        gpus = Set.copyOf(currentGpus);
         nodes = Map.copyOf(currNodes);
         resourceLocks.remove(id);
         resourceUpdated.dispatch(calculateResources());
@@ -220,8 +220,7 @@ public class ResourceManager {
                         .map(entry -> new Pair<>(entry.getKey(), entry.getValue().getMemoryInMB())))
                 .collect(Collectors.toUnmodifiableMap(Pair::getFirst, Pair::getSecond, Long::sum));
 
-        val currGpus = this.gpus.stream()
-                .toList();
+        val currGpus = new ArrayList<>(this.gpus);
         val usedGpus = resourceLocks.values()
                 .stream()
                 .map(ResourceUsage::getUsedGPUs)

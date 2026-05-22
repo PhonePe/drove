@@ -39,4 +39,49 @@ class ResourceConfigTest {
 
     }
 
+    @Test
+    void validateGpuConfigValidWhenBothDisabled() {
+        var config = ResourceConfig.builder()
+                .enableNvidiaGpu(false)
+                .nvidiaGPULoaderConfig(null)
+                .build();
+        assertTrue(config.isGpuConfigValid());
+    }
+
+    @Test
+    void validateGpuConfigValidWhenOnlyLegacyEnabled() {
+        var config = ResourceConfig.builder()
+                .enableNvidiaGpu(true)
+                .nvidiaGPULoaderConfig(null)
+                .build();
+        assertTrue(config.isGpuConfigValid());
+    }
+
+    @Test
+    void validateGpuConfigValidWhenOnlyManagedEnabled() {
+        var config = ResourceConfig.builder()
+                .enableNvidiaGpu(false)
+                .nvidiaGPULoaderConfig(new NvidiaGPULoaderConfig(true))
+                .build();
+        assertTrue(config.isGpuConfigValid());
+    }
+
+    @Test
+    void validateGpuConfigValidWhenManagedPresentButDisabled() {
+        var config = ResourceConfig.builder()
+                .enableNvidiaGpu(true)
+                .nvidiaGPULoaderConfig(new NvidiaGPULoaderConfig(false))
+                .build();
+        assertTrue(config.isGpuConfigValid());
+    }
+
+    @Test
+    void validateGpuConfigInvalidWhenBothEnabled() {
+        var config = ResourceConfig.builder()
+                .enableNvidiaGpu(true)
+                .nvidiaGPULoaderConfig(new NvidiaGPULoaderConfig(true))
+                .build();
+        assertFalse(config.isGpuConfigValid());
+    }
+
 }
