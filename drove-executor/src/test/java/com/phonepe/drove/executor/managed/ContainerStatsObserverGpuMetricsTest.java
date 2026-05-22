@@ -107,4 +107,75 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(1390D, metrics.getSmClockAvgMhz());
         assertEquals(45D, metrics.getMemoryControllerUtilizationAvgPercentage());
     }
+
+    @Test
+    void testAggregateGpuMetricsWithNullAllocatedGpuIds() {
+        ContainerStatsObserver.InstanceGpuMetrics metrics =
+                ContainerStatsObserver.aggregateGpuMetrics(null, new NvidiaGpuMetricsCollector.Snapshot(List.of()));
+
+        assertEquals(ContainerStatsObserver.InstanceGpuMetrics.ZERO, metrics);
+    }
+
+    @Test
+    void testAggregateGpuMetricsWithNullFieldsInSample() {
+        NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", null, null, null, null, null, null, null, null, null, null)
+        ));
+
+        ContainerStatsObserver.InstanceGpuMetrics metrics =
+                ContainerStatsObserver.aggregateGpuMetrics(Set.of("GPU-1"), snapshot);
+
+        assertEquals(1, metrics.getAllocatedDeviceCount());
+        assertEquals(1, metrics.getObservedDeviceCount());
+        assertEquals(0D, metrics.getUtilizationAvgPercentage());
+        assertEquals(0D, metrics.getMemoryBandwidthUtilizationAvgPercentage());
+        assertEquals(0L, metrics.getMemoryUsedTotalBytes());
+        assertEquals(0L, metrics.getMemoryTotalTotalBytes());
+        assertEquals(0D, metrics.getMemoryUtilizationAvgPercentage());
+        assertEquals(0D, metrics.getTemperatureAvgCelsius());
+        assertEquals(0D, metrics.getPowerDrawTotalWatts());
+        assertEquals(0D, metrics.getMemoryTempAvgCelsius());
+        assertEquals(0D, metrics.getSmClockAvgMhz());
+        assertEquals(0D, metrics.getMemoryControllerUtilizationAvgPercentage());
+        assertEquals(0L, metrics.getThermalThrottleCount());
+    }
+
+    @Test
+    void testAggregateGpuMetricsWithZeroTotalMemory() {
+        NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 50D, 20D, 500L, 0L, 60D, 200D, 55D, 1300D, 40D, 0L)
+        ));
+
+        ContainerStatsObserver.InstanceGpuMetrics metrics =
+                ContainerStatsObserver.aggregateGpuMetrics(Set.of("GPU-1"), snapshot);
+
+        assertEquals(1, metrics.getAllocatedDeviceCount());
+        assertEquals(1, metrics.getObservedDeviceCount());
+        assertEquals(0D, metrics.getMemoryUtilizationAvgPercentage());
+    }
+
+    @Test
+    void testAggregateGpuMetricsWithMixedNullAndValidFields() {
+        NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 40D, 500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 1L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", null, null, null, null, null, null, null, null, null, null)
+        ));
+
+        ContainerStatsObserver.InstanceGpuMetrics metrics =
+                ContainerStatsObserver.aggregateGpuMetrics(Set.of("GPU-1", "GPU-2"), snapshot);
+
+        assertEquals(2, metrics.getAllocatedDeviceCount());
+        assertEquals(2, metrics.getObservedDeviceCount());
+        // Only GPU-1 has non-null utilization, so average is just its value
+        assertEquals(80D, metrics.getUtilizationAvgPercentage());
+        assertEquals(40D, metrics.getMemoryBandwidthUtilizationAvgPercentage());
+        assertEquals(500L, metrics.getMemoryUsedTotalBytes());
+        assertEquals(1000L, metrics.getMemoryTotalTotalBytes());
+        assertEquals(65D, metrics.getTemperatureAvgCelsius());
+        assertEquals(220D, metrics.getPowerDrawTotalWatts());
+        assertEquals(70D, metrics.getMemoryTempAvgCelsius());
+        assertEquals(1400D, metrics.getSmClockAvgMhz());
+        assertEquals(60D, metrics.getMemoryControllerUtilizationAvgPercentage());
+        assertEquals(1L, metrics.getThermalThrottleCount());
+    }
 }

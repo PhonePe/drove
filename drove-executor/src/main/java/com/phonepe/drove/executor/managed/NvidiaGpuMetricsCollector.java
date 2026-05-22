@@ -54,6 +54,7 @@ import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUti
 @Slf4j
 @Singleton
 @Order(61)
+
 public class NvidiaGpuMetricsCollector implements Managed {
 
     static final String METRIC_PREFIX = "com.phonepe.drove.executor.gpu";
@@ -71,6 +72,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
     private final ScheduledSignal poller;
     private final Map<String, AtomicLong> longMetrics = new ConcurrentHashMap<>();
     private final Map<String, AtomicDouble> doubleMetrics = new ConcurrentHashMap<>();
+    @SuppressWarnings("java:S3077")
     private volatile Snapshot latestSnapshot = new Snapshot(List.of());
     private volatile boolean running;
 
