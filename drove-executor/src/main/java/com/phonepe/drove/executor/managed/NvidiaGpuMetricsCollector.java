@@ -59,6 +59,11 @@ public class NvidiaGpuMetricsCollector implements Managed {
     static final String METRIC_PREFIX = "com.phonepe.drove.executor.gpu";
     private static final String POLLER_HANDLER = "nvidia-gpu-metrics-reporter";
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("([-+]?\\d+(?:\\.\\d+)?)");
+    public static final String DEVICE = "device";
+    public static final String MEMORY = "memory";
+    public static final String SCRAPE_SUCCESS = "scrape.success";
+    public static final String GPU_POWER_READINGS = "gpu_power_readings";
+    public static final String UTILIZATION = "utilization";
 
     private final MetricRegistry metricRegistry;
     private final ResourceConfig resourceConfig;
@@ -114,21 +119,21 @@ public class NvidiaGpuMetricsCollector implements Managed {
         val startNanos = System.nanoTime();
         try {
             publish(parseSnapshot(queryNvidiaSmi()));
-            updateLongMetric(metricName("scrape.success"), 1);
+            updateLongMetric(metricName(SCRAPE_SUCCESS), 1);
             updateLongMetric(metricName("scrape.last_success_epoch_ms"), System.currentTimeMillis());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            updateLongMetric(metricName("scrape.success"), 0);
+            updateLongMetric(metricName(SCRAPE_SUCCESS), 0);
             log.info("Interrupted while collecting NVIDIA GPU metrics");
         } catch (IOException e) {
-            updateLongMetric(metricName("scrape.success"), 0);
+            updateLongMetric(metricName(SCRAPE_SUCCESS), 0);
             if (e.getMessage() != null && e.getMessage().contains("error=2")) {
                 log.info("nvidia-smi command not found; skipping NVIDIA GPU metrics collection");
                 return;
             }
             log.warn("Failed to collect NVIDIA GPU metrics: {}", e.getMessage());
         } catch (Exception e) {
-            updateLongMetric(metricName("scrape.success"), 0);
+            updateLongMetric(metricName(SCRAPE_SUCCESS), 0);
             log.warn("Error parsing NVIDIA GPU metrics", e);
         } finally {
             updateLongMetric(metricName("scrape.duration_ms"), Duration.ofNanos(System.nanoTime() - startNanos).toMillis());
@@ -143,11 +148,11 @@ public class NvidiaGpuMetricsCollector implements Managed {
         latestSnapshot = snapshot;
         updateLongMetric(metricName("count"), snapshot.gpus().size());
         updateDoubleMetric(metricName("utilization.gpu.average_percentage"), average(snapshot.gpus(), GpuSample::gpuUtilizationPct));
-        updateLongMetric(metricName("memory.used.total_bytes"), sum(snapshot.gpus(), GpuSample::memoryUsedBytes));
-        updateLongMetric(metricName("memory.total.total_bytes"), sum(snapshot.gpus(), GpuSample::memoryTotalBytes));
-        updateDoubleMetric(metricName("memory.temperature.average_celsius"), average(snapshot.gpus(), GpuSample::memoryTempC));
+        updateLongMetric(metricName(MEMORY,"used.total_bytes"), sum(snapshot.gpus(), GpuSample::memoryUsedBytes));
+        updateLongMetric(metricName(MEMORY,"total.total_bytes"), sum(snapshot.gpus(), GpuSample::memoryTotalBytes));
+        updateDoubleMetric(metricName(MEMORY,"temperature.average_celsius"), average(snapshot.gpus(), GpuSample::memoryTempC));
+        updateDoubleMetric(metricName(MEMORY,"controller_utilization.average_percentage"), average(snapshot.gpus(), GpuSample::memoryControllerUtilizationPct));
         updateDoubleMetric(metricName("sm_clock.average_mhz"), average(snapshot.gpus(), GpuSample::smClockMhz));
-        updateDoubleMetric(metricName("memory.controller_utilization.average_percentage"), average(snapshot.gpus(), GpuSample::memoryControllerUtilizationPct));
         updateLongMetric(metricName("thermal.throttle_count"), count(snapshot.gpus(), GpuSample::thermalThrottled));
 
         val state = resourceManager.currentState().getGpuInfo();
@@ -156,16 +161,16 @@ public class NvidiaGpuMetricsCollector implements Managed {
 
         for (val gpu : snapshot.gpus()) {
             val gpuDimension = sanitizeDimension(gpu.gpuId());
-            updateDoubleMetric(metricName("device", gpuDimension, "utilization.gpu_percentage"), orZero(gpu.gpuUtilizationPct()));
-            updateLongMetric(metricName("device", gpuDimension, "memory.used_bytes"), orZero(gpu.memoryUsedBytes()));
-            updateLongMetric(metricName("device", gpuDimension, "memory.total_bytes"), orZero(gpu.memoryTotalBytes()));
-            updateDoubleMetric(metricName("device", gpuDimension, "memory.utilization_percentage"), memoryUtilization(gpu));
-            updateDoubleMetric(metricName("device", gpuDimension, "temperature.celsius"), orZero(gpu.temperatureC()));
-            updateDoubleMetric(metricName("device", gpuDimension, "power.draw_watts"), orZero(gpu.powerDrawWatts()));
-            updateDoubleMetric(metricName("device", gpuDimension, "memory.temperature.celsius"), orZero(gpu.memoryTempC()));
-            updateDoubleMetric(metricName("device", gpuDimension, "sm_clock.mhz"), orZero(gpu.smClockMhz()));
-            updateDoubleMetric(metricName("device", gpuDimension, "memory.controller_utilization.percentage"), orZero(gpu.memoryControllerUtilizationPct()));
-            updateLongMetric(metricName("device", gpuDimension, "thermal.throttled"), orZero(gpu.thermalThrottled()));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "utilization.gpu_percentage"), orZero(gpu.gpuUtilizationPct()));
+            updateLongMetric(metricName(DEVICE, gpuDimension, "memory.used_bytes"), orZero(gpu.memoryUsedBytes()));
+            updateLongMetric(metricName(DEVICE, gpuDimension, "memory.total_bytes"), orZero(gpu.memoryTotalBytes()));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "memory.utilization_percentage"), memoryUtilization(gpu));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "temperature.celsius"), orZero(gpu.temperatureC()));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "power.draw_watts"), orZero(gpu.powerDrawWatts()));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "memory.temperature.celsius"), orZero(gpu.memoryTempC()));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "sm_clock.mhz"), orZero(gpu.smClockMhz()));
+            updateDoubleMetric(metricName(DEVICE, gpuDimension, "memory.controller_utilization.percentage"), orZero(gpu.memoryControllerUtilizationPct()));
+            updateLongMetric(metricName(DEVICE, gpuDimension, "thermal.throttled"), orZero(gpu.thermalThrottled()));
         }
     }
 
@@ -186,21 +191,21 @@ public class NvidiaGpuMetricsCollector implements Managed {
             val gpuNode = gpuNodes.item(i);
             val gpuId = Objects.requireNonNullElse(findChildText(gpuNode, "uuid"), "gpu_" + i);
             val powerDraw = parseDouble(firstNonEmpty(
-                    findNestedText(gpuNode, "gpu_power_readings", "instant_power_draw"),
+                    findNestedText(gpuNode, GPU_POWER_READINGS, "instant_power_draw"),
                     firstNonEmpty(
-                            findNestedText(gpuNode, "gpu_power_readings", "average_power_draw"),
-                            findNestedText(gpuNode, "gpu_power_readings", "power_draw"))));
+                            findNestedText(gpuNode, GPU_POWER_READINGS, "average_power_draw"),
+                            findNestedText(gpuNode, GPU_POWER_READINGS, "power_draw"))));
             result.add(new GpuSample(
                     gpuId,
-                    parseDouble(findNestedText(gpuNode, "utilization", "gpu_util")),
-                    parseDouble(findNestedText(gpuNode, "utilization", "memory_util")),
+                    parseDouble(findNestedText(gpuNode, UTILIZATION, "gpu_util")),
+                    parseDouble(findNestedText(gpuNode, UTILIZATION, "memory_util")),
                     parseSizeInBytes(findNestedText(gpuNode, "fb_memory_usage", "used")),
                     parseSizeInBytes(findNestedText(gpuNode, "fb_memory_usage", "total")),
                     parseDouble(findNestedText(gpuNode, "temperature", "gpu_temp")),
                     powerDraw,
                     parseDouble(findNestedText(gpuNode, "temperature", "memory_temp")),
                     parseDouble(findNestedText(gpuNode, "clocks", "sm_clock")),
-                    parseDouble(findNestedText(gpuNode, "utilization", "memory_util")),
+                    parseDouble(findNestedText(gpuNode, UTILIZATION, "memory_util")),
                     isThermallyThrottled(gpuNode)));
         }
         return new Snapshot(List.copyOf(result));
