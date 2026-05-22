@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.AbstractModule;
@@ -205,6 +206,12 @@ public class ControllerCoreModule extends AbstractModule {
     @Singleton
     public ObjectMapper mapper(final Environment environment) {
         return environment.getObjectMapper();
+    }
+
+    @Provides
+    @Singleton
+    public MetricRegistry metricRegistry(final Environment environment) {
+        return environment.metrics();
     }
 
     @Override

@@ -19,13 +19,12 @@ package com.phonepe.drove.controller.engine;
 import static com.phonepe.drove.controller.utils.EventUtils.instanceMetadata;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -72,10 +71,8 @@ public class StateUpdater {
 
     private final DroveEventBus droveEventBus;
 
-    private final PriorityBlockingQueue<UpdateData> updates
-            = new PriorityBlockingQueue<>(1024,
-                    Comparator.comparingInt(d -> ((UpdateData)d).getPriority().getValue())
-                            .thenComparingLong(d -> ((UpdateData)d).getIncrementalTime()));
+    private final LinkedBlockingDeque<UpdateData> updates
+            = new LinkedBlockingDeque<>();
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private Timer updateDeliveryDelayTimer;
