@@ -16,17 +16,22 @@
 
 package com.phonepe.drove.controller.engine;
 
+import static com.codahale.metrics.MetricRegistry.name;
 import static com.phonepe.drove.controller.utils.EventUtils.instanceMetadata;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,6 +39,7 @@ import javax.inject.Singleton;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.phonepe.drove.common.discovery.NodeDataStore;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -51,18 +57,20 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 
+import io.appform.functionmetrics.MonitoredFunction;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
-
-import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  *
  */
 @Slf4j
 @Singleton
-public class StateUpdater {
+public class StateUpdater implements AutoCloseable {
     private final ClusterResourcesDB resourcesDB;
     private final TaskDB taskDB;
     private final ApplicationInstanceInfoDB instanceInfoDB;
@@ -71,11 +79,20 @@ public class StateUpdater {
 
     private final DroveEventBus droveEventBus;
 
-    private final LinkedBlockingDeque<UpdateData> updates
-            = new LinkedBlockingDeque<>();
+    private final Map<Integer, Partition> updates;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Timer updateDeliveryDelayTimer;
+    private final ExecutorService executor;
+    private final Timer updateDeliveryDelayTimer;
+    private final int parallelism;
+    private Partitioner partitioner;
+
+    @RequiredArgsConstructor
+    @Data
+    private static final class Partition {
+        private final int partitionId;
+        private final LinkedBlockingDeque<UpdateData> queue = new LinkedBlockingDeque<>();
+        Future<?> future;
+    }
 
     @Getter
     private abstract class UpdateData {
@@ -113,31 +130,33 @@ public class StateUpdater {
         }
     }
 
+    @Getter
     private class ExecutorSnapshotUpdateData extends UpdateData {
 
-        @Getter
-        private final List<ExecutorNodeData> nodes;
+        private final ExecutorNodeData node;
+        private final boolean bulkUpdate;
 
         @Override
         <T> T accept(UpdateDataVisitor<T> visitor) {
             return visitor.visit(this);
         }
 
-        ExecutorSnapshotUpdateData(List<ExecutorNodeData> nodes) {
-            super("ExecutorSnapshotUpdate-" + Priority.LOW + "-" + System.currentTimeMillis() + "-" + nodes.size(),
+        ExecutorSnapshotUpdateData(ExecutorNodeData node, boolean bulkUpdate) {
+            super("ExecutorSnapshotUpdate-" + Priority.LOW + "-" + System.currentTimeMillis() + "-" + node.getState().getExecutorId(),
                   Priority.LOW);
-            this.nodes = nodes;
+            this.node = node;
+            this.bulkUpdate = bulkUpdate;
         }
     }
 
     @Getter
     private class RemoveExecutorUpdateData extends UpdateData {
-        private final Collection<String> executorIds;
+        private final String executorId;
 
-        private RemoveExecutorUpdateData(Collection<String> executorIds) {
-            super("ExecutorRemovalUpdate-" + Priority.LOW + "-" + System.currentTimeMillis() + "-" + executorIds.size(),
+        private RemoveExecutorUpdateData(String executorId) {
+            super("ExecutorRemovalUpdate-" + Priority.LOW + "-" + System.currentTimeMillis() + "-" + executorId,
                   Priority.LOW);
-            this.executorIds = executorIds;
+            this.executorId = executorId;
         }
 
         @Override
@@ -171,35 +190,38 @@ public class StateUpdater {
 
     }
 
+    @AllArgsConstructor
     private class UpdateHandler implements Callable<Void>, UpdateData.UpdateDataVisitor<Boolean> {
+
+        private final Partition partition;
 
         @Override
         public Boolean visit(ExecutorSnapshotUpdateData executorSnapshot) {
-            val children = executorSnapshot.getNodes();
+            val node = executorSnapshot.getNode();
             var hasAnyData = false;
             var anyDataUpdated = false;
-            for (val node : children) {
-                val instances = node.getInstances();
-                if (instances != null && !instances.isEmpty()) {
-                    hasAnyData = true;
-                    anyDataUpdated = updateAllAppInstances(anyDataUpdated, instances);
-                }
+            val instances = node.getInstances();
+            if (instances != null && !instances.isEmpty()) {
+                hasAnyData = true;
+                anyDataUpdated = updateAllAppInstances(anyDataUpdated, instances);
+            }
 
-                val tasks = node.getTasks();
-                if (tasks != null && !tasks.isEmpty()) {
-                    hasAnyData = true;
-                    anyDataUpdated = updateAllTasks(anyDataUpdated, tasks);
-                }
+            val tasks = node.getTasks();
+            if (tasks != null && !tasks.isEmpty()) {
+                hasAnyData = true;
+                anyDataUpdated = updateAllTasks(anyDataUpdated, tasks);
+            }
 
-                val serviceInstances = node.getServiceInstances();
-                if (serviceInstances != null && !serviceInstances.isEmpty()) {
-                    hasAnyData = true;
-                    anyDataUpdated = updateAllServiceInstances(anyDataUpdated, serviceInstances);
-                }
+            val serviceInstances = node.getServiceInstances();
+            if (serviceInstances != null && !serviceInstances.isEmpty()) {
+                hasAnyData = true;
+                anyDataUpdated = updateAllServiceInstances(anyDataUpdated, serviceInstances);
+            }
+            if(!executorSnapshot.isBulkUpdate()) {
                 nodeDataStore.updateNodeData(node);
             }
             if (!hasAnyData || anyDataUpdated) {
-                resourcesDB.update(children);
+                resourcesDB.update(List.of(node));
                 return true;
             }
             return false;
@@ -235,21 +257,24 @@ public class StateUpdater {
         }
 
         @Override
-        public Boolean visit(RemoveExecutorUpdateData removeExecutors) {
-            val executorIds = removeExecutors.getExecutorIds();
-            executorIds.stream()
-                    .map(executorId -> resourcesDB.currentSnapshot(executorId).orElse(null))
-                    .filter(Objects::nonNull)
-                            .forEach(hostInfo -> {
-                                final var nodeData = hostInfo.getNodeData();
-                                nodeData.getInstances()
-                                        .forEach(instance -> instanceInfoDB.deleteInstanceState(
-                                                instance.getAppId(), instance.getInstanceId()));
-                                nodeData.getServiceInstances()
-                                        .forEach(localServiceInstance -> localServiceStateDB.deleteInstanceState(
-                                                localServiceInstance.getServiceId(), localServiceInstance.getInstanceId()));
-                            });
-            resourcesDB.remove(executorIds);
+        public Boolean visit(RemoveExecutorUpdateData removeExecutor) {
+            log.debug("Processing update to remove executor {}",
+                    removeExecutor.getExecutorId());
+            val executorId = removeExecutor.getExecutorId();
+            val hostInfo = resourcesDB.currentSnapshot(executorId).orElse(null);
+            if(null == hostInfo) {
+                log.warn("Received update to remove executor {}, but it was not found in resourcesDB.", executorId);
+                return true; // We don't want to hold things up for this
+            }
+            final var nodeData = hostInfo.getNodeData();
+            nodeData.getInstances()
+                    .forEach(instance -> instanceInfoDB.deleteInstanceState(
+                            instance.getAppId(), instance.getInstanceId()));
+            nodeData.getServiceInstances()
+                    .forEach(localServiceInstance -> localServiceStateDB.deleteInstanceState(
+                            localServiceInstance.getServiceId(), localServiceInstance.getInstanceId()));
+            resourcesDB.remove(List.of(executorId));
+            log.info("Stopped tracking executor {}", executorId);
             return true;
         }
 
@@ -257,26 +282,30 @@ public class StateUpdater {
         @SuppressWarnings("java:S2189")
         public Void call() {
             while (true) {
-                val update = new AtomicReference<UpdateData>();
-                try {
-                    update.set(updates.take());
-                    val processingDelay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - update.get().getIncrementalTime());
-                    log.debug("Update pickup delay for {} ms", processingDelay);
-                    updateDeliveryDelayTimer.update(processingDelay, TimeUnit.MILLISECONDS);
-                    val updateStatus = update.get().accept(this);
-                    log.trace("Update status for {}: {}", update.get().getId(), updateStatus);
+               processUpdateData(); 
+            }
+        }
+
+        @MonitoredFunction
+        private void processUpdateData() {
+            val update = new AtomicReference<UpdateData>();
+            try {
+                update.set(partition.getQueue().take());
+                val processingDelay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - update.get().getIncrementalTime());
+                log.debug("Pickup delay for {} update: {} ms", update.getClass().getSimpleName(), processingDelay);
+                updateDeliveryDelayTimer.update(processingDelay, TimeUnit.MILLISECONDS);
+                val updateStatus = update.get().accept(this);
+                log.trace("Update status for {}: {}", update.get().getId(), updateStatus);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            catch (Throwable t) {
+                if (null == update.get()) {
+                    log.error("Error processing unknown update : " + t.getMessage(), t);
                 }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return null;
-                }
-                catch (Throwable t) {
-                    if (null == update.get()) {
-                        log.error("Error processing unknown update : " + t.getMessage(), t);
-                    }
-                    else {
-                        log.error("Error processing update " + update.get().getId() + ": " + t.getMessage(), t);
-                    }
+                else {
+                    log.error("Error processing update " + update.get().getId() + ": " + t.getMessage(), t);
                 }
             }
         }
@@ -360,6 +389,50 @@ public class StateUpdater {
         }
     }
 
+    private static final class Partitioner implements UpdateData.UpdateDataVisitor<Boolean> {
+
+        private final Map<Integer, Partition> updates;
+        private final int parallelism;
+
+        public Partitioner(Map<Integer, Partition> updates) {
+            this.updates = updates;
+            this.parallelism = updates.size();
+        }
+
+        public boolean add(UpdateData updateData) {
+            return updateData.accept(this);
+        }
+
+        @Override
+        public Boolean visit(ExecutorSnapshotUpdateData executorSnapshot) {
+            return addToPartition(executorSnapshot.getNode().getState().getExecutorId(), executorSnapshot);
+        }
+
+        @Override
+        public Boolean visit(InstanceUpdateData instanceData) {
+            return addToPartition(instanceData.getSnapshot().getExecutorId(), instanceData);
+        }
+
+        @Override
+        public Boolean visit(RemoveExecutorUpdateData removeExecutor) {
+            return addToPartition(removeExecutor.getExecutorId(), removeExecutor);
+        }
+
+        private boolean addToPartition(String key, UpdateData updateData) {
+            val partitionId = partition(key);
+            val partition = updates.get(partitionId);
+            Objects.requireNonNull(partition,
+                    () -> "No partition found for key: %s. Computed: %s, Allowed: [0-%d]"
+                        .formatted(key, partitionId, parallelism - 1));
+            return partition.queue.add(updateData);
+        }
+
+        private int partition(String value) {
+            return (value.hashCode() & 0x7fffffff) % parallelism;
+        }
+    }
+        
+
     @Inject
     public StateUpdater(
             ClusterResourcesDB resourcesDB,
@@ -368,6 +441,7 @@ public class StateUpdater {
             LocalServiceStateDB localServiceStateDB,
             NodeDataStore nodeDataStore,
             DroveEventBus droveEventBus,
+            ControllerOptions controllerOptions,
             MetricRegistry metricRegistry) {
         this.resourcesDB = resourcesDB;
         this.taskDB = taskDB;
@@ -377,31 +451,67 @@ public class StateUpdater {
         this.droveEventBus = droveEventBus;
         this.updateDeliveryDelayTimer = metricRegistry.timer(
                 name( "com", "phonepe", "drove", "controller", "stateUpdater", "updateDeliveryDelay"));
-
-        this.executor.submit(new UpdateHandler());
+        this.parallelism = Objects.requireNonNullElse(controllerOptions.getDataUpdateParallelism(), ControllerOptions.DEFAULT_DATA_UPDATE_PARALLELISM);
+        this.executor = Executors.newFixedThreadPool(this.parallelism);
+        this.updates = new ConcurrentHashMap<>();
+        IntStream.range(0, this.parallelism)
+                .forEach(i -> {
+                    val partition = new Partition(i);
+                    partition.future = executor.submit(new UpdateHandler(partition));
+                    updates.put(i, partition);
+                });
+        this.partitioner = new Partitioner(updates);
     }
 
-    public void updateClusterResources(final List<ExecutorNodeData> children) {
+    public void bulkUpdateClusterResources(final List<ExecutorNodeData> children) {
         if (children.isEmpty()) {
             log.warn("No children found from ZK.");
             return;
         }
-        updates.add(new ExecutorSnapshotUpdateData(children));
+        children.forEach(child -> partitioner.add(new ExecutorSnapshotUpdateData(child, true)));
+    }
+
+    public void updateClusterResource(final ExecutorNodeData nodeData) {
+        partitioner.add(new ExecutorSnapshotUpdateData(nodeData, false));
     }
 
     public void remove(Collection<String> executorIds) {
-        updates.add(new RemoveExecutorUpdateData(executorIds));
+        executorIds.forEach(executorId -> {
+            partitioner.add(new RemoveExecutorUpdateData(executorId));
+        });
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final InstanceInfo instanceInfo) {
-        return updates.add(new InstanceUpdateData(snapshot, instanceInfo));
+        return partitioner.add(new InstanceUpdateData(snapshot, instanceInfo));
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final TaskInfo instanceInfo) {
-        return updates.add(new InstanceUpdateData(snapshot, instanceInfo));
+        return partitioner.add(new InstanceUpdateData(snapshot, instanceInfo));
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final LocalServiceInstanceInfo instanceInfo) {
-        return updates.add(new InstanceUpdateData(snapshot, instanceInfo));
+        return partitioner.add(new InstanceUpdateData(snapshot, instanceInfo));
+    }
+
+    @Override
+    public void close() {
+        for (val partition : updates.values()) {
+            partition.future.cancel(true);
+        }
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+
+                executor.shutdownNow();
+
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    log.warn("ExecutorService did not terminate cleanly.");
+                }
+            }
+        }
+        catch (InterruptedException ie) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }

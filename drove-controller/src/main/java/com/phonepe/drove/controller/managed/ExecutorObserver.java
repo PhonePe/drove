@@ -112,6 +112,7 @@ public class ExecutorObserver implements Managed {
     @Override
     public void stop() throws Exception {
         log.debug("Shutting down {}", this.getClass().getSimpleName());
+        updater.close();
         dataRefresher.close();
         log.debug("Shut down {}", this.getClass().getSimpleName());
     }
@@ -150,7 +151,7 @@ public class ExecutorObserver implements Managed {
                     knownExecutors.clear();
                     knownExecutors.addAll(ids);
                 }
-                updater.updateClusterResources(currentExecutors);
+                updater.bulkUpdateClusterResources(currentExecutors);
                 log.info("Cluster state refresh completed for invocation at: {}", currentDate);
             }
             finally {

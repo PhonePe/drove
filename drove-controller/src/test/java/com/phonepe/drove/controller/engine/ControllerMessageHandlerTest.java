@@ -94,7 +94,7 @@ class ControllerMessageHandlerTest {
         doAnswer(invocationOnMock -> {
             ctr.incrementAndGet();
             return true;
-        }).when(su).updateClusterResources(anyList());
+        }).when(su).updateClusterResource(any());
 
         val r = new ExecutorSnapshotMessage(MessageHeader.executorRequest(), generateExecutorNode(0))
                 .accept(cmh);
@@ -108,7 +108,6 @@ class ControllerMessageHandlerTest {
         val cmh = new ControllerMessageHandler(su);
 
         val spec = taskSpec();
-        val aid = ControllerUtils.deployableObjectId(spec);
         val instance = generateTaskInfo(spec, 1, TaskState.RUNNING, new Date(), "Test Error", false);
         val ctr = new AtomicInteger();
         doAnswer(invocationOnMock -> {
@@ -128,7 +127,6 @@ class ControllerMessageHandlerTest {
         val cmh = new ControllerMessageHandler(su);
 
         val spec = taskSpec();
-        val aid = ControllerUtils.deployableObjectId(spec);
         val instance = generateTaskInfo(spec, 1, TaskState.STOPPED, new Date(), "Test Error", true);
         val ctr = new AtomicInteger();
         doAnswer(invocationOnMock -> {
@@ -148,7 +146,6 @@ class ControllerMessageHandlerTest {
         val cmh = new ControllerMessageHandler(su);
 
         val spec = taskSpec();
-        val aid = ControllerUtils.deployableObjectId(spec);
         val instance = generateTaskInfo(spec, 1, TaskState.STOPPED, new Date(), "Test Error", true);
         val ctr = new AtomicInteger();
         doAnswer(invocationOnMock -> {

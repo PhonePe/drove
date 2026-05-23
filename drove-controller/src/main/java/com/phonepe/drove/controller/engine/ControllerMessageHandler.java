@@ -47,7 +47,7 @@ public class ControllerMessageHandler implements ControllerMessageVisitor<Messag
 
     @Override
     public MessageResponse visit(ExecutorSnapshotMessage executorSnapshot) {
-        stateUpdater.updateClusterResources(List.of(executorSnapshot.getNodeData()));
+        stateUpdater.updateClusterResource(executorSnapshot.getNodeData());
         return new MessageResponse(executorSnapshot.getHeader(), MessageDeliveryStatus.ACCEPTED);
     }
 

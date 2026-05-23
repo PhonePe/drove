@@ -46,7 +46,6 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.common.CommonUtils.buildCurator;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 /**
@@ -79,7 +78,7 @@ class ExecutorObserverTest extends ControllerTestBase {
                             .map(n -> ((ExecutorNodeData) n).getState().getExecutorId())
                             .forEach(i -> ids.add((String) i));
                     return null;
-                }).when(updater).updateClusterResources(anyList());
+                }).when(updater).bulkUpdateClusterResources(anyList());
                 doAnswer(invocationOnMock -> {
                     testExecuted.compareAndSet(-1, 2);
                     removedIds.addAll(invocationOnMock.getArgument(0));
@@ -118,7 +117,7 @@ class ExecutorObserverTest extends ControllerTestBase {
         when(nds.nodes(NodeType.EXECUTOR)).thenReturn(List.of(node));
         val stateUpdater = mock(StateUpdater.class);
         val removed = new AtomicBoolean(false);
-        doAnswer(new Answer() {
+        doAnswer(new Answer<>() {
             @Override
             @SuppressWarnings("unchecked")
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
