@@ -97,18 +97,6 @@ public class StateUpdater implements AutoCloseable {
     @Getter
     private abstract class UpdateData {
 
-        enum Priority {
-            HIGH(1),
-            LOW(2);
-
-            @Getter
-            private final int value;
-
-            Priority(int value) {
-                this.value = value;
-            }
-        }
-
         interface UpdateDataVisitor<T> {
 
             T visit(ExecutorSnapshotUpdateData executorSnapshot);
@@ -119,14 +107,12 @@ public class StateUpdater implements AutoCloseable {
         }
 
         private final String id;
-        private final Priority priority;
         private final long incrementalTime = System.nanoTime();
 
         abstract <T> T accept(final UpdateDataVisitor<T> visitor);
 
-        protected UpdateData(String id, Priority priority) {
+        protected UpdateData(String id) {
             this.id = id;
-            this.priority = priority;
         }
     }
 
@@ -142,8 +128,9 @@ public class StateUpdater implements AutoCloseable {
         }
 
         ExecutorSnapshotUpdateData(ExecutorNodeData node, boolean bulkUpdate) {
-            super("ExecutorSnapshotUpdate-" + Priority.LOW + "-" + System.currentTimeMillis() + "-" + node.getState().getExecutorId(),
-                  Priority.LOW);
+            super("ExecutorSnapshotUpdate-"
+                    + System.currentTimeMillis()
+                    + "-" + node.getState().getExecutorId());
             this.node = node;
             this.bulkUpdate = bulkUpdate;
         }
@@ -154,8 +141,9 @@ public class StateUpdater implements AutoCloseable {
         private final String executorId;
 
         private RemoveExecutorUpdateData(String executorId) {
-            super("ExecutorRemovalUpdate-" + Priority.LOW + "-" + System.currentTimeMillis() + "-" + executorId,
-                  Priority.LOW);
+            super("ExecutorRemovalUpdate-"
+                    + "-" + System.currentTimeMillis()
+                    + "-" + executorId);
             this.executorId = executorId;
         }
 
@@ -176,9 +164,9 @@ public class StateUpdater implements AutoCloseable {
         protected InstanceUpdateData(
                 ExecutorResourceSnapshot snapshot,
                 DeployedInstanceInfo instanceInfo) {
-            super("InstanceUpdate-" + Priority.HIGH
-                          + "-" + System.currentTimeMillis() + "-" + ControllerUtils.deployableObjectId(instanceInfo),
-                  Priority.HIGH);
+            super("InstanceUpdate-"
+                    + "-" + System.currentTimeMillis()
+                    + "-" + ControllerUtils.deployableObjectId(instanceInfo));
             this.snapshot = snapshot;
             this.instanceInfo = instanceInfo;
         }
