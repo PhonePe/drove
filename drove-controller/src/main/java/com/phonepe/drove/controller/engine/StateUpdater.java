@@ -476,9 +476,7 @@ public class StateUpdater implements AutoCloseable {
     }
 
     public void remove(Collection<String> executorIds) {
-        executorIds.forEach(executorId -> {
-            partitioner.add(new RemoveExecutorUpdateData(executorId));
-        });
+        executorIds.forEach(executorId -> partitioner.add(new RemoveExecutorUpdateData(executorId)));
     }
 
     public boolean updateSingle(final ExecutorResourceSnapshot snapshot, final InstanceInfo instanceInfo) {
