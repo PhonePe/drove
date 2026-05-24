@@ -48,10 +48,21 @@
             {
                 data: 'id',
                 render: function(data, type, row, meta) {
-                    return '<a href="/applications/' + data + '" class="fw-bold">' + data + '</a>';
+                    if ( type !== 'display' ) {
+                        return data;
+                    }
+                    return ellipsizedHtml(data, 20, '/applications/' + data, 'fw-bold');
                 }
             },
-            { data: 'name' },
+            {
+                data: 'name',
+                render: function(data, type, row, meta) {
+                    if ( type !== 'display' ) {
+                        return data;
+                    }
+                    return ellipsizedHtml(data, 50, null, '');
+                }
+            },
             { data: 'state', render: tableAppStateText },
             { data: 'requiredInstances' },
             { data: 'healthyInstances' },

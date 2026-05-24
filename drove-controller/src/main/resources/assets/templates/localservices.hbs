@@ -54,10 +54,10 @@
             {
                 data: 'id',
                 render: function(data, type, row, meta) {
-                    if(type === 'display') {
-                        return '<a href="/localservices/' + data + '"  class="fw-bold">' + data + '</a>';
+                    if ( type !== 'display' ) {
+                        return data;
                     }
-                    return data;
+                    return ellipsizedHtml(data, 30, '/localservices/' + data, 'fw-bold');
                 }
             },
             { data: 'state', render: tableLocalServiceStateText },

@@ -80,8 +80,24 @@
             }
         ],
         columns: [
-            { data: 'sourceAppName' },
-            { data: 'taskId' },
+            {
+                data: 'sourceAppName',
+                render: function(data, type, row, meta) {
+                    if ( type !== 'display' ) {
+                        return data;
+                    }
+                    return ellipsizedHtml(data, 25, null, 'fw-bold');
+                }
+            },
+            {
+                data: 'taskId',
+                render: function(data, type, row, meta) {
+                    if ( type !== 'display' ) {
+                        return data;
+                    }
+                    return ellipsizedHtml(data, 20, '/tasks/' + row.sourceAppName + '/' + data, 'fw-bold');
+                }
+            },
             { data: 'state', render: tableTaskStateText },
             { data: 'usedCores' },
             { data: 'usedMemory', render: tableBytesText },
