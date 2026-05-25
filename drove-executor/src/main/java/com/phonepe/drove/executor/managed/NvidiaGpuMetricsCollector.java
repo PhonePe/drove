@@ -192,11 +192,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
         for (int i = 0; i < gpuNodes.getLength(); i++) {
             val gpuNode = gpuNodes.item(i);
             val gpuId = Objects.requireNonNullElse(findChildText(gpuNode, "uuid"), "gpu_" + i);
-            val powerDraw = parseDouble(firstNonEmpty(
-                    findNestedText(gpuNode, GPU_POWER_READINGS, "instant_power_draw"),
-                    firstNonEmpty(
-                            findNestedText(gpuNode, GPU_POWER_READINGS, "average_power_draw"),
-                            findNestedText(gpuNode, GPU_POWER_READINGS, "power_draw"))));
+            val powerDraw = parseDouble(findNestedText(gpuNode, GPU_POWER_READINGS, "power_draw"));
             result.add(new GpuSample(
                     gpuId,
                     parseDouble(findNestedText(gpuNode, UTILIZATION, "gpu_util")),
