@@ -29,17 +29,18 @@ import lombok.val;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
+
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.xml.parsers.DocumentBuilderFactory;
+
 import java.io.IOException;
-import java.io.StringReader;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +51,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
+import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.XmlParsingUtils.parseXml;
 
 @Slf4j
 @Singleton
@@ -65,7 +67,6 @@ public class NvidiaGpuMetricsCollector implements Managed {
     public static final String SCRAPE_SUCCESS = "scrape.success";
     public static final String GPU_POWER_READINGS = "gpu_power_readings";
     public static final String UTILIZATION = "utilization";
-
     private final MetricRegistry metricRegistry;
     private final ResourceConfig resourceConfig;
     private final ResourceManager resourceManager;
@@ -177,45 +178,49 @@ public class NvidiaGpuMetricsCollector implements Managed {
     }
 
     static Snapshot parseSnapshot(final String xmlOutput) throws Exception {
-        val factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(false);
-        factory.setNamespaceAware(true);
-        factory.setFeature("http://xml.org/sax/features/namespaces", false);
-        factory.setFeature("http://xml.org/sax/features/validation", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-
-        val builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new InputSource(new StringReader(xmlOutput)));
+        Document doc = parseXml(xmlOutput);
         val gpuNodes = doc.getElementsByTagName("gpu");
-        val result = new ArrayList<GpuSample>();
+        val result = new ArrayList<GpuSample>(gpuNodes.getLength());
         for (int i = 0; i < gpuNodes.getLength(); i++) {
-            val gpuNode = gpuNodes.item(i);
-            val gpuId = Objects.requireNonNullElse(findChildText(gpuNode, "uuid"), "gpu_" + i);
-            val powerDraw = parseDouble(findNestedText(gpuNode, GPU_POWER_READINGS, "power_draw"));
+            val gpuChildren = indexChildren(gpuNodes.item(i));
+
+            val gpuId = Objects.requireNonNullElse(textOf(gpuChildren.get("uuid")), "gpu_" + i);
+
+            val util = indexChildren(gpuChildren.get(UTILIZATION));
+            val fbMem = indexChildren(gpuChildren.get("fb_memory_usage"));
+            val temp = indexChildren(gpuChildren.get("temperature"));
+            val clocks = indexChildren(gpuChildren.get("clocks"));
+            val power = indexChildren(gpuChildren.get(GPU_POWER_READINGS));
+            val throttle = indexChildren(gpuChildren.get("clocks_event_reasons"));
+
+            val powerDraw = parseDouble(firstNonEmpty(
+                    textOf(power.get("power_draw")),
+                    firstNonEmpty(
+                            textOf(power.get("instant_power_draw")),
+                            textOf(power.get("average_power_draw")))));
+
             result.add(new GpuSample(
                     gpuId,
-                    parseDouble(findNestedText(gpuNode, UTILIZATION, "gpu_util")),
-                    parseDouble(findNestedText(gpuNode, UTILIZATION, "memory_util")),
-                    parseSizeInBytes(findNestedText(gpuNode, "fb_memory_usage", "used")),
-                    parseSizeInBytes(findNestedText(gpuNode, "fb_memory_usage", "total")),
-                    parseDouble(findNestedText(gpuNode, "temperature", "gpu_temp")),
+                    parseDouble(textOf(util.get("gpu_util"))),
+                    parseDouble(textOf(util.get("memory_util"))),
+                    parseSizeInBytes(textOf(fbMem.get("used"))),
+                    parseSizeInBytes(textOf(fbMem.get("total"))),
+                    parseDouble(textOf(temp.get("gpu_temp"))),
                     powerDraw,
-                    parseDouble(findNestedText(gpuNode, "temperature", "memory_temp")),
-                    parseDouble(findNestedText(gpuNode, "clocks", "sm_clock")),
-                    parseDouble(findNestedText(gpuNode, UTILIZATION, "memory_util")),
-                    isThermallyThrottled(gpuNode)));
+                    parseDouble(textOf(temp.get("memory_temp"))),
+                    parseDouble(textOf(clocks.get("sm_clock"))),
+                    parseDouble(textOf(util.get("memory_util"))),
+                    isThermallyThrottled(throttle)));
         }
         return new Snapshot(List.copyOf(result));
     }
 
-    private static Long isThermallyThrottled(final Node gpuNode) {
-        val throttleReasons = findChild(gpuNode, "clocks_event_reasons");
-        if (throttleReasons == null) {
+    private static Long isThermallyThrottled(final Map<String, Node> throttleChildren) {
+        if (throttleChildren.isEmpty()) {
             return null;
         }
-        val hwThermal = findChildText(throttleReasons, "clocks_event_reason_hw_thermal_slowdown");
-        val swThermal = findChildText(throttleReasons, "clocks_event_reason_sw_thermal_slowdown");
+        val hwThermal = textOf(throttleChildren.get("clocks_event_reason_hw_thermal_slowdown"));
+        val swThermal = textOf(throttleChildren.get("clocks_event_reason_sw_thermal_slowdown"));
         if (isActive(hwThermal) || isActive(swThermal)) {
             return 1L;
         }
@@ -230,31 +235,23 @@ public class NvidiaGpuMetricsCollector implements Managed {
         return Strings.isNullOrEmpty(first) ? second : first;
     }
 
-    private static String findNestedText(final Node parent, final String intermediateNodeName, final String childName) {
-        val intermediateNode = findChild(parent, intermediateNodeName);
-        if (intermediateNode == null) {
-            return null;
-        }
-        return findChildText(intermediateNode, childName);
-    }
-
-    private static Node findChild(final Node parent, final String childName) {
+    private static Map<String, Node> indexChildren(final Node parent) {
         if (parent == null) {
-            return null;
+            return Map.of();
         }
-        final NodeList childNodes = parent.getChildNodes();
-        for (int i = 0; i < childNodes.getLength(); i++) {
-            val child = childNodes.item(i);
-            if (child != null && child.getNodeName().equalsIgnoreCase(childName)) {
-                return child;
+        val children = parent.getChildNodes();
+        val map = new HashMap<String, Node>(children.getLength());
+        for (int i = 0; i < children.getLength(); i++) {
+            val child = children.item(i);
+            if (child != null && child.getNodeType() == Node.ELEMENT_NODE) {
+                map.putIfAbsent(child.getNodeName().toLowerCase(Locale.ROOT), child);
             }
         }
-        return null;
+        return map;
     }
 
-    private static String findChildText(final Node parent, final String childName) {
-        val child = findChild(parent, childName);
-        return child == null ? null : child.getTextContent();
+    private static String textOf(final Node node) {
+        return node == null ? null : node.getTextContent();
     }
 
     private static Double parseDouble(final String rawValue) {

@@ -10,12 +10,12 @@ import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+
+
+
 import java.io.IOException;
-import java.io.StringReader;
+
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -39,17 +39,7 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
             }
             throw e;
         }
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(false);
-        factory.setNamespaceAware(true);
-        factory.setFeature("http://xml.org/sax/features/namespaces", false);
-        factory.setFeature("http://xml.org/sax/features/validation", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-
-
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new InputSource(new StringReader(xmlOutput)));
+        Document doc = XmlParsingUtils.parseXml(xmlOutput);
         int gpuCount = doc.getElementsByTagName("gpu").getLength();
         val gpuList = IntStream.range(0, gpuCount).boxed().flatMap(i -> {
             val gpuDoc = doc.getElementsByTagName("gpu").item(i);
