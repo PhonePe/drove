@@ -104,15 +104,6 @@ public class ContainerStatsObserver implements Managed {
             ApplicationInstanceEngine instanceEngine,
             LocalServiceInstanceEngine localServiceInstanceEngine,
             DockerClient client,
-            Duration refreshDuration) {
-        this(metricRegistry, instanceEngine, localServiceInstanceEngine, client, null, refreshDuration);
-    }
-
-    public ContainerStatsObserver(
-            MetricRegistry metricRegistry,
-            ApplicationInstanceEngine instanceEngine,
-            LocalServiceInstanceEngine localServiceInstanceEngine,
-            DockerClient client,
             NvidiaGpuMetricsCollector nvidiaGpuMetricsCollector,
             Duration refreshDuration) {
         this.metricRegistry = metricRegistry;
@@ -313,9 +304,6 @@ public class ContainerStatsObserver implements Managed {
                     .connect(doubleGauge("gpu_sm_clock_mhz",
                             instanceInfo,
                             gpu -> gpu.getData().getSmClockAvgMhz()))
-                    .connect(doubleGauge("gpu_memory_controller_utilization_percentage",
-                            instanceInfo,
-                            gpu -> gpu.getData().getMemoryControllerUtilizationAvgPercentage()))
                     .connect(gauge("gpu_thermal_throttle_count",
                             instanceInfo,
                             gpu -> gpu.getData().getThermalThrottleCount()));
@@ -467,7 +455,7 @@ public class ContainerStatsObserver implements Managed {
                 .filter(sample -> allocatedGpuIds.contains(sample.gpuId()))
                 .toList();
         if (samples.isEmpty()) {
-            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
+            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D,  0L);
         }
         val memoryUtilAvg = samples.stream()
                 .mapToDouble(sample -> {
@@ -500,8 +488,7 @@ public class ContainerStatsObserver implements Managed {
                         .mapToDouble(Double::doubleValue).average().orElse(0D),
                 samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::smClockMhz).filter(Objects::nonNull)
                         .mapToDouble(Double::doubleValue).average().orElse(0D),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryControllerUtilizationPct).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+
                 samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::thermalThrottled).filter(Objects::nonNull)
                         .mapToLong(Long::longValue).sum());
     }
@@ -565,7 +552,7 @@ public class ContainerStatsObserver implements Managed {
 
     @Value
     static class InstanceGpuMetrics {
-        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D,0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0D, 0L);
+        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D,0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D,  0L);
         long allocatedDeviceCount;
         long observedDeviceCount;
         double utilizationAvgPercentage;
@@ -577,7 +564,6 @@ public class ContainerStatsObserver implements Managed {
         double powerDrawTotalWatts;
         double memoryTempAvgCelsius;
         double smClockAvgMhz;
-        double memoryControllerUtilizationAvgPercentage;
         long thermalThrottleCount;
     }
 

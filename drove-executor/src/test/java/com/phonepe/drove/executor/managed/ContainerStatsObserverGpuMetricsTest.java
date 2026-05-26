@@ -28,9 +28,9 @@ class ContainerStatsObserverGpuMetricsTest {
     @Test
     void testAggregateGpuMetricsForAllocatedDevices() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 80D,500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 0L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 30D,250L, 1000L, 60D, 140D, 55D, 1380D, 30D, 0L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-3", 10D, 20D,100L, 1000L, 50D, 90D, 48D, 1200D, 15D, 1L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 80D,500L, 1000L, 65D, 220D, 70D, 1400D, 0L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 30D,250L, 1000L, 60D, 140D, 55D, 1380D, 0L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-3", 10D, 20D,100L, 1000L, 50D, 90D, 48D, 1200D, 1L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -46,7 +46,7 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(360D, metrics.getPowerDrawTotalWatts());
         assertEquals(62.5D, metrics.getMemoryTempAvgCelsius());
         assertEquals(1390D, metrics.getSmClockAvgMhz());
-        assertEquals(45D, metrics.getMemoryControllerUtilizationAvgPercentage());
+
         assertEquals(0L, metrics.getThermalThrottleCount());
     }
 
@@ -65,14 +65,13 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(0D, metrics.getPowerDrawTotalWatts());
         assertEquals(0D, metrics.getMemoryTempAvgCelsius());
         assertEquals(0D, metrics.getSmClockAvgMhz());
-        assertEquals(0D, metrics.getMemoryControllerUtilizationAvgPercentage());
         assertEquals(0L, metrics.getThermalThrottleCount());
     }
 
     @Test
     void testAggregateGpuMetricsWhenAllocatedNotObserved() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-10", 80D, 10D,100L, 1000L, 65D, 220D, 70D, 1400D, 60D, 0L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-10", 80D, 10D,100L, 1000L, 65D, 220D, 70D, 1400D, 0L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -88,15 +87,14 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(0D, metrics.getPowerDrawTotalWatts());
         assertEquals(0D, metrics.getMemoryTempAvgCelsius());
         assertEquals(0D, metrics.getSmClockAvgMhz());
-        assertEquals(0D, metrics.getMemoryControllerUtilizationAvgPercentage());
         assertEquals(0L, metrics.getThermalThrottleCount());
     }
 
     @Test
     void testAggregateGpuMetricsWithThermalThrottle() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 10D,500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 1L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 25D,250L, 1000L, 60D, 140D, 55D, 1380D, 30D, 1L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 10D,500L, 1000L, 65D, 220D, 70D, 1400D, 1L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", 40D, 25D,250L, 1000L, 60D, 140D, 55D, 1380D, 1L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -105,7 +103,6 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(2L, metrics.getThermalThrottleCount());
         assertEquals(62.5D, metrics.getMemoryTempAvgCelsius());
         assertEquals(1390D, metrics.getSmClockAvgMhz());
-        assertEquals(45D, metrics.getMemoryControllerUtilizationAvgPercentage());
     }
 
     @Test
@@ -119,7 +116,7 @@ class ContainerStatsObserverGpuMetricsTest {
     @Test
     void testAggregateGpuMetricsWithNullFieldsInSample() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", null, null, null, null, null, null, null, null, null, null)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", null, null, null, null, null, null, null, null, null)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -136,14 +133,13 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(0D, metrics.getPowerDrawTotalWatts());
         assertEquals(0D, metrics.getMemoryTempAvgCelsius());
         assertEquals(0D, metrics.getSmClockAvgMhz());
-        assertEquals(0D, metrics.getMemoryControllerUtilizationAvgPercentage());
         assertEquals(0L, metrics.getThermalThrottleCount());
     }
 
     @Test
     void testAggregateGpuMetricsWithZeroTotalMemory() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 50D, 20D, 500L, 0L, 60D, 200D, 55D, 1300D, 40D, 0L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 50D, 20D, 500L, 0L, 60D, 200D, 55D, 1300D, 0L)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -157,8 +153,8 @@ class ContainerStatsObserverGpuMetricsTest {
     @Test
     void testAggregateGpuMetricsWithMixedNullAndValidFields() {
         NvidiaGpuMetricsCollector.Snapshot snapshot = new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 40D, 500L, 1000L, 65D, 220D, 70D, 1400D, 60D, 1L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", null, null, null, null, null, null, null, null, null, null)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1", 80D, 40D, 500L, 1000L, 65D, 220D, 70D, 1400D, 1L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2", null, null, null, null, null, null, null, null, null)
         ));
 
         ContainerStatsObserver.InstanceGpuMetrics metrics =
@@ -175,7 +171,6 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(220D, metrics.getPowerDrawTotalWatts());
         assertEquals(70D, metrics.getMemoryTempAvgCelsius());
         assertEquals(1400D, metrics.getSmClockAvgMhz());
-        assertEquals(60D, metrics.getMemoryControllerUtilizationAvgPercentage());
         assertEquals(1L, metrics.getThermalThrottleCount());
     }
 }

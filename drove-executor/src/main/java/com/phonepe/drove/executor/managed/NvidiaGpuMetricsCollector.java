@@ -16,8 +16,9 @@
 
 package com.phonepe.drove.executor.managed;
 
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -28,15 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.io.IOException;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
@@ -47,8 +45,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.XmlParsingUtils.parseXml;
@@ -56,17 +54,15 @@ import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.XmlParsing
 @Slf4j
 @Singleton
 @Order(61)
-
 public class NvidiaGpuMetricsCollector implements Managed {
 
     static final String METRIC_PREFIX = "com.phonepe.drove.executor.gpu";
     private static final String POLLER_HANDLER = "nvidia-gpu-metrics-reporter";
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("([-+]?\\d+(?:\\.\\d+)?)");
-    public static final String DEVICE = "device";
-    public static final String MEMORY = "memory";
-    public static final String SCRAPE_SUCCESS = "scrape.success";
-    public static final String GPU_POWER_READINGS = "gpu_power_readings";
-    public static final String UTILIZATION = "utilization";
+    private static final Pattern SANITIZE_PATTERN = Pattern.compile("[^a-zA-Z0-9_]");
+    private static final String GPU_POWER_READINGS = "gpu_power_readings";
+    private static final String UTILIZATION = "utilization";
+
     private final MetricRegistry metricRegistry;
     private final ResourceConfig resourceConfig;
     private final ResourceManager resourceManager;
@@ -119,27 +115,27 @@ public class NvidiaGpuMetricsCollector implements Managed {
     }
 
     void collect(final Date now) {
-        val startNanos = System.nanoTime();
+        val stopwatch = Stopwatch.createStarted();
         try {
             publish(parseSnapshot(queryNvidiaSmi()));
-            updateLongMetric(metricName(SCRAPE_SUCCESS), 1);
-            updateLongMetric(metricName("scrape.last_success_epoch_ms"), System.currentTimeMillis());
+            setScrapeSuccess(true);
+            updateLongMetric(METRIC_PREFIX + ".scrape.last_success_epoch_ms", System.currentTimeMillis());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            updateLongMetric(metricName(SCRAPE_SUCCESS), 0);
+            setScrapeSuccess(false);
             log.info("Interrupted while collecting NVIDIA GPU metrics");
         } catch (IOException e) {
-            updateLongMetric(metricName(SCRAPE_SUCCESS), 0);
+            setScrapeSuccess(false);
             if (e.getMessage() != null && e.getMessage().contains("error=2")) {
                 log.info("nvidia-smi command not found; skipping NVIDIA GPU metrics collection");
                 return;
             }
             log.warn("Failed to collect NVIDIA GPU metrics: {}", e.getMessage());
         } catch (Exception e) {
-            updateLongMetric(metricName(SCRAPE_SUCCESS), 0);
+            setScrapeSuccess(false);
             log.warn("Error parsing NVIDIA GPU metrics", e);
         } finally {
-            updateLongMetric(metricName("scrape.duration_ms"), Duration.ofNanos(System.nanoTime() - startNanos).toMillis());
+            updateLongMetric(METRIC_PREFIX + ".scrape.duration_ms", stopwatch.elapsed().toMillis());
         }
     }
 
@@ -149,33 +145,58 @@ public class NvidiaGpuMetricsCollector implements Managed {
 
     void publish(final Snapshot snapshot) {
         latestSnapshot = snapshot;
-        updateLongMetric(metricName("count"), snapshot.gpus().size());
-        updateDoubleMetric(metricName("utilization.gpu.average_percentage"), average(snapshot.gpus(), GpuSample::gpuUtilizationPct));
-        updateLongMetric(metricName(MEMORY,"used.total_bytes"), sum(snapshot.gpus(), GpuSample::memoryUsedBytes));
-        updateLongMetric(metricName(MEMORY,"total.total_bytes"), sum(snapshot.gpus(), GpuSample::memoryTotalBytes));
-        updateDoubleMetric(metricName(MEMORY,"temperature.average_celsius"), average(snapshot.gpus(), GpuSample::memoryTempC));
-        updateDoubleMetric(metricName(MEMORY,"controller_utilization.average_percentage"), average(snapshot.gpus(), GpuSample::memoryControllerUtilizationPct));
-        updateDoubleMetric(metricName("sm_clock.average_mhz"), average(snapshot.gpus(), GpuSample::smClockMhz));
-        updateLongMetric(metricName("thermal.throttle_count"), count(snapshot.gpus(), GpuSample::thermalThrottled));
+        val gpus = snapshot.gpus();
+        updateLongMetric(METRIC_PREFIX + ".count", gpus.size());
+
+        // Single-pass aggregation for all numeric fields
+        val gpuUtil = new Aggregator<Double>();
+        val memCtrlUtil = new Aggregator<Double>();
+        val memUsed = new Aggregator<Long>();
+        val memTotal = new Aggregator<Long>();
+        val memTemp = new Aggregator<Double>();
+        val smClock = new Aggregator<Double>();
+        val thermal = new Aggregator<Long>();
+
+        for (val gpu : gpus) {
+            gpuUtil.add(gpu.gpuUtilizationPct());
+            memCtrlUtil.add(gpu.memoryBandwidthUtilizationPct());
+            memUsed.add(gpu.memoryUsedBytes());
+            memTotal.add(gpu.memoryTotalBytes());
+            memTemp.add(gpu.memoryTempC());
+            smClock.add(gpu.smClockMhz());
+            thermal.add(gpu.thermalThrottled());
+        }
+
+        updateDoubleMetric(METRIC_PREFIX + ".utilization.gpu.average_percentage", gpuUtil.averageOrZero());
+        updateDoubleMetric(METRIC_PREFIX + ".memory.controller_utilization.average_percentage", memCtrlUtil.averageOrZero());
+        updateLongMetric(METRIC_PREFIX + ".memory.used.total_bytes", memUsed.sumOrZero());
+        updateLongMetric(METRIC_PREFIX + ".memory.total.total_bytes", memTotal.sumOrZero());
+        updateDoubleMetric(METRIC_PREFIX + ".memory.temperature.average_celsius", memTemp.averageOrZero());
+        updateDoubleMetric(METRIC_PREFIX + ".sm_clock.average_mhz", smClock.averageOrZero());
+        updateLongMetric(METRIC_PREFIX + ".thermal.throttle_count", thermal.sumOrZero());
 
         val state = resourceManager.currentState().getGpuInfo();
-        updateLongMetric(metricName("free_count"), state.getFreeGpus().size());
-        updateLongMetric(metricName("used_count"), state.getUsedGpus().size());
+        updateLongMetric(METRIC_PREFIX + ".free_count", state.getFreeGpus().size());
+        updateLongMetric(METRIC_PREFIX + ".used_count", state.getUsedGpus().size());
 
-        for (val gpu : snapshot.gpus()) {
-            val gpuDimension = sanitizeDimension(gpu.gpuId());
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "utilization.gpu_percentage"), orZero(gpu.gpuUtilizationPct()));
-            updateLongMetric(metricName(DEVICE, gpuDimension, "memory.used_bytes"), orZero(gpu.memoryUsedBytes()));
-            updateLongMetric(metricName(DEVICE, gpuDimension, "memory.total_bytes"), orZero(gpu.memoryTotalBytes()));
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "memory.utilization_percentage"), memoryUtilization(gpu));
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "temperature.celsius"), orZero(gpu.temperatureC()));
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "power.draw_watts"), orZero(gpu.powerDrawWatts()));
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "memory.temperature.celsius"), orZero(gpu.memoryTempC()));
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "sm_clock.mhz"), orZero(gpu.smClockMhz()));
-            updateDoubleMetric(metricName(DEVICE, gpuDimension, "memory.controller_utilization.percentage"), orZero(gpu.memoryControllerUtilizationPct()));
-            updateLongMetric(metricName(DEVICE, gpuDimension, "thermal.throttled"), orZero(gpu.thermalThrottled()));
+        for (val gpu : gpus) {
+            val prefix = METRIC_PREFIX + ".device." + sanitizeDimension(gpu.gpuId()) + ".";
+            updateDoubleMetric(prefix + "utilization.gpu_percentage", Objects.requireNonNullElse(gpu.gpuUtilizationPct(), 0D));
+            updateDoubleMetric(prefix + "memory.controller_utilization.percentage", Objects.requireNonNullElse(gpu.memoryBandwidthUtilizationPct(), 0D));
+            updateLongMetric(prefix + "memory.used_bytes", Objects.requireNonNullElse(gpu.memoryUsedBytes(), 0L));
+            updateLongMetric(prefix + "memory.total_bytes", Objects.requireNonNullElse(gpu.memoryTotalBytes(), 0L));
+            updateDoubleMetric(prefix + "memory.utilization_percentage", memoryUtilization(gpu));
+            updateDoubleMetric(prefix + "temperature.celsius", Objects.requireNonNullElse(gpu.temperatureC(), 0D));
+            updateDoubleMetric(prefix + "power.draw_watts", Objects.requireNonNullElse(gpu.powerDrawWatts(), 0D));
+            updateDoubleMetric(prefix + "memory.temperature.celsius", Objects.requireNonNullElse(gpu.memoryTempC(), 0D));
+            updateDoubleMetric(prefix + "sm_clock.mhz", Objects.requireNonNullElse(gpu.smClockMhz(), 0D));
+            updateLongMetric(prefix + "thermal.throttled", Objects.requireNonNullElse(gpu.thermalThrottled(), 0L));
         }
     }
+
+    // ------------------------------------------------------------------
+    // XML parsing
+    // ------------------------------------------------------------------
 
     static Snapshot parseSnapshot(final String xmlOutput) throws Exception {
         Document doc = parseXml(xmlOutput);
@@ -183,7 +204,6 @@ public class NvidiaGpuMetricsCollector implements Managed {
         val result = new ArrayList<GpuSample>(gpuNodes.getLength());
         for (int i = 0; i < gpuNodes.getLength(); i++) {
             val gpuChildren = indexChildren(gpuNodes.item(i));
-
             val gpuId = Objects.requireNonNullElse(textOf(gpuChildren.get("uuid")), "gpu_" + i);
 
             val util = indexChildren(gpuChildren.get(UTILIZATION));
@@ -193,11 +213,12 @@ public class NvidiaGpuMetricsCollector implements Managed {
             val power = indexChildren(gpuChildren.get(GPU_POWER_READINGS));
             val throttle = indexChildren(gpuChildren.get("clocks_event_reasons"));
 
-            val powerDraw = parseDouble(firstNonEmpty(
-                    textOf(power.get("power_draw")),
-                    firstNonEmpty(
-                            textOf(power.get("instant_power_draw")),
-                            textOf(power.get("average_power_draw")))));
+            // power_draw with fallback to average_power_draw
+            val powerDraw = Stream.of(textOf(power.get("power_draw")), textOf(power.get("average_power_draw")))
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .map(NvidiaGpuMetricsCollector::parseDouble)
+                    .orElse(null);
 
             result.add(new GpuSample(
                     gpuId,
@@ -209,7 +230,6 @@ public class NvidiaGpuMetricsCollector implements Managed {
                     powerDraw,
                     parseDouble(textOf(temp.get("memory_temp"))),
                     parseDouble(textOf(clocks.get("sm_clock"))),
-                    parseDouble(textOf(util.get("memory_util"))),
                     isThermallyThrottled(throttle)));
         }
         return new Snapshot(List.copyOf(result));
@@ -221,18 +241,11 @@ public class NvidiaGpuMetricsCollector implements Managed {
         }
         val hwThermal = textOf(throttleChildren.get("clocks_event_reason_hw_thermal_slowdown"));
         val swThermal = textOf(throttleChildren.get("clocks_event_reason_sw_thermal_slowdown"));
-        if (isActive(hwThermal) || isActive(swThermal)) {
-            return 1L;
-        }
-        return 0L;
+        return isActive(hwThermal) || isActive(swThermal) ? 1L : 0L;
     }
 
     private static boolean isActive(final String value) {
         return value != null && value.trim().equalsIgnoreCase("Active");
-    }
-
-    private static String firstNonEmpty(final String first, final String second) {
-        return Strings.isNullOrEmpty(first) ? second : first;
     }
 
     private static Map<String, Node> indexChildren(final Node parent) {
@@ -259,10 +272,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
             return null;
         }
         val matcher = NUMERIC_PATTERN.matcher(rawValue);
-        if (!matcher.find()) {
-            return null;
-        }
-        return Double.parseDouble(matcher.group(1));
+        return matcher.find() ? Double.parseDouble(matcher.group(1)) : null;
     }
 
     private static Long parseSizeInBytes(final String rawValue) {
@@ -283,22 +293,6 @@ public class NvidiaGpuMetricsCollector implements Managed {
         return numeric.longValue();
     }
 
-    private static double average(final List<GpuSample> gpus, final Function<GpuSample, Double> extractor) {
-        val nonNullValues = gpus.stream().map(extractor).filter(Objects::nonNull).toList();
-        if (nonNullValues.isEmpty()) {
-            return 0D;
-        }
-        return nonNullValues.stream().mapToDouble(Double::doubleValue).average().orElse(0D);
-    }
-
-    private static long sum(final List<GpuSample> gpus, final Function<GpuSample, Long> extractor) {
-        return gpus.stream().map(extractor).filter(Objects::nonNull).mapToLong(Long::longValue).sum();
-    }
-
-    private static long count(final List<GpuSample> gpus, final Function<GpuSample, Long> extractor) {
-        return gpus.stream().map(extractor).filter(Objects::nonNull).mapToLong(Long::longValue).sum();
-    }
-
     private static double memoryUtilization(final GpuSample sample) {
         if (sample.memoryUsedBytes() == null || sample.memoryTotalBytes() == null || sample.memoryTotalBytes() <= 0) {
             return 0D;
@@ -306,43 +300,36 @@ public class NvidiaGpuMetricsCollector implements Managed {
         return (sample.memoryUsedBytes() * 100D) / sample.memoryTotalBytes();
     }
 
+    // ------------------------------------------------------------------
+    // Metric helpers
+    // ------------------------------------------------------------------
+
+    private void setScrapeSuccess(final boolean success) {
+        updateLongMetric(METRIC_PREFIX + ".scrape.success", success ? 1L : 0L);
+    }
+
     private void updateLongMetric(final String metricName, final long value) {
-        val gauge = longMetrics.computeIfAbsent(metricName, key -> {
-            val holder = new AtomicLong(0L);
-            metricRegistry.register(key, (Gauge<Long>) holder::get);
-            return holder;
+        val holder = longMetrics.computeIfAbsent(metricName, key -> {
+            val h = new AtomicLong(0L);
+            metricRegistry.register(key, (Gauge<Long>) h::get);
+            return h;
         });
-        gauge.set(value);
+        holder.set(value);
     }
 
     private void updateDoubleMetric(final String metricName, final double value) {
-        val gauge = doubleMetrics.computeIfAbsent(metricName, key -> {
-            val holder = new AtomicDouble(0D);
-            metricRegistry.register(key, (Gauge<Double>) holder::get);
-            return holder;
+        val holder = doubleMetrics.computeIfAbsent(metricName, key -> {
+            val h = new AtomicDouble(0D);
+            metricRegistry.register(key, (Gauge<Double>) h::get);
+            return h;
         });
-        gauge.set(value);
-    }
-
-    private static long orZero(final Long value) {
-        return value == null ? 0L : value;
-    }
-
-    private static double orZero(final Double value) {
-        return value == null ? 0D : value;
+        holder.set(value);
     }
 
     private static String sanitizeDimension(final String value) {
-        return Objects.requireNonNullElse(value, "unknown")
-                .replaceAll("[^a-zA-Z0-9_]", "_");
+        return SANITIZE_PATTERN.matcher(Objects.requireNonNullElse(value, "unknown")).replaceAll("_");
     }
 
-    private static String metricName(final String... parts) {
-        val path = new ArrayList<String>();
-        path.add(METRIC_PREFIX);
-        path.addAll(List.of(parts));
-        return String.join(".", path);
-    }
 
     Snapshot latestSnapshot() {
         return latestSnapshot;
@@ -360,7 +347,27 @@ public class NvidiaGpuMetricsCollector implements Managed {
                      Double powerDrawWatts,
                      Double memoryTempC,
                      Double smClockMhz,
-                     Double memoryControllerUtilizationPct,
                      Long thermalThrottled) {
+    }
+
+    /** Lightweight helper for aggregating nullable numeric values. */
+    private static final class Aggregator<N extends Number> {
+        private double sum;
+        private int count;
+
+        void add(N value) {
+            if (value != null) {
+                sum += value.doubleValue();
+                count++;
+            }
+        }
+
+        double averageOrZero() {
+            return count > 0 ? sum / count : 0D;
+        }
+
+        long sumOrZero() {
+            return Math.round(sum);
+        }
     }
 }

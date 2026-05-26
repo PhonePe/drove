@@ -104,13 +104,11 @@ class NvidiaGpuMetricsCollectorTest {
         assertEquals(210.5, snapshot.gpus().get(0).powerDrawWatts());
         assertEquals(65.0, snapshot.gpus().get(0).memoryTempC());
         assertEquals(1410.0, snapshot.gpus().get(0).smClockMhz());
-        assertEquals(45.0, snapshot.gpus().get(0).memoryControllerUtilizationPct());
         assertEquals(0L, snapshot.gpus().get(0).thermalThrottled());
 
         assertEquals(185.0, snapshot.gpus().get(1).powerDrawWatts());
         assertEquals(62.0, snapshot.gpus().get(1).memoryTempC());
         assertEquals(1380.0, snapshot.gpus().get(1).smClockMhz());
-        assertEquals(30.0, snapshot.gpus().get(1).memoryControllerUtilizationPct());
         assertEquals(1L, snapshot.gpus().get(1).thermalThrottled());
     }
 
@@ -131,8 +129,8 @@ class NvidiaGpuMetricsCollectorTest {
                 new NvidiaGpuMetricsCollector(metricRegistry, config, resourceManager, Duration.ofSeconds(30));
 
         collector.publish(new NvidiaGpuMetricsCollector.Snapshot(List.of(
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-1111-AAAA", 70D, 10D,100L, 1000L, 55D, 200D, 60D, 1400D, 40D, 0L),
-                new NvidiaGpuMetricsCollector.GpuSample("GPU-2222-BBBB", 30D, 60D,200L, 2000L, 52D, 150D, 58D, 1350D, 25D, 1L)
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-1111-AAAA", 70D, 10D,100L, 1000L, 55D, 200D, 60D, 1400D, 0L),
+                new NvidiaGpuMetricsCollector.GpuSample("GPU-2222-BBBB", 30D, 60D,200L, 2000L, 52D, 150D, 58D, 1350D, 1L)
         )));
 
         assertEquals(2L, metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.count").getValue());
@@ -154,7 +152,7 @@ class NvidiaGpuMetricsCollectorTest {
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.memory.temperature.average_celsius").getValue());
         assertEquals(1375D,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.sm_clock.average_mhz").getValue());
-        assertEquals(32.5D,
+        assertEquals(35D,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.memory.controller_utilization.average_percentage").getValue());
         assertEquals(1L,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.thermal.throttle_count").getValue());
@@ -162,7 +160,7 @@ class NvidiaGpuMetricsCollectorTest {
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.memory.temperature.celsius").getValue());
         assertEquals(1400D,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.sm_clock.mhz").getValue());
-        assertEquals(40D,
+        assertEquals(10D,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.memory.controller_utilization.percentage").getValue());
         assertEquals(0L,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.thermal.throttled").getValue());

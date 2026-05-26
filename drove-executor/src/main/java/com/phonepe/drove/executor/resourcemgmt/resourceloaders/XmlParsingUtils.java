@@ -27,7 +27,7 @@ public class XmlParsingUtils {
     }
 
     @SneakyThrows
-    public static DocumentBuilder newDocumentBuilder() {
+    public static synchronized DocumentBuilder newDocumentBuilder() {
         return DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
     }
 
