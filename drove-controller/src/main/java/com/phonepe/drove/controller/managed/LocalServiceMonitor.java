@@ -143,13 +143,36 @@ public class LocalServiceMonitor implements Managed {
                                                                        .orElse(LocalServiceState.DESTROYED)))
                 .collect(Collectors.toMap(LocalServiceInfo::getServiceId, Function.identity()));
         //Ensure active executors have instances
-        //Kill instances for inactive executors
+        //Kill instances for inactive executors with no active application instances
         val executors = clusterResourcesDB.currentSnapshot(false);
         val liveExecutors = new ArrayList<ExecutorHostInfo>();
         val blacklistedExecutors = new ArrayList<ExecutorHostInfo>();
         executors.forEach(executorHostInfo -> {
             if (clusterResourcesDB.isBlacklisted(executorHostInfo.getExecutorId())) {
-                blacklistedExecutors.add(executorHostInfo);
+                val serviceInstances = Objects.requireNonNullElseGet(executorHostInfo.getNodeData()
+                        .getServiceInstances(), List::<LocalServiceInstanceInfo>of)
+                    .stream()
+                    .filter(serviceInstance -> serviceInstance.getState() == LocalServiceInstanceState.HEALTHY)
+                    .toList();
+                if (serviceInstances.isEmpty()) {
+                    log.debug("Executor {} is blacklisted and has no healthy service instances running. No action needed",
+                            executorHostInfo.getExecutorId());
+                }
+                else {
+                    // We dont't want to kill serivces on executors with running application instances
+                    // because, these containers might be using the services provided by the LS
+                    val instances = Objects.requireNonNullElseGet(executorHostInfo.getNodeData().getInstances(), List::of);
+                    if (!instances.isEmpty()) {
+                        log.warn("Executor {} is blacklisted but has {} application instances running. We shall attempt to stop services later",
+                                executorHostInfo.getExecutorId(),
+                                instances.size());
+                    }
+                    else {
+                        log.info("Executor {} is blacklisted and has no application instances running. We shall stop services",
+                                executorHostInfo.getExecutorId());
+                        blacklistedExecutors.add(executorHostInfo);
+                    }
+                }
             }
             else {
                 liveExecutors.add(executorHostInfo);

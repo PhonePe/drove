@@ -45,12 +45,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static com.phonepe.drove.controller.ControllerTestUtils.generateLocalServiceInstanceInfo;
 import static com.phonepe.drove.controller.ControllerTestUtils.localServiceSpec;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 /**
@@ -356,6 +358,115 @@ class LocalServiceMonitorTest {
             monitor.start();
             CommonTestUtils.delay(Duration.ofMillis(500)); //Wait enough time for checks to be hit more than once
             assertEquals(0, stopCalled.get()); //ensure stop instances is called only once
+        }
+        finally {
+            monitor.stop();
+        }
+    }
+    @Test
+    @SneakyThrows
+    void testBlacklistScaleDownWithActiveApps() {
+        when(leadershipEnsurer.isLeader()).thenReturn(true);
+        when(clusterStateDB.currentState())
+                .thenReturn(Optional.of(new ClusterStateData(ClusterState.NORMAL,
+                                                             Date.from(Instant.now().minus(1, ChronoUnit.DAYS)))));
+        val spec = localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+        final var instancesPerHost = 3;
+        final var noStopTestCompleted = new AtomicBoolean(false);
+        when(stateDB.services(0, Integer.MAX_VALUE))
+                .thenAnswer(invocationMock -> {
+                    if(noStopTestCompleted.get()) {
+                        return List.of(new LocalServiceInfo(serviceId,
+                                                            spec,
+                                                            instancesPerHost,
+                                                            ActivationState.ACTIVE,
+                                                            Date.from(Instant.now().minus(1, ChronoUnit.HOURS)),
+                                                            Date.from(Instant.now())));
+                    }
+                    else {
+                        return List.of(new LocalServiceInfo(serviceId,
+                                                         spec,
+                                                         instancesPerHost,
+                                                         ActivationState.ACTIVE,
+                                                         Date.from(Instant.now().minus(1, ChronoUnit.HOURS)),
+                                                         Date.from(Instant.now())));
+                    }
+                });
+        when(localServiceEngine.currentState(serviceId)).thenReturn(Optional.of(LocalServiceState.ACTIVE));
+        val numExecutors = 5;
+        val executorsWithApps = IntStream.range(0, numExecutors)
+                .mapToObj(i -> {
+                    val executorHostInfo = ControllerTestUtils.executorHost(8000 + i);
+                    final var nodeData = executorHostInfo.getNodeData();
+                    return executorHostInfo
+                            .setNodeData(new ExecutorNodeData(nodeData.getHostname(),
+                                                              nodeData.getPort(),
+                                                              nodeData.getTransportType(),
+                                                              nodeData.getUpdated(),
+                                                              nodeData.getState(),
+                                                              List.of(ControllerTestUtils.generateInstanceInfo("app1",
+                                                                                                               ControllerTestUtils
+                                                                                                                       .appSpec(),
+                                                                                                               0)),
+                                                              nodeData.getTasks(),
+                                                              List.of(generateLocalServiceInstanceInfo(
+                                                                                                       serviceId,
+                                                                                                       spec,
+                                                                                                       i,
+                                                                                                       LocalServiceInstanceState.HEALTHY,
+                                                                                                       Date.from(Instant
+                                                                                                               .now()),
+                                                                                                       "")),
+                                                              nodeData.getTags(),
+                                                              nodeData.getMetadata(),
+                                                              nodeData.getExecutorState()));
+                })
+                .toList();
+        val executorsWithoutApps = IntStream.range(0, numExecutors)
+                .mapToObj(i -> {
+                    val executorHostInfo = ControllerTestUtils.executorHost(8000 + i);
+                    final var nodeData = executorHostInfo.getNodeData();
+                    return executorHostInfo
+                            .setNodeData(new ExecutorNodeData(nodeData.getHostname(),
+                                                              nodeData.getPort(),
+                                                              nodeData.getTransportType(),
+                                                              nodeData.getUpdated(),
+                                                              nodeData.getState(),
+                                                              List.of(),
+                                                              nodeData.getTasks(),
+                                                              List.of(generateLocalServiceInstanceInfo(
+                                                                                                       serviceId,
+                                                                                                       spec,
+                                                                                                       i,
+                                                                                                       LocalServiceInstanceState.HEALTHY,
+                                                                                                       Date.from(Instant
+                                                                                                               .now()),
+                                                                                                       "")),
+                                                              nodeData.getTags(),
+                                                              nodeData.getMetadata(),
+                                                              nodeData.getExecutorState()));
+                })
+                .toList();
+
+        val stopCalled = new AtomicInteger(0);
+        when(clusterResourcesDB.currentSnapshot(false)).thenAnswer(invocationOnMock -> noStopTestCompleted.get() ? executorsWithoutApps : executorsWithApps);
+        when(clusterResourcesDB.isBlacklisted(anyString())).thenReturn(true);
+        when(localServiceEngine.handleOperation(any(LocalServiceOperation.class)))
+                .thenAnswer(invocationOnMock -> {
+                    val op = (LocalServiceOperation) invocationOnMock.getArgument(0);
+                    if (op.getType() == LocalServiceOperationType.STOP_INSTANCES) {
+                        stopCalled.incrementAndGet();
+                    }
+                    return ValidationResult.success();
+                });
+        try {
+            monitor.start();
+            CommonTestUtils.delay(Duration.ofSeconds(1)); //Wait enough time for checks to be hit more than once
+            assertEquals(0, stopCalled.get()); //ensure stop instances is NOT called
+            noStopTestCompleted.set(true);
+            CommonTestUtils.delay(Duration.ofSeconds(1)); //Wait enough time for checks to be hit more than once
+            assertTrue(stopCalled.get() > 0); //ensure stop instances is called for all executors
         }
         finally {
             monitor.stop();
