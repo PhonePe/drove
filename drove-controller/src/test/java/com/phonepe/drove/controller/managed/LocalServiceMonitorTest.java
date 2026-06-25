@@ -398,18 +398,22 @@ class LocalServiceMonitorTest {
         val executorsWithApps = IntStream.range(0, numExecutors)
                 .mapToObj(i -> {
                     val executorHostInfo = ControllerTestUtils.executorHost(8000 + i);
-                    final var nodeData = executorHostInfo.getNodeData();
+                    val nodeData = executorHostInfo.getNodeData();
                     return executorHostInfo
                             .setNodeData(new ExecutorNodeData(nodeData.getHostname(),
                                                               nodeData.getPort(),
                                                               nodeData.getTransportType(),
                                                               nodeData.getUpdated(),
                                                               nodeData.getState(),
-                                                              List.of(ControllerTestUtils.generateInstanceInfo("app1",
+                                                              List.of(ControllerTestUtils.generateInstanceInfo(
+                                                                                                               "app1",
                                                                                                                ControllerTestUtils
                                                                                                                        .appSpec(),
                                                                                                                0)),
-                                                              nodeData.getTasks(),
+                                                              List.of(ControllerTestUtils.generateTaskInfo(
+                                                                                                           ControllerTestUtils
+                                                                                                                   .taskSpec(),
+                                                                                                           0)),
                                                               List.of(generateLocalServiceInstanceInfo(
                                                                                                        serviceId,
                                                                                                        spec,

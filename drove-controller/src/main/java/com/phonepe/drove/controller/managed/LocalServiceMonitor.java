@@ -25,6 +25,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
@@ -40,6 +41,9 @@ import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.phonepe.drove.common.CommonUtils.executorId;
+
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -178,24 +182,30 @@ public class LocalServiceMonitor implements Managed {
     private void checkExecutor(ExecutorHostInfo executorHostInfo,
                                List<ExecutorHostInfo> liveExecutors,
                                List<ExecutorHostInfo> blacklistedExecutors) {
-        if (clusterResourcesDB.isBlacklisted(executorHostInfo.getExecutorId())) {
-            val serviceInstances = Objects.requireNonNullElseGet(executorHostInfo.getNodeData()
-                    .getServiceInstances(), List::<LocalServiceInstanceInfo>of)
+        final var executorId = executorHostInfo.getExecutorId();
+        if (clusterResourcesDB.isBlacklisted(executorId)) {
+            final var nodeData = executorHostInfo.getNodeData();
+            val serviceInstances = Objects.requireNonNullElseGet(
+                    nodeData .getServiceInstances(), List::<LocalServiceInstanceInfo>of)
                     .stream()
                     .filter(serviceInstance -> serviceInstance.getState() == LocalServiceInstanceState.HEALTHY)
                     .toList();
             if (serviceInstances.isEmpty()) {
                 log.debug("Executor {} is blacklisted and has no healthy service instances running. No action needed",
-                          executorHostInfo.getExecutorId());
+                          executorId);
             }
             else {
-                // We dont't want to kill serivces on executors with running application instances
+                // We dont't want to kill serivces on executors with running application or task instances
                 // because, these containers might be using the services provided by the LS
-                val instances = Objects.requireNonNullElseGet(executorHostInfo.getNodeData().getInstances(), List::of);
-                if (!instances.isEmpty()) {
+                val appInstances = Objects.requireNonNullElseGet(nodeData.getInstances(), List::of);
+                val taskInstances = Objects.requireNonNullElseGet(nodeData.getTasks(), List::of);
+                if (!appInstances.isEmpty()) {
                     log.warn("Executor {} is blacklisted but has {} application instances running. We shall attempt to stop services later",
-                             executorHostInfo.getExecutorId(),
-                             instances.size());
+                             executorId, appInstances.size());
+                }
+                else if (!taskInstances.isEmpty()) {
+                    log.warn("Executor {} is blacklisted but has {} task instances running. We shall attempt to stop services later",
+                             executorId, taskInstances.size());
                 }
                 else {
                     log.info("Executor {} is blacklisted and has no application instances running. We shall stop services",
