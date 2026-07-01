@@ -137,10 +137,13 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                     log.info("CREATE::SID: {}", schedulingSessionId);
                     return clusterSnapshot(deploymentSpec);
                 });
+        // cluster db read to be avoided inside validateNode, hence fetching MetaData before 
+		val allExecutorLevelMetadata = peerExecutorMetadata(sessionData.keySet());
         val selectedNode = clusterResourcesDB.selectNodes(
                 deploymentSpec.getResources(),
                 allowedStates,
-                allocatedNode -> validateNode(placementPolicy, sessionData, allocatedNode, deploymentSpec));
+                allocatedNode -> validateNode(placementPolicy, sessionData, allExecutorLevelMetadata,
+                                              allocatedNode, deploymentSpec));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration
@@ -306,9 +309,19 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         });
     }
 
+    private Map<String, Map<String, String>> peerExecutorMetadata(Set<String> executorIds) {
+        return executorIds.stream()
+                .collect(Collectors.toMap(
+                        executorId -> executorId,
+                        executorId -> clusterResourcesDB.lastKnownSnapshot(executorId)
+                                .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
+                                .orElse(Map.of())));
+    }
+
     private boolean validateNode(
             final PlacementPolicy placementPolicy,
             Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
+            final Map<String, Map<String, String>> allExecutorLevelMetadata,
             final AllocatedExecutorNode executorNode,
             final DeploymentSpec deploymentSpec) {
         val allocatedExecutorId = executorNode.getExecutorId();
@@ -343,15 +356,6 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                var allExecutorLevelMetadata = sessionLevelData.keySet()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                         executorId -> executorId,
-                                         executorId -> clusterResourcesDB.lastKnownSnapshot(executorId)
-                                                 .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
-                                                 .orElse(Map.of()))
-                                );
-
                 var schedulingInfo = SchedulingInfo.builder()
                         .executorNodeId(executorNode.getExecutorId())
                         .allocatedExecutorNodeMetadata(

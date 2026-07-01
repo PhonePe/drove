@@ -39,7 +39,8 @@ public class SafeMvelConstants {
     static final Set<String> UNSAFE_CLASSES = Set.of(
             "Runtime", "ProcessBuilder", "Process",
             "System", "Class", "ClassLoader",
-            "Thread", "SecurityManager", "Compiler"
+            "Thread", "SecurityManager", "Compiler",
+            "MVEL"
     );
 
     static final String[] UNSAFE_METHODS = new String[] {

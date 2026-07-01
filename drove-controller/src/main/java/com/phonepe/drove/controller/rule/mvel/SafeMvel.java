@@ -52,6 +52,8 @@ public class SafeMvel {
 
     private static final Pattern DOT_CLASS_ACCESS = Pattern.compile("\\.class(\\.|$)");
 
+    private static final Pattern BLOCKED_MVEL_ENGINE = Pattern.compile("\\borg\\.mvel2\\b");
+
     static {
         UNSAFE_CLASSES.forEach(AbstractParser.CLASS_LITERALS::remove);
     }
@@ -75,6 +77,9 @@ public class SafeMvel {
     private static void rejectDangerousExpressions(String rule) {
         val stripped = STRING_LITERAL.matcher(rule).replaceAll("");
 
+        if (BLOCKED_MVEL_ENGINE.matcher(stripped).find()) {
+            throw new SecurityException("Rule contains blocked MVEL engine reference");
+        }
         if (UNSAFE_CLASS_USAGE.matcher(stripped).find()) {
             throw new SecurityException("Rule contains blocked class reference");
         }
