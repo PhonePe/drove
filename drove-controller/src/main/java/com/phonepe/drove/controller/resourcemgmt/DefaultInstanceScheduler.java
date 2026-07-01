@@ -31,7 +31,6 @@ import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -130,17 +129,20 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             final PlacementPolicy placementPolicy,
             final Set<ExecutorState> allowedStates) {
 
+
         val sessionData = schedulingSessionData.computeIfAbsent(
                 schedulingSessionId,
                 id -> {
                     log.info("CREATE::SID: {}", schedulingSessionId);
                     return clusterSnapshot(deploymentSpec);
                 });
-        val allExecutorLevelMetadata = prepareAllExecutorMetadata(sessionData.keySet());
+        // cluster db read to be avoided inside validateNode, hence fetching MetaData before 
+		val allExecutorLevelMetadata = peerExecutorMetadata(sessionData.keySet());
         val selectedNode = clusterResourcesDB.selectNodes(
                 deploymentSpec.getResources(),
                 allowedStates,
-                filterContext -> validateNode(placementPolicy, sessionData, allExecutorLevelMetadata, filterContext, deploymentSpec));
+                allocatedNode -> validateNode(placementPolicy, sessionData, allExecutorLevelMetadata,
+                                              allocatedNode, deploymentSpec));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration
@@ -153,8 +155,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                            new InstanceResourceAllocation(executorId,
                                                                           instanceId,
                                                                           allocatedExecutorNode.getCpu(),
-                                                                          allocatedExecutorNode.getMemory(),
-                                                                          allocatedExecutorNode.getGpu()));
+                                                                          allocatedExecutorNode.getMemory()));
                     log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
                              sid, executorId, currentAllocations.size());
                     return executorAllocations;
@@ -187,8 +188,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                 if (removed != null) {
                                     clusterResourcesDB.deselectNode(removed.getExecutorId(),
                                                                     removed.getCpu(),
-                                                                    removed.getMemory(),
-                                            removed.getGpu());
+                                                                    removed.getMemory());
                                     log.info("Relinquished resources for {}/{}",
                                              removed.getExecutorId(), removed.getInstanceId());
                                 }
@@ -269,8 +269,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         applicationInstanceInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(applicationInstanceInfo.getResources(),
-                                                            ResourceType.MEMORY),
-                        (GPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.GPU));
+                                                            ResourceType.MEMORY));
             }
 
             @Override
@@ -279,8 +278,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         taskInfo.getExecutorId(),
                         taskInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.CPU),
-                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY),
-                        (GPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.GPU));
+                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY));
             }
 
             @Override
@@ -290,8 +288,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         localServiceInstanceInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(localServiceInstanceInfo.getResources(),
-                                                            ResourceType.MEMORY),
-                        (GPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.GPU));
+                                                            ResourceType.MEMORY));
             }
 
             private static ResourceAllocation filterAllocation(
@@ -306,11 +303,11 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         });
     }
 
-    private Map<String, Map<String, String>> prepareAllExecutorMetadata(Set<String> executorIds) {
+    private Map<String, Map<String, String>> peerExecutorMetadata(Set<String> executorIds) {
         return executorIds.stream()
                 .collect(Collectors.toMap(
                         executorId -> executorId,
-                        executorId -> clusterResourcesDB.currentSnapshot(executorId)
+                        executorId -> clusterResourcesDB.lastKnownSnapshot(executorId)
                                 .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
                                 .orElse(Map.of())));
     }
@@ -319,9 +316,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             final PlacementPolicy placementPolicy,
             Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
             final Map<String, Map<String, String>> allExecutorLevelMetadata,
-            final ClusterResourcesDB.FilterContext filterContext,
+            final AllocatedExecutorNode executorNode,
             final DeploymentSpec deploymentSpec) {
-        val allocatedExecutorId = filterContext.getAllocatedExecutorNode().getExecutorId();
+        val allocatedExecutorId = executorNode.getExecutorId();
 
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override
@@ -341,23 +338,22 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                return Objects.requireNonNullElse(filterContext.getAllocatedExecutorNodeData().getTags(), Set.of()).contains(matchTag.getTag());
+                return Objects.requireNonNullElse(executorNode.getTags(), Set.of()).contains(matchTag.getTag());
             }
 
             @Override
             public Boolean visit(NoTagPlacementPolicy noTag) {
                 //Return false if node has any tag other than hostname
-                return Sets.difference(Objects.requireNonNullElse(filterContext.getAllocatedExecutorNodeData().getTags(), Set.of()),
-                                       Set.of(filterContext.getAllocatedExecutorNodeData().getHostname())).isEmpty();
+                return Sets.difference(Objects.requireNonNullElse(executorNode.getTags(), Set.of()),
+                                       Set.of(executorNode.getHostname())).isEmpty();
             }
 
             @Override
             public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
                 var schedulingInfo = SchedulingInfo.builder()
-                        .executorNodeId(allocatedExecutorId)
+                        .executorNodeId(executorNode.getExecutorId())
                         .allocatedExecutorNodeMetadata(
-                                Objects.requireNonNullElse(filterContext.getAllocatedExecutorNodeData().getMetadata(), Map.of()))
-                        .allocatedExecutorData(filterContext.getAllocatedExecutorNodeData())
+                                Objects.requireNonNullElse(executorNode.getMetadata(), Map.of()))
                         .allExecutorMetadata(allExecutorLevelMetadata)
                         .applicationEnvironment(deploymentSpec.getEnv())
                         .build();
