@@ -30,4 +30,6 @@ public class SchedulingInfo {
     Map<String, Map<String,String>> allExecutorMetadata;
 
     Map<String, String> applicationEnvironment;
+
+    ExecutorNodeData allocatedExecutorData;
 }

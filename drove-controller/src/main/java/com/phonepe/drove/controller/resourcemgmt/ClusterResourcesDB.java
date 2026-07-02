@@ -50,6 +50,13 @@ public abstract class ClusterResourcesDB {
         long totalMemory;
     }
 
+    @Value
+    public static class FilterContext {
+        List<ExecutorHostInfo> liveExecutors;
+        ExecutorNodeData allocatedExecutorNodeData;
+        String executorId;
+    }
+
     protected final ConsumingFireForgetSignal<ExecutorTopologyChanges> topologyChanged = new ConsumingFireForgetSignal<>();
 
     public ConsumingFireForgetSignal<ExecutorTopologyChanges> onTopologyChange() {
@@ -76,7 +83,7 @@ public abstract class ClusterResourcesDB {
 
     public abstract Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
-            Set<ExecutorState> allowedExecutorState, Predicate<AllocatedExecutorNode> filter);
+            Set<ExecutorState> allowedExecutorState, Predicate<FilterContext> filter);
 
     public abstract void deselectNode(String executorId,
                                       CPUAllocation cpuAllocation,
