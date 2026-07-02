@@ -22,7 +22,6 @@ import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
@@ -54,7 +53,7 @@ public abstract class ClusterResourcesDB {
     public static class FilterContext {
         List<ExecutorHostInfo> liveExecutors;
         ExecutorNodeData allocatedExecutorNodeData;
-        AllocatedExecutorNode allocatedExecutorNode;
+        String executorId;
     }
 
     protected final ConsumingFireForgetSignal<ExecutorTopologyChanges> topologyChanged = new ConsumingFireForgetSignal<>();
@@ -86,9 +85,8 @@ public abstract class ClusterResourcesDB {
             Set<ExecutorState> allowedExecutorState, Predicate<FilterContext> filter);
 
     public abstract void deselectNode(String executorId,
-                                      CPUAllocation cpuAllocation,
-                                      MemoryAllocation memoryAllocation,
-                                      GPUAllocation gpuAllocation) ;
+                                             CPUAllocation cpuAllocation,
+                                             MemoryAllocation memoryAllocation) ;
 
     public abstract boolean isBlacklisted(String executorId);
 
