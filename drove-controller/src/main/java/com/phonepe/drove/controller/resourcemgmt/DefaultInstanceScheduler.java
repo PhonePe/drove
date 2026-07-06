@@ -316,7 +316,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             final Map<String, Map<String, String>> allExecutorLevelMetadata,
             final ClusterResourcesDB.FilterContext filterContext,
             final DeploymentSpec deploymentSpec) {
-        val allocatedExecutorId = filterContext.getExecutorId();
+        val allocatedExecutorId = filterContext.getAllocatedExecutorNode().getExecutorId();
 
         return placementPolicy.accept(new PlacementPolicyVisitor<>() {
             @Override

@@ -28,7 +28,6 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.SneakyThrows;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -112,12 +111,13 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
     public Optional<ExecutorHostInfo> currentSnapshot(final String executorId) {
         val stamp = lock.readLock();
         try {
-            return Optional.ofNullable(nodes.get(executorId));
+            return currentSnapshotUnsafe(executorId);
         }
         finally {
             lock.unlockRead(stamp);
         }
     }
+
 
     @Override
     public Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId) {
@@ -216,12 +216,11 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                     .map(node -> ensureResource(node, requirements))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .filter(allocatedNode -> filter.test(
-                            new FilterContext(
-                                    currentSnapshotUnsafe(true),
-                                    currentSnapshot(allocatedNode.getExecutorId()).map(ExecutorHostInfo::getNodeData).orElseThrow(),
-                                    allocatedNode.getExecutorId()
-                    )))
+                    .map(this::makeFilterContextUnsafe)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(filter)
+                    .map(FilterContext::getAllocatedExecutorNode)
                     .peek(this::softLockResources)
                     .findFirst();
         }
@@ -229,6 +228,8 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             lock.unlockWrite(stamp);
         }
     }
+
+
 
     @Override
     @MonitoredFunction
@@ -294,6 +295,23 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                 .stream()
                 .filter(node -> checkOffDuty(skipOffDutyNodes, node)) //Else remove blacklisted
                 .toList();
+    }
+
+    private Optional<ExecutorHostInfo> currentSnapshotUnsafe(final String executorId) {
+        return Optional.ofNullable(nodes.get(executorId));
+    }
+
+    private Optional<FilterContext> makeFilterContextUnsafe(AllocatedExecutorNode allocatedNode) {
+        val unsafeNodeSnapshot = currentSnapshotUnsafe(allocatedNode.getExecutorId());
+        if ( unsafeNodeSnapshot.isEmpty()) {
+            log.warn("CurrentSnapshot Node data for executor {} is not available", allocatedNode.getExecutorId());
+            return Optional.empty();
+        }
+        val unsafeSnapshots = currentSnapshotUnsafe(true);
+        return Optional.of(new FilterContext(
+                unsafeSnapshots,
+                unsafeNodeSnapshot.get().getNodeData(),
+                allocatedNode));
     }
 
     private static boolean inRequiredState(ExecutorHostInfo node, Set<ExecutorState> allowedStates) {
