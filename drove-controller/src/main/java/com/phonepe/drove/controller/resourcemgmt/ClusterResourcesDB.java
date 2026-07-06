@@ -54,7 +54,7 @@ public abstract class ClusterResourcesDB {
     public static class FilterContext {
         List<ExecutorHostInfo> liveExecutors;
         ExecutorNodeData allocatedExecutorNodeData;
-        String executorId;
+        AllocatedExecutorNode allocatedExecutorNode;
     }
 
     protected final ConsumingFireForgetSignal<ExecutorTopologyChanges> topologyChanged = new ConsumingFireForgetSignal<>();
