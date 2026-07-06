@@ -208,6 +208,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             Predicate<FilterContext> filter) {
         val stamp = lock.writeLock();
         try {
+            val liveAllNodesSnapshots = currentSnapshotUnsafe(true);
             val rawNodes = new ArrayList<>(nodes.values());
             Collections.shuffle(rawNodes);
             return rawNodes
@@ -216,7 +217,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                     .map(node -> ensureResource(node, requirements))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .map(this::makeFilterContextUnsafe)
+                    .map(allocatedNode -> makeFilterContextUnsafe(allocatedNode, liveAllNodesSnapshots))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .filter(filter)
@@ -301,16 +302,12 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         return Optional.ofNullable(nodes.get(executorId));
     }
 
-    private Optional<FilterContext> makeFilterContextUnsafe(AllocatedExecutorNode allocatedNode) {
-        val unsafeNodeSnapshot = currentSnapshotUnsafe(allocatedNode.getExecutorId());
-        if ( unsafeNodeSnapshot.isEmpty()) {
-            log.warn("CurrentSnapshot Node data for executor {} is not available", allocatedNode.getExecutorId());
-            return Optional.empty();
-        }
-        val unsafeSnapshots = currentSnapshotUnsafe(true);
-        return Optional.of(new FilterContext(
-                unsafeSnapshots,
-                unsafeNodeSnapshot.get().getNodeData(),
+    private Optional<FilterContext> makeFilterContextUnsafe(AllocatedExecutorNode allocatedNode, List<ExecutorHostInfo> liveSnapshots) {
+        val liveNodeSnapshot = currentSnapshotUnsafe(allocatedNode.getExecutorId());
+
+        return liveNodeSnapshot.map(executorHostInfo -> new FilterContext(
+                liveSnapshots,
+                executorHostInfo.getNodeData(),
                 allocatedNode));
     }
 
