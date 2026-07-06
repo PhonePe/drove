@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -378,6 +379,44 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 .stream()
                 .map(ExecutorHostInfo::getExecutorId)
                 .collect(Collectors.toUnmodifiableSet()));
+    }
+
+    @Test
+    void testFilterContextDataPropagation() {
+        val db = new InMemoryClusterResourcesDB();
+        val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
+        db.update(List.of(originalNodeData));
+
+        val filterContext = new AtomicReference<ClusterResourcesDB.FilterContext>();
+        val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                           EnumSet.of(ExecutorState.ACTIVE),
+                                           ctx -> {
+                                               filterContext.set(ctx);
+                                               return true;
+                                           })
+                .orElse(null);
+
+        assertNotNull(allocatedNode);
+        assertNotNull(filterContext);
+        assertEquals(1, filterContext.get().getLiveExecutors().size());
+        assertEquals(executorId(1), filterContext.get().getLiveExecutors().get(0).getExecutorId());
+        assertEquals(originalNodeData, filterContext.get().getAllocatedExecutorNodeData());
+        assertEquals(allocatedNode, filterContext.get().getAllocatedExecutorNode());
+    }
+
+    @Test
+    void testFilterContextEmptyWhenNodeDisappears() {
+        val db = new InMemoryClusterResourcesDB();
+        db.update(List.of(ControllerTestUtils.generateExecutorNode(1)));
+        assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                     EnumSet.of(ExecutorState.ACTIVE),
+                                     ctx -> true)
+                       .orElse(null));
+        db.remove(List.of(executorId(1)));
+        assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
+                                  EnumSet.of(ExecutorState.ACTIVE),
+                                  ctx -> true)
+                     .orElse(null));
     }
 
 }

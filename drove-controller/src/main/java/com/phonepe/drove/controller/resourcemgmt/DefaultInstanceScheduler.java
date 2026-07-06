@@ -17,7 +17,6 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
@@ -313,7 +312,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         executorId -> executorId,
                         executorId -> clusterResourcesDB.currentSnapshot(executorId)
                                 .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
-                                .orElse(ImmutableMap.of())));
+                                .orElse(Map.of())));
     }
 
     private boolean validateNode(
