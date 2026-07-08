@@ -55,7 +55,7 @@ public class AppOperationRouterAction extends AppAction {
                     context.ackUpdate(); // In case we can't do anything, eat up the operation
                     return currentState;
                 })
-                .orElse(null);
+                .orElse(currentState);
     }
 
     protected Optional<StateData<ApplicationState, ApplicationInfo>> moveToNextState(

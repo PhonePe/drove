@@ -102,6 +102,11 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         currentAction.set(actionFactory.create(transition));
         log.info("Action to be executed: {}", currentAction.get().getClass().getSimpleName());
         val newStateData = currentAction.get().execute(context, currentState);
+        if (null == newStateData) {
+            log.warn("Action {} returned null state data. Staying in current state: {}",
+                     currentAction.get().getClass().getSimpleName(), state);
+            return state;
+        }
         val newState = newStateData.getState();
         if (!transition.getTo().contains(newState)) {
             throw new IllegalStateException("No defined transitions from " + state.name() + " to " + newState.name());

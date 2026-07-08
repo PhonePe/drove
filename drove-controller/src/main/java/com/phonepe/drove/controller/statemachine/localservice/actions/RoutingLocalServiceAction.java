@@ -51,7 +51,7 @@ public class RoutingLocalServiceAction extends LocalServiceAction {
                     context.ackUpdate(); // In case we can't do anything, eat up the operation
                     return currentState;
                 })
-                .orElse(null);
+                .orElse(currentState);
     }
 
     protected Optional<StateData<LocalServiceState, LocalServiceInfo>> moveToNextState(

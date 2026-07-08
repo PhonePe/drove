@@ -31,7 +31,6 @@ import org.slf4j.MDC;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -59,7 +58,6 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
     private Future<S> currentState;
     private final Lock checkLock = new ReentrantLock();
     private final Condition checkCondition = checkLock.newCondition();
-    private final AtomicBoolean wake = new AtomicBoolean();
 
     protected StateMachineExecutor(
             JobType jobType,
@@ -97,10 +95,9 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
                         log.info("State machine is being suspended for app: {}", deployableId);
                         checkLock.lock();
                         try {
-                            while (!wake.get()) {
+                            while (!stateMachine.hasUpdate()) {
                                 checkCondition.await();
                             }
-                            wake.set(false);
                             log.info("State machine resumed for app: {}", deployableId);
                         }
                         finally {
@@ -124,7 +121,6 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
         if (stateMachine.notifyUpdate(update)) {
             checkLock.lock();
             try {
-                wake.set(true);
                 checkCondition.signalAll();
             }
             finally {
