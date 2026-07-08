@@ -118,17 +118,19 @@ public abstract class StateMachineExecutor<T, D, S extends Enum<S>, C extends Ac
     }
 
     public boolean notifyUpdate(final D update) {
-        if (stateMachine.notifyUpdate(update)) {
-            checkLock.lock();
-            try {
+        checkLock.lock();
+        try {
+            if (stateMachine.notifyUpdate(update)) {
                 checkCondition.signalAll();
             }
-            finally {
-                checkLock.unlock();
+            else {
+                return false;
             }
-            return true;
         }
-        return false;
+        finally {
+            checkLock.unlock();
+        }
+        return true;
     }
 
     public void stop() {
