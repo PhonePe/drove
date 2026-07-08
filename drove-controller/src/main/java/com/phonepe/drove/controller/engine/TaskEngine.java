@@ -23,6 +23,7 @@ import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -43,6 +44,9 @@ import lombok.val;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+
+import static com.phonepe.drove.controller.utils.ControllerUtils.checkSecurityPolicy;
+
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,13 +68,13 @@ public class TaskEngine {
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final ThreadFactory threadFactory;
     private final ExecutorService executorService;
     private final JobExecutor<Boolean> jobExecutor;
     private final ClusterStateDB clusterStateDB;
     private final LeadershipEnsurer leadershipEnsurer;
     private final ClusterOpSpec defaultClusterOpSpec;
-    private final ControllerOptions controllerOptions;
     private final HttpCaller httpCaller;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed = new ConsumingFireForgetSignal<>();
@@ -87,13 +91,13 @@ public class TaskEngine {
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             @Named("TaskThreadPool") ExecutorService executorService,
             JobExecutor<Boolean> jobExecutor,
             ClusterStateDB clusterStateDB,
             LeadershipEnsurer leadershipEnsurer,
             ClusterOpSpec defaultClusterOpSpec,
-            ControllerOptions controllerOptions,
             HttpCaller httpCaller) {
         this.taskDB = taskDB;
         this.clusterResourcesDB = clusterResourcesDB;
@@ -101,13 +105,13 @@ public class TaskEngine {
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.threadFactory = threadFactory;
         this.executorService = executorService;
         this.jobExecutor = jobExecutor;
         this.clusterStateDB = clusterStateDB;
         this.leadershipEnsurer = leadershipEnsurer;
         this.defaultClusterOpSpec = defaultClusterOpSpec;
-        this.controllerOptions = controllerOptions;
         this.httpCaller = httpCaller;
         this.completed.connect(taskRunner -> {
             val runTaskId = genRunTaskId(taskRunner.getSourceAppName(), taskRunner.getTaskId());
@@ -187,9 +191,7 @@ public class TaskEngine {
 
     private ArrayList<String> validateTaskSpec(TaskSpec taskSpec) {
         val errors = new ArrayList<String>();
-        errors.addAll(ControllerUtils.ensureWhitelistedVolumes(taskSpec.getVolumes(), controllerOptions));
-        errors.addAll(ControllerUtils.ensureCmdlArgs(taskSpec.getArgs(), controllerOptions));
-        errors.addAll(ControllerUtils.checkDeviceDisabled(taskSpec.getDevices(), controllerOptions));
+        errors.addAll(checkSecurityPolicy(taskSpec, securityPolicyEnforcer));
         errors.addAll(resourceCheck(taskSpec));
         if(ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
             errors.add("Local service placement is not allowed for tasks");
@@ -260,6 +262,7 @@ public class TaskEngine {
                                     retrySpecFactory,
                                     instanceIdGenerator,
                                     threadFactory,
+                                    securityPolicyEnforcer,
                                     completed,
                                     httpCaller);
         val f = executorService.submit(runner);

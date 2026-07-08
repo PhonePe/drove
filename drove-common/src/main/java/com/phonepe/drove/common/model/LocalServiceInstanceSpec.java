@@ -26,6 +26,8 @@ import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
+
 import lombok.Value;
 import lombok.With;
 
@@ -55,6 +57,7 @@ public class LocalServiceInstanceSpec implements DeploymentUnitSpec {
     List<DeviceSpec> devices;
     PreShutdownSpec preShutdown;
     UserSpec userSpec;
+    DeployableSecuritySpec securitySpec;
     String instanceAuthToken;
 
     @Override

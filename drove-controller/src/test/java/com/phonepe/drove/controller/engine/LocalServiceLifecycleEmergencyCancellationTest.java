@@ -252,7 +252,6 @@ class LocalServiceLifecycleEmergencyCancellationTest {
 
         activateService(serviceId);
         System.setProperty("sleep_before_responding", "5000"); //Giving some time for the cancellation to take effect
-        final var es = Executors.newCachedThreadPool();
 
         // Setup the handler to call cancel when the
         droveEventBus.onNewEvent().connect(e -> {

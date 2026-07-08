@@ -100,7 +100,7 @@ public class StateMachine<T, D, S extends Enum<S>, C extends ActionContext<D>, A
         val state = currentState.getState();
         val transition = validTransitions.get(state);
         currentAction.set(actionFactory.create(transition));
-        log.info("Action to be executed: {}", currentAction.get().getClass().getSimpleName());
+        log.info("Action to be executed: {}. Current State: {}", currentAction.get().getClass().getSimpleName(), currentState);
         val newStateData = currentAction.get().execute(context, currentState);
         if (null == newStateData) {
             log.warn("Action {} returned null state data. Staying in current state: {}",

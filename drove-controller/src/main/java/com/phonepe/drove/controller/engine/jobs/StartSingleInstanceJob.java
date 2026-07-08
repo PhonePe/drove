@@ -30,21 +30,22 @@ import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.application.ApplicationSpec;
-import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
+
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import dev.failsafe.TimeoutExceededException;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -68,6 +69,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
     private final InstanceIdGenerator instanceIdGenerator;
 
     private final ApplicationInstanceTokenManager tokenManager;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final HttpCaller httpCaller;
 
     @SuppressWarnings("java:S107")
@@ -81,6 +83,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ApplicationInstanceTokenManager tokenManager,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             HttpCaller httpCaller) {
         this.applicationSpec = applicationSpec;
         this.clusterOpSpec = clusterOpSpec;
@@ -91,6 +94,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
         this.tokenManager = tokenManager;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.httpCaller = httpCaller;
     }
 
@@ -148,18 +152,15 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                      ControllerUtils.deployableObjectId(applicationSpec));
             return false;
         }
-        val resources = new ArrayList<ResourceAllocation>();
-        resources.add(node.getCpu());
-        resources.add(node.getMemory());
-        //Below check is to make sure upgrades can be done easily
-        if (node.getGpu() != null && !node.getGpu().getGpuIds().isEmpty()) {
-            resources.add(node.getGpu());
-        }
+        val securityProfile = securityPolicyEnforcer.resolve(applicationSpec);
+        log.info("Scheduling application instance {}/{} on node {} with security profile {}",
+                 appId, instanceId, node.getExecutorId(), securityProfile.getPolicyName());
         val spec = new ApplicationInstanceSpec(appId,
                                                      applicationSpec.getName(),
                                                      instanceId,
                                                      applicationSpec.getExecutable(),
-                                                     resources,
+                                                     List.of(node.getCpu(),
+                                                             node.getMemory()),
                                                      applicationSpec.getExposedPorts(),
                                                      applicationSpec.getVolumes(),
                                                      translateConfigSpecs(applicationSpec.getConfigs(),
@@ -172,6 +173,7 @@ public class StartSingleInstanceJob implements Job<Boolean> {
                                                      applicationSpec.getDevices(),
                                                      applicationSpec.getPreShutdown(),
                                                      applicationSpec.getUserSpec(),
+                                                     DeployableSecuritySpec.from(securityProfile),
                                                      generateAppInstanceToken(node,
                                                                               appId,
                                                                               instanceId));

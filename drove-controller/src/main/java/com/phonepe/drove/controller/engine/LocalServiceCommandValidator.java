@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.models.application.PortSpec;
@@ -96,7 +97,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
             .build();
 
     private final LocalServiceStateDB localServiceStateDB;
-    private final ControllerOptions controllerOptions;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
 
     @VisibleForTesting
     static List<LocalServiceOperationType> validOpsForState(final LocalServiceState state) {
@@ -119,12 +120,7 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
-        if(reqs.containsKey(ResourceType.GPU)) {
-            errs.add("GPU resources are not supported for local services");
-        }
-        errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
-        errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
-        errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
+        errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
         if (!hasLocalPolicy(spec.getPlacementPolicy())) {
             errs.add("Only local placement is allowed for local services");
         }

@@ -54,6 +54,7 @@ import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorS
 import com.phonepe.drove.controller.rule.RuleEvalStrategy;
 import com.phonepe.drove.controller.rule.hope.HopeRuleStrategy;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleStrategy;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
@@ -307,6 +308,16 @@ public class ControllerCoreModule extends AbstractModule {
         return new InstallationMetadata(loadVersionFromManifest(),
                                         view.getInstallation(),
                                         view.getLinks());
+    }
+
+    @Provides
+    @Singleton
+    public List<ContainerSecurityPolicyConfig> securityProfiles(final AppConfig appConfig) {
+        val config = appConfig.getSecurityPolicies();
+        if (null == config) {
+            return List.of();
+        }
+        return config;
     }
 
     @SneakyThrows

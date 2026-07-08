@@ -19,8 +19,8 @@ package com.phonepe.drove.controller.engine;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
@@ -83,7 +83,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationInstanceInfoDB instanceInfoStore;
-    private final ControllerOptions controllerOptions;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
 
     @Override
     public ValidationResult validateSpec(ApplicationSpec spec)  {
@@ -105,9 +105,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
                              + " is undefined. Defined port names: " + ports.keySet());
         }
-        errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
-        errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
-        errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
+        errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
         if(hasLocalPolicy(spec.getPlacementPolicy())) {
             errs.add("Local service placement is not allowed for apps");
         }

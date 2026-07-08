@@ -31,6 +31,7 @@ import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.Job;
@@ -42,6 +43,9 @@ import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
+
 import dev.failsafe.TimeoutExceededException;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +74,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
     private final InstanceIdGenerator instanceIdGenerator;
 
     private final ApplicationInstanceTokenManager tokenManager;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final HttpCaller httpCaller;
     private final ExecutorHostInfo executor;
 
@@ -84,6 +89,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ApplicationInstanceTokenManager tokenManager,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             HttpCaller httpCaller,
             ExecutorHostInfo executor) {
         this.localServiceInfo = localServiceInfo;
@@ -95,6 +101,7 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
         this.tokenManager = tokenManager;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.httpCaller = httpCaller;
         this.executor = executor;
     }
@@ -157,31 +164,28 @@ public class StartSingleLocalServiceInstanceJob implements Job<Boolean> {
                      ControllerUtils.deployableObjectId(localServiceSpec));
             return false;
         }
-
+        val securityProfile = securityPolicyEnforcer.resolve(localServiceSpec);
+        log.info("Scheduling localservice instance {}/{} on node {} with security profile {}",
+                 localServiceSpec.getName(), instanceId, node.getExecutorId(), securityProfile.getPolicyName());
         val spec = new LocalServiceInstanceSpec(serviceId,
-                                                      localServiceSpec.getName(),
-                                                      instanceId,
-                                                      localServiceSpec.getExecutable(),
-                                                      List.of(node.getCpu(),
-                                                              node.getMemory()),
-                                                      localServiceSpec.getExposedPorts(),
-                                                              isHostLevelDeployable(localServiceSpec.getPlacementPolicy()),
-                                                      localServiceSpec.getVolumes(),
-                                                      translateConfigSpecs(
-                                                              localServiceSpec.getConfigs(),
-                                                              httpCaller),
-                                                      localServiceSpec.getHealthcheck(),
-                                                      localServiceSpec.getReadiness(),
-                                                      localServiceSpec.getLogging(),
-                                                      localServiceSpec.getEnv(),
-                                                      localServiceSpec.getArgs(),
-                                                      localServiceSpec.getDevices(),
-                                                      localServiceSpec.getPreShutdown(),
-                                                      localServiceSpec.getUserSpec(),
-                                                      generateAppInstanceToken(
-                                                              node,
-                                                              serviceId,
-                                                              instanceId));
+                                                localServiceSpec.getName(),
+                                                instanceId,
+                                                localServiceSpec.getExecutable(),
+                                                List.of(node.getCpu(), node.getMemory()),
+                                                localServiceSpec.getExposedPorts(),
+                                                isHostLevelDeployable(localServiceSpec.getPlacementPolicy()),
+                                                localServiceSpec.getVolumes(),
+                                                translateConfigSpecs(localServiceSpec.getConfigs(), httpCaller),
+                                                localServiceSpec.getHealthcheck(),
+                                                localServiceSpec.getReadiness(),
+                                                localServiceSpec.getLogging(),
+                                                localServiceSpec.getEnv(),
+                                                localServiceSpec.getArgs(),
+                                                localServiceSpec.getDevices(),
+                                                localServiceSpec.getPreShutdown(),
+                                                localServiceSpec.getUserSpec(),
+                                                DeployableSecuritySpec.from(securityProfile),
+                                                generateAppInstanceToken(node, serviceId, instanceId));
 
         val startMessage = new StartLocalServiceInstanceMessage(MessageHeader.controllerRequest(),
                                                                 new ExecutorAddress(node.getExecutorId(),

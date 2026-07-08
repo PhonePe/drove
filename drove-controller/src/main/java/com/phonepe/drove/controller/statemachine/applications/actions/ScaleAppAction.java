@@ -26,6 +26,7 @@ import com.phonepe.drove.controller.engine.jobs.StopSingleInstanceJob;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.SchedulerSessionManagementPlugin;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
@@ -70,8 +71,8 @@ public class ScaleAppAction extends AppAsyncAction {
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final ThreadFactory threadFactory;
-
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
     private final ClusterOpSpec defaultOpSpec;
@@ -86,6 +87,7 @@ public class ScaleAppAction extends AppAsyncAction {
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller,
@@ -98,6 +100,7 @@ public class ScaleAppAction extends AppAsyncAction {
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
@@ -140,6 +143,7 @@ public class ScaleAppAction extends AppAsyncAction {
                                                                                                                retrySpecFactory,
                                                                                                                instanceIdGenerator,
                                                                                                                tokenManager,
+                                                                                                               securityPolicyEnforcer,
                                                                                                                httpCaller))
                                                        .toList())
                                        .build());

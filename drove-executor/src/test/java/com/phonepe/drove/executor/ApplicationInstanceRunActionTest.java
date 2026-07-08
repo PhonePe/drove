@@ -48,6 +48,7 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
 import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
@@ -93,7 +94,6 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRunWithOverProvisioning() {
-        val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(4, new ResourceConfig()
                         .setOverProvisioning(new OverProvisioning()
                                              .setEnabled(true))
@@ -163,6 +163,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 Collections.emptyList(),
                 null,
                 null,
+                DeployableSecuritySpec.DEFAULT,
                 "TestToken");
         val executorId = CommonUtils.executorId(3000, "test-host");
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT, false);

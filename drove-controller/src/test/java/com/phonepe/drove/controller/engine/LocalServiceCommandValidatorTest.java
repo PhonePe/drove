@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.engine;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.MountedVolume;
@@ -77,7 +78,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testNoState() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.empty());
         val res = validator.validateOperation(engine, new LocalServiceDestroyOperation(serviceId));
@@ -99,7 +100,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
                     "DESTROYED",
             })
     void testNoOpsInRelevantStates(LocalServiceState testState) {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(testState));
         when(lsDB.service(serviceId)).thenReturn(Optional.of(new LocalServiceInfo(serviceId,
@@ -121,7 +122,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
     void testInvalidOpsInRelevantStates(
             LocalServiceState testState,
             LocalServiceOperation operation) {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(testState));
         when(lsDB.service(serviceId)).thenReturn(Optional.of(new LocalServiceInfo(serviceId,
@@ -141,7 +142,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
     void testValidOpsInRelevantStates(
             LocalServiceState testState,
             LocalServiceOperation operation) {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(testState));
         when(lsDB.service(serviceId)).thenReturn(Optional.of(new LocalServiceInfo(serviceId,
@@ -155,7 +156,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateSuccess() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val res = validator.validateOperation(engine,
                                               new LocalServiceCreateOperation(ControllerTestUtils.localServiceSpec(1),
                                                                               1));
@@ -165,7 +166,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateNoLocalServiceId() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val res = validator.validateOperation(engine,
                                               new LocalServiceCreateOperation(
                                                       ControllerTestUtils.localServiceSpec(1)
@@ -177,7 +178,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateFailHostLevelMoreThanOneInstance() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val res = validator.validateOperation(engine,
                                               new LocalServiceCreateOperation(
                                                       ControllerTestUtils.localServiceSpec(1)
@@ -188,7 +189,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateForExitingService() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         when(engine.exists(anyString())).thenReturn(true);
         val res = validator.validateOperation(engine,
                                               new LocalServiceCreateOperation(ControllerTestUtils.localServiceSpec(1),
@@ -198,7 +199,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateInvalidHealthCheckPortName() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.localServiceSpec(1)
                 .withHealthcheck(new CheckSpec(new HTTPCheckModeSpec(HTTP,
                                                                      "Invalid",
@@ -218,7 +219,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateInvalidReadinessCheckPortName() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.localServiceSpec(1)
                 .withReadiness(new CheckSpec(new HTTPCheckModeSpec(HTTP,
                                                                    "Invalid",
@@ -239,7 +240,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateMissingResourceRequirements() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.localServiceSpec(1)
                 .withResources(List.of());
         val res = validator.validateOperation(engine,
@@ -252,9 +253,11 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateWhitelistedDirMounts() {
+        val controllerOptions = ControllerOptions.DEFAULT
+                 .withAllowedMountDirs(List.of("/tmp"));
+        val securityPolicyEnforcer = new SecurityPolicyEnforcer(List.of(), controllerOptions);
         val validator = new LocalServiceCommandValidator(lsDB,
-                                                         ControllerOptions.DEFAULT
-                                                                 .withAllowedMountDirs(List.of("/tmp")));
+                                                         securityPolicyEnforcer);
         {
             val spec = ControllerTestUtils.localServiceSpec(1)
                     .withVolumes(List.of(new MountedVolume("/var/log",
@@ -281,9 +284,10 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
     void testCmdlArgs() {
 
         {
-            val validator = new LocalServiceCommandValidator(lsDB,
-                                                             ControllerOptions.DEFAULT
-                                                                     .withDisableCmdlArgs(true));
+        val controllerOptions = ControllerOptions.DEFAULT
+                 .withDisableCmdlArgs(true);
+        val securityPolicyEnforcer = new SecurityPolicyEnforcer(List.of(), controllerOptions);
+        val validator = new LocalServiceCommandValidator(lsDB, securityPolicyEnforcer);
             val spec = ControllerTestUtils.localServiceSpec(1)
                     .withArgs(List.of("random"));
             val res = validator.validateOperation(engine,
@@ -291,7 +295,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
             ensureFailure(res, "Passing command line to containers is disabled on this cluster");
         }
         {
-            val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+            val validator = createValidator();
             val spec = ControllerTestUtils.localServiceSpec(1)
                     .withArgs(Collections.nCopies(1024, "0123456789"));
             val res = validator.validateOperation(engine,
@@ -303,7 +307,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
     @Test
     void testDeviceLoading() {
         {
-            val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+            val validator = createValidator();
             val spec = ControllerTestUtils.localServiceSpec(1)
                     .withDevices(List.of(DirectDeviceSpec.builder()
                                                  .pathOnHost("/dev/random")
@@ -318,7 +322,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
     @Test
     void testFailOnlyLocalPolicy() {
         {
-            val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+            val validator = createValidator();
             val spec = ControllerTestUtils.localServiceSpec(1)
                     .withPlacementPolicy(new AnyPlacementPolicy());
             val res = validator.validateOperation(engine,
@@ -329,7 +333,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testFailLocalPolicyNohostLevel() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(INACTIVE));
         when(lsDB.service(serviceId)).thenReturn(Optional.of(
@@ -348,7 +352,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testReplaceInstancesInvalidIds() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(ACTIVE));
         when(lsDB.service(serviceId)).thenReturn(Optional.of(new LocalServiceInfo(serviceId,
@@ -368,7 +372,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testReplaceInstancesInvalidInstanceState() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(spec);
         when(engine.currentState(serviceId)).thenReturn(Optional.of(ACTIVE));
@@ -407,7 +411,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testReplaceInstancesWithIdSuccess() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(spec);
         when(engine.currentState(serviceId)).thenReturn(Optional.of(ACTIVE));
@@ -445,7 +449,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testStopInstancesInvalidIds() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val serviceId = "SomeServiceId";
         when(engine.currentState(serviceId)).thenReturn(Optional.of(ACTIVE));
         when(lsDB.service(serviceId)).thenReturn(Optional.of(new LocalServiceInfo(serviceId,
@@ -464,7 +468,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testStopInstancesWithIdSuccess() {
-        val validator = new LocalServiceCommandValidator(lsDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.localServiceSpec();
         val serviceId = ControllerUtils.deployableObjectId(spec);
         when(engine.currentState(serviceId)).thenReturn(Optional.of(ACTIVE));
@@ -540,6 +544,10 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
                 Arguments.of(ACTIVE, new LocalServiceRestartOperation(serviceId, false, ClusterOpSpec.DEFAULT)),
                 Arguments.of(ACTIVE, new LocalServiceStopInstancesOperation(serviceId, Set.of(), ClusterOpSpec.DEFAULT))
                         );
+    }
+
+    private LocalServiceCommandValidator createValidator() {
+        return new LocalServiceCommandValidator(lsDB, ControllerTestUtils.defaultEnforcer());
     }
 
 }

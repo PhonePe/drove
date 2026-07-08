@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.task;
 
+import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
@@ -101,5 +102,10 @@ public class TaskSpec implements DeploymentSpec {
     @Override
     public <T> T accept(DeploymentSpecVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public JobType getType() {
+        return JobType.COMPUTATION;
     }
 }

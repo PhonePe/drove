@@ -18,22 +18,34 @@ package com.phonepe.drove.controller.utils;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.models.api.ApiResponse;
+import com.phonepe.drove.models.api.AppSummary;
+import com.phonepe.drove.models.api.ClusterSummary;
+import com.phonepe.drove.models.api.LocalServiceSummary;
+import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckModeSpecVisitor;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
@@ -43,13 +55,16 @@ import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
-import com.phonepe.drove.models.application.requirements.*;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
+import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+import com.phonepe.drove.models.common.ClusterState;
+import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecVisitorAdapter;
 import com.phonepe.drove.models.config.impl.ControllerHttpFetchConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
-import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
@@ -61,6 +76,7 @@ import com.phonepe.drove.models.interfaces.DeployedInstanceInfoVisitor;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
@@ -69,6 +85,7 @@ import com.phonepe.drove.models.operation.localserviceops.*;
 import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -83,7 +100,6 @@ import lombok.val;
 import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
@@ -489,29 +505,6 @@ public class ControllerUtils {
                 });
     }
 
-    public static int freeGpus(ExecutorHostInfo executor, GpuType gpuType) {
-        return executor.getNodeData()
-                .accept(new NodeDataVisitor<>() {
-                    @Override
-                    public Integer visit(ControllerNodeData controllerData) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(ExecutorNodeData executorData) {
-                        val layout = executorData.getState().getLayout();
-                        if (layout == null || layout.getGpus() == null || executorData.getState().getGpus() == null) {
-                            return 0;
-                        }
-                        val freeGPUs = executorData.getState().getGpus().getFreeGpus();
-                        return (int) layout.getGpus().values().stream()
-                                .filter(gpu -> GPUUtils.matches(gpu, gpuType))
-                                .filter(gpu -> freeGPUs.contains(gpu.getGpuId()))
-                                .count();
-                    }
-                });
-    }
-
     public static int usedCores(ExecutorHostInfo executor) {
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
@@ -568,43 +561,15 @@ public class ControllerUtils {
         });
     }
 
-    public static List<String> ensureWhitelistedVolumes(
-            Collection<MountedVolume> volumes, ControllerOptions controllerOptions) {
-        val whitelistedDirs = Objects.requireNonNullElse(
-                controllerOptions.getAllowedMountDirs(),
-                List.<String>of());
-        if (null != volumes && !whitelistedDirs.isEmpty()) {
-            return volumes.stream()
-                    .filter(volume -> whitelistedDirs.stream()
-                            .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
-                    .map(volume -> "Volume mount requested on non whitelisted host directory: "
-                            + volume.getPathOnHost())
-                    .toList();
-        }
-        return List.of();
-    }
-
-    public static List<String> ensureCmdlArgs(
-            List<String> args, ControllerOptions controllerOptions) {
-        val argsDisabled = Objects.requireNonNullElse(controllerOptions.getDisableCmdlArgs(), false);
-        val argList = Objects.requireNonNullElse(args, List.<String>of());
-        if (argsDisabled && !argList.isEmpty()) {
-            return List.of("Passing command line to containers is disabled on this cluster");
-        }
-        if (Joiner.on(" ").join(argList).length() > 2048) {
-            return List.of("Maximum combined length of command line arguments can be 2048");
-        }
-        return List.of();
-    }
-
-    public static List<String> checkDeviceDisabled(
-            List<DeviceSpec> devices, ControllerOptions controllerOptions) {
-        val deviceEnabled = Objects.requireNonNullElse(controllerOptions.getEnableRawDeviceAccess(), false);
-        if (!deviceEnabled && null != devices && !devices.isEmpty()) {
-            return List.of("Device access is disabled. " +
-                                   "To enable, set enableRawDeviceAccess: true in controller options.");
-        }
-        return List.of();
+    public static List<String> checkSecurityPolicy(
+            final DeploymentSpec deploymentSpec,
+            final SecurityPolicyEnforcer securityPolicyEnforcer) {
+        val profile = securityPolicyEnforcer.resolve(deploymentSpec);
+        val error = new ArrayList<String>();
+        error.addAll(ensureWhitelistedVolumes(deploymentSpec.getVolumes(), profile));
+        error.addAll(ensureCmdlArgs(deploymentSpec.getArgs(), profile));
+        error.addAll(checkDeviceDisabled(deploymentSpec.getDevices(), profile));
+        return error;
     }
 
     public static List<ConfigSpec> translateConfigSpecs(final List<ConfigSpec> configs, final HttpCaller httpCaller) {
@@ -645,7 +610,13 @@ public class ControllerUtils {
             final DeploymentSpec spec,
             final long requiredInstances,
             final List<String> errors) {
-        val executors = clusterResourcesDB.currentSnapshot(true);
+
+        val finalPolicy = computeEffectivePlacementPolicy(spec);
+        val executors = clusterResourcesDB.currentSnapshot(true)
+                .stream()
+                .filter(executor -> isExecutorEligibleForPlacement(executor, finalPolicy))
+                .toList();
+
         var freeCores = 0;
         var freeMemory = 0L;
         for (val exec : executors) {
@@ -665,11 +636,6 @@ public class ControllerUtils {
                     public Integer visit(MemoryRequirement memoryRequirement) {
                         return 0;
                     }
-
-                    @Override
-                    public Integer visit(GPURequirement gpuRequirement) {
-                        return 0;
-                    }
                 }))
                 .sum();
         val requiredCores = requiredInstances * requiredCoresPerInstance;
@@ -685,58 +651,9 @@ public class ControllerUtils {
                     public Long visit(MemoryRequirement memoryRequirement) {
                         return memoryRequirement.getSizeInMB();
                     }
-
-                    @Override
-                    public Long visit(GPURequirement gpuRequirement) {
-                        return 0L;
-                    }
                 }))
                 .sum();
         val requiredMem = requiredInstances * requiredMemPerInstance;
-
-        val requiredGpuPerInstance = spec.getResources()
-                .stream()
-                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Integer visit(CPURequirement cpuRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(MemoryRequirement memoryRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(GPURequirement gpuRequirement) {
-                        return gpuRequirement.getCount();
-                    }
-                }))
-                .sum();
-        val requiredGpuTypes = spec.getResources()
-                .stream()
-                .map(r -> r.accept(new ResourceRequirementVisitor<GpuType>() {
-                    @Override
-                    public GpuType visit(CPURequirement cpuRequirement) {
-                        return null;
-                    }
-
-                    @Override
-                    public GpuType visit(MemoryRequirement memoryRequirement) {
-                        return null;
-                    }
-
-                    @Override
-                    public GpuType visit(GPURequirement gpuRequirement) {
-                        return gpuRequirement.getGpuType();
-                    }
-                }))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        if(requiredGpuTypes.size() > 1) {
-            errors.add("Multiple GPU types specified in resource requirements. This is currently not supported.");
-        }
-        val requiredGpuTypePerInstance = requiredGpuTypes.isEmpty() ? null : requiredGpuTypes.iterator().next();
         if (requiredCores > freeCores) {
             errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
                                "Available: " + freeCores);
@@ -745,7 +662,6 @@ public class ControllerUtils {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
                                "Available: " + freeMemory);
         }
-
         val maxAvailablePhysicalCoresPerNode = executors.stream()
                 .map(e -> e.getNodeData().getState().getLayout())
                 .filter(Objects::nonNull)
@@ -758,35 +674,106 @@ public class ControllerUtils {
                                "NUMA node in the cluster. Required: " + requiredCores
                                + " Max: " + maxAvailablePhysicalCoresPerNode);
         }
-        if(requiredGpuTypePerInstance != null) {
-            val maxAvailableGpuCountPerNode = executors.stream()
-                    .map(e -> e.getNodeData().getState().getLayout())
-                    .filter(Objects::nonNull)
-                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
-                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
-                            .count())
-                    .max()
-                    .orElse(Integer.MAX_VALUE);
+    }
 
-            val totalAvailableGpuCount = executors.stream()
-                    .map(e -> e.getNodeData().getState().getLayout())
-                    .filter(Objects::nonNull)
-                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
-                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
-                            .count())
-                    .sum();
-
-            if (maxAvailableGpuCountPerNode < requiredGpuPerInstance) {
-                errors.add("Required GPU count exceeds the maximum GPU count available on a single " +
-                        "executor in the cluster. Required: " + requiredGpuPerInstance
-                        + " Max: " + maxAvailableGpuCountPerNode);
+    public static boolean shouldAllowCombiningOfPolicy(final PlacementPolicy policy) {
+        return policy.accept(new PlacementPolicyVisitor<>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return false;
             }
 
-            if(totalAvailableGpuCount < requiredGpuPerInstance * requiredInstances) {
-                errors.add("Cluster does not have enough GPUs of required type. Required: " + (requiredGpuPerInstance * requiredInstances)
-                        + " Available: " + totalAvailableGpuCount);
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return false;
             }
-        }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return false;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                return compositePlacementPolicy.getPolicies()
+                        .stream()
+                        .anyMatch(ControllerUtils::shouldAllowCombiningOfPolicy);
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return false;
+            }
+        });
+    }
+
+    private static boolean isExecutorEligibleForPlacement(ExecutorHostInfo executor, PlacementPolicy policy) {
+        return policy.accept(new PlacementPolicyVisitor<>() {
+            @Override
+            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(MatchTagPlacementPolicy matchTag) {
+                return Objects.requireNonNullElse(executor.getNodeData().getTags(), Set.of())
+                        .contains(matchTag.getTag());
+            }
+
+            @Override
+            public Boolean visit(NoTagPlacementPolicy noTag) {
+                return Sets.difference(Objects.requireNonNullElse(executor.getNodeData().getTags(), Set.of()),
+                                       Set.of(executor.getNodeData().getHostname())).isEmpty();
+            }
+
+            @Override
+            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return true;
+            }
+
+            @Override
+            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
+                val combiner = Objects.requireNonNullElse(compositePlacementPolicy.getCombiner(),
+                                                          CompositePlacementPolicy.CombinerType.AND);
+
+                if (combiner == CompositePlacementPolicy.CombinerType.AND) {
+                    return compositePlacementPolicy.getPolicies().stream().allMatch(p -> isExecutorEligibleForPlacement(executor, p));
+                }
+                else {
+                    return compositePlacementPolicy.getPolicies().stream().anyMatch(p -> isExecutorEligibleForPlacement(executor, p));
+                }
+            }
+
+            @Override
+            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
+                return true;
+            }
+        });
     }
 
     public static boolean hasLocalPolicy(final PlacementPolicy policy) {
@@ -868,11 +855,6 @@ public class ControllerUtils {
                     public Long visit(MemoryRequirement memoryRequirement) {
                         return memoryRequirement.getSizeInMB();
                     }
-
-                    @Override
-                    public Long visit(GPURequirement gpuRequirement) {
-                        return 0L;
-                    }
                 }))
                 .sum();
     }
@@ -887,31 +869,6 @@ public class ControllerUtils {
                     @Override
                     public Long visit(MemoryRequirement memoryRequirement) {
                         return 0L;
-                    }
-
-                    @Override
-                    public Long visit(GPURequirement gpuRequirement) {
-                        return 0L;
-                    }
-                }))
-                .sum();
-    }
-
-    public static long totalGPU(DeploymentSpec spec, long instances) {
-        return instances * spec.getResources().stream().mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Integer visit(CPURequirement cpuRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(MemoryRequirement memoryRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(GPURequirement gpuRequirement) {
-                        return gpuRequirement.getCount();
                     }
                 }))
                 .sum();
@@ -1016,6 +973,65 @@ public class ControllerUtils {
         return timeoutMS;
     }
 
+    public static long maxStartTimeout(final DeploymentSpec spec) {
+        var timeoutMS = spec.getExecutable()
+                .accept(dockerCoordinates -> Objects.requireNonNullElse(dockerCoordinates.getDockerPullTimeout(),
+                                                                        DockerCoordinates.DEFAULT_PULL_TIMEOUT))
+                .toMilliseconds();
+        //Apps and LS become healthy once readiness check passes and one healthcheck passes
+        timeoutMS += spec.accept(new DeploymentSpecVisitor<Long>() {
+
+            @Override
+            public Long visit(ApplicationSpec applicationSpec) {
+                return timeoutMS(applicationSpec.getHealthcheck())
+                        + timeoutMS(applicationSpec.getReadiness());
+            }
+
+            @Override
+            public Long visit(TaskSpec taskSpec) {
+                return 0L;
+            }
+
+            @Override
+            public Long visit(LocalServiceSpec localServiceSpec) {
+                return timeoutMS(localServiceSpec.getHealthcheck())
+                        + timeoutMS(localServiceSpec.getReadiness());
+            }
+        });
+        return timeoutMS;
+    }
+
+    public static long maxStopTimeout(final DeploymentSpec spec) {
+        return spec.accept(new DeploymentSpecVisitor<Long>(){
+
+            @Override
+            public Long visit(ApplicationSpec applicationSpec) {
+                return waitTime(applicationSpec.getPreShutdown());
+            }
+
+            @Override
+            public Long visit(TaskSpec taskSpec) {
+                return 0l;
+            }
+
+            @Override
+            public Long visit(LocalServiceSpec localServiceSpec) {
+                return waitTime(localServiceSpec.getPreShutdown());
+            }
+        });
+    }
+
+    public static long waitTime(final PreShutdownSpec ps) {
+        if(null == ps) {
+            return 0L;
+        }
+        val waitTime = ps.getWaitBeforeKill();
+        if(null == waitTime) {
+            return 0L;
+        }
+        return waitTime.toMilliseconds();
+    }
+
     public static long timeoutMS(final CheckSpec checkSpec) {
         return Objects.requireNonNullElse(checkSpec.getInitialDelay(), Duration.seconds(0)).toMilliseconds()
                 + (checkSpec.getAttempts()
@@ -1048,6 +1064,41 @@ public class ControllerUtils {
             case CONFIG_TESTING -> CONFIG_TESTING;
             case INACTIVE -> INACTIVE;
         };
+    }
+
+    public static PlacementPolicy computeEffectivePlacementPolicy(DeploymentSpec deploymentSpec) {
+        return deploymentSpec.accept(new DeploymentSpecVisitor<>() {
+
+            @Override
+            public PlacementPolicy visit(ApplicationSpec applicationSpec) {
+                var placementPolicy = Objects.requireNonNullElse(applicationSpec.getPlacementPolicy(),
+                                                         new AnyPlacementPolicy());
+                if (!shouldAllowCombiningOfPolicy(placementPolicy)) {
+                    return new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
+                                                                   CompositePlacementPolicy.CombinerType.AND);
+                }
+
+                return placementPolicy;
+            }
+
+            @Override
+            public PlacementPolicy visit(TaskSpec taskSpec) {
+                var placementPolicy = Objects.requireNonNullElse(taskSpec.getPlacementPolicy(),
+                                                         new AnyPlacementPolicy());
+                if (!shouldAllowCombiningOfPolicy(placementPolicy)) {
+                    return new CompositePlacementPolicy(List.of(placementPolicy, new NoTagPlacementPolicy()),
+                                                                   CompositePlacementPolicy.CombinerType.AND);
+                }
+
+                return placementPolicy;
+            }
+
+            @Override
+            public PlacementPolicy visit(LocalServiceSpec localServiceSpec) {
+                // For LocalService, return as is
+                return localServiceSpec.getPlacementPolicy();
+            }
+        });
     }
 
     public static Boolean isHostLevelDeployable(final PlacementPolicy placementPolicy) {
@@ -1100,37 +1151,147 @@ public class ControllerUtils {
                : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 
-    /**
-     * Utility method to extract CPU requirement count from resource requirements list.
-     */
-    public static long extractCpuRequirement(List<ResourceRequirement> resources) {
-        return ((CPURequirement) extractRequirement(resources, ResourceType.CPU)).getCount();
+    public static AppSummary toAppSummary(
+            final ApplicationInfo info,
+            final ApplicationLifecycleManagementEngine applicationEngine,
+            final long healthyInstances) {
+        val spec = info.getSpec();
+        val instances = info.getInstances();
+        val cpus = totalCPU(spec, instances);
+        val memory = totalMemory(spec, instances);
+        return new AppSummary(info.getAppId(),
+                              spec.getName(),
+                              instances,
+                              healthyInstances,
+                              cpus,
+                              memory,
+                              spec.getTags(),
+                              applicationEngine.currentState(info.getAppId()).orElse(null),
+                              info.getCreated(),
+                              info.getUpdated());
+
     }
 
-    /**
-     * Utility method to extract memory requirement in MB from resource requirements list.
-     */
-    public static long extractMemoryRequirement(List<ResourceRequirement> resources) {
-        return ((MemoryRequirement) extractRequirement(resources, ResourceType.MEMORY)).getSizeInMB();
+    public static LocalServiceSummary toLocalServiceSummary(
+            final LocalServiceInfo info,
+            final long knownInstances,
+            final long healthyInstances,
+            final LocalServiceLifecycleManagementEngine localServiceEngine) {
+        val spec = info.getSpec();
+        val cpus = totalCPU(spec, knownInstances);
+        val memory = totalMemory(spec, knownInstances);
+        return new LocalServiceSummary(info.getServiceId(),
+                                       spec.getName(),
+                                       info.getInstancesPerHost(),
+                                       healthyInstances,
+                                       cpus,
+                                       memory,
+                                       spec.getTags(),
+                                       info.getActivationState(),
+                                       localServiceEngine.currentState(info.getServiceId()).orElse(null),
+                                       info.getCreated(),
+                                       info.getUpdated());
+
     }
 
-    /**
-     * Utility method to find the GPU requirement, returning empty if none is present.
-     */
-    public static Optional<GPURequirement> findGpuRequirement(List<ResourceRequirement> resources) {
-        return resources.stream()
-                .filter(req -> req.getType() == ResourceType.GPU)
-                .map(GPURequirement.class::cast)
-                .findFirst();
+    @SuppressWarnings("java:S107")
+    public static ClusterSummary computeClusterSummary(
+            final LeadershipObserver leadershipObserver,
+            final ClusterStateDB clusterStateDB,
+            final List<ApplicationInfo> applications,
+            final List<TaskInfo> tasks,
+            final List<LocalServiceInfo> localServices,
+            final ApplicationLifecycleManagementEngine applicationEngine,
+            final LocalServiceLifecycleManagementEngine localServiceEngine,
+            final ClusterResourcesSummary resourceSummary) {
+        var liveApps = 0;
+        var allApps = 0;
+        for (val appInfo : applications) {
+            liveApps += ApplicationState.ACTIVE_APP_STATES.contains(applicationEngine.currentState(appInfo.getAppId())
+                                                                            .orElse(ApplicationState.FAILED))
+                        ? 1
+                        : 0;
+            allApps++;
+        }
+        var liveTasks = 0;
+        for (val taskInfo : tasks) {
+            liveTasks += TaskState.ACTIVE_STATES.contains(taskInfo.getState())
+                         ? 1
+                         : 0;
+        }
+        var liveLocalServices = 0;
+        var allLocalServices = 0;
+        for (val localServiceInfo : localServices) {
+            liveLocalServices += LocalServiceState.RESOURCE_USING_STATES
+                                         .contains(localServiceEngine.currentState(localServiceInfo.getServiceId())
+                                                           .orElse(LocalServiceState.DESTROYED))
+                                 ? 1
+                                 : 0;
+            allLocalServices++;
+        }
+        return new ClusterSummary(
+                        leadershipObserver.leader()
+                                .map(node -> node.getHostname() + ":" + node.getPort())
+                                .orElse("Leader election underway"),
+                        clusterStateDB.currentState()
+                                .map(ClusterStateData::getState)
+                                .orElse(ClusterState.NORMAL),
+                        resourceSummary.getNumExecutors(),
+                        allApps,
+                        liveApps,
+                        liveTasks,
+                        allLocalServices,
+                        liveLocalServices,
+                        resourceSummary.getFreeCores(),
+                        resourceSummary.getUsedCores(),
+                        resourceSummary.getTotalCores(),
+                        resourceSummary.getFreeMemory(),
+                        resourceSummary.getUsedMemory(),
+                        resourceSummary.getTotalMemory());
+ 
     }
 
-    /**
-     * Utility method to extract specific resource requirement from the list.
-     */
-    public static ResourceRequirement extractRequirement(List<ResourceRequirement> resources, ResourceType type) {
-        return resources.stream()
-                .filter(req -> req.getType() == type)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Resource requirement of type " + type + " is required"));
+    private static List<String> ensureWhitelistedVolumes(
+            Collection<MountedVolume> volumes, ContainerSecurityProfile securityProfile) {
+        val whitelistedDirs = Objects.requireNonNullElse(
+                securityProfile.getAllowedMountDirs(),
+                ContainerSecurityProfile.DEFAULT_ALLOWED_MOUNT_DIRS);
+        if (null != volumes && !whitelistedDirs.isEmpty()) {
+            return volumes.stream()
+                    .filter(volume -> whitelistedDirs.stream()
+                            .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
+                    .map(volume -> "Volume mount requested on non whitelisted host directory: "
+                            + volume.getPathOnHost())
+                    .toList();
+        }
+        return List.of();
     }
+
+    private static List<String> ensureCmdlArgs(
+            List<String> args, ContainerSecurityProfile securityProfile) {
+        val argsDisabled = Objects.requireNonNullElse(securityProfile.getDisableCmdlArgs(),
+                ContainerSecurityProfile.DEFAULT_DISABLE_CMDL_ARGS);
+        val argList = Objects.requireNonNullElse(args, List.<String>of());
+        if (argsDisabled && !argList.isEmpty()) {
+            return List.of("Passing command line to containers is disabled on this cluster");
+        }
+        if (Joiner.on(" ").join(argList).length() > 2048) {
+            return List.of("Maximum combined length of command line arguments can be 2048");
+        }
+        return List.of();
+    }
+
+    private static List<String> checkDeviceDisabled(
+            List<DeviceSpec> devices, 
+            ContainerSecurityProfile securityProfile) {
+        val deviceEnabled = Objects.requireNonNullElse(securityProfile.getEnableRawDeviceAccess(),
+                ContainerSecurityProfile.DEFAULT_ENABLE_RAW_DEVICE_ACCESS);
+        if (!deviceEnabled && null != devices && !devices.isEmpty()) {
+            return List.of("Device access is disabled. " +
+                                   "To enable, set enableRawDeviceAccess: true in controller options.");
+        }
+        return List.of();
+    }
+
+
 }

@@ -108,6 +108,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              rf,
                                              instanceIdGenerator,
                                              tokenManager,
+                                             ControllerTestUtils.defaultEnforcer(),
                                              httpCaller());
         val testStatus = new AtomicBoolean();
         val exec = new JobExecutor<Boolean>(MoreExecutors.newDirectExecutorService());
@@ -138,6 +139,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              rf,
                                              instanceIdGenerator,
                                              tokenManager,
+                                             ControllerTestUtils.defaultEnforcer(),
                                              httpCaller());
         assertFailure(job);
     }
@@ -188,6 +190,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              rf,
                                              instanceIdGenerator,
                                              tokenManager,
+                                             ControllerTestUtils.defaultEnforcer(),
                                              httpCaller());
         assertFailure(job);
     }
@@ -219,6 +222,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              rf,
                                              instanceIdGenerator,
                                              tokenManager,
+                                             ControllerTestUtils.defaultEnforcer(),
                                              httpCaller());
         assertFailure(job);
     }
@@ -267,6 +271,7 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
                                              rf,
                                              instanceIdGenerator,
                                              tokenManager,
+                                             ControllerTestUtils.defaultEnforcer(),
                                              httpCaller());
 
         assertFailure(job);

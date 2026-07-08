@@ -27,12 +27,14 @@ import com.phonepe.drove.controller.engine.ControllerCommunicator;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.InstanceIdGenerator;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.Job;
 import com.phonepe.drove.jobexecutor.JobContext;
 import com.phonepe.drove.jobexecutor.JobResponseCombiner;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
 import com.phonepe.drove.models.task.TaskSpec;
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +62,7 @@ public class StartTaskJob implements Job<Boolean> {
     private final ControllerRetrySpecFactory retrySpecFactory;
 
     private final InstanceIdGenerator instanceIdGenerator;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final HttpCaller httpCaller;
 
     @SuppressWarnings("java:S107")
@@ -72,6 +75,7 @@ public class StartTaskJob implements Job<Boolean> {
             String schedulingSessionId,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             HttpCaller httpCaller) {
         this.taskSpec = taskSpec;
         this.clusterOpSpec = clusterOpSpec;
@@ -81,6 +85,7 @@ public class StartTaskJob implements Job<Boolean> {
         this.schedulingSessionId = schedulingSessionId;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.httpCaller = httpCaller;
     }
 
@@ -158,7 +163,10 @@ public class StartTaskJob implements Job<Boolean> {
                      sourceApp, taskId);
             return false;
         }
-
+        val securityProfile = securityPolicyEnforcer.resolve(taskSpec);
+        
+        log.info("Scheduling localservice instance {}/{} on node {} with security profile {}",
+                 taskSpec.getSourceAppName(), instanceId, node.getExecutorId(), securityProfile.getPolicyName());
         final var spec = new TaskInstanceSpec(taskId,
                                               sourceApp,
                                               instanceId,
@@ -171,7 +179,8 @@ public class StartTaskJob implements Job<Boolean> {
                                               taskSpec.getEnv(),
                                               taskSpec.getArgs(),
                                               taskSpec.getDevices(),
-                                              taskSpec.getUserSpec());
+                                              taskSpec.getUserSpec(),
+                                              DeployableSecuritySpec.from(securityProfile));
         val startMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
                                                 new ExecutorAddress(node.getExecutorId(),
                                                                             node.getHostname(),

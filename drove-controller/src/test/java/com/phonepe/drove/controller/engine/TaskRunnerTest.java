@@ -102,6 +102,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 completedSignal,
                                 httpCaller());
         val testDone = new AtomicBoolean();
@@ -180,6 +181,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 completedSignal,
                                 httpCaller());
         val testDone = new AtomicBoolean();
@@ -214,6 +216,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 completedSignal,
                                 httpCaller());
 
@@ -266,6 +269,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 completedSignal,
                                 httpCaller());
 
@@ -318,6 +322,7 @@ class TaskRunnerTest extends ControllerTestBase {
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
                                 Executors.defaultThreadFactory(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 completedSignal,
                                 httpCaller());
 

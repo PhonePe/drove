@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.interfaces;
 
+import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
@@ -34,6 +35,8 @@ import java.util.Map;
 public interface DeploymentSpec {
 
     ExecutableCoordinates getExecutable();
+
+    JobType getType();
 
     List<MountedVolume> getVolumes();
 

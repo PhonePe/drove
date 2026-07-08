@@ -23,6 +23,7 @@ import com.phonepe.drove.controller.engine.jobs.StartTaskJob;
 import com.phonepe.drove.controller.engine.jobs.StopTaskJob;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -78,6 +79,7 @@ public class TaskRunner implements Runnable {
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
     private final ThreadFactory threadFactory;
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
 
     private final ConsumingFireForgetSignal<TaskRunner> completed;
     private final HttpCaller httpCaller;
@@ -102,6 +104,7 @@ public class TaskRunner implements Runnable {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             ThreadFactory threadFactory,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             ConsumingFireForgetSignal<TaskRunner> completed,
             HttpCaller httpCaller) {
         this.sourceAppName = sourceAppName;
@@ -114,6 +117,7 @@ public class TaskRunner implements Runnable {
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
         this.threadFactory = threadFactory;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.completed = completed;
         this.httpCaller = httpCaller;
     }
@@ -137,6 +141,7 @@ public class TaskRunner implements Runnable {
                                          schedulingSessionId,
                                          retrySpecFactory,
                                          instanceIdGenerator,
+                                         securityPolicyEnforcer,
                                          httpCaller))
 
                 .build();

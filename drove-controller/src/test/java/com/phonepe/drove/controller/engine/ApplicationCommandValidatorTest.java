@@ -20,6 +20,7 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -82,7 +83,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testNoState() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.empty());
         val res = validator.validateOperation(engine,
@@ -95,7 +96,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testNoOpInInitState() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.INIT));
         val res = validator.validateOperation(engine,
@@ -116,7 +117,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testInvalidOpsInRunningState() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -139,7 +140,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testInvalidOpsInScalingState() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.SCALING_REQUESTED));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -187,7 +188,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val res = validator.validateOperation(engine,
                                               new ApplicationCreateOperation(ControllerTestUtils.appSpec(1),
                                                                     1,
@@ -197,7 +198,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateNoAppId() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val res = validator.validateOperation(engine,
                                               new ApplicationCreateOperation(
                                              ControllerTestUtils.appSpec(1)
@@ -210,7 +211,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateForExitingAppId() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         when(engine.exists(anyString())).thenReturn(true);
         val res = validator.validateOperation(engine,
                                               new ApplicationCreateOperation(ControllerTestUtils.appSpec(1),
@@ -221,7 +222,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateInvalidHealthCheckPortName() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.appSpec(1)
                 .withHealthcheck(new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                      "Invalid",
@@ -244,7 +245,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateInvalidReadinessCheckPortName() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.appSpec(1)
                 .withReadiness(new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                    "Invalid",
@@ -267,7 +268,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateMissingResourceRequirements() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.appSpec(1)
                 .withResources(List.of());
         val res = validator.validateOperation(engine,
@@ -282,7 +283,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateWrongPortInExposureSpec() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val spec = ControllerTestUtils.appSpec(1)
                 .withExposureSpec(new ExposureSpec("blah", "Invalid", ExposureMode.ALL));
         val res = validator.validateOperation(engine,
@@ -296,9 +297,13 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateWhitelistedDirMounts() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB,
-                                                        ControllerOptions.DEFAULT
-                                                                .withAllowedMountDirs(List.of("/tmp")));
+        val controllerOptions = ControllerOptions.DEFAULT
+                   .withAllowedMountDirs(List .of("/tmp"));
+        val validator = new ApplicationCommandValidator(asDB,
+                                                        crDB,
+                                                        aiDB,
+                                                        new SecurityPolicyEnforcer(List.of(),
+                                                                                   controllerOptions));
         {
             val spec = ControllerTestUtils.appSpec(1)
                     .withVolumes(List.of(new MountedVolume("/var/log",
@@ -306,11 +311,11 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                            MountedVolume.MountMode.READ_WRITE)));
             val res = validator.validateOperation(engine,
                                                   new ApplicationCreateOperation(spec,
-                                                                        1,
-                                                                        ClusterOpSpec.DEFAULT));
+                                                                                 1,
+                                                                                 ClusterOpSpec.DEFAULT));
             ensureFailure(res,
                           "Volume mount requested on non whitelisted host directory: /var/log"
-                         );
+            );
         }
         {
             val spec = ControllerTestUtils.appSpec(1)
@@ -319,8 +324,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                            MountedVolume.MountMode.READ_WRITE)));
             val res = validator.validateOperation(engine,
                                                   new ApplicationCreateOperation(spec,
-                                                                        1,
-                                                                        ClusterOpSpec.DEFAULT));
+                                                                                 1,
+                                                                                 ClusterOpSpec.DEFAULT));
             ensureSuccess(res);
         }
     }
@@ -329,9 +334,10 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     void testCmdlArgs() {
 
         {
+            val controllerOptions = ControllerOptions.DEFAULT
+                    .withDisableCmdlArgs(true);
             val validator = new ApplicationCommandValidator(asDB, crDB, aiDB,
-                                                            ControllerOptions.DEFAULT
-                                                                    .withDisableCmdlArgs(true));
+                                                            new SecurityPolicyEnforcer(List.of(), controllerOptions));
             val spec = ControllerTestUtils.appSpec(1)
                     .withArgs(List.of("random"));
             val res = validator.validateOperation(engine,
@@ -341,7 +347,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
             ensureFailure(res, "Passing command line to containers is disabled on this cluster");
         }
         {
-            val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+            val validator = createValidator();
             val spec = ControllerTestUtils.appSpec(1)
                     .withArgs(Collections.nCopies(1024, "0123456789"));
             val res = validator.validateOperation(engine,
@@ -354,25 +360,24 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testDeviceLoading() {
-        {
-            val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
-            val spec = ControllerTestUtils.appSpec(1)
-                    .withDevices(List.of(DirectDeviceSpec.builder()
-                                                 .pathOnHost("/dev/random")
-                                                 .build()));
-            val res = validator.validateOperation(engine,
-                                                  new ApplicationCreateOperation(spec,
-                                                                        1,
-                                                                        ClusterOpSpec.DEFAULT));
-            ensureFailure(res, "Device access is disabled. To enable, set enableRawDeviceAccess: true " +
-                    "in controller options.");
-        }
 
+        val validator = createValidator();
+        val spec = ControllerTestUtils.appSpec(1)
+                .withDevices(List.of(DirectDeviceSpec.builder()
+                        .pathOnHost("/dev/random")
+                        .build()));
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
+                                                                             1,
+                                                                             ClusterOpSpec.DEFAULT));
+        ensureFailure(res,
+                      "Device access is disabled. To enable, set enableRawDeviceAccess: true " +
+                              "in controller options.");
     }
 
     @Test
     void testStartInstSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -392,7 +397,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testStartInstNoResources() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -413,7 +418,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testStartInstValidateOperationMaxCorePerNode() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
         val appSpec = ControllerTestUtils.appSpec()
@@ -439,7 +444,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testScaleSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -458,7 +463,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testScaleInvalidId() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.MONITORING));
         when(asDB.application(appId)).thenReturn(Optional.empty());
@@ -473,7 +478,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testScaleNoResource() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.MONITORING));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -493,7 +498,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testStopInstSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         val spec = ControllerTestUtils.appSpec();
@@ -515,7 +520,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testStopInstInvalidId() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         val spec = ControllerTestUtils.appSpec();
@@ -539,7 +544,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testReplaceInstSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         val spec = ControllerTestUtils.appSpec();
@@ -560,7 +565,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testReplaceInstInvalidId() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         val spec = ControllerTestUtils.appSpec();
@@ -582,7 +587,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testDestroyAppSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.MONITORING));
         val spec = ControllerTestUtils.appSpec();
@@ -598,7 +603,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testSuspendAppSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         val spec = ControllerTestUtils.appSpec();
@@ -614,7 +619,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testRecoverAppSuccess() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(ApplicationState.RUNNING));
         val spec = ControllerTestUtils.appSpec();
@@ -629,7 +634,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
 
     private void testNoOpState(ApplicationState state, String errorMessage) {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = createValidator();
         val appId = "SomeAppId";
         when(engine.currentState(appId)).thenReturn(Optional.of(state));
         when(asDB.application(appId)).thenReturn(Optional.of(new ApplicationInfo(appId,
@@ -658,6 +663,13 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 //        assertEquals(expectedError.length, res.getMessages().size());
         assertEquals(Arrays.asList(expectedError),
                      res.getMessages(), () -> "Messages: " + res.getMessages());
+    }
+
+    private ApplicationCommandValidator createValidator() {
+        return new ApplicationCommandValidator(asDB,
+                                               crDB,
+                                               aiDB,
+                                               new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT));
     }
 
 

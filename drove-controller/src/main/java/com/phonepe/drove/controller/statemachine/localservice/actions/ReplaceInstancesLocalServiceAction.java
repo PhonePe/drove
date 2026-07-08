@@ -27,6 +27,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.SchedulerSessionManagementPlugin;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceAsyncAction;
@@ -67,7 +68,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
     private final ControllerCommunicator communicator;
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
-
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final ThreadFactory threadFactory;
     private final ApplicationInstanceTokenManager tokenManager;
     private final HttpCaller httpCaller;
@@ -82,6 +83,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
             ControllerCommunicator communicator,
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
+            SecurityPolicyEnforcer securityPolicyEnforcer,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             ApplicationInstanceTokenManager tokenManager,
             HttpCaller httpCaller,
@@ -93,6 +95,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
         this.communicator = communicator;
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
+        this.securityPolicyEnforcer = securityPolicyEnforcer;
         this.threadFactory = threadFactory;
         this.tokenManager = tokenManager;
         this.httpCaller = httpCaller;
@@ -222,6 +225,7 @@ public class ReplaceInstancesLocalServiceAction extends LocalServiceAsyncAction 
                                                       retrySpecFactory,
                                                       instanceIdGenerator,
                                                       tokenManager,
+                                                      securityPolicyEnforcer,
                                                       httpCaller,
                                                       executor);
     }

@@ -24,7 +24,6 @@ import com.phonepe.drove.common.model.executor.StartTaskMessage;
 import com.phonepe.drove.common.model.executor.StopTaskMessage;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
@@ -144,13 +143,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
@@ -204,13 +203,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
@@ -281,13 +280,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
 
         te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
@@ -375,13 +374,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         te.handleZombieTask(taskSpec.getSourceAppName(), taskSpec.getTaskId());
         CommonTestUtils.waitUntil(() -> pair.getKey().task(taskSpec.getSourceAppName(), taskSpec.getTaskId())
@@ -433,13 +432,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
         pair.getKey().updateTask(taskSpec.getSourceAppName(),
@@ -504,13 +503,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
@@ -556,13 +555,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
@@ -610,14 +609,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT
-                                        .withAllowedMountDirs(List.of("/tmp")),
                                 httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
@@ -644,13 +642,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
-                                jobSched,
+                                new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
@@ -674,13 +672,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         val r = te.handleTaskOp(new TaskKillOperation(taskSpec.getSourceAppName(),
                                                       taskSpec.getTaskId(),
@@ -725,19 +723,19 @@ class TaskEngineTest extends ControllerTestBase {
                                      new Date(),
                                      new Date())));
         when(taskDB.onStateChange()).thenReturn(new ConsumingFireForgetSignal<>());
-        val te = new TaskEngine(taskDB,
+        val te = new TaskEngine(pair.getKey(),
                                 cdb,
                                 pair.getValue(),
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
-                                jobSched,
+                                new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         te.registerTaskRunner(taskSpec.getSourceAppName(), taskSpec.getTaskId());
 
@@ -782,13 +780,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
         val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.withGPU(ControllerTestUtils.taskSpec(), 1, new GpuType(GpuVendor.NVIDIA, "h100")),
                                                         ControllerTestUtils.DEFAULT_CLUSTER_OP));
@@ -856,13 +854,13 @@ class TaskEngineTest extends ControllerTestBase {
                                 comm,
                                 new DefaultControllerRetrySpecFactory(),
                                 new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
                                 Executors.defaultThreadFactory(),
                                 executor,
                                 new JobExecutor<>(executor),
                                 new InMemoryClusterStateDB(),
                                 le,
                                 ControllerTestUtils.DEFAULT_CLUSTER_OP,
-                                ControllerOptions.DEFAULT,
                                 httpCaller());
 
         // Case 1: Small task, no placement policy -> Should fit on generic-host (implied NoTag)

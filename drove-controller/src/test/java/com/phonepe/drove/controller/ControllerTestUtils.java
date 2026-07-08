@@ -18,8 +18,10 @@ package com.phonepe.drove.controller;
 
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.retry.*;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.*;
 import com.phonepe.drove.models.application.checks.CheckSpec;
@@ -502,5 +504,9 @@ public class ControllerTestUtils {
                             errorMessage,
                             date,
                             date);
+    }
+
+    public static SecurityPolicyEnforcer defaultEnforcer() {
+        return new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT);
     }
 }
