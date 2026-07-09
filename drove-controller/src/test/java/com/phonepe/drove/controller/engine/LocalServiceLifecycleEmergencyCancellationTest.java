@@ -49,6 +49,7 @@ import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorS
 import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.testsupport.*;
@@ -80,6 +81,7 @@ import javax.inject.Singleton;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -229,6 +231,12 @@ class LocalServiceLifecycleEmergencyCancellationTest {
             @Singleton
             public NodeDataStore nodeDataStore() {
                 return mock(NodeDataStore.class);
+            }
+
+            @Provides
+            @Singleton
+            public List<ContainerSecurityPolicyConfig> containerSecurityPolicyConfigs() {
+                return List.of();
             }
         });
         injector.injectMembers(this);

@@ -1251,7 +1251,7 @@ public class ControllerUtils {
  
     }
 
-    private static List<String> ensureWhitelistedVolumes(
+    public static List<String> ensureWhitelistedVolumes(
             Collection<MountedVolume> volumes, ContainerSecurityProfile securityProfile) {
         val whitelistedDirs = Objects.requireNonNullElse(
                 securityProfile.getAllowedMountDirs(),
@@ -1267,7 +1267,7 @@ public class ControllerUtils {
         return List.of();
     }
 
-    private static List<String> ensureCmdlArgs(
+    public static List<String> ensureCmdlArgs(
             List<String> args, ContainerSecurityProfile securityProfile) {
         val argsDisabled = Objects.requireNonNullElse(securityProfile.getDisableCmdlArgs(),
                 ContainerSecurityProfile.DEFAULT_DISABLE_CMDL_ARGS);
@@ -1281,7 +1281,7 @@ public class ControllerUtils {
         return List.of();
     }
 
-    private static List<String> checkDeviceDisabled(
+    public static List<String> checkDeviceDisabled(
             List<DeviceSpec> devices, 
             ContainerSecurityProfile securityProfile) {
         val deviceEnabled = Objects.requireNonNullElse(securityProfile.getEnableRawDeviceAccess(),

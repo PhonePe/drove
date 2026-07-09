@@ -27,6 +27,7 @@ import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -40,13 +41,10 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.*;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.testsupport.*;
@@ -150,15 +148,6 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
 
             @Provides
             @Singleton
-            public ExecutorSelector executorSelector() {
-                val allocator = new GpuAwareNumaExecutorResourceAllocator();
-                return new CompositeExecutorSelector(
-                        new FirstFitExecutorSelector(allocator),
-                        new ScoredExecutorSelector(allocator, new MaxGpuNumaLocalAllocation()));
-            }
-
-            @Provides
-            @Singleton
             public LeadershipEnsurer leadershipEnsurer() {
                 val l = mock(LeadershipEnsurer.class);
                 when(l.isLeader()).thenReturn(true);
@@ -210,6 +199,18 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
             @Singleton
             public HttpCaller httpCaller() {
                 return CommonTestUtils.httpCaller();
+            }
+
+            @Provides
+            @Singleton
+            public NodeDataStore nodeDataStore() {
+                return mock(NodeDataStore.class);
+            }
+
+            @Provides
+            @Singleton
+            public List<ContainerSecurityPolicyConfig> containerSecurityPolicyConfigs() {
+                return List.of();
             }
         });
         injector.injectMembers(this);
