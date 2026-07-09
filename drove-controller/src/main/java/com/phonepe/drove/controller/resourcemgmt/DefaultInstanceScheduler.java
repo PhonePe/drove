@@ -301,12 +301,15 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     private Map<String, Map<String, String>> prepareAllExecutorMetadata(Set<String> executorIds) {
-        return executorIds.stream()
+        return clusterResourcesDB.currentSnapshot(executorIds)
+                .entrySet()
+                .stream()
                 .collect(Collectors.toMap(
-                        executorId -> executorId,
-                        executorId -> clusterResourcesDB.currentSnapshot(executorId)
-                                .map(executorHostInfo -> executorHostInfo.getNodeData().getMetadata())
-                                .orElse(Map.of())));
+                        Map.Entry::getKey,
+                        entry -> Objects.nonNull(entry.getValue()) && Objects.nonNull(entry.getValue().getNodeData()) ?
+                                Objects.requireNonNullElse(entry.getValue().getNodeData().getMetadata(), Map.of()) :
+                                Map.of()
+                ));
     }
 
     private boolean validateNode(

@@ -118,6 +118,24 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         }
     }
 
+    /**
+     *
+     * @param executorIds
+     * @return Map<String, ExecutorHostInfo>
+     *     when executorId is not found, it will be absent from the result map
+     */
+    @Override
+    public Map<String, ExecutorHostInfo> currentSnapshot(Set<String> executorIds) {
+        val stamp = lock.readLock();
+        try {
+            return executorIds.stream()
+                    .filter(nodes::containsKey)
+                    .collect(Collectors.toUnmodifiableMap(id -> id, nodes::get));
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
 
     @Override
     public Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId) {

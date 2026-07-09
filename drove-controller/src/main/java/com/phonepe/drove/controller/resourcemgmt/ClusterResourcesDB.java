@@ -30,6 +30,7 @@ import lombok.Value;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -71,6 +72,8 @@ public abstract class ClusterResourcesDB {
     public abstract List<ExecutorHostInfo> lastKnownSnapshots();
 
     public abstract Optional<ExecutorHostInfo> currentSnapshot(String executorId);
+
+    public abstract Map<String, ExecutorHostInfo> currentSnapshot(Set<String> executorIds);
 
     public abstract Optional<ExecutorHostInfo> lastKnownSnapshot(String executorId);
 

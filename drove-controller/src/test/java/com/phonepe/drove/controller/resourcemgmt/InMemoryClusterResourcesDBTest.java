@@ -419,4 +419,39 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                      .orElse(null));
     }
 
+    @Test
+    void testBulkExecutorSnapshotLookup() {
+        val db = new InMemoryClusterResourcesDB();
+        db.update(IntStream.rangeClosed(1, 5)
+                          .mapToObj(ControllerTestUtils::generateExecutorNode)
+                          .toList());
+
+        val allIds = IntStream.rangeClosed(1, 5)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toUnmodifiableSet());
+
+        val ghostIds = Set.of("ghost-1", "ghost-2");
+
+        // All existing IDs → full map with correct ExecutorHostInfo per entry
+        val fullResult = db.currentSnapshot(allIds);
+        assertEquals(5, fullResult.size());
+        allIds.forEach(id -> assertEquals(id, fullResult.get(id).getExecutorId()));
+
+        // Empty input set → empty map regardless of DB contents
+        assertTrue(db.currentSnapshot(Set.of()).isEmpty());
+
+        // All non-existent IDs → empty map, no Optional.empty() noise
+        assertTrue(db.currentSnapshot(ghostIds).isEmpty());
+
+        // Partial: mix of known (1-3) and unknown IDs → only known IDs in result
+        val existingIds = IntStream.rangeClosed(1, 3)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toUnmodifiableSet());
+
+        val partialResult = db.currentSnapshot(Sets.union(existingIds, ghostIds));
+        assertEquals(3, partialResult.size());
+        existingIds.forEach(id -> assertTrue(partialResult.containsKey(id)));
+        ghostIds.forEach(id -> assertFalse(partialResult.containsKey(id)));
+    }
+
 }
