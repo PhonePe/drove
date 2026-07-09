@@ -29,7 +29,6 @@ public class DeployableSecuritySpec {
 
     public static final DeployableSecuritySpec DEFAULT = new DeployableSecuritySpec(
             ContainerSecurityProfile.DEFAULT_ENABLE_PRIVILEGED_MODE,
-            ContainerSecurityProfile.DEFAULT_ENABLE_RAW_DEVICE_ACCESS,
             Capabilities.DEFAULT,
             ContainerSecurityProfile.DEFAULT_SECCOMP_PROFILE
     );
@@ -37,9 +36,6 @@ public class DeployableSecuritySpec {
     @Builder.Default
     Boolean enablePrivilegedMode = ContainerSecurityProfile.DEFAULT_ENABLE_PRIVILEGED_MODE;
     
-    @Builder.Default
-    Boolean enableRawDeviceAccess = ContainerSecurityProfile.DEFAULT_ENABLE_RAW_DEVICE_ACCESS;
-
     @Builder.Default
     Capabilities capabilities = Capabilities.DEFAULT;
 
@@ -49,7 +45,6 @@ public class DeployableSecuritySpec {
     public static DeployableSecuritySpec from(final ContainerSecurityProfile containerSecurityProfile) {
         return DeployableSecuritySpec.builder()
                 .enablePrivilegedMode(containerSecurityProfile.getEnablePrivilegedMode())
-                .enableRawDeviceAccess(containerSecurityProfile.getEnableRawDeviceAccess())
                 .capabilities(containerSecurityProfile.getCapabilities())
                 .seccompProfile(containerSecurityProfile.getSeccompProfile())
                 .build();

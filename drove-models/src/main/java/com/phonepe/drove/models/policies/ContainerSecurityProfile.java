@@ -41,7 +41,6 @@ public class ContainerSecurityProfile {
         public static final Capabilities DEFAULT = Capabilities.builder()
                 .addedCapabilities(Set.of())
                 .droppedCapabilities(Set.of())
-                .allCapabilities(Set.of())
                 .build();
         /**
          * Capabilities that are added to the container in addition to the default set of capabilities.
@@ -53,11 +52,6 @@ public class ContainerSecurityProfile {
          */
         Set<String> droppedCapabilities;
 
-        /**
-         * All capabilities that are allowed for the container.
-         * If a non empty set is specified, it overrides both addedCapabilities and droppedCapabilities.
-         */
-        Set<String> allCapabilities;
     }
 
     public static final String DEFAULT_POLICY_NAME = "__default__";
