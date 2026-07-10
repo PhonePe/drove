@@ -157,17 +157,8 @@ public class DashboardDataSource {
     }
 
     public Optional<DashboardData> current() {
-        val locked = dashboardDataLock.tryLock();
-        if(locked) {
-            try {
-                return Optional.ofNullable(cachedDashboardData.get());
-            }
-            finally {
-                dashboardDataLock.unlock();
-            }
-        }
-        log.debug("Could not acquire lock to read dashboard data. Returning empty");
-        return Optional.empty();
+        // As cachedDashboardData is AtomicReference, avoiding locking is safe here.
+        return Optional.ofNullable(cachedDashboardData.get());
     }
 
     private void refreshDashboardData(Date triggeredAt) {
