@@ -45,6 +45,7 @@ import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.testsupport.*;
@@ -350,6 +351,26 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
         destroyApp(appId);
     }
 
+    @Test
+    void testSecuritySpecPropagation() {
+        val spec = ControllerTestUtils.appSpec();
+        val appId = ControllerUtils.deployableObjectId(spec);
+
+        executor.getLastStartedAppSpec().set(null);
+        val states = new HashSet<ApplicationState>();
+        setupStateRecorder(appId, states);
+        createApp(spec, appId);
+        startInstance(appId);
+
+        assertNotNull(executor.getLastStartedAppSpec().get(),
+                      "ApplicationInstanceSpec must have been captured by DummyExecutor");
+        assertNotNull(executor.getLastStartedAppSpec().get().getSecuritySpec(),
+                      "securitySpec must not be null on the ApplicationInstanceSpec");
+
+        suspendApp(appId);
+        destroyApp(appId);
+    }
+
     private void setupStateRecorder(String appId, Set<ApplicationState> states) {
         droveEventBus.onNewEvent().connect(e -> {
             if (e instanceof DroveAppStateChangeEvent asc) {
@@ -360,7 +381,6 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
             }
         });
     }
-
 
     private String getSingleInstanceId(String appId) {
         return instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)

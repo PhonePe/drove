@@ -64,9 +64,11 @@ import static com.phonepe.drove.models.taskinstance.TaskState.RUNNING;
 import static com.phonepe.drove.models.taskinstance.TaskState.STOPPED;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
+import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 
 /**
  *
@@ -902,5 +904,94 @@ class TaskEngineTest extends ControllerTestBase {
             assertEquals(ValidationStatus.FAILURE, r.getStatus(), "Huge task should fail even on tagged host");
             assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Cluster does not have enough CPU")));
         }
+    }
+
+
+    @Test
+    void testCreateTaskCustomPolicyBlocksDevice() {
+        val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+        cdb.update(IntStream.rangeClosed(1, 5)
+                .mapToObj(ControllerTestUtils::generateExecutorNode)
+                .toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val comm = mock(ControllerCommunicator.class);
+        val taskSpec = taskSpec()
+                .withDevices(List.of(DirectDeviceSpec.builder()
+                                .pathOnHost("/dev/sda")
+                                .build()));
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("no-device")
+                .enableRawDeviceAccess(false)
+                .build();
+        val config = ContainerSecurityPolicyConfig.builder()
+                .match(List.of("COMPUTATION/*"))
+                .profile(profile)
+                .build();
+        val securityEnforcer = new SecurityPolicyEnforcer(List.of(config), ControllerOptions.DEFAULT);
+        val executor = Executors.newCachedThreadPool();
+        val te = new TaskEngine(pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                securityEnforcer,
+                                Executors.defaultThreadFactory(),
+                                executor,
+                                new JobExecutor<>(executor),
+                                new InMemoryClusterStateDB(),
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                httpCaller());
+        val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
+        assertEquals(ValidationStatus.FAILURE, r.getStatus());
+        assertTrue(r.getMessages().get(0).contains("Device access is disabled"));
+    }
+
+    @Test
+    void testCreateTaskCustomPolicyAllowsVolume() {
+        val cdb = new InMemoryClusterResourcesDB();
+        val pair = createDefaultInstanceScheduler(cdb);
+        cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val comm = mock(ControllerCommunicator.class);
+        // /var/log volume — blocked by default but allowed by custom policy
+        val taskSpec = taskSpec()
+                .withVolumes(List.of(new MountedVolume("/var/log", "/var/log",
+                                                       MountedVolume.MountMode.READ_ONLY)));
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("allow-var-log")
+                .allowedMountDirs(List.of("/var/log"))
+                .build();
+        val config = ContainerSecurityPolicyConfig.builder()
+                .match(List.of("COMPUTATION/*"))
+                .profile(profile)
+                .build();
+        val securityEnforcer = new SecurityPolicyEnforcer(
+                List.of(config), ControllerOptions.DEFAULT.withAllowedMountDirs(List.of("/tmp")));
+        when(comm.send(any(StartTaskMessage.class)))
+                .thenReturn(new MessageResponse(null, MessageDeliveryStatus.ACCEPTED));
+        val executor = Executors.newCachedThreadPool();
+        val te = new TaskEngine(pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                securityEnforcer,
+                                Executors.defaultThreadFactory(),
+                                executor,
+                                new JobExecutor<>(executor),
+                                new InMemoryClusterStateDB(),
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                httpCaller());
+        val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
+        // Validation must pass (no volume error), even though taskSpec has /var/log
+        assertNotEquals("Volume mount requested on non whitelisted host directory: /var/log",
+                        r.getMessages().isEmpty() ? "" : r.getMessages().get(0));
     }
 }

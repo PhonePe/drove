@@ -93,6 +93,7 @@ import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.engine.ValidationStatus.SUCCESS;
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -387,5 +388,29 @@ class LocalServiceLifecycleManagementEngineTest {
         val res = engine.handleOperation(operation);
         assertEquals(SUCCESS, res.getStatus(), Joiner.on(",").join(res.getMessages()));
         CommonTestUtils.waitUntil(() -> states.contains(requiredState), Duration.ofSeconds(35));
+    }
+
+    @Test
+    void testSecuritySpecPropagated() {
+        val spec = ControllerTestUtils.localServiceSpec();
+        val serviceId = ControllerUtils.deployableObjectId(spec);
+
+        executor.getLastStartedLocalServiceSpec().set(null);
+        setupStateRecorder(serviceId, states);
+        createService(spec, serviceId);
+        deployTestInstanceService(serviceId);
+        activateService(serviceId);
+        sendCommand(serviceId, new LocalServiceAdjustInstancesOperation(serviceId, null), ADJUSTING_INSTANCES);
+        ensureCurrentState(serviceId, ACTIVE);
+
+        assertNotNull(executor.getLastStartedLocalServiceSpec().get(),
+                      "LocalServiceInstanceSpec must have been captured by DummyExecutor");
+        assertNotNull(executor.getLastStartedLocalServiceSpec().get().getSecuritySpec(),
+                      "securitySpec must not be null on the LocalServiceInstanceSpec");
+
+        deactivateService(serviceId);
+        sendCommand(serviceId, new LocalServiceAdjustInstancesOperation(serviceId, null), ADJUSTING_INSTANCES);
+        ensureCurrentState(serviceId, INACTIVE);
+        destroyService(serviceId);
     }
 }

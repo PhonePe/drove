@@ -165,7 +165,7 @@ public class StartTaskJob implements Job<Boolean> {
         }
         val securityProfile = securityPolicyEnforcer.resolve(taskSpec);
         
-        log.info("Scheduling localservice instance {}/{} on node {} with security profile {}",
+        log.info("Scheduling task instance {}/{} on node {} with security profile {}",
                  taskSpec.getSourceAppName(), instanceId, node.getExecutorId(), securityProfile.getPolicyName());
         final var spec = new TaskInstanceSpec(taskId,
                                               sourceApp,

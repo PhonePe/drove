@@ -63,6 +63,8 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 
 /**
  *
@@ -672,5 +674,85 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT));
     }
 
+    @Test
+    void testCreateCustomPolicyAllowsVolume() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("allow-var-log")
+                .allowedMountDirs(List.of("/var/log"))
+                .build();
+        val enforcer = enforcerWithPolicy("SERVICE/TEST_SPEC", profile);
+        val validator = createValidatorWithEnforcer(enforcer);
+        val spec = ControllerTestUtils.appSpec(1)
+                .withVolumes(List.of(new MountedVolume("/var/log", "/var/log",
+                                                       MountedVolume.MountMode.READ_ONLY)));
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(
+                                                      spec, 1, ClusterOpSpec.DEFAULT));
+        ensureSuccess(res);
+    }
+
+    @Test
+    void testCreateCustomPolicyBlocksCmdlArgs() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("no-cmdl")
+                .disableCmdlArgs(true)
+                .build();
+        val enforcer = enforcerWithPolicy("SERVICE/*", profile);
+        val validator = createValidatorWithEnforcer(enforcer);
+        val spec = ControllerTestUtils.appSpec(1)
+                .withArgs(List.of("--some-flag"));
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(
+                                                      spec, 1, ClusterOpSpec.DEFAULT));
+        ensureFailure(res, "Passing command line to containers is disabled on this cluster");
+    }
+
+    @Test
+    void testCreateCustomPolicyAllowsDevice() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("allow-device")
+                .enableRawDeviceAccess(true)
+                .build();
+        val enforcer = enforcerWithPolicy("SERVICE/*", profile);
+        val validator = createValidatorWithEnforcer(enforcer);
+        val spec = ControllerTestUtils.appSpec(1)
+                .withDevices(List.of(DirectDeviceSpec.builder()
+                                             .pathOnHost("/dev/random")
+                                             .build()));
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(
+                                                      spec, 1, ClusterOpSpec.DEFAULT));
+        ensureSuccess(res);
+    }
+
+    @Test
+    void testCreatePolicyNoMatchFallback() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("some-policy")
+                .disableCmdlArgs(true)
+                .build();
+        val enforcer = enforcerWithPolicy("SERVICE/SomeOtherApp.*", profile);
+        val validator = createValidatorWithEnforcer(enforcer);
+        val spec = ControllerTestUtils.appSpec(1);
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(
+                                                      spec, 1, ClusterOpSpec.DEFAULT));
+        ensureSuccess(res);
+    }
+
+    private ApplicationCommandValidator createValidatorWithEnforcer(
+            SecurityPolicyEnforcer enforcer) {
+        return new ApplicationCommandValidator(asDB, crDB, aiDB, enforcer);
+    }
+
+    private SecurityPolicyEnforcer enforcerWithPolicy(
+            String matchRule,
+            ContainerSecurityProfile profile) {
+        val config = ContainerSecurityPolicyConfig.builder()
+                .match(List.of(matchRule))
+                .profile(profile)
+                .build();
+        return new SecurityPolicyEnforcer(List.of(config), ControllerOptions.DEFAULT);
+    }
 
 }

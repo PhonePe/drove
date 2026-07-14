@@ -49,10 +49,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.phonepe.drove.common.CommonTestUtils.httpCaller;
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.controller.config.ControllerOptions;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
@@ -284,5 +291,137 @@ class StartSingleInstanceJobTest extends ControllerTestBase {
             testStatus.set(r.getResult());
         });
         assertFalse(testStatus.get());
+    }
+
+    @Test
+    void testSecuritySpecPropagated() {
+        val instanceScheduler = mock(InstanceScheduler.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val comm = mock(ControllerCommunicator.class);
+        val sessionId = UUID.randomUUID().toString();
+        val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
+                .thenReturn(Optional.of(allocatedExecutorNode));
+
+        val capturedSpec = new AtomicReference<ApplicationInstanceSpec>();
+        when(comm.send(any(StartInstanceMessage.class)))
+                .thenAnswer((Answer<MessageResponse>) invocation -> {
+                    capturedSpec.set(invocation.<StartInstanceMessage>getArgument(0).getSpec());
+                    return new MessageResponse(
+                            invocation.<StartInstanceMessage>getArgument(0).getHeader(),
+                            MessageDeliveryStatus.ACCEPTED);
+                });
+
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
+        when(instanceInfoDB.instance(eq(appId), anyString()))
+                .thenAnswer((Answer<Optional<InstanceInfo>>) inv
+                        -> Optional.of(new InstanceInfo(appId,
+                                                        APP_SPEC.getName(),
+                                                        inv.getArgument(1),
+                                                        allocatedExecutorNode.getExecutorId(),
+                                                        new LocalInstanceInfo(allocatedExecutorNode.getHostname(),
+                                                                              Map.of("main", new InstancePort(8000, 32000, PortType.HTTP))),
+                                                        List.of(allocatedExecutorNode.getCpu(),
+                                                                allocatedExecutorNode.getMemory()),
+                                                        InstanceState.HEALTHY,
+                                                        Map.of(),
+                                                        null,
+                                                        new Date(),
+                                                        new Date())));
+
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("privileged-policy")
+                .enablePrivilegedMode(true)
+                .build();
+        val config = ContainerSecurityPolicyConfig.builder()
+                .match(List.of("SERVICE/TEST_SPEC"))
+                .profile(profile)
+                .build();
+        val enforcer = new SecurityPolicyEnforcer(List.of(config), ControllerOptions.DEFAULT);
+
+        val rf = mock(ControllerRetrySpecFactory.class);
+        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        val job = new StartSingleInstanceJob(APP_SPEC,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                             instanceScheduler,
+                                             instanceInfoDB,
+                                             comm,
+                                             sessionId,
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager,
+                                             enforcer,
+                                             httpCaller());
+        val testStatus = new AtomicBoolean();
+        val exec = new JobExecutor<Boolean>(MoreExecutors.newDirectExecutorService());
+        exec.schedule(Collections.singletonList(job), new BooleanResponseCombiner(), r -> {
+            testStatus.set(r.getResult());
+        });
+        assertTrue(testStatus.get());
+        assertNotNull(capturedSpec.get());
+        assertNotNull(capturedSpec.get().getSecuritySpec());
+        assertTrue(capturedSpec.get().getSecuritySpec().getEnablePrivilegedMode());
+    }
+
+    @Test
+    void testSecuritySpecPrivilegedFalseOnDefault() {
+        val instanceScheduler = mock(InstanceScheduler.class);
+        val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
+        val comm = mock(ControllerCommunicator.class);
+        val sessionId = UUID.randomUUID().toString();
+        val allocatedExecutorNode = ControllerTestUtils.allocatedExecutorNode(8080);
+        when(instanceScheduler.schedule(eq(sessionId), anyString(), eq(APP_SPEC)))
+                .thenReturn(Optional.of(allocatedExecutorNode));
+
+        val capturedSpec = new AtomicReference<ApplicationInstanceSpec>();
+        when(comm.send(any(StartInstanceMessage.class)))
+                .thenAnswer((Answer<MessageResponse>) invocation -> {
+                    capturedSpec.set(invocation.<StartInstanceMessage>getArgument(0).getSpec());
+                    return new MessageResponse(
+                            invocation.<StartInstanceMessage>getArgument(0).getHeader(),
+                            MessageDeliveryStatus.ACCEPTED);
+                });
+
+        val appId = ControllerUtils.deployableObjectId(APP_SPEC);
+        when(instanceInfoDB.instance(eq(appId), anyString()))
+                .thenAnswer((Answer<Optional<InstanceInfo>>) inv
+                        -> Optional.of(new InstanceInfo(appId,
+                                                        APP_SPEC.getName(),
+                                                        inv.getArgument(1),
+                                                        allocatedExecutorNode.getExecutorId(),
+                                                        new LocalInstanceInfo(allocatedExecutorNode.getHostname(),
+                                                                              Map.of("main", new InstancePort(8000, 32000, PortType.HTTP))),
+                                                        List.of(allocatedExecutorNode.getCpu(),
+                                                                allocatedExecutorNode.getMemory()),
+                                                        InstanceState.HEALTHY,
+                                                        Collections.emptyMap(),
+                                                        null,
+                                                        new Date(),
+                                                        new Date())));
+
+        val rf = mock(ControllerRetrySpecFactory.class);
+        when(rf.jobRetrySpec()).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        when(rf.instanceStateCheckRetrySpec(any(Long.class))).thenReturn(ControllerTestUtils.NO_RETRY_SPEC);
+        val job = new StartSingleInstanceJob(APP_SPEC,
+                                             ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                             instanceScheduler,
+                                             instanceInfoDB,
+                                             comm,
+                                             sessionId,
+                                             rf,
+                                             instanceIdGenerator,
+                                             tokenManager,
+                                             ControllerTestUtils.defaultEnforcer(),
+                                             httpCaller());
+        val testStatus = new AtomicBoolean();
+        val exec = new JobExecutor<Boolean>(MoreExecutors.newDirectExecutorService());
+        exec.schedule(Collections.singletonList(job), new BooleanResponseCombiner(), r -> {
+            testStatus.set(r.getResult());
+        });
+        assertTrue(testStatus.get());
+        assertNotNull(capturedSpec.get());
+        assertNotNull(capturedSpec.get().getSecuritySpec());
+        assertFalse(capturedSpec.get().getSecuritySpec().getEnablePrivilegedMode());
     }
 }

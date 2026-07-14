@@ -17,6 +17,8 @@
 package com.phonepe.drove.controller.testsupport;
 
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.*;
@@ -36,9 +38,9 @@ import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.*;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
@@ -72,6 +74,10 @@ public class DummyExecutor implements Runnable, AutoCloseable {
 
     private final Map<String, InstanceInfo> appInstances = new ConcurrentHashMap<>();
     private final Map<String, LocalServiceInstanceInfo> serviceInstances = new ConcurrentHashMap<>();
+    @Getter
+    private final AtomicReference<ApplicationInstanceSpec> lastStartedAppSpec = new AtomicReference<>();
+    @Getter
+    private final AtomicReference<LocalServiceInstanceSpec> lastStartedLocalServiceSpec = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
     private boolean stopRequested = false;
@@ -224,6 +230,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                         new Date(),
                         new Date());
                 appInstances.put(instanceId, instanceInfo);
+                lastStartedAppSpec.set(spec);
                 spec.getResources()
                         .forEach(r -> r.accept(new ResourceAllocationVisitor<Void>() {
                             @Override
@@ -315,6 +322,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                         new Date(),
                         new Date());
                 serviceInstances.put(instanceId, instanceInfo);
+                lastStartedLocalServiceSpec.set(spec);
                 spec.getResources()
                         .forEach(r -> r.accept(new ResourceAllocationVisitor<Void>() {
                             @Override

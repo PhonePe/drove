@@ -53,7 +53,7 @@ public class ContainerSecurityPolicyConfig {
             //If this is '*', this will be applicable to all jobTypes
             val jobTypes = parseToJobType(parts[0]);
             Preconditions.checkArgument(!jobTypes.isEmpty(), "Could not extract jobType from rules");
-            if(parts.length == 0 || parts[1].equals("*")) {
+            if(parts.length == 1 || parts[1].equals("*")) {
                 return new ParsedPolicyRule(jobTypes, Pattern.compile(".*"));
             }
             return new ParsedPolicyRule(jobTypes, Pattern.compile(parts[1]));

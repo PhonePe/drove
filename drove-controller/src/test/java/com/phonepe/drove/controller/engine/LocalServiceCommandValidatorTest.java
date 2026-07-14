@@ -60,6 +60,8 @@ import static com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE;
 import static com.phonepe.drove.models.localservice.LocalServiceState.INACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 
 /**
  * Tests {@link LocalServiceCommandValidator}
@@ -503,6 +505,35 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
                                                                                          ClusterOpSpec.DEFAULT)));
     }
 
+    @Test
+    void testCreateCustomPolicyAllowsVolume() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("allow-var-log")
+                .allowedMountDirs(List.of("/var/log"))
+                .build();
+        val enforcer = enforcerWithPolicy("LOCAL_SERVICE/TEST_SPEC", profile);
+        val validator = new LocalServiceCommandValidator(lsDB, enforcer);
+        val spec = ControllerTestUtils.localServiceSpec(1)
+                .withVolumes(List.of(new MountedVolume("/var/log", "/var/log",
+                                                       MountedVolume.MountMode.READ_ONLY)));
+        val res = validator.validateOperation(engine, new LocalServiceCreateOperation(spec, 1));
+        ensureSuccess(res);
+    }
+
+    @Test
+    void testCreateCustomPolicyBlocksCmdlArgs() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("no-cmdl")
+                .disableCmdlArgs(true)
+                .build();
+        val enforcer = enforcerWithPolicy("LOCAL_SERVICE/*", profile);
+        val validator = new LocalServiceCommandValidator(lsDB, enforcer);
+        val spec = ControllerTestUtils.localServiceSpec(1)
+                .withArgs(List.of("--some-flag"));
+        val res = validator.validateOperation(engine, new LocalServiceCreateOperation(spec, 1));
+        ensureFailure(res, "Passing command line to containers is disabled on this cluster");
+    }
+
     private static void ensureSuccess(ValidationResult res) {
         assertEquals(ValidationStatus.SUCCESS, res.getStatus(),
                      () -> "Messages: " + res.getMessages());
@@ -548,6 +579,17 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
 
     private LocalServiceCommandValidator createValidator() {
         return new LocalServiceCommandValidator(lsDB, ControllerTestUtils.defaultEnforcer());
+    }
+
+    private SecurityPolicyEnforcer enforcerWithPolicy(
+            String matchRule,
+            ContainerSecurityProfile profile) {
+        val config = ContainerSecurityPolicyConfig.builder()
+                .match(List.of(matchRule))
+                .profile(profile)
+                .build();
+        return new SecurityPolicyEnforcer(
+                List.of(config), ControllerOptions.DEFAULT);
     }
 
 }
