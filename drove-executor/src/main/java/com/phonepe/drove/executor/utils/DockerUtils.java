@@ -49,6 +49,8 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile.Capabilities;
+
 import io.dropwizard.util.DataSize;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -638,56 +640,50 @@ public class DockerUtils {
             String id,
             HostConfig hostConfig,
             DeploymentUnitSpec deploymentUnitSpec) {
-        var securityProfile = deploymentUnitSpec.getSecuritySpec();
+        val securityProfile = deploymentUnitSpec.getSecuritySpec();
         if (null == securityProfile) {
             log.warn("No security profile specified for deployment unit: {}", id);
+            return hostConfig;
+        }
+        if (Boolean.TRUE.equals(securityProfile.getEnablePrivilegedMode())) {
+            hostConfig.withPrivileged(true);
+            log.info("Privileged mode enabled for deployment unit: {}", id);
         }
         else {
-            if (Boolean.TRUE.equals(securityProfile.getEnablePrivilegedMode())) {
-                hostConfig.withPrivileged(true);
-                log.info("Privileged mode enabled for deployment unit: {}", id);
-            }
-            else {
-                log.info("Privileged mode not enabled for deployment unit: {}", id);
-            }
-            val capabilties = securityProfile.getCapabilities();
-            if (null != capabilties) {
-                val addedCaps = Objects.requireNonNullElse(capabilties.getAddedCapabilities(), Set.<String>of());
-                if(addedCaps.isEmpty()) {
-                    log.info("No capabilities added for deployment unit: {}", id);
-                }
-                else {
-                    hostConfig.withCapAdd(addedCaps
-                            .stream()
-                            .map(Capability::valueOf)
-                            .toList()
-                            .toArray(new Capability[0]));
-                    log.info("Capabilities added for deployment unit {}: {}", id, addedCaps);
-                }
-                val droppedCaps = Objects.requireNonNullElse(capabilties.getDroppedCapabilities(),
-                        Set.<String>of());
-                if(droppedCaps.isEmpty()) {
-                    log.info("No capabilities dropped for deployment unit: {}", id);
-                }
-                else {
-                    hostConfig.withCapDrop(droppedCaps
-                            .stream()
-                            .map(Capability::valueOf)
-                            .toList()
-                            .toArray(new Capability[0]));
-                    log.info("Capabilities dropped for deployment unit {}: {}", id, droppedCaps);
-                }
-            }
-            else {
-                log.info("No capability changes for deployment unit: {}", id);
-            }
-            if (!Strings.isNullOrEmpty(securityProfile.getSeccompProfile())) {
-                hostConfig.withSecurityOpts(List.of("seccomp=" + securityProfile.getSeccompProfile()));
-                log.info("Seccomp profile for deployment unit {}: {}", id, securityProfile.getSeccompProfile());
-            }
-            else {
-                log.info("No seccomp profile specified for deployment unit: {}", id);
-            }
+            log.info("Privileged mode not enabled for deployment unit: {}", id);
+        }
+        val capabilties = Objects.requireNonNullElse(securityProfile.getCapabilities(), Capabilities.DEFAULT);
+        val addedCaps = Objects.requireNonNullElse(capabilties.getAddedCapabilities(), Set.<String>of());
+        if (addedCaps.isEmpty()) {
+            log.info("No capabilities added for deployment unit: {}", id);
+        }
+        else {
+            hostConfig.withCapAdd(addedCaps
+                    .stream()
+                    .map(Capability::valueOf)
+                    .toList()
+                    .toArray(new Capability[0]));
+            log.info("Capabilities added for deployment unit {}: {}", id, addedCaps);
+        }
+        val droppedCaps = Objects.requireNonNullElse(capabilties.getDroppedCapabilities(),
+                                                     Set.<String>of());
+        if (droppedCaps.isEmpty()) {
+            log.info("No capabilities dropped for deployment unit: {}", id);
+        }
+        else {
+            hostConfig.withCapDrop(droppedCaps
+                    .stream()
+                    .map(Capability::valueOf)
+                    .toList()
+                    .toArray(new Capability[0]));
+            log.info("Capabilities dropped for deployment unit {}: {}", id, droppedCaps);
+        }
+        if (!Strings.isNullOrEmpty(securityProfile.getSeccompProfile())) {
+            hostConfig.withSecurityOpts(List.of("seccomp=" + securityProfile.getSeccompProfile()));
+            log.info("Seccomp profile for deployment unit {}: {}", id, securityProfile.getSeccompProfile());
+        }
+        else {
+            log.info("No seccomp profile specified for deployment unit: {}", id);
         }
         return hostConfig;
     }

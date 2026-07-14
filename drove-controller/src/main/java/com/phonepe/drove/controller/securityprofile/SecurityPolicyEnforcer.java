@@ -52,11 +52,9 @@ public class SecurityPolicyEnforcer {
         }
         else {
             this.policies = policies.stream()
-                    .flatMap(policy -> {
-                        return policy.getMatch()
+                    .flatMap(policy -> policy.getMatch()
                                 .stream()
-                                .map(policyRule -> Pair.of(ParsedPolicyRule.from(policyRule), policy.getProfile()));
-                    })
+                                .map(policyRule -> Pair.of(ParsedPolicyRule.from(policyRule), policy.getProfile())))
                     .toList();
         }
     }
