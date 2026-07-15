@@ -17,10 +17,11 @@
 package com.phonepe.drove.controller.rule;
 
 import com.phonepe.drove.controller.ControllerTestBase;
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
-import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
+import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
 import org.junit.jupiter.api.Assertions;
@@ -32,11 +33,19 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 class RuleTest extends ControllerTestBase {
-    static SchedulingInfo schedulingInfoBasic = SchedulingInfo.builder()
-            .applicationEnvironment(Map.of())
-            .allExecutorMetadata(Map.of())
-            .executorNodeId("id")
-            .allocatedExecutorNodeMetadata(Map.of())
+    static NodeSelectionContext schedulingInfoBasic = NodeSelectionContext.builder()
+            .session(NodeSelectionContext.SchedulingSession.builder()
+                             .sessionId("test-session")
+                             .build())
+            .environment(NodeSelectionContext.SchedulingEnvironment.builder()
+                                 .liveExecutors(Map.of())
+                                 .variables(Map.of())
+                                 .build())
+            .allocation(NodeSelectionContext.NodeAllocation.builder()
+                                .spec(ControllerTestUtils.appSpec())
+                                .instanceId("test-instance")
+                                .node(ControllerTestUtils.allocatedExecutorNode(8080))
+                                .build())
             .build();
 
     static RuleEvaluator ruleEvaluatorWithOnlyMvel = new RuleEvaluator(Map.of(
@@ -51,7 +60,7 @@ class RuleTest extends ControllerTestBase {
 
     @ParameterizedTest(name = "name = {0} | evaluator: {1} | policy: {2} | status : {3} | result: {4} ")
     @MethodSource("testBasicCase")
-    void testCode(String name, RuleEvaluator ruleEvaluator, RuleBasedPlacementPolicy policy, SchedulingInfo obj, RuleCallStatus status, Boolean result) {
+    void testCode(String name, RuleEvaluator ruleEvaluator, RuleBasedPlacementPolicy policy, NodeSelectionContext obj, RuleCallStatus status, Boolean result) {
 
         var res = ruleEvaluator.evaluate(
                 policy,

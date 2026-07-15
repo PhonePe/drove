@@ -15,7 +15,7 @@
 package com.phonepe.drove.controller.rule;
 
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
-import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
+import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import com.phonepe.drove.models.operation.rule.RuleCheckResponse;
 import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
@@ -35,7 +35,7 @@ public class RuleEvaluator {
         this.ruleEvalStrategies = ruleEvalStrategies;
     }
 
-    public RuleEvalResponse evaluate(RuleBasedPlacementPolicy ruleBasedPlacementPolicy, SchedulingInfo schedulingInfo) {
+    public RuleEvalResponse evaluate(RuleBasedPlacementPolicy ruleBasedPlacementPolicy, NodeSelectionContext context) {
         if (!ruleEvalStrategies.containsKey(ruleBasedPlacementPolicy.getRuleType())) {
             warnUnsupportedRule(ruleBasedPlacementPolicy);
             return RuleEvalResponse.builder()
@@ -48,7 +48,7 @@ public class RuleEvaluator {
         return ruleEvalStrategies.get(ruleBasedPlacementPolicy.getRuleType())
                 .evaluate(
                         ruleBasedPlacementPolicy.getRule(),
-                        schedulingInfo
+                        context
                          );
 
     }

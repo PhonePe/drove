@@ -16,6 +16,21 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.rule.RuleEvaluator;
@@ -26,11 +41,20 @@ import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
-import com.phonepe.drove.models.application.placement.policies.*;
+import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
-import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
+import com.phonepe.drove.models.info.resources.NodeSelectionContext;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.InstanceResourceAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -43,21 +67,14 @@ import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
-import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
+
 import io.appform.functionmetrics.MonitoredFunction;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -104,7 +121,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             ApplicationInstanceInfoDB instanceInfoDB,
             TaskDB taskDB,
             LocalServiceStateDB localServiceStateDB,
-            ClusterResourcesDB clusterResourcesDB,
+      ClusterResourcesDB clusterResourcesDB,
             RuleEvaluator ruleEvaluator) {
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
@@ -135,11 +152,16 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                     log.info("CREATE::SID: {}", schedulingSessionId);
                     return clusterSnapshot(deploymentSpec);
                 });
-        val allExecutorLevelMetadata = prepareAllExecutorMetadata(sessionData.keySet());
         val selectedNode = clusterResourcesDB.selectNodes(
                 deploymentSpec.getResources(),
                 allowedStates,
-                filterContext -> validateNode(placementPolicy, sessionData, allExecutorLevelMetadata, filterContext, deploymentSpec));
+                filterContext -> validateNode(
+                    filterContext,
+                    schedulingSessionId,
+                    instanceId,
+                    placementPolicy,
+                    sessionData,
+                    deploymentSpec));
         //If a node is found, add it to the list of allocated nodes for this session
         //Next time a request for this session comes, this will ensure that allocations done in current session
         //Are taken into consideration
@@ -300,23 +322,12 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         });
     }
 
-    private Map<String, Map<String, String>> prepareAllExecutorMetadata(Set<String> executorIds) {
-        return clusterResourcesDB.currentSnapshot(executorIds)
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> Objects.nonNull(entry.getValue()) && Objects.nonNull(entry.getValue().getNodeData()) ?
-                                Objects.requireNonNullElse(entry.getValue().getNodeData().getMetadata(), Map.of()) :
-                                Map.of()
-                ));
-    }
-
     private boolean validateNode(
+            final ClusterResourcesDB.FilterContext filterContext,
+            final String sessionId,
+            final String instanceId,
             final PlacementPolicy placementPolicy,
             Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
-            final Map<String, Map<String, String>> allExecutorLevelMetadata,
-            final ClusterResourcesDB.FilterContext filterContext,
             final DeploymentSpec deploymentSpec) {
         val allocatedExecutorId = filterContext.getAllocatedExecutorNode().getExecutorId();
 
@@ -350,16 +361,27 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                var schedulingInfo = SchedulingInfo.builder()
-                        .executorNodeId(allocatedExecutorId)
-                        .allocatedExecutorNodeMetadata(
-                                Objects.requireNonNullElse(filterContext.getAllocatedExecutorNodeData().getMetadata(), Map.of()))
-                        .allocatedExecutorData(filterContext.getAllocatedExecutorNodeData())
-                        .allExecutorMetadata(allExecutorLevelMetadata)
-                        .applicationEnvironment(deploymentSpec.getEnv())
-                        .build();
+                val clusterSnapshot = filterContext.getLiveExecutors()
+                               .stream()
+                               .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId,
+                                                         ExecutorHostInfo::getNodeData));
+                val context = NodeSelectionContext.builder()
+                    .session(NodeSelectionContext.SchedulingSession.builder()
+                           .sessionId(sessionId)
+                            .existingAllocations(sessionLevelData)
+                            .build())
+                    .environment(NodeSelectionContext.SchedulingEnvironment.builder()
+                            .liveExecutors(clusterSnapshot)
+                            .variables(Map.copyOf(deploymentSpec.getEnv()))
+                            .build())
+                    .allocation(NodeSelectionContext.NodeAllocation.builder()
+                            .spec(deploymentSpec)
+                            .instanceId(instanceId)
+                            .node(filterContext.getAllocatedExecutorNode())
+                            .build())
+                    .build();
 
-                RuleEvalResponse evalResponse = ruleEvaluator.evaluate(ruleBased, schedulingInfo);
+                val evalResponse = ruleEvaluator.evaluate(ruleBased, context);
                 return (RuleCallStatus.SUCCESS == evalResponse.getStatus() &&
                         evalResponse.isResult());
             }

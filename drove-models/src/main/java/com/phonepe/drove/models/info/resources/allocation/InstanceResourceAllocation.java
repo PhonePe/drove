@@ -14,31 +14,17 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.controller.resourcemgmt;
+package com.phonepe.drove.models.info.resources.allocation;
 
-import com.phonepe.drove.models.info.nodedata.ExecutorState;
-import com.phonepe.drove.models.info.nodedata.NodeTransportType;
-import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import lombok.Value;
 
-import java.util.Map;
-import java.util.Set;
-
 /**
- *
+ * Represents the resource allocation for a specific instance of a workload on an executor.
  */
 @Value
-public class AllocatedExecutorNode {
+public class InstanceResourceAllocation {
     String executorId;
-    String hostname;
-    int port;
-    NodeTransportType transportType;
+    String instanceId;
     CPUAllocation cpu;
     MemoryAllocation memory;
-    GPUAllocation gpu;
-    Set<String> tags;
-    Map<String, String> metadata;
-    ExecutorState executorState;
 }

@@ -18,6 +18,7 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 
 import java.util.EnumSet;

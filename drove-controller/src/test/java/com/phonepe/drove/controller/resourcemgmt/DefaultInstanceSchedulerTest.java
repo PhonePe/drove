@@ -119,7 +119,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val schedId = "SCHED_ID_1";
         val instanceId = "I1";
         int nodeToBeSelected = 2;
-        val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy("'/allocatedExecutorNodeMetadata/envvar1' == \"val" + nodeToBeSelected + "\"", RuleBasedPlacementPolicy.RuleType.HOPE));
+        val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy("'/allocation/node/metadata/envvar1' == \"val" + nodeToBeSelected + "\"", RuleBasedPlacementPolicy.RuleType.HOPE));
         var node = sched.schedule(schedId, instanceId, spec).orElse(null);
         assertEquals("EXECUTOR_" + nodeToBeSelected, node.getExecutorId(), "Specific selected node as per ENV variable");
         sched.discardAllocation(schedId, instanceId, node);
@@ -135,7 +135,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val schedId = "SCHED_ID_1";
         val instanceId = "I1";
         val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy(
-                "allocatedExecutorNodeMetadata.containsKey(\"specialNode\")",
+                "allocation.node.metadata.containsKey(\"specialNode\")",
                 RuleBasedPlacementPolicy.RuleType.MVEL));
         var node = sched.schedule(schedId, instanceId, spec).orElse(null);
         Map<String, String> result = Map.of("EXECUTOR_4", "EXECUTOR_4", "EXECUTOR_5", "EXECUTOR_5");

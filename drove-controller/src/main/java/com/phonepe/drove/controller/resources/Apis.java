@@ -26,7 +26,7 @@ import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.masking.EnforceMasking;
-import com.phonepe.drove.models.api.DryRunRuleInfo;
+import com.phonepe.drove.models.api.DryRunRuleRequest;
 import com.phonepe.drove.controller.rule.RuleEvaluator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
@@ -136,13 +136,13 @@ public class Apis {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Dry run result with check and evaluation status")
     public Response validatePlacementRule(
             @Auth final DroveUser user,
-            @Valid @NotNull final DryRunRuleInfo dryRunRuleInfo) {
+            @Valid @NotNull final DryRunRuleRequest dryRunRuleInfo) {
 
         if ( CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
             return maintenanceModeError();
         }
-        val policy = dryRunRuleInfo.getRuleBasedPlacementPolicy();
-        val schedulingInfo = dryRunRuleInfo.getSchedulingInfo();
+        val policy = dryRunRuleInfo.getPolicy();
+        val context = dryRunRuleInfo.getContext();
 
         val checkResponse = ruleEvaluator.check(policy);
         if (RuleCallStatus.SUCCESS != checkResponse.getStatus()) {
@@ -155,7 +155,7 @@ public class Apis {
                                     .build()));
         }
 
-        val evalResponse = ruleEvaluator.evaluate(policy, schedulingInfo);
+        val evalResponse = ruleEvaluator.evaluate(policy, context);
 
         log.info("ACCESS_AUDIT: Placement rule dryrun: {} received from user: {}. Validation result: {}",
                 policy.getRule(), user.getName(), evalResponse.isResult());

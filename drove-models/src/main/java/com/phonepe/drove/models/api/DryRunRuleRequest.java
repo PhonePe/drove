@@ -13,7 +13,8 @@
 package com.phonepe.drove.models.api;
 
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
-import com.phonepe.drove.models.info.nodedata.SchedulingInfo;
+import com.phonepe.drove.models.info.resources.NodeSelectionContext;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Value;
@@ -28,13 +29,13 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 @Builder
 @Schema(description = "Input data for dry-run validation of rule-based placement policies against scheduling information")
-public class DryRunRuleInfo {
+public class DryRunRuleRequest {
 
     @Schema(description = "Rule-based placement policy to validate, containing rules for executor selection and constraints")
     @NotNull
-    RuleBasedPlacementPolicy ruleBasedPlacementPolicy;
+    RuleBasedPlacementPolicy policy;
 
     @Schema(description = "Scheduling information containing resource requirements and constraints for the workload")
     @NotNull
-    SchedulingInfo schedulingInfo;
+    NodeSelectionContext context;
 }
