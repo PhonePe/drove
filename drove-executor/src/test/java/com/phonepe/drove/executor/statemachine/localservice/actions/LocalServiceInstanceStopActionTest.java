@@ -52,8 +52,15 @@ class LocalServiceInstanceStopActionTest extends AbstractTestBase {
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+                .thenReturn(new ResourceInfo(null,
+                                             null,
+                                             null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         val startAction = new LocalServiceInstanceRunAction(new ResourceConfig(), ExecutorOptions.DEFAULT,
                                                            CommonTestUtils.httpCaller(),
                                                            MAPPER,

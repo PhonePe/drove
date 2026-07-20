@@ -18,26 +18,35 @@ package com.phonepe.drove.executor.resourcemgmt;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Value;
 import lombok.NoArgsConstructor;
+import lombok.With;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 
-@Data
+@Value
+@Builder
+@With
+@Jacksonized
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 public class OverProvisioning {
 
-    public static final OverProvisioning DEFAULT = new OverProvisioning();
-
+    public static boolean DEFAULT_ENABLED = false;
     public static final int DEFAULT_MULTIPLIER = 1;
     private static final int MIN_OVER_PROVISIONING_MULTIPLIER = 1;
     private static final int MAX_OVER_PROVISIONING_MULTIPLIER = 20;
 
+    public static final OverProvisioning DEFAULT = OverProvisioning.builder()
+        .enabled(DEFAULT_ENABLED)
+        .cpuMultiplier(DEFAULT_MULTIPLIER)
+        .memoryMultiplier(DEFAULT_MULTIPLIER)
+        .build();
+
     @Builder.Default
-    private boolean enabled = false;
+    private boolean enabled = DEFAULT_ENABLED;
 
     @Min(MIN_OVER_PROVISIONING_MULTIPLIER)
     @Max(MAX_OVER_PROVISIONING_MULTIPLIER)

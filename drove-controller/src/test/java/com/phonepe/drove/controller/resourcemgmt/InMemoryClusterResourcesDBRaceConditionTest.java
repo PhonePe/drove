@@ -68,7 +68,12 @@ class InMemoryClusterResourcesDBRaceConditionTest {
             new AvailableCPU(freeCores, Map.of()),
             new AvailableMemory(freeMemory, usedMemory),
             new AvailableGPU(freeGpuIds, List.of()),
-            new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+            new PhysicalLayout(freeCores,
+                               freeMemory,
+                               physicalGpus,
+                               PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(

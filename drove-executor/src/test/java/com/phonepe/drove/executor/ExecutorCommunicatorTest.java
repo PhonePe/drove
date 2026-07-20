@@ -43,7 +43,6 @@ import static org.mockito.Mockito.when;
 class ExecutorCommunicatorTest extends AbstractTestBase {
     @Test
     void testComms() {
-        val engine = mock(ApplicationInstanceEngine.class);
         val messageHandler = mock(ExecutorMessageHandler.class);
         when(messageHandler.visit(any(BlacklistExecutorMessage.class)))
                 .thenAnswer((Answer<MessageResponse>) mock -> {

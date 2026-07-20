@@ -23,7 +23,6 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +35,10 @@ import java.util.Set;
 @Builder
 @Schema(description = "Physical layout of the executor host describing NUMA topology with CPU cores and memory per NUMA node")
 public class PhysicalLayout {
+    public static final double DEFAULT_CPU_SCALING_FACTOR = 1.0;
+    public static final double DEFAULT_MEMORY_SCALING_FACTOR = 1.0;
+    public static final double DEFAULT_GPU_SCALING_FACTOR = 1.0;
+
     @Schema(description = "Map of NUMA node ID to set of CPU core IDs on that node", example = "{0: [0,1,2,3], 1: [4,5,6,7]}")
     Map<Integer, Set<Integer>> cores;
 
@@ -44,5 +47,17 @@ public class PhysicalLayout {
 
     @Schema(description = "Map of GPU ID to GPU info for GPUs available in the host")
     @Builder.Default
-    Map<String, GPUInfo> gpus = new HashMap<>();
+    Map<String, GPUInfo> gpus = Map.of();
+
+    @Schema(description = "CPU Performance Scaling Factor for the host", example = "1.0")
+    @Builder.Default
+    double cpuScalingFactor = DEFAULT_CPU_SCALING_FACTOR;
+
+    @Schema(description = "Memory Performance Scaling Factor for the host", example = "1.0")
+    @Builder.Default
+    double memoryScalingFactor = DEFAULT_MEMORY_SCALING_FACTOR;
+
+    @Schema(description = "GPU Performance Scaling Factor for the host", example = "1.0")
+    @Builder.Default
+    double gpuScalingFactor = DEFAULT_GPU_SCALING_FACTOR;
 }

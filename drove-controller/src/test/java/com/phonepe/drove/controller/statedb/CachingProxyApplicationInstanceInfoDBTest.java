@@ -33,7 +33,6 @@ import java.util.stream.IntStream;
 import static com.phonepe.drove.common.CommonUtils.sublist;
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateInstanceInfo;
-import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;

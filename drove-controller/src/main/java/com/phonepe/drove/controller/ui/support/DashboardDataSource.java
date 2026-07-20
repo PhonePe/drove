@@ -157,7 +157,6 @@ public class DashboardDataSource {
     }
 
     public Optional<DashboardData> current() {
-        // As cachedDashboardData is AtomicReference, avoiding locking is safe here.
         return Optional.ofNullable(cachedDashboardData.get());
     }
 

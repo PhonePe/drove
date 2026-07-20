@@ -96,7 +96,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     void testRunWithOverProvisioning() {
         runAction(4, new ResourceConfig()
                         .setOverProvisioning(new OverProvisioning()
-                                             .setEnabled(true))
+                                             .withEnabled(true))
                         ,
                   true);
     }
@@ -108,9 +108,9 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(Math.max(2, availableCPUs + 2), new ResourceConfig()
                 .setOverProvisioning(new OverProvisioning()
-                                             .setCpuMultiplier(10)
-                                             .setMemoryMultiplier(10)
-                                             .setEnabled(true)),
+                                             .withCpuMultiplier(10)
+                                             .withMemoryMultiplier(10)
+                                             .withEnabled(true)),
                   false); //Will have all CPUs as cpuset will not be done
     }
 
@@ -170,8 +170,15 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+                .thenReturn(new ResourceInfo(null,
+                                             null,
+                                             null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         val newState
                 = new ApplicationInstanceRunAction(
                 resourceConfig, ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER,

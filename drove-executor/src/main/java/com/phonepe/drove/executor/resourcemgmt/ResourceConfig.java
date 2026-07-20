@@ -34,10 +34,10 @@ import java.util.Set;
  *
  */
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Jacksonized
-@NoArgsConstructor
 public class ResourceConfig {
     public static final ResourceConfig DEFAULT = ResourceConfig.builder().build();
 
@@ -81,6 +81,9 @@ public class ResourceConfig {
 
     @Builder.Default
     private OverProvisioning overProvisioning = OverProvisioning.DEFAULT;
+
+    @Builder.Default
+    private PerformanceScalingConfig performanceScaling = PerformanceScalingConfig.DEFAULT;
 
     @ValidationMethod(message = "enableNvidiaGpu (legacy pass-through) and nvidiaGPULoaderConfig (managed GPU) cannot both be enabled simultaneously")
     public boolean isGpuConfigValid() {

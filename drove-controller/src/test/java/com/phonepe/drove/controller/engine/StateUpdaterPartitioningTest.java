@@ -61,6 +61,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.InstanceInfo;
 
@@ -124,7 +125,8 @@ class StateUpdaterPartitioningTest {
         // Empty-instance host infos so the remove handler reaches cDB.remove() (not fast-path)
         val emptyHostInfo0 = new ExecutorHostInfo(ControllerTestUtils.executorId(0),
                                                   nodeWithInstances(0, List.of()),
-                                                  Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
+                                                  Map.of(0, new ExecutorHostInfo.NumaNodeInfo()),
+                                                  new ExecutorHostInfo.HostGPUInfo());
 
         // Each partition has a single thread so we use thread id as proxy for partition id
         // So we basically record thread ids for different op types
@@ -263,7 +265,8 @@ class StateUpdaterPartitioningTest {
         val emptyHostInfo = new ExecutorHostInfo(
                                                  ControllerTestUtils.executorId(0),
                                                  nodeWithInstances(0, List.of()),
-                                                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
+                                                 Map.of(0, new ExecutorHostInfo.NumaNodeInfo()),
+                                                 new ExecutorHostInfo.HostGPUInfo());
         doReturn(Optional.of(emptyHostInfo)).when(cDB).currentSnapshot(ControllerTestUtils.executorId(0));
         try (val su = buildStateUpdater("test-partitioning-3")) {
             su.updateSingle(resourceSnapshot(0), appInstance);
@@ -293,7 +296,8 @@ class StateUpdaterPartitioningTest {
         val hostInfo = new ExecutorHostInfo(
                                             ControllerTestUtils.executorId(0),
                                             nodeDataWithInstance,
-                                            Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
+                                            Map.of(0, new ExecutorHostInfo.NumaNodeInfo()),
+                                            new ExecutorHostInfo.HostGPUInfo());
 
         doReturn(Optional.empty()).when(iiDB).instance(anyString(), anyString());
 
@@ -403,7 +407,13 @@ class StateUpdaterPartitioningTest {
         return new ExecutorResourceSnapshot(ControllerTestUtils.executorId(n),
                                             new AvailableCPU(Map.of(), Map.of()),
                                             new AvailableMemory(Map.of(), Map.of()),
-                                            new PhysicalLayout(Map.of(), Map.of()));
+                                            new AvailableGPU(List.of(), List.of()),
+                                            new PhysicalLayout(Map.of(),
+                                                               Map.of(),
+                                                               Map.of(),
+                                                               PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
     }
 
     private static ExecutorNodeData nodeWithInstances(int n, List<InstanceInfo> instances) {

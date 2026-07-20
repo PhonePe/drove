@@ -18,6 +18,7 @@ package com.phonepe.drove.controller;
 
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.retry.*;
+import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.*;
@@ -30,6 +31,8 @@ import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
@@ -39,12 +42,14 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
-import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
+import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import com.phonepe.drove.models.instance.*;
+import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -95,7 +100,7 @@ public class ControllerTestUtils {
                                    List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                                    JobType.SERVICE,
                                    LocalLoggingSpec.DEFAULT,
-                                   List.of(new CPURequirement(1), new MemoryRequirement(512)),
+                                   new ArrayList<>(List.of(new CPURequirement(1), new MemoryRequirement(512))),
                                    new AnyPlacementPolicy(),
                                    new CheckSpec(new HTTPCheckModeSpec(Protocol.HTTP,
                                                                        "main",
@@ -129,7 +134,10 @@ public class ControllerTestUtils {
                                    null,
                                    null);
     }
-
+    public static <T extends DeploymentSpec> T withGPU(T spec, int gpuCount, GpuType gpuType) {
+        spec.getResources().add(new GPURequirement(gpuCount, gpuType));
+        return spec;
+    }
     public static TaskSpec taskSpec() {
         return taskSpec(1);
     }
@@ -149,7 +157,7 @@ public class ControllerTestUtils {
                             List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
                             List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                             LocalLoggingSpec.DEFAULT,
-                            List.of(new CPURequirement(1), new MemoryRequirement(512)),
+                            new ArrayList<>(List.of(new CPURequirement(1), new MemoryRequirement(512))),
                             new AnyPlacementPolicy(),
                             Collections.emptyMap(),
                             Collections.emptyMap(),
@@ -217,6 +225,7 @@ public class ControllerTestUtils {
                                          NodeTransportType.HTTP,
                                          new CPUAllocation(Collections.singletonMap(0, Collections.singleton(2))),
                                          new MemoryAllocation(Collections.singletonMap(0, 512L)),
+                                         new GPUAllocation(Set.of(), null),
                                          Collections.emptySet(),
                                          Map.of(),
                                          ExecutorState.ACTIVE);
@@ -279,21 +288,26 @@ public class ControllerTestUtils {
                                                                   new AvailableMemory(
                                                                           Map.of(0, 3 * 128 * (2L ^ 20)),
                                                                           Map.of(0, 128 * (2L ^ 20))),
+                                                                  new AvailableGPU(List.of(), List.of()),
                                                                   new PhysicalLayout(Map.of(0,
                                                                                             Set.of(0, 1, 2, 3, 4),
                                                                                             1,
                                                                                             Set.of(0, 1, 2, 3, 4)),
-                                                                                     Map.of(0,
-                                                                                            4 * 128 * (2L ^ 20),
-                                                                                            1,
-                                                                                            4 * 128 * (2L ^ 20)))),
+                                                                                      Map.of(0,
+                                                                                             4 * 128 * (2L ^ 20),
+                                                                                             1,
+                                                                                             4 * 128 * (2L ^ 20)),
+                                                                                      Map.of(),
+                                                                                      PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                                      PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                                      PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)),
                                      appInstances,
                                      taskInstances,
                                      serviceInstances,
                                      Set.of(),
                                      Map.of(),
                                      executorState),
-                Map.of(0, new ExecutorHostInfo.NumaNodeInfo()));
+                Map.of(0, new ExecutorHostInfo.NumaNodeInfo()), new ExecutorHostInfo.HostGPUInfo());
     }
 
 
@@ -322,6 +336,7 @@ public class ControllerTestUtils {
                                                                  new AvailableMemory(
                                                                          Map.of(0, 5 * 512L),
                                                                          Map.of(0, 0L)),
+                                                                 new AvailableGPU(List.of(), List.of()),
                                                                  new PhysicalLayout(Map.of(0,
                                                                                            Set.of(0, 1, 2, 3, 4),
                                                                                            1,
@@ -329,7 +344,10 @@ public class ControllerTestUtils {
                                                                                     Map.of(0,
                                                                                            4 * 128 * (2L ^ 20),
                                                                                            1,
-                                                                                           4 * 128 * (2L ^ 20)))),
+                                                                                           4 * 128 * (2L ^ 20)), Map.of(),
+                                                                                    PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                                    PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                                    PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)),
                                     List.of(),
                                     List.of(),
                                     List.of(),

@@ -16,6 +16,23 @@
 
 package com.phonepe.drove.executor.resourcemgmt;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.google.common.collect.Sets;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.models.info.GPUInfo;
@@ -23,19 +40,14 @@ import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
+
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-
-import javax.inject.Singleton;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -89,25 +101,39 @@ public class ResourceManager {
             = ConsumingFireForgetSignal.<ResourceInfo>builder()
             .executorService(Executors.newSingleThreadExecutor())
             .build();
+    private final PerformanceScalingConfig performanceScaling;
     private Map<Integer, NodeInfo> nodes = Collections.emptyMap();
     private Set<String> gpus = Collections.emptySet();
     private PhysicalLayout physicalLayout = null;
 
+    @Inject
+    public ResourceManager(PerformanceScalingConfig performanceScaling) {
+        this.performanceScaling = normalize(performanceScaling);
+    }
+
     @MonitoredFunction
     public synchronized void populateResources(ExecutorResources resources) {
         this.nodes = Map.copyOf(resources.getNumaNodeToResource());
-        this.gpus = Set.copyOf(resources.getGpuInfos().stream().map(GPUInfo::getGpuId).collect(Collectors.toSet()));
+        this.gpus = Set.copyOf(resources.getGpuInfos()
+                               .stream()
+                               .map(GPUInfo::getGpuId)
+                               .collect(Collectors.toSet()));
         val cores = new HashMap<Integer, Set<Integer>>();
         val memory = new HashMap<Integer, Long>();
-        resources.getNumaNodeToResource().forEach((numaNode, info) -> {
+        resources.getNumaNodeToResource()
+            .forEach((numaNode, info) -> {
             cores.put(numaNode, info.getPhysicalCores());
             memory.put(numaNode, info.getPhysicalMemoryInMB());
         });
-        this.physicalLayout = new PhysicalLayout(cores, memory,
-            resources.getGpuInfos().stream().collect(Collectors.toUnmodifiableMap(
-                GPUInfo::getGpuId,
-                g -> g,
-                (left, right) -> left)));
+        this.physicalLayout = new PhysicalLayout(cores,
+                                                 memory,
+                                                 resources.getGpuInfos()
+                                                     .stream()
+                                                     .collect(Collectors.toUnmodifiableMap(
+                                                         GPUInfo::getGpuId, Function.identity(), (left, right) -> left)),
+                                                 performanceScaling.getCpuScalingFactor(),
+                                                 performanceScaling.getMemoryScalingFactor(),
+                                                 performanceScaling.getGpuScalingFactor());
     }
 
     @MonitoredFunction
@@ -193,6 +219,16 @@ public class ResourceManager {
 
     public ConsumingFireForgetSignal<ResourceInfo> onResourceUpdated() {
         return resourceUpdated;
+    }
+
+    private static PerformanceScalingConfig normalize(PerformanceScalingConfig config) {
+        val cpuScalingFactor = Objects.requireNonNullElse(
+                config.getCpuScalingFactor(), PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR);
+        val memoryScalingFactor = Objects.requireNonNullElse(
+                config.getMemoryScalingFactor(), PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR);
+        val gpuScalingFactor = Objects.requireNonNullElse(
+                config.getGpuScalingFactor(), PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR);
+        return new PerformanceScalingConfig(cpuScalingFactor, memoryScalingFactor, gpuScalingFactor);
     }
 
     private ResourceInfo calculateResources() {

@@ -286,8 +286,15 @@ class DockerUtilsTest {
         val spec = actualSpec.withEnv(env);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+                .thenReturn(new ResourceInfo(null,
+                                             null,
+                                             null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         pullImage(spec);
         val containerId = DockerUtils.createContainer(
                 resourceConfig,
@@ -309,8 +316,15 @@ class DockerUtilsTest {
     void testContainerRun() {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+                .thenReturn(new ResourceInfo(null,
+                                             null,
+                                             null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         val httpCaller = mock(HttpCaller.class);
         val spec = ExecutorTestingUtils.testTaskInstanceSpec()
                 .withEnv(Map.of("ITERATIONS", "10000", "LOOP_SLEEP", "5"));
@@ -358,9 +372,9 @@ class DockerUtilsTest {
                 Arguments.of(
                         defaultConfig
                                 .setOverProvisioning(new OverProvisioning()
-                                                              .setEnabled(true)
-                                                              .setCpuMultiplier(1)
-                                                              .setMemoryMultiplier(1)),
+                                                              .withEnabled(true)
+                                                              .withCpuMultiplier(1)
+                                                              .withMemoryMultiplier(1)),
                         spec.withConfigs(null),
                         executorOptions),
                 Arguments.of(defaultConfig, spec, executorOptions

@@ -36,7 +36,7 @@ class ResourceManagerTest extends AbstractTestBase {
     //TODO(gabber12): Add tests for gpus
     @Test
     void testBasicResourceMgmt() {
-        val rm = new ResourceManager();
+        val rm = new ResourceManager(PerformanceScalingConfig.DEFAULT);
         rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
                 1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
@@ -71,7 +71,7 @@ class ResourceManagerTest extends AbstractTestBase {
 
     @Test
     void testSignal() {
-        val rm = new ResourceManager();
+        val rm = new ResourceManager(PerformanceScalingConfig.DEFAULT);
         rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
                 1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
@@ -85,7 +85,7 @@ class ResourceManagerTest extends AbstractTestBase {
 
     @Test
     void testExhaustionReclaim() {
-        val rm = new ResourceManager();
+        val rm = new ResourceManager(PerformanceScalingConfig.DEFAULT);
         rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
                 1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));
@@ -112,7 +112,7 @@ class ResourceManagerTest extends AbstractTestBase {
 
     @Test
     void testMultiNodeAllocation() {
-        val rm = new ResourceManager();
+        val rm = new ResourceManager(PerformanceScalingConfig.DEFAULT);
         rm.populateResources(new ResourceManager.ExecutorResources(Map.of(
                 0, ResourceManager.NodeInfo.from(set(19), 2 ^ 16),
                 1, ResourceManager.NodeInfo.from(set(19), 2 ^ 16)), Set.of()));

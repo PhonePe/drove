@@ -68,13 +68,16 @@ class ZkNodeDataStoreTest {
             assertTrue(store.nodes(NodeType.EXECUTOR).isEmpty());
             val state = new ExecutorResourceSnapshot(
                     "abc",
-                    new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
-                                     Collections.singletonMap(0, Collections.singleton(0))),
-                    new AvailableMemory(Collections.singletonMap(0, 1024L),
-                                        Collections.singletonMap(0, 1024L)),
+                    new AvailableCPU(Map.of(0, Collections.singleton(1)),
+                                     Map.of(0, Collections.singleton(0))),
+                    new AvailableMemory(Map.of(0, 1024L),
+                                        Map.of(0, 1024L)),
                     new AvailableGPU(List.of("1"),List.of( "2")),
-                    new PhysicalLayout(Collections.singletonMap(0, Collections.singleton(1)),
-                                       Collections.singletonMap(0, 1024L), Map.of()));
+                    new PhysicalLayout(Map.of(0, Collections.singleton(1)),
+                                       Map.of(0, 1024L), Map.of(),
+                                       PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                       PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                       PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
             val nodeData = new ExecutorNodeData("localhost",
                                                 8080,
                                                 NodeTransportType.HTTP,
@@ -116,13 +119,18 @@ class ZkNodeDataStoreTest {
             assertTrue(store.nodes(NodeType.EXECUTOR).isEmpty());
             val state = new ExecutorResourceSnapshot(
                     "abc",
-                    new AvailableCPU(Collections.singletonMap(0, Collections.singleton(1)),
-                            Collections.singletonMap(0, Collections.singleton(0))),
-                    new AvailableMemory(Collections.singletonMap(0, 1024L),
-                            Collections.singletonMap(0, 1024L)),
+                    new AvailableCPU(Map.of(0, Collections.singleton(1)),
+                        Map.of(0, Collections.singleton(0))),
+                    new AvailableMemory(Map.of(0, 1024L),
+                        Map.of(0, 1024L)),
                     new AvailableGPU(List.of("1"),List.of( "2")),
-                    new PhysicalLayout(Collections.singletonMap(0, Collections.singleton(1)),
-                            Collections.singletonMap(0, 1024L), Map.of("1", new GPUInfo("1", GpuVendor.NVIDIA, "H100", null), "2", new GPUInfo("2", GpuVendor.NVIDIA,"H100", null))));
+                    new PhysicalLayout(Map.of(0, Set.of(1)),
+                        Map.of(0, 1024L),
+                        Map.of("1", new GPUInfo("1", GpuVendor.NVIDIA, "H100", null),
+                               "2", new GPUInfo("2", GpuVendor.NVIDIA, "H100", null)),
+                        PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                        PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                        PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
             val nodeData = new ExecutorNodeData("localhost",
                     8080,
                     NodeTransportType.HTTP,

@@ -160,24 +160,6 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
             "Both GPUs should be NUMA-local");
     }
 
-    private ExecutorHostInfo createHostInfoWithTwoNuma(
-        Map<String, Integer> numa0Gpus,
-        Map<String, Integer> numa1Gpus
-    ) {
-        val freeMemory = new LinkedHashMap<Integer, Long>();
-        freeMemory.put(0, 2048L);
-        freeMemory.put(1, 2048L);
-
-        val freeCores = new LinkedHashMap<Integer, Set<Integer>>();
-        freeCores.put(0, Set.of(0, 1, 2, 3));
-        freeCores.put(1, Set.of(4, 5, 6, 7));
-
-        val allGpus = new HashMap<>(numa0Gpus);
-        allGpus.putAll(numa1Gpus);
-
-        return createCustomHostInfo(freeCores, freeMemory, allGpus);
-    }
-
     private ExecutorHostInfo createHostInfoWithGpuTopology(Map<String, Integer> gpuNumaAffinities) {
         val freeMemory = new LinkedHashMap<Integer, Long>();
         freeMemory.put(0, 4048L);
@@ -208,7 +190,12 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
             new AvailableCPU(freeCores, Map.of()),
             new AvailableMemory(freeMemory, usedMemory),
             new AvailableGPU(new ArrayList<>(gpuNumaAffinities.keySet()), List.of()),
-            new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+            new PhysicalLayout(freeCores,
+                               freeMemory,
+                               physicalGpus,
+                               PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(
@@ -261,7 +248,12 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
             new AvailableCPU(freeCores, Map.of()),
             new AvailableMemory(freeMemory, usedMemory),
             new AvailableGPU(new ArrayList<>(gpuNumaAffinities.keySet()), List.of()),
-            new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+            new PhysicalLayout(freeCores,
+                               freeMemory,
+                               physicalGpus,
+                               PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(

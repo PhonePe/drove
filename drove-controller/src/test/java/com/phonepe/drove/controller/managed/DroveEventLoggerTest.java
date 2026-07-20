@@ -42,6 +42,7 @@ class DroveEventLoggerTest {
         val called = new AtomicBoolean(false);
         val eStore = new EventStore() {
             @Override
+            @SuppressWarnings("rawtypes")
             public void recordEvent(DroveEvent event) {
                 called.set(true);
             }

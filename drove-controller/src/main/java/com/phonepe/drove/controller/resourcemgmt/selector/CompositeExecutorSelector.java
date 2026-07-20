@@ -35,12 +35,14 @@ import java.util.function.Predicate;
 public class CompositeExecutorSelector implements ExecutorSelector {
 
     public static final String FIRST_FIT_EXEC_SELECTOR = "FIRST_FIT_EXEC_SELECTOR";
-    public static final String SCORED_EXEC_SELECTOR = "SCORED_EXEC_SELECTOR";
+    public static final String GPU_AWARE_SELECTOR = "GPU_AWARE_SELECTOR";
     private final ExecutorSelector defaultSelector;
     private final ExecutorSelector gpuSelector;
 
     @Inject
-    public CompositeExecutorSelector(@Named(FIRST_FIT_EXEC_SELECTOR) ExecutorSelector defaultSelector, @Named(SCORED_EXEC_SELECTOR) ExecutorSelector gpuSelector) {
+    public CompositeExecutorSelector(
+            @Named(FIRST_FIT_EXEC_SELECTOR) ExecutorSelector defaultSelector,
+            @Named(GPU_AWARE_SELECTOR) ExecutorSelector gpuSelector) {
         this.defaultSelector = defaultSelector;
         this.gpuSelector = gpuSelector;
     }

@@ -95,7 +95,6 @@ class AppRecoveryTest extends ControllerTestBase {
                 .thenAnswer(new Answer<TaskRunner>() {
                     @Override
                     public TaskRunner answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        final var appId = invocationOnMock.getArgument(0, String.class);
                         final var taskId = invocationOnMock.getArgument(1, String.class);
                         if (taskId.equals(taskSpec.getTaskId())) {
                             runnerCreated.set(true);
@@ -217,7 +216,6 @@ class AppRecoveryTest extends ControllerTestBase {
                 .thenAnswer(new Answer<TaskRunner>() {
                     @Override
                     public TaskRunner answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        final var appId = invocationOnMock.getArgument(0, String.class);
                         final var taskId = invocationOnMock.getArgument(1, String.class);
                         if (taskId.equals(taskSpec.getTaskId())) {
                             runnerCreated.set(true);
@@ -281,7 +279,6 @@ class AppRecoveryTest extends ControllerTestBase {
                 .thenAnswer(new Answer<TaskRunner>() {
                     @Override
                     public TaskRunner answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        final var appId = invocationOnMock.getArgument(0, String.class);
                         final var taskId = invocationOnMock.getArgument(1, String.class);
                         if (taskId.equals(taskSpec.getTaskId())) {
                             runnerCreated.set(true);

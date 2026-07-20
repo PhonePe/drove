@@ -57,7 +57,12 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L), Map.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
@@ -81,7 +86,12 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
@@ -112,7 +122,12 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L), Map.of())));
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),

@@ -26,6 +26,7 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.executor.managed.MetadataManager;
+import com.phonepe.drove.executor.resourcemgmt.PerformanceScalingConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.models.info.nodedata.*;
@@ -57,7 +58,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
         val nds = new TestNodeDataStore();
         nds.onNodeDataUpdate().connect(nodeData -> updateCounter.incrementAndGet());
         //when(nds.updateNodeData(any(NodeData.class));
-        val rdb = new ResourceManager();
+        val rdb = new ResourceManager(PerformanceScalingConfig.DEFAULT);
         Map<Integer, ResourceManager.NodeInfo> computeResources = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 20)
                         .boxed()
                         .collect(Collectors.toUnmodifiableSet()),

@@ -120,7 +120,6 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
          * Expected: Allow configuration via constructor or system property
          */
         
-        InMemoryClusterResourcesDB db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         
         // After fix, there should be a way to configure:
         // - Constructor parameter
@@ -261,8 +260,10 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
             new PhysicalLayout(
                 Map.of(0, Set.of(0, 1)), 
                 Map.of(0, 2048L), 
-                Map.of()
-            )
+                Map.of(),
+                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
+                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
         );
 
         return new ExecutorNodeData(

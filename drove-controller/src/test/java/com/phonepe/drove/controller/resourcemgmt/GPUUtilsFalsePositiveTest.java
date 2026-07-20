@@ -125,7 +125,6 @@ class GPUUtilsFalsePositiveTest {
         for (Object[] testCase : testCases) {
             String gpuModel = (String) testCase[0];
             String requestedType = (String) testCase[1];
-            boolean shouldMatch = (boolean) testCase[2];
 
             val gpu = new GPUInfo("GPU-0", GpuVendor.NVIDIA, gpuModel, 0);
             val requested = new GpuType(GpuVendor.NVIDIA, requestedType);

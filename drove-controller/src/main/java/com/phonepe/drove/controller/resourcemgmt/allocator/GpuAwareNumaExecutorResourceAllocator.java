@@ -114,10 +114,6 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         return Optional.empty();
     }
 
-    // -------------------------------------------------------------------------
-    // NUMA candidate and CPU/memory allocation helpers
-    // -------------------------------------------------------------------------
-
     private List<Integer> candidateNumaNodeIds(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
@@ -180,10 +176,6 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                                                 .limit(requiredCpus)
                                                 .collect(Collectors.toUnmodifiableSet())));
     }
-
-    // -------------------------------------------------------------------------
-    // GPU metadata and allocation helpers
-    // -------------------------------------------------------------------------
 
     private Map<String, GPUInfo> getLayoutGpus(ExecutorHostInfo hostInfo) {
         return Optional.ofNullable(hostInfo.getNodeData())
