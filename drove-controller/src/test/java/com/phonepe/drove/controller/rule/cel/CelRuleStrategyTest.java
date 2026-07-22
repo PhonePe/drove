@@ -7,7 +7,11 @@
  *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 package com.phonepe.drove.controller.rule.cel;
 
@@ -104,6 +108,40 @@ class CelRuleStrategyTest {
     }
 
     @Test
+    void testComprehensionMacros() {
+        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val ctx = testContext();
+
+        // Standard macros (receiver-call syntax)
+        assertTrue(rs.evaluate("[1, 2, 3].exists(x, x == 2)", ctx).isResult());
+        assertFalse(rs.evaluate("[1, 2, 3].exists(x, x == 5)", ctx).isResult());
+        assertTrue(rs.evaluate("[1, 2, 3].all(x, x > 0)", ctx).isResult());
+        assertFalse(rs.evaluate("[1, 2, 3].all(x, x > 1)", ctx).isResult());
+        assertTrue(rs.evaluate("[1, 2, 3].filter(x, x > 1).size() == 2", ctx).isResult());
+
+        // Comprehensions extension 3-arg macros for maps (key, value, predicate)
+        val ctxWithTags = testContextWithTagsAndMetadata(
+                Set.of("gpu", "high-memory"),
+                Map.of("rack", "r1", "dc", "dc1")
+        );
+        assertTrue(rs.evaluate(
+                "ctx.allocation.node.metadata.exists(k, v, k == \"rack\" && v == \"r1\")",
+                ctxWithTags).isResult());
+        assertFalse(rs.evaluate(
+                "ctx.allocation.node.metadata.exists(k, v, k == \"rack\" && v == \"r2\")",
+                ctxWithTags).isResult());
+    }
+
+    @Test
+    void testBindingsExtension() {
+        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val ctx = testContext();
+
+        assertTrue(rs.evaluate("cel.bind(x, ctx.allocation.node.executorId, x == 'Ex1')", ctx).isResult());
+        assertFalse(rs.evaluate("cel.bind(x, ctx.allocation.node.executorId, x == 'other')", ctx).isResult());
+    }
+
+    @Test
     void testSyntaxErrorReturnsFailure() {
         val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
         val ctx = testContext();
@@ -177,9 +215,15 @@ class CelRuleStrategyTest {
                 Arguments.of(RuleCallStatus.SUCCESS, "ctx.allocation.node.hostname.startsWith('node')"),
                 Arguments.of(RuleCallStatus.SUCCESS, "ctx.allocation.node.hostname.matches('node.*')"),
                 Arguments.of(RuleCallStatus.SUCCESS, "has(ctx.allocation.node.metadata)"),
-                // filter() macro requires comprehension extensions — not enabled here
-                Arguments.of(RuleCallStatus.FAILURE,
-                             "size(filter(ctx.environment.liveExecutors, k, v, \"gpu\" in v.tags)) > 1"),
+                // Standard comprehension macros (receiver-call syntax)
+                Arguments.of(RuleCallStatus.SUCCESS, "[1, 2, 3].exists(x, x == 2)"),
+                Arguments.of(RuleCallStatus.SUCCESS, "[1, 2, 3].all(x, x > 0)"),
+                Arguments.of(RuleCallStatus.SUCCESS, "[1, 2, 3].filter(x, x > 1).size() == 2"),
+                // CelBindings extension
+                Arguments.of(RuleCallStatus.SUCCESS, "cel.bind(x, 42, x == 42)"),
+                // Comprehensions extension 3-arg exists for maps
+                Arguments.of(RuleCallStatus.SUCCESS,
+                             "ctx.environment.liveExecutors.exists(k, v, k == \"nonexistent\")"),
 
                 Arguments.of(RuleCallStatus.FAILURE, "(true &&"),
                 Arguments.of(RuleCallStatus.FAILURE, "true AND false"),
