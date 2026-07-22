@@ -59,6 +59,8 @@ import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.util.Duration;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.controller.rule.cel.CelRuleStrategy;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.val;
@@ -465,6 +467,13 @@ public class ControllerTestUtils {
                                             errorMessage,
                                             date,
                                             date);
+    }
+    public static CelRuleStrategy celRuleStrategy(ObjectMapper mapper) {
+        return celRuleStrategy(mapper, 2);
+    }
+
+    public static CelRuleStrategy celRuleStrategy(ObjectMapper mapper, int cacheSize) {
+        return new CelRuleStrategy(mapper, cacheSize);
     }
 
     public static TaskInfo generateTaskInfo(final TaskSpec spec, int idx) {

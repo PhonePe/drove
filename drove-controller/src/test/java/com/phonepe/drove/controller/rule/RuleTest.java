@@ -20,7 +20,6 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
-import com.phonepe.drove.controller.rule.cel.CelRuleInstance;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
@@ -61,7 +60,7 @@ class RuleTest extends ControllerTestBase {
     static RuleEvaluator ruleEvaluatorWithAll = new RuleEvaluator(Map.of(
             RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create(),
             RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
-            RuleBasedPlacementPolicy.RuleType.CEL, CelRuleInstance.create(MAPPER)
+            RuleBasedPlacementPolicy.RuleType.CEL, ControllerTestUtils.celRuleStrategy(MAPPER)
     ));
 
     @ParameterizedTest(name = "name = {0} | evaluator: {1} | policy: {2} | status : {3} | result: {4} ")

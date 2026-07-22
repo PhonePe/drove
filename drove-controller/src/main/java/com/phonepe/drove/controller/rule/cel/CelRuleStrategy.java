@@ -11,10 +11,19 @@
  */
 package com.phonepe.drove.controller.rule.cel;
 
+import java.util.Map;
+import java.util.Objects;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.rule.CachingRuleEvalStrategy;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
+
 import dev.cel.common.CelAbstractSyntaxTree;
 import dev.cel.common.types.MapType;
 import dev.cel.common.types.SimpleType;
@@ -24,14 +33,8 @@ import dev.cel.extensions.CelExtensions;
 import dev.cel.parser.CelStandardMacro;
 import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * CEL (Common Expression Language) based rule evaluation strategy.
@@ -77,11 +80,6 @@ public class CelRuleStrategy extends CachingRuleEvalStrategy<CelAbstractSyntaxTr
         this.objectMapper = objectMapper;
     }
 
-    CelRuleStrategy(final ObjectMapper objectMapper, final int cacheSize) {
-        super(cacheSize);
-        this.objectMapper = objectMapper;
-    }
-
     @Override
     protected CelAbstractSyntaxTree compileRule(final String rule) throws Exception {
         return CEL_COMPILER.compile(rule).getAst();
@@ -94,9 +92,9 @@ public class CelRuleStrategy extends CachingRuleEvalStrategy<CelAbstractSyntaxTr
             throw new IllegalArgumentException("Rule data cannot be null");
         }
         val ctxMap = objectMapper.convertValue(data,
-                new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
-        CelRuntime.Program program = CEL_RUNTIME.createProgram(ast);
-        Object result = program.eval(Map.of("ctx", ctxMap));
+                new TypeReference<Map<String, Object>>() {});
+        val program = CEL_RUNTIME.createProgram(ast);
+        val result = program.eval(Map.of("ctx", ctxMap));
         return result instanceof Boolean b && b;
     }
 }
