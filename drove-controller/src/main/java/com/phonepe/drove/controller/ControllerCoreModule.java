@@ -16,20 +16,6 @@
 
 package com.phonepe.drove.controller;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.jar.Manifest;
-
-import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -53,13 +39,7 @@ import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.controller.config.ViewOptions;
-import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
-import com.phonepe.drove.controller.engine.DefaultControllerRetrySpecFactory;
-import com.phonepe.drove.controller.engine.InjectingAppActionFactory;
-import com.phonepe.drove.controller.engine.InjectingLocalServiceActionFactory;
-import com.phonepe.drove.controller.engine.InstanceIdGenerator;
-import com.phonepe.drove.controller.engine.RandomInstanceIdGenerator;
-import com.phonepe.drove.controller.engine.RemoteExecutorMessageSender;
+import com.phonepe.drove.controller.engine.*;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -68,30 +48,15 @@ import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.*;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.AllocatedExecutorNodeScorer;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.rule.RuleEvalStrategy;
 import com.phonepe.drove.controller.rule.hope.HopeRuleStrategy;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleStrategy;
-import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ApplicationStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.CachingProxyApplicationStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyClusterStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyLocalServiceStateDB;
-import com.phonepe.drove.controller.statedb.CachingProxyTaskDB;
-import com.phonepe.drove.controller.statedb.ClusterStateDB;
-import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
-import com.phonepe.drove.controller.statedb.TaskDB;
-import com.phonepe.drove.controller.statedb.ZKLocalServiceStateDB;
-import com.phonepe.drove.controller.statedb.ZkApplicationInstanceInfoDB;
-import com.phonepe.drove.controller.statedb.ZkApplicationStateDB;
-import com.phonepe.drove.controller.statedb.ZkClusterStateDB;
-import com.phonepe.drove.controller.statedb.ZkTaskDB;
+import com.phonepe.drove.controller.rule.cel.CelRuleStrategy;
+import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -106,15 +71,26 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
-import lombok.val;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+
+import javax.annotation.Nullable;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.jar.Manifest;
 
 /**
  *
@@ -181,13 +157,16 @@ public class ControllerCoreModule extends AbstractModule {
                 .keepAliveTime(Duration.seconds(60))
                 .build();
     }
-
     @Provides
     @Singleton
-    public Map<RuleBasedPlacementPolicy.RuleType, RuleEvalStrategy> provideRuleEvalStrategyRegistry(MvelRuleStrategy mvelRuleStrategy, HopeRuleStrategy hopeRuleStrategy) {
+    public Map<RuleBasedPlacementPolicy.RuleType, RuleEvalStrategy> provideRuleEvalStrategyRegistry(
+            MvelRuleStrategy mvelRuleStrategy,
+            HopeRuleStrategy hopeRuleStrategy,
+            CelRuleStrategy celRuleStrategy) {
         return Map.of(
                 RuleBasedPlacementPolicy.RuleType.MVEL, mvelRuleStrategy,
-                RuleBasedPlacementPolicy.RuleType.HOPE, hopeRuleStrategy
+                RuleBasedPlacementPolicy.RuleType.HOPE, hopeRuleStrategy,
+                RuleBasedPlacementPolicy.RuleType.CEL, celRuleStrategy
         );
     }
 
@@ -210,6 +189,14 @@ public class ControllerCoreModule extends AbstractModule {
     @Singleton
     @Named("MvelRuleCompiledCacheSize")
     public Integer mvelRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
+        return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
+                ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
+    }
+
+    @Provides
+    @Singleton
+    @Named("CelRuleCompiledCacheSize")
+    public Integer celRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
         return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
                 ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
     }
@@ -250,7 +237,7 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    @Named(CompositeExecutorSelector.GPU_AWARE_SELECTOR)
+    @Named(CompositeExecutorSelector.SCORED_EXEC_SELECTOR)
     public ExecutorSelector scoredExecutorSelector(ExecutorResourceAllocator allocator, AllocatedExecutorNodeScorer scorer) {
         return new ScoredExecutorSelector(allocator, scorer);
     }

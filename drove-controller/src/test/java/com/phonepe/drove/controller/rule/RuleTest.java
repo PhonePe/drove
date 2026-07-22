@@ -20,6 +20,7 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
 import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.rule.cel.CelRuleInstance;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
@@ -57,6 +58,11 @@ class RuleTest extends ControllerTestBase {
             RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER)
     ));
 
+    static RuleEvaluator ruleEvaluatorWithAll = new RuleEvaluator(Map.of(
+            RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create(),
+            RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
+            RuleBasedPlacementPolicy.RuleType.CEL, CelRuleInstance.create(MAPPER)
+    ));
 
     @ParameterizedTest(name = "name = {0} | evaluator: {1} | policy: {2} | status : {3} | result: {4} ")
     @MethodSource("testBasicCase")
@@ -126,6 +132,61 @@ class RuleTest extends ControllerTestBase {
                         null,
                         RuleCallStatus.SUCCESS,
                         true
+                ),
+
+                Arguments.of("CEL happy case with all",
+                        ruleEvaluatorWithAll,
+                        RuleBasedPlacementPolicy.builder()
+                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
+                                .rule("true")
+                                .build(),
+                        schedulingInfoBasic,
+                        RuleCallStatus.SUCCESS,
+                        true
+                ),
+
+                Arguments.of("CEL wrong rule format with all",
+                        ruleEvaluatorWithAll,
+                        RuleBasedPlacementPolicy.builder()
+                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
+                                .rule("(true &&")
+                                .build(),
+                        schedulingInfoBasic,
+                        RuleCallStatus.FAILURE,
+                        false
+                ),
+
+                Arguments.of("CEL field access happy case with all",
+                        ruleEvaluatorWithAll,
+                        RuleBasedPlacementPolicy.builder()
+                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
+                                .rule("ctx.allocation.node.executorId == 'Ex1'")
+                                .build(),
+                        schedulingInfoBasic,
+                        RuleCallStatus.SUCCESS,
+                        true
+                ),
+
+                Arguments.of("CEL field access negative case with all",
+                        ruleEvaluatorWithAll,
+                        RuleBasedPlacementPolicy.builder()
+                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
+                                .rule("ctx.allocation.node.executorId == 'wrong'")
+                                .build(),
+                        schedulingInfoBasic,
+                        RuleCallStatus.SUCCESS,
+                        false
+                ),
+
+                Arguments.of("CEL with null obj",
+                        ruleEvaluatorWithAll,
+                        RuleBasedPlacementPolicy.builder()
+                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
+                                .rule("true")
+                                .build(),
+                        null,
+                        RuleCallStatus.FAILURE,
+                        false
                 )
         );
     }
