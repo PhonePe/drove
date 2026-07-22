@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 class RuleTest extends ControllerTestBase {
-    static NodeSelectionContext schedulingInfoBasic = NodeSelectionContext.builder()
+    private static final NodeSelectionContext schedulingInfoBasic = NodeSelectionContext.builder()
             .session(NodeSelectionContext.SchedulingSession.builder()
                              .sessionId("test-session")
                              .build())
@@ -48,16 +48,16 @@ class RuleTest extends ControllerTestBase {
                                 .build())
             .build();
 
-    static RuleEvaluator ruleEvaluatorWithOnlyMvel = new RuleEvaluator(Map.of(
+    private static final RuleEvaluator ruleEvaluatorWithOnlyMvel = new RuleEvaluator(Map.of(
             RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
     ));
 
-    static RuleEvaluator ruleEvaluatorWithBoth = new RuleEvaluator(Map.of(
+    private static final RuleEvaluator ruleEvaluatorWithBoth = new RuleEvaluator(Map.of(
             RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create(),
             RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER)
     ));
 
-    static RuleEvaluator ruleEvaluatorWithAll = new RuleEvaluator(Map.of(
+    private static final RuleEvaluator ruleEvaluatorWithAll = new RuleEvaluator(Map.of(
             RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create(),
             RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
             RuleBasedPlacementPolicy.RuleType.CEL, ControllerTestUtils.celRuleStrategy(MAPPER)

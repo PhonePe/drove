@@ -17,7 +17,6 @@ package com.phonepe.drove.controller.rule.cel;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.cel.common.CelAbstractSyntaxTree;
 import dev.cel.common.types.MapType;
 import dev.cel.common.types.SimpleType;
 import dev.cel.compiler.CelCompiler;
@@ -92,37 +91,46 @@ public final class CelEngine {
     }
 
     /**
-     * Compiles a CEL expression into an AST.
+     * Compiles and plans a CEL expression into an executable, immutable
+     * {@link CelRuntime.Program}.
      *
-     * @param expression the CEL expression to compile.
-     * @return the compiled AST.
-     * @throws Exception if compilation fails (syntax error, type error, etc.).
+     * <p>This performs the full parse, type-check and program-planning pipeline
+     * once. The returned {@link CelRuntime.Program} is stateless and thread-safe,
+     * so it can be cached and evaluated concurrently against different data.
+     *
+     * @param expression the CEL expression to compile and plan.
+     * @return the executable program.
+     * @throws Exception if compilation (syntax/type error) or planning fails.
      */
     @SuppressWarnings("java:S112")
-    public CelAbstractSyntaxTree compile(final String expression) throws Exception {
-        return compiler.compile(expression).getAst();
+    public CelRuntime.Program plan(final String expression) throws Exception {
+        val ast = compiler.compile(expression).getAst();
+        return runtime.createProgram(ast);
     }
 
     /**
-     * Evaluates a compiled CEL expression against the provided data object.
+     * Evaluates a pre-planned CEL {@link CelRuntime.Program} against the provided
+     * data object.
      *
      * <p>The data object is converted to a {@code Map<String, Object>} via Jackson
      * before being bound to the context variable. The result must be a boolean.
      *
-     * @param ast  the compiled expression AST.
-     * @param data the data object to evaluate against (must not be null).
+     * <p>The program is immutable and holds no per-evaluation state, so a single
+     * cached program may be evaluated safely from multiple threads.
+     *
+     * @param program the compiled and planned program.
+     * @param data    the data object to evaluate against (must not be null).
      * @return the boolean result of the evaluation.
      * @throws Exception if evaluation fails.
      */
     @SuppressWarnings("java:S112")
-    public boolean evaluate(final CelAbstractSyntaxTree ast, final Object data)
+    public boolean evaluate(final CelRuntime.Program program, final Object data)
             throws Exception {
         if (data == null) {
             throw new IllegalArgumentException("Rule data cannot be null");
         }
         val ctxMap = objectMapper.convertValue(data,
                 new TypeReference<Map<String, Object>>() {});
-        val program = runtime.createProgram(ast);
         val result = program.eval(Map.of(contextVarName, ctxMap));
         return result instanceof Boolean b && b;
     }

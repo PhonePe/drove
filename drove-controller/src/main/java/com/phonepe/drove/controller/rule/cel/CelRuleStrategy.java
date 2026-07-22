@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.rule.CachingRuleEvalStrategy;
 
-import dev.cel.common.CelAbstractSyntaxTree;
+import dev.cel.runtime.CelRuntime;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Singleton
-public class CelRuleStrategy extends CachingRuleEvalStrategy<CelAbstractSyntaxTree> {
+public class CelRuleStrategy extends CachingRuleEvalStrategy<CelRuntime.Program> {
 
     private final CelEngine celEngine;
 
@@ -60,13 +60,13 @@ public class CelRuleStrategy extends CachingRuleEvalStrategy<CelAbstractSyntaxTr
     }
 
     @Override
-    protected CelAbstractSyntaxTree compileRule(final String rule) throws Exception {
-        return celEngine.compile(rule);
+    protected CelRuntime.Program compileRule(final String rule) throws Exception {
+        return celEngine.plan(rule);
     }
 
     @Override
-    protected boolean evaluateRule(final CelAbstractSyntaxTree ast, final Object data)
+    protected boolean evaluateRule(final CelRuntime.Program program, final Object data)
             throws Exception {
-        return celEngine.evaluate(ast, data);
+        return celEngine.evaluate(program, data);
     }
 }
