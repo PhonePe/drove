@@ -157,6 +157,7 @@ public class ControllerCoreModule extends AbstractModule {
                 .keepAliveTime(Duration.seconds(60))
                 .build();
     }
+
     @Provides
     @Singleton
     public Map<RuleBasedPlacementPolicy.RuleType, RuleEvalStrategy> provideRuleEvalStrategyRegistry(

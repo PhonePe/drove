@@ -78,12 +78,13 @@ public final class CelEngine {
                         CelExtensions.lists(),
                         CelExtensions.math())
                 .setStandardMacros(CelStandardMacro.STANDARD_MACROS)
-                .addVar(contextVarName, MapType.create(SimpleType.STRING, SimpleType.DYN))
+                .addVar(this.contextVarName, MapType.create(SimpleType.STRING, SimpleType.DYN))
                 .setResultType(SimpleType.BOOL)
                 .build();
 
         this.runtime = CelRuntimeFactory.standardCelRuntimeBuilder()
                 .addLibraries(
+                        CelExtensions.strings(),
                         CelExtensions.comprehensions(),
                         CelExtensions.lists(),
                         CelExtensions.math())
@@ -97,6 +98,7 @@ public final class CelEngine {
      * @return the compiled AST.
      * @throws Exception if compilation fails (syntax error, type error, etc.).
      */
+    @SuppressWarnings("java:S112")
     public CelAbstractSyntaxTree compile(final String expression) throws Exception {
         return compiler.compile(expression).getAst();
     }
@@ -112,6 +114,7 @@ public final class CelEngine {
      * @return the boolean result of the evaluation.
      * @throws Exception if evaluation fails.
      */
+    @SuppressWarnings("java:S112")
     public boolean evaluate(final CelAbstractSyntaxTree ast, final Object data)
             throws Exception {
         if (data == null) {

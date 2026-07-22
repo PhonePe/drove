@@ -97,6 +97,15 @@ class CelRuleStrategyTest {
         assertTrue(rs.evaluate("ctx.allocation.node.hostname.contains('ocal')", ctx).isResult());
         assertTrue(rs.evaluate("ctx.allocation.node.hostname.matches('local.*')", ctx).isResult());
         assertFalse(rs.evaluate("ctx.allocation.node.hostname.matches('^remote.*')", ctx).isResult());
+
+        // Strings-extension functions (not standard CEL): these compile AND must evaluate,
+        // proving CelExtensions.strings() is registered on the runtime, not just the compiler.
+        assertTrue(rs.evaluate("ctx.allocation.node.hostname.lowerAscii() == 'localhost'", ctx).isResult());
+        assertTrue(rs.evaluate("ctx.allocation.node.hostname.upperAscii() == 'LOCALHOST'", ctx).isResult());
+        assertTrue(rs.evaluate("ctx.allocation.node.hostname.substring(0, 5) == 'local'", ctx).isResult());
+        assertTrue(rs.evaluate("ctx.allocation.node.hostname.replace('local', 'remote') == 'remotehost'", ctx).isResult());
+        assertTrue(rs.evaluate("'a,b,c'.split(',').size() == 3", ctx).isResult());
+        assertTrue(rs.evaluate("['a', 'b', 'c'].join('-') == 'a-b-c'", ctx).isResult());
     }
 
     @Test
