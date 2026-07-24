@@ -16,6 +16,31 @@
 
 package com.phonepe.drove.executor;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static com.phonepe.drove.common.CommonTestUtils.APP_IMAGE_NAME;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.runCmd;
+import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import com.codahale.metrics.SharedMetricRegistries;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
@@ -25,6 +50,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -48,31 +74,16 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
 import com.phonepe.drove.statemachine.StateData;
-import io.dropwizard.util.Duration;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.ok;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.phonepe.drove.common.CommonTestUtils.APP_IMAGE_NAME;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.runCmd;
-import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import io.dropwizard.util.Duration;
+import lombok.SneakyThrows;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -94,9 +105,10 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRunWithOverProvisioning() {
+        val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(4, new ResourceConfig()
                         .setOverProvisioning(new OverProvisioning()
-                                             .withEnabled(true))
+                                             .setEnabled(true))
                         ,
                   true);
     }
@@ -108,9 +120,9 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(Math.max(2, availableCPUs + 2), new ResourceConfig()
                 .setOverProvisioning(new OverProvisioning()
-                                             .withCpuMultiplier(10)
-                                             .withMemoryMultiplier(10)
-                                             .withEnabled(true)),
+                                             .setCpuMultiplier(10)
+                                             .setMemoryMultiplier(10)
+                                             .setEnabled(true)),
                   false); //Will have all CPUs as cpuset will not be done
     }
 
@@ -163,27 +175,21 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 Collections.emptyList(),
                 null,
                 null,
-                DeployableSecuritySpec.DEFAULT,
                 "TestToken");
         val executorId = CommonUtils.executorId(3000, "test-host");
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT, false);
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null,
-                                             null,
-                                             null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
-        val newState
-                = new ApplicationInstanceRunAction(
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+        val nodeStore = mock(LocalNodeDataManager.class);
+        when(nodeStore.currentData()).thenReturn(Optional.empty());
+        val newState = new ApplicationInstanceRunAction(
                 resourceConfig, ExecutorOptions.DEFAULT, CommonTestUtils.httpCaller(), MAPPER,
                 SharedMetricRegistries.getOrCreate("test"),
-                resourceManager)
+                resourceManager,
+                nodeStore)
                 .execute(ctx,
                          StateData.create(PROVISIONING,
                                           new ExecutorInstanceInfo(instanceSpec.getAppId(),

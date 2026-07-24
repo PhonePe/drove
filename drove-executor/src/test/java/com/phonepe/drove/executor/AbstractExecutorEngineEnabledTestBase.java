@@ -27,12 +27,12 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.net.HttpCaller;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
-import com.phonepe.drove.executor.resourcemgmt.PerformanceScalingConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
@@ -45,7 +45,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -167,13 +167,20 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             public CloseableHttpClient closeableHttpClient() {
                 return ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT);
             }
+
+            @Provides
+            @Singleton
+            public LocalNodeDataManager localNodeDataManager() {
+                val mock = mock(LocalNodeDataManager.class);
+                when(mock.currentData()).thenReturn(Optional.empty());
+                return mock;
+            }
         });
 
         injector.injectMembers(this);
-        val compute = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
-                        .boxed()
-                        .collect(Collectors.toUnmodifiableSet()),
-                16_000_000));
-        resourceDB.populateResources(new ResourceManager.ExecutorResources(compute, Set.of()));
+        resourceDB.populateResources(Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
+                                                                               .boxed()
+                                                                               .collect(Collectors.toUnmodifiableSet()),
+                                                                             16_000_000)));
     }
 }

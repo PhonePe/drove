@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -56,7 +57,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Singleton
 @Order(40)
-public class NodeDataUpdater implements Managed {
+public class LocalNodeDataManager implements Managed {
     private static final String STATE_CHANGE_HANDLER_NAME = "state-change-notifier";
 
     private final NodeDataStore nodeDataStore;
@@ -73,7 +74,7 @@ public class NodeDataUpdater implements Managed {
     private final Lock stateLock = new ReentrantLock();
 
     @Inject
-    public NodeDataUpdater(
+    public LocalNodeDataManager(
             ExecutorIdManager executorIdManager,
             NodeDataStore nodeDataStore,
             ResourceManager resourceDB,
@@ -110,6 +111,15 @@ public class NodeDataUpdater implements Managed {
         refreshSignal.close();
     }
 
+    public Optional<ExecutorNodeData> currentData() {
+        stateLock.lock();
+        try {
+            return Optional.ofNullable(currentData);
+        }
+        finally {
+            stateLock.unlock();
+        }
+    }
 
     public void hostInfoAvailable(ExecutorIdManager.ExecutorHostInfo hostInfo) {
         refreshNodeState(hostInfo.getPort(),

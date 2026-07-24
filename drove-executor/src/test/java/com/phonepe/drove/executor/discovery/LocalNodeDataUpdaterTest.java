@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  *
  */
-class NodeDataUpdaterTest extends AbstractTestBase {
+class LocalNodeDataUpdaterTest extends AbstractTestBase {
 
     @Test
     @SneakyThrows
@@ -83,7 +83,7 @@ class NodeDataUpdaterTest extends AbstractTestBase {
                                                  ExecutorTestingUtils.DOCKER_CLIENT);
         val rCfg = new ResourceConfig();
         val mm = new MetadataManager(rCfg.getMetadata(), METRIC_REGISTRY);
-        val ndu = new NodeDataUpdater(eim, nds, rdb, ie, te, lse, rCfg, blm, mm);
+        val ndu = new LocalNodeDataManager(eim, nds, rdb, ie, te, lse, rCfg, blm, mm);
         ndu.start();
         assertTrue(nds.nodes(NodeType.EXECUTOR).isEmpty());
         ndu.hostInfoAvailable(new ExecutorIdManager.ExecutorHostInfo(8080,

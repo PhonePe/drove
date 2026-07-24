@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.executor.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallbackTemplate;
 import com.github.dockerjava.api.command.PullImageCmd;
@@ -25,9 +26,12 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
+import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
 import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
@@ -43,13 +47,17 @@ import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
+import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
-import com.phonepe.drove.models.application.requirements.GpuVendor;
+import com.phonepe.drove.models.info.InjectedEnvironmentInfo;
+import com.phonepe.drove.models.info.InjectedEnvironmentInfo.Executor;
+import com.phonepe.drove.models.info.InjectedEnvironmentInfo.IO;
+import com.phonepe.drove.models.info.InjectedEnvironmentInfo.Parameters;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
-import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
-import com.phonepe.drove.models.policies.ContainerSecurityProfile.Capabilities;
+import com.phonepe.drove.models.instance.InstancePort;
 
 import io.dropwizard.util.DataSize;
 import lombok.*;
@@ -61,13 +69,17 @@ import org.slf4j.MDC;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.validation.Valid;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
-import static com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA;
 
 /**
  *
@@ -170,8 +182,14 @@ public class DockerUtils {
         void augment(final DockerRunParams params) throws Exception;
     }
 
+    @Value
+    public static class CreateContainerResponse {
+        String containerId;
+        Map<String, String> env;
+    }
+
     @SneakyThrows
-    public static String createContainer(
+    public static CreateContainerResponse createContainer(
             final ResourceConfig resourceConfig,
             final DockerClient client,
             final String id,
@@ -201,13 +219,14 @@ public class DockerUtils {
             populateSystemResources(resourceConfig, deploymentUnitSpec, hostConfig);
             populateResourceRequirements(resourceConfig, deploymentUnitSpec, hostConfig, resourceManager);
             val exposedPorts = new ArrayList<ExposedPort>();
+            val volumes = Objects.requireNonNullElse(
+                    deploymentUnitSpec.getVolumes(), List.<MountedVolume>of());
 
-            if (null != deploymentUnitSpec.getVolumes()) {
-                populateVolumeMounts(deploymentUnitSpec, hostConfig);
-            }
+            populateVolumeMounts(volumes, hostConfig);
 
             val env = new ArrayList<String>();
             val hostName = hostname();
+            env.add("DROVE_ENV_INFO_FILE=" + Constants.ENVIRONMENT_FILE_PATH);
             env.add("HOST=" + hostName);
             addEnvironmentVariables(deploymentUnitSpec, env);
             deploymentUnitSpec.getExecutable().accept((ExecutableTypeVisitor<Void>) dockerCoordinates -> {
@@ -215,31 +234,24 @@ public class DockerUtils {
                 return null;
             });
             val labels = new HashMap<String, String>();
-            val params = new DockerRunParams(hostName,
-                                             hostConfig,
-                                             exposedPorts,
-                                             deploymentUnitSpec.isHostLevelInstance(),
-                                             labels,
-                                             env);
+            val params = new DockerRunParams(hostName, hostConfig, exposedPorts,
+                                             deploymentUnitSpec.isHostLevelInstance(), labels, env);
             augmenter.augment(params);
             log.debug("Environment: {}", env);
             if (!Objects.requireNonNullElse(deploymentUnitSpec.getArgs(), List.<String>of()).isEmpty()) {
                 containerCmd.withCmd(deploymentUnitSpec.getArgs())
                         .withArgsEscaped(true);
             }
-            val userSpec = null == deploymentUnitSpec.getUserSpec()
-                           ? executorOptions.getDefaultUserSpec()
-                           : deploymentUnitSpec.getUserSpec();
-            if (null != userSpec) {
-                var user = userSpec.getUser();
-                if (!Strings.isNullOrEmpty(userSpec.getGroup())) {
-                    user = user + ":" + userSpec.getGroup();
-                }
-                if (!Strings.isNullOrEmpty(user)) {
-                    containerCmd.withUser(user);
-                }
-            }
-            applySecurityProfile(id, hostConfig, deploymentUnitSpec);
+            userSpec(deploymentUnitSpec, executorOptions)
+                .ifPresent(userSpec -> {
+                        var user = userSpec.getUser();
+                        if (!Strings.isNullOrEmpty(userSpec.getGroup())) {
+                            user = user + ":" + userSpec.getGroup();
+                        }
+                        if (!Strings.isNullOrEmpty(user)) {
+                            containerCmd.withUser(user);
+                        }
+                    });
             val containerId = containerCmd
                     .withHostConfig(hostConfig)
                     .withEnv(env)
@@ -248,8 +260,87 @@ public class DockerUtils {
                     .exec()
                     .getId();
             log.debug("Created container id: {}", containerId);
-            return containerId;
+            return new CreateContainerResponse(containerId,
+                    env.stream()
+                    .map(envVar -> {
+                        val parts = envVar.split("=", 2);
+                        return Pair.of(parts[0], parts[1]);
+                    })
+                    .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
         }
+    }
+
+    /**
+     * This will create and inject an instance of {@link com.phonepe.drove.models.info.InjectedEnvironmentInfo} into the container at the specified path.
+     */
+    @SneakyThrows
+    public static void injectEnvironmentInfo(
+            final String containerId,
+            final DockerClient client,
+            final DeploymentUnitSpec deploymentUnitSpec,
+            final Map<String, InstancePort> ports,
+            final ExecutorNodeData nodeData,
+            final ExecutorOptions executorOptions,
+            final ObjectMapper objectMapper,
+            final Map<String, String> env,
+            final String injectionPath) {
+        val volumes = Objects.requireNonNullElseGet(deploymentUnitSpec.getVolumes(),
+                List::<MountedVolume>of)
+            .stream()
+            .map(volume -> new InjectedEnvironmentInfo.Volume(
+                    volume.getPathInContainer(), volume.getMode()))
+            .toList();
+        val userSpec = userSpec(deploymentUnitSpec, executorOptions);
+        //We use constructor to foce handle any membership changes
+        val info = new InjectedEnvironmentInfo(
+                CommonUtils.instanceId(deploymentUnitSpec),
+                CommonUtils.jobType(deploymentUnitSpec),
+                new InjectedEnvironmentInfo.Executor(
+                        nodeData.getState().getExecutorId(),
+                        nodeData.getHostname(),
+                        nodeData.getTags(),
+                        nodeData.getMetadata()
+                    ),
+                new InjectedEnvironmentInfo.Parameters(
+                    deploymentUnitSpec.getExecutable().getType(),
+                    deploymentUnitSpec.getExecutable().accept(new ExecutableTypeVisitor<String>() {
+                        @Override
+                        public String visit(DockerCoordinates dockerCoordinates) {
+                            return dockerCoordinates.getUrl();
+                        }
+                    }),
+                    deploymentUnitSpec.getArgs(),
+                    Map.of() //TODO::TAGS
+                    ),
+                new InjectedEnvironmentInfo.IO(
+                    ports.entrySet()
+                        .stream()
+                        .map(port -> new InjectedEnvironmentInfo.Port(
+                            port.getKey(),
+                            port.getValue().getContainerPort(),
+                            port.getValue().getHostPort(),
+                            port.getValue().getPortType()))
+                        .toList(),
+                    List.of(), //TODO::VHOSTS
+                    volumes),
+                new InjectedEnvironmentInfo.Runtime(
+                        userSpec.map(UserSpec::getUser).orElse(null),
+                        userSpec.map(UserSpec::getGroup).orElse(null),
+                        deploymentUnitSpec.getResources(),
+                        env),
+                Instant.now());
+        createFileInContainer(containerId, client, new Consumer<TarArchiveOutputStream>() {
+            @Override
+            @SneakyThrows
+            public void accept(TarArchiveOutputStream tos) {
+                val entry = new TarArchiveEntry(injectionPath);
+                val data = objectMapper.writeValueAsBytes(info);
+                entry.setSize(data.length);
+                tos.putArchiveEntry(entry);
+                tos.write(data);
+                tos.closeArchiveEntry();
+            }
+        });
     }
 
     /**
@@ -274,32 +365,45 @@ public class DockerUtils {
             return;
         }
         val configSpecs = ExecutorUtils.translateConfigSpecs(configs, httpCaller);
+        createFileInContainer(
+                containerId,
+                client,
+                tos -> {
+                    configSpecs
+                            .stream()
+                            .map(InlineConfigSpec.class::cast)
+                            .forEach(configSpec -> {
+                                try {
+                                    val entry = new TarArchiveEntry(configSpec.getLocalFilename());
+                                    entry.setSize(configSpec.getData().length);
+                                    tos.putArchiveEntry(entry);
+                                    tos.write(configSpec.getData());
+                                    tos.closeArchiveEntry();
+                                }
+                                catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                });
+    }
+
+    @SneakyThrows
+    public static void createFileInContainer(
+            final String containerId,
+            final DockerClient client,
+            Consumer<TarArchiveOutputStream> contentWriter) {
         try (val bos = new ByteArrayOutputStream()) {
-            try (val tos = new TarArchiveOutputStream(bos)) {
-                tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
-                tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
-                configSpecs
-                        .stream()
-                        .map(InlineConfigSpec.class::cast)
-                        .forEach(configSpec -> {
-                            try {
-                                val entry = new TarArchiveEntry(configSpec.getLocalFilename());
-                                entry.setSize(configSpec.getData().length);
-                                tos.putArchiveEntry(entry);
-                                tos.write(configSpec.getData());
-                                tos.closeArchiveEntry();
-                            }
-                            catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-                tos.flush();
-                tos.finish();
+                try (val tos = new TarArchiveOutputStream(bos)) {
+                    tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+                    tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+                    contentWriter.accept(tos);
+                    tos.flush();
+                    tos.finish();
+                }
+                client.copyArchiveToContainerCmd(containerId)
+                        .withTarInputStream(new ByteArrayInputStream(bos.toByteArray()))
+                        .exec();
             }
-            client.copyArchiveToContainerCmd(containerId)
-                    .withTarInputStream(new ByteArrayInputStream(bos.toByteArray()))
-                    .exec();
-        }
     }
 
     @Value
@@ -360,8 +464,15 @@ public class DockerUtils {
         return new CommandOutput(exitCode, buffer.toString(), errMsg.get());
     }
 
-    private static void populateVolumeMounts(DeploymentUnitSpec deploymentUnitSpec, HostConfig hostConfig) {
-        hostConfig.withBinds(deploymentUnitSpec.getVolumes()
+    private static Optional<UserSpec> userSpec(final DeploymentUnitSpec deploymentUnitSpec,
+            final ExecutorOptions executorOptions) {
+        return Optional.ofNullable(null == deploymentUnitSpec.getUserSpec()
+                           ? executorOptions.getDefaultUserSpec()
+                           : deploymentUnitSpec.getUserSpec());
+    }
+
+    private static void populateVolumeMounts(Collection<MountedVolume> volumes, HostConfig hostConfig) {
+        hostConfig.withBinds(volumes
                                      .stream()
                                      .map(volume -> new Bind(volume.getPathOnHost(),
                                                              new Volume(
@@ -402,43 +513,7 @@ public class DockerUtils {
                         }
                         return null;
                     }
-
-                    @Override
-                    public Void visit(GPUAllocation gpu) {
-                        val gpuType = gpu.getGpuType();
-
-                        if (gpuType != null && gpuType.getVendor().equals(NVIDIA)) {
-                            addNVIDIAGpuDeviceRequest(hostConfig, gpu);
-                        } else {
-                            throw new UnsupportedOperationException(
-                                    "GPU type " + (gpuType == null ? "null" : gpuType.getVendor())
-                                            + " is not yet supported by DockerUtils");
-                        }
-                        return null;
-                    }
                 }));
-    }
-
-    private static void addNVIDIAGpuDeviceRequest(HostConfig hostConfig, GPUAllocation gpu) {
-        val gpuIds = gpu.getGpuIds().stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(id -> !id.isEmpty())
-                .toList();
-        if (gpuIds.isEmpty()) {
-            return;
-        }
-
-        var deviceRequests = hostConfig.getDeviceRequests();
-        if (Objects.isNull(deviceRequests)) {
-            deviceRequests = new ArrayList<>();
-            hostConfig.withDeviceRequests(deviceRequests);
-        }
-
-        deviceRequests.add(new DeviceRequest()
-                                   .withDriver("nvidia")
-                                   .withDeviceIds(new ArrayList<>(gpuIds))
-                                   .withCapabilities(List.of(List.of("gpu"))));
     }
 
     private static void populateSystemResources(
@@ -634,57 +709,5 @@ public class DockerUtils {
                 return new LogConfig(LogConfig.LoggingType.SYSLOG, configBuilder.build());
             }
         });
-    }
-
-    private static HostConfig applySecurityProfile(
-            String id,
-            HostConfig hostConfig,
-            DeploymentUnitSpec deploymentUnitSpec) {
-        val securityProfile = deploymentUnitSpec.getSecuritySpec();
-        if (null == securityProfile) {
-            log.warn("No security profile specified for deployment unit: {}", id);
-            return hostConfig;
-        }
-        if (Boolean.TRUE.equals(securityProfile.getEnablePrivilegedMode())) {
-            hostConfig.withPrivileged(true);
-            log.info("Privileged mode enabled for deployment unit: {}", id);
-        }
-        else {
-            log.info("Privileged mode not enabled for deployment unit: {}", id);
-        }
-        val capabilties = Objects.requireNonNullElse(securityProfile.getCapabilities(), Capabilities.DEFAULT);
-        val addedCaps = Objects.requireNonNullElse(capabilties.getAddedCapabilities(), Set.<String>of());
-        if (addedCaps.isEmpty()) {
-            log.info("No capabilities added for deployment unit: {}", id);
-        }
-        else {
-            hostConfig.withCapAdd(addedCaps
-                    .stream()
-                    .map(Capability::valueOf)
-                    .toList()
-                    .toArray(new Capability[0]));
-            log.info("Capabilities added for deployment unit {}: {}", id, addedCaps);
-        }
-        val droppedCaps = Objects.requireNonNullElse(capabilties.getDroppedCapabilities(),
-                                                     Set.<String>of());
-        if (droppedCaps.isEmpty()) {
-            log.info("No capabilities dropped for deployment unit: {}", id);
-        }
-        else {
-            hostConfig.withCapDrop(droppedCaps
-                    .stream()
-                    .map(Capability::valueOf)
-                    .toList()
-                    .toArray(new Capability[0]));
-            log.info("Capabilities dropped for deployment unit {}: {}", id, droppedCaps);
-        }
-        if (!Strings.isNullOrEmpty(securityProfile.getSeccompProfile())) {
-            hostConfig.withSecurityOpts(List.of("seccomp=" + securityProfile.getSeccompProfile()));
-            log.info("Seccomp profile for deployment unit {}: {}", id, securityProfile.getSeccompProfile());
-        }
-        else {
-            log.info("No seccomp profile specified for deployment unit: {}", id);
-        }
-        return hostConfig;
     }
 }

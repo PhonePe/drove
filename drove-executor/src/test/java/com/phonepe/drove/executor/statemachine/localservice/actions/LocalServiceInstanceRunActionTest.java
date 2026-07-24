@@ -21,6 +21,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.net.ServerSocket;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.*;
@@ -56,19 +58,17 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val spec = testLocalServiceInstanceSpec();
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L))));
+        val nodeStore = mock(LocalNodeDataManager.class);
+        when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
                                                        MAPPER,
                                                        SharedMetricRegistries.getOrCreate("test"),
-                                                       resourceManager);
+                                                       resourceManager,
+                                                       nodeStore);
 
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resp = action.execute(context,
@@ -85,19 +85,17 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                 .withHostLevelInstance(true);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+        val nodeStore = mock(LocalNodeDataManager.class);
+        when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
                                                        MAPPER,
                                                        SharedMetricRegistries.getOrCreate("test"),
-                                                       resourceManager);
+                                                       resourceManager,
+                                                       nodeStore);
 
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resp = action.execute(context,
@@ -121,19 +119,17 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                                              .build()));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+        val nodeStore = mock(LocalNodeDataManager.class);
+        when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
                                                        MAPPER,
                                                        SharedMetricRegistries.getOrCreate("test"),
-                                                       resourceManager);
+                                                       resourceManager,
+                                                       nodeStore);
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resp = action.execute(context,
                                   StateData.create(STARTING, createExecutorLocaLServiceInstanceInfo(spec, 8080)));

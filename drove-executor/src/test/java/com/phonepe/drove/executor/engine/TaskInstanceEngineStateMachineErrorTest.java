@@ -36,6 +36,7 @@ import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingTaskActionFactory;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
@@ -61,6 +62,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -246,6 +248,14 @@ class TaskInstanceEngineStateMachineErrorTest extends AbstractTestBase {
             @Named("ControllerHttpClient")
             public CloseableHttpClient closeableHttpClient() {
                 return ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT);
+            }
+
+            @Provides
+            @Singleton
+            public LocalNodeDataManager localNodeDataManager() {
+                val mock = mock(LocalNodeDataManager.class);
+                when(mock.currentData()).thenReturn(Optional.empty());
+                return mock;
             }
         });
 

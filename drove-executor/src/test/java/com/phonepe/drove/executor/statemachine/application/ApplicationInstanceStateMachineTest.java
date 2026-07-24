@@ -25,6 +25,7 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
@@ -37,11 +38,13 @@ import org.junit.jupiter.api.Test;
 
 import javax.inject.Singleton;
 import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 
 import static com.phonepe.drove.models.instance.InstanceState.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 /**
  * Tests {@link ApplicationInstanceStateMachine}
  */
@@ -76,6 +79,14 @@ class ApplicationInstanceStateMachineTest extends AbstractTestBase {
                                                                  @Singleton
                                                                  public ExecutorOptions executorOptions() {
                                                                      return ExecutorOptions.DEFAULT;
+                                                                 }
+
+                                                                 @Provides
+                                                                 @Singleton
+                                                                 public LocalNodeDataManager localNodeDataManager() {
+                                                                     val nodeDataMgr = mock(LocalNodeDataManager.class);
+                                                                     when(nodeDataMgr.currentData()).thenReturn(Optional.empty());
+                                                                     return nodeDataMgr;
                                                                  }
                                                              })),
                                                      ExecutorTestingUtils.DOCKER_CLIENT,

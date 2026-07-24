@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.model.ExecutorLocalServiceInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -32,6 +33,7 @@ import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.statemachine.StateData;
+
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -52,13 +54,15 @@ public class LocalServiceInstanceRunAction extends CommonInstanceRunAction<Execu
             HttpCaller httpCaller,
             ObjectMapper mapper,
             MetricRegistry metricRegistry,
-            ResourceManager resourceManager) {
+            ResourceManager resourceManager,
+            LocalNodeDataManager localNodeDataManager) {
         super(resourceConfig,
               executorOptions,
               httpCaller,
               mapper,
               metricRegistry,
-              resourceManager);
+              resourceManager,
+              localNodeDataManager);
     }
 
     @Override

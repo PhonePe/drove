@@ -21,6 +21,7 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.*;
@@ -52,20 +54,17 @@ class LocalServiceInstanceStopActionTest extends AbstractTestBase {
         val context = new InstanceActionContext<>(EXECUTOR_ID, spec, DOCKER_CLIENT, false);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null,
-                                             null,
-                                             null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+
+        val nodeSouce = mock(LocalNodeDataManager.class);
+        when(nodeSouce.currentData()).thenReturn(Optional.empty());
         val startAction = new LocalServiceInstanceRunAction(new ResourceConfig(), ExecutorOptions.DEFAULT,
                                                            CommonTestUtils.httpCaller(),
                                                            MAPPER,
                                                            SharedMetricRegistries.getOrCreate("test"),
-                                                           resourceManager);
+                                                           resourceManager,
+                                                           nodeSouce);
         val state = startAction.execute(context,
                                         StateData.create(LocalServiceInstanceState.PROVISIONING, createExecutorLocaLServiceInstanceInfo(spec, 8080)));
         assertEquals(LocalServiceInstanceState.DEPROVISIONING,

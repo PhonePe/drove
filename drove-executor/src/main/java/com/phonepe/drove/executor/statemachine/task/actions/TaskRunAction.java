@@ -86,7 +86,7 @@ public class TaskRunAction extends TaskAction {
         try {
             val instanceInfoRef = new AtomicReference<ExecutorTaskInfo>();
             val instanceId = instanceId(instanceSpec);
-            val containerId = DockerUtils.createContainer(
+            val createResponse = DockerUtils.createContainer(
                     schedulingConfig,
                     client, CommonUtils.instanceId(context.getInstanceSpec()),
                     instanceSpec,
@@ -110,6 +110,7 @@ public class TaskRunAction extends TaskAction {
                     },
                     executorOptions,
                     resourceManager);
+            val containerId = createResponse.getContainerId();
             DockerUtils.injectConfigs(containerId, context.getClient(), instanceSpec, httpCaller);
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)

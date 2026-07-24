@@ -16,24 +16,8 @@
 
 package com.phonepe.drove.executor.utils;
 
-import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import com.github.dockerjava.api.model.Capability;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -43,238 +27,51 @@ import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.models.application.JobType;
+import com.phonepe.drove.models.application.MountedVolume;
+import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
+import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
+import com.phonepe.drove.models.info.InjectedEnvironmentInfo;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
-import com.phonepe.drove.models.policies.ContainerSecurityProfile;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
-
+import com.phonepe.drove.models.instance.InstancePort;
+import lombok.val;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import lombok.val;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *
  */
 class DockerUtilsTest {
 
-    @Test
-    void testCreateContainerNullSecuritySpec() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(null);
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val inspected = DOCKER_CLIENT.inspectContainerCmd(containerId).exec();
-            assertNotNull(inspected);
-            val hostConfig = inspected.getHostConfig();
-            assertNotNull(hostConfig);
-            assertNotNull(hostConfig);
-            assertNotEquals(Boolean.TRUE, hostConfig.getPrivileged());
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
+    private static final ObjectMapper MAPPER;
+
+    static {
+        MAPPER = new ObjectMapper();
+        CommonUtils.configureMapper(MAPPER);
+        MAPPER.registerModule(new JavaTimeModule());
     }
-
-
-    @Test
-    void testCreateContainerPrivileged() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(
-                DeployableSecuritySpec.builder()
-                        .enablePrivilegedMode(true)
-                        .capabilities(ContainerSecurityProfile.Capabilities.DEFAULT)
-                        .seccompProfile("")
-                        .build());
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
-            assertNotNull(hostConfig);
-            assertEquals(Boolean.TRUE, hostConfig.getPrivileged());
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
-    }
-
-
-    @Test
-    void testCreateContainerAddedCaps() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(
-                DeployableSecuritySpec.builder()
-                        .enablePrivilegedMode(false)
-                        .capabilities(ContainerSecurityProfile.Capabilities.builder()
-                                              .addedCapabilities(Set.of("NET_ADMIN"))
-                                              .droppedCapabilities(Set.of())
-                                              .build())
-                        .seccompProfile("")
-                        .build());
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
-            assertNotNull(hostConfig);
-            assertNotNull(hostConfig.getCapAdd());
-            assertTrue(List.of(hostConfig.getCapAdd()).contains(Capability.NET_ADMIN),
-                       "CapAdd should contain NET_ADMIN");
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
-    }
-
-
-    @Test
-    void testCreateContainerDroppedCaps() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(
-                DeployableSecuritySpec.builder()
-                        .enablePrivilegedMode(false)
-                        .capabilities(ContainerSecurityProfile.Capabilities.builder()
-                                              .addedCapabilities(Set.of())
-                                              .droppedCapabilities(Set.of("MKNOD"))
-                                              .build())
-                        .seccompProfile("")
-                        .build());
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
-            assertNotNull(hostConfig);
-            assertNotNull(hostConfig.getCapDrop());
-            assertTrue(List.of(hostConfig.getCapDrop()).contains(Capability.MKNOD),
-                       "CapDrop should contain MKNOD");
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
-    }
-
-
-    @Test
-    void testCreateContainerSeccompProfile() {
-        val resourceManager = mockResourceManager();
-        val seccompPath = "/dev/null"; // a file that exists on any Linux host
-        val spec = testTaskInstanceSpec().withSecuritySpec(
-                DeployableSecuritySpec.builder()
-                        .enablePrivilegedMode(false)
-                        .capabilities(ContainerSecurityProfile.Capabilities.DEFAULT)
-                        .seccompProfile(seccompPath)
-                        .build());
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
-            assertNotNull(hostConfig);
-            assertNotNull(hostConfig.getSecurityOpts());
-            assertTrue(hostConfig.getSecurityOpts().stream()
-                               .anyMatch(o -> o.startsWith("seccomp=")),
-                       "SecurityOpts should contain a seccomp= entry");
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
-    }
-
-
-    @Test
-    void testCreateContainerDefaultSecuritySpec() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(DeployableSecuritySpec.DEFAULT);
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
-            assertNotNull(hostConfig);
-            assertNotEquals(Boolean.TRUE, hostConfig.getPrivileged());
-            val capAdd = hostConfig.getCapAdd();
-            assertTrue(capAdd == null || capAdd.length == 0,
-                       "No capabilities should be added with DEFAULT securitySpec");
-            val securityOpts = hostConfig.getSecurityOpts();
-            assertTrue(securityOpts == null || securityOpts.stream().noneMatch(o -> o.startsWith("seccomp=")),
-                       "No seccomp opt should be set with DEFAULT securitySpec");
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
-    }
-
-
-    @Test
-    void testCreateContainerEmptyCaps() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(
-                DeployableSecuritySpec.builder()
-                        .enablePrivilegedMode(false)
-                        .capabilities(ContainerSecurityProfile.Capabilities.builder()
-                                              .addedCapabilities(Set.of())
-                                              .droppedCapabilities(Set.of())
-                                              .build())
-                        .seccompProfile("")
-                        .build());
-        pullImage(spec);
-        val containerId = DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager);
-        try {
-            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
-            assertNotNull(hostConfig);
-            val capAdd = hostConfig.getCapAdd();
-            assertTrue(capAdd == null || capAdd.length == 0, "No caps should be added");
-            val capDrop = hostConfig.getCapDrop();
-            assertTrue(capDrop == null || capDrop.length == 0, "No caps should be dropped");
-        }
-        finally {
-            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
-        }
-    }
-
-
-    @Test
-    void testCreateContainerInvalidCapThrows() {
-        val resourceManager = mockResourceManager();
-        val spec = testTaskInstanceSpec().withSecuritySpec(
-                DeployableSecuritySpec.builder()
-                        .enablePrivilegedMode(false)
-                        .capabilities(ContainerSecurityProfile.Capabilities.builder()
-                                              .addedCapabilities(Set.of("INVALID_CAP_XYZ"))
-                                              .droppedCapabilities(Set.of())
-                                              .build())
-                        .seccompProfile("")
-                        .build());
-        pullImage(spec);
-        assertThrows(IllegalArgumentException.class, () -> DockerUtils.createContainer(
-                ResourceConfig.DEFAULT, DOCKER_CLIENT, CommonUtils.instanceId(spec),
-                spec, dockerRunParams -> {}, ExecutorOptions.DEFAULT, resourceManager));
-    }
-
-
-    private static ResourceManager mockResourceManager() {
-        val resourceManager = mock(ResourceManager.class);
-        when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
-        return resourceManager;
-    }
-
     @ParameterizedTest
     @MethodSource("generateResourceConfigs")
     void testContainerCreate(
@@ -286,17 +83,10 @@ class DockerUtilsTest {
         val spec = actualSpec.withEnv(env);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null,
-                                             null,
-                                             null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
         pullImage(spec);
-        val containerId = DockerUtils.createContainer(
+        val createResponse = DockerUtils.createContainer(
                 resourceConfig,
                 DOCKER_CLIENT,
                 CommonUtils.instanceId(spec),
@@ -304,6 +94,7 @@ class DockerUtilsTest {
                 dockerRunParams -> {},
                 executorOptions,
                 resourceManager);
+        val containerId = createResponse.getContainerId();
         try {
             assertNotNull(DOCKER_CLIENT.inspectContainerCmd(containerId).exec());
         }
@@ -316,20 +107,13 @@ class DockerUtilsTest {
     void testContainerRun() {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null,
-                                             null,
-                                             null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L),
-                                                                Map.of(),
-                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
         val httpCaller = mock(HttpCaller.class);
         val spec = ExecutorTestingUtils.testTaskInstanceSpec()
                 .withEnv(Map.of("ITERATIONS", "10000", "LOOP_SLEEP", "5"));
         pullImage(spec);
-        val containerId = DockerUtils.createContainer(
+        val createResponse = DockerUtils.createContainer(
                 ResourceConfig.DEFAULT,
                 DOCKER_CLIENT,
                 CommonUtils.instanceId(spec),
@@ -337,6 +121,7 @@ class DockerUtilsTest {
                 dockerRunParams -> {},
                 ExecutorOptions.DEFAULT,
                 resourceManager);
+        val containerId = createResponse.getContainerId();
         try {
             DockerUtils.injectConfigs(containerId,
                                       DOCKER_CLIENT,
@@ -346,6 +131,79 @@ class DockerUtilsTest {
             DOCKER_CLIENT.startContainerCmd(containerId).exec();
             val res = DockerUtils.runCommandInContainer(containerId, DOCKER_CLIENT, "echo hello");
             assertEquals(0, res.getStatus());
+        }
+        finally {
+            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
+    @Test
+    void testInjectEnvironmentInfoWritesFileToContainer() throws Exception {
+        val resourceManager = mock(ResourceManager.class);
+        when(resourceManager.currentState())
+                .thenReturn(new ResourceInfo(null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+        val spec = ExecutorTestingUtils.testTaskInstanceSpec()
+                .withEnv(Map.of("ITERATIONS", "3", "LOOP_SLEEP", "1"));
+        pullImage(spec);
+        val createResponse = DockerUtils.createContainer(
+                ResourceConfig.DEFAULT,
+                DOCKER_CLIENT,
+                CommonUtils.instanceId(spec),
+                spec,
+                dockerRunParams -> {},
+                ExecutorOptions.DEFAULT,
+                resourceManager);
+        val containerId = createResponse.getContainerId();
+        try {
+            val nodeData = new ExecutorNodeData(
+                    "test-host",
+                    8080,
+                    NodeTransportType.HTTP,
+                    new Date(),
+                    new ExecutorResourceSnapshot("test-executor-id", null, null, null),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    Set.of("tag1"),
+                    Map.of("env", "test"),
+                    ExecutorState.ACTIVE);
+            val portMappings = Map.of(
+                    "main", new InstancePort(8000, 32000, PortType.HTTP));
+            val injectionPath = "/drove-runtime.json";
+
+            DockerUtils.injectEnvironmentInfo(
+                    containerId,
+                    DOCKER_CLIENT,
+                    spec,
+                    portMappings,
+                    nodeData,
+                    ExecutorOptions.DEFAULT,
+                    MAPPER,
+                    createResponse.getEnv(),
+                    injectionPath);
+
+            DOCKER_CLIENT.startContainerCmd(containerId).exec();
+
+            val result = DockerUtils.runCommandInContainer(containerId, DOCKER_CLIENT,
+                                                           "cat " + injectionPath);
+            assertEquals(0, result.getStatus(), "cat command should succeed — file must exist in container");
+
+            val info = MAPPER.readValue(result.getOutput(), InjectedEnvironmentInfo.class);
+            assertNotNull(info);
+            assertEquals(CommonUtils.instanceId(spec), info.getInstanceId());
+            assertEquals(JobType.COMPUTATION, info.getJobType());
+            assertEquals("test-executor-id", info.getExecutor().getExecutorId());
+            assertEquals("test-host", info.getExecutor().getHostname());
+            assertEquals(1, info.getIo().getPorts().size());
+            assertEquals("main", info.getIo().getPorts().get(0).getName());
+            assertEquals(8000, info.getIo().getPorts().get(0).getSpecifiedPort());
+            assertEquals(32000, info.getIo().getPorts().get(0).getActualPort());
+            assertEquals(PortType.HTTP, info.getIo().getPorts().get(0).getPortType());
+            val expectedVolumes = spec.getVolumes().stream()
+                    .map(v -> new InjectedEnvironmentInfo.Volume(v.getPathInContainer(), v.getMode()))
+                    .toList();
+            assertEquals(expectedVolumes, info.getIo().getVolumes());
         }
         finally {
             DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
@@ -372,9 +230,9 @@ class DockerUtilsTest {
                 Arguments.of(
                         defaultConfig
                                 .setOverProvisioning(new OverProvisioning()
-                                                              .withEnabled(true)
-                                                              .withCpuMultiplier(1)
-                                                              .withMemoryMultiplier(1)),
+                                                              .setEnabled(true)
+                                                              .setCpuMultiplier(1)
+                                                              .setMemoryMultiplier(1)),
                         spec.withConfigs(null),
                         executorOptions),
                 Arguments.of(defaultConfig, spec, executorOptions

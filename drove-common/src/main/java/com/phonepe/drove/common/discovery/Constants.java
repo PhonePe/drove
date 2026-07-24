@@ -27,4 +27,5 @@ import java.time.Duration;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Constants {
     public static final Duration EXECUTOR_REFRESH_INTERVAL = Duration.ofSeconds(20);
+    public static final String ENVIRONMENT_FILE_PATH = "/drove.env.json";
 }

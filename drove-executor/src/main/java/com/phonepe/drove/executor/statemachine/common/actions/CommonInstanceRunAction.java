@@ -16,13 +16,27 @@
 
 package com.phonepe.drove.executor.statemachine.common.actions;
 
+import static com.phonepe.drove.common.CommonUtils.hostname;
+
+import java.net.ServerSocket;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports;
-import com.phonepe.drove.common.model.*;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
+import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
@@ -35,18 +49,11 @@ import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.statemachine.StateData;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.slf4j.MDC;
 
-import java.net.ServerSocket;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static com.phonepe.drove.common.CommonUtils.hostname;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -60,6 +67,7 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
     private final ObjectMapper mapper;
     private final MetricRegistry metricRegistry;
     private final ResourceManager resourceManager;
+    private final LocalNodeDataManager localNodeDataManager;
 
     protected CommonInstanceRunAction(
             ResourceConfig schedulingConfig,
@@ -67,13 +75,15 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
             HttpCaller httpCaller,
             ObjectMapper mapper,
             MetricRegistry metricRegistry,
-            ResourceManager resourceManager) {
+            ResourceManager resourceManager,
+            LocalNodeDataManager localNodeDataManager) {
         this.schedulingConfig = schedulingConfig;
         this.executorOptions = executorOptions;
         this.httpCaller = httpCaller;
         this.mapper = mapper;
         this.metricRegistry = metricRegistry;
         this.resourceManager = resourceManager;
+        this.localNodeDataManager = localNodeDataManager;
     }
 
 
@@ -83,7 +93,8 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
         val client = context.getClient();
         try {
             val instanceInfoRef = new AtomicReference<E>();
-            val containerId = DockerUtils.createContainer(
+            val portMappings = new HashMap<String, InstancePort>();
+            val createResponse = DockerUtils.createContainer(
                     schedulingConfig,
                     client,
                     containerId(instanceSpec),
@@ -91,7 +102,6 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
                     params -> {
                         val ports = new Ports();
                         val exposedPorts = params.getExposedPorts();
-                        val portMappings = new HashMap<String, InstancePort>();
                         portSpecs(instanceSpec)
                                 .forEach(
                                 portSpec -> {
@@ -126,7 +136,19 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
                     },
                     executorOptions,
                     resourceManager);
+            val containerId = createResponse.getContainerId();
             DockerUtils.injectConfigs(containerId, context.getClient(), instanceSpec, httpCaller);
+            localNodeDataManager.currentData()
+                .ifPresentOrElse(nodeData -> DockerUtils.injectEnvironmentInfo(containerId,
+                                              context.getClient(),
+                                              instanceSpec,
+                                              portMappings,
+                                              nodeData,
+                                              executorOptions,
+                                              mapper,
+                                              createResponse.getEnv(),
+                                              "/opt/drove/runtime.json"),
+                                 () -> log.warn("No local node data available to inject into container"));
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)
                     .exec();

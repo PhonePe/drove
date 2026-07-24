@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
@@ -52,13 +53,15 @@ public class ApplicationInstanceRunAction extends CommonInstanceRunAction<Execut
             HttpCaller httpCaller,
             ObjectMapper mapper,
             MetricRegistry metricRegistry,
-            ResourceManager resourceManager) {
+            ResourceManager resourceManager,
+            LocalNodeDataManager localNodeDataManager) {
         super(resourceConfig,
               executorOptions,
               httpCaller,
               mapper,
               metricRegistry,
-              resourceManager);
+              resourceManager,
+              localNodeDataManager);
     }
 
     @Override
