@@ -22,6 +22,7 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.engine.DockerLabels;
 import com.phonepe.drove.executor.engine.InstanceLogHandler;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
@@ -43,6 +44,7 @@ import org.slf4j.MDC;
 import javax.inject.Inject;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
@@ -61,19 +63,22 @@ public class TaskRunAction extends TaskAction {
     private final ObjectMapper mapper;
     private final MetricRegistry metricRegistry;
     private final ResourceManager resourceManager;
+    private final LocalNodeDataManager localNodeDataManager;
 
     @Inject
     public TaskRunAction(ResourceConfig resourceConfig,
                          ExecutorOptions executorOptions, HttpCaller httpCaller,
                          ObjectMapper mapper,
                          MetricRegistry metricRegistry,
-                         ResourceManager resourceManager) {
+                         ResourceManager resourceManager,
+                         LocalNodeDataManager localNodeDataManager) {
         this.schedulingConfig = resourceConfig;
         this.executorOptions = executorOptions;
         this.httpCaller = httpCaller;
         this.mapper = mapper;
         this.metricRegistry = metricRegistry;
         this.resourceManager = resourceManager;
+        this.localNodeDataManager = localNodeDataManager;
     }
 
     @Override
@@ -112,6 +117,18 @@ public class TaskRunAction extends TaskAction {
                     resourceManager);
             val containerId = createResponse.getContainerId();
             DockerUtils.injectConfigs(containerId, context.getClient(), instanceSpec, httpCaller);
+            localNodeDataManager.currentData()
+                .ifPresentOrElse(nodeData -> DockerUtils.injectEnvironmentInfo(containerId,
+                                              context.getClient(),
+                                              instanceSpec,
+                                              Map.of(),
+                                              nodeData,
+                                              executorOptions,
+                                              mapper,
+                                              createResponse.getEnv(),
+                                              "/opt/drove/runtime.json"),
+                                 () -> log.warn("No local node data available to inject into container"));
+
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)
                     .exec();

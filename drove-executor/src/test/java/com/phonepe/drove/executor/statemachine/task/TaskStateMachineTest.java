@@ -21,6 +21,7 @@ import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.Stage;
 import com.phonepe.drove.common.CommonTestUtils;
+import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
@@ -36,7 +37,11 @@ import org.junit.jupiter.api.Test;
 
 import javax.inject.Singleton;
 import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.Executors;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
 import static com.phonepe.drove.models.taskinstance.TaskState.*;
@@ -117,6 +122,14 @@ class TaskStateMachineTest {
                                                 @Singleton
                                                 public ExecutorOptions executorOptions() {
                                                     return ExecutorOptions.DEFAULT;
+                                                }
+
+                                                @Provides
+                                                @Singleton
+                                                public LocalNodeDataManager localNodeDataManager() {
+                                                    val mock = mock(LocalNodeDataManager.class);
+                                                    when(mock.currentData()).thenReturn(Optional.empty());
+                                                    return mock;
                                                 }
                                             })),
                                     ExecutorTestingUtils.DOCKER_CLIENT);
