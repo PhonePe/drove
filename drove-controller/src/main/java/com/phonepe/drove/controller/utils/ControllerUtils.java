@@ -957,9 +957,8 @@ public class ControllerUtils {
             val vhost = exposedSpec.getVhost();
             val portName = exposedSpec.getPortName();
             if(!ports.containsKey(portName)) {
-                errs.add("No known defined ports found with name '%'. "
-                        + "Invalid port name used for vhost: %s. "
-                        + "Known ports: %s".formatted(portName, vhost, ports.keySet()));
+                errs.add("No defined ports found with name '%s'. Invalid port name used for vhost: %s. Known ports: %s"
+                        .formatted(portName, vhost, ports.keySet()));
             }
             else {
                 val mapped = mappedVhosts.get(vhost);
