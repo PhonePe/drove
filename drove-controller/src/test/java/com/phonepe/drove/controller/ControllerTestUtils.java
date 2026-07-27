@@ -97,7 +97,7 @@ public class ControllerTestUtils {
         return new ApplicationSpec(name,
                                    String.format("%05d", version),
                                    new DockerCoordinates(CommonTestUtils.APP_IMAGE_NAME, Duration.seconds(100)),
-                                   Collections.singletonList(new PortSpec("main", 8000, PortType.HTTP)),
+                                   List.of(new PortSpec("main", 8000, PortType.HTTP)),
                                    List.of(new MountedVolume("/tmp", "/tmp", MountedVolume.MountMode.READ_ONLY)),
                                    List.of(new InlineConfigSpec("/files/drove.txt", base64("Drove Test"))),
                                    JobType.SERVICE,
@@ -132,7 +132,7 @@ public class ControllerTestUtils {
                                    Collections.emptyMap(),
                                    null,
                                    Collections.emptyList(),
-                                   new ExposureSpec("test.appform.io", "main", ExposureMode.ALL),
+                                   List.of(new ExposureSpec("test.appform.io", "main", ExposureMode.ALL)),
                                    null,
                                    null);
     }

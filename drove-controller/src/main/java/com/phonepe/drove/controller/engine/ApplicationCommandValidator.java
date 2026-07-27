@@ -19,8 +19,8 @@ package com.phonepe.drove.controller.engine;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
-import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
@@ -29,6 +29,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -47,7 +48,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,7 +86,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationInstanceInfoDB instanceInfoStore;
-    private final SecurityPolicyEnforcer securityPolicyEnforcer;
+    private final ControllerOptions controllerOptions;
 
     @Override
     public ValidationResult validateSpec(ApplicationSpec spec)  {
@@ -101,11 +104,15 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
-        if (null != spec.getExposureSpec() && !ports.containsKey(spec.getExposureSpec().getPortName())) {
-            errs.add("Exposed port name " + spec.getExposureSpec().getPortName()
-                             + " is undefined. Defined port names: " + ports.keySet());
-        }
-        errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
+        val expossureSpec = Objects.requireNonNullElseGet(spec.getExposureSpec(), List::<ExposureSpec>of);
+        errs.addAll(expossureSpec.stream()
+                .map(exposure -> exposure.getPortName())
+                .filter(portName -> !ports.containsKey(portName))
+                .map(portName -> "Exposed port name " + portName + " is undefined. Defined port names: " + ports.keySet())
+                .toList());
+        errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
+        errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
+        errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
         if(hasLocalPolicy(spec.getPlacementPolicy())) {
             errs.add("Local service placement is not allowed for apps");
         }

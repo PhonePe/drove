@@ -23,6 +23,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyType;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
@@ -48,6 +49,7 @@ import lombok.val;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -106,7 +108,11 @@ public class EventUtils {
                                               + ":" + portSpec.getType().name().toLowerCase())
                                       .toList())));
         Optional.ofNullable(spec.getExposureSpec())
-                .ifPresent(exposureSpec -> metadata.put(AppEventDataTag.VHOST, exposureSpec.getVhost()));
+                .ifPresent(exposureSpec -> metadata.put(
+                            AppEventDataTag.VHOST,
+                            exposureSpec.stream()
+                            .map(ExposureSpec::getVhost)
+                            .collect(Collectors.joining(","))));
 
         return metadata.build();
     }

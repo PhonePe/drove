@@ -16,7 +16,8 @@
 
 package com.phonepe.drove.controller.resources;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.*;
+import static com.phonepe.drove.controller.utils.ControllerUtils.totalCPU;
+import static com.phonepe.drove.controller.utils.ControllerUtils.totalMemory;
 import static com.phonepe.drove.models.api.ApiResponse.failure;
 import static com.phonepe.drove.models.api.ApiResponse.success;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
@@ -46,6 +47,7 @@ import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.managed.BlacklistingManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -68,6 +70,7 @@ import com.phonepe.drove.models.api.LocalServiceSummary;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.DroveEvent;
@@ -83,11 +86,11 @@ import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
+import com.phonepe.drove.models.taskinstance.TaskState;
 
 import lombok.val;
-
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -148,17 +151,17 @@ public class ResponseEngine {
 
     public ApiResponse<DashboardData> dashboardData() {
         return dashboardDataSource.current()
-                .map(ApiResponse::success)
-                .orElseGet(() -> ApiResponse.failure("Could not fetch dashboard data"));
-    }
+            .map(ApiResponse::success)
+            .orElseGet(() -> ApiResponse.failure("Could not fetch dashboard data"));
+    } 
 
     public ApiResponse<Map<String, AppSummary>> applications(final int from, final int size) {
         val apps = applicationStateDB.applications(from, size);
         val appIds = apps.stream().map(ApplicationInfo::getAppId).toList();
         val instanceCounts = instanceInfoDB.instanceCount(appIds, HEALTHY);
         return success(apps.stream()
-                .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
-                        info -> toAppSummary(info, instanceCounts))));
+                               .collect(Collectors.toUnmodifiableMap(ApplicationInfo::getAppId,
+                                                                     info -> toAppSummary(info, instanceCounts))));
     }
 
 
@@ -176,12 +179,12 @@ public class ResponseEngine {
 
     public ApiResponse<List<InstanceInfo>> applicationInstances(final String appId, final Set<InstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                ? InstanceState.ACTIVE_STATES
-                : state;
+                          ? InstanceState.ACTIVE_STATES
+                          : state;
         return success(instanceInfoDB.activeInstances(appId, 0, Integer.MAX_VALUE)
-                .stream()
-                .filter(info -> checkStates.contains(info.getState()))
-                .toList());
+                               .stream()
+                               .filter(info -> checkStates.contains(info.getState()))
+                               .toList());
     }
 
     public ApiResponse<InstanceInfo> instanceDetails(final String appId, final String instanceId) {
@@ -202,17 +205,17 @@ public class ResponseEngine {
 
     public ApiResponse<Map<String, Boolean>> taskDelete(final String sourceAppName, final String taskId) {
         return taskDB.deleteTask(sourceAppName, taskId)
-                ? ApiResponse.success(Map.of("deleted", true))
-                : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
+               ? ApiResponse.success(Map.of("deleted", true))
+               : ApiResponse.failure(Map.of("deleted", false), "Could not delete " + sourceAppName + "/" + taskId);
     }
 
     public ApiResponse<Map<String, LocalServiceSummary>> localServices(final int from, final int size) {
         val services = localServiceStateDB.services(from, size);
         return success(services.stream()
-                .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
-                        info -> toLocalServiceSummary(info,
-                                instancesForService(
-                                        info.getServiceId())))));
+                               .collect(Collectors.toUnmodifiableMap(LocalServiceInfo::getServiceId,
+                                                                     info -> toLocalServiceSummary(info,
+                                                                                                   instancesForService(
+                                                                                                           info.getServiceId())))));
     }
 
     public ApiResponse<LocalServiceSummary> localService(final String serviceId) {
@@ -234,12 +237,12 @@ public class ResponseEngine {
             final String serviceId,
             final Set<LocalServiceInstanceState> state) {
         val checkStates = null == state || state.isEmpty()
-                ? LocalServiceInstanceState.ACTIVE_STATES
-                : state;
+                          ? LocalServiceInstanceState.ACTIVE_STATES
+                          : state;
         return success(localServiceStateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false)
-                .stream()
-                .filter(info -> checkStates.contains(info.getState()))
-                .toList());
+                               .stream()
+                               .filter(info -> checkStates.contains(info.getState()))
+                               .toList());
     }
 
     public ApiResponse<LocalServiceInstanceInfo> localServiceInstanceDetails(
@@ -300,33 +303,35 @@ public class ResponseEngine {
         //Skip stale check if cluster is in maintenance mode
         val instances = instanceInfoDB.instances(appIds, Set.of(HEALTHY), isInMaintenanceWindow());
         return success(apps.stream()
-                .map(app -> {
-                    val spec = app.getSpec().getExposureSpec();
-                    return new ExposedAppInfo(app.getSpec().getName(),
-                            app.getAppId(),
-                            spec.getVhost(),
-                            app.getSpec().getTags(),
-                            instances.getOrDefault(app.getAppId(), List.of())
-                                    .stream()
-                                    .sorted(Comparator.comparing(
-                                            InstanceInfo::getCreated)) //Reduce chaos
-                                    .filter(instanceInfo -> instanceInfo.getLocalInfo()
-                                            .getPorts()
-                                            .containsKey(spec.getPortName())) //Has
-                                    // the specified port exposed
-                                    .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
-                                            instanceInfo.getLocalInfo()
-                                                    .getHostname(),
-                                            instanceInfo.getLocalInfo()
-                                                    .getPorts()
-                                                    .get(spec.getPortName())
-                                                    .getHostPort(),
-                                            instanceInfo.getLocalInfo()
-                                                    .getPorts()
-                                                    .get(spec.getPortName())
-                                                    .getPortType()))
-                                    .toList());
-                })
+                .flatMap(app -> Objects.requireNonNullElseGet(
+                        app.getSpec().getExposureSpec(), List::<ExposureSpec>of)
+                        .stream()
+                        .map(spec -> new ExposedAppInfo(
+                                app.getSpec().getName(),
+                                app.getAppId(),
+                                spec.getVhost(),
+                                app.getSpec().getTags(),
+                                instances.getOrDefault(app.getAppId(), List.of())
+                                        .stream()
+                                        .sorted(Comparator.comparing(InstanceInfo::getCreated)) //Reduce chaos
+                                        .filter(instanceInfo -> instanceInfo.getLocalInfo()
+                                                .getPorts()
+                                                .containsKey(spec.getPortName())) //Has
+                                        // the specified port exposed
+                                        .map(instanceInfo -> new ExposedAppInfo.ExposedHost(
+                                                instanceInfo.getLocalInfo()
+                                                            .getHostname(),
+                                                instanceInfo
+                                                        .getLocalInfo()
+                                                        .getPorts()
+                                                        .get(spec.getPortName())
+                                                        .getHostPort(),
+                                                instanceInfo
+                                                        .getLocalInfo()
+                                                        .getPorts()
+                                                        .get(spec.getPortName())
+                                                        .getPortType()))
+                                        .toList())))
                 .toList());
     }
 
@@ -390,20 +395,18 @@ public class ResponseEngine {
         val instances = instanceInfoDB.activeInstances(info.getAppId(), 0, Integer.MAX_VALUE);
         val cpus = totalCPU(spec, requiredInstances);
         val memory = totalMemory(spec, requiredInstances);
-        val gpus = totalGPU(spec, requiredInstances);
         return new AppDetails(info.getAppId(),
-                spec,
-                requiredInstances,
-                instances.stream()
-                        .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
-                        .count(),
-                cpus,
-                memory,
-                gpus,
-                instances,
-                applicationEngine.currentState(info.getAppId()).orElse(null),
-                info.getCreated(),
-                info.getUpdated());
+                              spec,
+                              requiredInstances,
+                              instances.stream()
+                                      .filter(instanceInfo -> instanceInfo.getState().equals(InstanceState.HEALTHY))
+                                      .count(),
+                              cpus,
+                              memory,
+                              instances,
+                              applicationEngine.currentState(info.getAppId()).orElse(null),
+                              info.getCreated(),
+                              info.getUpdated());
 
     }
 
@@ -417,17 +420,17 @@ public class ResponseEngine {
             final LocalServiceInfo info,
             Map<String, List<LocalServiceInstanceInfo>> instancesPerExecutor) {
         val knownInstances = instancesPerExecutor.values()
-                .stream()
-                .flatMap(List::stream)
-                .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES
-                        .contains(instanceInfo.getState()))
-                .count();
+                         .stream()
+                         .flatMap(List::stream)
+                         .filter(instanceInfo -> LocalServiceInstanceState.ACTIVE_STATES
+                                 .contains(instanceInfo.getState()))
+                         .count();
         val healthyInstances = instancesPerExecutor.values()
-                .stream()
-                .flatMap(List::stream)
-                .filter(instanceInfo -> instanceInfo.getState()
-                        .equals(LocalServiceInstanceState.HEALTHY))
-                .count();
+                 .stream()
+                 .flatMap(List::stream)
+                 .filter(instanceInfo -> instanceInfo.getState()
+                         .equals(LocalServiceInstanceState.HEALTHY))
+                 .count();
         return ControllerUtils.toLocalServiceSummary(info, knownInstances, healthyInstances, localServiceEngine);
     }
 
@@ -443,41 +446,41 @@ public class ResponseEngine {
                     public Optional<ExecutorSummary> visit(ExecutorNodeData executorData) {
                         val backlistedState = executorData.getExecutorState();
                         val executorState = removed ? ExecutorState.REMOVED
-                                : backlistedState;
+                                                    : backlistedState;
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
-                                hostInfo.getNodeData().getHostname(),
-                                hostInfo.getNodeData().getPort(),
-                                hostInfo.getNodeData().getTransportType(),
-                                executorData.getState()
-                                        .getCpus()
-                                        .getFreeCores()
-                                        .values()
-                                        .stream()
-                                        .mapToInt(Set::size)
-                                        .sum(),
-                                executorData.getState()
-                                        .getCpus()
-                                        .getUsedCores()
-                                        .values()
-                                        .stream()
-                                        .mapToInt(Set::size)
-                                        .sum(),
-                                executorData.getState()
-                                        .getMemory()
-                                        .getFreeMemory()
-                                        .values()
-                                        .stream()
-                                        .mapToLong(v -> v)
-                                        .sum(),
-                                executorData.getState()
-                                        .getMemory()
-                                        .getUsedMemory()
-                                        .values()
-                                        .stream()
-                                        .mapToLong(v -> v)
-                                        .sum(),
-                                executorData.getTags(),
-                                executorState));
+                                                               hostInfo.getNodeData().getHostname(),
+                                                               hostInfo.getNodeData().getPort(),
+                                                               hostInfo.getNodeData().getTransportType(),
+                                                               executorData.getState()
+                                                                       .getCpus()
+                                                                       .getFreeCores()
+                                                                       .values()
+                                                                       .stream()
+                                                                       .mapToInt(Set::size)
+                                                                       .sum(),
+                                                               executorData.getState()
+                                                                       .getCpus()
+                                                                       .getUsedCores()
+                                                                       .values()
+                                                                       .stream()
+                                                                       .mapToInt(Set::size)
+                                                                       .sum(),
+                                                               executorData.getState()
+                                                                       .getMemory()
+                                                                       .getFreeMemory()
+                                                                       .values()
+                                                                       .stream()
+                                                                       .mapToLong(v -> v)
+                                                                       .sum(),
+                                                               executorData.getState()
+                                                                       .getMemory()
+                                                                       .getUsedMemory()
+                                                                       .values()
+                                                                       .stream()
+                                                                       .mapToLong(v -> v)
+                                                                       .sum(),
+                                                               executorData.getTags(),
+                                                               executorState));
                     }
                 });
     }

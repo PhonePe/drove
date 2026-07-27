@@ -287,7 +287,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     void testCreateWrongPortInExposureSpec() {
         val validator = createValidator();
         val spec = ControllerTestUtils.appSpec(1)
-                .withExposureSpec(new ExposureSpec("blah", "Invalid", ExposureMode.ALL));
+                .withExposureSpec(List.of(new ExposureSpec("blah", "Invalid", ExposureMode.ALL)));
         val res = validator.validateOperation(engine,
                                               new ApplicationCreateOperation(spec,
                                                                     1,
