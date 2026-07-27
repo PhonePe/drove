@@ -16,6 +16,51 @@
 
 package com.phonepe.drove.controller.engine;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.checkDeviceDisabled;
+import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
+import static com.phonepe.drove.controller.utils.ControllerUtils.ensureCmdlArgs;
+import static com.phonepe.drove.controller.utils.ControllerUtils.ensureWhitelistedVolumes;
+import static com.phonepe.drove.controller.utils.ControllerUtils.hasLocalPolicy;
+import static com.phonepe.drove.controller.utils.ControllerUtils.validateCheckSpec;
+import static com.phonepe.drove.controller.utils.ControllerUtils.validateExposureSpec;
+import static com.phonepe.drove.models.application.ApplicationState.DESTROYED;
+import static com.phonepe.drove.models.application.ApplicationState.DESTROY_REQUESTED;
+import static com.phonepe.drove.models.application.ApplicationState.FAILED;
+import static com.phonepe.drove.models.application.ApplicationState.INIT;
+import static com.phonepe.drove.models.application.ApplicationState.MONITORING;
+import static com.phonepe.drove.models.application.ApplicationState.OUTAGE_DETECTED;
+import static com.phonepe.drove.models.application.ApplicationState.REPLACE_INSTANCES_REQUESTED;
+import static com.phonepe.drove.models.application.ApplicationState.RUNNING;
+import static com.phonepe.drove.models.application.ApplicationState.SCALING_REQUESTED;
+import static com.phonepe.drove.models.application.ApplicationState.STOP_INSTANCES_REQUESTED;
+import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
+import static com.phonepe.drove.models.instance.InstanceState.PENDING;
+import static com.phonepe.drove.models.instance.InstanceState.PROVISIONING;
+import static com.phonepe.drove.models.instance.InstanceState.READY;
+import static com.phonepe.drove.models.instance.InstanceState.STARTING;
+import static com.phonepe.drove.models.instance.InstanceState.UNREADY;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.CREATE;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.DESTROY;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.RECOVER;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.REPLACE_INSTANCES;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.SCALE_INSTANCES;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.START_INSTANCES;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.STOP_INSTANCES;
+import static com.phonepe.drove.models.operation.ApplicationOperationType.SUSPEND;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -36,29 +81,22 @@ import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.ApplicationOperationType;
 import com.phonepe.drove.models.operation.ApplicationOperationVisitor;
-import com.phonepe.drove.models.operation.ops.*;
+import com.phonepe.drove.models.operation.ops.ApplicationCreateOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationDestroyOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationRecoverOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationReplaceInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationScaleOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationStartInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationStopInstancesOperation;
+import com.phonepe.drove.models.operation.ops.ApplicationSuspendOperation;
 import com.phonepe.drove.statemachine.Action;
-import io.appform.functionmetrics.MonitoredFunction;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.commons.lang3.StringUtils;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.phonepe.drove.controller.utils.ControllerUtils.*;
-import static com.phonepe.drove.models.application.ApplicationState.*;
-import static com.phonepe.drove.models.instance.InstanceState.*;
-import static com.phonepe.drove.models.operation.ApplicationOperationType.*;
+import io.appform.functionmetrics.MonitoredFunction;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -104,8 +142,9 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
-        val expossureSpec = Objects.requireNonNullElseGet(spec.getExposureSpec(), List::<ExposureSpec>of);
-        errs.addAll(expossureSpec.stream()
+        validateExposureSpec(spec, ports);
+        val exposureSpec = Objects.requireNonNullElseGet(spec.getExposureSpec(), List::<ExposureSpec>of);
+        errs.addAll(exposureSpec.stream()
                 .map(exposure -> exposure.getPortName())
                 .filter(portName -> !ports.containsKey(portName))
                 .map(portName -> "Exposed port name " + portName + " is undefined. Defined port names: " + ports.keySet())

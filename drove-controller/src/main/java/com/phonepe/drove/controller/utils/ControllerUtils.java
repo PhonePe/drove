@@ -52,6 +52,7 @@ import com.phonepe.drove.models.application.checks.CmdCheckModeSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
@@ -944,6 +945,34 @@ public class ControllerUtils {
                         return Optional.empty();
                     }
                 });
+    }
+
+    public static List<String> validateExposureSpec(final ApplicationSpec spec,
+                                    final Map<String, PortSpec> ports) {
+        val exposed = Objects.requireNonNullElseGet(spec.getExposureSpec(),
+                                                    List::<ExposureSpec>of);
+        val mappedVhosts = new HashMap<String, String>();
+        val errs = new ArrayList<String>();
+        for(val exposedSpec : exposed) {
+            val vhost = exposedSpec.getVhost();
+            val portName = exposedSpec.getPortName();
+            if(!ports.containsKey(portName)) {
+                errs.add("No known defined ports found with name '%'. "
+                        + "Invalid port name used for vhost: %s. "
+                        + "Known ports: %s".formatted(portName, vhost, ports.keySet()));
+            }
+            else {
+                val mapped = mappedVhosts.get(vhost);
+                if(null != mapped && !mapped.equals(portName)) {
+                    errs.add("Vhost '%s' is already mapped to port '%s'. A mapped vhost cannot be remapped."
+                            .formatted(vhost, mapped));
+                }
+                else {
+                    mappedVhosts.put(vhost, portName);
+                }
+            }
+        }
+        return errs;
     }
 
     public static long maxStartTimeout(final DeploymentUnitSpec spec) {

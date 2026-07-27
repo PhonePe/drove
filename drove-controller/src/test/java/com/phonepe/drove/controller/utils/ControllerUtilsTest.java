@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.utils;
 import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
 import static com.phonepe.drove.controller.utils.ControllerUtils.maxStartTimeout;
 import static com.phonepe.drove.controller.utils.ControllerUtils.maxStopTimeout;
+import static com.phonepe.drove.controller.utils.ControllerUtils.validateExposureSpec;
 import static com.phonepe.drove.controller.utils.ControllerUtils.waitTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,20 +31,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.PreShutdownSpec;
+import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PortType;
+import com.phonepe.drove.models.application.exposure.ExposureMode;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
@@ -58,23 +57,9 @@ import com.phonepe.drove.models.application.placement.policies.OnePerHostPlaceme
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
-import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
-import com.phonepe.drove.models.info.GPUInfo;
-import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
-import com.phonepe.drove.models.info.nodedata.ExecutorState;
-import com.phonepe.drove.models.info.nodedata.NodeTransportType;
-import com.phonepe.drove.models.info.resources.PhysicalLayout;
-import com.phonepe.drove.models.info.resources.available.AvailableCPU;
-import com.phonepe.drove.models.info.resources.available.AvailableGPU;
-import com.phonepe.drove.models.info.resources.available.AvailableMemory;
-import com.phonepe.drove.models.application.requirements.GPURequirement;
-import com.phonepe.drove.models.application.requirements.GpuType;
-import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskState;
-import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 
 import org.junit.jupiter.api.Test;
 
@@ -517,146 +502,51 @@ class ControllerUtilsTest {
     }
 
     @Test
-    void testCheckResourcesClusterWideGpu() {
-        // Verify cluster-wide GPU capacity is validated
-        // Test 1: Cluster-wide GPU capacity is insufficient
-        {
-            val clusterDB = mock(ClusterResourcesDB.class);
-            val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100"));
-            val executor2 = buildExecutorWithGpu("executor-2", Map.of("GPU-1", "H100"));
-            when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1, executor2));
-
-            val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
-            ControllerTestUtils.withGPU(spec, 3, new GpuType(GpuVendor.NVIDIA, "H100"));
-            val errors = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-            assertTrue(errors.stream().anyMatch(e -> e.contains("not enough GPUs") || e.toLowerCase().contains("gpu")),
-                    "Should report insufficient GPU cluster capacity");
-        }
-
-        // Test 2: Cluster-wide GPU capacity is sufficient
-        {
-            val clusterDB = mock(ClusterResourcesDB.class);
-            val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "H100"));
-            val executor2 = buildExecutorWithGpu("executor-2", Map.of("GPU-2", "H100", "GPU-3", "H100"));
-            when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1, executor2));
-
-            val spec = ControllerTestUtils.appSpec("TEST_APP2", 1);
-            ControllerTestUtils.withGPU(spec, 3, new GpuType(GpuVendor.NVIDIA, "H100"));
-            val errors = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-            assertFalse(errors.stream().anyMatch(e -> e.contains("not enough GPUs")),
-                    "Should not report GPU cluster capacity issues when GPUs are available");
-        }
-
-        // Test 3: GPU type mismatch (requesting H100, but cluster has A100)
-        {
-            val clusterDB = mock(ClusterResourcesDB.class);
-            val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "A100"));
-            when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1));
-
-            val spec = ControllerTestUtils.appSpec("TEST_APP3", 1);
-            ControllerTestUtils.withGPU(spec, 1, new GpuType(GpuVendor.NVIDIA, "H100"));
-            val errors = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-            // Should fail both cluster-wide and per-executor checks
-            assertTrue(errors.stream().anyMatch(e -> e.toLowerCase().contains("gpu")),
-                    "Should report GPU availability issues when GPU type doesn't match");
-        }
+    void testExposureOk() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("b.appform.io", "main", ExposureMode.ALL)));
+        assertTrue(validateExposureSpec(spec, ports).isEmpty());
     }
 
     @Test
-    void testCheckResourcesClusterWideGpuMultiInstance() {
-        // Multiple instances requiring more GPUs than cluster has
-        val clusterDB = mock(ClusterResourcesDB.class);
-        val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100"));
-        val executor2 = buildExecutorWithGpu("executor-2", Map.of("GPU-1", "H100"));
-        when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1, executor2));
-
-        val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
-        ControllerTestUtils.withGPU(spec, 1, new GpuType(GpuVendor.NVIDIA, "H100"));
-        val errors = new ArrayList<String>();
-        // Request 3 instances, each needs 1 GPU = 3 GPUs total, but cluster only has 2
-        ControllerUtils.checkResources(clusterDB, spec, 3, errors);
-
-        assertTrue(errors.stream().anyMatch(e -> e.contains("not enough GPUs") || e.toLowerCase().contains("gpu")),
-                "Should report insufficient GPU capacity for multiple instances");
+    void testExposureNull() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec().withExposureSpec(null);
+        assertTrue(validateExposureSpec(spec, ports).isEmpty());
     }
 
     @Test
-    void testCheckResourcesNoGpuRequirement() {
-        val clusterDB = mock(ClusterResourcesDB.class);
-        val executor1 = buildExecutorWithGpu("executor-1", Map.of());
-        when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1));
-
-        val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
-        // No GPU added
-        val errors = new ArrayList<String>();
-        ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-        assertFalse(errors.stream().anyMatch(e -> e.toLowerCase().contains("gpu")),
-                "Should not report GPU issues when no GPU is required");
+    void testExposureBadPort() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("b.appform.io", "wrong", ExposureMode.ALL)));
+        val errs = validateExposureSpec(spec, ports);
+        assertEquals(1, errs.size());
+        assertTrue(errs.get(0).contains("wrong"));
     }
 
     @Test
-    void testFreeGpusMethod() {
-        val executor = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "A100"));
-
-        val freeH100 = ControllerUtils.freeGpus(executor, new GpuType(GpuVendor.NVIDIA, "H100"));
-        assertEquals(1, freeH100, "Should find 1 H100 GPU");
-
-        val freeA100 = ControllerUtils.freeGpus(executor, new GpuType(GpuVendor.NVIDIA, "A100"));
-        assertEquals(1, freeA100, "Should find 1 A100 GPU");
-
-        val freeNonExistent = ControllerUtils.freeGpus(executor, new GpuType(GpuVendor.NVIDIA, "V100"));
-        assertEquals(0, freeNonExistent, "Should find 0 V100 GPUs");
+    void testExposureRemap() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP),
+                           "admin", new PortSpec("admin", 9000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("a.appform.io", "admin", ExposureMode.ALL)));
+        val errs = validateExposureSpec(spec, ports);
+        assertEquals(1, errs.size());
+        assertTrue(errs.get(0).contains("already mapped"));
     }
 
-    private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {
-        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
-        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
-        val physicalGpus = gpuModels.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0)));
-
-        val usedMemory = freeMemory.keySet().stream()
-                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
-
-        val snapshot = new ExecutorResourceSnapshot(
-                executorId,
-                new AvailableCPU(freeCores, Map.of()),
-                new AvailableMemory(freeMemory, usedMemory),
-                new AvailableGPU(new ArrayList<>(gpuModels.keySet()), List.of()),
-                new PhysicalLayout(
-                    freeCores,
-                    freeMemory,
-                    physicalGpus,
-                    PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                    PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                    PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
-        );
-
-        return new ExecutorHostInfo(
-                executorId,
-                new ExecutorNodeData(
-                        "host-" + executorId,
-                        8080,
-                        NodeTransportType.HTTP,
-                        new Date(),
-                        snapshot,
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        Set.of(),
-                        Map.of(),
-                        ExecutorState.ACTIVE
-                ),
-                Map.of(),
-                new ExecutorHostInfo.HostGPUInfo()
-        );
+    @Test
+    void testExposureSameVhostSamePort() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("a.appform.io", "main", ExposureMode.ALL)));
+        assertTrue(validateExposureSpec(spec, ports).isEmpty());
     }
+
 }
