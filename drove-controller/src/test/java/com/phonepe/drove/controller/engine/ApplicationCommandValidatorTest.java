@@ -298,6 +298,23 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
 
     @Test
+    void testCreateWrongPortInMultipleExposureSpecs() {
+        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val spec = ControllerTestUtils.appSpec(1)
+                .withExposureSpec(List.of(new ExposureSpec("valid.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("wrong1.appform.io", "Invalid1", ExposureMode.ALL),
+                                          new ExposureSpec("wrong2.appform.io", "Invalid2", ExposureMode.ALL)));
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
+                                                                    1,
+                                                                    ClusterOpSpec.DEFAULT));
+        ensureFailure(res,
+                      "Exposed port name Invalid1 is undefined. Defined port names: [main]",
+                      "Exposed port name Invalid2 is undefined. Defined port names: [main]"
+                     );
+    }
+
+    @Test
     void testCreateWhitelistedDirMounts() {
         val controllerOptions = ControllerOptions.DEFAULT
                    .withAllowedMountDirs(List .of("/tmp"));

@@ -80,6 +80,9 @@ import com.phonepe.drove.models.api.ClusterSummary;
 import com.phonepe.drove.models.api.DashboardData;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.exposure.ExposureMode;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
+import com.phonepe.drove.models.api.ExposedAppInfo;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
@@ -563,6 +566,30 @@ class ResponseEngineTest {
                     r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
                 });
 
+    }
+
+    @Test
+    void testEndpointsMultipleExposureSpecs() {
+        val appSpec = appSpec("TEST_APP_MULTI", 1)
+                .withExposureSpec(List.of(new ExposureSpec("vhost1.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("vhost2.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("vhost3.appform.io", "main", ExposureMode.ALL)));
+        val appId = ControllerUtils.deployableObjectId(appSpec);
+        val app = new ApplicationInfo(appId, appSpec, 10, new Date(), new Date());
+        when(applicationStateDB.applications(0, Integer.MAX_VALUE)).thenReturn(List.of(app));
+        when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
+        val instances = LongStream.rangeClosed(1, app.getInstances())
+                .mapToObj(i -> generateInstanceInfo(app.getAppId(), app.getSpec(), (int) i))
+                .toList();
+        when(instanceInfoDB.instances(anyList(), anySet(), eq(false)))
+                .thenReturn(Map.of(appId, instances));
+
+        val r = re.endpoints(Set.of());
+        assertEquals(SUCCESS, r.getStatus());
+        assertEquals(3, r.getData().size());
+        assertEquals(Set.of("vhost1.appform.io", "vhost2.appform.io", "vhost3.appform.io"),
+                     r.getData().stream().map(ExposedAppInfo::getVhost).collect(Collectors.toSet()));
+        r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
     }
 
     @Test
