@@ -16,18 +16,18 @@
 
 package com.phonepe.drove.common.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
-
 import lombok.Value;
 import lombok.With;
 
@@ -57,11 +57,17 @@ public class LocalServiceInstanceSpec implements DeploymentUnitSpec {
     List<DeviceSpec> devices;
     PreShutdownSpec preShutdown;
     UserSpec userSpec;
-    DeployableSecuritySpec securitySpec;
+    Map<String, String> tags;
     String instanceAuthToken;
 
     @Override
     public <T> T accept(DeploymentUnitSpecVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    @JsonIgnore
+    public List<ExposureSpec> getExposureSpec() {
+        return List.of();
     }
 }

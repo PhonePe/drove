@@ -55,8 +55,6 @@ import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstancePort;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
-
 import io.dropwizard.util.Duration;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -164,7 +162,8 @@ public class ExecutorTestingUtils {
                                                                       ),
                                                                Duration.seconds(1)),
                                            null,
-                                           DeployableSecuritySpec.DEFAULT,
+                                           Map.of("tag1", "value1"),
+                                           List.of(),
                                            "TestToken");
     }
 
@@ -196,7 +195,7 @@ public class ExecutorTestingUtils {
                                                     .pathOnHost("/dev/random")
                                                     .build()),
                                     null,
-                                    DeployableSecuritySpec.DEFAULT);
+                                    Map.of("tag1", "value1"));
     }
 
     public static LocalServiceInstanceSpec testLocalServiceInstanceSpec() {
@@ -277,7 +276,7 @@ public class ExecutorTestingUtils {
                                                                       ),
                                                                Duration.seconds(1)),
                                            null,
-                                           DeployableSecuritySpec.DEFAULT,
+                                           Map.of("tag1", "value1"),
                                            "TestToken");
     }
 

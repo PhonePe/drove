@@ -63,6 +63,8 @@ import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureMode;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.common.Protocol;
@@ -175,6 +177,8 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 Collections.emptyList(),
                 null,
                 null,
+                Map.of("TEST_TAG", "TestValue"),
+                List.of(new ExposureSpec("test-host", "test-host", ExposureMode.ALL)),
                 "TestToken");
         val executorId = CommonUtils.executorId(3000, "test-host");
         val ctx = new InstanceActionContext<>(executorId, instanceSpec, DOCKER_CLIENT, false);

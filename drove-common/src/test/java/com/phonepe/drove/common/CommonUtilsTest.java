@@ -152,6 +152,7 @@ class CommonUtilsTest {
                                                                     null,
                                                                     null,
                                                                     null,
+                                                                    null,
                                                                     null)));
         assertEquals("test", instanceId(new TaskInstanceSpec(null,
                                                              null,

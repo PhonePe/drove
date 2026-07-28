@@ -16,15 +16,15 @@
 
 package com.phonepe.drove.common.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
-
 import lombok.Value;
 import lombok.With;
 
@@ -49,10 +49,16 @@ public class TaskInstanceSpec implements DeploymentUnitSpec {
     List<String> args;
     List<DeviceSpec> devices;
     UserSpec userSpec;
-    DeployableSecuritySpec securitySpec;
+    Map<String, String> tags;
 
     @Override
     public <T> T accept(DeploymentUnitSpecVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    @JsonIgnore
+    public List<ExposureSpec> getExposureSpec() {
+        return List.of();
     }
 }

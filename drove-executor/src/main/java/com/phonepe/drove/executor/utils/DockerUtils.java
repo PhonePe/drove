@@ -16,11 +16,42 @@
 
 package com.phonepe.drove.executor.utils;
 
+import static com.phonepe.drove.common.CommonUtils.hostname;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallbackTemplate;
 import com.github.dockerjava.api.command.PullImageCmd;
-import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.api.model.AccessMode;
+import com.github.dockerjava.api.model.AuthConfig;
+import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.Device;
+import com.github.dockerjava.api.model.DeviceRequest;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Frame;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.LogConfig;
+import com.github.dockerjava.api.model.Ulimit;
+import com.github.dockerjava.api.model.Volume;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -31,7 +62,6 @@ import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
-import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfigVisitor;
 import com.phonepe.drove.executor.resourcemgmt.OverProvisioning;
@@ -50,36 +80,24 @@ import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.InjectedEnvironmentInfo;
-import com.phonepe.drove.models.info.InjectedEnvironmentInfo.Executor;
-import com.phonepe.drove.models.info.InjectedEnvironmentInfo.IO;
-import com.phonepe.drove.models.info.InjectedEnvironmentInfo.Parameters;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.models.instance.InstancePort;
 
-import io.dropwizard.util.DataSize;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.validation.Valid;
-
-import static com.phonepe.drove.common.CommonUtils.hostname;
+import io.dropwizard.util.DataSize;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.Value;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -310,8 +328,7 @@ public class DockerUtils {
                         }
                     }),
                     deploymentUnitSpec.getArgs(),
-                    Map.of() //TODO::TAGS
-                    ),
+                    deploymentUnitSpec.getTags()),
                 new InjectedEnvironmentInfo.IO(
                     ports.entrySet()
                         .stream()
@@ -321,7 +338,7 @@ public class DockerUtils {
                             port.getValue().getHostPort(),
                             port.getValue().getPortType()))
                         .toList(),
-                    List.of(), //TODO::VHOSTS
+                    deploymentUnitSpec.getExposureSpec(),
                     volumes),
                 new InjectedEnvironmentInfo.Runtime(
                         userSpec.map(UserSpec::getUser).orElse(null),

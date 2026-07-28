@@ -22,12 +22,11 @@ import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
-
 import lombok.Value;
 import lombok.With;
 
@@ -56,7 +55,8 @@ public class ApplicationInstanceSpec implements DeploymentUnitSpec {
     List<DeviceSpec> devices;
     PreShutdownSpec preShutdown;
     UserSpec userSpec;
-    DeployableSecuritySpec securitySpec;
+    Map<String, String> tags;
+    List<ExposureSpec> exposureSpec;
     String instanceAuthToken;
 
     @Override

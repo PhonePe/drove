@@ -34,7 +34,6 @@ import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
-import com.phonepe.drove.models.policies.DeployableSecuritySpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -297,7 +296,7 @@ class TaskInstanceEngineTest extends AbstractExecutorEngineEnabledTestBase {
                                         null,
                                         Collections.emptyList(),
                                         null,
-                                        DeployableSecuritySpec.DEFAULT);
+                                        Map.of("test", "tag"));
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);
         val startInstanceMessage = new StartTaskMessage(MessageHeader.controllerRequest(),
                                                         executorAddress,
