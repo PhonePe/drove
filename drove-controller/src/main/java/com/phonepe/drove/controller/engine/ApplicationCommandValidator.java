@@ -142,7 +142,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
-        validateExposureSpec(spec, ports);
+        errs.addAll(validateExposureSpec(spec, ports));
         val exposureSpec = Objects.requireNonNullElseGet(spec.getExposureSpec(), List::<ExposureSpec>of);
         errs.addAll(exposureSpec.stream()
                 .map(exposure -> exposure.getPortName())
