@@ -293,8 +293,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res,
-                      "Exposed port name Invalid is undefined. Defined port names: [main]"
-                     );
+                "No defined ports found with name 'Invalid'. Invalid port name used for vhost: blah. Known ports: [main]",
+                "Exposed port name Invalid is undefined. Defined port names: [main]");
     }
 
     @Test
@@ -309,9 +309,10 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                     1,
                                                                     ClusterOpSpec.DEFAULT));
         ensureFailure(res,
-                      "Exposed port name Invalid1 is undefined. Defined port names: [main]",
-                      "Exposed port name Invalid2 is undefined. Defined port names: [main]"
-                     );
+                     "No defined ports found with name 'Invalid1'. Invalid port name used for vhost: wrong1.appform.io. Known ports: [main]",
+                     "No defined ports found with name 'Invalid2'. Invalid port name used for vhost: wrong2.appform.io. Known ports: [main]",
+                     "Exposed port name Invalid1 is undefined. Defined port names: [main]",
+                     "Exposed port name Invalid2 is undefined. Defined port names: [main]");
     }
 
     @Test
