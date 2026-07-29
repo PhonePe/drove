@@ -16,6 +16,21 @@
 
 package com.phonepe.drove.executor.utils;
 
+import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
+import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.phonepe.drove.common.CommonUtils;
@@ -28,7 +43,6 @@ import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceInfo;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.models.application.JobType;
-import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
@@ -38,27 +52,14 @@ import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.instance.InstancePort;
-import lombok.val;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
-import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import lombok.val;
 
 /**
  *
@@ -180,8 +181,7 @@ class DockerUtilsTest {
                     nodeData,
                     ExecutorOptions.DEFAULT,
                     MAPPER,
-                    createResponse.getEnv(),
-                    injectionPath);
+                    createResponse.getEnv());
 
             DOCKER_CLIENT.startContainerCmd(containerId).exec();
 

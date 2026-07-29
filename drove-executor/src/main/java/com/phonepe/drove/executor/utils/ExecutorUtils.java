@@ -242,4 +242,9 @@ public class ExecutorUtils {
                 .collect(Collectors.toMap(Function.identity(),
                         Function.identity()));
     }
+
+    public static String envInfoPath(ExecutorOptions executorOptions) {
+        return Objects.requireNonNullElse(executorOptions.getEnvironmentInfoPath(),
+                                          ExecutorOptions.DEFAULT_ENVIRONMENT_INFO_PATH);
+    }
 }

@@ -146,8 +146,7 @@ public abstract class CommonInstanceRunAction<E extends DeployedExecutionObjectI
                                               nodeData,
                                               executorOptions,
                                               mapper,
-                                              createResponse.getEnv(),
-                                              "/opt/drove/runtime.json"),
+                                              createResponse.getEnv()),
                                  () -> log.warn("No local node data available to inject into container"));
             context.setDockerInstanceId(containerId);
             client.startContainerCmd(containerId)

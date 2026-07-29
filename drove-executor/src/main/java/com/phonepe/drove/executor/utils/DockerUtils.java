@@ -57,7 +57,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
-import com.phonepe.drove.common.discovery.Constants;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.common.net.HttpCaller;
@@ -244,7 +243,7 @@ public class DockerUtils {
 
             val env = new ArrayList<String>();
             val hostName = hostname();
-            env.add("DROVE_ENV_INFO_FILE=" + Constants.ENVIRONMENT_FILE_PATH);
+            env.add("DROVE_ENV_INFO_FILE=" + ExecutorUtils.envInfoPath(executorOptions));
             env.add("HOST=" + hostName);
             addEnvironmentVariables(deploymentUnitSpec, env);
             deploymentUnitSpec.getExecutable().accept((ExecutableTypeVisitor<Void>) dockerCoordinates -> {
@@ -300,8 +299,7 @@ public class DockerUtils {
             final ExecutorNodeData nodeData,
             final ExecutorOptions executorOptions,
             final ObjectMapper objectMapper,
-            final Map<String, String> env,
-            final String injectionPath) {
+            final Map<String, String> env) {
         val volumes = Objects.requireNonNullElseGet(deploymentUnitSpec.getVolumes(),
                 List::<MountedVolume>of)
             .stream()
@@ -350,7 +348,7 @@ public class DockerUtils {
             @Override
             @SneakyThrows
             public void accept(TarArchiveOutputStream tos) {
-                val entry = new TarArchiveEntry(injectionPath);
+                val entry = new TarArchiveEntry(ExecutorUtils.envInfoPath(executorOptions));
                 val data = objectMapper.writeValueAsBytes(info);
                 entry.setSize(data.length);
                 tos.putArchiveEntry(entry);

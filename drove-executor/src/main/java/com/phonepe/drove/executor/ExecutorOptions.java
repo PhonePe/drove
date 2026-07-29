@@ -54,6 +54,7 @@ public class ExecutorOptions {
 
     public static final Duration DEFAULT_CONTROLLER_CONNECT_TIMEOUT = Duration.seconds(1);
     public static final Duration DEFAULT_CONTROLLER_RESPONSE_TIMEOUT = Duration.seconds(1);
+    public static final String DEFAULT_ENVIRONMENT_INFO_PATH = "/etc/drove/environment-info.json";
 
     public static final ExecutorOptions DEFAULT = new ExecutorOptions(null,
                                                                       true,
@@ -64,6 +65,7 @@ public class ExecutorOptions {
                                                                       DEFAULT_CONTAINER_COMMAND_TIMEOUT,
                                                                       DEFAULT_DOCKER_SOCKET_PATH,
                                                                       null,
+                                                                      DEFAULT_ENVIRONMENT_INFO_PATH,
                                                                       DEFAULT_UPDATE_MODE,
                                                                       DEFAULT_CONTROLLER_CONNECT_TIMEOUT,
                                                                       DEFAULT_CONTROLLER_RESPONSE_TIMEOUT);
@@ -91,6 +93,8 @@ public class ExecutorOptions {
     String dockerSocketPath;
 
     UserSpec defaultUserSpec;
+
+    String environmentInfoPath;
 
     RemoteUpdateMode remoteUpdateMode;
 

@@ -125,8 +125,7 @@ public class TaskRunAction extends TaskAction {
                                               nodeData,
                                               executorOptions,
                                               mapper,
-                                              createResponse.getEnv(),
-                                              "/opt/drove/runtime.json"),
+                                              createResponse.getEnv()),
                                  () -> log.warn("No local node data available to inject into container"));
 
             context.setDockerInstanceId(containerId);
