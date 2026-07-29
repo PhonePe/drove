@@ -214,7 +214,7 @@ public class DockerUtils {
             final DockerCreateParmAugmenter augmenter,
             final ExecutorOptions executorOptions,
             final ResourceManager resourceManager) {
-        val image = deploymentUnitSpec.getExecutable().accept(DockerCoordinates::getUrl);
+        val image = imageUrl(deploymentUnitSpec);
 
         try (val containerCmd = client.createContainerCmd(image)) {
             containerCmd
@@ -293,6 +293,7 @@ public class DockerUtils {
      * This will create and inject an instance of {@link com.phonepe.drove.models.info.InjectedEnvironmentInfo} into the container at the specified path.
      */
     @SneakyThrows
+    @SuppressWarnings("java:S107") //All parameters are required to create the environment info
     public static void injectEnvironmentInfo(
             final String containerId,
             final DockerClient client,
@@ -321,12 +322,7 @@ public class DockerUtils {
                     ),
                 new InjectedEnvironmentInfo.Parameters(
                     deploymentUnitSpec.getExecutable().getType(),
-                    deploymentUnitSpec.getExecutable().accept(new ExecutableTypeVisitor<String>() {
-                        @Override
-                        public String visit(DockerCoordinates dockerCoordinates) {
-                            return dockerCoordinates.getUrl();
-                        }
-                    }),
+                    imageUrl(deploymentUnitSpec),
                     deploymentUnitSpec.getArgs(),
                     deploymentUnitSpec.getTags()),
                 new InjectedEnvironmentInfo.IO(
@@ -390,8 +386,7 @@ public class DockerUtils {
         createFileInContainer(
                 containerId,
                 client,
-                tos -> {
-                    configSpecs
+                tos -> configSpecs
                             .stream()
                             .map(InlineConfigSpec.class::cast)
                             .forEach(configSpec -> {
@@ -405,8 +400,7 @@ public class DockerUtils {
                                 catch (Exception e) {
                                     throw new RuntimeException(e);
                                 }
-                            });
-                });
+                            }));
     }
 
     @SneakyThrows
@@ -732,4 +726,9 @@ public class DockerUtils {
             }
         });
     }
+
+    private static String imageUrl(DeploymentUnitSpec deploymentUnitSpec) {
+        return deploymentUnitSpec.getExecutable().accept(DockerCoordinates::getUrl);
+    }
+
 }
