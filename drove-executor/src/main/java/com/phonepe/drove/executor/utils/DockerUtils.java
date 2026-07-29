@@ -280,8 +280,10 @@ public class DockerUtils {
             return new CreateContainerResponse(containerId,
                     env.stream()
                     .map(envVar -> {
-                        val parts = envVar.split("=", 2);
-                        return Pair.of(parts[0], parts[1]);
+                        val idx = envVar.indexOf('=');
+                        return idx >= 0
+                               ? Pair.of(envVar.substring(0, idx), envVar.substring(idx + 1))
+                               : Pair.of(envVar, "");
                     })
                     .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond)));
         }
@@ -307,7 +309,7 @@ public class DockerUtils {
                     volume.getPathInContainer(), volume.getMode()))
             .toList();
         val userSpec = userSpec(deploymentUnitSpec, executorOptions);
-        //We use constructor to foce handle any membership changes
+        //We use constructor to force handle any membership changes
         val info = new InjectedEnvironmentInfo(
                 CommonUtils.instanceId(deploymentUnitSpec),
                 CommonUtils.jobType(deploymentUnitSpec),
@@ -344,18 +346,23 @@ public class DockerUtils {
                         deploymentUnitSpec.getResources(),
                         env),
                 Instant.now());
-        createFileInContainer(containerId, client, new Consumer<TarArchiveOutputStream>() {
-            @Override
-            @SneakyThrows
-            public void accept(TarArchiveOutputStream tos) {
-                val entry = new TarArchiveEntry(ExecutorUtils.envInfoPath(executorOptions));
-                val data = objectMapper.writeValueAsBytes(info);
-                entry.setSize(data.length);
-                tos.putArchiveEntry(entry);
-                tos.write(data);
-                tos.closeArchiveEntry();
-            }
-        });
+        try {
+            createFileInContainer(containerId, client, new Consumer<TarArchiveOutputStream>() {
+                @Override
+                @SneakyThrows
+                public void accept(TarArchiveOutputStream tos) {
+                    val entry = new TarArchiveEntry(ExecutorUtils.envInfoPath(executorOptions));
+                    val data = objectMapper.writeValueAsBytes(info);
+                    entry.setSize(data.length);
+                    tos.putArchiveEntry(entry);
+                    tos.write(data);
+                    tos.closeArchiveEntry();
+                }
+            });
+        }
+        catch (Exception e) {
+            log.error("Error injecting environment info into container: " + containerId, e);
+        }
     }
 
     /**

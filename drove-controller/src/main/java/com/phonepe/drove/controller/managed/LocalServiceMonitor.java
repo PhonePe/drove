@@ -195,7 +195,7 @@ public class LocalServiceMonitor implements Managed {
                           executorId);
             }
             else {
-                // We dont't want to kill serivces on executors with running application or task instances
+                // We don't want to kill services on executors with running application or task instances
                 // because, these containers might be using the services provided by the LS
                 val appInstances = Objects.requireNonNullElseGet(nodeData.getInstances(), List::of);
                 val taskInstances = Objects.requireNonNullElseGet(nodeData.getTasks(), List::of);

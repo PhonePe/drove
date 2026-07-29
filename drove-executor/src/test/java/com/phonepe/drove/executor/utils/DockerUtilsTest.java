@@ -59,6 +59,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import lombok.SneakyThrows;
 import lombok.val;
 
 /**
@@ -139,7 +140,8 @@ class DockerUtilsTest {
     }
 
     @Test
-    void testInjectEnvironmentInfoWritesFileToContainer() throws Exception {
+    @SneakyThrows
+    void testInjectEnvInfo() {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
                 .thenReturn(new ResourceInfo(null, null,
@@ -171,7 +173,7 @@ class DockerUtilsTest {
                     ExecutorState.ACTIVE);
             val portMappings = Map.of(
                     "main", new InstancePort(8000, 32000, PortType.HTTP));
-            val injectionPath = "/drove-runtime.json";
+            val injectionPath = ExecutorUtils.envInfoPath(ExecutorOptions.DEFAULT);
 
             DockerUtils.injectEnvironmentInfo(
                     containerId,
@@ -207,6 +209,39 @@ class DockerUtilsTest {
         }
         finally {
             DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
+    @Test
+    void testInjectEnvNonExistentContiner() {
+        val spec = ExecutorTestingUtils.testTaskInstanceSpec()
+                .withEnv(Map.of("ITERATIONS", "3", "LOOP_SLEEP", "1"));
+        val containerId = "non-existent-container-id";
+        //Silent failure
+        try {
+            DockerUtils.injectEnvironmentInfo(
+                        containerId,
+                        DOCKER_CLIENT,
+                        spec,
+                        Map.of(),
+                        new ExecutorNodeData(
+                                "test-host",
+                                8080,
+                                NodeTransportType.HTTP,
+                                new Date(),
+                                new ExecutorResourceSnapshot("test-executor-id", null, null, null),
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                Set.of("tag1"),
+                                Map.of("env", "test"),
+                                ExecutorState.ACTIVE),
+                        ExecutorOptions.DEFAULT,
+                        MAPPER,
+                        Map.of());
+        }
+        catch (Throwable t) {
+            Assertions.fail("injectEnvironmentInfo should not throw exception for non-existent container", t);
         }
     }
 
