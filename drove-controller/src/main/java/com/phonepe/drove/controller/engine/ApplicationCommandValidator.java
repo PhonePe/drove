@@ -143,12 +143,6 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             errs.add("Memory requirements are mandatory");
         }
         errs.addAll(validateExposureSpec(spec, ports));
-        val exposureSpec = Objects.requireNonNullElseGet(spec.getExposureSpec(), List::<ExposureSpec>of);
-        errs.addAll(exposureSpec.stream()
-                .map(exposure -> exposure.getPortName())
-                .filter(portName -> !ports.containsKey(portName))
-                .map(portName -> "Exposed port name " + portName + " is undefined. Defined port names: " + ports.keySet())
-                .toList());
         errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
         errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
         errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
