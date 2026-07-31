@@ -17,19 +17,22 @@
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
 import com.google.common.base.Preconditions;
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
-import io.vavr.Tuple2;
 import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,6 +44,7 @@ import java.util.stream.Collectors;
  *
  * Also encapsulates CPU and memory allocation helpers for NUMA-aware resource allocation.
  */
+@Slf4j
 public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAllocator {
 
     public Optional<CandidateExecutorAllocation> allocate(
@@ -55,12 +59,36 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
     @Override
     public Optional<CandidateExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
-            long requiredCpus,
-            long requiredMemory,
+            long actualRequiredCpus,
+            long actualRequiredMemory,
             long requiredGpus,
             GpuType requiredGpuType) {
         Preconditions.checkArgument(requiredGpus == 0 || requiredGpuType != null,
                 "GPU type must be specified when GPU count is greater than 0");
+        val physicalLayout = Optional.ofNullable(hostInfo.getNodeData()
+            .accept(new NodeDataVisitor<PhysicalLayout>() {
+
+                @Override
+                public PhysicalLayout visit(ControllerNodeData controllerData) {
+                    return null;
+                }
+
+                @Override
+                public PhysicalLayout visit(ExecutorNodeData executorData) {
+                    return executorData.getState().getLayout();
+                }
+                
+            }));
+        val cpuScaling = physicalLayout.map(PhysicalLayout::getCpuScalingFactor)
+                                .orElse(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR);
+        val memoryScaling = physicalLayout.map(PhysicalLayout::getMemoryScalingFactor)
+                                .orElse(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR);
+        val requiredCpus = (long) Math.ceil(actualRequiredCpus * cpuScaling);
+        val requiredMemory = (long) Math.ceil(actualRequiredMemory * memoryScaling);
+        if(requiredCpus != actualRequiredCpus || requiredMemory != actualRequiredMemory) {
+            log.info("Scaling resource requirements for executor {}: requested CPUs={} scaled to {}, requested Memory={} scaled to {}",
+                    hostInfo.getExecutorId(), actualRequiredCpus, requiredCpus, actualRequiredMemory, requiredMemory);
+        }
         val candidateNumaNodeIds = candidateNumaNodeIds(hostInfo, requiredCpus, requiredMemory);
         if (candidateNumaNodeIds.isEmpty()) {
             return Optional.empty();
@@ -108,7 +136,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                     selectedNumaNodeId,
                     requiredCpus,
                     requiredMemory,
-                    gpuAlloc.get()._1()), new CandidateAllocationMetadata(gpuAlloc.get()._2())));
+                    gpuAlloc.get().getFirst()), new CandidateAllocationMetadata(gpuAlloc.get().getSecond())));
         }
 
         return Optional.empty();
@@ -206,13 +234,13 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
      * Allocate GPUs preferring those local to the selected NUMA node, falling back to cross-NUMA if needed.
      * Returns a GPUAllocation with localGpuCount set to the number of NUMA-local GPUs allocated.
      */
-    private Optional<Tuple2<GPUAllocation, Integer>> allocateGPUs(
+    private Optional<Pair<GPUAllocation, Integer>> allocateGPUs(
             long requiredGpus,
             int preferredNumaNode,
             Set<String> freeGpuIds,
             Map<String, GPUInfo> layoutGpus) {
         if (requiredGpus == 0) {
-            return Optional.of(new Tuple2<>(new GPUAllocation(Set.of(), null), 0));
+            return Optional.of(Pair.of(new GPUAllocation(Set.of(), null), 0));
         }
 
         if (freeGpuIds.size() < requiredGpus) {
@@ -234,7 +262,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         if (numaLocalGpus.size() == requiredGpus) {
             // All allocated GPUs are NUMA-local
             val resolvedGpuType = resolveGpuType(numaLocalGpus, layoutGpus);
-            return Optional.of(new Tuple2<>(new GPUAllocation(numaLocalGpus, resolvedGpuType), numaLocalGpus.size()));
+            return Optional.of(Pair.of(new GPUAllocation(numaLocalGpus, resolvedGpuType), numaLocalGpus.size()));
         }
 
         // Not enough NUMA-local GPUs; fall back to any free GPUs
@@ -244,7 +272,7 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 .limit(requiredGpus)
                 .collect(Collectors.toUnmodifiableSet());
         val resolvedGpuTypeFallback = resolveGpuType(allocatedGpus, layoutGpus);
-        return Optional.of(new Tuple2<>(new GPUAllocation(allocatedGpus, resolvedGpuTypeFallback), numaLocalGpus.size()));
+        return Optional.of(Pair.of(new GPUAllocation(allocatedGpus, resolvedGpuTypeFallback), numaLocalGpus.size()));
     }
 
     private GpuType resolveGpuType(Set<String> allocatedGpuIds, Map<String, GPUInfo> layoutGpus) {
