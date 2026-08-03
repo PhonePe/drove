@@ -17,6 +17,7 @@
 package com.phonepe.drove.executor.resourcemgmt;
 
 import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 
@@ -36,7 +37,22 @@ class ResourceConfigTest {
         assertEquals(Collections.emptySet(), resourceConfig.getTags());
         assertEquals(MetadataConfig.DEFAULT, resourceConfig.getMetadata());
         assertFalse(resourceConfig.getOverProvisioning().isEnabled());
+        assertEquals(PerformanceScalingConfig.DEFAULT, resourceConfig.getPerformanceScaling());
+    }
 
+    @Test
+    void validatePerformanceScalingCanBeCustomized() {
+        val customScaling = PerformanceScalingConfig.builder()
+                .cpuScalingFactor(2.0)
+                .memoryScalingFactor(1.5)
+                .gpuScalingFactor(0.5)
+                .build();
+        var config = ResourceConfig.builder()
+                .performanceScaling(customScaling)
+                .build();
+        assertEquals(2.0, config.getPerformanceScaling().getCpuScalingFactor(), 0.001);
+        assertEquals(1.5, config.getPerformanceScaling().getMemoryScalingFactor(), 0.001);
+        assertEquals(0.5, config.getPerformanceScaling().getGpuScalingFactor(), 0.001);
     }
 
     @Test
