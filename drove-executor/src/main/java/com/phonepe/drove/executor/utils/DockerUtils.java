@@ -17,6 +17,7 @@
 package com.phonepe.drove.executor.utils;
 
 import static com.phonepe.drove.common.CommonUtils.hostname;
+import static com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,6 +44,7 @@ import com.github.dockerjava.api.command.PullImageCmd;
 import com.github.dockerjava.api.model.AccessMode;
 import com.github.dockerjava.api.model.AuthConfig;
 import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Device;
 import com.github.dockerjava.api.model.DeviceRequest;
@@ -81,9 +83,11 @@ import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.InjectedEnvironmentInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.models.instance.InstancePort;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile.Capabilities;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -219,9 +223,6 @@ public class DockerUtils {
         try (val containerCmd = client.createContainerCmd(image)) {
             containerCmd
                     .withName(id);
-            val maxOpenFiles = executorOptions.getMaxOpenFiles() <= 0
-                               ? ExecutorOptions.DEFAULT_MAX_OPEN_FILES
-                               : executorOptions.getMaxOpenFiles();
             val cachedFileCount = executorOptions.getCacheFileCount() <= 0
                                   ? ExecutorOptions.DEFAULT_LOG_CACHE_COUNT
                                   : executorOptions.getCacheFileCount();
@@ -230,8 +231,7 @@ public class DockerUtils {
             val cacheFileSize = Objects.requireNonNullElse(executorOptions.getCacheFileSize(),
                                                            ExecutorOptions.DEFAULT_LOG_CACHE_SIZE);
             val hostConfig = new HostConfig()
-                    .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount))
-                    .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
+                    .withLogConfig(logConfig(deploymentUnitSpec, logBufferSize, cacheFileSize, cachedFileCount));
 
             populateSystemResources(resourceConfig, deploymentUnitSpec, hostConfig);
             populateResourceRequirements(resourceConfig, deploymentUnitSpec, hostConfig, resourceManager);
@@ -251,8 +251,12 @@ public class DockerUtils {
                 return null;
             });
             val labels = new HashMap<String, String>();
-            val params = new DockerRunParams(hostName, hostConfig, exposedPorts,
-                                             deploymentUnitSpec.isHostLevelInstance(), labels, env);
+            val params = new DockerRunParams(hostName,
+                                             hostConfig,
+                                             exposedPorts,
+                                             deploymentUnitSpec.isHostLevelInstance(),
+                                             labels,
+                                             env);
             augmenter.augment(params);
             log.debug("Environment: {}", env);
             if (!Objects.requireNonNullElse(deploymentUnitSpec.getArgs(), List.<String>of()).isEmpty()) {
@@ -269,6 +273,7 @@ public class DockerUtils {
                             containerCmd.withUser(user);
                         }
                     });
+            applySecurityProfile(id, hostConfig, deploymentUnitSpec, executorOptions);
             val containerId = containerCmd
                     .withHostConfig(hostConfig)
                     .withEnv(env)
@@ -529,7 +534,43 @@ public class DockerUtils {
                         }
                         return null;
                     }
+
+                    @Override
+                    public Void visit(GPUAllocation gpu) {
+                        val gpuType = gpu.getGpuType();
+
+                        if (gpuType != null && gpuType.getVendor().equals(NVIDIA)) {
+                            addNVIDIAGpuDeviceRequest(hostConfig, gpu);
+                        } else {
+                            throw new UnsupportedOperationException(
+                                    "GPU type " + (gpuType == null ? "null" : gpuType.getVendor())
+                                            + " is not yet supported by DockerUtils");
+                        }
+                        return null;
+                    }
                 }));
+    }
+
+    private static void addNVIDIAGpuDeviceRequest(HostConfig hostConfig, GPUAllocation gpu) {
+        val gpuIds = gpu.getGpuIds().stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .toList();
+        if (gpuIds.isEmpty()) {
+            return;
+        }
+
+        var deviceRequests = hostConfig.getDeviceRequests();
+        if (Objects.isNull(deviceRequests)) {
+            deviceRequests = new ArrayList<>();
+            hostConfig.withDeviceRequests(deviceRequests);
+        }
+
+        deviceRequests.add(new DeviceRequest()
+                                   .withDriver("nvidia")
+                                   .withDeviceIds(new ArrayList<>(gpuIds))
+                                   .withCapabilities(List.of(List.of("gpu"))));
     }
 
     private static void populateSystemResources(
@@ -725,6 +766,72 @@ public class DockerUtils {
                 return new LogConfig(LogConfig.LoggingType.SYSLOG, configBuilder.build());
             }
         });
+    }
+
+    private static HostConfig applySecurityProfile(
+            String id,
+            HostConfig hostConfig,
+            DeploymentUnitSpec deploymentUnitSpec,
+            ExecutorOptions executorOptions) {
+        val securityProfile = deploymentUnitSpec.getSecuritySpec();
+        val maxOpenFiles = executorOptions.getMaxOpenFiles() <= 0
+                               ? ExecutorOptions.DEFAULT_MAX_OPEN_FILES
+                               : executorOptions.getMaxOpenFiles();
+        if (null == securityProfile) {
+            log.warn("No security profile specified for deployment unit: {}", id);
+            return hostConfig
+                    .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
+        }
+        if (Boolean.TRUE.equals(securityProfile.getEnablePrivilegedMode())) {
+            hostConfig.withPrivileged(true);
+            log.info("Privileged mode enabled for deployment unit: {}", id);
+        }
+        else {
+            log.info("Privileged mode not enabled for deployment unit: {}", id);
+        }
+        val capabilties = Objects.requireNonNullElse(securityProfile.getCapabilities(), Capabilities.DEFAULT);
+        val addedCaps = Objects.requireNonNullElse(capabilties.getAddedCapabilities(), Set.<String>of());
+        if (addedCaps.isEmpty()) {
+            log.info("No capabilities added for deployment unit: {}", id);
+        }
+        else {
+            hostConfig.withCapAdd(addedCaps
+                    .stream()
+                    .map(Capability::valueOf)
+                    .toList()
+                    .toArray(new Capability[0]));
+            log.info("Capabilities added for deployment unit {}: {}", id, addedCaps);
+        }
+        val droppedCaps = Objects.requireNonNullElse(capabilties.getDroppedCapabilities(),
+                                                     Set.<String>of());
+        if (droppedCaps.isEmpty()) {
+            log.info("No capabilities dropped for deployment unit: {}", id);
+        }
+        else {
+            hostConfig.withCapDrop(droppedCaps
+                    .stream()
+                    .map(Capability::valueOf)
+                    .toList()
+                    .toArray(new Capability[0]));
+            log.info("Capabilities dropped for deployment unit {}: {}", id, droppedCaps);
+        }
+        if (securityProfile.getMaxOpenFiles() > 0) {
+            hostConfig.withUlimits(List.of(new Ulimit("nofile", securityProfile.getMaxOpenFiles(),
+                                                      securityProfile.getMaxOpenFiles())));
+            log.info("Max open files for deployment unit {}: {}", id, securityProfile.getMaxOpenFiles());
+        }
+        else {
+            hostConfig.withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
+            log.info("No max open files specified for deployment unit: {}. Using default: {}", id, maxOpenFiles);
+        }
+        if (!Strings.isNullOrEmpty(securityProfile.getSeccompProfile())) {
+            hostConfig.withSecurityOpts(List.of("seccomp=" + securityProfile.getSeccompProfile()));
+            log.info("Seccomp profile for deployment unit {}: {}", id, securityProfile.getSeccompProfile());
+        }
+        else {
+            log.info("No seccomp profile specified for deployment unit: {}", id);
+        }
+        return hostConfig;
     }
 
     private static String imageUrl(DeploymentUnitSpec deploymentUnitSpec) {

@@ -19,12 +19,14 @@ package com.phonepe.drove.models.policies;
 import java.util.List;
 import java.util.Set;
 
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.With;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * ContainerSecurityPolicy defines the security policies for a container.
@@ -32,6 +34,7 @@ import lombok.With;
 @Value
 @Builder
 @With
+@Jacksonized
 public class ContainerSecurityProfile {
 
     @Value
@@ -59,6 +62,8 @@ public class ContainerSecurityProfile {
     public static final Boolean DEFAULT_DISABLE_CMDL_ARGS = false;
     public static final Boolean DEFAULT_ENABLE_PRIVILEGED_MODE = false;
     public static final Boolean DEFAULT_ENABLE_RAW_DEVICE_ACCESS = false;
+    public static final Capabilities DEFAULT_CAPABILITIES = Capabilities.DEFAULT;
+    public static final long DEFAULT_MAX_OPEN_FILES = 470_000;
     public static final String DEFAULT_SECCOMP_PROFILE = "";
 
     public static final ContainerSecurityProfile DEFAULT = ContainerSecurityProfile.builder()
@@ -68,6 +73,7 @@ public class ContainerSecurityProfile {
             .enablePrivilegedMode(DEFAULT_ENABLE_PRIVILEGED_MODE)
             .enableRawDeviceAccess(DEFAULT_ENABLE_RAW_DEVICE_ACCESS)
             .capabilities(Capabilities.DEFAULT)
+            .maxOpenFiles(DEFAULT_MAX_OPEN_FILES)
             .seccompProfile(DEFAULT_SECCOMP_PROFILE)
             .build();
 
@@ -112,6 +118,14 @@ public class ContainerSecurityProfile {
      */
     @Builder.Default
     Capabilities capabilities = Capabilities.DEFAULT;
+
+    /**
+     * Maximum number of open files allowed for the container.
+     * If not specified, the default limit will be applied.
+     */
+    @Builder.Default
+    @Min(0)
+    long maxOpenFiles = DEFAULT_MAX_OPEN_FILES;
 
     /**
      * List of allowed security contexts for the container.

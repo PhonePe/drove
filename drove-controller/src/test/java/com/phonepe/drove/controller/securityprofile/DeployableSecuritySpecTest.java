@@ -36,6 +36,7 @@ class DeployableSecuritySpecTest {
         assertFalse(def.getEnablePrivilegedMode());
         assertEquals(Capabilities.DEFAULT, def.getCapabilities());
         assertEquals("", def.getSeccompProfile());
+        assertEquals(ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES, def.getMaxOpenFiles());
     }
 
     @Test
@@ -61,6 +62,19 @@ class DeployableSecuritySpecTest {
         assertTrue(spec.getEnablePrivilegedMode());
         assertEquals(caps, spec.getCapabilities());
         assertEquals("/etc/seccomp/profile.json", spec.getSeccompProfile());
+        assertEquals(ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES, spec.getMaxOpenFiles());
+    }
+
+    @Test
+    void testFromMaxOpenFiles() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("test-policy")
+                .maxOpenFiles(200_000L)
+                .build();
+
+        val spec = DeployableSecuritySpec.from(profile);
+
+        assertEquals(200_000L, spec.getMaxOpenFiles());
     }
 
     @Test

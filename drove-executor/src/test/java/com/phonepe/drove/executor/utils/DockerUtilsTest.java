@@ -508,6 +508,71 @@ class DockerUtilsTest {
     }
 
 
+    @Test
+    void testNullSpecDefaultUlimit() {
+        val resourceManager = mockResourceManager();
+        val spec = testTaskInstanceSpec().withSecuritySpec(null);
+        pullImage(spec);
+        val containerId = DockerUtils.createContainer(ResourceConfig.DEFAULT,
+                                                      DOCKER_CLIENT,
+                                                      CommonUtils.instanceId(spec),
+                                                      spec,
+                                                      dockerRunParams -> {},
+                                                      ExecutorOptions.DEFAULT,
+                                                      resourceManager)
+                .getContainerId();
+        try {
+            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
+            assertNotNull(hostConfig);
+            val ulimits = hostConfig.getUlimits();
+            assertNotNull(ulimits, "Ulimits must be set when securitySpec is null");
+            assertTrue(java.util.Arrays.stream(ulimits)
+                               .anyMatch(u -> "nofile".equals(u.getName())
+                                       && u.getSoft() == ExecutorOptions.DEFAULT_MAX_OPEN_FILES),
+                       "nofile ulimit must equal ExecutorOptions.DEFAULT_MAX_OPEN_FILES");
+        }
+        finally {
+            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
+
+    @Test
+    void testCustomMaxOpenFilesUlimit() {
+        val resourceManager = mockResourceManager();
+        val customLimit = 50_000L;
+        val spec = testTaskInstanceSpec().withSecuritySpec(
+                DeployableSecuritySpec.builder()
+                        .enablePrivilegedMode(false)
+                        .capabilities(ContainerSecurityProfile.Capabilities.DEFAULT)
+                        .seccompProfile("")
+                        .maxOpenFiles(customLimit)
+                        .build());
+        pullImage(spec);
+        val containerId = DockerUtils.createContainer(ResourceConfig.DEFAULT,
+                                                      DOCKER_CLIENT,
+                                                      CommonUtils.instanceId(spec),
+                                                      spec,
+                                                      dockerRunParams -> {},
+                                                      ExecutorOptions.DEFAULT,
+                                                      resourceManager)
+                .getContainerId();
+        try {
+            val hostConfig = DOCKER_CLIENT.inspectContainerCmd(containerId).exec().getHostConfig();
+            assertNotNull(hostConfig);
+            val ulimits = hostConfig.getUlimits();
+            assertNotNull(ulimits, "Ulimits must be present");
+            assertTrue(java.util.Arrays.stream(ulimits)
+                               .anyMatch(u -> "nofile".equals(u.getName())
+                                       && u.getSoft() == customLimit),
+                       "nofile ulimit must equal customLimit");
+        }
+        finally {
+            DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
+        }
+    }
+
+
     private static ResourceManager mockResourceManager() {
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())

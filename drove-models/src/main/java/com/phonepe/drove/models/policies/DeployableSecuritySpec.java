@@ -30,7 +30,8 @@ public class DeployableSecuritySpec {
     public static final DeployableSecuritySpec DEFAULT = new DeployableSecuritySpec(
             ContainerSecurityProfile.DEFAULT_ENABLE_PRIVILEGED_MODE,
             Capabilities.DEFAULT,
-            ContainerSecurityProfile.DEFAULT_SECCOMP_PROFILE
+            ContainerSecurityProfile.DEFAULT_SECCOMP_PROFILE,
+            ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES
     );
 
     @Builder.Default
@@ -42,11 +43,15 @@ public class DeployableSecuritySpec {
     @Builder.Default
     String seccompProfile = ContainerSecurityProfile.DEFAULT_SECCOMP_PROFILE;
 
+    @Builder.Default
+    long maxOpenFiles = ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES;
+
     public static DeployableSecuritySpec from(final ContainerSecurityProfile containerSecurityProfile) {
         return DeployableSecuritySpec.builder()
                 .enablePrivilegedMode(containerSecurityProfile.getEnablePrivilegedMode())
                 .capabilities(containerSecurityProfile.getCapabilities())
                 .seccompProfile(containerSecurityProfile.getSeccompProfile())
+                .maxOpenFiles(containerSecurityProfile.getMaxOpenFiles())
                 .build();
     }
 }
