@@ -83,8 +83,8 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                                 .orElse(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR);
         val memoryScaling = physicalLayout.map(PhysicalLayout::getMemoryScalingFactor)
                                 .orElse(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR);
-        val requiredCpus = (long) Math.ceil(actualRequiredCpus * cpuScaling);
-        val requiredMemory = (long) Math.ceil(actualRequiredMemory * memoryScaling);
+        val requiredCpus = (long) Math.ceil(actualRequiredCpus / cpuScaling);
+        val requiredMemory = (long) Math.ceil(actualRequiredMemory / memoryScaling);
         if(requiredCpus != actualRequiredCpus || requiredMemory != actualRequiredMemory) {
             log.info("Scaling resource requirements for executor {}: requested CPUs={} scaled to {}, requested Memory={} scaled to {}",
                     hostInfo.getExecutorId(), actualRequiredCpus, requiredCpus, actualRequiredMemory, requiredMemory);

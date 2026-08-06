@@ -32,7 +32,6 @@ class PerformanceScalingConfigTest {
         val config = PerformanceScalingConfig.builder().build();
         assertEquals(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR, config.getCpuScalingFactor().doubleValue(), 0.001);
         assertEquals(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR, config.getMemoryScalingFactor().doubleValue(), 0.001);
-        assertEquals(PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR, config.getGpuScalingFactor().doubleValue(), 0.001);
     }
 
     @Test
@@ -40,7 +39,6 @@ class PerformanceScalingConfigTest {
         val config = PerformanceScalingConfig.DEFAULT;
         assertEquals(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR, config.getCpuScalingFactor().doubleValue(), 0.001);
         assertEquals(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR, config.getMemoryScalingFactor().doubleValue(), 0.001);
-        assertEquals(PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR, config.getGpuScalingFactor().doubleValue(), 0.001);
     }
 
     @Test
@@ -48,11 +46,9 @@ class PerformanceScalingConfigTest {
         val config = PerformanceScalingConfig.builder()
                 .cpuScalingFactor(2.5)
                 .memoryScalingFactor(0.8)
-                .gpuScalingFactor(1.5)
                 .build();
         assertEquals(2.5, config.getCpuScalingFactor().doubleValue(), 0.001);
         assertEquals(0.8, config.getMemoryScalingFactor().doubleValue(), 0.001);
-        assertEquals(1.5, config.getGpuScalingFactor().doubleValue(), 0.001);
     }
 
     @Test
@@ -60,23 +56,19 @@ class PerformanceScalingConfigTest {
         val config = PerformanceScalingConfig.builder()
                 .cpuScalingFactor(0.0)
                 .memoryScalingFactor(0.0)
-                .gpuScalingFactor(0.0)
                 .build();
         assertEquals(0.0, config.getCpuScalingFactor().doubleValue(), 0.001);
         assertEquals(0.0, config.getMemoryScalingFactor().doubleValue(), 0.001);
-        assertEquals(0.0, config.getGpuScalingFactor().doubleValue(), 0.001);
     }
 
     @Test
     void withMethodsProduceNewInstances() {
         val original = PerformanceScalingConfig.DEFAULT;
         val modified = original.withCpuScalingFactor(3.0)
-                              .withMemoryScalingFactor(2.0)
-                              .withGpuScalingFactor(0.5);
+                              .withMemoryScalingFactor(2.0);
         assertNotSame(original, modified);
         assertEquals(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR, original.getCpuScalingFactor().doubleValue(), 0.001);
         assertEquals(3.0, modified.getCpuScalingFactor().doubleValue(), 0.001);
         assertEquals(2.0, modified.getMemoryScalingFactor().doubleValue(), 0.001);
-        assertEquals(0.5, modified.getGpuScalingFactor().doubleValue(), 0.001);
     }
 }

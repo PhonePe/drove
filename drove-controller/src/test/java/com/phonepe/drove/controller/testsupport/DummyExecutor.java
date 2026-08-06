@@ -399,8 +399,7 @@ public class DummyExecutor implements Runnable, AutoCloseable {
                                                                                       1, TOTAL_MEMORY),
                                                                                Map.of(),
                                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
+                                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
         clusterResourcesDB.update(List.of(new ExecutorNodeData("localhost",
                                                                8080,
                                                                NodeTransportType.HTTP,

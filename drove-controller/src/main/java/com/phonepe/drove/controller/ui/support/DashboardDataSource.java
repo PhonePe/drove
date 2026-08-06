@@ -58,6 +58,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.localservice.ActivationState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
@@ -265,7 +266,8 @@ public class DashboardDataSource {
                 EnumSet.allOf(ApplicationState.class)
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), state -> 0L)));
-        val appIds = new ArrayList<String>();
+        val appIds = applications.stream().map(ApplicationInfo::getAppId).collect(Collectors.toSet());
+        val healthyInstances = instanceInfoDB.healthyInstances(appIds);
         val appNames = new HashSet<String>();
         for(val app : applications) {
             val appState = appEngine.currentState(app.getAppId()).orElse(null);
@@ -278,13 +280,13 @@ public class DashboardDataSource {
                     (state, count) -> Objects.requireNonNullElse(count, 0L) + 1);
 
             if(app.getInstances() > 0) {
-                scorables.add(Pair.of(app, score(app, clusterSummary)));
+                scorables.add(Pair.of(app, scoreFromInstances(app.getSpec(),
+                                                              healthyInstances.getOrDefault(app.getAppId(), List.of()),
+                                                              clusterSummary)));
             }
 
-            appIds.add(app.getAppId());
             appNames.add(app.getSpec().getName());
         }
-        val healthyInstances = instanceInfoDB.healthyInstances(appIds);
         val totalHealthyInstances = healthyInstances.values()
             .stream()
             .mapToInt(List::size)
@@ -295,9 +297,7 @@ public class DashboardDataSource {
             .map(data -> ControllerUtils.toAppSummary(
                         data.getFirst(),
                         appEngine,
-                        healthyInstances
-                        .getOrDefault(data.getFirst().getAppId(), List.of()).size()
-                        ))
+                        healthyInstances.getOrDefault(data.getFirst().getAppId(), List.of())))
             .toList();
         return Pair.of(DashboardData.AppStats.builder()
                 .appCountByState(appCountByState)
@@ -424,14 +424,17 @@ public class DashboardDataSource {
                     clusterResourcesSummary);
     } 
 
-    private static long score(final ApplicationInfo applicationInfo, ClusterResourcesSummary clusterSummary) {
-        return  score(applicationInfo.getSpec(), applicationInfo.getInstances(), clusterSummary);
-    }
-
     //We use dominant resource fairness scoring
     private static long score(final DeploymentSpec spec, long instances, ClusterResourcesSummary clusterSummary) {
         val totalCPU = (ControllerUtils.totalCPU(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalCores());
         val totalMemory = (ControllerUtils.totalMemory(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalMemory());
+        return Math.max(totalCPU, totalMemory);
+    }
+        
+    //We use dominant resource fairness scoring
+    private static <T extends DeployedInstanceInfo> long scoreFromInstances(final DeploymentSpec spec, List<T> instances, ClusterResourcesSummary clusterSummary) {
+        val totalCPU = (ControllerUtils.totalCPUFromInstances(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalCores());
+        val totalMemory = (ControllerUtils.totalMemoryFromInstances(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalMemory());
         return Math.max(totalCPU, totalMemory);
     }
         

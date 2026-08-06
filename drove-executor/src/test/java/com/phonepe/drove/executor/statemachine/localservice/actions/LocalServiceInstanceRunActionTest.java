@@ -58,8 +58,12 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         val spec = testLocalServiceInstanceSpec();
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
@@ -76,7 +80,6 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         assertEquals(UNREADY, resp.getState());
     }
 
-
     @Test
     void testRunLocalPort() {
         val port = freePort();
@@ -85,8 +88,12 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                 .withHostLevelInstance(true);
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null,null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
@@ -103,13 +110,6 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
         assertEquals(UNREADY, resp.getState());
     }
 
-    @SneakyThrows
-    private int freePort() {
-        try (val s = new ServerSocket(0)) {
-            return s.getLocalPort();
-        }
-    }
-
     @Test
     void testRunFail() {
         val spec = testLocalServiceInstanceSpec(CommonTestUtils.APP_IMAGE_NAME + "-invalid")
@@ -119,11 +119,15 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                                              .build()));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null,null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
-        val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
+            val action = new LocalServiceInstanceRunAction(new ResourceConfig(),
                                                        ExecutorOptions.DEFAULT,
                                                        CommonTestUtils.httpCaller(),
                                                        MAPPER,
@@ -135,4 +139,12 @@ class LocalServiceInstanceRunActionTest extends AbstractTestBase {
                                   StateData.create(STARTING, createExecutorLocaLServiceInstanceInfo(spec, 8080)));
         assertEquals(START_FAILED, resp.getState());
     }
+
+    @SneakyThrows
+    private int freePort() {
+        try (val s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        }
+    }
+
 }

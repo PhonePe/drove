@@ -36,13 +36,10 @@ public class PerformanceScalingConfig {
     public static final PerformanceScalingConfig DEFAULT = PerformanceScalingConfig.builder()
             .cpuScalingFactor(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR)
             .memoryScalingFactor(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
-            .gpuScalingFactor(PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
             .build();
 
     @Builder.Default
     Double cpuScalingFactor = PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR;
     @Builder.Default
     Double memoryScalingFactor = PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR;
-    @Builder.Default
-    Double gpuScalingFactor = PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR;
 }

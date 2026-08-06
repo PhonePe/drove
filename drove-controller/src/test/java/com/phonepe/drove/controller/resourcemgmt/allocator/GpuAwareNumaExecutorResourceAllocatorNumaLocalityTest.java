@@ -194,8 +194,7 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
                                freeMemory,
                                physicalGpus,
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(
@@ -252,8 +251,7 @@ class GpuAwareNumaExecutorResourceAllocatorNumaLocalityTest {
                                freeMemory,
                                physicalGpus,
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(

@@ -23,7 +23,6 @@ import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.*;
 import com.phonepe.drove.common.net.HttpCaller;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
@@ -31,6 +30,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
+import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
@@ -56,11 +56,11 @@ import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.PlacementPolicyVisitor;
 import com.phonepe.drove.models.application.placement.policies.*;
-import com.phonepe.drove.models.application.requirements.CPURequirement;
-import com.phonepe.drove.models.application.requirements.MemoryRequirement;
-import com.phonepe.drove.models.application.requirements.ResourceRequirementVisitor;
+
+import com.phonepe.drove.models.application.requirements.*;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
+
 import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecVisitorAdapter;
@@ -69,6 +69,10 @@ import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocationVisitor;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -100,7 +104,9 @@ import lombok.val;
 
 import javax.ws.rs.core.Response;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
@@ -506,6 +512,29 @@ public class ControllerUtils {
                 });
     }
 
+    public static int freeGpus(ExecutorHostInfo executor, GpuType gpuType) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<>() {
+                    @Override
+                    public Integer visit(ControllerNodeData controllerData) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(ExecutorNodeData executorData) {
+                        val layout = executorData.getState().getLayout();
+                        if (layout == null || layout.getGpus() == null || executorData.getState().getGpus() == null) {
+                            return 0;
+                        }
+                        val freeGPUs = executorData.getState().getGpus().getFreeGpus();
+                        return (int) layout.getGpus().values().stream()
+                                .filter(gpu -> GPUUtils.matches(gpu, gpuType))
+                                .filter(gpu -> freeGPUs.contains(gpu.getGpuId()))
+                                .count();
+                    }
+                });
+    }
+
     public static int usedCores(ExecutorHostInfo executor) {
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
@@ -637,6 +666,11 @@ public class ControllerUtils {
                     public Integer visit(MemoryRequirement memoryRequirement) {
                         return 0;
                     }
+
+                    @Override
+                    public Integer visit(GPURequirement gpuRequirement) {
+                        return 0;
+                    }
                 }))
                 .sum();
         val requiredCores = requiredInstances * requiredCoresPerInstance;
@@ -652,9 +686,58 @@ public class ControllerUtils {
                     public Long visit(MemoryRequirement memoryRequirement) {
                         return memoryRequirement.getSizeInMB();
                     }
+
+                    @Override
+                    public Long visit(GPURequirement gpuRequirement) {
+                        return 0L;
+                    }
                 }))
                 .sum();
         val requiredMem = requiredInstances * requiredMemPerInstance;
+
+        val requiredGpuPerInstance = spec.getResources()
+                .stream()
+                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Integer visit(CPURequirement cpuRequirement) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(MemoryRequirement memoryRequirement) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(GPURequirement gpuRequirement) {
+                        return gpuRequirement.getCount();
+                    }
+                }))
+                .sum();
+        val requiredGpuTypes = spec.getResources()
+                .stream()
+                .map(r -> r.accept(new ResourceRequirementVisitor<GpuType>() {
+                    @Override
+                    public GpuType visit(CPURequirement cpuRequirement) {
+                        return null;
+                    }
+
+                    @Override
+                    public GpuType visit(MemoryRequirement memoryRequirement) {
+                        return null;
+                    }
+
+                    @Override
+                    public GpuType visit(GPURequirement gpuRequirement) {
+                        return gpuRequirement.getGpuType();
+                    }
+                }))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if(requiredGpuTypes.size() > 1) {
+            errors.add("Multiple GPU types specified in resource requirements. This is currently not supported.");
+        }
+        val requiredGpuTypePerInstance = requiredGpuTypes.isEmpty() ? null : requiredGpuTypes.iterator().next();
         if (requiredCores > freeCores) {
             errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
                                "Available: " + freeCores);
@@ -663,6 +746,7 @@ public class ControllerUtils {
             errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
                                "Available: " + freeMemory);
         }
+
         val maxAvailablePhysicalCoresPerNode = executors.stream()
                 .map(e -> e.getNodeData().getState().getLayout())
                 .filter(Objects::nonNull)
@@ -674,6 +758,35 @@ public class ControllerUtils {
             errors.add("Required cores exceeds the maximum core available on a single " +
                                "NUMA node in the cluster. Required: " + requiredCores
                                + " Max: " + maxAvailablePhysicalCoresPerNode);
+        }
+        if(requiredGpuTypePerInstance != null) {
+            val maxAvailableGpuCountPerNode = executors.stream()
+                    .map(e -> e.getNodeData().getState().getLayout())
+                    .filter(Objects::nonNull)
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
+                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
+                            .count())
+                    .max()
+                    .orElse(Integer.MAX_VALUE);
+
+            val totalAvailableGpuCount = executors.stream()
+                    .map(e -> e.getNodeData().getState().getLayout())
+                    .filter(Objects::nonNull)
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
+                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
+                            .count())
+                    .sum();
+
+            if (maxAvailableGpuCountPerNode < requiredGpuPerInstance) {
+                errors.add("Required GPU count exceeds the maximum GPU count available on a single " +
+                        "executor in the cluster. Required: " + requiredGpuPerInstance
+                        + " Max: " + maxAvailableGpuCountPerNode);
+            }
+
+            if(totalAvailableGpuCount < requiredGpuPerInstance * requiredInstances) {
+                errors.add("Cluster does not have enough GPUs of required type. Required: " + (requiredGpuPerInstance * requiredInstances)
+                        + " Available: " + totalAvailableGpuCount);
+            }
         }
     }
 
@@ -856,8 +969,99 @@ public class ControllerUtils {
                     public Long visit(MemoryRequirement memoryRequirement) {
                         return memoryRequirement.getSizeInMB();
                     }
+
+                    @Override
+                    public Long visit(GPURequirement gpuRequirement) {
+                        return 0L;
+                    }
                 }))
                 .sum();
+    }
+
+    public static <T extends DeployedInstanceInfo> long totalCPUFromInstances(DeploymentSpec spec, List<T> instances) {
+        return instances.stream()
+            .mapToLong(instance -> instance.getResources()
+                    .stream()
+                    .mapToLong(alloc -> alloc.accept(new ResourceAllocationVisitor<Long>() {
+                        @Override
+                        public Long visit(CPUAllocation cpu) {
+                            return cpu.getCores()
+                                .values()
+                                .stream()
+                                .mapToLong(cores -> cores.size())
+                                .sum();
+                        }
+
+                        @Override
+                        public Long visit(MemoryAllocation memory) {
+                            return 0L;
+                        }
+
+                        @Override
+                        public Long visit(GPUAllocation gpu) {
+                            return 0L;
+                        }
+                        
+                    }))
+            .sum())
+        .sum();
+    }
+
+    public static <T extends DeployedInstanceInfo> long totalMemoryFromInstances(DeploymentSpec spec, List<T> instances) {
+        return instances.stream()
+            .mapToLong(instance -> instance.getResources()
+                    .stream()
+                    .mapToLong(alloc -> alloc.accept(new ResourceAllocationVisitor<Long>() {
+                        @Override
+                        public Long visit(CPUAllocation cpu) {
+                            return 0L;
+                        }
+
+                        @Override
+                        public Long visit(MemoryAllocation memory) {
+                            return memory.getMemoryInMB()
+                                .values()
+                                .stream()
+                                .mapToLong(Long::longValue)
+                                .sum();
+                        }
+
+                        @Override
+                        public Long visit(GPUAllocation gpu) {
+                            return 0L;
+                        }
+                        
+                    }))
+            .sum())
+        .sum();
+    }
+
+    public static <T extends DeployedInstanceInfo> long totalGPUFromInstances(DeploymentSpec spec, List<T> instances) {
+        return instances.stream()
+            .mapToLong(instance -> instance.getResources()
+                    .stream()
+                    .mapToLong(alloc -> alloc.accept(new ResourceAllocationVisitor<Long>() {
+                        @Override
+                        public Long visit(CPUAllocation cpu) {
+                            return cpu.getCores()
+                                .values()
+                                .stream()
+                                .mapToLong(cores -> cores.size())
+                                .sum();
+                        }
+
+                        @Override
+                        public Long visit(MemoryAllocation memory) {
+                            return 0L;
+                        }
+
+                        @Override
+                        public Long visit(GPUAllocation gpu) {
+                            return (long)gpu.getGpuIds().size();
+                        }
+                    }))
+            .sum())
+        .sum();
     }
 
     public static long totalCPU(DeploymentSpec spec, long instances) {
@@ -870,6 +1074,31 @@ public class ControllerUtils {
                     @Override
                     public Long visit(MemoryRequirement memoryRequirement) {
                         return 0L;
+                    }
+
+                    @Override
+                    public Long visit(GPURequirement gpuRequirement) {
+                        return 0L;
+                    }
+                }))
+                .sum();
+    }
+
+    public static long totalGPU(DeploymentSpec spec, long instances) {
+        return instances * spec.getResources().stream().mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
+                    @Override
+                    public Integer visit(CPURequirement cpuRequirement) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(MemoryRequirement memoryRequirement) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(GPURequirement gpuRequirement) {
+                        return gpuRequirement.getCount();
                     }
                 }))
                 .sum();
@@ -1179,20 +1408,55 @@ public class ControllerUtils {
                : "Execution of jobs failed with error: " + executionResult.getFailure().getMessage();
     }
 
+    /**
+     * Utility method to extract CPU requirement count from resource requirements list.
+     */
+    public static long extractCpuRequirement(List<ResourceRequirement> resources) {
+        return ((CPURequirement) extractRequirement(resources, ResourceType.CPU)).getCount();
+    }
+
+    /**
+     * Utility method to extract memory requirement in MB from resource requirements list.
+     */
+    public static long extractMemoryRequirement(List<ResourceRequirement> resources) {
+        return ((MemoryRequirement) extractRequirement(resources, ResourceType.MEMORY)).getSizeInMB();
+    }
+
+    /**
+     * Utility method to find the GPU requirement, returning empty if none is present.
+     */
+    public static Optional<GPURequirement> findGpuRequirement(List<ResourceRequirement> resources) {
+        return resources.stream()
+                .filter(req -> req.getType() == ResourceType.GPU)
+                .map(GPURequirement.class::cast)
+                .findFirst();
+    }
+
+    /**
+     * Utility method to extract specific resource requirement from the list.
+     */
+    public static ResourceRequirement extractRequirement(List<ResourceRequirement> resources, ResourceType type) {
+        return resources.stream()
+                .filter(req -> req.getType() == type)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Resource requirement of type " + type + " is required"));
+    }
+
     public static AppSummary toAppSummary(
             final ApplicationInfo info,
             final ApplicationLifecycleManagementEngine applicationEngine,
-            final long healthyInstances) {
+            final List<InstanceInfo> healthyInstances) {
         val spec = info.getSpec();
-        val instances = info.getInstances();
-        val cpus = totalCPU(spec, instances);
-        val memory = totalMemory(spec, instances);
+        val cpus = totalCPUFromInstances(spec, healthyInstances);
+        val memory = totalMemoryFromInstances(spec, healthyInstances);
+        val gpu = totalGPUFromInstances(spec, healthyInstances);
         return new AppSummary(info.getAppId(),
                               spec.getName(),
-                              instances,
-                              healthyInstances,
+                              info.getInstances(),
+                              healthyInstances.size(),
                               cpus,
                               memory,
+                              gpu,
                               spec.getTags(),
                               applicationEngine.currentState(info.getAppId()).orElse(null),
                               info.getCreated(),

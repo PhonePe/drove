@@ -16,6 +16,10 @@
 
 package com.phonepe.drove.models.interfaces;
 
+import java.util.List;
+
+import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+
 /**
  *
  */
@@ -25,4 +29,6 @@ public interface DeployedInstanceInfo {
     String name();
 
     String instanceId();
+
+    List<ResourceAllocation> getResources();
 }

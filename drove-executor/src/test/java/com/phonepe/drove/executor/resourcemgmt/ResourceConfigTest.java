@@ -45,14 +45,12 @@ class ResourceConfigTest {
         val customScaling = PerformanceScalingConfig.builder()
                 .cpuScalingFactor(2.0)
                 .memoryScalingFactor(1.5)
-                .gpuScalingFactor(0.5)
                 .build();
         var config = ResourceConfig.builder()
                 .performanceScaling(customScaling)
                 .build();
         assertEquals(2.0, config.getPerformanceScaling().getCpuScalingFactor(), 0.001);
         assertEquals(1.5, config.getPerformanceScaling().getMemoryScalingFactor(), 0.001);
-        assertEquals(0.5, config.getPerformanceScaling().getGpuScalingFactor(), 0.001);
     }
 
     @Test

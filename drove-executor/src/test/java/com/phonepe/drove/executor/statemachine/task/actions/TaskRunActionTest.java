@@ -59,9 +59,12 @@ class TaskRunActionTest extends AbstractTestBase {
         val spec = testTaskInstanceSpec();
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
+                .thenReturn(new ResourceInfo(null, null, null,
                                              new PhysicalLayout(Map.of(0, java.util.Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L))));
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new TaskRunAction(new ResourceConfig(),
@@ -82,9 +85,12 @@ class TaskRunActionTest extends AbstractTestBase {
         val spec = testTaskInstanceSpec(CommonTestUtils.TASK_IMAGE_NAME + "-invalid", Map.of("ITERATIONS", "3"));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
+                .thenReturn(new ResourceInfo(null, null, null,
                                              new PhysicalLayout(Map.of(0, java.util.Set.of(0, 1, 2, 3)),
-                                                                Map.of(0, 1024L))));
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new TaskRunAction(new ResourceConfig(),

@@ -37,7 +37,6 @@ import java.util.Set;
 public class PhysicalLayout {
     public static final double DEFAULT_CPU_SCALING_FACTOR = 1.0;
     public static final double DEFAULT_MEMORY_SCALING_FACTOR = 1.0;
-    public static final double DEFAULT_GPU_SCALING_FACTOR = 1.0;
 
     @Schema(description = "Map of NUMA node ID to set of CPU core IDs on that node", example = "{0: [0,1,2,3], 1: [4,5,6,7]}")
     Map<Integer, Set<Integer>> cores;
@@ -57,7 +56,4 @@ public class PhysicalLayout {
     @Builder.Default
     double memoryScalingFactor = DEFAULT_MEMORY_SCALING_FACTOR;
 
-    @Schema(description = "GPU Performance Scaling Factor for the host", example = "1.0")
-    @Builder.Default
-    double gpuScalingFactor = DEFAULT_GPU_SCALING_FACTOR;
 }

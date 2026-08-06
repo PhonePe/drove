@@ -66,8 +66,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                                freeMemory,
                                Map.of("GPU-0", gpuInfo),
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(
@@ -160,8 +159,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                                Map.of(0, 128L),
                                Map.of("GPU-0", new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)),
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         db.update(executorResourceSnapshot);
@@ -204,8 +202,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                                Map.of(0, 128L), 
                                Map.of("GPU-0", new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)),
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
         db.update(inUseSnapshot);
 
@@ -277,8 +274,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                         id -> id,
                         id -> new GPUInfo(id, GpuVendor.NVIDIA, "H100", gpuMap.get(id)))),
                 PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
         db.update(inUseSnapshot);
 
@@ -379,8 +375,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                                Map.of(0, 128L), 
                                Map.of("GPU-0", new GPUInfo("GPU-0", GpuVendor.NVIDIA, "H100", 0)),
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
         db.update(executorUpdate);
 
@@ -424,8 +419,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                                freeMemory,
                                physicalGpus,
                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         val nodeData = new ExecutorNodeData(

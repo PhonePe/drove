@@ -67,8 +67,7 @@ class MessagingTest {
                                                                                                Map.of(),
                                                                                                Map.of(),
                                                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                                                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)),
+                                                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)),
                                                               null));
         assertEquals(MessageDeliveryStatus.ACCEPTED, res.getStatus());
     }

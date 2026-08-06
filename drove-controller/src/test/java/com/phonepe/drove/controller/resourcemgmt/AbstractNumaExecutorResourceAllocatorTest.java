@@ -225,8 +225,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
                                    freeMemory,
                                    physicalGpus,
                                    PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
 
         val nodeData = new ExecutorNodeData(
                 "test-host", 8080, NodeTransportType.HTTP, new Date(),
@@ -259,8 +258,7 @@ class AbstractNumaExecutorResourceAllocatorTest {
                                    freeMemory,
                                    Map.of(),
                                    PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
         return new ExecutorNodeData(
                 "test-host", 8080, NodeTransportType.HTTP, new Date(),
                 snapshot, List.of(), List.of(), List.of(),

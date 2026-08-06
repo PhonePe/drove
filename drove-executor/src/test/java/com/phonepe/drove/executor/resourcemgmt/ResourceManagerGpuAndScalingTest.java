@@ -184,7 +184,6 @@ class ResourceManagerGpuAndScalingTest {
         val scaling = PerformanceScalingConfig.builder()
                 .cpuScalingFactor(2.0)
                 .memoryScalingFactor(1.5)
-                .gpuScalingFactor(0.5)
                 .build();
 
         val rm = new ResourceManager(scaling);
@@ -194,7 +193,6 @@ class ResourceManagerGpuAndScalingTest {
         assertNotNull(layout);
         assertEquals(2.0, layout.getCpuScalingFactor(), 0.001);
         assertEquals(1.5, layout.getMemoryScalingFactor(), 0.001);
-        assertEquals(0.5, layout.getGpuScalingFactor(), 0.001);
     }
 
     @Test
@@ -205,19 +203,17 @@ class ResourceManagerGpuAndScalingTest {
         val layout = rm.currentState().getPhysicalLayout();
         assertEquals(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR, layout.getCpuScalingFactor(), 0.001);
         assertEquals(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR, layout.getMemoryScalingFactor(), 0.001);
-        assertEquals(PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR, layout.getGpuScalingFactor(), 0.001);
     }
 
     @Test
     void nullScalingFactorsNormalizeToDefaults() {
-        val scaling = new PerformanceScalingConfig(null, null, null);
+        val scaling = new PerformanceScalingConfig(null, null);
         val rm = new ResourceManager(scaling);
         populate(rm, Set.of(GPU_0));
 
         val layout = rm.currentState().getPhysicalLayout();
         assertEquals(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR, layout.getCpuScalingFactor(), 0.001);
         assertEquals(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR, layout.getMemoryScalingFactor(), 0.001);
-        assertEquals(PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR, layout.getGpuScalingFactor(), 0.001);
     }
 
     @Test

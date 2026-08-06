@@ -76,6 +76,7 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalInstanceInfo;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
 import com.phonepe.drove.statemachine.StateData;
 
 import org.apache.commons.io.FileUtils;
@@ -107,10 +108,9 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
     @Test
     @SneakyThrows
     void testRunWithOverProvisioning() {
-        val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(4, new ResourceConfig()
                         .setOverProvisioning(new OverProvisioning()
-                                             .setEnabled(true))
+                                             .withEnabled(true))
                         ,
                   true);
     }
@@ -122,9 +122,9 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val availableCPUs = Runtime.getRuntime().availableProcessors();
         runAction(Math.max(2, availableCPUs + 2), new ResourceConfig()
                 .setOverProvisioning(new OverProvisioning()
-                                             .setCpuMultiplier(10)
-                                             .setMemoryMultiplier(10)
-                                             .setEnabled(true)),
+                                             .withCpuMultiplier(10)
+                                             .withMemoryMultiplier(10)
+                                             .withEnabled(true)),
                   false); //Will have all CPUs as cpuset will not be done
     }
 
@@ -177,6 +177,7 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 Collections.emptyList(),
                 null,
                 null,
+                DeployableSecuritySpec.DEFAULT,
                 Map.of("TEST_TAG", "TestValue"),
                 List.of(new ExposureSpec("test-host", "test-host", ExposureMode.ALL)),
                 "TestToken");
@@ -185,8 +186,14 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         new ApplicationExecutableFetchAction(null).execute(ctx, StateData.create(InstanceState.PENDING, null));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null,
+                                             null,
+                                             null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val newState = new ApplicationInstanceRunAction(

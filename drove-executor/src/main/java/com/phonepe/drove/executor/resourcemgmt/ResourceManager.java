@@ -125,18 +125,20 @@ public class ResourceManager {
             cores.put(numaNode, info.getPhysicalCores());
             memory.put(numaNode, info.getPhysicalMemoryInMB());
         });
+        val cpuScalingFactor = performanceScaling.getCpuScalingFactor();
+        val memoryScalingFactor = performanceScaling.getMemoryScalingFactor();
+        log.info("Performance Scaling Factors: CPU: {} Memory: {}",
+                cpuScalingFactor, memoryScalingFactor);
         this.physicalLayout = new PhysicalLayout(cores,
                                                  memory,
                                                  resources.getGpuInfos()
                                                      .stream()
                                                      .collect(Collectors.toUnmodifiableMap(
                                                          GPUInfo::getGpuId, Function.identity(), (left, right) -> left)),
-                                                 performanceScaling.getCpuScalingFactor(),
-                                                 performanceScaling.getMemoryScalingFactor(),
-                                                 performanceScaling.getGpuScalingFactor());
+                                                 cpuScalingFactor,
+                                                 memoryScalingFactor);
     }
 
-    @MonitoredFunction
     public synchronized boolean lockResources(final ResourceUsage usage) {
         if (resourceLocks.containsKey(usage.getId())) {
             log.error("Resources already allocated for: {}", usage.getId());
@@ -226,9 +228,7 @@ public class ResourceManager {
                 config.getCpuScalingFactor(), PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR);
         val memoryScalingFactor = Objects.requireNonNullElse(
                 config.getMemoryScalingFactor(), PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR);
-        val gpuScalingFactor = Objects.requireNonNullElse(
-                config.getGpuScalingFactor(), PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR);
-        return new PerformanceScalingConfig(cpuScalingFactor, memoryScalingFactor, gpuScalingFactor);
+        return new PerformanceScalingConfig(cpuScalingFactor, memoryScalingFactor);
     }
 
     private ResourceInfo calculateResources() {

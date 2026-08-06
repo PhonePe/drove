@@ -262,8 +262,7 @@ class InMemoryClusterResourcesDBRetentionLogicTest {
                 Map.of(0, 2048L), 
                 Map.of(),
                 PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         return new ExecutorNodeData(

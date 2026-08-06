@@ -46,6 +46,7 @@ import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.engine.*;
 import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.resourcemgmt.PerformanceScalingConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
@@ -218,6 +219,12 @@ public class ExecutorCoreModule extends AbstractModule {
     @Singleton
     public ResourceConfig resourceConfig(final AppConfig appConfig) {
         return Objects.requireNonNullElse(appConfig.getResources(), ResourceConfig.DEFAULT);
+    }
+
+    @Provides
+    @Singleton
+    public PerformanceScalingConfig performanceScalingConfig(final ResourceConfig resourceConfig) {
+        return Objects.requireNonNullElse(resourceConfig.getPerformanceScaling(), PerformanceScalingConfig.DEFAULT);
     }
 
     @Provides

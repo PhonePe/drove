@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.Set;
 
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
@@ -51,6 +53,7 @@ import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -172,10 +175,12 @@ class DashboardDataSourceTest {
 
     @Test
     void testAppStatsComputationWithApplications() throws Exception {
+        val spec = ControllerTestUtils.appSpec();
+        val appId = ControllerUtils.deployableObjectId(spec);
         val leadershipEnsurer = mock(LeadershipEnsurer.class);
         when(leadershipEnsurer.isLeader()).thenReturn(true);
 
-        val appInfo = createMockApplicationInfo("app1", "TestApp");
+        val appInfo = createMockApplicationInfo(appId, spec.getName());
         val applicationStateDB = mock(ApplicationStateDB.class);
         when(applicationStateDB.applications(anyInt(), anyInt())).thenReturn(List.of(appInfo));
 
@@ -183,7 +188,8 @@ class DashboardDataSourceTest {
         when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
 
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        when(instanceInfoDB.healthyInstances(anyList())).thenReturn(Map.of("app1", List.of(mock(InstanceInfo.class))));
+        when(instanceInfoDB.healthyInstances(anyCollection())).thenReturn(Map.of(appId,
+                    List.of(ControllerTestUtils.generateInstanceInfo(appId, spec, 0))));
 
         val taskEngine = mock(TaskEngine.class);
         when(taskEngine.tasks(any())).thenReturn(List.of());
@@ -473,7 +479,7 @@ class DashboardDataSourceTest {
         when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
 
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        when(instanceInfoDB.healthyInstances(anyList())).thenReturn(Map.of());
+        when(instanceInfoDB.healthyInstances(anyCollection())).thenReturn(Map.of());
 
         val taskEngine = mock(TaskEngine.class);
         when(taskEngine.tasks(any())).thenReturn(List.of());
@@ -592,9 +598,9 @@ class DashboardDataSourceTest {
                 clusterStateDB,
                 TEST_REFRESH_INTERVAL);
 
-        Thread.sleep(TEST_REFRESH_INTERVAL.toMillis() + 50);
+        CommonTestUtils.waitUntil(() -> dataSource.current().isPresent());
 
-        val results = new ArrayList<Boolean>();
+        val results = new CopyOnWriteArrayList<Boolean>();
         val threads = new ArrayList<Thread>();
         for (int i = 0; i < 5; i++) {
             val thread = new Thread(() -> {
@@ -831,7 +837,7 @@ class DashboardDataSourceTest {
         when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
 
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        when(instanceInfoDB.healthyInstances(anyList())).thenReturn(Map.of());
+        when(instanceInfoDB.healthyInstances(anyCollection())).thenReturn(Map.of());
 
         val taskEngine = mock(TaskEngine.class);
         when(taskEngine.tasks(any())).thenReturn(List.of());
@@ -884,7 +890,7 @@ class DashboardDataSourceTest {
         when(appEngine.currentState(anyString())).thenReturn(Optional.of(ApplicationState.RUNNING));
 
         val instanceInfoDB = mock(ApplicationInstanceInfoDB.class);
-        when(instanceInfoDB.healthyInstances(anyList())).thenReturn(Map.of());
+        when(instanceInfoDB.healthyInstances(anyCollection())).thenReturn(Map.of());
 
         val taskEngine = mock(TaskEngine.class);
         when(taskEngine.tasks(any())).thenReturn(List.of());

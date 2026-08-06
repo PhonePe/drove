@@ -62,8 +62,14 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
         val spec = testAppInstanceSpec();
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null,
+                                             null,
+                                             null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new ApplicationInstanceRunAction(new ResourceConfig(),
@@ -88,8 +94,12 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                                              .build()));
         val resourceManager = mock(ResourceManager.class);
         when(resourceManager.currentState())
-                .thenReturn(new ResourceInfo(null, null,
-                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)), Map.of(0, 1024L))));
+                .thenReturn(new ResourceInfo(null, null, null,
+                                             new PhysicalLayout(Map.of(0, Set.of(0, 1, 2, 3)),
+                                                                Map.of(0, 1024L),
+                                                                Map.of(),
+                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                                                PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         val nodeStore = mock(LocalNodeDataManager.class);
         when(nodeStore.currentData()).thenReturn(Optional.empty());
         val action = new ApplicationInstanceRunAction(new ResourceConfig(),

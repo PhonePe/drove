@@ -139,8 +139,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                 4 * 128 * (2L ^ 20)),
                         Map.of(),
                         PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                        PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                        PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)));
+                        PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
@@ -509,8 +508,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                    freeMemoryPerNuma,
                                    physicalGpus,
                                    PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR)
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         return new ExecutorNodeData(

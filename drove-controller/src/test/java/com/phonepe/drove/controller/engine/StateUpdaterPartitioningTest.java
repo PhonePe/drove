@@ -412,8 +412,7 @@ class StateUpdaterPartitioningTest {
                                                                Map.of(),
                                                                Map.of(),
                                                                PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                                               PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
+                                                               PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
     }
 
     private static ExecutorNodeData nodeWithInstances(int n, List<InstanceInfo> instances) {

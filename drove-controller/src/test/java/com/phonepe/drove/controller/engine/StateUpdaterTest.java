@@ -221,8 +221,7 @@ class StateUpdaterTest {
                                        Map.of(),
                                        Map.of(),
                                        PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                       PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR,
-                                       PhysicalLayout.DEFAULT_GPU_SCALING_FACTOR));
+                                       PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
             su.updateSingle(resourceSnapshot, appInstance);
             su.updateSingle(resourceSnapshot, taskInstance);
             su.updateSingle(resourceSnapshot, serviceInstance);
