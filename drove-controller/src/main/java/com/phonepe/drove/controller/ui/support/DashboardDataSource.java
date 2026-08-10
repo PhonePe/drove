@@ -280,8 +280,7 @@ public class DashboardDataSource {
                     (state, count) -> Objects.requireNonNullElse(count, 0L) + 1);
 
             if(app.getInstances() > 0) {
-                scorables.add(Pair.of(app, scoreFromInstances(app.getSpec(),
-                                                              healthyInstances.getOrDefault(app.getAppId(), List.of()),
+                scorables.add(Pair.of(app, scoreFromInstances(healthyInstances.getOrDefault(app.getAppId(), List.of()),
                                                               clusterSummary)));
             }
 
@@ -432,7 +431,7 @@ public class DashboardDataSource {
     }
         
     //We use dominant resource fairness scoring
-    private static <T extends DeployedInstanceInfo> long scoreFromInstances(final DeploymentSpec spec, List<T> instances, ClusterResourcesSummary clusterSummary) {
+    private static <T extends DeployedInstanceInfo> long scoreFromInstances(List<T> instances, ClusterResourcesSummary clusterSummary) {
         val totalCPU = (ControllerUtils.totalCPUFromInstances(instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalCores());
         val totalMemory = (ControllerUtils.totalMemoryFromInstances(instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalMemory());
         return Math.max(totalCPU, totalMemory);
