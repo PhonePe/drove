@@ -433,8 +433,8 @@ public class DashboardDataSource {
         
     //We use dominant resource fairness scoring
     private static <T extends DeployedInstanceInfo> long scoreFromInstances(final DeploymentSpec spec, List<T> instances, ClusterResourcesSummary clusterSummary) {
-        val totalCPU = (ControllerUtils.totalCPUFromInstances(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalCores());
-        val totalMemory = (ControllerUtils.totalMemoryFromInstances(spec, instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalMemory());
+        val totalCPU = (ControllerUtils.totalCPUFromInstances(instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalCores());
+        val totalMemory = (ControllerUtils.totalMemoryFromInstances(instances) * 1_000_000L) / Math.max(1, clusterSummary.getTotalMemory());
         return Math.max(totalCPU, totalMemory);
     }
         

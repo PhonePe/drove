@@ -104,7 +104,6 @@ import lombok.val;
 
 import javax.ws.rs.core.Response;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -978,7 +977,7 @@ public class ControllerUtils {
                 .sum();
     }
 
-    public static <T extends DeployedInstanceInfo> long totalCPUFromInstances(DeploymentSpec spec, List<T> instances) {
+    public static <T extends DeployedInstanceInfo> long totalCPUFromInstances(List<T> instances) {
         return instances.stream()
             .mapToLong(instance -> instance.getResources()
                     .stream()
@@ -1007,7 +1006,7 @@ public class ControllerUtils {
         .sum();
     }
 
-    public static <T extends DeployedInstanceInfo> long totalMemoryFromInstances(DeploymentSpec spec, List<T> instances) {
+    public static <T extends DeployedInstanceInfo> long totalMemoryFromInstances(List<T> instances) {
         return instances.stream()
             .mapToLong(instance -> instance.getResources()
                     .stream()
@@ -1036,7 +1035,7 @@ public class ControllerUtils {
         .sum();
     }
 
-    public static <T extends DeployedInstanceInfo> long totalGPUFromInstances(DeploymentSpec spec, List<T> instances) {
+    public static <T extends DeployedInstanceInfo> long totalGPUFromInstances(List<T> instances) {
         return instances.stream()
             .mapToLong(instance -> instance.getResources()
                     .stream()
@@ -1447,9 +1446,9 @@ public class ControllerUtils {
             final ApplicationLifecycleManagementEngine applicationEngine,
             final List<InstanceInfo> healthyInstances) {
         val spec = info.getSpec();
-        val cpus = totalCPUFromInstances(spec, healthyInstances);
-        val memory = totalMemoryFromInstances(spec, healthyInstances);
-        val gpu = totalGPUFromInstances(spec, healthyInstances);
+        val cpus = totalCPUFromInstances(healthyInstances);
+        val memory = totalMemoryFromInstances(healthyInstances);
+        val gpu = totalGPUFromInstances(healthyInstances);
         return new AppSummary(info.getAppId(),
                               spec.getName(),
                               info.getInstances(),

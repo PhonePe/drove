@@ -34,7 +34,7 @@ import javax.validation.constraints.Min;
 @NoArgsConstructor
 public class OverProvisioning {
 
-    public static boolean DEFAULT_ENABLED = false;
+    public static final boolean DEFAULT_ENABLED = false;
     public static final int DEFAULT_MULTIPLIER = 1;
     private static final int MIN_OVER_PROVISIONING_MULTIPLIER = 1;
     private static final int MAX_OVER_PROVISIONING_MULTIPLIER = 20;
