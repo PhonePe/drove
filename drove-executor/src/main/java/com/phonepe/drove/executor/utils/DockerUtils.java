@@ -779,8 +779,7 @@ public class DockerUtils {
                                : executorOptions.getMaxOpenFiles();
         if (null == securityProfile) {
             log.warn("No security profile specified for deployment unit: {}", id);
-            return hostConfig
-                    .withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
+            return setUlimits(hostConfig, maxOpenFiles);
         }
         if (Boolean.TRUE.equals(securityProfile.getEnablePrivilegedMode())) {
             hostConfig.withPrivileged(true);
@@ -816,12 +815,11 @@ public class DockerUtils {
             log.info("Capabilities dropped for deployment unit {}: {}", id, droppedCaps);
         }
         if (securityProfile.getMaxOpenFiles() > 0) {
-            hostConfig.withUlimits(List.of(new Ulimit("nofile", securityProfile.getMaxOpenFiles(),
-                                                      securityProfile.getMaxOpenFiles())));
+            setUlimits(hostConfig, securityProfile.getMaxOpenFiles());
             log.info("Max open files for deployment unit {}: {}", id, securityProfile.getMaxOpenFiles());
         }
         else {
-            hostConfig.withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
+            setUlimits(hostConfig, maxOpenFiles);
             log.info("No max open files specified for deployment unit: {}. Using default: {}", id, maxOpenFiles);
         }
         if (!Strings.isNullOrEmpty(securityProfile.getSeccompProfile())) {
@@ -831,6 +829,11 @@ public class DockerUtils {
         else {
             log.info("No seccomp profile specified for deployment unit: {}", id);
         }
+        return hostConfig;
+    }
+
+    private static HostConfig setUlimits(HostConfig hostConfig, long maxOpenFiles) {
+        hostConfig.withUlimits(List.of(new Ulimit("nofile", maxOpenFiles, maxOpenFiles)));
         return hostConfig;
     }
 
