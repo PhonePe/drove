@@ -117,7 +117,10 @@ public class ApplicationSpec implements DeploymentSpec {
 
     @Valid
     @Schema(description = "Exposure specification for external access and load balancing")
-    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
+    @JsonFormat(with = {
+        JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
+        JsonFormat.Feature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED
+    })
     List<ExposureSpec> exposureSpec;
 
     @Valid
