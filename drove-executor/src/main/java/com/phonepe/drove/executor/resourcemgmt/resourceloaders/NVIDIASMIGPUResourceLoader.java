@@ -33,7 +33,7 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         try {
             xmlOutput = queryNvidiaSMI();
         } catch (Exception e) {
-            if (e.getMessage() != null && e.getMessage().contains("error=2")) {
+            if (e instanceof IOException ioException && CommandUtils.isCommandNotFound(ioException)) {
                 log.info("nvidia-smi command not found. This likely means that there is no NVIDIA GPU present in the system or the NVIDIA drivers are not installed. Returning empty GPU list.");
                 return List.of();
             }

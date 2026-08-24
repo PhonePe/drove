@@ -17,6 +17,7 @@
 package com.phonepe.drove.executor.managed;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.isCommandNotFound;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.XmlParsingUtils.parseXml;
 
@@ -112,6 +114,9 @@ public class NvidiaGpuMetricsCollector implements Managed {
         poller.disconnect(POLLER_HANDLER);
         poller.close();
         running = false;
+        metricRegistry.removeMatching(MetricFilter.startsWith(METRIC_PREFIX));
+        longMetrics.clear();
+        doubleMetrics.clear();
     }
 
     void collect(final Date now) {
@@ -126,7 +131,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
             log.info("Interrupted while collecting NVIDIA GPU metrics");
         } catch (IOException e) {
             setScrapeSuccess(false);
-            if (e.getMessage() != null && e.getMessage().contains("error=2")) {
+            if (isCommandNotFound(e)) {
                 log.info("nvidia-smi command not found; skipping NVIDIA GPU metrics collection");
                 return;
             }
@@ -351,7 +356,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
     }
 
     /** Lightweight helper for aggregating nullable numeric values. */
-    private static final class Aggregator<N extends Number> {
+    static final class Aggregator<N extends Number> {
         private double sum;
         private int count;
 

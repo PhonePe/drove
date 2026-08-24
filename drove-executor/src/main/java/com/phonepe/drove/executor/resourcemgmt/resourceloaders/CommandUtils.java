@@ -21,6 +21,17 @@ public class CommandUtils {
     }
 
     /**
+     * Checks whether the given {@link IOException} indicates that the command was not found
+     * (i.e., the binary does not exist on the system).
+     *
+     * @param e the exception thrown by {@link ProcessBuilder#start()}
+     * @return {@code true} if the error indicates the command was not found
+     */
+    public static boolean isCommandNotFound(final IOException e) {
+        return e.getMessage() != null && e.getMessage().contains("Cannot run program");
+    }
+
+    /**
      * Run the given command and returns the output lines
      *
      * @param commandWithArgs - command along with its arguments to run

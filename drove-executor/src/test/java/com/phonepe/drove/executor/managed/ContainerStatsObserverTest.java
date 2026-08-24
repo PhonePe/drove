@@ -53,7 +53,9 @@ class ContainerStatsObserverTest extends AbstractExecutorEngineEnabledTestBase {
         val statsObserver = new ContainerStatsObserver(METRIC_REGISTRY,
                                                        applicationInstanceEngine,
                                                        localServiceInstanceEngine,
-                                                       ExecutorTestingUtils.DOCKER_CLIENT, Duration.ofSeconds(1));
+                                                       ExecutorTestingUtils.DOCKER_CLIENT,
+                                                       mock(NvidiaGpuMetricsCollector.class),
+                                                       Duration.ofSeconds(1));
         statsObserver.start();
         val spec = ExecutorTestingUtils.testAppInstanceSpec();
         val instanceId = spec.getInstanceId();

@@ -434,14 +434,18 @@ public class ContainerStatsObserver implements Managed {
                 });
     }
 
-    private <T> io.appform.signals.signalhandlers.SignalConsumer<T> doubleGauge(
+    private <T> DoubleGauge<T> doubleGauge(
             final String name,
             final DeployedInstanceInfo instanceInfo,
             final ToDoubleFunction<T> generator) {
         val metricName = metricName(instanceInfo, name);
-        val gauge = new java.util.concurrent.atomic.AtomicReference<>(0D);
-        metricRegistry.register(metricName, (com.codahale.metrics.Gauge<Double>) gauge::get);
-        return data -> gauge.set(generator.applyAsDouble(data));
+        return metricRegistry.register(metricName,
+                new DoubleGauge<T>() {
+                    @Override
+                    public void consume(T data) {
+                        setValue(generator.applyAsDouble(data));
+                    }
+                });
     }
 
     static InstanceGpuMetrics aggregateGpuMetrics(
@@ -455,42 +459,50 @@ public class ContainerStatsObserver implements Managed {
                 .filter(sample -> allocatedGpuIds.contains(sample.gpuId()))
                 .toList();
         if (samples.isEmpty()) {
-            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D,  0L);
+            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0L);
         }
-        val memoryUtilAvg = samples.stream()
-                .mapToDouble(sample -> {
-                    if (sample.memoryUsedBytes() == null || sample.memoryTotalBytes() == null || sample.memoryTotalBytes() <= 0) {
-                        return 0D;
-                    }
-                    return (sample.memoryUsedBytes() * 100D) / sample.memoryTotalBytes();
-                })
-                .average()
-                .orElse(0D);
+        val gpuUtil = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val memBwUtil = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val memUsed = new NvidiaGpuMetricsCollector.Aggregator<Long>();
+        val memTotal = new NvidiaGpuMetricsCollector.Aggregator<Long>();
+        val memUtil = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val temp = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val power = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val memTemp = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val smClock = new NvidiaGpuMetricsCollector.Aggregator<Double>();
+        val thermal = new NvidiaGpuMetricsCollector.Aggregator<Long>();
+        for (val sample : samples) {
+            gpuUtil.add(sample.gpuUtilizationPct());
+            memBwUtil.add(sample.memoryBandwidthUtilizationPct());
+            memUsed.add(sample.memoryUsedBytes());
+            memTotal.add(sample.memoryTotalBytes());
+            memUtil.add(memoryUtilization(sample));
+            temp.add(sample.temperatureC());
+            power.add(sample.powerDrawWatts());
+            memTemp.add(sample.memoryTempC());
+            smClock.add(sample.smClockMhz());
+            thermal.add(sample.thermalThrottled());
+        }
         return new InstanceGpuMetrics(
                 allocatedGpuIds.size(),
                 samples.size(),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::
-                                gpuUtilizationPct).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).average().orElse(0D),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::
-                                memoryBandwidthUtilizationPct).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).average().orElse(0D),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryUsedBytes).filter(Objects::nonNull)
-                        .mapToLong(Long::longValue).sum(),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryTotalBytes).filter(Objects::nonNull)
-                        .mapToLong(Long::longValue).sum(),
-                memoryUtilAvg,
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::temperatureC).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).average().orElse(0D),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::powerDrawWatts).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).sum(),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::memoryTempC).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).average().orElse(0D),
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::smClockMhz).filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue).average().orElse(0D),
+                gpuUtil.averageOrZero(),
+                memBwUtil.averageOrZero(),
+                memUsed.sumOrZero(),
+                memTotal.sumOrZero(),
+                memUtil.averageOrZero(),
+                temp.averageOrZero(),
+                power.sumOrZero(),
+                memTemp.averageOrZero(),
+                smClock.averageOrZero(),
+                thermal.sumOrZero());
+    }
 
-                samples.stream().map(NvidiaGpuMetricsCollector.GpuSample::thermalThrottled).filter(Objects::nonNull)
-                        .mapToLong(Long::longValue).sum());
+    private static double memoryUtilization(final NvidiaGpuMetricsCollector.GpuSample sample) {
+        if (sample.memoryUsedBytes() == null || sample.memoryTotalBytes() == null || sample.memoryTotalBytes() <= 0) {
+            return 0D;
+        }
+        return (sample.memoryUsedBytes() * 100D) / sample.memoryTotalBytes();
     }
 
     @Value

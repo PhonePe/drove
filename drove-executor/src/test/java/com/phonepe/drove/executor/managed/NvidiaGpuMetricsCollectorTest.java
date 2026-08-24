@@ -242,6 +242,30 @@ class NvidiaGpuMetricsCollectorTest {
     }
 
     @Test
+    void testCommandNotFoundSetsScrapeSuccessToZero() {
+        MetricRegistry metricRegistry = new MetricRegistry();
+        ResourceConfig config = new ResourceConfig();
+        config.setNvidiaGPULoaderConfig(new NvidiaGPULoaderConfig(true));
+
+        ResourceManager resourceManager = mock(ResourceManager.class);
+        when(resourceManager.currentState()).thenReturn(new com.phonepe.drove.executor.resourcemgmt.ResourceInfo(
+                null, null, new AvailableGPU(List.of(), List.of()), null));
+
+        NvidiaGpuMetricsCollector collector =
+                new NvidiaGpuMetricsCollector(metricRegistry, config, resourceManager, Duration.ofSeconds(30)) {
+                    @Override
+                    String queryNvidiaSmi() throws IOException {
+                        throw new IOException("Cannot run program \"nvidia-smi\": error=2, No such file or directory");
+                    }
+                };
+
+        collector.collect(new Date());
+
+        assertEquals(0L,
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.scrape.success").getValue());
+    }
+
+    @Test
     void testStartDoesNothingWhenDisabled() {
         MetricRegistry metricRegistry = new MetricRegistry();
         ResourceConfig config = new ResourceConfig();
@@ -323,8 +347,8 @@ class NvidiaGpuMetricsCollectorTest {
         assertFalse(metricRegistry.getGauges().isEmpty());
 
         collector.stop();
-        // After stop, gauges still exist but poller is stopped
-        assertFalse(metricRegistry.getGauges().isEmpty());
+        // After stop, all GPU metrics should be removed
+        assertTrue(metricRegistry.getGauges().isEmpty());
     }
 
     @Test
