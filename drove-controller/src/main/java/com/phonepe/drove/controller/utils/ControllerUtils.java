@@ -552,6 +552,38 @@ public class ControllerUtils {
                 });
     }
 
+    public static int freeGpus(ExecutorHostInfo executor) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<>() {
+                    @Override
+                    public Integer visit(ControllerNodeData controllerData) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(ExecutorNodeData executorData) {
+                        val gpus = executorData.getState().getGpus();
+                        return gpus == null ? 0 : Objects.requireNonNullElse(gpus.getFreeGpus(), List.of()).size();
+                    }
+                });
+    }
+
+    public static int usedGpus(ExecutorHostInfo executor) {
+        return executor.getNodeData()
+                .accept(new NodeDataVisitor<>() {
+                    @Override
+                    public Integer visit(ControllerNodeData controllerData) {
+                        return 0;
+                    }
+
+                    @Override
+                    public Integer visit(ExecutorNodeData executorData) {
+                        val gpus = executorData.getState().getGpus();
+                        return gpus == null ? 0 : Objects.requireNonNullElse(gpus.getUsedGpus(), List.of()).size();
+                    }
+                });
+    }
+
     public static <T> Response ok(final T data) {
         return Response.ok(ApiResponse.success(data)).build();
     }
@@ -940,11 +972,15 @@ public class ControllerUtils {
         var usedCores = 0;
         var freeMemory = 0L;
         var usedMemory = 0L;
+        var freeGpus = 0;
+        var usedGpus = 0;
         for (val executor : executors) {
             usedCores += usedCores(executor);
             freeCores += freeCores(executor);
             freeMemory += freeMemory(executor);
             usedMemory += usedMemory(executor);
+            freeGpus += freeGpus(executor);
+            usedGpus += usedGpus(executor);
         }
         return new ClusterResourcesDB.ClusterResourcesSummary(executors.size(),
                                                               freeCores,
@@ -952,7 +988,10 @@ public class ControllerUtils {
                                                               freeCores + usedCores,
                                                               freeMemory,
                                                               usedMemory,
-                                                              freeMemory + usedMemory);
+                                                              freeMemory + usedMemory,
+                                                              freeGpus,
+                                                              usedGpus,
+                                                              freeGpus + usedGpus);
     }
 
     public static long totalMemory(DeploymentSpec spec, long instances) {

@@ -49,6 +49,9 @@ public abstract class ClusterResourcesDB {
         long freeMemory;
         long usedMemory;
         long totalMemory;
+        int freeGpus;
+        int usedGpus;
+        int totalGpus;
     }
 
     @Value
