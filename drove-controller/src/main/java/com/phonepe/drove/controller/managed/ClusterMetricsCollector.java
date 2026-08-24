@@ -180,6 +180,9 @@ public class ClusterMetricsCollector implements Managed, ServerLifecycleListener
         metricsRegistry.setGaugeValue(CLUSTER_MEMORY_FREE, clusterResources.getFreeMemory());
         metricsRegistry.setGaugeValue(CLUSTER_MEMORY_USED, clusterResources.getUsedMemory());
         metricsRegistry.setGaugeValue(CLUSTER_MEMORY_TOTAL, clusterResources.getTotalMemory());
+        metricsRegistry.setGaugeValue(CLUSTER_GPU_FREE, clusterResources.getFreeGpus());
+        metricsRegistry.setGaugeValue(CLUSTER_GPU_USED, clusterResources.getUsedGpus());
+        metricsRegistry.setGaugeValue(CLUSTER_GPU_TOTAL, clusterResources.getTotalGpus());
 
         metricsRegistry.setGaugeValue(CLUSTER_EXECUTORS_ACTIVE, activeExecutorsCount);
         metricsRegistry.setGaugeValue(CLUSTER_EXECUTORS_INACTIVE, inactiveExecutorsCount);
