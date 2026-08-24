@@ -20,6 +20,8 @@ import com.phonepe.drove.models.common.ClusterState;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
+import java.util.Map;
+
 /**
  * Summary view of the cluster state
  */
@@ -67,4 +69,7 @@ public class ClusterSummary {
 
     @Schema(description = "Total memory in bytes available in the cluster", example = "429496729600")
     long totalMemory;
+
+    @Schema(description = "GPU count by vendor across all executors. Empty when no GPUs are present.")
+    Map<String, Integer> gpuSummary;
 }

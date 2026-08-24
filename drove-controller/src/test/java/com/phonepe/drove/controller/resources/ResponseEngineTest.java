@@ -415,7 +415,8 @@ class ResponseEngineTest {
                 150,
                 102400,
                 51200,
-                153600);
+                153600,
+                java.util.Map.of());
 
         val dashboardData = com.phonepe.drove.models.api.DashboardData.builder()
                 .clusterSummary(clusterSummary)
@@ -752,7 +753,8 @@ class ResponseEngineTest {
                         150,
                         102400,
                         51200,
-                        153600))
+                        153600,
+                        java.util.Map.of()))
                 .appStats(DashboardData.AppStats.builder()
                         .appCountByState(Map.of(ApplicationState.RUNNING, 90L))
                         .topApps(List.of())

@@ -584,6 +584,29 @@ public class ControllerUtils {
                 });
     }
 
+    private static void gpuVendorCounts(ExecutorHostInfo executor, Map<String, Integer> accumulator) {
+        executor.getNodeData().accept(new NodeDataVisitor<Void>() {
+            @Override
+            public Void visit(ControllerNodeData controllerData) {
+                return null;
+            }
+
+            @Override
+            public Void visit(ExecutorNodeData executorData) {
+                val layout = executorData.getState().getLayout();
+                if (layout != null && layout.getGpus() != null) {
+                    for (val gpuInfo : layout.getGpus().values()) {
+                        if (gpuInfo != null && gpuInfo.getGpuVendor() != null) {
+                            val vendor = gpuInfo.getGpuVendor().name();
+                            accumulator.merge(vendor, 1, Integer::sum);
+                        }
+                    }
+                }
+                return null;
+            }
+        });
+    }
+
     public static <T> Response ok(final T data) {
         return Response.ok(ApiResponse.success(data)).build();
     }
@@ -974,6 +997,7 @@ public class ControllerUtils {
         var usedMemory = 0L;
         var freeGpus = 0;
         var usedGpus = 0;
+        val gpuSummary = new HashMap<String, Integer>();
         for (val executor : executors) {
             usedCores += usedCores(executor);
             freeCores += freeCores(executor);
@@ -981,6 +1005,7 @@ public class ControllerUtils {
             usedMemory += usedMemory(executor);
             freeGpus += freeGpus(executor);
             usedGpus += usedGpus(executor);
+            gpuVendorCounts(executor, gpuSummary);
         }
         return new ClusterResourcesDB.ClusterResourcesSummary(executors.size(),
                                                               freeCores,
@@ -991,7 +1016,8 @@ public class ControllerUtils {
                                                               freeMemory + usedMemory,
                                                               freeGpus,
                                                               usedGpus,
-                                                              freeGpus + usedGpus);
+                                                              freeGpus + usedGpus,
+                                                              gpuSummary);
     }
 
     public static long totalMemory(DeploymentSpec spec, long instances) {
@@ -1577,7 +1603,8 @@ public class ControllerUtils {
                         resourceSummary.getTotalCores(),
                         resourceSummary.getFreeMemory(),
                         resourceSummary.getUsedMemory(),
-                        resourceSummary.getTotalMemory());
+                        resourceSummary.getTotalMemory(),
+                        resourceSummary.getGpuSummary());
  
     }
 

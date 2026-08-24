@@ -52,6 +52,7 @@ public abstract class ClusterResourcesDB {
         int freeGpus;
         int usedGpus;
         int totalGpus;
+        Map<String, Integer> gpuSummary;
     }
 
     @Value

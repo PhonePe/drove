@@ -466,7 +466,7 @@ class ControllerUtilsTest {
         );
 
         val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
-                10, 40, 20, 60, 102400, 51200, 153600, 0, 0, 0);
+                10, 40, 20, 60, 102400, 51200, 153600, 0, 0, 0, java.util.Map.of());
 
         val summary = ControllerUtils.computeClusterSummary(
                 leadershipObserver, clusterStateDB, applications, tasks, localServices,
@@ -500,7 +500,7 @@ class ControllerUtilsTest {
         val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
 
         val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
-                5, 10, 5, 15, 51200, 25600, 76800, 0, 0, 0);
+                5, 10, 5, 15, 51200, 25600, 76800, 0, 0, 0, java.util.Map.of());
 
         val summary = ControllerUtils.computeClusterSummary(
                 leadershipObserver, clusterStateDB, List.of(), List.of(), List.of(),

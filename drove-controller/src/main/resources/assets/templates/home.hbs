@@ -51,6 +51,16 @@
                     </div>
                 </div>
             </div>
+            <!-- GPUs (only shown when GPUs exist) -->
+            <div class="col-6 col-md-4 col-xl-2" id="dash-gpu-card" style="display:none;">
+                <div class="card h-100 text-center dash-stat-card">
+                    <div class="card-body py-3">
+                        <div class="text-body-secondary small mb-1 fw-bold">GPUs</div>
+                        <div id="dash-gpu-text" class="fs-5 fw-bold">—</div>
+                        <div id="dash-gpu-vendors" class="text-body-secondary mt-1" style="font-size:0.72rem;"></div>
+                    </div>
+                </div>
+            </div>
             <!-- Applications -->
             <div class="col-6 col-md-4 col-xl-2">
                 <div class="card h-100 text-center dash-stat-card">
@@ -342,6 +352,21 @@
         $('#dash-mem-text').text(bytesToString(d.usedMemory) + ' / ' + bytesToString(d.totalMemory));
         updateProgress('#dash-mem-bar', d.usedMemory, 0, d.totalMemory);
         $('#dash-mem-free').text(bytesToString(d.freeMemory) + ' free');
+
+        // GPUs (only shown when GPUs exist)
+        if (d.gpuSummary && Object.keys(d.gpuSummary).length > 0) {
+            var gpuTotal = 0;
+            var vendorParts = [];
+            for (var vendor in d.gpuSummary) {
+                gpuTotal += d.gpuSummary[vendor];
+                vendorParts.push(vendor + ': ' + d.gpuSummary[vendor]);
+            }
+            $('#dash-gpu-text').text(gpuTotal);
+            $('#dash-gpu-vendors').text(vendorParts.join(', '));
+            $('#dash-gpu-card').show();
+        } else {
+            $('#dash-gpu-card').hide();
+        }
 
         // Applications
         $('#dash-apps-active').text(d.numActiveApplications);

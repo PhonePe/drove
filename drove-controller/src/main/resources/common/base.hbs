@@ -324,6 +324,14 @@
             </div>
             <span id="fc-mem">—</span>
         </span>
+        <!-- GPUs (only shown when GPUs exist) -->
+        <span class="d-flex align-items-center gap-1 opacity-75" id="fc-gpu-wrap" style="display:none;" data-bs-toggle="tooltip" data-bs-placement="top" title="GPUs (total)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-gpu-card flex-shrink-0" viewBox="0 0 16 16">
+                <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8Z"/>
+                <path d="M2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2ZM1 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4Z"/>
+            </svg>
+            <span id="fc-gpu">—</span>
+        </span>
         <!-- Apps -->
         <span class="d-flex align-items-center gap-1 opacity-75" data-bs-toggle="tooltip" data-bs-placement="top" title="Apps (active/total)">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" class="bi bi-grid flex-shrink-0" viewBox="0 0 16 16">
@@ -518,6 +526,19 @@
 
             updateProgress('#fc-mem-bar', d.usedMemory, 0, d.totalMemory);
             $('#fc-mem').text(bytesToString(d.usedMemory) + '/' + bytesToString(d.totalMemory));
+
+            if (d.gpuSummary && Object.keys(d.gpuSummary).length > 0) {
+                var gpuTotal = 0;
+                var vendorParts = [];
+                for (var vendor in d.gpuSummary) {
+                    gpuTotal += d.gpuSummary[vendor];
+                    vendorParts.push(vendor + ': ' + d.gpuSummary[vendor]);
+                }
+                $('#fc-gpu').text(gpuTotal);
+                $('#fc-gpu-wrap').attr('title', 'GPUs — ' + vendorParts.join(', ')).show();
+            } else {
+                $('#fc-gpu-wrap').hide();
+            }
 
             $('#fc-apps').text(d.numActiveApplications + '/' + d.numApplications);
             $('#fc-tasks').text(d.numActiveTasks);
