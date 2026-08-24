@@ -29,6 +29,9 @@ public final class ClusterMetricNames {
         public static final String CLUSTER_CPU_USED = "cluster.resources.cpu.used";
         public static final String CLUSTER_CPU_FREE = "cluster.resources.cpu.free";
         public static final String CLUSTER_CPU_TOTAL = "cluster.resources.cpu.total";
+        public static final String CLUSTER_GPU_USED = "cluster.resources.gpu.used";
+        public static final String CLUSTER_GPU_FREE = "cluster.resources.gpu.free";
+        public static final String CLUSTER_GPU_TOTAL = "cluster.resources.gpu.total";
         public static final String CLUSTER_MEMORY_USED = "cluster.resources.memory.used_mb";
         public static final String CLUSTER_MEMORY_FREE = "cluster.resources.memory.free_mb";
         public static final String CLUSTER_MEMORY_TOTAL = "cluster.resources.memory.total_mb";
