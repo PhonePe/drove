@@ -133,39 +133,39 @@ class NvidiaGpuMetricsCollectorTest {
                 new NvidiaGpuMetricsCollector.GpuSample("GPU-2222-BBBB", 30D, 60D,200L, 2000L, 52D, 150D, 58D, 1350D, 1L)
         )));
 
-        assertEquals(2L, metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.count").getValue());
+        assertEquals(2L, metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_count").getValue());
         assertEquals(50D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.utilization.gpu.average_percentage").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_utilization_average_percentage").getValue());
         assertEquals(300L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.memory.used.total_bytes").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_memory_used_total_bytes").getValue());
         assertEquals(3000L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.memory.total.total_bytes").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_memory_total_total_bytes").getValue());
         assertEquals(2L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.free_count").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_free_count").getValue());
         assertEquals(1L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.used_count").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_used_count").getValue());
         assertEquals(70D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.utilization.gpu_percentage").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_utilization_percentage").getValue());
         assertEquals(10D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.memory.utilization_percentage").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_memory_utilization_percentage").getValue());
         assertEquals(59D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.memory.temperature.average_celsius").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_memory_temperature_average_celsius").getValue());
         assertEquals(1375D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.sm_clock.average_mhz").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_sm_clock_average_mhz").getValue());
         assertEquals(35D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.memory.controller_utilization.average_percentage").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_memory_controller_utilization_average_percentage").getValue());
         assertEquals(1L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.thermal.throttle_count").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_thermal_throttle_count").getValue());
         assertEquals(60D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.memory.temperature.celsius").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_memory_temperature_celsius").getValue());
         assertEquals(1400D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.sm_clock.mhz").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_sm_clock_mhz").getValue());
         assertEquals(10D,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.memory.controller_utilization.percentage").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_memory_controller_utilization_percentage").getValue());
         assertEquals(0L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_1111_AAAA.thermal.throttled").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_thermal_throttled").getValue());
         assertEquals(1L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.device.GPU_2222_BBBB.thermal.throttled").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_2222_BBBB_thermal_throttled").getValue());
     }
 
     @Test
@@ -189,7 +189,7 @@ class NvidiaGpuMetricsCollectorTest {
         collector.collect(new Date());
 
         assertEquals(0L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.scrape.success").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_scrape_success").getValue());
     }
 
     @Test
@@ -213,7 +213,7 @@ class NvidiaGpuMetricsCollectorTest {
         collector.collect(new Date());
 
         assertEquals(0L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.scrape.success").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_scrape_success").getValue());
         assertTrue(Thread.interrupted(), "Thread should be re-interrupted after InterruptedException");
     }
 
@@ -238,7 +238,7 @@ class NvidiaGpuMetricsCollectorTest {
         collector.collect(new Date());
 
         assertEquals(0L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.scrape.success").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_scrape_success").getValue());
     }
 
     @Test
@@ -262,7 +262,7 @@ class NvidiaGpuMetricsCollectorTest {
         collector.collect(new Date());
 
         assertEquals(0L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu.scrape.success").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_scrape_success").getValue());
     }
 
     @Test

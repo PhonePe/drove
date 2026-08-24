@@ -124,7 +124,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
         try {
             publish(parseSnapshot(queryNvidiaSmi()));
             setScrapeSuccess(true);
-            updateLongMetric(METRIC_PREFIX + ".scrape.last_success_epoch_ms", System.currentTimeMillis());
+            updateLongMetric(METRIC_PREFIX + "_scrape_last_success_epoch_ms", System.currentTimeMillis());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             setScrapeSuccess(false);
@@ -140,7 +140,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
             setScrapeSuccess(false);
             log.warn("Error parsing NVIDIA GPU metrics", e);
         } finally {
-            updateLongMetric(METRIC_PREFIX + ".scrape.duration_ms", stopwatch.elapsed().toMillis());
+            updateLongMetric(METRIC_PREFIX + "_scrape_duration_ms", stopwatch.elapsed().toMillis());
         }
     }
 
@@ -151,7 +151,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
     void publish(final Snapshot snapshot) {
         latestSnapshot = snapshot;
         val gpus = snapshot.gpus();
-        updateLongMetric(METRIC_PREFIX + ".count", gpus.size());
+        updateLongMetric(METRIC_PREFIX + "_count", gpus.size());
 
         // Single-pass aggregation for all numeric fields
         val gpuUtil = new Aggregator<Double>();
@@ -172,30 +172,30 @@ public class NvidiaGpuMetricsCollector implements Managed {
             thermal.add(gpu.thermalThrottled());
         }
 
-        updateDoubleMetric(METRIC_PREFIX + ".utilization.gpu.average_percentage", gpuUtil.averageOrZero());
-        updateDoubleMetric(METRIC_PREFIX + ".memory.controller_utilization.average_percentage", memCtrlUtil.averageOrZero());
-        updateLongMetric(METRIC_PREFIX + ".memory.used.total_bytes", memUsed.sumOrZero());
-        updateLongMetric(METRIC_PREFIX + ".memory.total.total_bytes", memTotal.sumOrZero());
-        updateDoubleMetric(METRIC_PREFIX + ".memory.temperature.average_celsius", memTemp.averageOrZero());
-        updateDoubleMetric(METRIC_PREFIX + ".sm_clock.average_mhz", smClock.averageOrZero());
-        updateLongMetric(METRIC_PREFIX + ".thermal.throttle_count", thermal.sumOrZero());
+        updateDoubleMetric(METRIC_PREFIX + "_utilization_average_percentage", gpuUtil.averageOrZero());
+        updateDoubleMetric(METRIC_PREFIX + "_memory_controller_utilization_average_percentage", memCtrlUtil.averageOrZero());
+        updateLongMetric(METRIC_PREFIX + "_memory_used_total_bytes", memUsed.sumOrZero());
+        updateLongMetric(METRIC_PREFIX + "_memory_total_total_bytes", memTotal.sumOrZero());
+        updateDoubleMetric(METRIC_PREFIX + "_memory_temperature_average_celsius", memTemp.averageOrZero());
+        updateDoubleMetric(METRIC_PREFIX + "_sm_clock_average_mhz", smClock.averageOrZero());
+        updateLongMetric(METRIC_PREFIX + "_thermal_throttle_count", thermal.sumOrZero());
 
         val state = resourceManager.currentState().getGpuInfo();
-        updateLongMetric(METRIC_PREFIX + ".free_count", state.getFreeGpus().size());
-        updateLongMetric(METRIC_PREFIX + ".used_count", state.getUsedGpus().size());
+        updateLongMetric(METRIC_PREFIX + "_free_count", state.getFreeGpus().size());
+        updateLongMetric(METRIC_PREFIX + "_used_count", state.getUsedGpus().size());
 
         for (val gpu : gpus) {
-            val prefix = METRIC_PREFIX + ".device." + sanitizeDimension(gpu.gpuId()) + ".";
-            updateDoubleMetric(prefix + "utilization.gpu_percentage", Objects.requireNonNullElse(gpu.gpuUtilizationPct(), 0D));
-            updateDoubleMetric(prefix + "memory.controller_utilization.percentage", Objects.requireNonNullElse(gpu.memoryBandwidthUtilizationPct(), 0D));
-            updateLongMetric(prefix + "memory.used_bytes", Objects.requireNonNullElse(gpu.memoryUsedBytes(), 0L));
-            updateLongMetric(prefix + "memory.total_bytes", Objects.requireNonNullElse(gpu.memoryTotalBytes(), 0L));
-            updateDoubleMetric(prefix + "memory.utilization_percentage", memoryUtilization(gpu));
-            updateDoubleMetric(prefix + "temperature.celsius", Objects.requireNonNullElse(gpu.temperatureC(), 0D));
-            updateDoubleMetric(prefix + "power.draw_watts", Objects.requireNonNullElse(gpu.powerDrawWatts(), 0D));
-            updateDoubleMetric(prefix + "memory.temperature.celsius", Objects.requireNonNullElse(gpu.memoryTempC(), 0D));
-            updateDoubleMetric(prefix + "sm_clock.mhz", Objects.requireNonNullElse(gpu.smClockMhz(), 0D));
-            updateLongMetric(prefix + "thermal.throttled", Objects.requireNonNullElse(gpu.thermalThrottled(), 0L));
+            val prefix = METRIC_PREFIX + "_device_" + sanitizeDimension(gpu.gpuId()) + "_";
+            updateDoubleMetric(prefix + "utilization_percentage", Objects.requireNonNullElse(gpu.gpuUtilizationPct(), 0D));
+            updateDoubleMetric(prefix + "memory_controller_utilization_percentage", Objects.requireNonNullElse(gpu.memoryBandwidthUtilizationPct(), 0D));
+            updateLongMetric(prefix + "memory_used_bytes", Objects.requireNonNullElse(gpu.memoryUsedBytes(), 0L));
+            updateLongMetric(prefix + "memory_total_bytes", Objects.requireNonNullElse(gpu.memoryTotalBytes(), 0L));
+            updateDoubleMetric(prefix + "memory_utilization_percentage", memoryUtilization(gpu));
+            updateDoubleMetric(prefix + "temperature_celsius", Objects.requireNonNullElse(gpu.temperatureC(), 0D));
+            updateDoubleMetric(prefix + "power_draw_watts", Objects.requireNonNullElse(gpu.powerDrawWatts(), 0D));
+            updateDoubleMetric(prefix + "memory_temperature_celsius", Objects.requireNonNullElse(gpu.memoryTempC(), 0D));
+            updateDoubleMetric(prefix + "sm_clock_mhz", Objects.requireNonNullElse(gpu.smClockMhz(), 0D));
+            updateLongMetric(prefix + "thermal_throttled", Objects.requireNonNullElse(gpu.thermalThrottled(), 0L));
         }
     }
 
@@ -310,7 +310,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
     // ------------------------------------------------------------------
 
     private void setScrapeSuccess(final boolean success) {
-        updateLongMetric(METRIC_PREFIX + ".scrape.success", success ? 1L : 0L);
+        updateLongMetric(METRIC_PREFIX + "_scrape_success", success ? 1L : 0L);
     }
 
     private void updateLongMetric(final String metricName, final long value) {
