@@ -16,18 +16,18 @@
 
 package com.phonepe.drove.executor;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.discovery.ControllerConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+
 import io.dropwizard.Configuration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
-import javax.annotation.Nullable;
-import javax.validation.Valid;
 
 /**
  *
@@ -36,9 +36,9 @@ import javax.validation.Valid;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class AppConfig extends Configuration {
-    @Nullable
+    @NotNull
     @Valid
-    private ZkConfig zookeeper;
+    private ControllerConfig controllers;
 
     @Valid
     private ResourceConfig resources;
@@ -51,7 +51,4 @@ public class AppConfig extends Configuration {
 
     @Valid
     private DockerAuthConfig dockerAuth;
-
-    @Valid
-    private ControllerConfig controllers;
 }

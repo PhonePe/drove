@@ -16,6 +16,14 @@
 
 package com.phonepe.drove.executor;
 
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.SynchronousQueue;
+
+import javax.annotation.Nullable;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
@@ -31,44 +39,44 @@ import com.google.inject.name.Names;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.ControllerMessageType;
 import com.phonepe.drove.common.model.controller.ControllerMessage;
 import com.phonepe.drove.common.net.MessageSender;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.executor.discovery.ControllerConfig;
 import com.phonepe.drove.executor.discovery.RemoteLeadershipObserver;
 import com.phonepe.drove.executor.discovery.RemoteNodeDataStore;
-import com.phonepe.drove.executor.discovery.RemoteUpdateMode;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
-import com.phonepe.drove.executor.engine.*;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
+import com.phonepe.drove.executor.engine.RemoteControllerMessageSender;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.logging.LogInfo;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.resourcemgmt.PerformanceScalingConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.resourcemgmt.metadata.MetadataConfig;
-
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.CompositeGPUResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ExecutorResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.ExecutorResourceLoaderImpl;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.GPUResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NVIDIASMIGPUResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NoOpGPUResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaActivationNumaResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaCtlBasedNumaResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.NumaResourceLoader;
+import com.phonepe.drove.executor.resourcemgmt.resourceloaders.OverProvisioningNumaResourceLoader;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
-import com.phonepe.drove.executor.resourcemgmt.resourceloaders.*;
+
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-
-import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.SynchronousQueue;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -87,6 +95,8 @@ public class ExecutorCoreModule extends AbstractModule {
                 .to(OverProvisioningNumaResourceLoader.class);
         bind(NumaResourceLoader.class).to(NumaActivationNumaResourceLoader.class);
         bind(ExecutorResourceLoader.class).to(ExecutorResourceLoaderImpl.class);
+        bind(NodeDataStore.class).to(RemoteNodeDataStore.class);
+        bind(LeadershipObserver.class).to(RemoteLeadershipObserver.class);
     }
 
     @Provides
@@ -186,37 +196,6 @@ public class ExecutorCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    @Nullable
-    public ZkConfig zkConfig(
-            final AppConfig appConfig,
-            RemoteUpdateMode remoteUpdateMode) {
-        val zkConfig = appConfig.getZookeeper();
-        if (remoteUpdateMode.equals(RemoteUpdateMode.STORE)) {
-            if (null == zkConfig) {
-                throw new IllegalArgumentException(
-                        "Zookeeper configuration is mandatory if update mode is set to 'STORE'");
-            }
-        }
-        else {
-            log.warn("Ignoring zookeeper configuration as update mode is set to " + remoteUpdateMode.name());
-            return null;
-        }
-        return zkConfig;
-    }
-
-    @Provides
-    @Singleton
-    @Nullable
-    public CuratorFramework curator(@Nullable ZkConfig zkConfig) {
-        if (null == zkConfig) {
-            log.info("No zookeeper config provided. Curator will not be created.");
-            return null;
-        }
-        return CommonUtils.buildCurator(zkConfig);
-    }
-
-    @Provides
-    @Singleton
     public ResourceConfig resourceConfig(final AppConfig appConfig) {
         return Objects.requireNonNullElse(appConfig.getResources(), ResourceConfig.DEFAULT);
     }
@@ -286,60 +265,10 @@ public class ExecutorCoreModule extends AbstractModule {
     }
 
     @Provides
-    public RemoteUpdateMode updateMode(final AppConfig appConfig) {
-        return Objects.requireNonNullElse(
-                Objects.requireNonNullElse(appConfig.getOptions(), ExecutorOptions.DEFAULT).getRemoteUpdateMode(),
-                ExecutorOptions.DEFAULT_UPDATE_MODE);
-    }
-
-    @Provides
-    @Singleton
-    public NodeDataStore nodeDataStore(
-            final RemoteUpdateMode updateMode,
-            @Nullable final CuratorFramework curatorFramework,
-            final ObjectMapper mapper,
-            final ExecutorCommunicator executorCommunicator) {
-        return switch (updateMode) {
-            case STORE -> new ZkNodeDataStore(curatorFramework, mapper);
-            case RPC -> new RemoteNodeDataStore(executorCommunicator);
-        };
-    }
-
-    @Provides
-    @Singleton
-    public LeadershipObserver leadershipObserver(
-            final RemoteUpdateMode updateMode,
-            final NodeDataStore nodeDataStore,
-            @Nullable final ControllerConfig controllerConfig,
-            @Named("ControllerHttpClient") final CloseableHttpClient httpClient) {
-        return switch (updateMode) {
-            case STORE -> new ZkLeadershipObserver(nodeDataStore);
-            case RPC -> new RemoteLeadershipObserver(Objects.requireNonNull(controllerConfig),
-                                                     httpClient,
-                                                     Objects.requireNonNullElse(controllerConfig.getLeadershipCheckInterval(),
-                                                                                ControllerConfig.DEFAULT_CHECK_INTERVAL)
-                                                             .toJavaDuration());
-        };
-    }
-
-    @Provides
     @Singleton
     @Nullable
-    public ControllerConfig controllerConfig(
-            final RemoteUpdateMode updateMode,
-            final AppConfig appConfig) {
-        val controllerConfig = appConfig.getControllers();
-        if (updateMode.equals(RemoteUpdateMode.RPC)) {
-            if (null == controllerConfig) {
-                throw new IllegalArgumentException("Controller configuration is mandatory if update mode is set to " +
-                                                           "'RPC");
-            }
-        }
-        else {
-            log.warn("Ignoring controller config as update mode is set to STORE");
-            return null;
-        }
-        return controllerConfig;
+    public ControllerConfig controllerConfig(final AppConfig appConfig) {
+        return appConfig.getControllers();
     }
 
     @Provides

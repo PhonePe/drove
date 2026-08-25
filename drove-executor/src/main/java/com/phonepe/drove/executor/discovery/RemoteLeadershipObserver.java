@@ -16,24 +16,30 @@
 
 package com.phonepe.drove.executor.discovery;
 
+import java.net.URL;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.StampedLock;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import javax.ws.rs.core.UriBuilder;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
-import io.appform.signals.signals.ScheduledSignal;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import javax.inject.Singleton;
-import javax.ws.rs.core.UriBuilder;
-import java.net.URL;
-import java.time.Duration;
-import java.util.Date;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.StampedLock;
+import io.appform.signals.signals.ScheduledSignal;
+import lombok.NonNull;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Checks for cluster leader by pinging the specified controllers in the cluster.
@@ -52,13 +58,15 @@ public class RemoteLeadershipObserver implements LeadershipObserver {
     private final StampedLock leaderLock = new StampedLock();
     private final ScheduledSignal scheduledSignal;
 
+    @Inject
     public RemoteLeadershipObserver(
-            ControllerConfig controllerConfig,
-            CloseableHttpClient httpClient,
-            Duration checkInterval) {
+            @NonNull final ControllerConfig controllerConfig,
+            @Named("ControllerHttpClient") CloseableHttpClient httpClient) {
         this.controllerConfig = controllerConfig;
         this.httpClient = httpClient;
-        this.scheduledSignal = new ScheduledSignal(checkInterval);
+        val interval = Objects.requireNonNullElse(controllerConfig.getLeadershipCheckInterval(),
+                ControllerConfig.DEFAULT_CHECK_INTERVAL);
+        this.scheduledSignal = new ScheduledSignal(interval.toJavaDuration());
     }
 
     @Override

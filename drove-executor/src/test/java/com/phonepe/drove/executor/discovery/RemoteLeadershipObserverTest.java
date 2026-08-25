@@ -16,6 +16,19 @@
 
 package com.phonepe.drove.executor.discovery;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.badRequest;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.List;
+import java.util.stream.Stream;
+
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
@@ -23,8 +36,8 @@ import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.NodeData;
-import lombok.SneakyThrows;
-import lombok.val;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,15 +45,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.time.Duration;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import lombok.SneakyThrows;
+import lombok.val;
 
 /**
  * Tests {@link RemoteLeadershipObserver}
@@ -80,13 +86,14 @@ class RemoteLeadershipObserverTest {
         }
     }
 
+    @NotNull
     private static RemoteLeadershipObserver buildClient() throws MalformedURLException {
         return new RemoteLeadershipObserver(ControllerConfig.builder()
                                                     .endpoints(List.of(URI.create(controller1.baseUrl()).toURL(),
                                                                        URI.create(controller2.baseUrl()).toURL()))
+                                                    .leadershipCheckInterval(io.dropwizard.util.Duration.milliseconds(500))
                                                     .build(),
-                                            ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT),
-                                            Duration.ofMillis(500));
+                                            ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
     }
 
     @ParameterizedTest
