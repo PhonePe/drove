@@ -26,7 +26,6 @@ import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
@@ -37,6 +36,7 @@ import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingTaskActionFactory;
 import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
+import com.phonepe.drove.executor.discovery.RemoteLeadershipObserver;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
@@ -240,7 +240,7 @@ class TaskInstanceEngineStateMachineErrorTest extends AbstractTestBase {
             @Provides
             @Singleton
             public LeadershipObserver leadershipObserver() {
-                return mock(ZkLeadershipObserver.class);
+                return mock(RemoteLeadershipObserver.class);
             }
 
             @Provides

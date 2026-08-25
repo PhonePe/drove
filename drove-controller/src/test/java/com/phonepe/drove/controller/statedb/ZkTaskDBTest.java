@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
+import com.phonepe.drove.controller.zookeeper.ControllerZookeeperTestExtension;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  *
  */
-@ExtendWith(ZookeeperTestExtension.class)
+@ExtendWith(ControllerZookeeperTestExtension.class)
 class ZkTaskDBTest extends ControllerTestBase {
 
     @Test

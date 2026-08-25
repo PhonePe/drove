@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
+import static com.phonepe.drove.controller.zookeeper.ZkUtils.*;
 
 /**
  *

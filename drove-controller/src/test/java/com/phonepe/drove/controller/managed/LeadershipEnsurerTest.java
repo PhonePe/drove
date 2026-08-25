@@ -18,7 +18,7 @@ package com.phonepe.drove.controller.managed;
 
 import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeData;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.phonepe.drove.common.CommonUtils.buildCurator;
+import static com.phonepe.drove.controller.zookeeper.ControllerZkUtils.buildCurator;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

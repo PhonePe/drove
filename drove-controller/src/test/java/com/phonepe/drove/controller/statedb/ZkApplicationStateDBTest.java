@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
+import com.phonepe.drove.controller.zookeeper.ControllerZookeeperTestExtension;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  *
  */
-@ExtendWith(ZookeeperTestExtension.class)
+@ExtendWith(ControllerZookeeperTestExtension.class)
 class ZkApplicationStateDBTest extends ControllerTestBase {
 
     @Test

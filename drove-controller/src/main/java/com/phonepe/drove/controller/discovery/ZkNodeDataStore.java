@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.discovery;
+package com.phonepe.drove.controller.discovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.models.info.nodedata.NodeData;
 import com.phonepe.drove.models.info.nodedata.NodeType;
 import io.appform.functionmetrics.MonitoredFunction;

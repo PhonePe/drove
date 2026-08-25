@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.statedb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phonepe.drove.common.zookeeper.ZkUtils;
+import com.phonepe.drove.controller.zookeeper.ZkUtils;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.appform.functionmetrics.MonitoredFunction;
@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
+import static com.phonepe.drove.controller.zookeeper.ZkUtils.*;
 
 /**
  *

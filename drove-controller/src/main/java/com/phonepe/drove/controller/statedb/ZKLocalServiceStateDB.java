@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
+import static com.phonepe.drove.controller.zookeeper.ZkUtils.*;
 
 /**
  *

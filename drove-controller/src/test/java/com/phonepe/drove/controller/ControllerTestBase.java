@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import java.util.Map;
 
-import static com.phonepe.drove.common.CommonUtils.configureMapper;
+import static com.phonepe.drove.controller.zookeeper.ControllerZkUtils.configureMapper;
 
 /**
  *

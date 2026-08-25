@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
+import com.phonepe.drove.controller.zookeeper.ControllerZookeeperTestExtension;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  *
  */
-@ExtendWith(ZookeeperTestExtension.class)
+@ExtendWith(ControllerZookeeperTestExtension.class)
 class ZkClusterStateDBTest extends ControllerTestBase {
 
     @Test

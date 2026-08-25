@@ -25,9 +25,9 @@ import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
+import com.phonepe.drove.executor.discovery.RemoteLeadershipObserver;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
@@ -158,7 +158,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             @Provides
             @Singleton
             public LeadershipObserver leadershipObserver() {
-                return mock(ZkLeadershipObserver.class);
+                return mock(RemoteLeadershipObserver.class);
             }
 
             @Provides

@@ -16,165 +16,116 @@
 
 package com.phonepe.drove.executor.discovery;
 
-import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
-import com.phonepe.drove.models.info.nodedata.*;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.badRequest;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.List;
+
+import com.github.tomakehurst.wiremock.http.Fault;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.executor.utils.ExecutorUtils;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import lombok.SneakyThrows;
+import lombok.val;
 
 /**
- *
+ * Tests {@link ManagedLeadershipObserver} using {@link RemoteLeadershipObserver}
  */
-@Slf4j
 class ManagedLeadershipObserverTest {
+
+    @RegisterExtension
+    static WireMockExtension controller1 = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
+
+    @RegisterExtension
+    static WireMockExtension controller2 = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
+
+    @AfterEach
+    void reset() {
+        controller1.resetAll();
+        controller2.resetAll();
+    }
 
     @Test
     @SneakyThrows
     void testObserverSuccess() {
-        val nds = mock(NodeDataStore.class);
-        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(List.of(new ControllerNodeData("h1",
-                                                                                       3000,
-                                                                                       NodeTransportType.HTTP,
-                                                                                       new Date(),
-                                                                                       false),
-                                                                new ControllerNodeData("h2",
-                                                                                       3000,
-                                                                                       NodeTransportType.HTTP,
-                                                                                       new Date(),
-                                                                                       true)));
-        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
-        obs.start();
-        waitUntil(() -> obs.leader().isPresent());
-        val leader = obs.leader().orElse(null);
-        assertNotNull(leader);
-        assertTrue(leader.isLeader());
-        assertEquals("h2", leader.getHostname());
-        obs.stop();
+        controller1.stubFor(get(RemoteLeadershipObserver.PING_API).willReturn(ok()));
+        controller2.stubFor(get(RemoteLeadershipObserver.PING_API).willReturn(badRequest()));
+        val observer = buildManagedObserver();
+        observer.start();
+        try {
+            waitUntil(() -> observer.leader().isPresent());
+            val leader = observer.leader().orElse(null);
+            assertNotNull(leader);
+            assertEquals(controller1.getPort(), leader.getPort());
+        }
+        finally {
+            observer.stop();
+        }
     }
 
     @Test
     @SneakyThrows
     void testObserverNoLeader() {
-        val nds = mock(NodeDataStore.class);
-        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(List.of(new ControllerNodeData("h1",
-                                                                                       3000,
-                                                                                       NodeTransportType.HTTP,
-                                                                                       new Date(),
-                                                                                       false),
-                                                                new ControllerNodeData("h2",
-                                                                                       3000,
-                                                                                       NodeTransportType.HTTP,
-                                                                                       new Date(),
-                                                                                       false)));
-        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
-        obs.start();
-        waitUntil(() -> obs.leader().isEmpty());
-        val leader = obs.leader().orElse(null);
-        assertNull(leader);
-        obs.stop();
+        controller1.stubFor(get(RemoteLeadershipObserver.PING_API).willReturn(badRequest()));
+        controller2.stubFor(get(RemoteLeadershipObserver.PING_API).willReturn(serverError()));
+        val observer = buildManagedObserver();
+        observer.start();
+        try {
+            waitUntil(() -> observer.leader().isEmpty());
+            val leader = observer.leader().orElse(null);
+            assertEquals(null, leader);
+        }
+        finally {
+            observer.stop();
+        }
     }
 
     @Test
     @SneakyThrows
-    void testObserverTransientState() {
-        val nds = mock(NodeDataStore.class);
-        val ctr = new AtomicInteger(0);
-        when(nds.nodes(NodeType.CONTROLLER)).thenAnswer(new Answer<List<NodeData>>() {
-            @Override
-            public List<NodeData> answer(InvocationOnMock mock) throws Throwable {
-                val currVal = ctr.get();
-                if (currVal == 1) {
-                    log.info("Returning leader : h2");
-                    return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), false),
-                                   new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), true));
-                }
-                if (currVal == 2) {
-                    log.info("Returning leader : h1");
-                    return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), true),
-                                   new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), false));
-                }
-                log.info("Returning no leader");
-                return List.of(new ControllerNodeData("h1", 3000, NodeTransportType.HTTP, new Date(), false),
-                               new ControllerNodeData("h2", 3000, NodeTransportType.HTTP, new Date(), false));
-            }
-        });
-        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
-        obs.start();
-        {
-            ctr.set(0);
-            waitUntil(() -> obs.leader().isEmpty());
-            val leader = obs.leader().orElse(null);
-            assertNull(leader);
-        }
-        {
-            ctr.set(1);
-            waitUntil(() -> {
-                val leader = obs.leader().orElse(null);
-                return null != leader && leader.getHostname().equals("h2");
-            });
-            val leader = obs.leader().orElse(null);
-
+    void testObserverFailover() {
+        controller1.stubFor(get(RemoteLeadershipObserver.PING_API)
+                .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+        controller2.stubFor(get(RemoteLeadershipObserver.PING_API).willReturn(ok()));
+        val observer = buildManagedObserver();
+        observer.start();
+        try {
+            waitUntil(() -> observer.leader().isPresent());
+            val leader = observer.leader().orElse(null);
             assertNotNull(leader);
-            assertTrue(leader.isLeader());
-            assertEquals("h2", leader.getHostname());
+            assertEquals(controller2.getPort(), leader.getPort());
         }
-        {
-            ctr.set(2);
-            waitUntil(() -> {
-                val leader = obs.leader().orElse(null);
-                return null != leader && leader.getHostname().equals("h1");
-            });
-            val leader = obs.leader().orElse(null);
-
-            assertNotNull(leader);
-            assertTrue(leader.isLeader());
-            assertEquals("h1", leader.getHostname());
+        finally {
+            observer.stop();
         }
-        {
-            ctr.set(3);
-            waitUntil(() -> obs.leader().isEmpty());
-            val leader = obs.leader().orElse(null);
-            assertNull(leader);
-        }
-        obs.stop();
     }
 
-    @Test
-    @SneakyThrows
-    void testObserverRandomData() {
-        val nds = mock(NodeDataStore.class);
-        when(nds.nodes(NodeType.CONTROLLER)).thenReturn(
-                List.of(new ExecutorNodeData("h",
-                                             4000,
-                                             NodeTransportType.HTTP,
-                                             new Date(),
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             Map.of(),
-                                             ExecutorState.ACTIVE)));
-
-        val obs = new ManagedLeadershipObserver(new ZkLeadershipObserver(nds));
-        obs.start();
-        waitUntil(() -> obs.leader().isEmpty());
-        val leader = obs.leader().orElse(null);
-        assertNull(leader);
-        obs.stop();
+    private ManagedLeadershipObserver buildManagedObserver() throws MalformedURLException {
+        val remoteObserver = new RemoteLeadershipObserver(
+                ControllerConfig.builder()
+                        .endpoints(List.of(
+                                URI.create(controller1.baseUrl()).toURL(),
+                                URI.create(controller2.baseUrl()).toURL()))
+                        .leadershipCheckInterval(io.dropwizard.util.Duration.milliseconds(500))
+                        .build(),
+                ExecutorUtils.buildControllerClient(ClusterAuthenticationConfig.DEFAULT));
+        return new ManagedLeadershipObserver(remoteObserver);
     }
 }

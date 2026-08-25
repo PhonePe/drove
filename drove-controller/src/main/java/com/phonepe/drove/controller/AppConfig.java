@@ -19,7 +19,7 @@ package com.phonepe.drove.controller;
 import com.phonepe.drove.auth.config.ApplicationAuthConfig;
 import com.phonepe.drove.auth.config.BasicAuthConfig;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.config.ViewOptions;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;

@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.managed;
 
-import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
+import com.phonepe.drove.controller.zookeeper.ControllerZookeeperTestExtension;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  *
  */
-@ExtendWith(ZookeeperTestExtension.class)
+@ExtendWith(ControllerZookeeperTestExtension.class)
 class ZookeeperManagerTest {
 
     @Test

@@ -16,37 +16,47 @@
 
 package com.phonepe.drove.common;
 
+import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.BooleanSupplier;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.Constants;
-import com.phonepe.drove.common.model.*;
-import com.phonepe.drove.common.retry.*;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.common.model.ApplicationInstanceSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpec;
+import com.phonepe.drove.common.model.DeploymentUnitSpecVisitor;
+import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
+import com.phonepe.drove.common.model.TaskInstanceSpec;
+import com.phonepe.drove.common.retry.CompositeRetrySpec;
+import com.phonepe.drove.common.retry.IntervalRetrySpec;
+import com.phonepe.drove.common.retry.MaxDurationRetrySpec;
+import com.phonepe.drove.common.retry.MaxRetriesRetrySpec;
+import com.phonepe.drove.common.retry.RetryOnAllExceptionsSpec;
+import com.phonepe.drove.common.retry.RetrySpec;
+import com.phonepe.drove.common.retry.RetrySpecVisitor;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPVerb;
-import dev.failsafe.Failsafe;
-import dev.failsafe.RetryPolicy;
-import dev.failsafe.event.EventListener;
-import dev.failsafe.event.ExecutionCompletedEvent;
-import dev.failsafe.function.CheckedPredicate;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryForever;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
@@ -64,18 +74,20 @@ import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
-import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.time.Duration;
-import java.util.*;
-import java.util.function.BooleanSupplier;
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
+import dev.failsafe.event.EventListener;
+import dev.failsafe.event.ExecutionCompletedEvent;
+import dev.failsafe.function.CheckedPredicate;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -84,11 +96,13 @@ import java.util.function.BooleanSupplier;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommonUtils {
     private static final String DEFAULT_NAMESPACE = "drove";
+    private static final Pattern NON_ALNUM_NON_DASH = Pattern.compile("[^a-z0-9-]+");
 
     @IgnoreInJacocoGeneratedReport
     @SuppressWarnings("deprecation")
     public static void configureMapper(ObjectMapper objectMapper) {
         objectMapper.registerModule(new ParameterNamesModule());
+        objectMapper.registerModule(new JavaTimeModule());
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -112,14 +126,6 @@ public class CommonUtils {
     }
 
     @IgnoreInJacocoGeneratedReport
-    public static CuratorFramework buildCurator(ZkConfig config) {
-        return CuratorFrameworkFactory.builder()
-                .connectString(config.getConnectionString())
-                .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
-                .retryPolicy(new RetryForever(1000))
-                .sessionTimeoutMs(30_000)
-                .build();
-    }
 
     public static <T> List<T> sublist(final List<T> list, int start, int size) {
         if (list == null || list.isEmpty()) {
@@ -232,7 +238,6 @@ public class CommonUtils {
         });
     }
 
-
     @SneakyThrows
     public static CloseableHttpClient createHttpClient(boolean insecure) {
         val connectionTimeout = Duration.ofSeconds(1);
@@ -297,7 +302,6 @@ public class CommonUtils {
                 .build();
     }
 
-
     public static HttpUriRequestBase buildRequest(
             HTTPVerb verb,
             URI uri,
@@ -346,6 +350,16 @@ public class CommonUtils {
         return !Strings.isNullOrEmpty(osName) && osName.toLowerCase().contains("mac");
     }
 
+    public static String normalizeGPUModel(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        return NON_ALNUM_NON_DASH.matcher(value.toLowerCase().trim())
+                .replaceAll(" ")
+                .trim().replaceAll("\\s+", "_");
+    }
+
     @SneakyThrows
     private static TlsSocketStrategy buildInsecureTlsStrategy() {
         val sslContext = SSLContexts.custom()
@@ -357,5 +371,4 @@ public class CommonUtils {
                 .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                 .buildClassic();
     }
-
 }

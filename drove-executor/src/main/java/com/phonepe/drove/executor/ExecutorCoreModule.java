@@ -155,7 +155,6 @@ public class ExecutorCoreModule extends AbstractModule {
                 .minThreads(0)
                 .workQueue(new SynchronousQueue<>())
                 .keepAliveTime(Duration.seconds(60))
-
                 .build();
         return new LocalServiceInstanceEngine(
                 executorIdManager,

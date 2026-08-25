@@ -14,11 +14,12 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.discovery;
+package com.phonepe.drove.controller.discovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.zookeeper.ControllerZkUtils;
+import com.phonepe.drove.controller.zookeeper.ZkConfig;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
@@ -59,7 +60,7 @@ class ZkNodeDataStoreTest {
             val mapper = new ObjectMapper();
             CommonUtils.configureMapper(mapper);
 
-            val curator = CommonUtils.buildCurator(config);
+            val curator = ControllerZkUtils.buildCurator(config);
             curator.start();
             curator.blockUntilConnected();
 
@@ -109,7 +110,7 @@ class ZkNodeDataStoreTest {
             val mapper = new ObjectMapper();
             CommonUtils.configureMapper(mapper);
 
-            val curator = CommonUtils.buildCurator(config);
+            val curator = ControllerZkUtils.buildCurator(config);
             curator.start();
             curator.blockUntilConnected();
 
@@ -159,7 +160,7 @@ class ZkNodeDataStoreTest {
             val mapper = new ObjectMapper();
             CommonUtils.configureMapper(mapper);
 
-            val curator = CommonUtils.buildCurator(config);
+            val curator = ControllerZkUtils.buildCurator(config);
             curator.start();
             curator.blockUntilConnected();
 

@@ -18,8 +18,8 @@ package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.ZkNodeDataStore;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.discovery.ZkNodeDataStore;
+import com.phonepe.drove.controller.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.common.CommonUtils.buildCurator;
+import static com.phonepe.drove.controller.zookeeper.ControllerZkUtils.buildCurator;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.*;

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.discovery.leadership;
+package com.phonepe.drove.controller.discovery.leadership;
 
 import com.phonepe.drove.common.discovery.NodeDataStore;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 @Singleton
-public class ZkLeadershipObserver implements LeadershipObserver {
+public class ZkLeadershipObserver implements com.phonepe.drove.common.discovery.leadership.LeadershipObserver {
 
     private static final String LEADERSHIP_OBSERVER_HANDLER = "LEADERSHIP_OBSERVER_HANDLER";
 

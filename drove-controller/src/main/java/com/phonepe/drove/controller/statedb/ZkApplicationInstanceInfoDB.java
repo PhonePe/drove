@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
+import static com.phonepe.drove.controller.zookeeper.ZkUtils.*;
 import static com.phonepe.drove.models.instance.InstanceState.ACTIVE_STATES;
 import static com.phonepe.drove.models.instance.InstanceState.LOST;
 

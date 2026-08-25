@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.zookeeper;
+package com.phonepe.drove.controller.zookeeper;
 
 import lombok.SneakyThrows;
 import lombok.val;
@@ -22,12 +22,10 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.TestingCluster;
 import org.junit.jupiter.api.extension.*;
 
-import static com.phonepe.drove.common.CommonUtils.buildCurator;
-
 /**
  *
  */
-public class ZookeeperTestExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
+public class ControllerZookeeperTestExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
     private TestingCluster testZkCluster;
     private CuratorFramework curatorFramework;
 
@@ -37,7 +35,7 @@ public class ZookeeperTestExtension implements BeforeEachCallback, AfterEachCall
         try {
             testZkCluster = new TestingCluster(1);
             testZkCluster.start();
-            curatorFramework = buildCurator(new ZkConfig().setConnectionString(testZkCluster.getConnectString())
+            curatorFramework = ControllerZkUtils.buildCurator(new ZkConfig().setConnectionString(testZkCluster.getConnectString())
                                                     .setNameSpace("DTEST"));
             curatorFramework.start();
             curatorFramework.blockUntilConnected();

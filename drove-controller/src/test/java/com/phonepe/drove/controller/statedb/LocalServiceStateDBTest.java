@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.statedb;
 
-import com.phonepe.drove.common.zookeeper.ZookeeperTestExtension;
+import com.phonepe.drove.controller.zookeeper.ControllerZookeeperTestExtension;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests {@link ZKLocalServiceStateDB}
  */
-@ExtendWith(ZookeeperTestExtension.class)
+@ExtendWith(ControllerZookeeperTestExtension.class)
 class LocalServiceStateDBTest extends ControllerTestBase {
     @Test
     @SneakyThrows

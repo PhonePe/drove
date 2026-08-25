@@ -16,7 +16,7 @@
 
 package com.phonepe.drove.controller.helpers;
 
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
+import com.phonepe.drove.controller.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;

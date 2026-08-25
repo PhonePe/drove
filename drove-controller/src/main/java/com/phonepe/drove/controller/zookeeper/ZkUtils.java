@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.zookeeper;
+package com.phonepe.drove.controller.zookeeper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
@@ -132,7 +132,7 @@ public class ZkUtils {
                 //Nothing to do here
             }
             else {
-                log.error("Error reading node data: " + path, e);
+                log.error("Error reading node " + path, e);
             }
         }
         return null;

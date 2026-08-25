@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.managed;
 
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
+import com.phonepe.drove.controller.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.models.info.nodedata.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

@@ -17,7 +17,7 @@
 package com.phonepe.drove.controller.statedb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phonepe.drove.common.zookeeper.ZkUtils;
+import com.phonepe.drove.controller.zookeeper.ZkUtils;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import org.apache.curator.framework.CuratorFramework;

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.zookeeper;
+package com.phonepe.drove.controller.zookeeper;
 
 import lombok.Data;
 

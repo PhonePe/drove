@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.common.zookeeper;
+package com.phonepe.drove.controller.zookeeper;
 
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
@@ -34,13 +34,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.common.zookeeper.ZkUtils.*;
+import static com.phonepe.drove.controller.zookeeper.ZkUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  */
-@ExtendWith(ZookeeperTestExtension.class)
+@ExtendWith(ControllerZookeeperTestExtension.class)
 class ZkUtilsTest extends AbstractTestBase {
 
     @Value
