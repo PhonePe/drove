@@ -1604,6 +1604,8 @@ public class ControllerUtils {
                         resourceSummary.getFreeMemory(),
                         resourceSummary.getUsedMemory(),
                         resourceSummary.getTotalMemory(),
+                        resourceSummary.getUsedGpus(),
+                        resourceSummary.getTotalGpus(),
                         resourceSummary.getGpuSummary());
  
     }
