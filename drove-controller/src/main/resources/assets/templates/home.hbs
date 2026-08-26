@@ -1,23 +1,16 @@
 {{#partial "content"}}
     <section>
         <div class="row g-3" id="dash-stat-cards">
-            <!-- Cluster State -->
+            <!-- Cluster State + Executors -->
             <div class="col-6 col-md-4 col-xl-2">
                 <div class="card h-100 text-center dash-stat-card">
                     <div class="card-body py-3">
-                        <div class="text-body-secondary small mb-1 fw-bold">Cluster State</div>
+                        <div class="text-body-secondary small mb-1 fw-bold">Cluster</div>
                         <div id="dash-state" class="fs-5 fw-bold">—</div>
-                        <div id="dash-leader" class="text-body-secondary mt-2" style="font-size:0.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title=""></div>
-                    </div>
-                </div>
-            </div>
-            <!-- Executors -->
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card h-100 text-center dash-stat-card">
-                    <div class="card-body py-3">
-                        <div class="text-body-secondary small mb-1 fw-bold">Executors</div>
-                        <div id="dash-executors" class="fs-3 fw-bold">—</div>
-                        <div class="text-body-secondary" style="font-size:0.72rem;">nodes</div>
+                        <div class="text-body-secondary mt-1" style="font-size:0.72rem;">
+                            <span id="dash-executors">—</span> executors
+                        </div>
+                        <div id="dash-leader" class="text-body-secondary mt-1" style="font-size:0.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title=""></div>
                     </div>
                 </div>
             </div>
