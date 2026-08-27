@@ -1,4 +1,27 @@
 {{#partial "content"}}
+    <style>
+        table.dataTable tr.dtrg-group { cursor: pointer; }
+        table.dataTable tr.dtrg-group th {
+            background-color: #e9ecef;
+            color: #212529 !important;
+            border-top: 2px solid #dee2e6;
+            border-bottom: 2px solid #dee2e6;
+            text-align: left;
+        }
+        table.dataTable tr.dtrg-group th .text-body-secondary {
+            color: #495057 !important;
+        }
+        table.dataTable tr.dtrg-group th .dtrg-toggle {
+            margin-right: 0.5rem;
+            transition: transform 0.2s;
+        }
+        table.dataTable tr.dtrg-group.collapsed .dtrg-toggle {
+            transform: rotate(-90deg);
+        }
+        table.dataTable tr.dtrg-group.collapsed ~ tr:not(.dtrg-group) {
+            display: none;
+        }
+    </style>
     <section>
         <ul class="nav nav-tabs mb-3" id="cluster-tabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -35,7 +58,7 @@
                         <table class="table table-bordered" id="gpus" style="width: 100%">
                             <thead>
                             <tr>
-                                <th>Executor</th>
+                                <th>Host</th>
                                 <th>GPU ID</th>
                                 <th>Vendor</th>
                                 <th>Model</th>
@@ -119,6 +142,7 @@
         info: false,
         responsive: false,
         scrollX: true,
+        order: [[2, 'asc'], [0, 'asc']],
         columnDefs: [
             {
                 className: 'text-start text-nowrap',
@@ -127,14 +151,17 @@
             {
                 className: 'text-center text-wrap',
                 targets: [2, 3, 4, 5]
-            }
+            },
+            { visible: false, targets: 2 }
         ],
         columns: [
             {
-                data: 'executorId',
+                data: 'hostname',
                 render: function(data, type, row, meta) {
                     if(type === 'display') {
-                        return '<a href="/executors/{0}" class="fw-semibold">{0}</a>'.format(data);
+                        return '<a href="/executors/{0}" class="fw-semibold">{1}</a>'
+                                .format(row.executorId, data)
+                            + '<div class="text-body-secondary" style="font-size:0.72rem;">' + row.executorId + '</div>';
                     }
                     return data;
                 }
@@ -161,7 +188,36 @@
                     return data;
                 }
             }
-        ]
+        ],
+        drawCallback: function(settings) {
+            var api = this.api();
+            var colspan = api.columns().visible().reduce(function(a, b) { return a + b; }, 0);
+            var rowData = api.rows({page: 'current'}).data();
+            var groupCounts = {};
+            for(var i = 0; i < rowData.length; i++) {
+                var v = rowData[i].vendor;
+                groupCounts[v] = (groupCounts[v] || 0) + 1;
+            }
+            var nodes = api.rows({page: 'current'}).nodes();
+            var last = null;
+            for(var i = 0; i < nodes.length; i++) {
+                var data = rowData[i];
+                var group = data.vendor;
+                if(last !== group) {
+                    $(nodes[i]).before(
+                        '<tr class="dtrg-group dtrg-start dtrg-level-0">'
+                        + '<th colspan="' + colspan + '" scope="row" class="fw-bold">'
+                        + '<span class="dtrg-toggle">&#9660;</span>'
+                        + '<span class="badge bg-secondary">' + group + '</span>'
+                        + ' <span class="text-body-secondary">' + groupCounts[group] + ' devices</span>'
+                        + '</th></tr>');
+                    last = group;
+                }
+            }
+            $('#gpus tbody tr.dtrg-group').off('click').on('click', function() {
+                $(this).toggleClass('collapsed');
+            });
+        }
     });
 
     setInterval(() => {

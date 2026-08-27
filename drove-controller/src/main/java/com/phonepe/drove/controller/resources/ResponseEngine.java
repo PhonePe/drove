@@ -307,6 +307,7 @@ public class ResponseEngine {
                                 layoutGpus.forEach((gpuId, gpuInfo) -> gpus.add(
                                         new GpuResourceInfo(
                                                 hostInfo.getExecutorId(),
+                                                hostInfo.getNodeData().getHostname(),
                                                 gpuId,
                                                 gpuInfo.getGpuVendor(),
                                                 gpuInfo.getGpuModel(),

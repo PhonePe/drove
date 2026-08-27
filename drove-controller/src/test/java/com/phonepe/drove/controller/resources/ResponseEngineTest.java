@@ -879,6 +879,7 @@ class ResponseEngineTest {
                 .findFirst()
                 .orElseThrow();
         assertEquals("Ex1", freeGpu.getExecutorId());
+        assertEquals("host1", freeGpu.getHostname());
         assertEquals(com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA, freeGpu.getVendor());
         assertEquals("A100-SXM4-40GB", freeGpu.getModel());
         assertEquals(GpuResourceInfo.GpuState.FREE, freeGpu.getState());

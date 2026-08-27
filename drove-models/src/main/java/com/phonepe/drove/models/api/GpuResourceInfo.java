@@ -35,6 +35,9 @@ public class GpuResourceInfo {
     @Schema(description = "Executor ID hosting this GPU", example = "executor-1-abcd1234")
     String executorId;
 
+    @Schema(description = "Hostname of the executor node", example = "executor-1.example.com")
+    String hostname;
+
     @Schema(description = "Unique GPU device identifier", example = "GPU-abcdef12-3456-7890")
     String gpuId;
 
