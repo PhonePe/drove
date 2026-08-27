@@ -1,26 +1,51 @@
 {{#partial "content"}}
     <section>
-        <div class="row">
-            <div class="col">
-                <h4 class="fw-bold">Cluster — Executors</h4>
+        <ul class="nav nav-tabs mb-3" id="cluster-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="executors-tab" data-bs-toggle="tab" data-bs-target="#executors-pane" type="button" role="tab" aria-selected="true">Executors</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="gpus-tab" data-bs-toggle="tab" data-bs-target="#gpus-pane" type="button" role="tab" aria-selected="false">GPUs <span class="badge bg-secondary" id="gpu-count-badge" style="display:none;"></span></button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="executors-pane" role="tabpanel" aria-labelledby="executors-tab" tabindex="0">
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered" id="executors" style="width: 100%">
+                            <thead>
+                            <tr>
+                                <th data-priority="11000">ID</th>
+                                <th>Host</th>
+                                <th>State</th>
+                                <th>Free Cores</th>
+                                <th>Used Cores</th>
+                                <th>Free Memory</th>
+                                <th>Used Memory</th>
+                                <th data-priority="10500">Tags</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <table class="table table-bordered" id="executors" style="width: 100%">
-                    <thead>
-                    <tr>
-                        <th data-priority="11000">ID</th>
-                        <th>Host</th>
-                        <th>State</th>
-                        <th>Free Cores</th>
-                        <th>Used Cores</th>
-                        <th>Free Memory</th>
-                        <th>Used Memory</th>
-                        <th data-priority="10500">Tags</th>
-                    </tr>
-                    </thead>
-                </table>
+            <div class="tab-pane fade" id="gpus-pane" role="tabpanel" aria-labelledby="gpus-tab" tabindex="0">
+                <div class="row">
+                    <div class="col">
+                        <table class="table table-bordered" id="gpus" style="width: 100%">
+                            <thead>
+                            <tr>
+                                <th>Executor</th>
+                                <th>GPU ID</th>
+                                <th>Vendor</th>
+                                <th>Model</th>
+                                <th>State</th>
+                                <th>NUMA</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -85,8 +110,71 @@
         ]
     });
 
+    const gpuTable = $('#gpus').DataTable({
+        processing: true,
+        ajax: '/apis/v1/cluster/gpus',
+        paging: true,
+        pageLength: 20,
+        lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+        info: false,
+        responsive: false,
+        scrollX: true,
+        columnDefs: [
+            {
+                className: 'text-start text-nowrap',
+                targets: [0, 1]
+            },
+            {
+                className: 'text-center text-wrap',
+                targets: [2, 3, 4, 5]
+            }
+        ],
+        columns: [
+            {
+                data: 'executorId',
+                render: function(data, type, row, meta) {
+                    if(type === 'display') {
+                        return '<a href="/executors/{0}" class="fw-semibold">{0}</a>'.format(data);
+                    }
+                    return data;
+                }
+            },
+            { data: 'gpuId' },
+            { data: 'vendor' },
+            { data: 'model' },
+            {
+                data: 'state',
+                render: function(data, type, row, meta) {
+                    if(type !== 'display') {
+                        return data;
+                    }
+                    var badgeClass = data === 'FREE' ? 'bg-success' : 'bg-danger';
+                    return '<span class="badge ' + badgeClass + '">' + data + '</span>';
+                }
+            },
+            {
+                data: 'numaNodeAffinity',
+                render: function(data, type, row, meta) {
+                    if(type !== 'display' || data === null || data === undefined) {
+                        return data;
+                    }
+                    return data;
+                }
+            }
+        ]
+    });
+
     setInterval(() => {
         executors.ajax.reload(null, false);
+        if($('#gpus-pane').hasClass('show')) {
+            gpuTable.ajax.reload(null, false);
+        }
     }, 5000);
+
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+        if($(e.target).attr('id') === 'gpus-tab') {
+            gpuTable.ajax.reload(null, false);
+        }
+    });
 {{/partial}}
 {{> common/base}}

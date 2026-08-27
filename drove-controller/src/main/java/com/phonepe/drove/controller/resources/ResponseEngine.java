@@ -64,6 +64,7 @@ import com.phonepe.drove.models.api.DroveEventsList;
 import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.api.ExecutorSummary;
 import com.phonepe.drove.models.api.ExposedAppInfo;
+import com.phonepe.drove.models.api.GpuResourceInfo;
 import com.phonepe.drove.models.api.LocalServiceSummary;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -281,6 +282,44 @@ public class ResponseEngine {
                 .map(ExecutorHostInfo::getNodeData)
                 .map(ApiResponse::success)
                 .orElse(failure("No executor found with id: " + executorId));
+    }
+
+    public ApiResponse<List<GpuResourceInfo>> gpus() {
+        val gpus = new ArrayList<GpuResourceInfo>();
+        clusterResourcesDB.currentSnapshot(false)
+                .forEach(hostInfo -> hostInfo.getNodeData()
+                        .accept(new NodeDataVisitor<Void>() {
+                            @Override
+                            public Void visit(ControllerNodeData controllerData) {
+                                return null;
+                            }
+
+                            @Override
+                            public Void visit(ExecutorNodeData executorData) {
+                                val snapshot = executorData.getState();
+                                if (snapshot == null || snapshot.getGpus() == null) {
+                                    return null;
+                                }
+                                val freeGpuIds = Set.copyOf(snapshot.getGpus().getFreeGpus());
+                                val layoutGpus = snapshot.getLayout() != null
+                                        ? snapshot.getLayout().getGpus()
+                                        : Map.<String, com.phonepe.drove.models.info.GPUInfo>of();
+                                layoutGpus.forEach((gpuId, gpuInfo) -> gpus.add(
+                                        new GpuResourceInfo(
+                                                hostInfo.getExecutorId(),
+                                                gpuId,
+                                                gpuInfo.getGpuVendor(),
+                                                gpuInfo.getGpuModel(),
+                                                freeGpuIds.contains(gpuId)
+                                                        ? GpuResourceInfo.GpuState.FREE
+                                                        : GpuResourceInfo.GpuState.IN_USE,
+                                                gpuInfo.getNumaNodeAffinity())));
+                                return null;
+                            }
+                        }));
+        gpus.sort(Comparator.comparing(GpuResourceInfo::getExecutorId)
+                .thenComparing(GpuResourceInfo::getGpuId));
+        return success(gpus);
     }
 
     public ApiResponse<List<ExposedAppInfo>> endpoints(Set<String> appNames) {
