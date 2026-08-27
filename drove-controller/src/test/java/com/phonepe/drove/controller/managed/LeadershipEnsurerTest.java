@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.phonepe.drove.controller.zookeeper.ControllerZkUtils.buildCurator;
+import static com.phonepe.drove.controller.zookeeper.ZkUtils.buildCurator;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

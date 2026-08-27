@@ -36,7 +36,7 @@ import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
 import com.phonepe.drove.controller.zookeeper.ZkConfig;
-import com.phonepe.drove.controller.zookeeper.ControllerZkUtils;
+import com.phonepe.drove.controller.zookeeper.ZkUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.controller.config.ViewOptions;
@@ -108,7 +108,7 @@ public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public CuratorFramework curator(ZkConfig config) {
-        return ControllerZkUtils.buildCurator(config);
+        return ZkUtils.buildCurator(config);
     }
 
     @Provides

@@ -20,7 +20,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.zookeeper.ControllerZkUtils;
 import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.MessageResponse;
 import com.phonepe.drove.common.model.executor.BlacklistExecutorMessage;

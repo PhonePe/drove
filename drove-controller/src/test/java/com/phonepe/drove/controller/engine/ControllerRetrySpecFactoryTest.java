@@ -17,7 +17,6 @@
 package com.phonepe.drove.controller.engine;
 
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.controller.zookeeper.ControllerZkUtils;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

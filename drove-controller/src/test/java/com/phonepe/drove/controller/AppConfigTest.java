@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.phonepe.drove.controller.zookeeper.ControllerZkUtils.configureMapper;
+import static com.phonepe.drove.common.CommonUtils.configureMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

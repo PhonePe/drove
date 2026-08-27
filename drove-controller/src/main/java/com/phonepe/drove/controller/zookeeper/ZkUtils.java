@@ -22,6 +22,8 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryForever;
 import org.apache.zookeeper.KeeperException;
 
 import java.util.Collections;
@@ -33,11 +35,28 @@ import java.util.function.Predicate;
 import static com.phonepe.drove.common.CommonUtils.sublist;
 
 /**
- *
+ * ZooKeeper utility methods for the controller.
  */
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ZkUtils {
+    private static final String DEFAULT_NAMESPACE = "drove";
+
+    /**
+     * Build a CuratorFramework instance for ZooKeeper operations.
+     *
+     * @param config ZkConfig with connection details
+     * @return Configured CuratorFramework instance
+     */
+    public static CuratorFramework buildCurator(ZkConfig config) {
+        return CuratorFrameworkFactory.builder()
+                .connectString(config.getConnectionString())
+                .namespace(Objects.requireNonNullElse(config.getNameSpace(), DEFAULT_NAMESPACE))
+                .retryPolicy(new RetryForever(1000))
+                .sessionTimeoutMs(30_000)
+                .build();
+    }
+
     public static boolean setNodeData(
             CuratorFramework curatorFramework,
             String path,

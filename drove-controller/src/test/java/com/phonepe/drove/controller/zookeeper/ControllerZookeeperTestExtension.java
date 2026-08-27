@@ -35,7 +35,7 @@ public class ControllerZookeeperTestExtension implements BeforeEachCallback, Aft
         try {
             testZkCluster = new TestingCluster(1);
             testZkCluster.start();
-            curatorFramework = ControllerZkUtils.buildCurator(new ZkConfig().setConnectionString(testZkCluster.getConnectString())
+            curatorFramework = ZkUtils.buildCurator(new ZkConfig().setConnectionString(testZkCluster.getConnectString())
                                                     .setNameSpace("DTEST"));
             curatorFramework.start();
             curatorFramework.blockUntilConnected();
