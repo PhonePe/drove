@@ -553,58 +553,43 @@ public class ControllerUtils {
     }
 
     public static int freeGpus(ExecutorHostInfo executor) {
-        return executor.getNodeData()
-                .accept(new NodeDataVisitor<>() {
-                    @Override
-                    public Integer visit(ControllerNodeData controllerData) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(ExecutorNodeData executorData) {
-                        val gpus = executorData.getState().getGpus();
-                        return gpus == null ? 0 : Objects.requireNonNullElse(gpus.getFreeGpus(), List.of()).size();
-                    }
-                });
+        return gpuSummaryData(executor).freeGpus();
     }
 
     public static int usedGpus(ExecutorHostInfo executor) {
+        return gpuSummaryData(executor).usedGpus();
+    }
+
+    record GpuSummaryData(int freeGpus, int usedGpus, Map<String, Integer> gpuVendorCounts) {
+    }
+
+    private static GpuSummaryData gpuSummaryData(ExecutorHostInfo executor) {
         return executor.getNodeData()
                 .accept(new NodeDataVisitor<>() {
                     @Override
-                    public Integer visit(ControllerNodeData controllerData) {
-                        return 0;
+                    public GpuSummaryData visit(ControllerNodeData controllerData) {
+                        return new GpuSummaryData(0, 0, Map.of());
                     }
 
                     @Override
-                    public Integer visit(ExecutorNodeData executorData) {
+                    public GpuSummaryData visit(ExecutorNodeData executorData) {
                         val gpus = executorData.getState().getGpus();
-                        return gpus == null ? 0 : Objects.requireNonNullElse(gpus.getUsedGpus(), List.of()).size();
+                        int freeGpus = gpus == null ? 0
+                                : Objects.requireNonNullElse(gpus.getFreeGpus(), List.of()).size();
+                        int usedGpus = gpus == null ? 0
+                                : Objects.requireNonNullElse(gpus.getUsedGpus(), List.of()).size();
+                        val layout = executorData.getState().getLayout();
+                        val vendors = new HashMap<String, Integer>();
+                        if (layout != null && layout.getGpus() != null) {
+                            for (val gpuInfo : layout.getGpus().values()) {
+                                if (gpuInfo != null && gpuInfo.getGpuVendor() != null) {
+                                    vendors.merge(gpuInfo.getGpuVendor().name(), 1, Integer::sum);
+                                }
+                            }
+                        }
+                        return new GpuSummaryData(freeGpus, usedGpus, vendors);
                     }
                 });
-    }
-
-    private static void gpuVendorCounts(ExecutorHostInfo executor, Map<String, Integer> accumulator) {
-        executor.getNodeData().accept(new NodeDataVisitor<Void>() {
-            @Override
-            public Void visit(ControllerNodeData controllerData) {
-                return null;
-            }
-
-            @Override
-            public Void visit(ExecutorNodeData executorData) {
-                val layout = executorData.getState().getLayout();
-                if (layout != null && layout.getGpus() != null) {
-                    for (val gpuInfo : layout.getGpus().values()) {
-                        if (gpuInfo != null && gpuInfo.getGpuVendor() != null) {
-                            val vendor = gpuInfo.getGpuVendor().name();
-                            accumulator.merge(vendor, 1, Integer::sum);
-                        }
-                    }
-                }
-                return null;
-            }
-        });
     }
 
     public static <T> Response ok(final T data) {
@@ -1003,9 +988,10 @@ public class ControllerUtils {
             freeCores += freeCores(executor);
             freeMemory += freeMemory(executor);
             usedMemory += usedMemory(executor);
-            freeGpus += freeGpus(executor);
-            usedGpus += usedGpus(executor);
-            gpuVendorCounts(executor, gpuSummary);
+            val gpuData = gpuSummaryData(executor);
+            freeGpus += gpuData.freeGpus();
+            usedGpus += gpuData.usedGpus();
+            gpuData.gpuVendorCounts().forEach((vendor, count) -> gpuSummary.merge(vendor, count, Integer::sum));
         }
         return new ClusterResourcesDB.ClusterResourcesSummary(executors.size(),
                                                               freeCores,
@@ -1604,6 +1590,7 @@ public class ControllerUtils {
                         resourceSummary.getFreeMemory(),
                         resourceSummary.getUsedMemory(),
                         resourceSummary.getTotalMemory(),
+                        resourceSummary.getFreeGpus(),
                         resourceSummary.getUsedGpus(),
                         resourceSummary.getTotalGpus(),
                         resourceSummary.getGpuSummary());

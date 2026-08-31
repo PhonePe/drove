@@ -425,15 +425,12 @@ public class ResponseEngine {
                         val executorState = removed ? ExecutorState.REMOVED
                                 : backlistedState;
                         val snapshot = executorData.getState();
-                        val gpuInfo = snapshot.getGpus();
                         val layout = snapshot.getLayout();
                         val layoutGpus = layout != null && layout.getGpus() != null
                                 ? layout.getGpus() : Map.<String, GPUInfo>of();
+                        int freeGpus = ControllerUtils.freeGpus(hostInfo);
+                        int usedGpus = ControllerUtils.usedGpus(hostInfo);
                         int totalGpus = layoutGpus.size();
-                        int freeGpus = gpuInfo != null && gpuInfo.getFreeGpus() != null
-                                ? gpuInfo.getFreeGpus().size() : 0;
-                        int usedGpus = gpuInfo != null && gpuInfo.getUsedGpus() != null
-                                ? gpuInfo.getUsedGpus().size() : 0;
                         String gpuVendor = layoutGpus.values().stream()
                                 .map(GPUInfo::getGpuVendor)
                                 .filter(Objects::nonNull)
@@ -477,6 +474,7 @@ public class ResponseEngine {
                                 executorState,
                                 freeGpus,
                                 usedGpus,
+                                totalGpus,
                                 gpuVendor.isEmpty() ? null : gpuVendor,
                                 gpuModel.isEmpty() ? null : gpuModel));
                     }

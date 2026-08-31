@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.NVIDIA_SMI_QUERY_XML_COMMAND;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.isCommandNotFound;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.CommandUtils.parseCommandOutput;
 import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.XmlParsingUtils.parseXml;
@@ -146,7 +147,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
     }
 
     String queryNvidiaSmi() throws InterruptedException, IOException {
-        return String.join("", parseCommandOutput("nvidia-smi -q -x", false));
+        return String.join("", parseCommandOutput(NVIDIA_SMI_QUERY_XML_COMMAND, false));
     }
 
     void publish(final Snapshot snapshot) {

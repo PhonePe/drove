@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CommandUtils {
     private static final long DEFAULT_TIMEOUT_SECONDS = 10;
+    public static final String NVIDIA_SMI_QUERY_XML_COMMAND = "nvidia-smi -q -x";
 
     private CommandUtils() {
     }

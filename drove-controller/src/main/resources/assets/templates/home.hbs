@@ -45,7 +45,7 @@
                 </div>
             </div>
             <!-- GPUs (only shown when GPUs exist) -->
-            <div class="col-6 col-md-4 col-xl-2" id="dash-gpu-card" style="display:none;">
+            <div class="col-6 col-md-4 col-xl-2" id="dash-gpu-card" style="display:none;" data-bs-toggle="tooltip" data-bs-placement="top" title="GPUs (used/total)">
                 <div class="card h-100 text-center dash-stat-card">
                     <div class="card-body py-3">
                         <div class="text-body-secondary small mb-1 fw-bold">GPUs</div>
@@ -356,8 +356,14 @@
             var vendorSummary = gpuVendorSummary(d.gpuSummary);
             $('#dash-gpu-text').text(d.usedGpus + ' / ' + d.totalGpus);
             updateProgress('#dash-gpu-bar', d.usedGpus, 0, d.totalGpus);
-            $('#dash-gpu-free').text((d.totalGpus - d.usedGpus) + ' free');
-            $('#dash-gpu-card').attr('title', vendorSummary || '').show();
+            $('#dash-gpu-free').text(d.freeGpus + ' free');
+            var gpuTooltipTitle = 'GPUs (used/total)' + (vendorSummary ? ' — ' + vendorSummary : '');
+            var $gpuCard = $('#dash-gpu-card');
+            $gpuCard.attr('title', gpuTooltipTitle).show();
+            var gpuTip = bootstrap.Tooltip.getInstance($gpuCard[0]);
+            if (gpuTip) {
+                gpuTip.setContent({ '.tooltip-inner': gpuTooltipTitle });
+            }
         } else {
             $('#dash-gpu-card').hide();
         }

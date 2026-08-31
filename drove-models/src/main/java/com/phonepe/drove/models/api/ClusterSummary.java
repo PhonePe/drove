@@ -70,6 +70,9 @@ public class ClusterSummary {
     @Schema(description = "Total memory in bytes available in the cluster", example = "429496729600")
     long totalMemory;
 
+    @Schema(description = "Number of unallocated GPUs across all executors", example = "6")
+    int freeGpus;
+
     @Schema(description = "Number of allocated GPUs across all executors", example = "2")
     int usedGpus;
 

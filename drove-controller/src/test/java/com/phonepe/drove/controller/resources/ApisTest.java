@@ -949,6 +949,7 @@ class ApisTest {
                 512_000,
                 512_000,
                 1024_000,
+                6,
                 2,
                 8,
                 Map.of());
@@ -974,6 +975,7 @@ class ApisTest {
                                                    1024,
                                                    Set.of(),
                                                    ExecutorState.ACTIVE,
+                                                   0,
                                                    0,
                                                    0,
                                                    null,
@@ -1144,6 +1146,7 @@ class ApisTest {
                         512_000,
                         512_000,
                         1024_000,
+                        6,
                         2,
                         8,
                         Map.of()))

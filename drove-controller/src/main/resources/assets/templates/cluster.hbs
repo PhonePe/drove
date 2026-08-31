@@ -16,9 +16,9 @@
                 <th>Used Cores</th>
                 <th>Free Memory</th>
                 <th>Used Memory</th>
-                <th>GPU</th>
-                <th>Free GPUs</th>
-                <th>Used GPUs</th>
+                <th class="gpu-col">GPU</th>
+                <th class="gpu-col">Free GPUs</th>
+                <th class="gpu-col">Used GPUs</th>
                 <th data-priority="10500">Tags</th>
             </tr>
             </thead>
@@ -27,10 +27,6 @@
 {{/partial}}
 
 {{#partial "page_js"}}
-    const GPU_COL_INFO = 7;
-    const GPU_COL_FREE = 8;
-    const GPU_COL_USED = 9;
-    const GPU_COLS = [GPU_COL_INFO, GPU_COL_FREE, GPU_COL_USED];
     var gpuColumnsVisible = false;
 
     const executors = $('#executors').DataTable({
@@ -52,14 +48,14 @@
                 targets: [1,2,3,4,5,6]
             },
             {
-                className: 'text-center text-nowrap',
-                targets: [GPU_COL_FREE, GPU_COL_USED]
+                className: 'gpu-col text-center text-nowrap',
+                targets: [7, 8]
             },
             {
-                className: 'text-start text-wrap',
-                targets: [GPU_COL_INFO]
+                className: 'gpu-col text-start text-wrap',
+                targets: 9
             },
-            { visible: false, targets: GPU_COLS }
+            { visible: false, targets: 'gpu-col' }
         ],
         columns: [
             {
@@ -82,7 +78,7 @@
             { data: 'usedMemory', render: tableBytesText },
             {
                 data: 'gpuModel',
-                render: function(data, type, row, meta) {
+                render: function(data, type, row) {
                     if(type !== 'display') {
                         return data || '';
                     }
@@ -99,13 +95,13 @@
             },
             {
                 data: 'freeGpus',
-                render: function(data, type, row, meta) {
+                render: function(data) {
                     return data || 0;
                 }
             },
             {
                 data: 'usedGpus',
-                render: function(data, type, row, meta) {
+                render: function(data) {
                     return data || 0;
                 }
             },
@@ -141,9 +137,7 @@
 
     $('#gpu-columns-toggle').on('click', function() {
         gpuColumnsVisible = !gpuColumnsVisible;
-        GPU_COLS.forEach(function(col) {
-            executors.column(col).visible(gpuColumnsVisible);
-        });
+        executors.columns('.gpu-col').visible(gpuColumnsVisible);
         $(this).text(gpuColumnsVisible ? 'Hide GPU columns' : 'Show GPU columns');
     });
 

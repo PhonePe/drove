@@ -65,6 +65,9 @@ public class ExecutorSummary {
     @Schema(description = "Number of allocated GPUs on this executor", example = "6")
     int usedGpus;
 
+    @Schema(description = "Total GPUs present on this executor", example = "8")
+    int totalGpus;
+
     @Schema(description = "Comma-separated GPU vendor names on this executor", example = "NVIDIA")
     String gpuVendor;
 

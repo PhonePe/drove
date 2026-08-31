@@ -33,15 +33,6 @@ public class XmlParsingUtils {
 
     private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY = createFactory();
 
-    private static final ThreadLocal<DocumentBuilder> DOCUMENT_BUILDER =
-            ThreadLocal.withInitial(() -> {
-                try {
-                    return DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
-                } catch (ParserConfigurationException e) {
-                    throw new IllegalStateException("Failed to create DocumentBuilder", e);
-                }
-            });
-
     private static DocumentBuilderFactory createFactory() {
         val factory = DocumentBuilderFactory.newInstance();
         try {

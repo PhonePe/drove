@@ -289,7 +289,7 @@ public class ContainerStatsObserver implements Managed {
                         .connect(doubleGauge("gpu_utilization_percentage",
                                             instanceInfo,
                                             gpu -> gpu.getData().getUtilizationAvgPercentage()))
-                        .connect(doubleGauge("gpu_mem_bandwidth_utilization_percentage",
+                        .connect(doubleGauge("gpu_memory_controller_utilization_percentage",
                                             instanceInfo,
                                             gpu -> gpu.getData().getMemoryBandwidthUtilizationAvgPercentage()))
                         .connect(gauge("gpu_memory_used_bytes",

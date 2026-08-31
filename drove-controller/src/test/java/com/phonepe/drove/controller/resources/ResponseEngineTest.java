@@ -416,6 +416,7 @@ class ResponseEngineTest {
                 102400,
                 51200,
                 153600,
+                6,
                 2,
                 8,
                 Map.of());
@@ -756,6 +757,7 @@ class ResponseEngineTest {
                         102400,
                         51200,
                         153600,
+                        6,
                         2,
                         8,
                         Map.of()))
