@@ -62,6 +62,12 @@ public class ExecutorSummary {
     @Schema(description = "Number of unallocated GPUs on this executor", example = "2")
     int freeGpus;
 
-    @Schema(description = "Total number of GPUs on this executor", example = "8")
-    int totalGpus;
+    @Schema(description = "Number of allocated GPUs on this executor", example = "6")
+    int usedGpus;
+
+    @Schema(description = "Comma-separated GPU vendor names on this executor", example = "NVIDIA")
+    String gpuVendor;
+
+    @Schema(description = "Comma-separated GPU model names on this executor", example = "A100-SXM4-40GB")
+    String gpuModel;
 }

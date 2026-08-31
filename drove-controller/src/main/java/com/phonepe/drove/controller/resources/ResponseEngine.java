@@ -426,10 +426,23 @@ public class ResponseEngine {
                         val snapshot = executorData.getState();
                         val gpuInfo = snapshot.getGpus();
                         val layout = snapshot.getLayout();
-                        int totalGpus = layout != null && layout.getGpus() != null
-                                ? layout.getGpus().size() : 0;
+                        val layoutGpus = layout != null && layout.getGpus() != null
+                                ? layout.getGpus() : Map.<String, com.phonepe.drove.models.info.GPUInfo>of();
+                        int totalGpus = layoutGpus.size();
                         int freeGpus = gpuInfo != null && gpuInfo.getFreeGpus() != null
                                 ? gpuInfo.getFreeGpus().size() : 0;
+                        int usedGpus = totalGpus - freeGpus;
+                        String gpuVendor = layoutGpus.values().stream()
+                                .map(com.phonepe.drove.models.info.GPUInfo::getGpuVendor)
+                                .filter(Objects::nonNull)
+                                .map(Enum::name)
+                                .distinct()
+                                .collect(Collectors.joining(", "));
+                        String gpuModel = layoutGpus.values().stream()
+                                .map(com.phonepe.drove.models.info.GPUInfo::getGpuModel)
+                                .filter(Objects::nonNull)
+                                .distinct()
+                                .collect(Collectors.joining(", "));
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                 hostInfo.getNodeData().getHostname(),
                                 hostInfo.getNodeData().getPort(),
@@ -461,7 +474,9 @@ public class ResponseEngine {
                                 executorData.getTags(),
                                 executorState,
                                 freeGpus,
-                                totalGpus));
+                                usedGpus,
+                                gpuVendor.isEmpty() ? null : gpuVendor,
+                                gpuModel.isEmpty() ? null : gpuModel));
                     }
                 });
     }

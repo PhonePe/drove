@@ -16,9 +16,10 @@
                 <th>Used Cores</th>
                 <th>Free Memory</th>
                 <th>Used Memory</th>
-                <th data-priority="10500">Tags</th>
+                <th>GPU</th>
                 <th>Free GPUs</th>
-                <th>Total GPUs</th>
+                <th>Used GPUs</th>
+                <th data-priority="10500">Tags</th>
             </tr>
             </thead>
         </table>
@@ -26,8 +27,10 @@
 {{/partial}}
 
 {{#partial "page_js"}}
+    const GPU_COL_INFO = 7;
     const GPU_COL_FREE = 8;
-    const GPU_COL_TOTAL = 9;
+    const GPU_COL_USED = 9;
+    const GPU_COLS = [GPU_COL_INFO, GPU_COL_FREE, GPU_COL_USED];
     var gpuColumnsVisible = false;
 
     const executors = $('#executors').DataTable({
@@ -50,9 +53,13 @@
             },
             {
                 className: 'text-center text-nowrap',
-                targets: [GPU_COL_FREE, GPU_COL_TOTAL]
+                targets: [GPU_COL_FREE, GPU_COL_USED]
             },
-            { visible: false, targets: [GPU_COL_FREE, GPU_COL_TOTAL] }
+            {
+                className: 'text-start text-wrap',
+                targets: [GPU_COL_INFO]
+            },
+            { visible: false, targets: GPU_COLS }
         ],
         columns: [
             {
@@ -74,6 +81,35 @@
             { data: 'freeMemory', render: tableBytesText },
             { data: 'usedMemory', render: tableBytesText },
             {
+                data: 'gpuModel',
+                render: function(data, type, row, meta) {
+                    if(type !== 'display') {
+                        return data || '';
+                    }
+                    if(!data && !row.gpuVendor) {
+                        return '—';
+                    }
+                    var model = data || '';
+                    var vendor = row.gpuVendor || '';
+                    if(vendor) {
+                        return '<span class="text-body-secondary" style="font-size:0.72rem;">' + vendor + '</span> ' + model;
+                    }
+                    return model || '—';
+                }
+            },
+            {
+                data: 'freeGpus',
+                render: function(data, type, row, meta) {
+                    return data || 0;
+                }
+            },
+            {
+                data: 'usedGpus',
+                render: function(data, type, row, meta) {
+                    return data || 0;
+                }
+            },
+            {
                 data: 'tags',
                 render: function(data, type, row, meta) {
                     if(type === 'sort') {
@@ -89,24 +125,6 @@
                     }
                     return tagStr;
                 }
-            },
-            {
-                data: 'freeGpus',
-                render: function(data, type, row, meta) {
-                    if(type !== 'display') {
-                        return data || 0;
-                    }
-                    return data || 0;
-                }
-            },
-            {
-                data: 'totalGpus',
-                render: function(data, type, row, meta) {
-                    if(type !== 'display') {
-                        return data || 0;
-                    }
-                    return data || 0;
-                }
             }
         ]
     });
@@ -114,15 +132,18 @@
     executors.on('xhr', function() {
         var data = executors.ajax.json();
         if(data && data.data) {
-            var hasGpus = data.data.some(function(row) { return row.totalGpus > 0; });
+            var hasGpus = data.data.some(function(row) {
+                return (row.freeGpus > 0) || (row.usedGpus > 0);
+            });
             $('#gpu-columns-toggle').toggle(hasGpus);
         }
     });
 
     $('#gpu-columns-toggle').on('click', function() {
         gpuColumnsVisible = !gpuColumnsVisible;
-        executors.column(GPU_COL_FREE).visible(gpuColumnsVisible);
-        executors.column(GPU_COL_TOTAL).visible(gpuColumnsVisible);
+        GPU_COLS.forEach(function(col) {
+            executors.column(col).visible(gpuColumnsVisible);
+        });
         $(this).text(gpuColumnsVisible ? 'Hide GPU columns' : 'Show GPU columns');
     });
 
