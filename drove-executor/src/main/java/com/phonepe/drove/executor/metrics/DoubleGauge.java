@@ -19,13 +19,11 @@ package com.phonepe.drove.executor.metrics;
 import com.codahale.metrics.Gauge;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.appform.signals.signalhandlers.SignalConsumer;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * A simple gauge to measure double values. The {@link SignalConsumer#consume(Object)} method needs to be overridden
  * to update the value
  */
-@Slf4j
 public abstract class DoubleGauge<R> implements Gauge<Double>, SignalConsumer<R> {
     private final AtomicDouble value;
 

@@ -615,6 +615,56 @@ class ControllerUtilsTest {
         assertEquals(0, freeNonExistent, "Should find 0 V100 GPUs");
     }
 
+    @Test
+    void testFreeGpusAndUsedGpus() {
+        val executor = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "A100"));
+        assertEquals(2, ControllerUtils.freeGpus(executor), "Should find 2 free GPUs");
+        assertEquals(0, ControllerUtils.usedGpus(executor), "Should find 0 used GPUs");
+    }
+
+    @Test
+    void testFreeGpusAndUsedGpusWithMixedState() {
+        val executor = buildExecutorWithGpuMixedState("executor-1",
+                Map.of("GPU-0", "H100", "GPU-1", "A100"),
+                List.of("GPU-1"));
+        assertEquals(1, ControllerUtils.freeGpus(executor), "Should find 1 free GPU");
+        assertEquals(1, ControllerUtils.usedGpus(executor), "Should find 1 used GPU");
+    }
+
+    @Test
+    void testFreeGpusAndUsedGpusWithNullGpuInfo() {
+        val executor = buildExecutorWithGpu("executor-1", Map.of());
+        assertEquals(0, ControllerUtils.freeGpus(executor), "Should find 0 free GPUs when no GPUs");
+        assertEquals(0, ControllerUtils.usedGpus(executor), "Should find 0 used GPUs when no GPUs");
+    }
+
+    @Test
+    void testSummarizeResourcesWithMixedVendors() {
+        val executorNvidia = buildExecutorWithGpuAndVendor("executor-1",
+                Map.of("GPU-0", GpuVendor.NVIDIA, "GPU-1", GpuVendor.NVIDIA));
+        val executorAmd = buildExecutorWithGpuAndVendor("executor-2",
+                Map.of("GPU-2", GpuVendor.AMD, "GPU-3", GpuVendor.AMD));
+        val executorIntel = buildExecutorWithGpuAndVendor("executor-3",
+                Map.of("GPU-4", GpuVendor.INTEL));
+
+        val summary = ControllerUtils.summarizeResources(List.of(executorNvidia, executorAmd, executorIntel));
+
+        assertEquals(5, summary.getTotalGpus(), "Should have 5 total GPUs");
+        assertEquals(5, summary.getFreeGpus(), "Should have 5 free GPUs");
+        assertEquals(0, summary.getUsedGpus(), "Should have 0 used GPUs");
+        assertEquals(2, summary.getGpuSummary().get("NVIDIA"), "Should have 2 NVIDIA GPUs");
+        assertEquals(2, summary.getGpuSummary().get("AMD"), "Should have 2 AMD GPUs");
+        assertEquals(1, summary.getGpuSummary().get("INTEL"), "Should have 1 INTEL GPU");
+    }
+
+    @Test
+    void testSummarizeResourcesWithNoGpus() {
+        val executor = buildExecutorWithGpu("executor-1", Map.of());
+        val summary = ControllerUtils.summarizeResources(List.of(executor));
+        assertEquals(0, summary.getTotalGpus(), "Should have 0 total GPUs");
+        assertTrue(summary.getGpuSummary().isEmpty(), "GPU summary should be empty");
+    }
+
     private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {
         Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
         val freeMemory = Map.of(0, 1024L * 1024 * 1024);
@@ -631,6 +681,89 @@ class ControllerUtilsTest {
                 new AvailableCPU(freeCores, Map.of()),
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(new ArrayList<>(gpuModels.keySet()), List.of()),
+                new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+        );
+
+        return new ExecutorHostInfo(
+                executorId,
+                new ExecutorNodeData(
+                        "host-" + executorId,
+                        8080,
+                        NodeTransportType.HTTP,
+                        new Date(),
+                        snapshot,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Set.of(),
+                        Map.of(),
+                        ExecutorState.ACTIVE
+                ),
+                Map.of(),
+                new ExecutorHostInfo.HostGPUInfo()
+        );
+    }
+
+    private ExecutorHostInfo buildExecutorWithGpuAndVendor(
+            String executorId, Map<String, GpuVendor> gpuVendors) {
+        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
+        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
+        val physicalGpus = gpuVendors.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), entry.getValue(), "Model-" + entry.getKey(), 0)));
+
+        val usedMemory = freeMemory.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+
+        val snapshot = new ExecutorResourceSnapshot(
+                executorId,
+                new AvailableCPU(freeCores, Map.of()),
+                new AvailableMemory(freeMemory, usedMemory),
+                new AvailableGPU(new ArrayList<>(gpuVendors.keySet()), List.of()),
+                new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+        );
+
+        return new ExecutorHostInfo(
+                executorId,
+                new ExecutorNodeData(
+                        "host-" + executorId,
+                        8080,
+                        NodeTransportType.HTTP,
+                        new Date(),
+                        snapshot,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Set.of(),
+                        Map.of(),
+                        ExecutorState.ACTIVE
+                ),
+                Map.of(),
+                new ExecutorHostInfo.HostGPUInfo()
+        );
+    }
+
+    private ExecutorHostInfo buildExecutorWithGpuMixedState(
+            String executorId, Map<String, String> gpuModels, List<String> usedGpuIds) {
+        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
+        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
+        val physicalGpus = gpuModels.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0)));
+
+        val usedMemory = freeMemory.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+
+        val freeGpuIds = new ArrayList<>(gpuModels.keySet());
+        freeGpuIds.removeAll(usedGpuIds);
+
+        val snapshot = new ExecutorResourceSnapshot(
+                executorId,
+                new AvailableCPU(freeCores, Map.of()),
+                new AvailableMemory(freeMemory, usedMemory),
+                new AvailableGPU(freeGpuIds, usedGpuIds),
                 new PhysicalLayout(freeCores, freeMemory, physicalGpus)
         );
 

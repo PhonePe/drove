@@ -55,7 +55,7 @@ import static com.phonepe.drove.executor.resourcemgmt.resourceloaders.XmlParsing
 
 @Slf4j
 @Singleton
-@Order(61)
+@Order(59)
 public class NvidiaGpuMetricsCollector implements Managed {
 
     static final String METRIC_PREFIX = "com.phonepe.drove.executor.gpu";
@@ -181,8 +181,13 @@ public class NvidiaGpuMetricsCollector implements Managed {
         updateLongMetric(METRIC_PREFIX + "_thermal_throttle_count", thermal.sumOrZero());
 
         val state = resourceManager.currentState().getGpuInfo();
-        updateLongMetric(METRIC_PREFIX + "_free_count", state.getFreeGpus().size());
-        updateLongMetric(METRIC_PREFIX + "_used_count", state.getUsedGpus().size());
+        if (state != null) {
+            updateLongMetric(METRIC_PREFIX + "_free_count", state.getFreeGpus().size());
+            updateLongMetric(METRIC_PREFIX + "_used_count", state.getUsedGpus().size());
+        } else {
+            updateLongMetric(METRIC_PREFIX + "_free_count", 0L);
+            updateLongMetric(METRIC_PREFIX + "_used_count", 0L);
+        }
 
         for (val gpu : gpus) {
             val prefix = METRIC_PREFIX + "_device_" + sanitizeDimension(gpu.gpuId()) + "_";

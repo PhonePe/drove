@@ -531,13 +531,16 @@
             $('#fc-mem').text(bytesToString(d.usedMemory) + '/' + bytesToString(d.totalMemory));
 
             if (d.gpuSummary && Object.keys(d.gpuSummary).length > 0) {
-                var vendorParts = [];
-                for (var vendor in d.gpuSummary) {
-                    vendorParts.push(vendor + ': ' + d.gpuSummary[vendor]);
-                }
+                var vendorSummary = gpuVendorSummary(d.gpuSummary);
                 updateProgress('#fc-gpu-bar', d.usedGpus, 0, d.totalGpus);
                 $('#fc-gpu').text(d.usedGpus + '/' + d.totalGpus);
-                $('#fc-gpu-wrap').attr('title', 'GPUs (used/total) — ' + vendorParts.join(', ')).show();
+                var tooltipTitle = 'GPUs (used/total)' + (vendorSummary ? ' — ' + vendorSummary : '');
+                var $gpuWrap = $('#fc-gpu-wrap');
+                $gpuWrap.attr('title', tooltipTitle).show();
+                var tip = bootstrap.Tooltip.getInstance($gpuWrap[0]);
+                if (tip) {
+                    tip.setContent({ '.tooltip-inner': tooltipTitle });
+                }
             } else {
                 $('#fc-gpu-wrap').hide();
             }
@@ -943,6 +946,17 @@
         const i = Math.floor(Math.log(bytes) / Math.log(k));
 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function gpuVendorSummary(gpuSummary) {
+        if (!gpuSummary || Object.keys(gpuSummary).length === 0) {
+            return null;
+        }
+        var vendorParts = [];
+        for (var vendor in gpuSummary) {
+            vendorParts.push(vendor + ': ' + gpuSummary[vendor]);
+        }
+        return vendorParts.join(', ');
     }
 
     function insertEmptyTable(settings, table, count) {

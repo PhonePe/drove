@@ -323,17 +323,17 @@ public class ContainerStatsObserver implements Managed {
         return instanceInfo.accept(new DeployedInstanceInfoVisitor<List<ResourceAllocation>>() {
                     @Override
                     public List<ResourceAllocation> visit(InstanceInfo applicationInstanceInfo) {
-                        return applicationInstanceInfo.getResources();
+                        return Objects.requireNonNullElse(applicationInstanceInfo.getResources(), List.of());
                     }
 
                     @Override
                     public List<ResourceAllocation> visit(TaskInfo taskInfo) {
-                        return taskInfo.getResources();
+                        return Objects.requireNonNullElse(taskInfo.getResources(), List.of());
                     }
 
                     @Override
                     public List<ResourceAllocation> visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
-                        return localServiceInstanceInfo.getResources();
+                        return Objects.requireNonNullElse(localServiceInstanceInfo.getResources(), List.of());
                     }
                 })
                 .stream()
@@ -348,17 +348,17 @@ public class ContainerStatsObserver implements Managed {
         return instanceInfo.accept(new DeployedInstanceInfoVisitor<List<ResourceAllocation>>() {
                     @Override
                     public List<ResourceAllocation> visit(InstanceInfo applicationInstanceInfo) {
-                        return applicationInstanceInfo.getResources();
+                        return Objects.requireNonNullElse(applicationInstanceInfo.getResources(), List.of());
                     }
 
                     @Override
                     public List<ResourceAllocation> visit(TaskInfo taskInfo) {
-                        return taskInfo.getResources();
+                        return Objects.requireNonNullElse(taskInfo.getResources(), List.of());
                     }
 
                     @Override
                     public List<ResourceAllocation> visit(LocalServiceInstanceInfo localServiceInstanceInfo) {
-                        return localServiceInstanceInfo.getResources();
+                        return Objects.requireNonNullElse(localServiceInstanceInfo.getResources(), List.of());
                     }
                 })
                 .stream()
@@ -459,7 +459,9 @@ public class ContainerStatsObserver implements Managed {
                 .filter(sample -> allocatedGpuIds.contains(sample.gpuId()))
                 .toList();
         if (samples.isEmpty()) {
-            return new InstanceGpuMetrics(allocatedGpuIds.size(), 0, 0D, 0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D, 0L);
+            return InstanceGpuMetrics.builder()
+                    .allocatedDeviceCount(allocatedGpuIds.size())
+                    .build();
         }
         val gpuUtil = new NvidiaGpuMetricsCollector.Aggregator<Double>();
         val memBwUtil = new NvidiaGpuMetricsCollector.Aggregator<Double>();
@@ -483,19 +485,20 @@ public class ContainerStatsObserver implements Managed {
             smClock.add(sample.smClockMhz());
             thermal.add(sample.thermalThrottled());
         }
-        return new InstanceGpuMetrics(
-                allocatedGpuIds.size(),
-                samples.size(),
-                gpuUtil.averageOrZero(),
-                memBwUtil.averageOrZero(),
-                memUsed.sumOrZero(),
-                memTotal.sumOrZero(),
-                memUtil.averageOrZero(),
-                temp.averageOrZero(),
-                power.sumOrZero(),
-                memTemp.averageOrZero(),
-                smClock.averageOrZero(),
-                thermal.sumOrZero());
+        return InstanceGpuMetrics.builder()
+                .allocatedDeviceCount(allocatedGpuIds.size())
+                .observedDeviceCount(samples.size())
+                .utilizationAvgPercentage(gpuUtil.averageOrZero())
+                .memoryBandwidthUtilizationAvgPercentage(memBwUtil.averageOrZero())
+                .memoryUsedTotalBytes(memUsed.sumOrZero())
+                .memoryTotalTotalBytes(memTotal.sumOrZero())
+                .memoryUtilizationAvgPercentage(memUtil.averageOrZero())
+                .temperatureAvgCelsius(temp.averageOrZero())
+                .powerDrawTotalWatts(power.sumOrZero())
+                .memoryTempAvgCelsius(memTemp.averageOrZero())
+                .smClockAvgMhz(smClock.averageOrZero())
+                .thermalThrottleCount(thermal.sumOrZero())
+                .build();
     }
 
     private static double memoryUtilization(final NvidiaGpuMetricsCollector.GpuSample sample) {
@@ -564,7 +567,7 @@ public class ContainerStatsObserver implements Managed {
 
     @Value
     static class InstanceGpuMetrics {
-        static final InstanceGpuMetrics ZERO = new InstanceGpuMetrics(0, 0, 0D,0D, 0L, 0L, 0D, 0D, 0D, 0D, 0D,  0L);
+        static final InstanceGpuMetrics ZERO = builder().build();
         long allocatedDeviceCount;
         long observedDeviceCount;
         double utilizationAvgPercentage;
@@ -577,6 +580,34 @@ public class ContainerStatsObserver implements Managed {
         double memoryTempAvgCelsius;
         double smClockAvgMhz;
         long thermalThrottleCount;
+
+        @lombok.Builder
+        public InstanceGpuMetrics(
+                long allocatedDeviceCount,
+                long observedDeviceCount,
+                double utilizationAvgPercentage,
+                double memoryBandwidthUtilizationAvgPercentage,
+                long memoryUsedTotalBytes,
+                long memoryTotalTotalBytes,
+                double memoryUtilizationAvgPercentage,
+                double temperatureAvgCelsius,
+                double powerDrawTotalWatts,
+                double memoryTempAvgCelsius,
+                double smClockAvgMhz,
+                long thermalThrottleCount) {
+            this.allocatedDeviceCount = allocatedDeviceCount;
+            this.observedDeviceCount = observedDeviceCount;
+            this.utilizationAvgPercentage = utilizationAvgPercentage;
+            this.memoryBandwidthUtilizationAvgPercentage = memoryBandwidthUtilizationAvgPercentage;
+            this.memoryUsedTotalBytes = memoryUsedTotalBytes;
+            this.memoryTotalTotalBytes = memoryTotalTotalBytes;
+            this.memoryUtilizationAvgPercentage = memoryUtilizationAvgPercentage;
+            this.temperatureAvgCelsius = temperatureAvgCelsius;
+            this.powerDrawTotalWatts = powerDrawTotalWatts;
+            this.memoryTempAvgCelsius = memoryTempAvgCelsius;
+            this.smClockAvgMhz = smClockAvgMhz;
+            this.thermalThrottleCount = thermalThrottleCount;
+        }
     }
 
     private static String metricName(final DeployedInstanceInfo instanceInfo, String name) {

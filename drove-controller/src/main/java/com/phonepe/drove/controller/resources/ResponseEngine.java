@@ -304,7 +304,11 @@ public class ResponseEngine {
                                 val layoutGpus = snapshot.getLayout() != null
                                         ? snapshot.getLayout().getGpus()
                                         : Map.<String, com.phonepe.drove.models.info.GPUInfo>of();
-                                layoutGpus.forEach((gpuId, gpuInfo) -> gpus.add(
+                                layoutGpus.forEach((gpuId, gpuInfo) -> {
+                                    if (gpuInfo == null || gpuInfo.getGpuVendor() == null) {
+                                        return;
+                                    }
+                                    gpus.add(
                                         new GpuResourceInfo(
                                                 hostInfo.getExecutorId(),
                                                 hostInfo.getNodeData().getHostname(),
@@ -314,7 +318,8 @@ public class ResponseEngine {
                                                 freeGpuIds.contains(gpuId)
                                                         ? GpuResourceInfo.GpuState.FREE
                                                         : GpuResourceInfo.GpuState.IN_USE,
-                                                gpuInfo.getNumaNodeAffinity())));
+                                                gpuInfo.getNumaNodeAffinity()));
+                                });
                                 return null;
                             }
                         }));

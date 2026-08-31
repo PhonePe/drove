@@ -353,14 +353,11 @@
 
         // GPUs (only shown when GPUs exist)
         if (d.gpuSummary && Object.keys(d.gpuSummary).length > 0) {
-            var vendorParts = [];
-            for (var vendor in d.gpuSummary) {
-                vendorParts.push(vendor + ': ' + d.gpuSummary[vendor]);
-            }
+            var vendorSummary = gpuVendorSummary(d.gpuSummary);
             $('#dash-gpu-text').text(d.usedGpus + ' / ' + d.totalGpus);
             updateProgress('#dash-gpu-bar', d.usedGpus, 0, d.totalGpus);
             $('#dash-gpu-free').text((d.totalGpus - d.usedGpus) + ' free');
-            $('#dash-gpu-card').attr('title', vendorParts.join(', ')).show();
+            $('#dash-gpu-card').attr('title', vendorSummary || '').show();
         } else {
             $('#dash-gpu-card').hide();
         }
