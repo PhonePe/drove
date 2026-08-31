@@ -64,7 +64,6 @@ import com.phonepe.drove.models.api.DroveEventsList;
 import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.api.ExecutorSummary;
 import com.phonepe.drove.models.api.ExposedAppInfo;
-import com.phonepe.drove.models.api.GpuResourceInfo;
 import com.phonepe.drove.models.api.LocalServiceSummary;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
@@ -284,50 +283,6 @@ public class ResponseEngine {
                 .orElse(failure("No executor found with id: " + executorId));
     }
 
-    public ApiResponse<List<GpuResourceInfo>> gpus() {
-        val gpus = new ArrayList<GpuResourceInfo>();
-        clusterResourcesDB.currentSnapshot(false)
-                .forEach(hostInfo -> hostInfo.getNodeData()
-                        .accept(new NodeDataVisitor<Void>() {
-                            @Override
-                            public Void visit(ControllerNodeData controllerData) {
-                                return null;
-                            }
-
-                            @Override
-                            public Void visit(ExecutorNodeData executorData) {
-                                val snapshot = executorData.getState();
-                                if (snapshot == null || snapshot.getGpus() == null) {
-                                    return null;
-                                }
-                                val freeGpuIds = Set.copyOf(snapshot.getGpus().getFreeGpus());
-                                val layoutGpus = snapshot.getLayout() != null
-                                        ? snapshot.getLayout().getGpus()
-                                        : Map.<String, com.phonepe.drove.models.info.GPUInfo>of();
-                                layoutGpus.forEach((gpuId, gpuInfo) -> {
-                                    if (gpuInfo == null || gpuInfo.getGpuVendor() == null) {
-                                        return;
-                                    }
-                                    gpus.add(
-                                        new GpuResourceInfo(
-                                                hostInfo.getExecutorId(),
-                                                hostInfo.getNodeData().getHostname(),
-                                                gpuId,
-                                                gpuInfo.getGpuVendor(),
-                                                gpuInfo.getGpuModel(),
-                                                freeGpuIds.contains(gpuId)
-                                                        ? GpuResourceInfo.GpuState.FREE
-                                                        : GpuResourceInfo.GpuState.IN_USE,
-                                                gpuInfo.getNumaNodeAffinity()));
-                                });
-                                return null;
-                            }
-                        }));
-        gpus.sort(Comparator.comparing(GpuResourceInfo::getExecutorId)
-                .thenComparing(GpuResourceInfo::getGpuId));
-        return success(gpus);
-    }
-
     public ApiResponse<List<ExposedAppInfo>> endpoints(Set<String> appNames) {
         //TODO::HANDLE EXPOSURE MODE
         val apps = applicationStateDB.applications(0, Integer.MAX_VALUE)
@@ -468,40 +423,45 @@ public class ResponseEngine {
                         val backlistedState = executorData.getExecutorState();
                         val executorState = removed ? ExecutorState.REMOVED
                                 : backlistedState;
+                        val snapshot = executorData.getState();
+                        val gpuInfo = snapshot.getGpus();
+                        val layout = snapshot.getLayout();
+                        int totalGpus = layout != null && layout.getGpus() != null
+                                ? layout.getGpus().size() : 0;
+                        int freeGpus = gpuInfo != null && gpuInfo.getFreeGpus() != null
+                                ? gpuInfo.getFreeGpus().size() : 0;
                         return Optional.of(new ExecutorSummary(hostInfo.getExecutorId(),
                                 hostInfo.getNodeData().getHostname(),
                                 hostInfo.getNodeData().getPort(),
                                 hostInfo.getNodeData().getTransportType(),
-                                executorData.getState()
-                                        .getCpus()
+                                snapshot.getCpus()
                                         .getFreeCores()
                                         .values()
                                         .stream()
                                         .mapToInt(Set::size)
                                         .sum(),
-                                executorData.getState()
-                                        .getCpus()
+                                snapshot.getCpus()
                                         .getUsedCores()
                                         .values()
                                         .stream()
                                         .mapToInt(Set::size)
                                         .sum(),
-                                executorData.getState()
-                                        .getMemory()
+                                snapshot.getMemory()
                                         .getFreeMemory()
                                         .values()
                                         .stream()
                                         .mapToLong(v -> v)
                                         .sum(),
-                                executorData.getState()
-                                        .getMemory()
+                                snapshot.getMemory()
                                         .getUsedMemory()
                                         .values()
                                         .stream()
                                         .mapToLong(v -> v)
                                         .sum(),
                                 executorData.getTags(),
-                                executorState));
+                                executorState,
+                                freeGpus,
+                                totalGpus));
                     }
                 });
     }

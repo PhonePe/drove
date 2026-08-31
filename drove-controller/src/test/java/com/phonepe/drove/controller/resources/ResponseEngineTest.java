@@ -78,7 +78,6 @@ import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.api.BlacklistOperationResponse;
 import com.phonepe.drove.models.api.ClusterSummary;
 import com.phonepe.drove.models.api.DashboardData;
-import com.phonepe.drove.models.api.GpuResourceInfo;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
@@ -803,94 +802,6 @@ class ResponseEngineTest {
         assertEquals(FAILED, res.getStatus());
         assertEquals("Could not fetch dashboard data", res.getMessage());
         assertNull(res.getData());
-    }
-
-    @Test
-    void testGpusEmpty() {
-        when(clusterResourcesDB.currentSnapshot(false))
-                .thenReturn(IntStream.rangeClosed(1, 5)
-                                    .mapToObj(ControllerTestUtils::executorHost)
-                                    .toList());
-        val r = re.gpus();
-        assertEquals(SUCCESS, r.getStatus());
-        assertNotNull(r.getData());
-        assertTrue(r.getData().isEmpty());
-    }
-
-    @Test
-    void testGpusWithDevices() {
-        val gpuId1 = "GPU-aaaa-1111";
-        val gpuId2 = "GPU-bbbb-2222";
-        val gpuInfo1 = new com.phonepe.drove.models.info.GPUInfo(
-                gpuId1,
-                com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA,
-                "A100-SXM4-40GB",
-                0);
-        val gpuInfo2 = new com.phonepe.drove.models.info.GPUInfo(
-                gpuId2,
-                com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA,
-                "A100-SXM4-40GB",
-                1);
-        val layout = com.phonepe.drove.models.info.resources.PhysicalLayout.builder()
-                .cores(Map.of(0, Set.of(0, 1, 2, 3, 4)))
-                .memory(Map.of(0, 4L * 128 * (2L ^ 20)))
-                .gpus(Map.of(gpuId1, gpuInfo1, gpuId2, gpuInfo2))
-                .build();
-        val snapshot = com.phonepe.drove.models.info.ExecutorResourceSnapshot.builder()
-                .executorId("Ex1")
-                .cpus(new com.phonepe.drove.models.info.resources.available.AvailableCPU(
-                        Map.of(0, Set.of(2, 3, 4)),
-                        Map.of(1, Set.of(0, 1))))
-                .memory(new com.phonepe.drove.models.info.resources.available.AvailableMemory(
-                        Map.of(0, 3 * 128 * (2L ^ 20)),
-                        Map.of(0, 128 * (2L ^ 20))))
-                .gpus(new com.phonepe.drove.models.info.resources.available.AvailableGPU(
-                        List.of(gpuId1),
-                        List.of(gpuId2)))
-                .layout(layout)
-                .build();
-        val executorData = new com.phonepe.drove.models.info.nodedata.ExecutorNodeData(
-                "host1",
-                8080,
-                com.phonepe.drove.models.info.nodedata.NodeTransportType.HTTP,
-                new Date(),
-                snapshot,
-                List.of(),
-                List.of(),
-                List.of(),
-                Set.of(),
-                Map.of(),
-                com.phonepe.drove.models.info.nodedata.ExecutorState.ACTIVE);
-        val hostInfo = new ExecutorHostInfo(
-                "Ex1",
-                executorData,
-                Map.of(0, new ExecutorHostInfo.NumaNodeInfo()),
-                new ExecutorHostInfo.HostGPUInfo());
-
-        when(clusterResourcesDB.currentSnapshot(false)).thenReturn(List.of(hostInfo));
-
-        val r = re.gpus();
-        assertEquals(SUCCESS, r.getStatus());
-        assertNotNull(r.getData());
-        assertEquals(2, r.getData().size());
-
-        val freeGpu = r.getData().stream()
-                .filter(g -> g.getGpuId().equals(gpuId1))
-                .findFirst()
-                .orElseThrow();
-        assertEquals("Ex1", freeGpu.getExecutorId());
-        assertEquals("host1", freeGpu.getHostname());
-        assertEquals(com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA, freeGpu.getVendor());
-        assertEquals("A100-SXM4-40GB", freeGpu.getModel());
-        assertEquals(GpuResourceInfo.GpuState.FREE, freeGpu.getState());
-        assertEquals(0, freeGpu.getNumaNodeAffinity());
-
-        val usedGpu = r.getData().stream()
-                .filter(g -> g.getGpuId().equals(gpuId2))
-                .findFirst()
-                .orElseThrow();
-        assertEquals(GpuResourceInfo.GpuState.IN_USE, usedGpu.getState());
-        assertEquals(1, usedGpu.getNumaNodeAffinity());
     }
 
 

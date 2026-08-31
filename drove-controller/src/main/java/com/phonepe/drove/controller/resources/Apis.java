@@ -510,15 +510,6 @@ public class Apis {
         return responseEngine.executorDetails(executorId);
     }
 
-    @GET
-    @Path("/cluster/gpus")
-    @Timed
-    @Operation(summary = "List GPU resources", description = "Get a list of all GPU devices across all executors in the cluster", tags = {"Cluster"})
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "List of GPU resources")
-    public ApiResponse<List<GpuResourceInfo>> gpus() {
-        return responseEngine.gpus();
-    }
-
     @POST
     @Path("/cluster/executors/{id}/blacklist")
     @Timed

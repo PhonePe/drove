@@ -58,4 +58,10 @@ public class ExecutorSummary {
 
     @Schema(description = "Current state of the executor")
     ExecutorState state;
+
+    @Schema(description = "Number of unallocated GPUs on this executor", example = "2")
+    int freeGpus;
+
+    @Schema(description = "Total number of GPUs on this executor", example = "8")
+    int totalGpus;
 }
