@@ -56,6 +56,8 @@ import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.dropwizard.testing.junit5.ResourceExtension;
 import lombok.val;
+
+import org.apache.http.util.EntityUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
@@ -153,7 +155,7 @@ class ApisTest {
             try (val r = EXT.target("/v1/applications/validate/spec")
                     .request()
                     .post(Entity.json(Map.of()))) {
-                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
         }
         { //Force a app level failure
@@ -544,7 +546,7 @@ class ApisTest {
             try (val r = EXT.target("/v1/localservices/validate/spec")
                     .request()
                     .post(Entity.json(Map.of()))) {
-                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
         }
         { //Force a failure
@@ -860,7 +862,7 @@ class ApisTest {
             try (val r = EXT.target("/v1/tasks/validate/spec")
                     .request()
                     .post(Entity.json(Map.of()))) {
-                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
+                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
             }
         }
         { //Force a app level failure
