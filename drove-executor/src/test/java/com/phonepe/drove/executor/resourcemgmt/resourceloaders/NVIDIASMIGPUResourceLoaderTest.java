@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.GPUInfo;
@@ -200,7 +201,7 @@ class NVIDIASMIGPUResourceLoaderTest {
         };
 
         val gpusById = underTest.loadGPUInfo().stream()
-                .collect(java.util.stream.Collectors.toUnmodifiableMap(GPUInfo::getGpuId, gpu -> gpu));
+                .collect(Collectors.toUnmodifiableMap(GPUInfo::getGpuId, gpu -> gpu));
         assertEquals(2, gpusById.size());
         assertEquals(0, gpusById.get("GPU-FIRST").getNumaNodeAffinity());
         assertEquals(1, gpusById.get("GPU-SECOND").getNumaNodeAffinity());
@@ -264,7 +265,7 @@ class NVIDIASMIGPUResourceLoaderTest {
         };
 
         val gpusById = underTest.loadGPUInfo().stream()
-                .collect(java.util.stream.Collectors.toUnmodifiableMap(GPUInfo::getGpuId, gpu -> gpu));
+                .collect(Collectors.toUnmodifiableMap(GPUInfo::getGpuId, gpu -> gpu));
         assertEquals(2, gpusById.size());
         assertTrue(gpusById.containsKey("MIG-1111"));
         assertTrue(gpusById.containsKey("MIG-2222"));

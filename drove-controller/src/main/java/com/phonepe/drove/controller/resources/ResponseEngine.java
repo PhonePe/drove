@@ -74,6 +74,7 @@ import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeRemovedEvent;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
+import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
@@ -427,19 +428,20 @@ public class ResponseEngine {
                         val gpuInfo = snapshot.getGpus();
                         val layout = snapshot.getLayout();
                         val layoutGpus = layout != null && layout.getGpus() != null
-                                ? layout.getGpus() : Map.<String, com.phonepe.drove.models.info.GPUInfo>of();
+                                ? layout.getGpus() : Map.<String, GPUInfo>of();
                         int totalGpus = layoutGpus.size();
                         int freeGpus = gpuInfo != null && gpuInfo.getFreeGpus() != null
                                 ? gpuInfo.getFreeGpus().size() : 0;
-                        int usedGpus = totalGpus - freeGpus;
+                        int usedGpus = gpuInfo != null && gpuInfo.getUsedGpus() != null
+                                ? gpuInfo.getUsedGpus().size() : 0;
                         String gpuVendor = layoutGpus.values().stream()
-                                .map(com.phonepe.drove.models.info.GPUInfo::getGpuVendor)
+                                .map(GPUInfo::getGpuVendor)
                                 .filter(Objects::nonNull)
                                 .map(Enum::name)
                                 .distinct()
                                 .collect(Collectors.joining(", "));
                         String gpuModel = layoutGpus.values().stream()
-                                .map(com.phonepe.drove.models.info.GPUInfo::getGpuModel)
+                                .map(GPUInfo::getGpuModel)
                                 .filter(Objects::nonNull)
                                 .distinct()
                                 .collect(Collectors.joining(", "));

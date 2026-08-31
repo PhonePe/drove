@@ -951,7 +951,7 @@ class ApisTest {
                 1024_000,
                 2,
                 8,
-                java.util.Map.of());
+                Map.of());
         when(responseEngine.cluster()).thenReturn(ApiResponse.success(clusterSummary));
         val r = EXT.target("/v1/cluster")
                 .request()
@@ -1146,7 +1146,7 @@ class ApisTest {
                         1024_000,
                         2,
                         8,
-                        java.util.Map.of()))
+                        Map.of()))
                 .appStats(DashboardData.AppStats.builder()
                         .appCountByState(Map.of(ApplicationState.RUNNING, 5L))
                         .topApps(List.of())

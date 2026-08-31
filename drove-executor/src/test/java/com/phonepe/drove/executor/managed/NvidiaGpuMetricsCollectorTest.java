@@ -155,7 +155,7 @@ class NvidiaGpuMetricsCollectorTest {
         assertEquals(35D,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_memory_controller_utilization_average_percentage").getValue());
         assertEquals(1L,
-                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_thermal_throttle_count").getValue());
+                metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_thermal_throttled_devices").getValue());
         assertEquals(60D,
                 metricRegistry.getGauges().get("com.phonepe.drove.executor.gpu_device_GPU_1111_AAAA_memory_temperature_celsius").getValue());
         assertEquals(1400D,

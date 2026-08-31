@@ -47,7 +47,7 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(62.5D, metrics.getMemoryTempAvgCelsius());
         assertEquals(1390D, metrics.getSmClockAvgMhz());
 
-        assertEquals(0L, metrics.getThermalThrottleCount());
+        assertEquals(0L, metrics.getThermalThrottledDevices());
     }
 
     @Test
@@ -65,7 +65,7 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(0D, metrics.getPowerDrawTotalWatts());
         assertEquals(0D, metrics.getMemoryTempAvgCelsius());
         assertEquals(0D, metrics.getSmClockAvgMhz());
-        assertEquals(0L, metrics.getThermalThrottleCount());
+        assertEquals(0L, metrics.getThermalThrottledDevices());
     }
 
     @Test
@@ -87,7 +87,7 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(0D, metrics.getPowerDrawTotalWatts());
         assertEquals(0D, metrics.getMemoryTempAvgCelsius());
         assertEquals(0D, metrics.getSmClockAvgMhz());
-        assertEquals(0L, metrics.getThermalThrottleCount());
+        assertEquals(0L, metrics.getThermalThrottledDevices());
     }
 
     @Test
@@ -100,7 +100,7 @@ class ContainerStatsObserverGpuMetricsTest {
         ContainerStatsObserver.InstanceGpuMetrics metrics =
                 ContainerStatsObserver.aggregateGpuMetrics(Set.of("GPU-1", "GPU-2"), snapshot);
 
-        assertEquals(2L, metrics.getThermalThrottleCount());
+        assertEquals(2L, metrics.getThermalThrottledDevices());
         assertEquals(62.5D, metrics.getMemoryTempAvgCelsius());
         assertEquals(1390D, metrics.getSmClockAvgMhz());
     }
@@ -133,7 +133,7 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(0D, metrics.getPowerDrawTotalWatts());
         assertEquals(0D, metrics.getMemoryTempAvgCelsius());
         assertEquals(0D, metrics.getSmClockAvgMhz());
-        assertEquals(0L, metrics.getThermalThrottleCount());
+        assertEquals(0L, metrics.getThermalThrottledDevices());
     }
 
     @Test
@@ -171,6 +171,6 @@ class ContainerStatsObserverGpuMetricsTest {
         assertEquals(220D, metrics.getPowerDrawTotalWatts());
         assertEquals(70D, metrics.getMemoryTempAvgCelsius());
         assertEquals(1400D, metrics.getSmClockAvgMhz());
-        assertEquals(1L, metrics.getThermalThrottleCount());
+        assertEquals(1L, metrics.getThermalThrottledDevices());
     }
 }

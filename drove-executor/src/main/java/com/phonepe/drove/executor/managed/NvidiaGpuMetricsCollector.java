@@ -114,6 +114,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
         poller.disconnect(POLLER_HANDLER);
         poller.close();
         running = false;
+        latestSnapshot = new Snapshot(List.of());
         metricRegistry.removeMatching(MetricFilter.startsWith(METRIC_PREFIX));
         longMetrics.clear();
         doubleMetrics.clear();
@@ -178,7 +179,7 @@ public class NvidiaGpuMetricsCollector implements Managed {
         updateLongMetric(METRIC_PREFIX + "_memory_total_total_bytes", memTotal.sumOrZero());
         updateDoubleMetric(METRIC_PREFIX + "_memory_temperature_average_celsius", memTemp.averageOrZero());
         updateDoubleMetric(METRIC_PREFIX + "_sm_clock_average_mhz", smClock.averageOrZero());
-        updateLongMetric(METRIC_PREFIX + "_thermal_throttle_count", thermal.sumOrZero());
+        updateLongMetric(METRIC_PREFIX + "_thermal_throttled_devices", thermal.sumOrZero());
 
         val state = resourceManager.currentState().getGpuInfo();
         if (state != null) {
