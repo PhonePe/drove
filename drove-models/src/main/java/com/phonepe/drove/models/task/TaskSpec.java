@@ -99,6 +99,9 @@ public class TaskSpec implements DeploymentSpec {
     @Schema(description = "User specification for running containers as non-root user")
     UserSpec userSpec;
 
+    @Schema(description = "Type of job - always COMPUTATION for tasks", requiredMode = Schema.RequiredMode.REQUIRED)
+    JobType type = JobType.COMPUTATION;
+
     @Override
     public <T> T accept(DeploymentSpecVisitor<T> visitor) {
         return visitor.visit(this);

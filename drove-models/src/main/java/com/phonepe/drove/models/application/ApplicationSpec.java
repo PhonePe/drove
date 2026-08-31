@@ -77,7 +77,7 @@ public class ApplicationSpec implements DeploymentSpec {
 
     @NotNull(message = "- Specify if job is a computation or a service")
     @Schema(description = "Type of job - SERVICE for long-running services, COMPUTATION for batch jobs", requiredMode = Schema.RequiredMode.REQUIRED)
-    JobType type;
+    JobType type = JobType.SERVICE;
 
     @Valid
     @Schema(description = "Logging configuration for the application")

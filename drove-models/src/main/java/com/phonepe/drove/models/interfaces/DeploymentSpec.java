@@ -16,6 +16,9 @@
 
 package com.phonepe.drove.models.interfaces;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
@@ -25,6 +28,8 @@ import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.config.ConfigSpec;
+import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.task.TaskSpec;
 
 import java.util.List;
 import java.util.Map;
@@ -32,11 +37,16 @@ import java.util.Map;
 /**
  *
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+        @JsonSubTypes.Type(name = "SERVICE", value = ApplicationSpec.class),
+        @JsonSubTypes.Type(name = "COMPUTATION", value = TaskSpec.class),
+        @JsonSubTypes.Type(name = "LOCAL_SERVICE", value = LocalServiceSpec.class),
+})
 public interface DeploymentSpec {
+    JobType getType();
 
     ExecutableCoordinates getExecutable();
-
-    JobType getType();
 
     List<MountedVolume> getVolumes();
 

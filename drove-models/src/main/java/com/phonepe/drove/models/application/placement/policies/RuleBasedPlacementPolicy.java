@@ -39,7 +39,7 @@ import javax.validation.constraints.NotNull;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-@Schema(description = "Placement policy that uses custom HOPE, MVEL, or CEL rules for flexible container placement decisions")
+@Schema(description = "Placement policy that uses custom HOPE or MVEL rules for flexible container placement decisions")
 public class RuleBasedPlacementPolicy extends PlacementPolicy {
 
     public static final String HOPE_RULE = "HOPE";
@@ -53,7 +53,7 @@ public class RuleBasedPlacementPolicy extends PlacementPolicy {
         HOPE(HOPE_RULE),
         @Schema(description = "MVEL expression language for complex placement rules")
         MVEL(MVEL_RULE),
-        @Schema(description = "CEL (Common Expression Language) for type-safe placement rules")
+        @Schema(description = "CEL expression language for placement rules")
         CEL(CEL_RULE);
 
         private final String name;

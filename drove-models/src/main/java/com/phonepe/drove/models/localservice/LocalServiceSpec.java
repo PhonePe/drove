@@ -77,9 +77,8 @@ public class LocalServiceSpec implements DeploymentSpec {
     @Schema(description = "Configuration specifications for the service")
     List<ConfigSpec> configs;
 
-    @NotNull(message = "- Specify if job is a computation or a service")
     @Schema(description = "Type of job - SERVICE for long-running services, COMPUTATION for batch jobs", requiredMode = Schema.RequiredMode.REQUIRED)
-    JobType type;
+    JobType type = JobType.LOCAL_SERVICE;
 
     @Valid
     @Schema(description = "Logging configuration for the service")
