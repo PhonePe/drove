@@ -80,5 +80,5 @@ public class ClusterSummary {
     int totalGpus;
 
     @Schema(description = "GPU count by vendor across all executors. Empty when no GPUs are present.")
-    Map<String, Integer> gpuSummary;
+    Map<String, Integer> gpuVendorCounts;
 }

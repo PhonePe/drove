@@ -352,8 +352,8 @@
         $('#dash-mem-free').text(bytesToString(d.freeMemory) + ' free');
 
         // GPUs (only shown when GPUs exist)
-        if (d.gpuSummary && Object.keys(d.gpuSummary).length > 0) {
-            var vendorSummary = gpuVendorSummary(d.gpuSummary);
+        if (d.gpuVendorCounts && Object.keys(d.gpuVendorCounts).length > 0) {
+            var vendorSummary = gpuVendorSummary(d.gpuVendorCounts);
             $('#dash-gpu-text').text(d.usedGpus + ' / ' + d.totalGpus);
             updateProgress('#dash-gpu-bar', d.usedGpus, 0, d.totalGpus);
             $('#dash-gpu-free').text(d.freeGpus + ' free');

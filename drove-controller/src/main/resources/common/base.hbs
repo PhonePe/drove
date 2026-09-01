@@ -530,8 +530,8 @@
             updateProgress('#fc-mem-bar', d.usedMemory, 0, d.totalMemory);
             $('#fc-mem').text(bytesToString(d.usedMemory) + '/' + bytesToString(d.totalMemory));
 
-            if (d.gpuSummary && Object.keys(d.gpuSummary).length > 0) {
-                var vendorSummary = gpuVendorSummary(d.gpuSummary);
+            if (d.gpuVendorCounts && Object.keys(d.gpuVendorCounts).length > 0) {
+                var vendorSummary = gpuVendorSummary(d.gpuVendorCounts);
                 updateProgress('#fc-gpu-bar', d.usedGpus, 0, d.totalGpus);
                 $('#fc-gpu').text(d.usedGpus + '/' + d.totalGpus);
                 var tooltipTitle = 'GPUs (used/total)' + (vendorSummary ? ' — ' + vendorSummary : '');
@@ -947,13 +947,13 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 
-    function gpuVendorSummary(gpuSummary) {
-        if (!gpuSummary || Object.keys(gpuSummary).length === 0) {
+    function gpuVendorSummary(gpuVendorCounts) {
+        if (!gpuVendorCounts || Object.keys(gpuVendorCounts).length === 0) {
             return null;
         }
         var vendorParts = [];
-        for (var vendor in gpuSummary) {
-            vendorParts.push(vendor + ': ' + gpuSummary[vendor]);
+        for (var vendor in gpuVendorCounts) {
+            vendorParts.push(vendor + ': ' + gpuVendorCounts[vendor]);
         }
         return vendorParts.join(', ');
     }

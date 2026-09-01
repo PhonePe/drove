@@ -430,7 +430,6 @@ public class ResponseEngine {
                                 ? layout.getGpus() : Map.<String, GPUInfo>of();
                         int freeGpus = ControllerUtils.freeGpus(hostInfo);
                         int usedGpus = ControllerUtils.usedGpus(hostInfo);
-                        int totalGpus = layoutGpus.size();
                         String gpuVendor = layoutGpus.values().stream()
                                 .map(GPUInfo::getGpuVendor)
                                 .filter(Objects::nonNull)
@@ -474,7 +473,6 @@ public class ResponseEngine {
                                 executorState,
                                 freeGpus,
                                 usedGpus,
-                                totalGpus,
                                 gpuVendor.isEmpty() ? null : gpuVendor,
                                 gpuModel.isEmpty() ? null : gpuModel));
                     }

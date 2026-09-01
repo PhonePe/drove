@@ -652,9 +652,9 @@ class ControllerUtilsTest {
         assertEquals(5, summary.getTotalGpus(), "Should have 5 total GPUs");
         assertEquals(5, summary.getFreeGpus(), "Should have 5 free GPUs");
         assertEquals(0, summary.getUsedGpus(), "Should have 0 used GPUs");
-        assertEquals(2, summary.getGpuSummary().get("NVIDIA"), "Should have 2 NVIDIA GPUs");
-        assertEquals(2, summary.getGpuSummary().get("AMD"), "Should have 2 AMD GPUs");
-        assertEquals(1, summary.getGpuSummary().get("INTEL"), "Should have 1 INTEL GPU");
+        assertEquals(2, summary.getGpuVendorCounts().get("NVIDIA"), "Should have 2 NVIDIA GPUs");
+        assertEquals(2, summary.getGpuVendorCounts().get("AMD"), "Should have 2 AMD GPUs");
+        assertEquals(1, summary.getGpuVendorCounts().get("INTEL"), "Should have 1 INTEL GPU");
     }
 
     @Test
@@ -662,7 +662,7 @@ class ControllerUtilsTest {
         val executor = buildExecutorWithGpu("executor-1", Map.of());
         val summary = ControllerUtils.summarizeResources(List.of(executor));
         assertEquals(0, summary.getTotalGpus(), "Should have 0 total GPUs");
-        assertTrue(summary.getGpuSummary().isEmpty(), "GPU summary should be empty");
+        assertTrue(summary.getGpuVendorCounts().isEmpty(), "GPU vendor counts should be empty");
     }
 
     private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {

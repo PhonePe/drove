@@ -982,7 +982,7 @@ public class ControllerUtils {
         var usedMemory = 0L;
         var freeGpus = 0;
         var usedGpus = 0;
-        val gpuSummary = new HashMap<String, Integer>();
+        val gpuVendorCounts = new HashMap<String, Integer>();
         for (val executor : executors) {
             usedCores += usedCores(executor);
             freeCores += freeCores(executor);
@@ -991,7 +991,7 @@ public class ControllerUtils {
             val gpuData = gpuSummaryData(executor);
             freeGpus += gpuData.freeGpus();
             usedGpus += gpuData.usedGpus();
-            gpuData.gpuVendorCounts().forEach((vendor, count) -> gpuSummary.merge(vendor, count, Integer::sum));
+            gpuData.gpuVendorCounts().forEach((vendor, count) -> gpuVendorCounts.merge(vendor, count, Integer::sum));
         }
         return new ClusterResourcesDB.ClusterResourcesSummary(executors.size(),
                                                               freeCores,
@@ -1003,7 +1003,7 @@ public class ControllerUtils {
                                                               freeGpus,
                                                               usedGpus,
                                                               freeGpus + usedGpus,
-                                                              gpuSummary);
+                                                              gpuVendorCounts);
     }
 
     public static long totalMemory(DeploymentSpec spec, long instances) {
@@ -1593,7 +1593,7 @@ public class ControllerUtils {
                         resourceSummary.getFreeGpus(),
                         resourceSummary.getUsedGpus(),
                         resourceSummary.getTotalGpus(),
-                        resourceSummary.getGpuSummary());
+                        resourceSummary.getGpuVendorCounts());
  
     }
 
