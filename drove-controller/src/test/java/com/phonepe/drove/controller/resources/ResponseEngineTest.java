@@ -594,6 +594,10 @@ class ResponseEngineTest {
         assertEquals(Set.of("vhost1.appform.io", "vhost2.appform.io", "vhost3.appform.io"),
                      r.getData().stream().map(ExposedAppInfo::getVhost).collect(Collectors.toSet()));
         r.getData().forEach(exposedAppInfo -> assertEquals(10, exposedAppInfo.getHosts().size()));
+        //Verify that all vhost entries return the same set of hosts (same instances)
+        val firstHosts = new java.util.HashSet<>(r.getData().get(0).getHosts());
+        r.getData().forEach(exposedAppInfo ->
+                                    assertEquals(firstHosts, new java.util.HashSet<>(exposedAppInfo.getHosts())));
     }
 
     @Test
