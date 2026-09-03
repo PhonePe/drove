@@ -1241,9 +1241,15 @@ public class ControllerUtils {
             }
             else {
                 val mapped = mappedVhosts.get(vhost);
-                if(null != mapped && !mapped.equals(portName)) {
-                    errs.add("Vhost '%s' is already mapped to port '%s'. A mapped vhost cannot be remapped."
-                            .formatted(vhost, mapped));
+                if(null != mapped) {
+                    if(null != mapped && !mapped.equals(portName)) {
+                        errs.add("Vhost '%s' is already mapped to port '%s'. A mapped vhost cannot be remapped."
+                                .formatted(vhost, mapped));
+                    }
+                    else {
+                        errs.add("Vhost '%s' is already mapped to port '%s'. Duplicate mapping found."
+                                .formatted(vhost, mapped));
+                    }
                 }
                 else {
                     mappedVhosts.put(vhost, portName);

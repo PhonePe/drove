@@ -108,6 +108,7 @@ public class EventUtils {
                                               + ":" + portSpec.getType().name().toLowerCase())
                                       .toList())));
         Optional.ofNullable(spec.getExposureSpec())
+                .filter(exposureSpec -> !exposureSpec.isEmpty())
                 .ifPresent(exposureSpec -> metadata.put(
                             AppEventDataTag.VHOST,
                             exposureSpec.stream()

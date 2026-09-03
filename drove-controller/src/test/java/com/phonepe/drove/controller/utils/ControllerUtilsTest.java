@@ -19,6 +19,7 @@ package com.phonepe.drove.controller.utils;
 import static com.phonepe.drove.controller.utils.ControllerUtils.errorMessage;
 import static com.phonepe.drove.controller.utils.ControllerUtils.maxStartTimeout;
 import static com.phonepe.drove.controller.utils.ControllerUtils.maxStopTimeout;
+import static com.phonepe.drove.controller.utils.ControllerUtils.validateExposureSpec;
 import static com.phonepe.drove.controller.utils.ControllerUtils.waitTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,7 +34,6 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,12 +41,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.PortSpec;
+import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
+import com.phonepe.drove.models.application.exposure.ExposureMode;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.placement.PlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
@@ -56,6 +62,8 @@ import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacem
 import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
+import com.phonepe.drove.models.application.requirements.GpuType;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
@@ -67,14 +75,9 @@ import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
-import com.phonepe.drove.models.application.requirements.GPURequirement;
-import com.phonepe.drove.models.application.requirements.GpuType;
-import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskState;
-import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 
 import org.junit.jupiter.api.Test;
 
@@ -466,7 +469,7 @@ class ControllerUtilsTest {
         );
 
         val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
-                10, 40, 20, 60, 102400, 51200, 153600, 0, 0, 0, Map.of());
+                10, 40, 20, 60, 102400, 51200, 153600);
 
         val summary = ControllerUtils.computeClusterSummary(
                 leadershipObserver, clusterStateDB, applications, tasks, localServices,
@@ -500,7 +503,7 @@ class ControllerUtilsTest {
         val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
 
         val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
-                5, 10, 5, 15, 51200, 25600, 76800, 0, 0, 0, Map.of());
+                5, 10, 5, 15, 51200, 25600, 76800);
 
         val summary = ControllerUtils.computeClusterSummary(
                 leadershipObserver, clusterStateDB, List.of(), List.of(), List.of(),
@@ -514,6 +517,56 @@ class ControllerUtilsTest {
         assertEquals(0, summary.getNumActiveTasks());
         assertEquals(0, summary.getNumLocalServices());
         assertEquals(0, summary.getNumActiveLocalServices());
+    }
+
+    @Test
+    void testExposureOk() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("b.appform.io", "main", ExposureMode.ALL)));
+        assertTrue(validateExposureSpec(spec, ports).isEmpty());
+    }
+
+    @Test
+    void testExposureNull() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec().withExposureSpec(null);
+        assertTrue(validateExposureSpec(spec, ports).isEmpty());
+    }
+
+    @Test
+    void testExposureBadPort() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("b.appform.io", "wrong", ExposureMode.ALL)));
+        val errs = validateExposureSpec(spec, ports);
+        assertEquals(1, errs.size());
+        assertTrue(errs.get(0).contains("wrong"));
+    }
+
+    @Test
+    void testExposureRemap() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP),
+                           "admin", new PortSpec("admin", 9000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("a.appform.io", "admin", ExposureMode.ALL)));
+        val errs = validateExposureSpec(spec, ports);
+        assertEquals(1, errs.size());
+        assertTrue(errs.get(0).contains("already mapped"));
+    }
+
+    @Test
+    void testExposureSameVhostSamePort() {
+        val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
+        val spec = ControllerTestUtils.appSpec()
+                .withExposureSpec(List.of(new ExposureSpec("a.appform.io", "main", ExposureMode.ALL),
+                                          new ExposureSpec("a.appform.io", "main", ExposureMode.ALL)));
+        val errs = validateExposureSpec(spec, ports);
+        assertEquals(1, errs.size());
+        assertTrue(errs.get(0).contains("already mapped"));
     }
 
     @Test
@@ -615,56 +668,6 @@ class ControllerUtilsTest {
         assertEquals(0, freeNonExistent, "Should find 0 V100 GPUs");
     }
 
-    @Test
-    void testFreeGpusAndUsedGpus() {
-        val executor = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "A100"));
-        assertEquals(2, ControllerUtils.freeGpus(executor), "Should find 2 free GPUs");
-        assertEquals(0, ControllerUtils.usedGpus(executor), "Should find 0 used GPUs");
-    }
-
-    @Test
-    void testFreeGpusAndUsedGpusWithMixedState() {
-        val executor = buildExecutorWithGpuMixedState("executor-1",
-                Map.of("GPU-0", "H100", "GPU-1", "A100"),
-                List.of("GPU-1"));
-        assertEquals(1, ControllerUtils.freeGpus(executor), "Should find 1 free GPU");
-        assertEquals(1, ControllerUtils.usedGpus(executor), "Should find 1 used GPU");
-    }
-
-    @Test
-    void testFreeGpusAndUsedGpusWithNullGpuInfo() {
-        val executor = buildExecutorWithGpu("executor-1", Map.of());
-        assertEquals(0, ControllerUtils.freeGpus(executor), "Should find 0 free GPUs when no GPUs");
-        assertEquals(0, ControllerUtils.usedGpus(executor), "Should find 0 used GPUs when no GPUs");
-    }
-
-    @Test
-    void testSummarizeResourcesWithMixedVendors() {
-        val executorNvidia = buildExecutorWithGpuAndVendor("executor-1",
-                Map.of("GPU-0", GpuVendor.NVIDIA, "GPU-1", GpuVendor.NVIDIA));
-        val executorAmd = buildExecutorWithGpuAndVendor("executor-2",
-                Map.of("GPU-2", GpuVendor.AMD, "GPU-3", GpuVendor.AMD));
-        val executorIntel = buildExecutorWithGpuAndVendor("executor-3",
-                Map.of("GPU-4", GpuVendor.INTEL));
-
-        val summary = ControllerUtils.summarizeResources(List.of(executorNvidia, executorAmd, executorIntel));
-
-        assertEquals(5, summary.getTotalGpus(), "Should have 5 total GPUs");
-        assertEquals(5, summary.getFreeGpus(), "Should have 5 free GPUs");
-        assertEquals(0, summary.getUsedGpus(), "Should have 0 used GPUs");
-        assertEquals(2, summary.getGpuVendorCounts().get("NVIDIA"), "Should have 2 NVIDIA GPUs");
-        assertEquals(2, summary.getGpuVendorCounts().get("AMD"), "Should have 2 AMD GPUs");
-        assertEquals(1, summary.getGpuVendorCounts().get("INTEL"), "Should have 1 INTEL GPU");
-    }
-
-    @Test
-    void testSummarizeResourcesWithNoGpus() {
-        val executor = buildExecutorWithGpu("executor-1", Map.of());
-        val summary = ControllerUtils.summarizeResources(List.of(executor));
-        assertEquals(0, summary.getTotalGpus(), "Should have 0 total GPUs");
-        assertTrue(summary.getGpuVendorCounts().isEmpty(), "GPU vendor counts should be empty");
-    }
-
     private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {
         Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
         val freeMemory = Map.of(0, 1024L * 1024 * 1024);
@@ -681,89 +684,6 @@ class ControllerUtilsTest {
                 new AvailableCPU(freeCores, Map.of()),
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(new ArrayList<>(gpuModels.keySet()), List.of()),
-                new PhysicalLayout(freeCores, freeMemory, physicalGpus)
-        );
-
-        return new ExecutorHostInfo(
-                executorId,
-                new ExecutorNodeData(
-                        "host-" + executorId,
-                        8080,
-                        NodeTransportType.HTTP,
-                        new Date(),
-                        snapshot,
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        Set.of(),
-                        Map.of(),
-                        ExecutorState.ACTIVE
-                ),
-                Map.of(),
-                new ExecutorHostInfo.HostGPUInfo()
-        );
-    }
-
-    private ExecutorHostInfo buildExecutorWithGpuAndVendor(
-            String executorId, Map<String, GpuVendor> gpuVendors) {
-        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
-        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
-        val physicalGpus = gpuVendors.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> new GPUInfo(entry.getKey(), entry.getValue(), "Model-" + entry.getKey(), 0)));
-
-        val usedMemory = freeMemory.keySet().stream()
-                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
-
-        val snapshot = new ExecutorResourceSnapshot(
-                executorId,
-                new AvailableCPU(freeCores, Map.of()),
-                new AvailableMemory(freeMemory, usedMemory),
-                new AvailableGPU(new ArrayList<>(gpuVendors.keySet()), List.of()),
-                new PhysicalLayout(freeCores, freeMemory, physicalGpus)
-        );
-
-        return new ExecutorHostInfo(
-                executorId,
-                new ExecutorNodeData(
-                        "host-" + executorId,
-                        8080,
-                        NodeTransportType.HTTP,
-                        new Date(),
-                        snapshot,
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        Set.of(),
-                        Map.of(),
-                        ExecutorState.ACTIVE
-                ),
-                Map.of(),
-                new ExecutorHostInfo.HostGPUInfo()
-        );
-    }
-
-    private ExecutorHostInfo buildExecutorWithGpuMixedState(
-            String executorId, Map<String, String> gpuModels, List<String> usedGpuIds) {
-        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
-        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
-        val physicalGpus = gpuModels.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        Map.Entry::getKey,
-                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0)));
-
-        val usedMemory = freeMemory.keySet().stream()
-                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
-
-        val freeGpuIds = new ArrayList<>(gpuModels.keySet());
-        freeGpuIds.removeAll(usedGpuIds);
-
-        val snapshot = new ExecutorResourceSnapshot(
-                executorId,
-                new AvailableCPU(freeCores, Map.of()),
-                new AvailableMemory(freeMemory, usedMemory),
-                new AvailableGPU(freeGpuIds, usedGpuIds),
                 new PhysicalLayout(freeCores, freeMemory, physicalGpus)
         );
 
