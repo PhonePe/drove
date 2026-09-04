@@ -45,6 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -255,6 +257,41 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
 
     @Test
     @SneakyThrows
+    void testOtherLocalServiceUnaffected() {
+        //Following should not get killed
+        val lsSpec = ExecutorTestingUtils.testLocalServiceInstanceSpec();
+        val lsInstanceData = ExecutorTestingUtils.createExecutorLocaLServiceInstanceInfo(lsSpec, 8080);
+        val lsContainer = ExecutorTestingUtils.startTestLocalServiceContainer(lsSpec, lsInstanceData, MAPPER);
+
+        val taskSpec = ExecutorTestingUtils.testTaskInstanceSpec();
+        val taskInstanceData = ExecutorTestingUtils.createExecutorTaskInfo(taskSpec);
+        val cId = ExecutorTestingUtils.startTestTaskContainer(taskSpec, taskInstanceData, MAPPER);
+
+        val ae = mock(ApplicationInstanceEngine.class);
+
+        val te = mock(TaskInstanceEngine.class);
+        val lsie = mock(LocalServiceInstanceEngine.class);
+        when(lsie.instanceIds(any())).thenReturn(Set.of(lsSpec.getInstanceId()));
+        val cc = mock(ClusterClient.class);
+        when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
+
+        val zr = new ZombieInstanceReaper(DOCKER_CLIENT,
+                                          ae,
+                                          te,
+                                          lsie,
+                                          Duration.ofSeconds(1),
+                                          cc,
+                                          ExecutorOptions.DEFAULT);
+        zr.start();
+        CommonTestUtils.waitUntil(() -> !containerExists(cId));
+        assertTrue(containerExists(lsContainer));
+        assertFalse(containerExists(cId));
+        zr.stop();
+        DOCKER_CLIENT.killContainerCmd(lsContainer).exec();
+    }
+
+    @Test
+    @SneakyThrows
     void testKillAppLessInstance() {
         val ids = new LinkedHashSet<String>();
         IntStream.rangeClosed(0, 100).forEach(i -> ids.add("AI" + i));
@@ -296,14 +333,15 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         val ids = new LinkedHashSet<String>();
         IntStream.rangeClosed(0, 100).forEach(i -> ids.add("SI" + i));
         val killedIds = ids.stream().limit(10).collect(Collectors.toSet()); //Kill 10
+        val nonStaleIds = Set.copyOf(Sets.difference(ids, killedIds));
         val ae = mock(ApplicationInstanceEngine.class);
         val cc = mock(ClusterClient.class);
-        when(cc.currentKnownInstances()).thenReturn(new KnownInstancesData(Set.copyOf(Sets.difference(ids, killedIds)),
-                                                                           killedIds,
+        when(cc.currentKnownInstances()).thenReturn(new KnownInstancesData(Set.of(),
                                                                            Set.of(),
                                                                            Set.of(),
                                                                            Set.of(),
-                                                                           Set.of()));
+                                                                           nonStaleIds,
+                                                                           killedIds));
         val te = mock(TaskInstanceEngine.class);
         val lsie = mock(LocalServiceInstanceEngine.class);
         when(lsie.instanceIds(any())).thenReturn(ids);
@@ -324,6 +362,9 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
         zr.start();
         CommonTestUtils.waitUntil(() -> Sets.intersection(ids, killedIds).isEmpty());
         assertTrue(Sets.intersection(ids, killedIds).isEmpty());
+        assertTrue(ids.containsAll(nonStaleIds));
+        killedIds.forEach(id -> verify(lsie).stopInstance(id));
+        verify(ae, never()).stopInstance(anyString());
         zr.stop();
     }
 }
