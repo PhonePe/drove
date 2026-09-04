@@ -154,7 +154,7 @@ public class ZombieInstanceReaper implements Managed {
                                knownInstances.getStaleAppInstanceIds(),
                                appInstances);
         // Kill all local service instances that do not have a parent service
-        pruneHeadlessInstances(applicationInstanceEngine,
+        pruneHeadlessInstances(localServiceInstanceEngine,
                                JobType.LOCAL_SERVICE,
                                knownInstances.getStaleLocalServiceInstanceIds(),
                                localServiceInstances);
