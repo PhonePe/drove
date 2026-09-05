@@ -788,8 +788,8 @@ public class DockerUtils {
         else {
             log.info("Privileged mode not enabled for deployment unit: {}", id);
         }
-        val capabilties = Objects.requireNonNullElse(securityProfile.getCapabilities(), Capabilities.DEFAULT);
-        val addedCaps = Objects.requireNonNullElse(capabilties.getAddedCapabilities(), Set.<String>of());
+        val capabilities = Objects.requireNonNullElse(securityProfile.getCapabilities(), Capabilities.DEFAULT);
+        val addedCaps = Objects.requireNonNullElse(capabilities.getAddedCapabilities(), Set.<String>of());
         if (addedCaps.isEmpty()) {
             log.info("No capabilities added for deployment unit: {}", id);
         }
@@ -801,7 +801,7 @@ public class DockerUtils {
                     .toArray(new Capability[0]));
             log.info("Capabilities added for deployment unit {}: {}", id, addedCaps);
         }
-        val droppedCaps = Objects.requireNonNullElse(capabilties.getDroppedCapabilities(),
+        val droppedCaps = Objects.requireNonNullElse(capabilities.getDroppedCapabilities(),
                                                      Set.<String>of());
         if (droppedCaps.isEmpty()) {
             log.info("No capabilities dropped for deployment unit: {}", id);
