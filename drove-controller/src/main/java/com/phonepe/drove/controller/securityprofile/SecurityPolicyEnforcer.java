@@ -81,10 +81,10 @@ public class SecurityPolicyEnforcer {
             .filter(policy -> policy.getFirst().getNamePattern().matcher(matchable).matches())
             .map(Pair::getSecond)
             .findFirst()
-            .orElse(ContainerSecurityProfile.DEFAULT);
+            .orElse(defaultProfile);
     }
 
-    private static final String matchableString(final DeploymentSpec spec) {
+    private static String matchableString(final DeploymentSpec spec) {
         return spec.accept(new DeploymentSpecVisitor<String>() {
 
             @Override

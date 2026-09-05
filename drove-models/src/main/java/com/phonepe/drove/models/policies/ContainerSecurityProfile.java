@@ -113,7 +113,7 @@ public class ContainerSecurityProfile {
 
     /**
      * List of allowed capabilities for the container.
-     * If not specified, no capabilities are allowed.
+     * If not specified, default capabilities are allowed.
      * This is a list of capability names (e.g., "NET_ADMIN", "SYS_TIME").
      */
     @Builder.Default

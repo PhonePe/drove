@@ -1605,9 +1605,7 @@ public class ControllerUtils {
 
     public static List<String> ensureWhitelistedVolumes(
             Collection<MountedVolume> volumes, ContainerSecurityProfile securityProfile) {
-        val whitelistedDirs = Objects.requireNonNullElse(
-                securityProfile.getAllowedMountDirs(),
-                ContainerSecurityProfile.DEFAULT_ALLOWED_MOUNT_DIRS);
+        val whitelistedDirs = securityProfile.getAllowedMountDirs();
         if (null != volumes && !whitelistedDirs.isEmpty()) {
             return volumes.stream()
                     .filter(volume -> whitelistedDirs.stream()
@@ -1621,8 +1619,7 @@ public class ControllerUtils {
 
     public static List<String> ensureCmdlArgs(
             List<String> args, ContainerSecurityProfile securityProfile) {
-        val argsDisabled = Objects.requireNonNullElse(securityProfile.getDisableCmdlArgs(),
-                ContainerSecurityProfile.DEFAULT_DISABLE_CMDL_ARGS);
+        val argsDisabled = securityProfile.getDisableCmdlArgs();
         val argList = Objects.requireNonNullElse(args, List.<String>of());
         if (argsDisabled && !argList.isEmpty()) {
             return List.of("Passing command line to containers is disabled on this cluster");
@@ -1636,8 +1633,7 @@ public class ControllerUtils {
     public static List<String> checkDeviceDisabled(
             List<DeviceSpec> devices, 
             ContainerSecurityProfile securityProfile) {
-        val deviceEnabled = Objects.requireNonNullElse(securityProfile.getEnableRawDeviceAccess(),
-                ContainerSecurityProfile.DEFAULT_ENABLE_RAW_DEVICE_ACCESS);
+        val deviceEnabled = securityProfile.getEnableRawDeviceAccess();
         if (!deviceEnabled && null != devices && !devices.isEmpty()) {
             return List.of("Device access is disabled. " +
                                    "To enable, set enableRawDeviceAccess: true in controller options.");
