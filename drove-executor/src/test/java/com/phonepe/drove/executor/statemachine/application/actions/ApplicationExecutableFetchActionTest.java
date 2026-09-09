@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.executor.statemachine.application.actions;
 
+import com.github.dockerjava.api.exception.ConflictException;
 import com.github.dockerjava.api.model.Image;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
@@ -49,7 +50,7 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
         }
         finally {
             val imageId = ExecutorTestingUtils.DOCKER_CLIENT.listImagesCmd()
-                    .withImageNameFilter("hello-world")
+                    .withReferenceFilter("hello-world")
                     .exec()
                     .stream()
                     .findAny()
@@ -57,7 +58,13 @@ class ApplicationExecutableFetchActionTest extends AbstractTestBase {
                     .orElse(null);
             log.info("Hello world image id: {}", imageId);
             if(!Strings.isNullOrEmpty(imageId)) {
-                ExecutorTestingUtils.DOCKER_CLIENT.removeImageCmd(imageId).withForce(true).exec();
+                try {
+                    ExecutorTestingUtils.DOCKER_CLIENT.removeImageCmd(imageId).withForce(true).exec();
+                }
+                catch (ConflictException e) {
+                    //Shared docker daemon on CI runner; another concurrent job may be using this image
+                    log.warn("Could not remove hello-world image {}, still in use: {}", imageId, e.getMessage());
+                }
             }
         }
     }
