@@ -39,17 +39,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
+import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
+import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
+import com.phonepe.drove.models.application.ApplicationState;
+import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
 import com.phonepe.drove.models.application.PortType;
 import com.phonepe.drove.models.application.PreShutdownSpec;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
+import com.phonepe.drove.models.application.devices.DeviceSpec;
+import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
@@ -64,10 +74,13 @@ import com.phonepe.drove.models.application.placement.policies.OnePerHostPlaceme
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
+import com.phonepe.drove.models.common.ClusterState;
+import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
@@ -75,7 +88,12 @@ import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
+import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.localservice.ActivationState;
+import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
+import com.phonepe.drove.models.localservice.LocalServiceState;
+import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskState;
 
@@ -327,22 +345,25 @@ class ControllerUtilsTest {
     void testToAppSummary() {
         val spec = ControllerTestUtils.appSpec("TEST_APP", 2);
         val appId = ControllerUtils.deployableObjectId(spec);
-        val appInfo = new com.phonepe.drove.models.application.ApplicationInfo(
+        val appInfo = new ApplicationInfo(
                 appId, spec, 5, new java.util.Date(), new java.util.Date());
-        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         when(appEngine.currentState(appId)).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.application.ApplicationState.RUNNING));
+                ApplicationState.RUNNING));
 
-        val summary = ControllerUtils.toAppSummary(appInfo, appEngine, 3);
+        val summary = ControllerUtils.toAppSummary(appInfo, appEngine,
+                IntStream.range(0,3)
+                .mapToObj(i -> ControllerTestUtils.generateInstanceInfo(appId, spec, i, InstanceState.HEALTHY))
+                .collect(Collectors.toList()));
 
         assertEquals(appId, summary.getId());
         assertEquals("TEST_APP", summary.getName());
         assertEquals(5, summary.getRequiredInstances());
         assertEquals(3, summary.getHealthyInstances());
-        assertEquals(5, summary.getTotalCPUs());
-        assertEquals(2560, summary.getTotalMemory());
+        assertEquals(3, summary.getTotalCPUs());
+        assertEquals(1536, summary.getTotalMemory());
         assertEquals(spec.getTags(), summary.getTags());
-        assertEquals(com.phonepe.drove.models.application.ApplicationState.RUNNING, summary.getState());
+        assertEquals(ApplicationState.RUNNING, summary.getState());
         assertEquals(appInfo.getCreated(), summary.getCreated());
         assertEquals(appInfo.getUpdated(), summary.getUpdated());
     }
@@ -351,12 +372,12 @@ class ControllerUtilsTest {
     void testToAppSummaryWithNoState() {
         val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
         val appId = ControllerUtils.deployableObjectId(spec);
-        val appInfo = new com.phonepe.drove.models.application.ApplicationInfo(
+        val appInfo = new ApplicationInfo(
                 appId, spec, 2, new java.util.Date(), new java.util.Date());
-        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         when(appEngine.currentState(appId)).thenReturn(java.util.Optional.empty());
 
-        val summary = ControllerUtils.toAppSummary(appInfo, appEngine, 0);
+        val summary = ControllerUtils.toAppSummary(appInfo, appEngine, List.of());
 
         assertEquals(appId, summary.getId());
         assertEquals("TEST_APP", summary.getName());
@@ -369,13 +390,13 @@ class ControllerUtilsTest {
     void testToLocalServiceSummary() {
         val spec = ControllerTestUtils.localServiceSpec("TEST_SERVICE", 1);
         val serviceId = ControllerUtils.deployableObjectId(spec);
-        val serviceInfo = new com.phonepe.drove.models.localservice.LocalServiceInfo(
+        val serviceInfo = new LocalServiceInfo(
                 serviceId, spec, 3, 
-                com.phonepe.drove.models.localservice.ActivationState.ACTIVE,
+                ActivationState.ACTIVE,
                 new java.util.Date(), new java.util.Date());
-        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
         when(lsEngine.currentState(serviceId)).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE));
+                LocalServiceState.ACTIVE));
 
         val summary = ControllerUtils.toLocalServiceSummary(serviceInfo, 10, 8, lsEngine);
 
@@ -386,8 +407,8 @@ class ControllerUtilsTest {
         assertEquals(10, summary.getTotalCPUs());
         assertEquals(5120, summary.getTotalMemory());
         assertEquals(spec.getTags(), summary.getTags());
-        assertEquals(com.phonepe.drove.models.localservice.ActivationState.ACTIVE, summary.getActivationState());
-        assertEquals(com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE, summary.getState());
+        assertEquals(ActivationState.ACTIVE, summary.getActivationState());
+        assertEquals(LocalServiceState.ACTIVE, summary.getState());
         assertEquals(serviceInfo.getCreated(), summary.getCreated());
         assertEquals(serviceInfo.getUpdated(), summary.getUpdated());
     }
@@ -396,11 +417,11 @@ class ControllerUtilsTest {
     void testToLocalServiceSummaryWithNoState() {
         val spec = ControllerTestUtils.localServiceSpec("TEST_SERVICE", 1);
         val serviceId = ControllerUtils.deployableObjectId(spec);
-        val serviceInfo = new com.phonepe.drove.models.localservice.LocalServiceInfo(
+        val serviceInfo = new LocalServiceInfo(
                 serviceId, spec, 2,
-                com.phonepe.drove.models.localservice.ActivationState.INACTIVE,
+                ActivationState.INACTIVE,
                 new java.util.Date(), new java.util.Date());
-        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
         when(lsEngine.currentState(serviceId)).thenReturn(java.util.Optional.empty());
 
         val summary = ControllerUtils.toLocalServiceSummary(serviceInfo, 5, 0, lsEngine);
@@ -409,45 +430,45 @@ class ControllerUtilsTest {
         assertEquals("TEST_SERVICE", summary.getName());
         assertEquals(2, summary.getInstancesPerHost());
         assertEquals(0, summary.getHealthyInstances());
-        assertEquals(com.phonepe.drove.models.localservice.ActivationState.INACTIVE, summary.getActivationState());
+        assertEquals(ActivationState.INACTIVE, summary.getActivationState());
         assertNull(summary.getState());
     }
 
     @Test
     void testComputeClusterSummary() {
-        val leadershipObserver = mock(com.phonepe.drove.common.discovery.leadership.LeadershipObserver.class);
-        val leaderNode = new com.phonepe.drove.models.info.nodedata.ControllerNodeData(
-                "leader-host", 8080, com.phonepe.drove.models.info.nodedata.NodeTransportType.HTTP,
+        val leadershipObserver = mock(LeadershipObserver.class);
+        val leaderNode = new ControllerNodeData(
+                "leader-host", 8080, NodeTransportType.HTTP,
                 new java.util.Date(), true);
         when(leadershipObserver.leader()).thenReturn(java.util.Optional.of(leaderNode));
 
-        val clusterStateDB = mock(com.phonepe.drove.controller.statedb.ClusterStateDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
         when(clusterStateDB.currentState()).thenReturn(java.util.Optional.of(
-                new com.phonepe.drove.models.common.ClusterStateData(
-                        com.phonepe.drove.models.common.ClusterState.NORMAL, new java.util.Date())));
+                new ClusterStateData(
+                        ClusterState.NORMAL, new java.util.Date())));
 
-        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
         when(appEngine.currentState("app1")).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.application.ApplicationState.RUNNING));
+                ApplicationState.RUNNING));
         when(appEngine.currentState("app2")).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.application.ApplicationState.MONITORING));
+                ApplicationState.MONITORING));
         when(appEngine.currentState("app3")).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.application.ApplicationState.FAILED));
+                ApplicationState.FAILED));
 
-        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
         when(lsEngine.currentState("ls1")).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.localservice.LocalServiceState.ACTIVE));
+                LocalServiceState.ACTIVE));
         when(lsEngine.currentState("ls2")).thenReturn(java.util.Optional.of(
-                com.phonepe.drove.models.localservice.LocalServiceState.DESTROYED));
+                LocalServiceState.DESTROYED));
 
         val applications = List.of(
-                new com.phonepe.drove.models.application.ApplicationInfo(
+                new ApplicationInfo(
                         "app1", ControllerTestUtils.appSpec("APP1", 1), 2, 
                         new java.util.Date(), new java.util.Date()),
-                new com.phonepe.drove.models.application.ApplicationInfo(
+                new ApplicationInfo(
                         "app2", ControllerTestUtils.appSpec("APP2", 1), 3,
                         new java.util.Date(), new java.util.Date()),
-                new com.phonepe.drove.models.application.ApplicationInfo(
+                new ApplicationInfo(
                         "app3", ControllerTestUtils.appSpec("APP3", 1), 1,
                         new java.util.Date(), new java.util.Date())
         );
@@ -458,25 +479,25 @@ class ControllerUtilsTest {
         );
 
         val localServices = List.of(
-                new com.phonepe.drove.models.localservice.LocalServiceInfo(
+                new LocalServiceInfo(
                         "ls1", ControllerTestUtils.localServiceSpec("LS1", 1), 2,
-                        com.phonepe.drove.models.localservice.ActivationState.ACTIVE,
+                        ActivationState.ACTIVE,
                         new java.util.Date(), new java.util.Date()),
-                new com.phonepe.drove.models.localservice.LocalServiceInfo(
+                new LocalServiceInfo(
                         "ls2", ControllerTestUtils.localServiceSpec("LS2", 1), 1,
-                        com.phonepe.drove.models.localservice.ActivationState.INACTIVE,
+                        ActivationState.INACTIVE,
                         new java.util.Date(), new java.util.Date())
         );
 
         val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
-                10, 40, 20, 60, 102400, 51200, 153600);
+                10, 40, 20, 60, 102400, 51200, 153600, 0, 0, 0, Map.of());
 
         val summary = ControllerUtils.computeClusterSummary(
                 leadershipObserver, clusterStateDB, applications, tasks, localServices,
                 appEngine, lsEngine, resourceSummary);
 
         assertEquals("leader-host:8080", summary.getLeader());
-        assertEquals(com.phonepe.drove.models.common.ClusterState.NORMAL, summary.getState());
+        assertEquals(ClusterState.NORMAL, summary.getState());
         assertEquals(10, summary.getNumExecutors());
         assertEquals(3, summary.getNumApplications());
         assertEquals(1, summary.getNumActiveApplications());
@@ -493,30 +514,119 @@ class ControllerUtilsTest {
 
     @Test
     void testComputeClusterSummaryWithNoLeader() {
-        val leadershipObserver = mock(com.phonepe.drove.common.discovery.leadership.LeadershipObserver.class);
+        val leadershipObserver = mock(LeadershipObserver.class);
         when(leadershipObserver.leader()).thenReturn(java.util.Optional.empty());
 
-        val clusterStateDB = mock(com.phonepe.drove.controller.statedb.ClusterStateDB.class);
+        val clusterStateDB = mock(ClusterStateDB.class);
         when(clusterStateDB.currentState()).thenReturn(java.util.Optional.empty());
 
-        val appEngine = mock(com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine.class);
-        val lsEngine = mock(com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine.class);
+        val appEngine = mock(ApplicationLifecycleManagementEngine.class);
+        val lsEngine = mock(LocalServiceLifecycleManagementEngine.class);
 
         val resourceSummary = new com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary(
-                5, 10, 5, 15, 51200, 25600, 76800);
+                5, 10, 5, 15, 51200, 25600, 76800, 0, 0, 0, Map.of());
 
         val summary = ControllerUtils.computeClusterSummary(
                 leadershipObserver, clusterStateDB, List.of(), List.of(), List.of(),
                 appEngine, lsEngine, resourceSummary);
 
         assertEquals("Leader election underway", summary.getLeader());
-        assertEquals(com.phonepe.drove.models.common.ClusterState.NORMAL, summary.getState());
+        assertEquals(ClusterState.NORMAL, summary.getState());
         assertEquals(5, summary.getNumExecutors());
         assertEquals(0, summary.getNumApplications());
         assertEquals(0, summary.getNumActiveApplications());
         assertEquals(0, summary.getNumActiveTasks());
         assertEquals(0, summary.getNumLocalServices());
         assertEquals(0, summary.getNumActiveLocalServices());
+    }
+
+    @Test
+    void testSecurityPolicyValid() {
+        val enforcer = ControllerTestUtils.defaultEnforcer();
+        val spec = ControllerTestUtils.appSpec();
+        val errors = ControllerUtils.checkSecurityPolicy(spec, enforcer);
+        assertTrue(errors.isEmpty());
+    }
+
+    @Test
+    void testSecurityPolicyVolumeViolation() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("strict")
+                .allowedMountDirs(List.of("/tmp"))
+                .build();
+        val badVolume = List.of(
+                new MountedVolume(
+                        "/var/log", "/var/log",
+                        MountedVolume.MountMode.READ_ONLY));
+        val errors = ControllerUtils.ensureWhitelistedVolumes(badVolume, profile);
+
+        assertFalse(errors.isEmpty());
+        assertTrue(errors.get(0).contains("/var/log"));
+    }
+
+    @Test
+    void testSecurityPolicyCmdlArgsViolation() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("no-cmdl")
+                .disableCmdlArgs(true)
+                .build();
+        val errors = ControllerUtils.ensureCmdlArgs(List.of("--flag"), profile);
+
+        assertFalse(errors.isEmpty());
+        assertTrue(errors.get(0).contains("command line"));
+    }
+
+    @Test
+    void testSecurityPolicyDeviceViolation() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("no-device")
+                .enableRawDeviceAccess(false)
+                .build();
+        val devices = List.<DeviceSpec>of(
+                new DirectDeviceSpec(
+                        "/dev/sda", "/dev/sda", null));
+        val errors = ControllerUtils.checkDeviceDisabled(devices, profile);
+
+        assertFalse(errors.isEmpty());
+        assertTrue(errors.get(0).contains("Device access is disabled"));
+    }
+
+    @Test
+    void testSecurityPolicyCmdlArgsLengthViolation() {
+        val profile = ContainerSecurityProfile.DEFAULT;
+        val longArg = "x".repeat(2049);
+        val errors = ControllerUtils.ensureCmdlArgs(List.of(longArg), profile);
+
+        assertFalse(errors.isEmpty());
+        assertTrue(errors.get(0).contains("2048"));
+    }
+
+    @Test
+    void testWhitelistedVolumesNull() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("p")
+                .allowedMountDirs(List.of("/tmp"))
+                .build();
+        val errors = ControllerUtils.ensureWhitelistedVolumes(null, profile);
+        assertTrue(errors.isEmpty());
+    }
+
+    @Test
+    void testWhitelistedVolumesEmptyList() {
+        val profile = ContainerSecurityProfile.DEFAULT;
+        val volumes = List.of(
+                new MountedVolume(
+                        "/var/log", "/var/log",
+                        MountedVolume.MountMode.READ_ONLY));
+        val errors = ControllerUtils.ensureWhitelistedVolumes(volumes, profile);
+        assertTrue(errors.isEmpty());
+    }
+
+    @Test
+    void testCmdlArgsNull() {
+        val profile = ContainerSecurityProfile.DEFAULT;
+        val errors = ControllerUtils.ensureCmdlArgs(null, profile);
+        assertTrue(errors.isEmpty());
     }
 
     @Test
@@ -668,6 +778,56 @@ class ControllerUtilsTest {
         assertEquals(0, freeNonExistent, "Should find 0 V100 GPUs");
     }
 
+    @Test
+    void testFreeGpusAndUsedGpus() {
+        val executor = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "A100"));
+        assertEquals(2, ControllerUtils.freeGpus(executor), "Should find 2 free GPUs");
+        assertEquals(0, ControllerUtils.usedGpus(executor), "Should find 0 used GPUs");
+    }
+
+    @Test
+    void testFreeGpusAndUsedGpusWithMixedState() {
+        val executor = buildExecutorWithGpuMixedState("executor-1",
+                Map.of("GPU-0", "H100", "GPU-1", "A100"),
+                List.of("GPU-1"));
+        assertEquals(1, ControllerUtils.freeGpus(executor), "Should find 1 free GPU");
+        assertEquals(1, ControllerUtils.usedGpus(executor), "Should find 1 used GPU");
+    }
+
+    @Test
+    void testFreeGpusAndUsedGpusWithNullGpuInfo() {
+        val executor = buildExecutorWithGpu("executor-1", Map.of());
+        assertEquals(0, ControllerUtils.freeGpus(executor), "Should find 0 free GPUs when no GPUs");
+        assertEquals(0, ControllerUtils.usedGpus(executor), "Should find 0 used GPUs when no GPUs");
+    }
+
+    @Test
+    void testSummarizeResourcesWithMixedVendors() {
+        val executorNvidia = buildExecutorWithGpuAndVendor("executor-1",
+                Map.of("GPU-0", GpuVendor.NVIDIA, "GPU-1", GpuVendor.NVIDIA));
+        val executorAmd = buildExecutorWithGpuAndVendor("executor-2",
+                Map.of("GPU-2", GpuVendor.AMD, "GPU-3", GpuVendor.AMD));
+        val executorIntel = buildExecutorWithGpuAndVendor("executor-3",
+                Map.of("GPU-4", GpuVendor.INTEL));
+
+        val summary = ControllerUtils.summarizeResources(List.of(executorNvidia, executorAmd, executorIntel));
+
+        assertEquals(5, summary.getTotalGpus(), "Should have 5 total GPUs");
+        assertEquals(5, summary.getFreeGpus(), "Should have 5 free GPUs");
+        assertEquals(0, summary.getUsedGpus(), "Should have 0 used GPUs");
+        assertEquals(2, summary.getGpuVendorCounts().get("NVIDIA"), "Should have 2 NVIDIA GPUs");
+        assertEquals(2, summary.getGpuVendorCounts().get("AMD"), "Should have 2 AMD GPUs");
+        assertEquals(1, summary.getGpuVendorCounts().get("INTEL"), "Should have 1 INTEL GPU");
+    }
+
+    @Test
+    void testSummarizeResourcesWithNoGpus() {
+        val executor = buildExecutorWithGpu("executor-1", Map.of());
+        val summary = ControllerUtils.summarizeResources(List.of(executor));
+        assertEquals(0, summary.getTotalGpus(), "Should have 0 total GPUs");
+        assertTrue(summary.getGpuVendorCounts().isEmpty(), "GPU vendor counts should be empty");
+    }
+
     private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {
         Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
         val freeMemory = Map.of(0, 1024L * 1024 * 1024);
@@ -684,7 +844,103 @@ class ControllerUtilsTest {
                 new AvailableCPU(freeCores, Map.of()),
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(new ArrayList<>(gpuModels.keySet()), List.of()),
-                new PhysicalLayout(freeCores, freeMemory, physicalGpus)
+                new PhysicalLayout(
+                    freeCores,
+                    freeMemory,
+                    physicalGpus,
+                    PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                    PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
+        );
+
+        return new ExecutorHostInfo(
+                executorId,
+                new ExecutorNodeData(
+                        "host-" + executorId,
+                        8080,
+                        NodeTransportType.HTTP,
+                        new Date(),
+                        snapshot,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Set.of(),
+                        Map.of(),
+                        ExecutorState.ACTIVE
+                ),
+                Map.of(),
+                new ExecutorHostInfo.HostGPUInfo()
+        );
+    }
+
+    private ExecutorHostInfo buildExecutorWithGpuAndVendor(
+            String executorId, Map<String, GpuVendor> gpuVendors) {
+        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
+        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
+        val physicalGpus = gpuVendors.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), entry.getValue(), "Model-" + entry.getKey(), 0)));
+
+        val usedMemory = freeMemory.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+
+        val snapshot = new ExecutorResourceSnapshot(
+                executorId,
+                new AvailableCPU(freeCores, Map.of()),
+                new AvailableMemory(freeMemory, usedMemory),
+                new AvailableGPU(new ArrayList<>(gpuVendors.keySet()), List.of()),
+                new PhysicalLayout(freeCores,
+                                   freeMemory,
+                                   physicalGpus,
+                                   PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
+        );
+
+        return new ExecutorHostInfo(
+                executorId,
+                new ExecutorNodeData(
+                        "host-" + executorId,
+                        8080,
+                        NodeTransportType.HTTP,
+                        new Date(),
+                        snapshot,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Set.of(),
+                        Map.of(),
+                        ExecutorState.ACTIVE
+                ),
+                Map.of(),
+                new ExecutorHostInfo.HostGPUInfo()
+        );
+    }
+
+    private ExecutorHostInfo buildExecutorWithGpuMixedState(
+            String executorId, Map<String, String> gpuModels, List<String> usedGpuIds) {
+        Map<Integer, Set<Integer>> freeCores = Map.of(0, new HashSet<>(Set.of(0, 1, 2, 3)));
+        val freeMemory = Map.of(0, 1024L * 1024 * 1024);
+        val physicalGpus = gpuModels.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> new GPUInfo(entry.getKey(), GpuVendor.NVIDIA, entry.getValue(), 0)));
+
+        val usedMemory = freeMemory.keySet().stream()
+                .collect(Collectors.toUnmodifiableMap(k -> k, k -> 0L));
+
+        val freeGpuIds = new ArrayList<>(gpuModels.keySet());
+        freeGpuIds.removeAll(usedGpuIds);
+
+        val snapshot = new ExecutorResourceSnapshot(
+                executorId,
+                new AvailableCPU(freeCores, Map.of()),
+                new AvailableMemory(freeMemory, usedMemory),
+                new AvailableGPU(freeGpuIds, usedGpuIds),
+                new PhysicalLayout(freeCores,
+                                   freeMemory,
+                                   physicalGpus,
+                                   PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         return new ExecutorHostInfo(

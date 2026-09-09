@@ -27,7 +27,6 @@ import javax.inject.Singleton;
 public class FirstFitExecutorSelector implements ExecutorSelector {
 
 	private final ExecutorResourceAllocator allocator;
-    // private final Perf
 
 	@Override
 	public Optional<AllocatedExecutorNode> select(

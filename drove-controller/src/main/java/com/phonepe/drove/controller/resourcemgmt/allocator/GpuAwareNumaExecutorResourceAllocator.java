@@ -16,26 +16,31 @@
 
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.google.common.base.Preconditions;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
+import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
-import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
-import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
+
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * NUMA node selector that prioritizes nodes with the most local free GPUs.
@@ -65,24 +70,11 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
             GpuType requiredGpuType) {
         Preconditions.checkArgument(requiredGpus == 0 || requiredGpuType != null,
                 "GPU type must be specified when GPU count is greater than 0");
-        val physicalLayout = Optional.ofNullable(hostInfo.getNodeData()
-            .accept(new NodeDataVisitor<PhysicalLayout>() {
-
-                @Override
-                public PhysicalLayout visit(ControllerNodeData controllerData) {
-                    return null;
-                }
-
-                @Override
-                public PhysicalLayout visit(ExecutorNodeData executorData) {
-                    return executorData.getState().getLayout();
-                }
-                
-            }));
-        val cpuScaling = physicalLayout.map(PhysicalLayout::getCpuScalingFactor)
-                                .orElse(PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR);
-        val memoryScaling = physicalLayout.map(PhysicalLayout::getMemoryScalingFactor)
-                                .orElse(PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR);
+        val physicalLayout = hostInfo.getNodeData().getState().getLayout();
+        var cpuScaling = physicalLayout.getCpuScalingFactor();
+        cpuScaling = ControllerUtils.doubleEquals(cpuScaling, 0) ? PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR : cpuScaling;
+        var memoryScaling = physicalLayout.getMemoryScalingFactor();
+        memoryScaling = ControllerUtils.doubleEquals(memoryScaling, 0) ? PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR : memoryScaling;
         val requiredCpus = (long) Math.ceil(actualRequiredCpus / cpuScaling);
         val requiredMemory = (long) Math.ceil(actualRequiredMemory / memoryScaling);
         if(requiredCpus != actualRequiredCpus || requiredMemory != actualRequiredMemory) {

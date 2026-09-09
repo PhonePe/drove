@@ -16,7 +16,6 @@
 
 package com.phonepe.drove.controller.resources;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.*;
 import static com.phonepe.drove.models.api.ApiResponse.failure;
 import static com.phonepe.drove.models.api.ApiResponse.success;
 import static com.phonepe.drove.models.instance.InstanceState.HEALTHY;
@@ -35,7 +34,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerCommunicator;
@@ -55,7 +53,6 @@ import com.phonepe.drove.controller.ui.support.DashboardDataSource;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.ApiResponse;
-import com.phonepe.drove.models.api.AppDetails;
 import com.phonepe.drove.models.api.AppSummary;
 import com.phonepe.drove.models.api.BlacklistOperationResponse;
 import com.phonepe.drove.models.api.ClusterSummary;
@@ -88,8 +85,6 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 
 import lombok.val;
-
-
 import lombok.extern.slf4j.Slf4j;
 
 /**

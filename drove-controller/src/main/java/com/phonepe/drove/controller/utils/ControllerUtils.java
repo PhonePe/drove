@@ -1093,11 +1093,7 @@ public class ControllerUtils {
                     .mapToLong(alloc -> alloc.accept(new ResourceAllocationVisitor<Long>() {
                         @Override
                         public Long visit(CPUAllocation cpu) {
-                            return cpu.getCores()
-                                .values()
-                                .stream()
-                                .mapToLong(cores -> cores.size())
-                                .sum();
+                            return 0L;
                         }
 
                         @Override
@@ -1641,5 +1637,7 @@ public class ControllerUtils {
         return List.of();
     }
 
-
+    public static boolean doubleEquals(double lhs, double rhs) {
+        return Math.abs(lhs - rhs) < 1e-9;
+    }
 }
