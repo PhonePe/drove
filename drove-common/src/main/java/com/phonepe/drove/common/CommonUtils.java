@@ -371,4 +371,8 @@ public class CommonUtils {
                 .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                 .buildClassic();
     }
+
+    public static boolean doubleEquals(double lhs, double rhs) {
+        return Math.abs(lhs - rhs) < 1e-9;
+    }
 }

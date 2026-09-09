@@ -34,6 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.common.collect.Sets;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
@@ -115,26 +116,34 @@ public class ResourceManager {
     public synchronized void populateResources(ExecutorResources resources) {
         this.nodes = Map.copyOf(resources.getNumaNodeToResource());
         this.gpus = Set.copyOf(resources.getGpuInfos()
-                               .stream()
-                               .map(GPUInfo::getGpuId)
-                               .collect(Collectors.toSet()));
+                .stream()
+                .map(GPUInfo::getGpuId)
+                .collect(Collectors.toSet()));
         val cores = new HashMap<Integer, Set<Integer>>();
         val memory = new HashMap<Integer, Long>();
         resources.getNumaNodeToResource()
-            .forEach((numaNode, info) -> {
-            cores.put(numaNode, info.getPhysicalCores());
-            memory.put(numaNode, info.getPhysicalMemoryInMB());
-        });
-        val cpuScalingFactor = performanceScaling.getCpuScalingFactor();
-        val memoryScalingFactor = performanceScaling.getMemoryScalingFactor();
-        log.info("Performance Scaling Factors: CPU: {} Memory: {}",
-                cpuScalingFactor, memoryScalingFactor);
+                .forEach((numaNode, info) -> {
+                    cores.put(numaNode, info.getPhysicalCores());
+                    memory.put(numaNode, info.getPhysicalMemoryInMB());
+                });
+        var cpuScalingFactor = Objects.requireNonNullElse(performanceScaling.getCpuScalingFactor(),
+                                                          PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR);
+        cpuScalingFactor = CommonUtils.doubleEquals(cpuScalingFactor, 0.0)
+                ? PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR
+                : cpuScalingFactor;
+        var memoryScalingFactor = Objects.requireNonNullElse(performanceScaling.getMemoryScalingFactor(),
+                                                             PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR);
+        memoryScalingFactor = CommonUtils.doubleEquals(memoryScalingFactor, 0.0)
+                ? PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR
+                : memoryScalingFactor;
+        log.info("Performance Scaling Factors: CPU: {} Memory: {}", cpuScalingFactor, memoryScalingFactor);
         this.physicalLayout = new PhysicalLayout(cores,
                                                  memory,
                                                  resources.getGpuInfos()
-                                                     .stream()
-                                                     .collect(Collectors.toUnmodifiableMap(
-                                                         GPUInfo::getGpuId, Function.identity(), (left, right) -> left)),
+                                                         .stream()
+                                                         .collect(Collectors.toUnmodifiableMap(GPUInfo::getGpuId,
+                                                                                               Function.identity(),
+                                                                                               (left, right) -> left)),
                                                  cpuScalingFactor,
                                                  memoryScalingFactor);
     }

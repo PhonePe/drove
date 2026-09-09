@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
+import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
@@ -72,9 +73,9 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
                 "GPU type must be specified when GPU count is greater than 0");
         val physicalLayout = hostInfo.getNodeData().getState().getLayout();
         var cpuScaling = physicalLayout.getCpuScalingFactor();
-        cpuScaling = ControllerUtils.doubleEquals(cpuScaling, 0) ? PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR : cpuScaling;
+        cpuScaling = CommonUtils.doubleEquals(cpuScaling, 0) ? PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR : cpuScaling;
         var memoryScaling = physicalLayout.getMemoryScalingFactor();
-        memoryScaling = ControllerUtils.doubleEquals(memoryScaling, 0) ? PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR : memoryScaling;
+        memoryScaling = CommonUtils.doubleEquals(memoryScaling, 0) ? PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR : memoryScaling;
         val requiredCpus = (long) Math.ceil(actualRequiredCpus / cpuScaling);
         val requiredMemory = (long) Math.ceil(actualRequiredMemory / memoryScaling);
         if(requiredCpus != actualRequiredCpus || requiredMemory != actualRequiredMemory) {
