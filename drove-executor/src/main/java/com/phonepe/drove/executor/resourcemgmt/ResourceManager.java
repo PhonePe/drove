@@ -148,6 +148,7 @@ public class ResourceManager {
                                                  memoryScalingFactor);
     }
 
+    @MonitoredFunction
     public synchronized boolean lockResources(final ResourceUsage usage) {
         if (resourceLocks.containsKey(usage.getId())) {
             log.error("Resources already allocated for: {}", usage.getId());
