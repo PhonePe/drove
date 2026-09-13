@@ -116,7 +116,8 @@ public class AdjustInstancesLocalServiceAction extends LocalServiceAsyncAction {
                 .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getExecutorId));
         val currInfo = currentState.getData();
         val instancesPerHost = currInfo.getInstancesPerHost();
-        val liveExecutors = clusterResourcesDB.currentSnapshot(false)
+        val allExecutors = clusterResourcesDB.currentSnapshot(false);
+        val liveExecutors = allExecutors
                 .stream()
                 .filter(executorHostInfo -> ACCEPTABLE_EXECUTOR_STATES.contains(executorHostInfo.getNodeData().getExecutorState()))
                 .toList();

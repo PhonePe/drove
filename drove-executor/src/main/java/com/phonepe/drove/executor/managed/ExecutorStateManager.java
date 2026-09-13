@@ -17,16 +17,22 @@
 package com.phonepe.drove.executor.managed;
 
 import com.phonepe.drove.executor.discovery.ClusterClient;
+import com.phonepe.drove.executor.engine.InstanceRecovery;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+
+import org.eclipse.jetty.server.Server;
+
 import dev.failsafe.Failsafe;
 import dev.failsafe.FailsafeException;
 import dev.failsafe.RetryPolicy;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.dropwizard.lifecycle.Managed;
+import io.dropwizard.lifecycle.ServerLifecycleListener;
+import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
@@ -51,20 +57,25 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 @Order(80)
-public class ExecutorStateManager implements Managed {
+public class ExecutorStateManager implements Managed, ServerLifecycleListener {
     private final AtomicReference<ExecutorState> currentState = new AtomicReference<>(ExecutorState.ACTIVE);
     private final ConsumingFireForgetSignal<ExecutorState> stateChanged = new ConsumingFireForgetSignal<>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ClusterClient clusterClient;
+    private final InstanceRecovery instanceRecovery;
 
     @Inject
     public ExecutorStateManager(
             LocalServiceInstanceEngine localServiceInstanceEngine,
-            ClusterClient clusterClient) {
+            ClusterClient clusterClient,
+            InstanceRecovery instanceRecovery,
+            Environment environment) {
         this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.clusterClient = clusterClient;
+        this.instanceRecovery = instanceRecovery;
+        environment.lifecycle().addServerLifecycleListener(this);
     }
 
     public void requestBlacklist() {
@@ -89,12 +100,6 @@ public class ExecutorStateManager implements Managed {
 
     @Override
     public void start() throws Exception {
-        stateChanged.connect(state -> {
-            if (state.equals(ExecutorState.UNREADY)) {
-                log.info("Executor entered unready state, will check and activate");
-                executorService.submit(this::ensureActive);
-            }
-        });
         log.info("Setting initial state to unready");
         updateState(ExecutorState.UNREADY);
     }
@@ -102,6 +107,21 @@ public class ExecutorStateManager implements Managed {
     @Override
     public void stop() throws Exception {
         Managed.super.stop();
+    }
+
+    @Override
+    public void serverStarted(Server server) {
+        stateChanged.connect(state -> {
+            if (state.equals(ExecutorState.UNREADY)) {
+                log.info("Executor entered unready state, will check and activate");
+                executorService.submit(this::ensureActive);
+            }
+        });
+        log.info("Recovering state for executor");
+        instanceRecovery.recoverState();
+        log.info("Currenct running containers reconciled. Ensuring everything is kosher and activating executor");
+        ensureActive();
+        log.info("Executor state recovery complete. Current state: {}", currentState());
     }
 
     private void updateState(ExecutorState state) {
@@ -164,4 +184,5 @@ public class ExecutorStateManager implements Managed {
         return Failsafe.with(retryPolicy)
                 .get(clusterClient::reservedResources);
     }
+
 }

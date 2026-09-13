@@ -16,6 +16,20 @@
 
 package com.phonepe.drove.executor;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -25,33 +39,27 @@ import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.common.AbstractTestBase;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
+import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.net.HttpCaller;
+import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
-import com.phonepe.drove.executor.discovery.RemoteLeadershipObserver;
 import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.InstanceRecovery;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
-import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
-import lombok.val;
+
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
+import lombok.val;
 
 /**
  *
@@ -145,6 +153,41 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
 
             @Provides
             @Singleton
+            public DockerClient dockerClient() {
+                return ExecutorTestingUtils.DOCKER_CLIENT;
+            }
+
+            @Provides
+            @Singleton
+            public ObjectMapper objectMapper() {
+                return MAPPER;
+            }
+
+            @Provides
+            @Singleton
+            public ClusterClient clusterClient() {
+                return mock(ClusterClient.class);
+            }
+
+            @Provides
+            @Singleton
+            public InstanceRecovery instanceRecovery(
+                    final ApplicationInstanceEngine applicationInstanceEngine,
+                    final TaskInstanceEngine taskInstanceEngine,
+                    final LocalServiceInstanceEngine localServiceInstanceEngine,
+                    final ObjectMapper mapper,
+                    final DockerClient dockerClient,
+                    final ClusterClient clusterClient) {
+                return new InstanceRecovery(applicationInstanceEngine,
+                                            taskInstanceEngine,
+                                            localServiceInstanceEngine,
+                                            mapper,
+                                            dockerClient,
+                                            clusterClient);
+            }
+
+            @Provides
+            @Singleton
             public HttpCaller httpCaller() {
                 return CommonTestUtils.httpCaller();
             }
@@ -158,7 +201,7 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
             @Provides
             @Singleton
             public LeadershipObserver leadershipObserver() {
-                return mock(RemoteLeadershipObserver.class);
+                return mock(ZkLeadershipObserver.class);
             }
 
             @Provides
@@ -178,9 +221,10 @@ public class AbstractExecutorEngineEnabledTestBase extends AbstractTestBase {
         });
 
         injector.injectMembers(this);
-        resourceDB.populateResources(Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
-                                                                               .boxed()
-                                                                               .collect(Collectors.toUnmodifiableSet()),
-                                                                             16_000_000)));
+        val compute = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 7)
+                        .boxed()
+                        .collect(Collectors.toUnmodifiableSet()),
+                16_000_000));
+        resourceDB.populateResources(new ResourceManager.ExecutorResources(compute, Set.of()));
     }
 }

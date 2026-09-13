@@ -31,10 +31,13 @@ import com.phonepe.drove.common.model.MessageHeader;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.common.model.executor.ExecutorAddress;
 import com.phonepe.drove.common.model.executor.StartTaskMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dockerjava.api.DockerClient;
 import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.InjectingTaskActionFactory;
+import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.discovery.LocalNodeDataManager;
 import com.phonepe.drove.executor.discovery.RemoteLeadershipObserver;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
@@ -223,6 +226,41 @@ class TaskInstanceEngineStateMachineErrorTest extends AbstractTestBase {
                         new com.phonepe.drove.executor.InjectingLocalServiceInstanceActionFactory(injector),
                         resourceDB,
                         ExecutorTestingUtils.DOCKER_CLIENT);
+            }
+
+            @Provides
+            @Singleton
+            public DockerClient dockerClient() {
+                return ExecutorTestingUtils.DOCKER_CLIENT;
+            }
+
+            @Provides
+            @Singleton
+            public ObjectMapper objectMapper() {
+                return MAPPER;
+            }
+
+            @Provides
+            @Singleton
+            public ClusterClient clusterClient() {
+                return mock(ClusterClient.class);
+            }
+
+            @Provides
+            @Singleton
+            public InstanceRecovery instanceRecovery(
+                    final ApplicationInstanceEngine applicationInstanceEngine,
+                    final TaskInstanceEngine taskInstanceEngine,
+                    final LocalServiceInstanceEngine localServiceInstanceEngine,
+                    final ObjectMapper mapper,
+                    final DockerClient dockerClient,
+                    final ClusterClient clusterClient) {
+                return new InstanceRecovery(applicationInstanceEngine,
+                                            taskInstanceEngine,
+                                            localServiceInstanceEngine,
+                                            mapper,
+                                            dockerClient,
+                                            clusterClient);
             }
 
             @Provides

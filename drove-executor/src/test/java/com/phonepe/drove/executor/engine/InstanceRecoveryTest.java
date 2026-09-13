@@ -14,9 +14,12 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.executor.managed;
+package com.phonepe.drove.executor.engine;
 
-import com.codahale.metrics.SharedMetricRegistries;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.github.dockerjava.api.model.HostConfig;
 import com.google.common.base.Strings;
 import com.phonepe.drove.common.AbstractTestBase;
@@ -26,16 +29,12 @@ import com.phonepe.drove.executor.ContainerHelperExtension;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.models.internal.KnownInstancesData;
-import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
-import lombok.SneakyThrows;
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import lombok.SneakyThrows;
+import lombok.val;
 
 /**
  *
@@ -48,21 +47,16 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
     void testNoContainers() {
         val clusterClient = mock(ClusterClient.class);
         when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-        val env = mock(Environment.class);
-        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
-        when(env.lifecycle()).thenReturn(lifecycle);
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
                                       localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
-                                      clusterClient,
-                                      env);
-        ir.start();
+                                      clusterClient);
+        ir.recoverState();
         assertEquals(0, applicationInstanceEngine.currentState().size());
         assertEquals(0, taskInstanceEngine.currentState().size());
-        ir.stop();
     }
 
     @Test
@@ -73,22 +67,16 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         ExecutorTestingUtils.startTestAppContainer(appSpec, appInstanceData, MAPPER);
         val clusterClient = mock(ClusterClient.class);
         when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-        val env = mock(Environment.class);
-        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
-        when(env.lifecycle()).thenReturn(lifecycle);
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
                                       localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
-                                      clusterClient,
-                                      env);
-        ir.start();
-        ir.serverStarted(null);
+                                      clusterClient);
+        ir.recoverState();
         assertEquals(1, applicationInstanceEngine.currentState().size());
         assertEquals(0, taskInstanceEngine.currentState().size());
-        ir.stop();
     }
 
 
@@ -100,23 +88,17 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         ExecutorTestingUtils.startTestLocalServiceContainer(appSpec, appInstanceData, MAPPER);
         val clusterClient = mock(ClusterClient.class);
         when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-        val env = mock(Environment.class);
-        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
-        when(env.lifecycle()).thenReturn(lifecycle);
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
                                       localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
-                                      clusterClient,
-                                      env);
-        ir.start();
-        ir.serverStarted(null);
+                                      clusterClient);
+        ir.recoverState();
         assertEquals(0, applicationInstanceEngine.currentState().size());
         assertEquals(1, localServiceInstanceEngine.currentState().size());
         assertEquals(0, taskInstanceEngine.currentState().size());
-        ir.stop();
     }
 
     @Test
@@ -127,22 +109,16 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
         ExecutorTestingUtils.startTestTaskContainer(taskSpec, taskInstanceData, MAPPER);
         val clusterClient = mock(ClusterClient.class);
         when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-        val env = mock(Environment.class);
-        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
-        when(env.lifecycle()).thenReturn(lifecycle);
 
         val ir = new InstanceRecovery(applicationInstanceEngine,
                                       taskInstanceEngine,
                                       localServiceInstanceEngine,
                                       AbstractTestBase.MAPPER,
                                       ExecutorTestingUtils.DOCKER_CLIENT,
-                                      clusterClient,
-                                      env);
-        ir.start();
-        ir.serverStarted(null);
+                                      clusterClient);
+        ir.recoverState();
         assertEquals(0, applicationInstanceEngine.currentState().size());
         assertEquals(1, taskInstanceEngine.currentState().size());
-        ir.stop();
     }
 
     @Test
@@ -158,21 +134,15 @@ class InstanceRecoveryTest extends AbstractExecutorEngineEnabledTestBase {
                     .exec();
             val clusterClient = mock(ClusterClient.class);
             when(clusterClient.lastKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
-            val env = mock(Environment.class);
-            val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
-            when(env.lifecycle()).thenReturn(lifecycle);
 
             val ir = new InstanceRecovery(applicationInstanceEngine,
-                                          taskInstanceEngine,
-                                          localServiceInstanceEngine,
-                                          AbstractTestBase.MAPPER,
-                                          ExecutorTestingUtils.DOCKER_CLIENT,
-                                          clusterClient,
-                                          env);
-            ir.start();
-            ir.serverStarted(null);
+                                      taskInstanceEngine,
+                                      localServiceInstanceEngine,
+                                      AbstractTestBase.MAPPER,
+                                      ExecutorTestingUtils.DOCKER_CLIENT,
+                                      clusterClient);
+            ir.recoverState();
             assertEquals(0, applicationInstanceEngine.currentState().size());
-            ir.stop();
         }
         finally {
             if (!Strings.isNullOrEmpty(containerId)) {

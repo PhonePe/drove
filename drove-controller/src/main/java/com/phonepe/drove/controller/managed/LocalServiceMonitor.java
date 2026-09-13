@@ -1,20 +1,37 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.controller.managed;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.CommonUtils;
@@ -25,7 +42,6 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
-import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
@@ -33,22 +49,12 @@ import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceAdjustInstancesOperation;
 import com.phonepe.drove.models.operation.localserviceops.LocalServiceStopInstancesOperation;
+
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.Managed;
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import static com.phonepe.drove.common.CommonUtils.executorId;
-
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Monitors Local Services to ensure required instances are present on all executors
@@ -70,11 +76,11 @@ public class LocalServiceMonitor implements Managed {
     @Inject
     @IgnoreInJacocoGeneratedReport
     public LocalServiceMonitor(
-            ClusterResourcesDB clusterResourcesDB,
-            ClusterStateDB clusterStateDB,
-            LocalServiceStateDB stateDB,
-            LocalServiceLifecycleManagementEngine localServiceEngine,
-            LeadershipEnsurer leadershipEnsurer) {
+                               ClusterResourcesDB clusterResourcesDB,
+                               ClusterStateDB clusterStateDB,
+                               LocalServiceStateDB stateDB,
+                               LocalServiceLifecycleManagementEngine localServiceEngine,
+                               LeadershipEnsurer leadershipEnsurer) {
         this(clusterResourcesDB,
              clusterStateDB,
              stateDB,
@@ -88,12 +94,12 @@ public class LocalServiceMonitor implements Managed {
 
     @VisibleForTesting
     LocalServiceMonitor(
-            ClusterResourcesDB clusterResourcesDB,
-            ClusterStateDB clusterStateDB,
-            LocalServiceStateDB stateDB,
-            LocalServiceLifecycleManagementEngine localServiceEngine,
-            LeadershipEnsurer leadershipEnsurer,
-            ScheduledSignal refreshSignal) {
+                        ClusterResourcesDB clusterResourcesDB,
+                        ClusterStateDB clusterStateDB,
+                        LocalServiceStateDB stateDB,
+                        LocalServiceLifecycleManagementEngine localServiceEngine,
+                        LeadershipEnsurer leadershipEnsurer,
+                        ScheduledSignal refreshSignal) {
         this.clusterResourcesDB = clusterResourcesDB;
         this.clusterStateDB = clusterStateDB;
         this.stateDB = stateDB;
@@ -140,23 +146,27 @@ public class LocalServiceMonitor implements Managed {
             log.warn("Local service check skipped as cluster is in maintenance window");
             return;
         }
-        val relevantStates = EnumSet.of(LocalServiceState.ACTIVE, LocalServiceState.CONFIG_TESTING, LocalServiceState.INACTIVE);
+        val relevantStates = EnumSet.of(LocalServiceState.ACTIVE,
+                                        LocalServiceState.CONFIG_TESTING,
+                                        LocalServiceState.INACTIVE);
         val services = stateDB.services(0, Integer.MAX_VALUE)
                 .stream()
-                .filter(serviceInfo -> relevantStates.contains(localServiceEngine.currentState(serviceInfo.getServiceId())
+                .filter(serviceInfo -> relevantStates.contains(
+                                                               localServiceEngine.currentState(serviceInfo
+                                                                       .getServiceId())
                                                                        .orElse(LocalServiceState.DESTROYED)))
                 .collect(Collectors.toMap(LocalServiceInfo::getServiceId, Function.identity()));
         //Ensure active executors have instances
         //Kill instances for inactive executors with no active application instances
         val executors = clusterResourcesDB.currentSnapshot(false);
         val liveExecutors = new ArrayList<ExecutorHostInfo>();
-        val blacklistedExecutors = new ArrayList<ExecutorHostInfo>();
-        executors.forEach(executorHostInfo -> checkExecutor(executorHostInfo, liveExecutors, blacklistedExecutors));
+        val instancesToBeStopped = new HashMap<String, Set<String>>();
+        executors.forEach(executorHostInfo -> checkExecutor(executorHostInfo, liveExecutors, instancesToBeStopped));
 
         handleServiceInstances(services, liveExecutors);
         services.keySet().forEach(serviceId -> {
             val numStale = stateDB.markStaleInstances(serviceId);
-            if(numStale > 0) {
+            if (numStale > 0) {
                 log.info("Marked {} instances stale for service {}", numStale, serviceId);
             }
             else {
@@ -165,14 +175,6 @@ public class LocalServiceMonitor implements Managed {
         });
         //Now kill all service instances running on blacklisted executors
         //This _could_ be done in adjust instances, it is more efficient to generate commands here in a single shot
-        val instancesToBeStopped = blacklistedExecutors.stream()
-                .flatMap(executorHostInfo -> Objects.requireNonNullElse(
-                                executorHostInfo.getNodeData().getServiceInstances(),
-                                List.<LocalServiceInstanceInfo>of())
-                        .stream())
-                .collect(Collectors.groupingBy(LocalServiceInstanceInfo::getServiceId,
-                                               Collectors.mapping(LocalServiceInstanceInfo::getInstanceId,
-                                                                  Collectors.toSet())));
         instancesToBeStopped.forEach((serviceId, instances) -> {
             log.info("Requesting to stop {} instances for service {}", instances.size(), serviceId);
             notifyOperation(new LocalServiceStopInstancesOperation(serviceId, instances, null));
@@ -181,56 +183,61 @@ public class LocalServiceMonitor implements Managed {
 
     private void checkExecutor(ExecutorHostInfo executorHostInfo,
                                List<ExecutorHostInfo> liveExecutors,
-                               List<ExecutorHostInfo> blacklistedExecutors) {
+                               Map<String, Set<String>> instancesToBeStopped) {
         final var executorId = executorHostInfo.getExecutorId();
-        if (clusterResourcesDB.isBlacklisted(executorId)) {
-            final var nodeData = executorHostInfo.getNodeData();
-            val serviceInstances = Objects.requireNonNullElseGet(
-                    nodeData .getServiceInstances(), List::<LocalServiceInstanceInfo>of)
-                    .stream()
-                    .filter(serviceInstance -> serviceInstance.getState() == LocalServiceInstanceState.HEALTHY)
-                    .toList();
-            if (serviceInstances.isEmpty()) {
-                log.debug("Executor {} is blacklisted and has no healthy service instances running. No action needed",
-                          executorId);
-            }
-            else {
-                // We don't want to kill services on executors with running application or task instances
-                // because, these containers might be using the services provided by the LS
-                val appInstances = Objects.requireNonNullElseGet(nodeData.getInstances(), List::of);
-                val taskInstances = Objects.requireNonNullElseGet(nodeData.getTasks(), List::of);
-                if (!appInstances.isEmpty()) {
-                    log.warn("Executor {} is blacklisted but has {} application instances running. We shall attempt to stop services later",
-                             executorId, appInstances.size());
-                }
-                else if (!taskInstances.isEmpty()) {
-                    log.warn("Executor {} is blacklisted but has {} task instances running. We shall attempt to stop services later",
-                             executorId, taskInstances.size());
-                }
-                else {
-                    log.info("Executor {} is blacklisted and has no application instances running. We shall stop services",
-                             executorHostInfo.getExecutorId());
-                    blacklistedExecutors.add(executorHostInfo);
-                }
-            }
+        if (!clusterResourcesDB.isBlacklisted(executorId)) {
+            liveExecutors.add(executorHostInfo);
+            return;
+        }
+        final var nodeData = executorHostInfo.getNodeData();
+        val serviceInstances = Objects.requireNonNullElseGet(
+                                                             nodeData.getServiceInstances(),
+                                                             List::<LocalServiceInstanceInfo>of);
+        val hasHealthyServiceInstances = serviceInstances.stream()
+                .anyMatch(serviceInstance -> serviceInstance.getState() == LocalServiceInstanceState.HEALTHY);
+        if (!hasHealthyServiceInstances) {
+            log.debug("Executor {} is blacklisted and has no healthy service instances running. No action needed",
+                      executorId);
+            return;
+        }
+        // We don't want to kill services on executors with running application or task instances
+        // because, these containers might be using the services provided by the LS
+        val appInstances = Objects.requireNonNullElseGet(nodeData.getInstances(), List::of);
+        val taskInstances = Objects.requireNonNullElseGet(nodeData.getTasks(), List::of);
+        if (!appInstances.isEmpty()) {
+            log.warn("Executor {} is blacklisted but has {} application instances running. We shall attempt to stop services later",
+                     executorId,
+                     appInstances.size());
+        }
+        else if (!taskInstances.isEmpty()) {
+            log.warn("Executor {} is blacklisted but has {} task instances running. We shall attempt to stop services later",
+                     executorId,
+                     taskInstances.size());
         }
         else {
-            liveExecutors.add(executorHostInfo);
+            log.info("Executor {} is blacklisted and has {} service instances running with no dependencies. We shall stop them",
+                     executorId,
+                     serviceInstances.size());
+            serviceInstances.forEach(serviceInstance -> instancesToBeStopped
+                    .computeIfAbsent(serviceInstance.getServiceId(), k -> new HashSet<>())
+                    .add(serviceInstance.getInstanceId()));
         }
     }
 
-    @SuppressWarnings({"java:S1301", "java:S131"})
-    private void handleServiceInstances(
-            Map<String, LocalServiceInfo> services,
-            ArrayList<ExecutorHostInfo> liveExecutors) {
+
+    @SuppressWarnings("java:S1301")
+    private void handleServiceInstances(Map<String, LocalServiceInfo> services,
+                                        List<ExecutorHostInfo> liveExecutors) {
         services.forEach((serviceId, serviceInfo) -> {
             val currInstances = stateDB.instances(serviceId, LocalServiceInstanceState.ACTIVE_STATES, false);
             switch (serviceInfo.getActivationState()) {
                 case ACTIVE -> {
                     val requiredInstances = serviceInfo.getInstancesPerHost() * liveExecutors.size();
-                    if (currInstances.size() != requiredInstances) {
+                    if (currInstances.size() < requiredInstances) {
                         log.info("Discrepancy found in the instance count for service {}. Required: {} Actual: {}",
-                                 serviceId, requiredInstances, currInstances.size());
+                                 serviceId,
+                                 requiredInstances,
+                                 currInstances.size());
                         notifyOperation(new LocalServiceAdjustInstancesOperation(serviceId, null));
                     }
                 }

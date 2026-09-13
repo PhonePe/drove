@@ -16,10 +16,12 @@
 
 package com.phonepe.drove.executor.managed;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.ExecutorTestingUtils;
 import com.phonepe.drove.executor.discovery.ClusterClient;
 import com.phonepe.drove.executor.discovery.ControllerCommunicationError;
+import com.phonepe.drove.executor.engine.InstanceRecovery;
 import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
@@ -28,6 +30,9 @@ import com.phonepe.drove.models.internal.LocalServiceInstanceResources;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
 
 import java.util.List;
 import java.util.Map;
@@ -47,7 +52,11 @@ class ExecutorStateManagerTest {
     void testBlacklist() {
         val lsie = mock(LocalServiceInstanceEngine.class);
         val clusterClient = mock(ClusterClient.class);
-        val exSM = new ExecutorStateManager(lsie, clusterClient);
+        val instanceRecovery = mock(InstanceRecovery.class);
+        val environment = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(environment.lifecycle()).thenReturn(lifecycle);
+        val exSM = new ExecutorStateManager(lsie, clusterClient, instanceRecovery, environment);
 
         exSM.requestBlacklist();
         assertEquals(ExecutorState.BLACKLIST_REQUESTED, exSM.currentState());
@@ -57,7 +66,11 @@ class ExecutorStateManagerTest {
     void testBlacklistFinalize() {
         val lsie = mock(LocalServiceInstanceEngine.class);
         val clusterClient = mock(ClusterClient.class);
-        val exSM = new ExecutorStateManager(lsie, clusterClient);
+        val instanceRecovery = mock(InstanceRecovery.class);
+        val environment = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(environment.lifecycle()).thenReturn(lifecycle);
+        val exSM = new ExecutorStateManager(lsie, clusterClient, instanceRecovery, environment);
 
         exSM.markBlacklisted();
         assertEquals(ExecutorState.BLACKLISTED, exSM.currentState());
@@ -68,7 +81,11 @@ class ExecutorStateManagerTest {
     void testStateManagement() {
         val lsie = mock(LocalServiceInstanceEngine.class);
         val clusterClient = mock(ClusterClient.class);
-        val exSM = new ExecutorStateManager(lsie, clusterClient);
+        val instanceRecovery = mock(InstanceRecovery.class);
+        val environment = mock(Environment.class);
+        val lifecycle = new LifecycleEnvironment(SharedMetricRegistries.getOrCreate("test"));
+        when(environment.lifecycle()).thenReturn(lifecycle);
+        val exSM = new ExecutorStateManager(lsie, clusterClient, instanceRecovery, environment);
         val spec = ExecutorTestingUtils.testLocalServiceInstanceSpec();
         try {
             val clusterRetryCtr = new AtomicInteger(0);
@@ -92,7 +109,7 @@ class ExecutorStateManagerTest {
             val currState = new AtomicReference<ExecutorState>();
             exSM.onStateChange().connect(currState::set);
             exSM.start();
-            CommonTestUtils.waitUntil(() -> ExecutorState.ACTIVE.equals(currState.get()));
+            exSM.serverStarted(null);
         }
         finally {
             exSM.stop();

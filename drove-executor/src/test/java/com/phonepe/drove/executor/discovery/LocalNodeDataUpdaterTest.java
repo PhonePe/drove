@@ -16,23 +16,12 @@
 
 package com.phonepe.drove.executor.discovery;
 
-import com.google.inject.Guice;
-import com.phonepe.drove.common.AbstractTestBase;
-import com.phonepe.drove.common.CommonUtils;
-import com.phonepe.drove.executor.*;
-import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
-import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
-import com.phonepe.drove.executor.engine.TaskInstanceEngine;
-import com.phonepe.drove.executor.managed.ExecutorIdManager;
-import com.phonepe.drove.executor.managed.ExecutorStateManager;
-import com.phonepe.drove.executor.managed.MetadataManager;
-import com.phonepe.drove.executor.resourcemgmt.PerformanceScalingConfig;
-import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
-import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
-import com.phonepe.drove.models.info.nodedata.*;
-import lombok.SneakyThrows;
-import lombok.val;
-import org.junit.jupiter.api.Test;
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
 import java.util.Set;
@@ -41,8 +30,38 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
-import static org.junit.jupiter.api.Assertions.*;
+import com.google.inject.Guice;
+import com.phonepe.drove.common.AbstractTestBase;
+import com.phonepe.drove.common.CommonUtils;
+import com.phonepe.drove.executor.ExecutorOptions;
+import com.phonepe.drove.executor.ExecutorTestingUtils;
+import com.phonepe.drove.executor.InjectingApplicationInstanceActionFactory;
+import com.phonepe.drove.executor.InjectingLocalServiceInstanceActionFactory;
+import com.phonepe.drove.executor.InjectingTaskActionFactory;
+import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
+import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
+import com.phonepe.drove.executor.engine.TaskInstanceEngine;
+import com.phonepe.drove.executor.managed.ExecutorIdManager;
+import com.phonepe.drove.executor.managed.ExecutorStateManager;
+import com.phonepe.drove.executor.managed.MetadataManager;
+import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
+import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
+import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.nodedata.NodeType;
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
+import org.junit.jupiter.api.Test;
+
+import lombok.SneakyThrows;
+import lombok.val;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import lombok.val;
 
 /**
  *
@@ -57,13 +76,15 @@ class LocalNodeDataUpdaterTest extends AbstractTestBase {
         val nds = new TestNodeDataStore();
         nds.onNodeDataUpdate().connect(nodeData -> updateCounter.incrementAndGet());
         //when(nds.updateNodeData(any(NodeData.class));
-        val rdb = new ResourceManager(PerformanceScalingConfig.DEFAULT);
+        val rdb = new ResourceManager();
         Map<Integer, ResourceManager.NodeInfo> computeResources = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 20)
                         .boxed()
                         .collect(Collectors.toUnmodifiableSet()),
                 512_000_000));
         rdb.populateResources(new ResourceManager.ExecutorResources(computeResources, Set.of()));
-        val blm = new ExecutorStateManager(null, null);
+        val environment = mock(Environment.class);
+        when(environment.lifecycle()).thenReturn(new LifecycleEnvironment(METRIC_REGISTRY));
+        val blm = new ExecutorStateManager(null, null, null, environment);
         final var injector = Guice.createInjector();
         val ie = new ApplicationInstanceEngine(eim,
                                                Executors.newSingleThreadExecutor(),

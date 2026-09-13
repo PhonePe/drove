@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.phonepe.drove.executor.managed;
+package com.phonepe.drove.executor.engine;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,10 +24,6 @@ import com.phonepe.drove.common.model.ApplicationInstanceSpec;
 import com.phonepe.drove.common.model.LocalServiceInstanceSpec;
 import com.phonepe.drove.common.model.TaskInstanceSpec;
 import com.phonepe.drove.executor.discovery.ClusterClient;
-import com.phonepe.drove.executor.engine.ApplicationInstanceEngine;
-import com.phonepe.drove.executor.engine.DockerLabels;
-import com.phonepe.drove.executor.engine.LocalServiceInstanceEngine;
-import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.model.ExecutorInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorLocalServiceInstanceInfo;
 import com.phonepe.drove.executor.model.ExecutorTaskInfo;
@@ -57,8 +53,7 @@ import java.util.stream.Collectors;
  */
 @Singleton
 @Slf4j
-@Order(70)
-public class InstanceRecovery implements Managed, ServerLifecycleListener {
+public class InstanceRecovery {
     private final ApplicationInstanceEngine applicationInstanceEngine;
     private final TaskInstanceEngine taskInstanceEngine;
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
@@ -73,36 +68,16 @@ public class InstanceRecovery implements Managed, ServerLifecycleListener {
             LocalServiceInstanceEngine localServiceInstanceEngine,
             ObjectMapper mapper,
             DockerClient client,
-            ClusterClient clusterClient,
-            Environment environment) {
+            ClusterClient clusterClient) {
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
         this.mapper = mapper;
         this.client = client;
         this.clusterClient = clusterClient;
         this.localServiceInstanceEngine = localServiceInstanceEngine;
-        environment.lifecycle().addServerLifecycleListener(this);
     }
 
-
-    @Override
-    public void start() throws Exception {
-        log.info("Managed instance recovery system started");
-    }
-
-    @Override
-    public void stop() throws Exception {
-        log.info("Managed instance recovery system stopped");
-    }
-
-    @Override
-    public void serverStarted(Server server) {
-        log.info("State recovery started");
-        recoverState();
-        log.info("State recovery completed");
-    }
-
-    private void recoverState() {
+    public void recoverState() {
         val containers = client.listContainersCmd()
                 .withLabelFilter(List.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
                                          DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
