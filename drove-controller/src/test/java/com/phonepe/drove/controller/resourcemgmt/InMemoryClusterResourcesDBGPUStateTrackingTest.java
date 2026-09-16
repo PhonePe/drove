@@ -112,6 +112,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                    new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
             EnumSet.of(ExecutorState.ACTIVE),
             node -> true,
+            false,
             false
         );
 
@@ -146,6 +147,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                    new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
             EnumSet.of(ExecutorState.ACTIVE),
             node -> true,
+            false,
             false
         );
 
@@ -189,6 +191,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                    new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
             EnumSet.of(ExecutorState.ACTIVE),
             node -> true,
+            false,
             false
         );
 
@@ -243,6 +246,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                    new GPURequirement(gpuCount, new GpuType(GpuVendor.NVIDIA, "h100"))),
             EnumSet.of(ExecutorState.ACTIVE),
             node -> true,
+            false,
             false
         );
 
@@ -355,6 +359,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
                    new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
             EnumSet.of(ExecutorState.ACTIVE),
             node -> true,
+            false,
             false
         );
 

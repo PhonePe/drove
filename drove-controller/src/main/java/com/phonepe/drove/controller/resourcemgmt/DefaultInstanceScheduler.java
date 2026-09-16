@@ -24,9 +24,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,6 +56,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.InstanceResourceAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
@@ -131,13 +134,6 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     @Override
-    public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, String instanceId, DeploymentSpec deploymentSpec) {
-        var placementPolicy = ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec);
-        return schedule(schedulingSessionId, instanceId, deploymentSpec, placementPolicy);
-    }
-
-    @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
             @NonNull final String schedulingSessionId,
@@ -145,41 +141,37 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             final DeploymentSpec deploymentSpec,
             final PlacementPolicy placementPolicy,
             final Set<ExecutorState> allowedStates) {
+        return place(schedulingSessionId,
+                     List.of(instanceId),
+                     deploymentSpec,
+                     placementPolicy,
+                     allowedStates,
+                     schedulingSessionData,
+                     false)
+            .stream()
+            .findAny();
+    }
 
-        val sessionData = schedulingSessionData.computeIfAbsent(
-                schedulingSessionId,
-                id -> {
-                    log.info("CREATE::SID: {}", schedulingSessionId);
-                    return clusterSnapshot(deploymentSpec);
-                });
-        val selectedNode = clusterResourcesDB.selectNodes(
-                deploymentSpec.getResources(),
-                allowedStates,
-                filterContext -> validateNode(
-                    filterContext,
-                    schedulingSessionId,
-                    instanceId,
-                    placementPolicy,
-                    sessionData,
-                    deploymentSpec));
-        //If a node is found, add it to the list of allocated nodes for this session
-        //Next time a request for this session comes, this will ensure that allocations done in current session
-        //Are taken into consideration
-        selectedNode.ifPresent(allocatedExecutorNode -> schedulingSessionData.computeIfPresent(
-                schedulingSessionId,
-                (sid, executorAllocations) -> {
-                    val executorId = allocatedExecutorNode.getExecutorId();
-                    val currentAllocations = executorAllocations.computeIfAbsent(executorId, eId -> new HashMap<>());
-                    currentAllocations.put(instanceId,
-                                           new InstanceResourceAllocation(executorId,
-                                                                          instanceId,
-                                                                          allocatedExecutorNode.getCpu(),
-                                                                          allocatedExecutorNode.getMemory()));
-                    log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
-                             sid, executorId, currentAllocations.size());
-                    return executorAllocations;
-                }));
-        return selectedNode;
+    @Override
+    @MonitoredFunction
+    public List<AllocatedExecutorNode> simulatePlacement(
+            final DeploymentSpec deploymentSpec,
+            final PlacementPolicy requiredPlacementPolicy,
+            final int numInstances) {
+        val placementPolicy = Objects.requireNonNullElseGet(requiredPlacementPolicy,
+                () -> ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec));
+        val schedulingSessionId = UUID.randomUUID().toString();
+        val localSessionData = new ConcurrentHashMap<>(Map.of(schedulingSessionId, clusterSnapshot(deploymentSpec)));
+        val instanceIds = IntStream.rangeClosed(1, numInstances)
+            .mapToObj(i -> "%s-simulation-instance-%d".formatted(deploymentSpec.getType().name().toLowerCase(), i))
+            .toList();
+        return place(schedulingSessionId,
+                     instanceIds,
+                     deploymentSpec,
+                     placementPolicy,
+                     EnumSet.of(ExecutorState.ACTIVE),
+                     localSessionData,
+                     true);
     }
 
     @Override
@@ -207,7 +199,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                 if (removed != null) {
                                     clusterResourcesDB.deselectNode(removed.getExecutorId(),
                                                                     removed.getCpu(),
-                                                                    removed.getMemory());
+                                                                    removed.getMemory(),
+                                            removed.getGpu());
                                     log.info("Relinquished resources for {}/{}",
                                              removed.getExecutorId(), removed.getInstanceId());
                                 }
@@ -236,6 +229,62 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                        .map(InstanceResourceAllocation::getExecutorId)
                        .findAny()
                        .orElse(null);
+    }
+
+    private List<AllocatedExecutorNode> place(
+            @NonNull final String schedulingSessionId,
+            final List<String> instanceIds,
+            final DeploymentSpec deploymentSpec,
+            final PlacementPolicy placementPolicy,
+            final Set<ExecutorState> allowedStates,
+            final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> providedSessionData,
+            final boolean simulation) {
+        val sessionData = providedSessionData.computeIfAbsent(
+                schedulingSessionId,
+                id -> {
+                    log.info("CREATE::SID: {}", schedulingSessionId);
+                    return clusterSnapshot(deploymentSpec);
+                });
+        return instanceIds.stream()
+            .map(instanceId -> {
+                val allocatedExecutorNode = clusterResourcesDB.selectNodes(
+                    deploymentSpec.getResources(),
+                    allowedStates,
+                    filterContext -> validateNode(
+                        filterContext,
+                        schedulingSessionId,
+                        instanceId,
+                        placementPolicy,
+                        sessionData,
+                        deploymentSpec),
+                    simulation,
+                    true)
+                    .orElse(null);
+                if(null == allocatedExecutorNode) {
+                    return null;
+                }
+                //If a node is found, add it to the list of allocated nodes for this session
+                //Next time a request for this session comes, this will ensure that allocations done in current session
+                //Are taken into consideration
+                providedSessionData.computeIfPresent(
+                    schedulingSessionId,
+                    (sid, executorAllocations) -> {
+                        val executorId = allocatedExecutorNode.getExecutorId();
+                        val currentAllocations = executorAllocations.computeIfAbsent(executorId, eId -> new HashMap<>());
+                        currentAllocations.put(instanceId,
+                                               new InstanceResourceAllocation(executorId,
+                                                                              instanceId,
+                                                                              allocatedExecutorNode.getCpu(),
+                                                                              allocatedExecutorNode.getMemory(),
+                                                                              allocatedExecutorNode.getGpu()));
+                        log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
+                                 sid, executorId, currentAllocations.size());
+                        return executorAllocations;
+                    });
+                return allocatedExecutorNode;
+            })
+            .filter(Objects::nonNull)
+            .toList();
     }
 
     private Map<String, Map<String, InstanceResourceAllocation>> clusterSnapshot(DeploymentSpec deploymentSpec) {
@@ -288,7 +337,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         applicationInstanceInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(applicationInstanceInfo.getResources(),
-                                                            ResourceType.MEMORY));
+                                                            ResourceType.MEMORY),
+                        (GPUAllocation) filterAllocation(applicationInstanceInfo.getResources(), ResourceType.GPU));
             }
 
             @Override
@@ -297,7 +347,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         taskInfo.getExecutorId(),
                         taskInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.CPU),
-                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY));
+                        (MemoryAllocation) filterAllocation(taskInfo.getResources(), ResourceType.MEMORY),
+                        (GPUAllocation) filterAllocation(taskInfo.getResources(), ResourceType.GPU));
             }
 
             @Override
@@ -307,7 +358,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         localServiceInstanceInfo.getInstanceId(),
                         (CPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.CPU),
                         (MemoryAllocation) filterAllocation(localServiceInstanceInfo.getResources(),
-                                                            ResourceType.MEMORY));
+                                                            ResourceType.MEMORY),
+                        (GPUAllocation) filterAllocation(localServiceInstanceInfo.getResources(), ResourceType.GPU));
             }
 
             private static ResourceAllocation filterAllocation(

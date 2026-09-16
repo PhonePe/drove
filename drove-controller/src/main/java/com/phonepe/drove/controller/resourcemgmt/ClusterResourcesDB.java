@@ -90,7 +90,11 @@ public abstract class ClusterResourcesDB {
 
     public abstract Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
-            Set<ExecutorState> allowedExecutorState, Predicate<FilterContext> filter);
+            Set<ExecutorState> allowedExecutorState,
+            Predicate<FilterContext> filter,
+            boolean readOnly,
+            boolean shouldShuffle);
+
 
     public abstract void deselectNode(String executorId,
                                              CPUAllocation cpuAllocation,

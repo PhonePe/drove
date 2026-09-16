@@ -36,6 +36,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
@@ -136,17 +137,13 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                         Map.of(0,
                                 4 * 128 * (2L ^ 20),
                                 1,
-                                4 * 128 * (2L ^ 20)),
-                        Map.of(),
-                        PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                        PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
+                                4 * 128 * (2L ^ 20)), Map.of())));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
         val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
-                        EnumSet.of(ExecutorState.ACTIVE),
-                        node -> true
-                )
+                                           EnumSet.of(ExecutorState.ACTIVE),
+                                           ctx -> true, false, true)
                 .orElse(null);
         assertNotNull(allocatedNode);
         //Ensure nodes are allocated correctly
@@ -214,22 +211,18 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                             .collect(Collectors.toSet()));
         }
         assertNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
-                        EnumSet.of(ExecutorState.ACTIVE),
-                        node -> true
-                )
-                .orElse(null));
-
+                                  EnumSet.of(ExecutorState.ACTIVE),
+                                  ctx -> true, false, true)
+                           .orElse(null));
         db.deselectNode(allocatedNode.getExecutorId(),
                 allocatedNode.getCpu(),
                 allocatedNode.getMemory(),
                 new GPUAllocation(Set.of(), null)); // Free up cores
         //Now it should be available
         assertNotNull(db.selectNodes(List.of(new CPURequirement(4), new MemoryRequirement(128)),
-                        EnumSet.of(ExecutorState.ACTIVE),
-                        node -> true
-                )
-                .orElse(null));
-
+                                     EnumSet.of(ExecutorState.ACTIVE),
+                                     ctx -> true, false, true)
+                              .orElse(null));
     }
 
     @Test
@@ -263,7 +256,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         { // Allocate node and assert that it is active
             val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                                                EnumSet.of(ExecutorState.ACTIVE),
-                                               ctx -> true
+                                               ctx -> true, false, true
                                               )
                     .orElse(null);
             assertNotNull(allocatedNode);
@@ -287,13 +280,13 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertTrue(db.isBlacklisted(executorId));
             assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                                       EnumSet.of(ExecutorState.ACTIVE),
-                                      ctx -> true
+                                      ctx -> true, false, true
                                      )
                                .orElse(null));
 
             final var allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                                                      EnumSet.of(ExecutorState.BLACKLISTED),
-                                                     ctx -> true
+                                                     ctx -> true, false, true
                                                     )
                     .orElse(null);
             assertNotNull(allocatedNode);
@@ -315,7 +308,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
             assertFalse(db.isBlacklisted(executorId));
             assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                                          EnumSet.of(ExecutorState.ACTIVE),
-                                         ctx -> true
+                                         ctx -> true, false, true
                                         )
                                   .orElse(null));
         }
@@ -331,8 +324,9 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         { // Allocate node and assert that it is active
             val allocatedNode = db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                             EnumSet.of(ExecutorState.ACTIVE),
-                            node -> true
-                    )
+                            node -> true,
+                            false,
+                            true)
                     .orElse(null);
             assertNotNull(allocatedNode);
             assertTrue(db.isActive(allocatedNode.getExecutorId()));
@@ -454,6 +448,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 List.of(new CPURequirement(1), new MemoryRequirement(128)),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
+                false,
                 false);
 
         assertTrue(result.isPresent());
@@ -479,6 +474,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
+                false,
                 false);
 
         assertTrue(result.isPresent());
@@ -504,11 +500,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 new AvailableCPU(freeCoresPerNuma, Map.of()),
                 new AvailableMemory(freeMemoryPerNuma, usedMemory),
                 new AvailableGPU(freeGpus, List.of()),
-                new PhysicalLayout(freeCoresPerNuma,
-                                   freeMemoryPerNuma,
-                                   physicalGpus,
-                                   PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
-                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
+                new PhysicalLayout(freeCoresPerNuma, freeMemoryPerNuma, physicalGpus)
         );
 
         return new ExecutorNodeData(
@@ -553,6 +545,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
+                false,
                 false
         );
 
@@ -562,7 +555,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 "Executor with NUMA-local GPU allocation should be preferred over cross-NUMA fallback");
     }
 
-
+    @Test
     void testFilterContextDataPropagation() {
         val db = getDb();
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
@@ -574,7 +567,9 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                                            ctx -> {
                                                filterContext.set(ctx);
                                                return true;
-                                           })
+                                           },
+                                           false,
+                                           true)
                 .orElse(null);
 
         assertNotNull(allocatedNode);
@@ -591,13 +586,47 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         db.update(List.of(ControllerTestUtils.generateExecutorNode(1)));
         assertNotNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                                      EnumSet.of(ExecutorState.ACTIVE),
-                                     ctx -> true)
+                                     ctx -> true, false, true)
                        .orElse(null));
         db.remove(List.of(executorId(1)));
         assertNull(db.selectNodes(List.of(new CPURequirement(2), new MemoryRequirement(128)),
                                   EnumSet.of(ExecutorState.ACTIVE),
-                                  ctx -> true)
+                                  ctx -> true, false, true)
                      .orElse(null));
+    }
+    @Test
+    void testBulkExecutorSnapshotLookup() {
+        val db = getDb();
+        db.update(IntStream.rangeClosed(1, 5)
+                          .mapToObj(ControllerTestUtils::generateExecutorNode)
+                          .toList());
+
+        val allIds = IntStream.rangeClosed(1, 5)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toUnmodifiableSet());
+
+        val ghostIds = Set.of("ghost-1", "ghost-2");
+
+        // All existing IDs → full map with correct ExecutorHostInfo per entry
+        val fullResult = db.currentSnapshot(allIds);
+        assertEquals(5, fullResult.size());
+        allIds.forEach(id -> assertEquals(id, fullResult.get(id).getExecutorId()));
+
+        // Empty input set → empty map regardless of DB contents
+        assertTrue(db.currentSnapshot(Set.of()).isEmpty());
+
+        // All non-existent IDs → empty map, no Optional.empty() noise
+        assertTrue(db.currentSnapshot(ghostIds).isEmpty());
+
+        // Partial: mix of known (1-3) and unknown IDs → only known IDs in result
+        val existingIds = IntStream.rangeClosed(1, 3)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toUnmodifiableSet());
+
+        val partialResult = db.currentSnapshot(Sets.union(existingIds, ghostIds));
+        assertEquals(3, partialResult.size());
+        existingIds.forEach(id -> assertTrue(partialResult.containsKey(id)));
+        ghostIds.forEach(id -> assertFalse(partialResult.containsKey(id)));
     }
 
     @NotNull
