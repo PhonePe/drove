@@ -30,6 +30,7 @@ import com.phonepe.drove.executor.engine.*;
 import com.phonepe.drove.executor.model.DeployedExecutionObjectInfo;
 import com.phonepe.drove.executor.utils.DockerUtils;
 import com.phonepe.drove.models.application.JobType;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.interfaces.DeployedInstanceInfo;
@@ -86,6 +87,7 @@ public class ZombieInstanceReaper implements Managed {
     private final LocalServiceInstanceEngine localServiceInstanceEngine;
     private final ClusterClient clusterClient;
     private final ExecutorOptions executorOptions;
+    private final ExecutorStateManager executorStateManager;
 
     @Inject
     @IgnoreInJacocoGeneratedReport
@@ -95,14 +97,16 @@ public class ZombieInstanceReaper implements Managed {
             TaskInstanceEngine taskInstanceEngine,
             LocalServiceInstanceEngine localServiceInstanceEngine,
             ClusterClient clusterClient,
-            ExecutorOptions executorOptions) {
+            ExecutorOptions executorOptions,
+            ExecutorStateManager executorStateManager) {
         this(client,
              applicationInstanceEngine,
              taskInstanceEngine,
              localServiceInstanceEngine,
              Duration.ofMinutes(1),
              clusterClient,
-             executorOptions);
+             executorOptions,
+             executorStateManager);
     }
 
     @VisibleForTesting
@@ -113,7 +117,8 @@ public class ZombieInstanceReaper implements Managed {
             LocalServiceInstanceEngine localServiceInstanceEngine,
             Duration checkDuration,
             ClusterClient clusterClient,
-            ExecutorOptions executorOptions) {
+            ExecutorOptions executorOptions,
+            ExecutorStateManager executorStateManager) {
         this.client = client;
         this.applicationInstanceEngine = applicationInstanceEngine;
         this.taskInstanceEngine = taskInstanceEngine;
@@ -121,6 +126,7 @@ public class ZombieInstanceReaper implements Managed {
         this.localServiceInstanceEngine = localServiceInstanceEngine;
         this.clusterClient = clusterClient;
         this.executorOptions = executorOptions;
+        this.executorStateManager = executorStateManager;
     }
 
     @Override
@@ -137,6 +143,10 @@ public class ZombieInstanceReaper implements Managed {
     }
 
     void reconcileInstances(final Date checkTime) {
+        if(!ExecutorState.ACTIVE.equals(executorStateManager.currentState())) {
+            log.warn("Executor is not yet active. Skipping zombie check");
+            return;
+        }
         val containers = client.listContainersCmd()
                 .withShowAll(true)
                 .withLabelFilter(List.of(DockerLabels.DROVE_INSTANCE_ID_LABEL,
