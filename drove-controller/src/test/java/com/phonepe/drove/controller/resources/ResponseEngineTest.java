@@ -33,7 +33,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 
 import java.security.SecureRandom;
 import java.util.Date;
@@ -84,9 +87,17 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.api.ExposedAppInfo;
+import com.phonepe.drove.models.api.PlacementSimlulationRequest;
+import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
+import com.phonepe.drove.models.info.nodedata.ExecutorState;
+import com.phonepe.drove.models.info.nodedata.NodeTransportType;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
+import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -813,6 +824,44 @@ class ResponseEngineTest {
         assertEquals(FAILED, res.getStatus());
         assertEquals("Could not fetch dashboard data", res.getMessage());
         assertNull(res.getData());
+    }
+
+
+
+    @Test
+    void testSimulatePlacement() {
+        val spec = appSpec();
+        val nodes = List.of(new AllocatedExecutorNode("EXECUTOR_1",
+                                                      "host00001",
+                                                      8080,
+                                                      NodeTransportType.HTTP,
+                                                      new CPUAllocation(Map.of(0, Set.of(0))),
+                                                      new MemoryAllocation(Map.of(0, 512L)),
+                                                      new GPUAllocation(Set.of(), null),
+                                                      Set.of(),
+                                                      Map.of(),
+                                                      ExecutorState.ACTIVE),
+                            new AllocatedExecutorNode("EXECUTOR_2",
+                                                      "host00002",
+                                                      8080,
+                                                      NodeTransportType.HTTP,
+                                                      new CPUAllocation(Map.of(0, Set.of(0))),
+                                                      new MemoryAllocation(Map.of(0, 512L)),
+                                                      new GPUAllocation(Set.of(), null),
+                                                      Set.of(),
+                                                      Map.of(),
+                                                      ExecutorState.ACTIVE));
+        when(scheduler.simulatePlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt()))
+                .thenReturn(nodes);
+        val request = PlacementSimlulationRequest.builder()
+                .spec(spec)
+                .placementPolicy(new AnyPlacementPolicy())
+                .numInstances(2)
+                .build();
+        val res = re.simulatePlacement(request);
+        assertEquals(SUCCESS, res.getStatus());
+        assertEquals(nodes, res.getData());
+        verify(scheduler).simulatePlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt());
     }
 
 

@@ -476,7 +476,7 @@ public class ExecutorTestingUtils {
                             DockerLabels.DROVE_JOB_TYPE_LABEL,
                             JobType.COMPUTATION.name(),
                             DockerLabels.DROVE_INSTANCE_ID_LABEL,
-                            spec.getTaskId(),
+                            spec.getInstanceId(),
                             DockerLabels.DROVE_INSTANCE_SPEC_LABEL,
                             mapper.writeValueAsString(spec),
                             DockerLabels.DROVE_INSTANCE_DATA_LABEL,

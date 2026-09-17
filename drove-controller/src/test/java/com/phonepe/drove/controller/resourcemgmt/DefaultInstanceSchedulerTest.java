@@ -22,6 +22,7 @@ import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacemen
 import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPolicy;
 import lombok.val;
@@ -30,10 +31,12 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import static com.phonepe.drove.controller.ControllerTestUtils.appSpec;
 import static com.phonepe.drove.controller.ControllerTestUtils.generateExecutorNode;
+import static com.phonepe.drove.controller.ControllerTestUtils.localServiceSpec;
+import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;
 import static com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy.CombinerType.AND;
 import static com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy.CombinerType.OR;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -287,5 +290,164 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         assertNull(sched.schedule(schedId, instanceId, spec).orElse(null));
         sched.discardAllocation(schedId, instanceId, node);
         assertNotNull(sched.schedule(schedId, instanceId, spec).orElse(null));
+    }
+
+
+    @Test
+    void testSimulatePlacementWithAnyPolicy() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(appSpec(), new AnyPlacementPolicy(), 10);
+        assertEquals(10, placements.size());
+        val knownExecutors = IntStream.rangeClosed(1, 5)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toSet());
+        assertTrue(placements.stream().allMatch(node -> knownExecutors.contains(node.getExecutorId())));
+    }
+
+    @Test
+    void testSimulatePlacementWithOnePerHostPolicy() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val spec = appSpec().withPlacementPolicy(new OnePerHostPlacementPolicy());
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(spec, new OnePerHostPlacementPolicy(), 6);
+        assertEquals(5, placements.size());
+        assertEquals(5, placements.stream().map(node -> node.getExecutorId()).collect(Collectors.toSet()).size());
+    }
+
+    @Test
+    void testSimulatePlacementWithMaxNPerHostPolicy() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val spec = appSpec().withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(spec, new MaxNPerHostPlacementPolicy(2), 12);
+        assertEquals(10, placements.size());
+        val placementsPerExecutor = placements.stream()
+                .collect(Collectors.groupingBy(node -> node.getExecutorId(), Collectors.counting()));
+        assertTrue(placementsPerExecutor.values().stream().allMatch(count -> count <= 2));
+    }
+
+    @Test
+    void testSimulatePlacementWithMatchTagPolicy() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val spec = appSpec().withPlacementPolicy(new MatchTagPlacementPolicy("test"));
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
+        rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(spec, new MatchTagPlacementPolicy("test"), 15);
+        assertEquals(15, placements.size());
+        val taggedExecutors = IntStream.rangeClosed(1, 3)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toSet());
+        assertTrue(placements.stream().allMatch(node -> taggedExecutors.contains(node.getExecutorId())));
+    }
+
+    @Test
+    void testSimulatePlacementWithNoTagPolicy() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val spec = appSpec().withPlacementPolicy(new NoTagPlacementPolicy());
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
+        rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(spec, new NoTagPlacementPolicy(), 10);
+        assertEquals(10, placements.size());
+        val untaggedExecutors = IntStream.rangeClosed(4, 5)
+                .mapToObj(ControllerTestUtils::executorId)
+                .collect(Collectors.toSet());
+        assertTrue(placements.stream().allMatch(node -> untaggedExecutors.contains(node.getExecutorId())));
+    }
+
+    @Test
+    void testSimulatePlacementWithRuleBasedPolicy() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val spec = appSpec().withPlacementPolicy(new RuleBasedPlacementPolicy(
+                "'/allocation/node/metadata/envvar1' == \"val1\"",
+                RuleBasedPlacementPolicy.RuleType.HOPE));
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i))).toList());
+        val placements = sched.simulatePlacement(spec, null, 3);
+        assertEquals(3, placements.size());
+        assertTrue(placements.stream().allMatch(node -> "EXECUTOR_1".equals(node.getExecutorId())));
+    }
+
+    @Test
+    void testSimulatePlacementWithCompositePolicyAnd() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        val spec = appSpec().withPlacementPolicy(new CompositePlacementPolicy(
+                List.of(new MatchTagPlacementPolicy("test"), new MaxNPerHostPlacementPolicy(2)),
+                AND));
+        rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
+        rdb.update(IntStream.rangeClosed(4, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(spec, null, 8);
+        assertEquals(6, placements.size());
+        val placementsPerExecutor = placements.stream()
+                .collect(Collectors.groupingBy(node -> node.getExecutorId(), Collectors.counting()));
+        assertTrue(placementsPerExecutor.values().stream().allMatch(count -> count <= 2));
+    }
+
+    @Test
+    void testSimulatePlacementDoesNotChangeClusterState() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val usedCoresBefore = usedCores(rdb);
+        val usedMemoryBefore = usedMemory(rdb);
+        val placements = sched.simulatePlacement(appSpec(), new AnyPlacementPolicy(), 10);
+        assertEquals(10, placements.size());
+        assertEquals(usedCoresBefore, usedCores(rdb));
+        assertEquals(usedMemoryBefore, usedMemory(rdb));
+    }
+
+    @Test
+    void testSimulatePlacementWithTaskSpec() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(taskSpec(), new AnyPlacementPolicy(), 5);
+        assertEquals(5, placements.size());
+    }
+
+    @Test
+    void testSimulatePlacementWithLocalServiceSpec() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val placements = sched.simulatePlacement(localServiceSpec(), new AnyPlacementPolicy(), 5);
+        assertEquals(5, placements.size());
+    }
+
+    @Test
+    void testSimulatePlacementDoesNotAffectRealScheduling() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
+        val spec = appSpec();
+        sched.simulatePlacement(spec, new AnyPlacementPolicy(), 10);
+        IntStream.rangeClosed(1, 20)
+                .forEach(i -> assertNotNull(sched.schedule("SCHED_ID_1", "I" + i, spec).orElse(null)));
+    }
+
+    private static long usedCores(InMemoryClusterResourcesDB rdb) {
+        return rdb.currentSnapshot(false)
+                .stream()
+                .mapToInt(hostInfo -> hostInfo.getNodeData().getState().getCpus().getUsedCores().values()
+                        .stream()
+                        .mapToInt(Set::size)
+                        .sum())
+                .sum();
+    }
+
+    private static long usedMemory(InMemoryClusterResourcesDB rdb) {
+        return rdb.currentSnapshot(false)
+                .stream()
+                .mapToLong(hostInfo -> hostInfo.getNodeData().getState().getMemory().getUsedMemory().values()
+                        .stream()
+                        .mapToLong(value -> value)
+                        .sum())
+                .sum();
     }
 }

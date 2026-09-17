@@ -267,7 +267,7 @@ class ZombieInstanceReaperTest extends AbstractTestBase {
 
         val te = mock(TaskInstanceEngine.class);
         val lsie = mock(LocalServiceInstanceEngine.class);
-        when(te.instanceIds(any())).thenReturn(Set.of(taskInstanceData.getTaskId()));
+        when(te.instanceIds(any())).thenReturn(Set.of(taskInstanceData.getInstanceId()));
         val cc = mock(ClusterClient.class);
         when(cc.currentKnownInstances()).thenReturn(KnownInstancesData.EMPTY);
         val esm = mock(ExecutorStateManager.class);
