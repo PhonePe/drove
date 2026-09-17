@@ -44,6 +44,7 @@ import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.managed.BlacklistingManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -62,6 +63,7 @@ import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.api.ExecutorSummary;
 import com.phonepe.drove.models.api.ExposedAppInfo;
 import com.phonepe.drove.models.api.LocalServiceSummary;
+import com.phonepe.drove.models.api.PlacementSimlulationRequest;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -76,6 +78,7 @@ import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -109,6 +112,7 @@ public class ResponseEngine {
     private final DroveEventBus eventBus;
     private final BlacklistingManager blacklistingManager;
     private final DashboardDataSource dashboardDataSource;
+    private final InstanceScheduler instanceScheduler;
 
     @Inject
     public ResponseEngine(
@@ -125,7 +129,8 @@ public class ResponseEngine {
             ControllerCommunicator communicator,
             DroveEventBus eventBus,
             BlacklistingManager blacklistingAppMovementManager,
-            DashboardDataSource dashboardDataSource) {
+            DashboardDataSource dashboardDataSource,
+            InstanceScheduler instanceScheduler) {
         this.leadershipObserver = leadershipObserver;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
@@ -141,6 +146,7 @@ public class ResponseEngine {
         this.eventBus = eventBus;
         this.blacklistingManager = blacklistingAppMovementManager;
         this.dashboardDataSource = dashboardDataSource;
+        this.instanceScheduler = instanceScheduler;
     }
 
     public ApiResponse<DashboardData> dashboardData() {
@@ -249,6 +255,15 @@ public class ResponseEngine {
 
     public ApiResponse<List<LocalServiceInstanceInfo>> localServiceOldInstances(final String serviceId) {
         return success(localServiceStateDB.oldInstances(serviceId));
+    }
+
+    public ApiResponse<List<AllocatedExecutorNode>> simulatePlacement(
+            final PlacementSimlulationRequest simulationRequest) {
+        return ApiResponse.success(instanceScheduler.simulatePlacement(
+                                                    simulationRequest.getSpec(),
+                                                    simulationRequest.getPlacementPolicy(),
+                                                    simulationRequest.getNumInstances()));
+
     }
 
     public ApiResponse<ClusterSummary> cluster() {

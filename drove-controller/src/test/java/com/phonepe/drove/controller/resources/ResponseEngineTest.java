@@ -66,6 +66,7 @@ import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -119,6 +120,7 @@ class ResponseEngineTest {
     private final DroveEventBus eventBus = mock(DroveEventBus.class);
     private final BlacklistingManager blacklistingManager = mock(BlacklistingManager.class);
     private final DashboardDataSource dashboardDataSource = mock(DashboardDataSource.class);
+    private final InstanceScheduler scheduler = mock(InstanceScheduler.class);
     private final ResponseEngine re = new ResponseEngine(leadershipObserver,
                                                          appEngine,
                                                          applicationStateDB,
@@ -133,7 +135,8 @@ class ResponseEngineTest {
                                                          communicator,
                                                          eventBus,
                                                          blacklistingManager,
-                                                         dashboardDataSource);
+                                                         dashboardDataSource,
+                                                         scheduler);
 
     @AfterEach
     void resetMocks() {
@@ -149,7 +152,8 @@ class ResponseEngineTest {
               eventBus,
               communicator,
               eventBus,
-              blacklistingManager);
+              blacklistingManager,
+              scheduler);
     }
 
     @Test
@@ -643,7 +647,8 @@ class ResponseEngineTest {
                                     communicator,
                                     eventBus,
                                     blacklistingManager,
-                                    dashboardDataSource);
+                                    dashboardDataSource,
+                                    scheduler);
 
         val r = re.events(0, 10);
         assertEquals(SUCCESS, r.getStatus());
