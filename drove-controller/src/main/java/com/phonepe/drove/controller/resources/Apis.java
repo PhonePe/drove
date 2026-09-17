@@ -27,7 +27,7 @@ import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.masking.EnforceMasking;
 import com.phonepe.drove.models.api.DryRunRuleRequest;
-import com.phonepe.drove.controller.rule.RuleEvaluator;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -96,7 +96,7 @@ public class Apis {
 
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
-    private final RuleEvaluator ruleEvaluator;
+    private final PlacementRuleEvaluator ruleEvaluator;
 
 
     @Inject
@@ -106,7 +106,7 @@ public class Apis {
             LocalServiceLifecycleManagementEngine localServiceEngine,
             ResponseEngine responseEngine,
             ClusterStateDB clusterStateDB,
-            RuleEvaluator ruleEvaluator) {
+            PlacementRuleEvaluator ruleEvaluator) {
         this.applicationEngine = applicationEngine;
         this.taskEngine = taskEngine;
         this.localServiceEngine = localServiceEngine;

@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.phonepe.drove.controller.rule.cel;
+package com.phonepe.drove.controller.cel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -43,13 +43,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import lombok.val;
 
-class CelRuleStrategyTest {
+class CelEngineTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Test
     void testBasicBooleanRules() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         assertTrue(rs.evaluate("true", ctx).isResult());
@@ -65,7 +65,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testTagsAndMetadata() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContextWithTagsAndMetadata(
                 Set.of("gpu", "high-memory"),
                 Map.of("rack", "r1", "dc", "dc1")
@@ -81,7 +81,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testEnvironmentVariables() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         assertTrue(rs.evaluate("ctx.environment.variables[\"region\"] == 'us-east'", ctx).isResult());
@@ -90,7 +90,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testStringExtensions() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         assertTrue(rs.evaluate("ctx.allocation.node.hostname.startsWith('local')", ctx).isResult());
@@ -110,7 +110,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testHasMacro() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         assertTrue(rs.evaluate("has(ctx.allocation.node.metadata)", ctx).isResult());
@@ -118,7 +118,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testComprehensionMacros() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         // Standard macros (receiver-call syntax)
@@ -133,17 +133,13 @@ class CelRuleStrategyTest {
                 Set.of("gpu", "high-memory"),
                 Map.of("rack", "r1", "dc", "dc1")
         );
-        assertTrue(rs.evaluate(
-                "ctx.allocation.node.metadata.exists(k, v, k == \"rack\" && v == \"r1\")",
-                ctxWithTags).isResult());
-        assertFalse(rs.evaluate(
-                "ctx.allocation.node.metadata.exists(k, v, k == \"rack\" && v == \"r2\")",
-                ctxWithTags).isResult());
+        assertTrue(rs.evaluate("ctx.allocation.node.metadata.exists(k, v, k == \"rack\" && v == \"r1\")", ctxWithTags).isResult());
+        assertFalse(rs.evaluate("ctx.allocation.node.metadata.exists(k, v, k == \"rack\" && v == \"r2\")", ctxWithTags).isResult());
     }
 
     @Test
     void testBindingsExtension() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         assertTrue(rs.evaluate("cel.bind(x, ctx.allocation.node.executorId, x == 'Ex1')", ctx).isResult());
@@ -152,7 +148,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testSyntaxErrorReturnsFailure() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();
 
         assertEquals(RuleCallStatus.FAILURE, rs.evaluate("(true &&", ctx).getStatus());
@@ -162,7 +158,7 @@ class CelRuleStrategyTest {
 
     @Test
     void testNullDataReturnsFailure() {
-        val rs = ControllerTestUtils.celRuleStrategy(MAPPER, 0);
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val result = rs.evaluate("ctx.allocation.node.executorId == 'Ex1'", null);
         assertEquals(RuleCallStatus.FAILURE, result.getStatus());
     }
@@ -170,7 +166,7 @@ class CelRuleStrategyTest {
     @Test
     void concurrentEvaluationIsThreadSafeAndCorrect()
             throws InterruptedException, ExecutionException {
-        val strategy = ControllerTestUtils.celRuleStrategy(MAPPER, 50);
+        val strategy = ControllerTestUtils.celEngine(MAPPER, 50);
         val ctx = testContext();
 
         val rules = List.of(
@@ -205,7 +201,7 @@ class CelRuleStrategyTest {
     @ParameterizedTest(name = "[{0}] {1}")
     @MethodSource("ruleCheckCases")
     void ruleCheckReturnsExpectedStatus(RuleCallStatus expectedStatus, String expression) {
-        val strategy = ControllerTestUtils.celRuleStrategy(MAPPER, 50);
+        val strategy = ControllerTestUtils.celEngine(MAPPER, 50);
         val result = strategy.check(expression);
         assertEquals(expectedStatus, result.getStatus(),
                      "Unexpected status for expression: " + expression);

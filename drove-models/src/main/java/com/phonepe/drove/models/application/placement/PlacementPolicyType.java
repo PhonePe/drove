@@ -31,7 +31,7 @@ public enum PlacementPolicyType {
     MATCH_TAG,
     @Schema(description = "Place only on hosts without any tags")
     NO_TAG,
-    @Schema(description = "Use custom rules (HOPE or MVEL) for placement decisions")
+    @Schema(description = "Use custom rules (CEL) for placement decisions")
     RULE_BASED,
     @Schema(description = "Place on any available host")
     ANY,

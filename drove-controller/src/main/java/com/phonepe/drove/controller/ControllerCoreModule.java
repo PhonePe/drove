@@ -16,6 +16,20 @@
 
 package com.phonepe.drove.controller;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.jar.Manifest;
+
+import javax.annotation.Nullable;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -29,18 +43,23 @@ import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.controller.discovery.ZkNodeDataStore;
+import com.phonepe.drove.common.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.controller.discovery.leadership.ZkLeadershipObserver;
+import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
-import com.phonepe.drove.controller.zookeeper.ZkConfig;
-import com.phonepe.drove.controller.zookeeper.ZkUtils;
+import com.phonepe.drove.common.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.controller.config.ViewOptions;
-import com.phonepe.drove.controller.engine.*;
+import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.DefaultControllerRetrySpecFactory;
+import com.phonepe.drove.controller.engine.InjectingAppActionFactory;
+import com.phonepe.drove.controller.engine.InjectingLocalServiceActionFactory;
+import com.phonepe.drove.controller.engine.InstanceIdGenerator;
+import com.phonepe.drove.controller.engine.RandomInstanceIdGenerator;
+import com.phonepe.drove.controller.engine.RemoteExecutorMessageSender;
 import com.phonepe.drove.controller.event.EventStore;
 import com.phonepe.drove.controller.event.InMemoryEventStore;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
@@ -49,15 +68,19 @@ import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.*;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.AllocatedExecutorNodeScorer;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
-import com.phonepe.drove.controller.rule.RuleEvalStrategy;
-import com.phonepe.drove.controller.rule.hope.HopeRuleStrategy;
-import com.phonepe.drove.controller.rule.mvel.MvelRuleStrategy;
-import com.phonepe.drove.controller.rule.cel.CelRuleStrategy;
+import com.phonepe.drove.controller.cel.CelEngine;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
+
+import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.controller.statedb.*;
+
+
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -72,26 +95,15 @@ import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.deploy.FailureStrategy;
 import com.phonepe.drove.statemachine.Action;
 import com.phonepe.drove.statemachine.ActionFactory;
-import io.dropwizard.setup.Environment;
-import io.dropwizard.util.Duration;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.jar.Manifest;
+import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
+import lombok.SneakyThrows;
+import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -108,7 +120,7 @@ public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public CuratorFramework curator(ZkConfig config) {
-        return ZkUtils.buildCurator(config);
+        return CommonUtils.buildCurator(config);
     }
 
     @Provides
@@ -161,19 +173,6 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public Map<RuleBasedPlacementPolicy.RuleType, RuleEvalStrategy> provideRuleEvalStrategyRegistry(
-            MvelRuleStrategy mvelRuleStrategy,
-            HopeRuleStrategy hopeRuleStrategy,
-            CelRuleStrategy celRuleStrategy) {
-        return Map.of(
-                RuleBasedPlacementPolicy.RuleType.MVEL, mvelRuleStrategy,
-                RuleBasedPlacementPolicy.RuleType.HOPE, hopeRuleStrategy,
-                RuleBasedPlacementPolicy.RuleType.CEL, celRuleStrategy
-        );
-    }
-
-    @Provides
-    @Singleton
     @Named("JobLevelThreadFactory")
     public ThreadFactory jobLevelThreadFactory() {
         return new ThreadFactoryBuilder().setNameFormat("job-level-%d").build();
@@ -181,35 +180,11 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    @Named("HopeRuleCompiledCacheSize")
-    public Integer hopeRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
-        return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
-                                          ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
+    public PlacementRuleEvaluator placementRuleEvaluator(final CelEngine celEngine) {
+        return new PlacementRuleEvaluator(celEngine);
     }
 
-    @Provides
-    @Singleton
-    @Named("MvelRuleCompiledCacheSize")
-    public Integer mvelRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
-        return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
-                ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
-    }
 
-    @Provides
-    @Singleton
-    @Named("CelRuleCompiledCacheSize")
-    public Integer celRuleCompiledCacheSize(final ControllerOptions controllerOptions) {
-        return Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
-                ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
-    }
-
-    @Provides
-    @Singleton
-    @Named("MvelRuleAllowedImportPackages")
-    public List<String> mvelAllowedImportPackages(final ControllerOptions controllerOptions) {
-        return Objects.requireNonNullElse(controllerOptions.getAllowedRuleImportPackages(),
-                ControllerOptions.DEFAULT_RULE_ALLOWED_IMPORT_PACKAGES);
-    }
 
     @Provides
     @Singleton
@@ -239,7 +214,7 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
-    @Named(CompositeExecutorSelector.SCORED_EXEC_SELECTOR)
+    @Named(CompositeExecutorSelector.GPU_AWARE_SELECTOR)
     public ExecutorSelector scoredExecutorSelector(ExecutorResourceAllocator allocator, AllocatedExecutorNodeScorer scorer) {
         return new ScoredExecutorSelector(allocator, scorer);
     }
@@ -327,6 +302,16 @@ public class ControllerCoreModule extends AbstractModule {
         return new InstallationMetadata(loadVersionFromManifest(),
                                         view.getInstallation(),
                                         view.getLinks());
+    }
+
+    @Provides
+    @Singleton
+    public List<ContainerSecurityPolicyConfig> securityProfiles(final AppConfig appConfig) {
+        val config = appConfig.getSecurityPolicies();
+        if (null == config) {
+            return List.of();
+        }
+        return config;
     }
 
     @SneakyThrows

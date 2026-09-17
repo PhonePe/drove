@@ -20,21 +20,16 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
-import com.phonepe.drove.controller.rule.RuleEvalStrategy;
-import com.phonepe.drove.controller.rule.RuleEvaluator;
-import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
-import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
+import com.phonepe.drove.controller.cel.CelEngine;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.testsupport.InMemoryLocalServiceStateDB;
 import com.phonepe.drove.controller.testsupport.InMemoryTaskDB;
-import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import io.appform.functionmetrics.FunctionMetricsManager;
 import io.appform.functionmetrics.Pair;
 import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
-
-import java.util.Map;
 
 import static com.phonepe.drove.common.CommonUtils.configureMapper;
 
@@ -54,12 +49,10 @@ public class ControllerTestBase {
         val tdb = new InMemoryTaskDB();
         val localServiceDB = new InMemoryLocalServiceStateDB();
         val instanceDB = new InMemoryApplicationInstanceInfoDB();
-        val re = new RuleEvaluator(Map.of(
-                                        RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
-                                        RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create())
-                    );
+        val re = new PlacementRuleEvaluator(new CelEngine(MAPPER, 100));
         val sch = new DefaultInstanceScheduler(instanceDB, tdb, localServiceDB, cdb, re);
-        return new Pair(tdb, sch);
+        return new Pair<>(tdb, sch);
 
     }
 }
+

@@ -24,14 +24,13 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.Value;
-import lombok.Getter;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+
 
 /**
- * Placement policy using custom rules for placement decisions
+ * Placement policy using CEL rules for placement decisions
  */
 
 @Value
@@ -39,43 +38,18 @@ import javax.validation.constraints.NotNull;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-@Schema(description = "Placement policy that uses custom HOPE or MVEL rules for flexible container placement decisions")
+@Schema(description = "Placement policy that uses CEL rules for flexible container placement decisions")
 public class RuleBasedPlacementPolicy extends PlacementPolicy {
 
-    public static final String HOPE_RULE = "HOPE";
-    public static final String MVEL_RULE = "MVEL";
-    public static final String CEL_RULE = "CEL";
-
-    @Getter
-    @Schema(description = "Type of rule expression language")
-    public enum RuleType {
-        @Schema(description = "HOPE expression language for simple placement rules")
-        HOPE(HOPE_RULE),
-        @Schema(description = "MVEL expression language for complex placement rules")
-        MVEL(MVEL_RULE),
-        @Schema(description = "CEL expression language for placement rules")
-        CEL(CEL_RULE);
-
-        private final String name;
-
-        RuleType(String name) {
-            this.name = name;
-        }
-    }
-
     @NotEmpty(message = "- Specify a rule to select/reject node based")
-    @Schema(description = "The rule expression used to evaluate host eligibility", example = "hostname != 'excluded-host'", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "The CEL rule expression used to evaluate host eligibility", example = "ctx.allocation.node.executorId != 'excluded-host'", requiredMode = Schema.RequiredMode.REQUIRED)
     String rule;
 
-    @NotNull
-    @Schema(description = "Type of rule expression language to use", requiredMode = Schema.RequiredMode.REQUIRED)
-    RuleType ruleType;
-
-    public RuleBasedPlacementPolicy(String rule, RuleType ruleType) {
+    public RuleBasedPlacementPolicy(String rule) {
         super(PlacementPolicyType.RULE_BASED);
         this.rule = rule;
-        this.ruleType = ruleType;
     }
+
 
     @Override
     public <T> T accept(PlacementPolicyVisitor<T> visitor) {

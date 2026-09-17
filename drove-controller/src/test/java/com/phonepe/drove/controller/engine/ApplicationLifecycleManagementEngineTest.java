@@ -41,9 +41,12 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.rule.RuleEvaluator;
-import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
-import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.*;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
+import com.phonepe.drove.controller.cel.CelEngine;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.models.policies.ContainerSecurityProfile;
 import com.phonepe.drove.controller.statedb.*;
@@ -54,7 +57,6 @@ import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
-import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.events.events.DroveAppStateChangeEvent;
 import com.phonepe.drove.models.events.events.datatags.AppEventDataTag;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -137,14 +139,20 @@ class ApplicationLifecycleManagementEngineTest extends ControllerTestBase {
                 bind(new TypeLiteral<ActionFactory<ApplicationInfo, ApplicationOperation, ApplicationState,
                         AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext, ApplicationOperation>>>() {
                 }).to(InjectingAppActionFactory.class);
-                bind(RuleEvaluator.class)
-                        .toInstance(new RuleEvaluator(Map.of(
-                                RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
-                                RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
-                        )));
+                bind(PlacementRuleEvaluator.class)
+                        .toInstance(new PlacementRuleEvaluator(new CelEngine(MAPPER, 100)));
                 bind(new TypeLiteral<MessageSender<ExecutorMessageType, ExecutorMessage>>() {
                 })
                         .to(DummyExecutorMessageSender.class).asEagerSingleton();
+            }
+
+            @Provides
+            @Singleton
+            public ExecutorSelector executorSelector() {
+                val allocator = new GpuAwareNumaExecutorResourceAllocator();
+                return new CompositeExecutorSelector(
+                        new FirstFitExecutorSelector(allocator),
+                        new ScoredExecutorSelector(allocator, new MaxGpuNumaLocalAllocation()));
             }
 
             @Provides

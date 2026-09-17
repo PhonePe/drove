@@ -1,5 +1,5 @@
 /*
-*  * Copyright (c) 2025 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2025 Original Author(s), PhonePe India Pvt. Ltd.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  You may not use this file except in compliance with the License.
@@ -7,23 +7,16 @@
  *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
-
 package com.phonepe.drove.controller.rule;
 
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
-import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.cel.CelEngine;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
-import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -48,24 +41,12 @@ class RuleTest extends ControllerTestBase {
                                 .build())
             .build();
 
-    private static final RuleEvaluator ruleEvaluatorWithOnlyMvel = new RuleEvaluator(Map.of(
-            RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
-    ));
+    private static final PlacementRuleEvaluator ruleEvaluator = new PlacementRuleEvaluator(
+            new CelEngine(MAPPER, 100));
 
-    private static final RuleEvaluator ruleEvaluatorWithBoth = new RuleEvaluator(Map.of(
-            RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create(),
-            RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER)
-    ));
-
-    private static final RuleEvaluator ruleEvaluatorWithAll = new RuleEvaluator(Map.of(
-            RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create(),
-            RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(MAPPER),
-            RuleBasedPlacementPolicy.RuleType.CEL, ControllerTestUtils.celRuleStrategy(MAPPER)
-    ));
-
-    @ParameterizedTest(name = "name = {0} | evaluator: {1} | policy: {2} | status : {3} | result: {4} ")
+    @ParameterizedTest(name = "name = {0} | policy: {1} | status : {2} | result: {3} ")
     @MethodSource("testBasicCase")
-    void testCode(String name, RuleEvaluator ruleEvaluator, RuleBasedPlacementPolicy policy, NodeSelectionContext obj, RuleCallStatus status, Boolean result) {
+    void testCode(String name, RuleBasedPlacementPolicy policy, NodeSelectionContext obj, RuleCallStatus status, Boolean result) {
 
         var res = ruleEvaluator.evaluate(
                 policy,
@@ -79,64 +60,8 @@ class RuleTest extends ControllerTestBase {
 
     private static Stream<Arguments> testBasicCase() {
         return Stream.of(
-                Arguments.of( "happy case with mvel only", ruleEvaluatorWithOnlyMvel, RuleBasedPlacementPolicy.builder()
-                        .ruleType(RuleBasedPlacementPolicy.RuleType.MVEL)
-                        .rule("true")
-                        .build(),
-                        schedulingInfoBasic,
-                        RuleCallStatus.SUCCESS,
-                        true
-                ),
-
-                Arguments.of( "Wrong rule format with mvel only",ruleEvaluatorWithOnlyMvel,  RuleBasedPlacementPolicy.builder()
-                        .ruleType(RuleBasedPlacementPolicy.RuleType.MVEL)
-                        .rule("aksjgdkadj")
-                        .build(),
-                        schedulingInfoBasic,
-                        RuleCallStatus.FAILURE,
-                        false
-                ),
-
-                Arguments.of("Nonexisting rule type with mvel only",  ruleEvaluatorWithOnlyMvel, RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.HOPE)
-                                .rule("SOME_RULE")
-                                .build(),
-                        schedulingInfoBasic,
-                        RuleCallStatus.FAILURE,
-                        false
-                ),
-
-                Arguments.of("HOPE wrong rule format with both",  ruleEvaluatorWithBoth, RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.HOPE)
-                                .rule("2 asdj 4ada")
-                                .build(),
-                        schedulingInfoBasic,
-                        RuleCallStatus.FAILURE,
-                        false
-                ),
-
-                Arguments.of( "HOPE happy rule case with both", ruleEvaluatorWithBoth,  RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.HOPE)
-                                .rule("2 < 4")
-                                .build(),
-                        schedulingInfoBasic,
-                        RuleCallStatus.SUCCESS,
-                        true
-                ),
-
-                Arguments.of( "correct rule case with both but null obj", ruleEvaluatorWithBoth,  RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.HOPE)
-                                .rule("2 < 4")
-                                .build(),
-                        null,
-                        RuleCallStatus.SUCCESS,
-                        true
-                ),
-
-                Arguments.of("CEL happy case with all",
-                        ruleEvaluatorWithAll,
+                Arguments.of("CEL happy case",
                         RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
                                 .rule("true")
                                 .build(),
                         schedulingInfoBasic,
@@ -144,10 +69,8 @@ class RuleTest extends ControllerTestBase {
                         true
                 ),
 
-                Arguments.of("CEL wrong rule format with all",
-                        ruleEvaluatorWithAll,
+                Arguments.of("CEL wrong rule format",
                         RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
                                 .rule("(true &&")
                                 .build(),
                         schedulingInfoBasic,
@@ -155,10 +78,8 @@ class RuleTest extends ControllerTestBase {
                         false
                 ),
 
-                Arguments.of("CEL field access happy case with all",
-                        ruleEvaluatorWithAll,
+                Arguments.of("CEL field access happy case",
                         RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
                                 .rule("ctx.allocation.node.executorId == 'Ex1'")
                                 .build(),
                         schedulingInfoBasic,
@@ -166,10 +87,8 @@ class RuleTest extends ControllerTestBase {
                         true
                 ),
 
-                Arguments.of("CEL field access negative case with all",
-                        ruleEvaluatorWithAll,
+                Arguments.of("CEL field access negative case",
                         RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
                                 .rule("ctx.allocation.node.executorId == 'wrong'")
                                 .build(),
                         schedulingInfoBasic,
@@ -178,9 +97,7 @@ class RuleTest extends ControllerTestBase {
                 ),
 
                 Arguments.of("CEL with null obj",
-                        ruleEvaluatorWithAll,
                         RuleBasedPlacementPolicy.builder()
-                                .ruleType(RuleBasedPlacementPolicy.RuleType.CEL)
                                 .rule("true")
                                 .build(),
                         null,

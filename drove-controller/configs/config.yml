@@ -75,5 +75,3 @@ options:
   disableReadAuth: true
   compiledRuleCacheCount: 2
   enableRawDeviceAccess: true
-  allowedRuleImportPackages:
-    - com.phonepe.drove.rules

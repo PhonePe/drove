@@ -219,9 +219,9 @@ class DeploymentSpecDeserializationTest extends AbstractTestBase {
         val policy = request.getPolicy();
         assertEquals(RuleBasedPlacementPolicy.class, policy.getClass(),
                       "Policy must deserialize as RuleBasedPlacementPolicy");
-        assertEquals(RuleBasedPlacementPolicy.RuleType.CEL,
-                      ((RuleBasedPlacementPolicy) policy).getRuleType(),
-                      "Rule type must be CEL");
+        assertEquals("hostname != 'bad-host'",
+                      ((RuleBasedPlacementPolicy) policy).getRule(),
+                      "Rule expression must match");
         assertEquals("hostname != 'bad-host'",
                       ((RuleBasedPlacementPolicy) policy).getRule(),
                       "Rule expression must match");

@@ -60,7 +60,8 @@ import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import io.dropwizard.util.Duration;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phonepe.drove.controller.rule.cel.CelRuleStrategy;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
+import com.phonepe.drove.controller.cel.CelEngine;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.val;
@@ -464,12 +465,16 @@ public class ControllerTestUtils {
                                             date,
                                             date);
     }
-    public static CelRuleStrategy celRuleStrategy(ObjectMapper mapper) {
-        return celRuleStrategy(mapper, 2);
+    public static CelEngine celEngine(ObjectMapper mapper) {
+        return celEngine(mapper, 2);
     }
 
-    public static CelRuleStrategy celRuleStrategy(ObjectMapper mapper, int cacheSize) {
-        return new CelRuleStrategy(mapper, cacheSize);
+    public static CelEngine celEngine(ObjectMapper mapper, int cacheSize) {
+        return new CelEngine(mapper, cacheSize);
+    }
+
+    public static PlacementRuleEvaluator placementRuleEvaluator(ObjectMapper mapper) {
+        return new PlacementRuleEvaluator(celEngine(mapper));
     }
 
     public static TaskInfo generateTaskInfo(final TaskSpec spec, int idx) {

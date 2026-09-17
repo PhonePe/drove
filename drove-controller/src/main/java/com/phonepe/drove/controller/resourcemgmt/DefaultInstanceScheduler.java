@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
-import com.phonepe.drove.controller.rule.RuleEvaluator;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.LocalServiceStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -114,7 +114,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     private final TaskDB taskDB;
     private final LocalServiceStateDB localServiceStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
-    private final RuleEvaluator ruleEvaluator;
+    private final PlacementRuleEvaluator ruleEvaluator;
     //Map of sessionId -> [executorId -> [ instanceId -> resources]]]
     private final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> schedulingSessionData =
             new ConcurrentHashMap<>();
@@ -125,7 +125,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             TaskDB taskDB,
             LocalServiceStateDB localServiceStateDB,
       ClusterResourcesDB clusterResourcesDB,
-            RuleEvaluator ruleEvaluator) {
+            PlacementRuleEvaluator ruleEvaluator) {
         this.instanceInfoDB = instanceInfoDB;
         this.taskDB = taskDB;
         this.localServiceStateDB = localServiceStateDB;

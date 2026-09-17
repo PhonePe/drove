@@ -46,16 +46,14 @@ import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorR
 import com.phonepe.drove.controller.resourcemgmt.selector.*;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
-import com.phonepe.drove.controller.rule.RuleEvaluator;
-import com.phonepe.drove.controller.rule.hope.HopeRuleInstance;
-import com.phonepe.drove.controller.rule.mvel.MvelRuleInstance;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
+import com.phonepe.drove.controller.cel.CelEngine;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.controller.statedb.*;
 import com.phonepe.drove.controller.statemachine.localservice.LocalServiceActionContext;
 import com.phonepe.drove.controller.testsupport.*;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
-import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.events.events.DroveLocalServiceStateChangeEvent;
 import com.phonepe.drove.models.events.events.datatags.LocalServiceEventDataTag;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -167,13 +165,8 @@ class LocalServiceLifecycleManagementEngineTest {
 
             @Provides
             @Singleton
-            public RuleEvaluator ruleEvaluator(ObjectMapper objectMapper) {
-                return new RuleEvaluator(
-                        Map.of(
-                                RuleBasedPlacementPolicy.RuleType.HOPE, HopeRuleInstance.create(objectMapper),
-                                RuleBasedPlacementPolicy.RuleType.MVEL, MvelRuleInstance.create()
-                                )
-                );
+            public PlacementRuleEvaluator ruleEvaluator(ObjectMapper objectMapper) {
+                return new PlacementRuleEvaluator(new CelEngine(objectMapper, 100));
             }
 
             @Provides
