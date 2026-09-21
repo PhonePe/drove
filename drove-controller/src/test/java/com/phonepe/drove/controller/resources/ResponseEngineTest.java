@@ -70,6 +70,7 @@ import com.phonepe.drove.controller.metrics.ClusterMetricsRegistry;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.PlacementCheckResult;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -87,7 +88,7 @@ import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.api.ExposedAppInfo;
-import com.phonepe.drove.models.api.PlacementSimlulationRequest;
+import com.phonepe.drove.models.api.PlacementSimulationRequest;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
@@ -851,18 +852,51 @@ class ResponseEngineTest {
                                                       Set.of(),
                                                       Map.of(),
                                                       ExecutorState.ACTIVE));
-        when(scheduler.simulatePlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt()))
-                .thenReturn(nodes);
-        val request = PlacementSimlulationRequest.builder()
+        when(scheduler.checkPlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt(), eq(true)))
+                .thenReturn(PlacementCheckResult.builder()
+                                       .requested(2)
+                                       .placed(2)
+                                       .errors(List.of())
+                                       .placements(nodes)
+                                       .build());
+        val request = PlacementSimulationRequest.builder()
                 .spec(spec)
                 .placementPolicy(new AnyPlacementPolicy())
                 .numInstances(2)
                 .build();
-        val res = re.simulatePlacement(request);
+        val res = re.simulatePlacement(request, true);
         assertEquals(SUCCESS, res.getStatus());
-        assertEquals(nodes, res.getData());
-        verify(scheduler).simulatePlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt());
+        assertEquals(nodes, res.getData().getPlacements());
+        assertEquals(2, res.getData().getRequested());
+        assertEquals(2, res.getData().getPlaced());
+        assertTrue(res.getData().getErrors().isEmpty());
+        verify(scheduler).checkPlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt(), eq(true));
     }
+
+    @Test
+    void testSimulatePlacementSummaryOnly() {
+        val spec = appSpec();
+        when(scheduler.checkPlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt(), eq(false)))
+                .thenReturn(PlacementCheckResult.builder()
+                                       .requested(2)
+                                       .placed(1)
+                                       .errors(List.of("Cluster can place only 1 of 2 requested instances"))
+                                       .placements(List.of())
+                                       .build());
+        val request = PlacementSimulationRequest.builder()
+                .spec(spec)
+                .placementPolicy(new AnyPlacementPolicy())
+                .numInstances(2)
+                .build();
+        val res = re.simulatePlacement(request, false);
+        assertEquals(SUCCESS, res.getStatus());
+        assertTrue(res.getData().getPlacements().isEmpty());
+        assertEquals(2, res.getData().getRequested());
+        assertEquals(1, res.getData().getPlaced());
+        assertEquals(1, res.getData().getErrors().size());
+        verify(scheduler).checkPlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt(), eq(false));
+    }
+
 
 
 }

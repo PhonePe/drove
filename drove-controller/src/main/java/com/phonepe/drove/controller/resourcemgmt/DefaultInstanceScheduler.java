@@ -158,7 +158,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     public List<AllocatedExecutorNode> simulatePlacement(
             final DeploymentSpec deploymentSpec,
             final PlacementPolicy requiredPlacementPolicy,
-            final int numInstances) {
+            final int numInstances,
+            final boolean detail) {
         val placementPolicy = Objects.requireNonNullElseGet(requiredPlacementPolicy,
                 () -> ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec));
         val schedulingSessionId = UUID.randomUUID().toString();
@@ -166,33 +167,35 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         val instanceIds = IntStream.rangeClosed(1, numInstances)
                 .mapToObj(i -> "%s-simulation-instance-%d".formatted(deploymentSpec.getType().name().toLowerCase(), i))
                 .toList();
-        return place(schedulingSessionId,
+        val placed = place(schedulingSessionId,
                      instanceIds,
                      deploymentSpec,
                      placementPolicy,
                      EnumSet.of(ExecutorState.ACTIVE),
                      localSessionData,
                      true);
+        return detail ? placed : List.of();
     }
 
     @Override
     @MonitoredFunction
-    public PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec, final int numInstances) {
-        val placementPolicy = ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec);
-        val placed = simulatePlacement(deploymentSpec, placementPolicy, numInstances);
-        if (placed.size() == numInstances) {
-            return PlacementCheckResult.builder()
-                    .requested(numInstances)
-                    .placed(placed.size())
-                    .errors(List.of())
-                    .build();
-        }
+    public PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec,
+                                               final PlacementPolicy requiredPlacementPolicy,
+                                               final int numInstances,
+                                               final boolean detail) {
+        //Count needs the full placement run; expose placements only when detail is set
+        val placements = simulatePlacement(deploymentSpec, requiredPlacementPolicy, numInstances, true);
         return PlacementCheckResult.builder()
                 .requested(numInstances)
-                .placed(placed.size())
-                .errors(placementErrors(deploymentSpec, numInstances, placed.size()))
+                .placed(placements.size())
+                .errors(placements.size() == numInstances
+                        ? List.of()
+                        : placementErrors(deploymentSpec, numInstances, placements.size()))
+                .placements(detail ? placements : List.of())
                 .build();
     }
+
+
 
     @Override
     @MonitoredFunction
@@ -423,6 +426,31 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                     + "NUMA node in the cluster. Required: " + requiredCores
                     + " Max: " + maxAvailablePhysicalCoresPerNode);
         }
+        ControllerUtils.findGpuRequirement(requirements).ifPresent(gpuRequirement -> {
+            val gpuType = gpuRequirement.getGpuType();
+            val requiredGpusPerInstance = gpuRequirement.getCount();
+            val totalFreeGpus = snapshot.stream()
+                    .mapToInt(executor -> ControllerUtils.freeGpus(executor, gpuType))
+                    .sum();
+            val maxFreeGpusPerExecutor = snapshot.stream()
+                    .map(executor -> executor.getNodeData().getState().getLayout())
+                    .filter(Objects::nonNull)
+                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
+                            .filter(gpu -> GPUUtils.matches(gpu, gpuType))
+                            .count())
+                    .max()
+                    .orElse(Integer.MAX_VALUE);
+            if (maxFreeGpusPerExecutor < requiredGpusPerInstance) {
+                errors.add("Required GPU count exceeds the maximum GPU count available on a single "
+                        + "executor in the cluster. Required: " + requiredGpusPerInstance
+                        + " Max: " + maxFreeGpusPerExecutor);
+            }
+            if (totalFreeGpus < requiredGpusPerInstance * numInstances) {
+                errors.add("Cluster does not have enough GPUs of required type " + gpuType
+                        + ". Required: " + (requiredGpusPerInstance * numInstances)
+                        + " Available: " + totalFreeGpus);
+            }
+        });
         errors.add("Per executor free capacity: " + snapshot
                 .stream()
                 .map(executor -> executor.getExecutorId()

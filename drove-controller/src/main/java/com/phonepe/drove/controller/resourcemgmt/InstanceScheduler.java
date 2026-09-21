@@ -62,11 +62,26 @@ public interface InstanceScheduler {
     List<AllocatedExecutorNode> simulatePlacement(
             final DeploymentSpec deploymentSpec,
             final PlacementPolicy requiredPlacementPolicy,
-            final int numInstances);
+            final int numInstances,
+            final boolean detail);
 
-    PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec, final int numInstances);
+    default List<AllocatedExecutorNode> simulatePlacement(
+            final DeploymentSpec deploymentSpec,
+            final PlacementPolicy requiredPlacementPolicy,
+            final int numInstances) {
+        return simulatePlacement(deploymentSpec, requiredPlacementPolicy, numInstances, false);
+    }
 
+    PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec,
+                                        final PlacementPolicy requiredPlacementPolicy,
+                                        final int numInstances,
+                                        final boolean detail);
+
+    default PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec, final int numInstances) {
+        return checkPlacement(deploymentSpec, null, numInstances, false);
+    }
     void finaliseSession(String schedulingSessionId);
+
 
     boolean discardAllocation(String schedulingSessionId, String instanceId, final AllocatedExecutorNode node);
 }

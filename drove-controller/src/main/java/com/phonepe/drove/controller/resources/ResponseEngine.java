@@ -63,7 +63,8 @@ import com.phonepe.drove.models.api.DroveEventsSummary;
 import com.phonepe.drove.models.api.ExecutorSummary;
 import com.phonepe.drove.models.api.ExposedAppInfo;
 import com.phonepe.drove.models.api.LocalServiceSummary;
-import com.phonepe.drove.models.api.PlacementSimlulationRequest;
+import com.phonepe.drove.models.api.PlacementSimulationRequest;
+import com.phonepe.drove.models.api.PlacementSimulationResponse;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
@@ -78,7 +79,6 @@ import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
-import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -257,14 +257,22 @@ public class ResponseEngine {
         return success(localServiceStateDB.oldInstances(serviceId));
     }
 
-    public ApiResponse<List<AllocatedExecutorNode>> simulatePlacement(
-            final PlacementSimlulationRequest simulationRequest) {
-        return ApiResponse.success(instanceScheduler.simulatePlacement(
-                                                    simulationRequest.getSpec(),
-                                                    simulationRequest.getPlacementPolicy(),
-                                                    simulationRequest.getNumInstances()));
-
+    public ApiResponse<PlacementSimulationResponse> simulatePlacement(
+            final PlacementSimulationRequest simulationRequest,
+            final boolean detail) {
+        val checkResult = instanceScheduler.checkPlacement(
+                simulationRequest.getSpec(),
+                simulationRequest.getPlacementPolicy(),
+                simulationRequest.getNumInstances(),
+                detail);
+        return ApiResponse.success(PlacementSimulationResponse.builder()
+                                           .requested(checkResult.getRequested())
+                                           .placed(checkResult.getPlaced())
+                                           .errors(checkResult.getErrors())
+                                           .placements(checkResult.getPlacements())
+                                           .build());
     }
+
 
     public ApiResponse<ClusterSummary> cluster() {
         return dashboardDataSource.current()

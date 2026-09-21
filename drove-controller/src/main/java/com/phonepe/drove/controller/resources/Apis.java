@@ -35,7 +35,6 @@ import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.DroveEvent;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
-import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -480,14 +479,19 @@ public class Apis {
     @Operation(summary = "Placement Simulation", description = "Simulate placement for a deployable on the cluster", tags = {"Cluster"})
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Validation result")
     @RolesAllowed({DroveUserRole.Values.DROVE_EXTERNAL_READ_WRITE_ROLE, DroveUserRole.Values.DROVE_EXTERNAL_ROOT_ROLE})
-    public ApiResponse<List<AllocatedExecutorNode>> simulatePlacement(
+    public ApiResponse<PlacementSimulationResponse> simulatePlacement(
             @Auth final DroveUser user,
-            @NotNull @Valid final PlacementSimlulationRequest simlulationRequest) {
+            @QueryParam("detail") @DefaultValue("false") @Parameter(description = "Include per-instance placement details in the response") final boolean detail,
+            @NotNull @Valid final PlacementSimulationRequest simulationRequest) {
         log.info("ACCESS_AUDIT::Placement Simulation request received from user: {}.", user.getName());
         if (CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return ApiResponse.failure(List.of(), "Cluster is in maintenance mode");
+            return ApiResponse.failure(PlacementSimulationResponse.builder()
+                                                       .errors(List.of())
+                                                       .placements(List.of())
+                                                       .build(),
+                                       "Cluster is in maintenance mode");
         }
-        return responseEngine.simulatePlacement(simlulationRequest);
+        return responseEngine.simulatePlacement(simulationRequest, detail);
     }
 
     @GET

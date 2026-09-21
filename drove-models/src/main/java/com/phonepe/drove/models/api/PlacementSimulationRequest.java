@@ -17,6 +17,7 @@
 package com.phonepe.drove.models.api;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -30,7 +31,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class PlacementSimlulationRequest {
+public class PlacementSimulationRequest {
     @NotNull
     @Valid
     DeploymentSpec spec;
@@ -39,5 +40,6 @@ public class PlacementSimlulationRequest {
     PlacementPolicy placementPolicy;
 
     @Min(value = 1, message = "- numInstances must be at least 1")
+    @Max(value = 2048, message = "- numInstances must be at most 2048")
     int numInstances;
 }

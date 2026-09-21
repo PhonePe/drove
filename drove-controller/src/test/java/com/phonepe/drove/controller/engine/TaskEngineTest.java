@@ -811,7 +811,7 @@ class TaskEngineTest extends ControllerTestBase {
         val r = te.handleTaskOp(new TaskCreateOperation(ControllerTestUtils.withGPU(ControllerTestUtils.taskSpec(), 1, new GpuType(GpuVendor.NVIDIA, "h100")),
                                                         ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
-        assertEquals(3, r.getMessages().size());
+        assertEquals(5, r.getMessages().size());
     }
 
     @Test
