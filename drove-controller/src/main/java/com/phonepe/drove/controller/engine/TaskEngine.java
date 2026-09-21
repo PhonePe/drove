@@ -32,6 +32,7 @@ import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
+import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -191,12 +192,19 @@ public class TaskEngine {
     private ArrayList<String> validateTaskSpec(TaskSpec taskSpec) {
         val errors = new ArrayList<String>();
         errors.addAll(checkSecurityPolicy(taskSpec, securityPolicyEnforcer));
+        if (taskSpec.getResources().stream().filter(req -> req.getType() == ResourceType.GPU).count() > 1) {
+            errors.add("Multiple GPU requirements specified in resource requirements. "
+                               + "This is currently not supported.");
+            return errors;
+        }
         errors.addAll(resourceCheck(taskSpec));
         if(ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
             errors.add("Local service placement is not allowed for tasks");
         }
         return errors;
     }
+
+
 
     public TaskRunner registerTaskRunner(String sourceAppName, String taskId) {
         val runTaskId = genRunTaskId(sourceAppName, taskId);
@@ -274,8 +282,9 @@ public class TaskEngine {
     }
 
     private List<String> resourceCheck(final TaskSpec taskSpec) {
-        val errors = new ArrayList<String>();
-        ControllerUtils.checkResources(clusterResourcesDB, taskSpec, 1, errors);
-        return errors;
+        val checkResult = scheduler.checkPlacement(taskSpec, 1);
+        return checkResult.fits()
+               ? List.of()
+               : checkResult.getErrors();
     }
 }

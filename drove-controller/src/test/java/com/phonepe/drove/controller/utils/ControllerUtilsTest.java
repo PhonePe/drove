@@ -45,7 +45,6 @@ import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
-import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.jobexecutor.JobExecutionResult;
@@ -678,92 +677,6 @@ class ControllerUtilsTest {
         assertEquals(1, errs.size());
         assertTrue(errs.get(0).contains("already mapped"));
     }
-
-    @Test
-    void testCheckResourcesClusterWideGpu() {
-        // Verify cluster-wide GPU capacity is validated
-        // Test 1: Cluster-wide GPU capacity is insufficient
-        {
-            val clusterDB = mock(ClusterResourcesDB.class);
-            val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100"));
-            val executor2 = buildExecutorWithGpu("executor-2", Map.of("GPU-1", "H100"));
-            when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1, executor2));
-
-            val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
-            ControllerTestUtils.withGPU(spec, 3, new GpuType(GpuVendor.NVIDIA, "H100"));
-            val errors = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-            assertTrue(errors.stream().anyMatch(e -> e.contains("not enough GPUs") || e.toLowerCase().contains("gpu")),
-                    "Should report insufficient GPU cluster capacity");
-        }
-
-        // Test 2: Cluster-wide GPU capacity is sufficient
-        {
-            val clusterDB = mock(ClusterResourcesDB.class);
-            val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "H100"));
-            val executor2 = buildExecutorWithGpu("executor-2", Map.of("GPU-2", "H100", "GPU-3", "H100"));
-            when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1, executor2));
-
-            val spec = ControllerTestUtils.appSpec("TEST_APP2", 1);
-            ControllerTestUtils.withGPU(spec, 3, new GpuType(GpuVendor.NVIDIA, "H100"));
-            val errors = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-            assertFalse(errors.stream().anyMatch(e -> e.contains("not enough GPUs")),
-                    "Should not report GPU cluster capacity issues when GPUs are available");
-        }
-
-        // Test 3: GPU type mismatch (requesting H100, but cluster has A100)
-        {
-            val clusterDB = mock(ClusterResourcesDB.class);
-            val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "A100"));
-            when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1));
-
-            val spec = ControllerTestUtils.appSpec("TEST_APP3", 1);
-            ControllerTestUtils.withGPU(spec, 1, new GpuType(GpuVendor.NVIDIA, "H100"));
-            val errors = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-            // Should fail both cluster-wide and per-executor checks
-            assertTrue(errors.stream().anyMatch(e -> e.toLowerCase().contains("gpu")),
-                    "Should report GPU availability issues when GPU type doesn't match");
-        }
-    }
-
-    @Test
-    void testCheckResourcesClusterWideGpuMultiInstance() {
-        // Multiple instances requiring more GPUs than cluster has
-        val clusterDB = mock(ClusterResourcesDB.class);
-        val executor1 = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100"));
-        val executor2 = buildExecutorWithGpu("executor-2", Map.of("GPU-1", "H100"));
-        when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1, executor2));
-
-        val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
-        ControllerTestUtils.withGPU(spec, 1, new GpuType(GpuVendor.NVIDIA, "H100"));
-        val errors = new ArrayList<String>();
-        // Request 3 instances, each needs 1 GPU = 3 GPUs total, but cluster only has 2
-        ControllerUtils.checkResources(clusterDB, spec, 3, errors);
-
-        assertTrue(errors.stream().anyMatch(e -> e.contains("not enough GPUs") || e.toLowerCase().contains("gpu")),
-                "Should report insufficient GPU capacity for multiple instances");
-    }
-
-    @Test
-    void testCheckResourcesNoGpuRequirement() {
-        val clusterDB = mock(ClusterResourcesDB.class);
-        val executor1 = buildExecutorWithGpu("executor-1", Map.of());
-        when(clusterDB.currentSnapshot(true)).thenReturn(List.of(executor1));
-
-        val spec = ControllerTestUtils.appSpec("TEST_APP", 1);
-        // No GPU added
-        val errors = new ArrayList<String>();
-        ControllerUtils.checkResources(clusterDB, spec, 1, errors);
-
-        assertFalse(errors.stream().anyMatch(e -> e.toLowerCase().contains("gpu")),
-                "Should not report GPU issues when no GPU is required");
-    }
-
     @Test
     void testFreeGpusMethod() {
         val executor = buildExecutorWithGpu("executor-1", Map.of("GPU-0", "H100", "GPU-1", "A100"));

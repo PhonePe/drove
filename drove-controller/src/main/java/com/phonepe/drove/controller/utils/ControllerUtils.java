@@ -18,7 +18,6 @@ package com.phonepe.drove.controller.utils;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.common.model.*;
@@ -105,7 +104,6 @@ import lombok.val;
 import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.phonepe.drove.controller.utils.StateCheckStatus.*;
 import static com.phonepe.drove.models.localservice.LocalServiceState.*;
@@ -673,162 +671,6 @@ public class ControllerUtils {
                 })
                 .get(checker::get);
     }
-
-    public static void checkResources(
-            final ClusterResourcesDB clusterResourcesDB,
-            final DeploymentSpec spec,
-            final long requiredInstances,
-            final List<String> errors) {
-
-        val finalPolicy = computeEffectivePlacementPolicy(spec);
-        val executors = clusterResourcesDB.currentSnapshot(true)
-                .stream()
-                .filter(executor -> isExecutorEligibleForPlacement(executor, finalPolicy))
-                .toList();
-
-        var freeCores = 0;
-        var freeMemory = 0L;
-        for (val exec : executors) {
-            freeCores += ControllerUtils.freeCores(exec);
-            freeMemory += ControllerUtils.freeMemory(exec);
-        }
-
-        val requiredCoresPerInstance = spec.getResources()
-                .stream()
-                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Integer visit(CPURequirement cpuRequirement) {
-                        return (int) cpuRequirement.getCount();
-                    }
-
-                    @Override
-                    public Integer visit(MemoryRequirement memoryRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(GPURequirement gpuRequirement) {
-                        return 0;
-                    }
-                }))
-                .sum();
-        val requiredCores = requiredInstances * requiredCoresPerInstance;
-        val requiredMemPerInstance = spec.getResources()
-                .stream()
-                .mapToLong(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Long visit(CPURequirement cpuRequirement) {
-                        return 0L;
-                    }
-
-                    @Override
-                    public Long visit(MemoryRequirement memoryRequirement) {
-                        return memoryRequirement.getSizeInMB();
-                    }
-
-                    @Override
-                    public Long visit(GPURequirement gpuRequirement) {
-                        return 0L;
-                    }
-                }))
-                .sum();
-        val requiredMem = requiredInstances * requiredMemPerInstance;
-
-        val requiredGpuPerInstance = spec.getResources()
-                .stream()
-                .mapToInt(r -> r.accept(new ResourceRequirementVisitor<>() {
-                    @Override
-                    public Integer visit(CPURequirement cpuRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(MemoryRequirement memoryRequirement) {
-                        return 0;
-                    }
-
-                    @Override
-                    public Integer visit(GPURequirement gpuRequirement) {
-                        return gpuRequirement.getCount();
-                    }
-                }))
-                .sum();
-        val requiredGpuTypes = spec.getResources()
-                .stream()
-                .map(r -> r.accept(new ResourceRequirementVisitor<GpuType>() {
-                    @Override
-                    public GpuType visit(CPURequirement cpuRequirement) {
-                        return null;
-                    }
-
-                    @Override
-                    public GpuType visit(MemoryRequirement memoryRequirement) {
-                        return null;
-                    }
-
-                    @Override
-                    public GpuType visit(GPURequirement gpuRequirement) {
-                        return gpuRequirement.getGpuType();
-                    }
-                }))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        if(requiredGpuTypes.size() > 1) {
-            errors.add("Multiple GPU types specified in resource requirements. This is currently not supported.");
-        }
-        val requiredGpuTypePerInstance = requiredGpuTypes.isEmpty() ? null : requiredGpuTypes.iterator().next();
-        if (requiredCores > freeCores) {
-            errors.add("Cluster does not have enough CPU. Required: " + requiredCores + " " +
-                               "Available: " + freeCores);
-        }
-        if (requiredMem > freeMemory) {
-            errors.add("Cluster does not have enough Memory. Required: " + requiredMem + " " +
-                               "Available: " + freeMemory);
-        }
-
-        val maxAvailablePhysicalCoresPerNode = executors.stream()
-                .map(e -> e.getNodeData().getState().getLayout())
-                .filter(Objects::nonNull)
-                .flatMap(physicalLayout -> physicalLayout.getCores().values().stream().map(Set::size))
-                .mapToInt(Integer::intValue)
-                .max()
-                .orElse(Integer.MAX_VALUE);
-        if (maxAvailablePhysicalCoresPerNode < requiredCoresPerInstance) {
-            errors.add("Required cores exceeds the maximum core available on a single " +
-                               "NUMA node in the cluster. Required: " + requiredCores
-                               + " Max: " + maxAvailablePhysicalCoresPerNode);
-        }
-        if(requiredGpuTypePerInstance != null) {
-            val maxAvailableGpuCountPerNode = executors.stream()
-                    .map(e -> e.getNodeData().getState().getLayout())
-                    .filter(Objects::nonNull)
-                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
-                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
-                            .count())
-                    .max()
-                    .orElse(Integer.MAX_VALUE);
-
-            val totalAvailableGpuCount = executors.stream()
-                    .map(e -> e.getNodeData().getState().getLayout())
-                    .filter(Objects::nonNull)
-                    .mapToInt(physicalLayout -> (int) physicalLayout.getGpus().values().stream()
-                            .filter(gpu -> GPUUtils.matches(gpu, requiredGpuTypePerInstance))
-                            .count())
-                    .sum();
-
-            if (maxAvailableGpuCountPerNode < requiredGpuPerInstance) {
-                errors.add("Required GPU count exceeds the maximum GPU count available on a single " +
-                        "executor in the cluster. Required: " + requiredGpuPerInstance
-                        + " Max: " + maxAvailableGpuCountPerNode);
-            }
-
-            if(totalAvailableGpuCount < requiredGpuPerInstance * requiredInstances) {
-                errors.add("Cluster does not have enough GPUs of required type. Required: " + (requiredGpuPerInstance * requiredInstances)
-                        + " Available: " + totalAvailableGpuCount);
-            }
-        }
-    }
-
     public static boolean shouldAllowCombiningOfPolicy(final PlacementPolicy policy) {
         return policy.accept(new PlacementPolicyVisitor<>() {
             @Override
@@ -871,60 +713,6 @@ public class ControllerUtils {
             @Override
             public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
                 return false;
-            }
-        });
-    }
-
-    private static boolean isExecutorEligibleForPlacement(ExecutorHostInfo executor, PlacementPolicy policy) {
-        return policy.accept(new PlacementPolicyVisitor<>() {
-            @Override
-            public Boolean visit(OnePerHostPlacementPolicy onePerHost) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(MaxNPerHostPlacementPolicy maxNPerHost) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(MatchTagPlacementPolicy matchTag) {
-                return Objects.requireNonNullElse(executor.getNodeData().getTags(), Set.of())
-                        .contains(matchTag.getTag());
-            }
-
-            @Override
-            public Boolean visit(NoTagPlacementPolicy noTag) {
-                return Sets.difference(Objects.requireNonNullElse(executor.getNodeData().getTags(), Set.of()),
-                                       Set.of(executor.getNodeData().getHostname())).isEmpty();
-            }
-
-            @Override
-            public Boolean visit(RuleBasedPlacementPolicy ruleBased) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(AnyPlacementPolicy anyPlacementPolicy) {
-                return true;
-            }
-
-            @Override
-            public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
-                val combiner = Objects.requireNonNullElse(compositePlacementPolicy.getCombiner(),
-                                                          CompositePlacementPolicy.CombinerType.AND);
-
-                if (combiner == CompositePlacementPolicy.CombinerType.AND) {
-                    return compositePlacementPolicy.getPolicies().stream().allMatch(p -> isExecutorEligibleForPlacement(executor, p));
-                }
-                else {
-                    return compositePlacementPolicy.getPolicies().stream().anyMatch(p -> isExecutorEligibleForPlacement(executor, p));
-                }
-            }
-
-            @Override
-            public Boolean visit(LocalPlacementPolicy localPlacementPolicy) {
-                return true;
             }
         });
     }
@@ -1476,13 +1264,20 @@ public class ControllerUtils {
 
     /**
      * Utility method to find the GPU requirement, returning empty if none is present.
+     * Only one GPU requirement is allowed. More than one is a spec error.
      */
     public static Optional<GPURequirement> findGpuRequirement(List<ResourceRequirement> resources) {
-        return resources.stream()
+        val gpuRequirements = resources.stream()
                 .filter(req -> req.getType() == ResourceType.GPU)
                 .map(GPURequirement.class::cast)
-                .findFirst();
+                .toList();
+        if (gpuRequirements.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Multiple GPU requirements specified in resource requirements. This is currently not supported.");
+        }
+        return gpuRequirements.stream().findFirst();
     }
+
 
     /**
      * Utility method to extract specific resource requirement from the list.

@@ -64,6 +64,8 @@ public interface InstanceScheduler {
             final PlacementPolicy requiredPlacementPolicy,
             final int numInstances);
 
+    PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec, final int numInstances);
+
     void finaliseSession(String schedulingSessionId);
 
     boolean discardAllocation(String schedulingSessionId, String instanceId, final AllocatedExecutorNode node);

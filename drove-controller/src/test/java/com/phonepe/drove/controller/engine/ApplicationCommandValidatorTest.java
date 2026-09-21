@@ -20,6 +20,8 @@ import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.resourcemgmt.PlacementCheckResult;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -32,6 +34,9 @@ import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
 import com.phonepe.drove.models.application.exposure.ExposureMode;
 import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.common.Protocol;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
@@ -53,28 +58,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.IntStream;
 
 import static com.phonepe.drove.models.common.HTTPVerb.GET;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
 import com.phonepe.drove.models.policies.ContainerSecurityProfile;
-
 /**
  *
  */
 class ApplicationCommandValidatorTest extends ControllerTestBase {
 
-
     private final ApplicationStateDB asDB = mock(ApplicationStateDB.class);
     private final ClusterResourcesDB crDB = mock(ClusterResourcesDB.class);
     private final ApplicationInstanceInfoDB aiDB = mock(ApplicationInstanceInfoDB.class);
+    private final InstanceScheduler instanceScheduler = mock(InstanceScheduler.class);
 
     private final ApplicationLifecycleManagementEngine engine = mock(ApplicationLifecycleManagementEngine.class);
 
@@ -284,6 +289,23 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
 
     @Test
+    void testCreateMultipleGpuRequirements() {
+        val validator = createValidator();
+        val spec = ControllerTestUtils.appSpec(1)
+                .withResources(List.of(new CPURequirement(1),
+                                       new MemoryRequirement(512),
+                                       new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "H100")),
+                                       new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "A100"))));
+        val res = validator.validateOperation(engine,
+                                              new ApplicationCreateOperation(spec,
+                                                                            1,
+                                                                            ClusterOpSpec.DEFAULT));
+        ensureFailure(res,
+                      "Multiple GPU requirements specified in resource requirements. "
+                              + "This is currently not supported.");
+    }
+
+    @Test
     void testCreateWrongPortInExposureSpec() {
         val validator = createValidator();
         val spec = ControllerTestUtils.appSpec(1)
@@ -298,7 +320,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateWrongPortInMultipleExposureSpecs() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, ControllerOptions.DEFAULT);
+        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT), instanceScheduler);
         val spec = ControllerTestUtils.appSpec(1)
                 .withExposureSpec(List.of(new ExposureSpec("valid.appform.io", "main", ExposureMode.ALL),
                                           new ExposureSpec("wrong1.appform.io", "Invalid1", ExposureMode.ALL),
@@ -320,7 +342,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                         crDB,
                                                         aiDB,
                                                         new SecurityPolicyEnforcer(List.of(),
-                                                                                   controllerOptions));
+                                                                                   controllerOptions),
+                                                        instanceScheduler);
         {
             val spec = ControllerTestUtils.appSpec(1)
                     .withVolumes(List.of(new MountedVolume("/var/log",
@@ -354,7 +377,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
             val controllerOptions = ControllerOptions.DEFAULT
                     .withDisableCmdlArgs(true);
             val validator = new ApplicationCommandValidator(asDB, crDB, aiDB,
-                                                            new SecurityPolicyEnforcer(List.of(), controllerOptions));
+                                                            new SecurityPolicyEnforcer(List.of(), controllerOptions),
+                                                            instanceScheduler);
             val spec = ControllerTestUtils.appSpec(1)
                     .withArgs(List.of("random"));
             val res = validator.validateOperation(engine,
@@ -405,8 +429,12 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         when(aiDB.instanceCount(eq(appId), anySet())).thenReturn(2L);
 
         when(crDB.executorCount(true)).thenReturn(1L);
-        when(crDB.currentSnapshot(true))
-                .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
+        when(instanceScheduler.checkPlacement(any(), anyInt()))
+                .thenReturn(PlacementCheckResult.builder()
+                                   .requested(1)
+                                   .placed(1)
+                                   .errors(List.of())
+                                   .build());
 
         ensureSuccess(validator.validateOperation(
                 engine, new ApplicationStartInstancesOperation(appId, 1, ClusterOpSpec.DEFAULT)));
@@ -424,15 +452,17 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null)));
 
         when(crDB.executorCount(true)).thenReturn(1L);
-        when(crDB.currentSnapshot(true))
-                .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
-
+        when(instanceScheduler.checkPlacement(any(), anyInt()))
+                .thenReturn(PlacementCheckResult.builder()
+                                   .requested(100)
+                                   .placed(3)
+                                   .errors(List.of(
+                                           "Cluster can place only 3 of 100 requested instances for SomeAppId"))
+                                   .build());
         ensureFailure(validator.validateOperation(
                               engine, new ApplicationStartInstancesOperation(appId, 100, ClusterOpSpec.DEFAULT)),
-                      "Cluster does not have enough CPU. Required: 100 Available: 3",
-                      "Cluster does not have enough Memory. Required: 51200 Available: 8448");
+                      "Cluster can place only 3 of 100 requested instances for SomeAppId");
     }
-
     @Test
     void testStartInstValidateOperationMaxCorePerNode() {
         val validator = createValidator();
@@ -447,16 +477,21 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null)));
 
         when(crDB.executorCount(true)).thenReturn(4L);
-        when(crDB.currentSnapshot(true))
-                .thenReturn(IntStream.range(0, 3)
-                                    .mapToObj(i -> ControllerTestUtils.executorHost(i, 8000, List.of(), List.of(),
-                                                                                    List.of()))
-                                    .toList());
+        when(instanceScheduler.checkPlacement(any(), anyInt()))
+                .thenReturn(PlacementCheckResult.builder()
+                                   .requested(1)
+                                   .placed(0)
+                                   .errors(List.of(
+                                           "Cluster can place only 0 of 1 requested instances for SomeAppId",
+                                           "Required cores exceeds the maximum cores available on a single "
+                                                   + "NUMA node in the cluster. Required: 6 Max: 5"))
+                                   .build());
 
         ensureFailure(validator.validateOperation(
                               engine, new ApplicationStartInstancesOperation(appId, 1, ClusterOpSpec.DEFAULT)),
-                      "Required cores exceeds the maximum core available on a single NUMA node in the cluster. " +
-                              "Required: 6 Max: 5");
+                      "Cluster can place only 0 of 1 requested instances for SomeAppId",
+                      "Required cores exceeds the maximum cores available on a single "
+                              + "NUMA node in the cluster. Required: 6 Max: 5");
     }
 
     @Test
@@ -469,14 +504,18 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  1,
                                                                                  null,
                                                                                  null)));
-        when(aiDB.instanceCount(eq(appId), anySet())).thenReturn(2L);
-
-        when(crDB.currentSnapshot(true))
-                .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
+        when(crDB.executorCount(true)).thenReturn(1L);
+        when(instanceScheduler.checkPlacement(any(), anyInt()))
+                .thenReturn(PlacementCheckResult.builder()
+                                   .requested(1)
+                                   .placed(1)
+                                   .errors(List.of())
+                                   .build());
 
         ensureSuccess(validator.validateOperation(
                 engine, new ApplicationScaleOperation(appId, 1, ClusterOpSpec.DEFAULT)));
     }
+
 
     @Test
     void testScaleInvalidId() {
@@ -504,13 +543,17 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                                                  null,
                                                                                  null)));
         when(crDB.executorCount(true)).thenReturn(1L);
-        when(crDB.currentSnapshot(true))
-                .thenReturn(List.of(ControllerTestUtils.executorHost(8000)));
+        when(instanceScheduler.checkPlacement(any(), anyInt()))
+                .thenReturn(PlacementCheckResult.builder()
+                                   .requested(100)
+                                   .placed(3)
+                                   .errors(List.of(
+                                           "Cluster can place only 3 of 100 requested instances for SomeAppId"))
+                                   .build());
 
         ensureFailure(validator.validateOperation(
                               engine, new ApplicationScaleOperation(appId, 100, ClusterOpSpec.DEFAULT)),
-                      "Cluster does not have enough CPU. Required: 100 Available: 3",
-                      "Cluster does not have enough Memory. Required: 51200 Available: 8448");
+                      "Cluster can place only 3 of 100 requested instances for SomeAppId");
     }
 
     @Test
@@ -686,7 +729,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
         return new ApplicationCommandValidator(asDB,
                                                crDB,
                                                aiDB,
-                                               new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT));
+                                               new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT),
+                                               instanceScheduler);
     }
 
     @Test
@@ -754,10 +798,9 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                       spec, 1, ClusterOpSpec.DEFAULT));
         ensureSuccess(res);
     }
-
     private ApplicationCommandValidator createValidatorWithEnforcer(
             SecurityPolicyEnforcer enforcer) {
-        return new ApplicationCommandValidator(asDB, crDB, aiDB, enforcer);
+        return new ApplicationCommandValidator(asDB, crDB, aiDB, enforcer, instanceScheduler);
     }
 
     private SecurityPolicyEnforcer enforcerWithPolicy(

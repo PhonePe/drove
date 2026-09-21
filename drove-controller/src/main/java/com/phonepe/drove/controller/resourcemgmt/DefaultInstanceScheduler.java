@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -163,8 +164,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         val schedulingSessionId = UUID.randomUUID().toString();
         val localSessionData = new ConcurrentHashMap<>(Map.of(schedulingSessionId, clusterSnapshot(deploymentSpec)));
         val instanceIds = IntStream.rangeClosed(1, numInstances)
-            .mapToObj(i -> "%s-simulation-instance-%d".formatted(deploymentSpec.getType().name().toLowerCase(), i))
-            .toList();
+                .mapToObj(i -> "%s-simulation-instance-%d".formatted(deploymentSpec.getType().name().toLowerCase(), i))
+                .toList();
         return place(schedulingSessionId,
                      instanceIds,
                      deploymentSpec,
@@ -172,6 +173,25 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                      EnumSet.of(ExecutorState.ACTIVE),
                      localSessionData,
                      true);
+    }
+
+    @Override
+    @MonitoredFunction
+    public PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec, final int numInstances) {
+        val placementPolicy = ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec);
+        val placed = simulatePlacement(deploymentSpec, placementPolicy, numInstances);
+        if (placed.size() == numInstances) {
+            return PlacementCheckResult.builder()
+                    .requested(numInstances)
+                    .placed(placed.size())
+                    .errors(List.of())
+                    .build();
+        }
+        return PlacementCheckResult.builder()
+                .requested(numInstances)
+                .placed(placed.size())
+                .errors(placementErrors(deploymentSpec, numInstances, placed.size()))
+                .build();
     }
 
     @Override
@@ -245,21 +265,26 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                     log.info("CREATE::SID: {}", schedulingSessionId);
                     return clusterSnapshot(deploymentSpec);
                 });
+        val currentInstanceIds = Set.copyOf(instanceIds);
         return instanceIds.stream()
-            .map(instanceId -> {
-                val allocatedExecutorNode = clusterResourcesDB.selectNodes(
-                    deploymentSpec.getResources(),
-                    allowedStates,
-                    filterContext -> validateNode(
-                        filterContext,
-                        schedulingSessionId,
-                        instanceId,
-                        placementPolicy,
-                        sessionData,
-                        deploymentSpec),
-                    simulation,
-                    true)
-                    .orElse(null);
+              .map(instanceId -> {
+                  val allocatedExecutorNode = clusterResourcesDB.selectNodes(
+                      deploymentSpec.getResources(),
+                      allowedStates,
+                      filterContext -> (!simulation
+                                        || hasSimulatedCapacity(filterContext,
+                                                                sessionData,
+                                                                currentInstanceIds,
+                                                                deploymentSpec))
+                                       && validateNode(filterContext,
+                                                       schedulingSessionId,
+                                                       instanceId,
+                                                       placementPolicy,
+                                                       sessionData,
+                                                       deploymentSpec),
+                      simulation,
+                      true)
+                      .orElse(null);
                 if(null == allocatedExecutorNode) {
                     return null;
                 }
@@ -372,6 +397,94 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                         .orElse(null);
             }
         });
+    }
+
+    private List<String> placementErrors(final DeploymentSpec deploymentSpec,
+                                         final int numInstances,
+                                         final int placed) {
+        val errors = new ArrayList<String>();
+        val appName = ControllerUtils.deployableObjectId(deploymentSpec);
+        errors.add("Cluster can place only " + placed + " of " + numInstances
+                + " requested instances for " + appName);
+        val requirements = deploymentSpec.getResources();
+        val requiredCores = ControllerUtils.extractCpuRequirement(requirements);
+        val requiredMem = ControllerUtils.extractMemoryRequirement(requirements);
+        errors.add("Required per instance: " + requiredCores + " cores, " + requiredMem + " MB memory");
+        val snapshot = clusterResourcesDB.currentSnapshot(true);
+        val maxAvailablePhysicalCoresPerNode = snapshot.stream()
+                .map(executor -> executor.getNodeData().getState().getLayout())
+                .filter(Objects::nonNull)
+                .flatMap(physicalLayout -> physicalLayout.getCores().values().stream().map(Set::size))
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(Integer.MAX_VALUE);
+        if (maxAvailablePhysicalCoresPerNode < requiredCores) {
+            errors.add("Required cores exceeds the maximum cores available on a single "
+                    + "NUMA node in the cluster. Required: " + requiredCores
+                    + " Max: " + maxAvailablePhysicalCoresPerNode);
+        }
+        errors.add("Per executor free capacity: " + snapshot
+                .stream()
+                .map(executor -> executor.getExecutorId()
+                        + "[cores: " + ControllerUtils.freeCores(executor)
+                        + ", memory: " + ControllerUtils.freeMemory(executor) + " MB]")
+                .collect(Collectors.joining(", ")));
+        return errors;
+    }
+
+    /**
+     * Checks if the candidate executor has free capacity for the current simulation
+     * instance, after all previous instances of the same simulation. The executor
+     * free capacity already includes all running apps, tasks, and local services.
+     */
+    private boolean hasSimulatedCapacity(
+            final ClusterResourcesDB.FilterContext filterContext,
+            final Map<String, Map<String, InstanceResourceAllocation>> sessionLevelData,
+            final Set<String> currentSessionInstanceIds,
+            final DeploymentSpec deploymentSpec) {
+        val candidate = filterContext.getAllocatedExecutorNode();
+        val executorId = candidate.getExecutorId();
+        val executorAllocations = sessionLevelData.getOrDefault(executorId, Map.of());
+        val simulatedCores = executorAllocations.values()
+                .stream()
+                .filter(allocation -> currentSessionInstanceIds.contains(allocation.getInstanceId()))
+                .map(InstanceResourceAllocation::getCpu)
+                .filter(Objects::nonNull)
+                .mapToInt(allocation -> allocation.getCores().values().stream().mapToInt(Set::size).sum())
+                .sum();
+        val simulatedMemory = executorAllocations.values()
+                .stream()
+                .filter(allocation -> currentSessionInstanceIds.contains(allocation.getInstanceId()))
+                .map(InstanceResourceAllocation::getMemory)
+                .filter(Objects::nonNull)
+                .mapToLong(allocation -> allocation.getMemoryInMB().values().stream().mapToLong(v -> v).sum())
+                .sum();
+        val host = filterContext.getLiveExecutors().stream()
+                .filter(executor -> executorId.equals(executor.getExecutorId()))
+                .findAny()
+                .orElse(null);
+        if (null == host) {
+            return false;
+        }
+        val requirements = deploymentSpec.getResources();
+        val requiredCores = ControllerUtils.extractCpuRequirement(requirements);
+        val requiredMemory = ControllerUtils.extractMemoryRequirement(requirements);
+        val requiredGpus = ControllerUtils.findGpuRequirement(requirements).orElse(null);
+        if (ControllerUtils.freeCores(host) - simulatedCores < requiredCores
+                || ControllerUtils.freeMemory(host) - simulatedMemory < requiredMemory) {
+            return false;
+        }
+        if (null != requiredGpus) {
+            val simulatedGpus = executorAllocations.values().stream()
+                    .filter(allocation -> currentSessionInstanceIds.contains(allocation.getInstanceId()))
+                    .map(InstanceResourceAllocation::getGpu)
+                    .filter(Objects::nonNull)
+                    .mapToInt(allocation -> allocation.getGpuIds().size())
+                    .sum();
+            return ControllerUtils.freeGpus(host, requiredGpus.getGpuType()) - simulatedGpus
+                    >= requiredGpus.getCount();
+        }
+        return true;
     }
 
     private boolean validateNode(

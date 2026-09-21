@@ -16,10 +16,8 @@
 
 package com.phonepe.drove.controller.engine;
 
-import static com.phonepe.drove.controller.utils.ControllerUtils.checkDeviceDisabled;
+import static com.phonepe.drove.controller.utils.ControllerUtils.checkSecurityPolicy;
 import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
-import static com.phonepe.drove.controller.utils.ControllerUtils.ensureCmdlArgs;
-import static com.phonepe.drove.controller.utils.ControllerUtils.ensureWhitelistedVolumes;
 import static com.phonepe.drove.controller.utils.ControllerUtils.hasLocalPolicy;
 import static com.phonepe.drove.controller.utils.ControllerUtils.validateCheckSpec;
 import static com.phonepe.drove.controller.utils.ControllerUtils.validateExposureSpec;
@@ -50,10 +48,7 @@ import static com.phonepe.drove.models.operation.ApplicationOperationType.SUSPEN
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,17 +59,16 @@ import javax.inject.Singleton;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statemachine.applications.AppActionContext;
-import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.ApplicationState;
 import com.phonepe.drove.models.application.PortSpec;
-import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
 import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.instance.InstanceInfo;
@@ -124,8 +118,8 @@ public class ApplicationCommandValidator implements CommandValidator<Application
     private final ApplicationStateDB applicationStateDB;
     private final ClusterResourcesDB clusterResourcesDB;
     private final ApplicationInstanceInfoDB instanceInfoStore;
-    private final ControllerOptions controllerOptions;
-
+    private final SecurityPolicyEnforcer securityPolicyEnforcer;
+    private final InstanceScheduler instanceScheduler;
     @Override
     public ValidationResult validateSpec(ApplicationSpec spec)  {
         val errs = new ArrayList<String>();
@@ -142,10 +136,12 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
+        if (reqs.getOrDefault(ResourceType.GPU, 0L) > 1) {
+            errs.add("Multiple GPU requirements specified in resource requirements. "
+                              + "This is currently not supported.");
+        }
+        errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
         errs.addAll(validateExposureSpec(spec, ports));
-        errs.addAll(ensureWhitelistedVolumes(spec.getVolumes(), controllerOptions));
-        errs.addAll(ensureCmdlArgs(spec.getArgs(), controllerOptions));
-        errs.addAll(checkDeviceDisabled(spec.getDevices(), controllerOptions));
         if(hasLocalPolicy(spec.getPlacementPolicy())) {
             errs.add("Local service placement is not allowed for apps");
         }
@@ -182,7 +178,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             }
         }
         return operation.accept(new OpValidationVisitor(appId, applicationStateDB, clusterResourcesDB,
-                                                        instanceInfoStore, this, engine));
+                                                        instanceInfoStore, instanceScheduler, this, engine));
     }
 
     @RequiredArgsConstructor
@@ -192,12 +188,12 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         private final ApplicationStateDB applicationStateDB;
         private final ClusterResourcesDB clusterResourcesDB;
         private final ApplicationInstanceInfoDB instancesDB;
+        private final InstanceScheduler instanceScheduler;
         private final ApplicationCommandValidator validator;
 
         private final DeployableLifeCycleManagementEngine<ApplicationInfo, ApplicationSpec, ApplicationOperation,
                 ApplicationState, AppActionContext, Action<ApplicationInfo, ApplicationState, AppActionContext,
                 ApplicationOperation>> engine;
-
         @Override
         public ValidationResult visit(ApplicationCreateOperation create) {
             if (engine.exists(appId)) {
@@ -268,7 +264,6 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             return ValidationResult.success();
         }
 
-
         private ValidationResult ensureResources(long requiredNewInstances) {
             val executorCount = clusterResourcesDB.executorCount(true);
             if(executorCount == 0) {
@@ -278,10 +273,9 @@ public class ApplicationCommandValidator implements CommandValidator<Application
             if (null == spec) {
                 return ValidationResult.failure("No spec found for app " + appId);
             }
-            val errs = new ArrayList<String>();
-            ControllerUtils.checkResources(clusterResourcesDB, spec, requiredNewInstances, errs);
-            if (!errs.isEmpty()) {
-                return ValidationResult.failure(errs);
+            val checkResult = instanceScheduler.checkPlacement(spec, (int) requiredNewInstances);
+            if (!checkResult.fits()) {
+                return ValidationResult.failure(checkResult.getErrors());
             }
             return ValidationResult.success();
         }
