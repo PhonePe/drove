@@ -23,7 +23,7 @@ import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 
 import java.util.EnumSet;
-import java.util.List;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -58,20 +58,13 @@ public interface InstanceScheduler {
             final PlacementPolicy placementPolicy,
             final Set<ExecutorState> allowedStates);
 
-
-    List<AllocatedExecutorNode> simulatePlacement(
-            final DeploymentSpec deploymentSpec,
-            final PlacementPolicy requiredPlacementPolicy,
-            final int numInstances,
-            final boolean detail);
-
-    default List<AllocatedExecutorNode> simulatePlacement(
-            final DeploymentSpec deploymentSpec,
-            final PlacementPolicy requiredPlacementPolicy,
-            final int numInstances) {
-        return simulatePlacement(deploymentSpec, requiredPlacementPolicy, numInstances, false);
-    }
-
+    /**
+     * Simulates placement of {@code numInstances} instances of the given spec on
+     * the cluster without locking any resources. Reports how many instances the
+     * cluster can place, and errors when it cannot place all of them. The
+     * placements list is populated only when {@code detail} is set. Capacity data
+     * is as fresh as the last executor refresh; actual scheduling can differ.
+     */
     PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec,
                                         final PlacementPolicy requiredPlacementPolicy,
                                         final int numInstances,
@@ -80,6 +73,7 @@ public interface InstanceScheduler {
     default PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec, final int numInstances) {
         return checkPlacement(deploymentSpec, null, numInstances, false);
     }
+
     void finaliseSession(String schedulingSessionId);
 
 

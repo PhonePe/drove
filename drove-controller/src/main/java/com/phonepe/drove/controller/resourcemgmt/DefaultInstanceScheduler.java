@@ -155,11 +155,10 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
     @Override
     @MonitoredFunction
-    public List<AllocatedExecutorNode> simulatePlacement(
-            final DeploymentSpec deploymentSpec,
-            final PlacementPolicy requiredPlacementPolicy,
-            final int numInstances,
-            final boolean detail) {
+    public PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec,
+                                               final PlacementPolicy requiredPlacementPolicy,
+                                               final int numInstances,
+                                               final boolean detail) {
         val placementPolicy = Objects.requireNonNullElseGet(requiredPlacementPolicy,
                 () -> ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec));
         val schedulingSessionId = UUID.randomUUID().toString();
@@ -167,24 +166,14 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         val instanceIds = IntStream.rangeClosed(1, numInstances)
                 .mapToObj(i -> "%s-simulation-instance-%d".formatted(deploymentSpec.getType().name().toLowerCase(), i))
                 .toList();
-        val placed = place(schedulingSessionId,
-                     instanceIds,
-                     deploymentSpec,
-                     placementPolicy,
-                     EnumSet.of(ExecutorState.ACTIVE),
-                     localSessionData,
-                     true);
-        return detail ? placed : List.of();
-    }
-
-    @Override
-    @MonitoredFunction
-    public PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec,
-                                               final PlacementPolicy requiredPlacementPolicy,
-                                               final int numInstances,
-                                               final boolean detail) {
         //Count needs the full placement run; expose placements only when detail is set
-        val placements = simulatePlacement(deploymentSpec, requiredPlacementPolicy, numInstances, true);
+        val placements = place(schedulingSessionId,
+                               instanceIds,
+                               deploymentSpec,
+                               placementPolicy,
+                               EnumSet.of(ExecutorState.ACTIVE),
+                               localSessionData,
+                               true);
         return PlacementCheckResult.builder()
                 .requested(numInstances)
                 .placed(placements.size())
@@ -194,7 +183,6 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                 .placements(detail ? placements : List.of())
                 .build();
     }
-
 
 
     @Override
@@ -305,9 +293,16 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                                               allocatedExecutorNode.getCpu(),
                                                                               allocatedExecutorNode.getMemory(),
                                                                               allocatedExecutorNode.getGpu()));
-                        log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
-                                 sid, executorId, currentAllocations.size());
+                        if (simulation) {
+                            log.debug("POST_ALLOC::SID: {} exec id: {} count: {}",
+                                      sid, executorId, currentAllocations.size());
+                        }
+                        else {
+                            log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
+                                     sid, executorId, currentAllocations.size());
+                        }
                         return executorAllocations;
+
                     });
                 return allocatedExecutorNode;
             })

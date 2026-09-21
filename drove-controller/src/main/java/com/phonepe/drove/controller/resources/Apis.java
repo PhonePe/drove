@@ -38,8 +38,10 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
+import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
+
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
@@ -491,8 +493,35 @@ public class Apis {
                                                        .build(),
                                        "Cluster is in maintenance mode");
         }
+        val spec = simulationRequest.getSpec();
+        val validationResult = spec.<ValidationResult>accept(new DeploymentSpecVisitor<>() {
+
+            @Override
+            public ValidationResult visit(ApplicationSpec applicationSpec) {
+                return applicationEngine.validateSpec(applicationSpec);
+            }
+
+            @Override
+            public ValidationResult visit(TaskSpec taskSpec) {
+                return taskEngine.validateSpec(taskSpec);
+            }
+
+            @Override
+            public ValidationResult visit(LocalServiceSpec localServiceSpec) {
+                return localServiceEngine.validateSpec(localServiceSpec);
+            }
+        });
+        if (!ValidationStatus.SUCCESS.equals(validationResult.getStatus())) {
+            return ApiResponse.failure(PlacementSimulationResponse.builder()
+                                                       .errors(List.copyOf(validationResult.getMessages()))
+                                                       .placements(List.of())
+                                                       .build(),
+                                       "Spec validation failed");
+        }
+
         return responseEngine.simulatePlacement(simulationRequest, detail);
     }
+
 
     @GET
     @Path("/cluster")
