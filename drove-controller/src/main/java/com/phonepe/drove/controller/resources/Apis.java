@@ -26,8 +26,6 @@ import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.engine.ValidationStatus;
 import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.masking.EnforceMasking;
-import com.phonepe.drove.models.api.DryRunRuleRequest;
-import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.api.*;
@@ -45,8 +43,6 @@ import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.operation.ApplicationOperation;
 import com.phonepe.drove.models.operation.LocalServiceOperation;
 import com.phonepe.drove.models.operation.TaskOperation;
-import com.phonepe.drove.models.operation.rule.RuleCallStatus;
-import com.phonepe.drove.models.operation.rule.RuleCheckResponse;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import io.dropwizard.auth.Auth;
@@ -94,10 +90,8 @@ public class Apis {
     private final ApplicationLifecycleManagementEngine applicationEngine;
     private final TaskEngine taskEngine;
     private final LocalServiceLifecycleManagementEngine localServiceEngine;
-
     private final ResponseEngine responseEngine;
     private final ClusterStateDB clusterStateDB;
-    private final PlacementRuleEvaluator ruleEvaluator;
 
 
     @Inject
@@ -106,14 +100,12 @@ public class Apis {
             TaskEngine taskEngine,
             LocalServiceLifecycleManagementEngine localServiceEngine,
             ResponseEngine responseEngine,
-            ClusterStateDB clusterStateDB,
-            PlacementRuleEvaluator ruleEvaluator) {
+            ClusterStateDB clusterStateDB) {
         this.applicationEngine = applicationEngine;
         this.taskEngine = taskEngine;
         this.localServiceEngine = localServiceEngine;
         this.responseEngine = responseEngine;
         this.clusterStateDB = clusterStateDB;
-        this.ruleEvaluator = ruleEvaluator;
     }
 
     @POST
@@ -129,43 +121,6 @@ public class Apis {
                               (s, res) -> log.info("ACCESS_AUDIT: Application Spec {} received from user: {}. Validation result: {}",
                                                    s.getName(), user.getName(), res),
                               s -> Map.of("valid", true));
-    }
-
-    @POST
-    @Path("/applications/placementpolicy/rule/dryrun")
-    @Timed
-    @Operation(summary = "Dry run placement rule", description = "Tests a placement policy rule without actually applying it", tags = {"Applications"})
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Dry run result with check and evaluation status")
-    public Response validatePlacementRule(
-            @Auth final DroveUser user,
-            @Valid @NotNull final DryRunRuleRequest dryRunRuleInfo) {
-
-        if ( CommonUtils.isInMaintenanceWindow(clusterStateDB.currentState().orElse(null))) {
-            return maintenanceModeError();
-        }
-        val policy = dryRunRuleInfo.getPolicy();
-        val context = dryRunRuleInfo.getContext();
-
-        val checkResponse = ruleEvaluator.check(policy);
-        if (RuleCallStatus.SUCCESS != checkResponse.getStatus()) {
-            return ControllerUtils.ok(Map.of(
-                    "status", false,
-                    "checkResult", checkResponse.getError(),
-                    "evalResult", RuleCheckResponse.builder()
-                                        .status(RuleCallStatus.FAILURE)
-                                        .error("Not evaluated")
-                                    .build()));
-        }
-
-        val evalResponse = ruleEvaluator.evaluate(policy, context);
-
-        log.info("ACCESS_AUDIT: Placement rule dryrun: {} received from user: {}. Validation result: {}",
-                policy.getRule(), user.getName(), evalResponse.isResult());
-
-        return ControllerUtils.ok(Map.of(
-                "status", evalResponse.getStatus() == RuleCallStatus.SUCCESS,
-                "checkResult", checkResponse,
-                "evalResult", evalResponse));
     }
 
     @POST

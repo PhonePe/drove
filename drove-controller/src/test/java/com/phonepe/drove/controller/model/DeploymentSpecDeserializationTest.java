@@ -17,10 +17,8 @@
 package com.phonepe.drove.controller.model;
 
 import com.phonepe.drove.common.AbstractTestBase;
-import com.phonepe.drove.models.api.DryRunRuleRequest;
 import com.phonepe.drove.models.application.ApplicationSpec;
 import com.phonepe.drove.models.application.JobType;
-import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.interfaces.DeploymentSpec;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.task.TaskSpec;
@@ -38,8 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Verifies polymorphic deserialization of {@link DeploymentSpec} subtypes
- * and full deserialization of {@link DryRunRuleRequest} from a JSON payload.
+ * Verifies polymorphic deserialization of {@link DeploymentSpec} subtypes.
  */
 class DeploymentSpecDeserializationTest extends AbstractTestBase {
 
@@ -206,45 +203,5 @@ class DeploymentSpecDeserializationTest extends AbstractTestBase {
                       "Round-trip deserialization must preserve the subtype for type=" + jobType);
         assertEquals(jobType, reDeserialized.getType(),
                       "Round-trip must preserve the JobType for type=" + jobType);
-    }
-
-    @Test
-    void testDryRunRuleRequestDeserialization() {
-        val request = readJsonResource("/dry-run-rule-request.json", DryRunRuleRequest.class);
-
-        assertNotNull(request, "DryRunRuleRequest must not be null");
-        assertNotNull(request.getPolicy(), "Policy must not be null");
-        assertNotNull(request.getContext(), "Context must not be null");
-
-        val policy = request.getPolicy();
-        assertEquals(RuleBasedPlacementPolicy.class, policy.getClass(),
-                      "Policy must deserialize as RuleBasedPlacementPolicy");
-        assertEquals("hostname != 'bad-host'",
-                      ((RuleBasedPlacementPolicy) policy).getRule(),
-                      "Rule expression must match");
-        assertEquals("hostname != 'bad-host'",
-                      ((RuleBasedPlacementPolicy) policy).getRule(),
-                      "Rule expression must match");
-
-        val allocation = request.getContext().getAllocation();
-        assertNotNull(allocation, "Node allocation must not be null");
-        assertEquals(ApplicationSpec.class, allocation.getSpec().getClass(),
-                      "DeploymentSpec in allocation must resolve to ApplicationSpec");
-        assertEquals(JobType.SERVICE, allocation.getSpec().getType(),
-                      "DeploymentSpec type must be SERVICE");
-        assertEquals("AI-00001", allocation.getInstanceId(),
-                      "Instance ID must match");
-
-        val session = request.getContext().getSession();
-        assertNotNull(session, "Scheduling session must not be null");
-        assertEquals("test-session-1", session.getSessionId(),
-                      "Session ID must match");
-
-        val environment = request.getContext().getEnvironment();
-        assertNotNull(environment, "Scheduling environment must not be null");
-        assertEquals(1, environment.getLiveExecutors().size(),
-                      "Live executors map must contain one entry");
-        assertEquals("us-east-1", environment.getVariables().get("region"),
-                      "Environment variable 'region' must match");
     }
 }
