@@ -38,9 +38,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.BiConsumer;
 import java.util.function.LongBinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 
 /**
  *
@@ -234,31 +236,46 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
 
     @Override
     @MonitoredFunction
-    public Optional<AllocatedExecutorNode> selectNodes(
+    public List<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
             Set<ExecutorState> allowedExecutorState,
             Predicate<FilterContext> filter,
             boolean readOnly,
-            boolean shouldShuffle) {
+            boolean shouldShuffle,
+            List<String> instanceIds,
+            BiConsumer<String, AllocatedExecutorNode> onAllocation) {
 
         val stamp = readOnly ? lock.readLock() : lock.writeLock();
         try {
-            val liveAllNodesSnapshots = currentSnapshotUnsafe(true);
             val rawNodes = new ArrayList<>(nodes.values());
             if(shouldShuffle) {
                 Collections.shuffle(rawNodes);
             }
-            val allocatedNodePredicate = (Predicate<AllocatedExecutorNode>) allocatedNode -> makeFilterContextUnsafe(allocatedNode, liveAllNodesSnapshots)
-                .map(filterContext -> filter.test(filterContext))
-                .orElse(false);
-            val selectedNode = selector.select(rawNodes,
-                    node -> inRequiredState(node, allowedExecutorState),
-                    requirements,
-                    allocatedNodePredicate);
-            if(!readOnly) {
-                selectedNode.ifPresent(this::softLockResources);
+            val selectedNodes = new ArrayList<AllocatedExecutorNode>();
+            for (val instanceId : instanceIds) {
+                val liveAllNodesSnapshots = currentSnapshotUnsafe(true);
+                val allocatedNodePredicate = (Predicate<AllocatedExecutorNode>) allocatedNode ->
+                        makeFilterContextUnsafe(allocatedNode, liveAllNodesSnapshots, instanceId)
+                                .map(filterContext -> filter.test(filterContext))
+                                .orElse(false);
+                val selectedNode = selector.select(rawNodes,
+                        node -> inRequiredState(node, allowedExecutorState),
+                        requirements,
+                        allocatedNodePredicate);
+                if (selectedNode.isEmpty()) {
+                    //Same requirements for every instance; a failed selection cannot succeed later
+                    break;
+                }
+                val allocatedExecutorNode = selectedNode.get();
+                if(!readOnly) {
+                    softLockResources(allocatedExecutorNode);
+                }
+                selectedNodes.add(allocatedExecutorNode);
+                if (null != onAllocation) {
+                    onAllocation.accept(instanceId, allocatedExecutorNode);
+                }
             }
-            return selectedNode;
+            return selectedNodes;
         }
         finally {
             lock.unlock(stamp);
@@ -336,13 +353,17 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         return Optional.ofNullable(nodes.get(executorId));
     }
 
-    private Optional<FilterContext> makeFilterContextUnsafe(AllocatedExecutorNode allocatedNode, List<ExecutorHostInfo> liveSnapshots) {
+    private Optional<FilterContext> makeFilterContextUnsafe(
+            AllocatedExecutorNode allocatedNode,
+            List<ExecutorHostInfo> liveSnapshots,
+            String instanceId) {
         val liveNodeSnapshot = currentSnapshotUnsafe(allocatedNode.getExecutorId());
 
         return liveNodeSnapshot.map(executorHostInfo -> new FilterContext(
                 liveSnapshots,
                 executorHostInfo.getNodeData(),
-                allocatedNode));
+                allocatedNode,
+                instanceId));
     }
 
     private static boolean inRequiredState(ExecutorHostInfo node, Set<ExecutorState> allowedStates) {

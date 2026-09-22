@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 /**
@@ -60,6 +61,7 @@ public abstract class ClusterResourcesDB {
         List<ExecutorHostInfo> liveExecutors;
         ExecutorNodeData allocatedExecutorNodeData;
         AllocatedExecutorNode allocatedExecutorNode;
+        String instanceId;
     }
 
     protected final ConsumingFireForgetSignal<ExecutorTopologyChanges> topologyChanged = new ConsumingFireForgetSignal<>();
@@ -88,12 +90,38 @@ public abstract class ClusterResourcesDB {
 
     public abstract void update(ExecutorResourceSnapshot snapshot);
 
-    public abstract Optional<AllocatedExecutorNode> selectNodes(
+    public Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
             Set<ExecutorState> allowedExecutorState,
             Predicate<FilterContext> filter,
             boolean readOnly,
-            boolean shouldShuffle);
+            boolean shouldShuffle) {
+        return selectNodes(requirements,
+                           allowedExecutorState,
+                           filter,
+                           readOnly,
+                           shouldShuffle,
+                           List.of(""),
+                           null)
+                .stream()
+                .findFirst();
+    }
+
+    /**
+     * Selects nodes for the given instance ids under a single lock acquisition.
+     * Selection stops at the first instance that cannot be placed. The
+     * onAllocation callback runs once per selected node, in instance id order,
+     * before the selection of the next instance. The filter can read the
+     * current instance id from FilterContext.
+     */
+    public abstract List<AllocatedExecutorNode> selectNodes(
+            List<ResourceRequirement> requirements,
+            Set<ExecutorState> allowedExecutorState,
+            Predicate<FilterContext> filter,
+            boolean readOnly,
+            boolean shouldShuffle,
+            List<String> instanceIds,
+            BiConsumer<String, AllocatedExecutorNode> onAllocation);
 
 
     public abstract void deselectNode(String executorId,

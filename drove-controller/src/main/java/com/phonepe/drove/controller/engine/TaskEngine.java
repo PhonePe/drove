@@ -195,15 +195,15 @@ public class TaskEngine {
         if (taskSpec.getResources().stream().filter(req -> req.getType() == ResourceType.GPU).count() > 1) {
             errors.add("Multiple GPU requirements specified in resource requirements. "
                                + "This is currently not supported.");
-            return errors;
         }
-        errors.addAll(resourceCheck(taskSpec));
-        if(ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
+        if (errors.stream().noneMatch(message -> message.startsWith("Multiple GPU requirements"))) {
+            errors.addAll(resourceCheck(taskSpec));
+        }
+        if (ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
             errors.add("Local service placement is not allowed for tasks");
         }
         return errors;
     }
-
 
 
     public TaskRunner registerTaskRunner(String sourceAppName, String taskId) {

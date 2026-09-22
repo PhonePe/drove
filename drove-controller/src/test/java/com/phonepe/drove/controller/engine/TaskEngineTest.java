@@ -56,6 +56,8 @@ import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskResult;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
+
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
@@ -969,6 +971,46 @@ class TaskEngineTest extends ControllerTestBase {
         assertTrue(r.getMessages().stream()
                            .anyMatch(m -> m.contains("Multiple GPU requirements specified in resource requirements.")));
     }
+
+    @Test
+    void testCreateTaskMultipleGpuRequirementsCollectsAllErrors() {
+        val cdb = getCdb();
+        val pair = createDefaultInstanceScheduler(cdb);
+        cdb.update(IntStream.rangeClosed(1, 5)
+                           .mapToObj(ControllerTestUtils::generateExecutorNode)
+                           .toList());
+        val le = mock(LeadershipEnsurer.class);
+        when(le.isLeader()).thenReturn(true);
+        val comm = mock(ControllerCommunicator.class);
+        val taskSpec = taskSpec()
+                .withResources(List.of(new CPURequirement(1),
+                                       new MemoryRequirement(512),
+                                       new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "H100")),
+                                       new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "A100"))))
+                .withPlacementPolicy(new LocalPlacementPolicy(true));
+        val executor = Executors.newCachedThreadPool();
+        val te = new TaskEngine(pair.getKey(),
+                                cdb,
+                                pair.getValue(),
+                                comm,
+                                new DefaultControllerRetrySpecFactory(),
+                                new RandomInstanceIdGenerator(),
+                                ControllerTestUtils.defaultEnforcer(),
+                                Executors.defaultThreadFactory(),
+                                executor,
+                                new JobExecutor<>(executor),
+                                new InMemoryClusterStateDB(),
+                                le,
+                                ControllerTestUtils.DEFAULT_CLUSTER_OP,
+                                httpCaller());
+        val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
+        assertEquals(ValidationStatus.FAILURE, r.getStatus());
+        assertTrue(r.getMessages().stream()
+                           .anyMatch(m -> m.contains("Multiple GPU requirements specified in resource requirements.")));
+        assertTrue(r.getMessages().stream()
+                           .anyMatch(m -> m.contains("Local service placement is not allowed for tasks")));
+    }
+
 
     @Test
     void testCreateTaskCustomPolicyBlocksDevice() {
