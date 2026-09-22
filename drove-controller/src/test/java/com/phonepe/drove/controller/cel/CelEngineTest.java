@@ -147,6 +147,73 @@ class CelEngineTest {
     }
 
     @Test
+    void testListsRangeIsNotAvailable() {
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
+
+        // lists.range must not compile: it allocates an unbounded list.
+        assertEquals(RuleCallStatus.FAILURE, rs.check("lists.range(10).size() == 10").getStatus());
+        // Other list functions stay available.
+        assertEquals(RuleCallStatus.SUCCESS, rs.check("[3, 1, 2].sort()[0] == 1").getStatus());
+        assertEquals(RuleCallStatus.SUCCESS, rs.check("[1, 2, 2].distinct().size() == 2").getStatus());
+    }
+
+    @Test
+    void testIterationBudgetBlocksNestedComprehensions() {
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
+        val ctx = testContext();
+
+        // 6 nested all() over 10-element lists = 10^6 iterations > 1000 budget.
+        val rule = "[1,2,3,4,5,6,7,8,9,10].all(a, [1,2,3,4,5,6,7,8,9,10].all(b, "
+                + "[1,2,3,4,5,6,7,8,9,10].all(c, [1,2,3,4,5,6,7,8,9,10].all(d, "
+                + "[1,2,3,4,5,6,7,8,9,10].all(e, [1,2,3,4,5,6,7,8,9,10].all(f, "
+                + "a + b + c + d + e + f > 0))))))";
+        val result = rs.evaluate(rule, ctx);
+
+        assertEquals(RuleCallStatus.FAILURE, result.getStatus());
+        assertTrue(result.getError().toLowerCase().contains("iteration"));
+    }
+
+    @Test
+    void testIterationBudgetStillAllowsNormalRules() {
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
+        val ctx = testContext();
+
+        assertTrue(rs.evaluate("[1, 2, 3].all(x, x > 0)", ctx).isResult());
+        assertTrue(rs.evaluate("[1, 2, 3].exists(x, x == 2)", ctx).isResult());
+        assertTrue(rs.evaluate("[1, 2, 3].filter(x, x > 1).size() == 2", ctx).isResult());
+    }
+
+    @Test
+    void testOversizedRegexFails() {
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
+        val ctx = testContext();
+
+        // 'a?' repeated 2000 times exceeds maxRegexProgramSize (100).
+        val regex = "a?".repeat(2000);
+        val result = rs.evaluate("ctx.allocation.node.hostname.matches('" + regex + "')", ctx);
+
+        assertEquals(RuleCallStatus.FAILURE, result.getStatus());
+    }
+
+    @Test
+    void testOversizedExpressionFails() {
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
+
+        // 1001 code points exceeds maxExpressionCodePointSize (1000).
+        val expr = "true && " + "true ".repeat(200);
+        assertEquals(RuleCallStatus.FAILURE, rs.check(expr).getStatus());
+    }
+
+    @Test
+    void testDeeplyNestedExpressionFails() {
+        val rs = ControllerTestUtils.celEngine(MAPPER, 0);
+
+        // Paren nesting deeper than maxParseRecursionDepth (32).
+        val expr = "(".repeat(40) + "true" + ")".repeat(40);
+        assertEquals(RuleCallStatus.FAILURE, rs.check(expr).getStatus());
+    }
+
+    @Test
     void testSyntaxErrorReturnsFailure() {
         val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val ctx = testContext();

@@ -19,11 +19,14 @@ import com.phonepe.drove.common.model.utils.Pair;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import com.phonepe.drove.models.operation.rule.RuleCheckResponse;
 import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
+import dev.cel.common.CelOptions;
 import dev.cel.common.types.MapType;
 import dev.cel.common.types.SimpleType;
 import dev.cel.compiler.CelCompiler;
 import dev.cel.compiler.CelCompilerFactory;
 import dev.cel.extensions.CelExtensions;
+import dev.cel.extensions.CelListsExtensions;
+import dev.cel.extensions.CelListsExtensions.Function;
 import dev.cel.parser.CelStandardMacro;
 import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
@@ -53,13 +56,26 @@ import java.util.Objects;
  *   <li>{@link CelExtensions#strings()} — {@code startsWith}, {@code matches}, etc.</li>
  *   <li>{@link CelExtensions#bindings()} — {@code cel.bind()} local variables (compiler-only)</li>
  *   <li>{@link CelExtensions#comprehensions()} — v2 comprehension macros: {@code filter()}, {@code map()}, {@code exists()}, {@code all()}</li>
- *   <li>{@link CelExtensions#lists()} — list operations</li>
+ *   <li>{@link CelExtensions#lists(Function...)} — list operations, minus {@code range}</li>
  *   <li>{@link CelExtensions#math()} — {@code math.greatest()}, {@code math.least()}</li>
  *   <li>{@link CelStandardMacro#STANDARD_MACROS} — standard macros including {@code has()}</li>
  * </ul>
  *
  * <p>CEL is non-Turing-complete (no loops, no recursion, no side effects),
- * making it inherently safe without custom sandboxing.
+ * making it inherently safe without custom sandboxing. Rules are user
+ * supplied, so the compiler and runtime are hardened with explicit
+ * {@link CelOptions} limits:
+ * <ul>
+ *   <li>{@code comprehensionMaxIterations} — total iteration budget per
+ *       evaluation, shared by all comprehensions. Blocks CPU exhaustion via
+ *       nested {@code all()}/{@code exists()}.</li>
+ *   <li>{@code maxRegexProgramSize} — RE2 program-size cap per regex.</li>
+ *   <li>{@code maxExpressionCodePointSize} — rule text length cap.</li>
+ *   <li>{@code maxParseRecursionDepth} — parse-tree depth cap.</li>
+ * </ul>
+ *
+ * <p>Exceeding a limit makes evaluation throw. Callers report this as a
+ * FAILURE result.
  */
 @Slf4j
 @Singleton
@@ -67,6 +83,17 @@ public class CelEngine {
 
     public static final String DEFAULT_CONTEXT_VAR_NAME = "ctx";
     public static final int DEFAULT_COMPILED_PROGRAM_CACHE_SIZE = 100;
+    public static final int MAX_COMPREHENSION_ITERATIONS = 1000;
+    public static final int MAX_REGEX_PROGRAM_SIZE = 100;
+    public static final int MAX_EXPRESSION_CODE_POINTS = 1000;
+    public static final int MAX_PARSE_RECURSION_DEPTH = 32;
+
+    private static final CelOptions CEL_OPTIONS = CelOptions.newBuilder()
+            .comprehensionMaxIterations(MAX_COMPREHENSION_ITERATIONS)
+            .maxRegexProgramSize(MAX_REGEX_PROGRAM_SIZE)
+            .maxExpressionCodePointSize(MAX_EXPRESSION_CODE_POINTS)
+            .maxParseRecursionDepth(MAX_PARSE_RECURSION_DEPTH)
+            .build();
 
     private final CelCompiler compiler;
     private final CelRuntime runtime;
@@ -92,9 +119,10 @@ public class CelEngine {
                         CelExtensions.strings(),
                         CelExtensions.bindings(),
                         CelExtensions.comprehensions(),
-                        CelExtensions.lists(),
+                        listsWithoutRange(),
                         CelExtensions.math())
                 .setStandardMacros(CelStandardMacro.STANDARD_MACROS)
+                .setOptions(CEL_OPTIONS)
                 .addVar(this.contextVarName, MapType.create(SimpleType.STRING, SimpleType.DYN))
                 .setResultType(SimpleType.BOOL)
                 .build();
@@ -103,8 +131,9 @@ public class CelEngine {
                 .addLibraries(
                         CelExtensions.strings(),
                         CelExtensions.comprehensions(),
-                        CelExtensions.lists(),
+                        listsWithoutRange(),
                         CelExtensions.math())
+                .setOptions(CEL_OPTIONS)
                 .build();
 
         this.cachedPrograms = Caffeine.newBuilder()
@@ -120,6 +149,20 @@ public class CelEngine {
                               rule, compiled.getFirst().getError());
                     return null;
                 });
+    }
+
+    /**
+     * The lists extension minus {@code range}, because {@code lists.range(n)}
+     * allocates a list of {@code n} elements with no bound.
+     */
+    private static CelListsExtensions listsWithoutRange() {
+        return CelExtensions.lists(
+                Function.SLICE,
+                Function.FLATTEN,
+                Function.DISTINCT,
+                Function.REVERSE,
+                Function.SORT,
+                Function.SORT_BY);
     }
 
     /**

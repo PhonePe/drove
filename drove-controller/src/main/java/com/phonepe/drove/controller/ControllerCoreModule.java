@@ -180,6 +180,14 @@ public class ControllerCoreModule extends AbstractModule {
 
     @Provides
     @Singleton
+    public CelEngine celEngine(final ObjectMapper mapper, final ControllerOptions controllerOptions) {
+        val ruleCacheSize = Objects.requireNonNullElse(controllerOptions.getCompiledRuleCacheCount(),
+                                          ControllerOptions.DEFAULT_COMPILED_RULE_CACHE_SIZE);
+        return new CelEngine(mapper, ruleCacheSize);
+    }
+
+    @Provides
+    @Singleton
     public PlacementRuleEvaluator placementRuleEvaluator(final CelEngine celEngine) {
         return new PlacementRuleEvaluator(celEngine);
     }

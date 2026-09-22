@@ -27,6 +27,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
 
 
 /**
@@ -41,7 +42,10 @@ import javax.validation.constraints.NotEmpty;
 @Schema(description = "Placement policy that uses CEL rules for flexible container placement decisions")
 public class RuleBasedPlacementPolicy extends PlacementPolicy {
 
+    public static final int MAX_RULE_LENGTH = 1000;
+
     @NotEmpty(message = "- Specify a rule to select/reject node based")
+    @Size(max = MAX_RULE_LENGTH, message = "- Rule must not exceed " + MAX_RULE_LENGTH + " characters")
     @Schema(description = "The CEL rule expression used to evaluate host eligibility", example = "ctx.allocation.node.executorId != 'excluded-host'", requiredMode = Schema.RequiredMode.REQUIRED)
     String rule;
 

@@ -16,6 +16,8 @@ import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacemen
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCheckResponse;
 import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
+
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -29,14 +31,10 @@ import javax.inject.Singleton;
  */
 @Slf4j
 @Singleton
+@AllArgsConstructor(onConstructor = @__({@Inject}))
 public class PlacementRuleEvaluator {
 
     private final CelEngine celEngine;
-
-    @Inject
-    public PlacementRuleEvaluator(final CelEngine celEngine) {
-        this.celEngine = celEngine;
-    }
 
     public RuleEvalResponse evaluate(final RuleBasedPlacementPolicy policy, final NodeSelectionContext context) {
         return celEngine.evaluate(policy.getRule(), context);
