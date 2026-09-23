@@ -24,7 +24,6 @@ import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.TaskEngine;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
-
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.controller.utils.EventUtils;
 import com.phonepe.drove.models.api.*;
@@ -95,7 +94,6 @@ class ApisTest {
             = mock(LocalServiceLifecycleManagementEngine.class);
     private static final ResponseEngine responseEngine = mock(ResponseEngine.class);
     private static final ClusterStateDB clusterStateDB = mock(ClusterStateDB.class);
-
 
     private static final ResourceExtension EXT = ResourceExtension.builder()
             .addResource(new Apis(applicationEngine, taskEngine, localServiceEngine, responseEngine, clusterStateDB))

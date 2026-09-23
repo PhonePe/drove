@@ -1264,20 +1264,25 @@ public class ControllerUtils {
 
     /**
      * Utility method to find the GPU requirement, returning empty if none is present.
-     * Only one GPU requirement is allowed. More than one is a spec error.
+     * Only one GPU requirement is allowed. More than one is a spec error and is
+     * reported by spec validation, not here.
      */
     public static Optional<GPURequirement> findGpuRequirement(List<ResourceRequirement> resources) {
-        val gpuRequirements = resources.stream()
+        return resources.stream()
                 .filter(req -> req.getType() == ResourceType.GPU)
                 .map(GPURequirement.class::cast)
-                .toList();
-        if (gpuRequirements.size() > 1) {
-            throw new IllegalArgumentException(
-                    "Multiple GPU requirements specified in resource requirements. This is currently not supported.");
-        }
-        return gpuRequirements.stream().findFirst();
+                .findFirst();
     }
 
+    public static Optional<String> checkMultipleGpuRequirements(List<ResourceRequirement> resources) {
+        val gpuRequirementCount = Objects.requireNonNullElse(resources, List.<ResourceRequirement>of())
+                .stream()
+                .filter(req -> req.getType() == ResourceType.GPU)
+                .count();
+        return gpuRequirementCount > 1
+               ? Optional.of("Multiple GPU requirements specified in resource requirements. This is currently not supported.")
+               : Optional.empty();
+    }
 
     /**
      * Utility method to extract specific resource requirement from the list.

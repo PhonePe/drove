@@ -20,6 +20,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Value;
+import lombok.val;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,4 +60,27 @@ public class ExecutorHostInfo {
     ExecutorNodeData nodeData;
     Map<Integer, NumaNodeInfo> nodes;
     HostGPUInfo gpuInfo;
+
+    /**
+     * Makes a copy that does not share mutable state with this object. The copy
+     * contains new core maps, memory info and GPU maps. The copy shares
+     * nodeData, because nodeData is immutable.
+     */
+    public ExecutorHostInfo shallowCopy() {
+        val nodesCopy = new HashMap<Integer, NumaNodeInfo>();
+        if (null != nodes) {
+            nodes.forEach((numaNodeId, numaNode) -> {
+                val numaNodeCopy = new NumaNodeInfo();
+                numaNodeCopy.getCores().putAll(numaNode.getCores());
+                numaNodeCopy.getMemory().setAvailable(numaNode.getMemory().getAvailable());
+                numaNodeCopy.getMemory().setUsed(numaNode.getMemory().getUsed());
+                nodesCopy.put(numaNodeId, numaNodeCopy);
+            });
+        }
+        val gpuInfoCopy = new HostGPUInfo();
+        if (null != gpuInfo) {
+            gpuInfoCopy.getGpus().putAll(gpuInfo.getGpus());
+        }
+        return new ExecutorHostInfo(executorId, nodeData, nodesCopy, gpuInfoCopy);
+    }
 }

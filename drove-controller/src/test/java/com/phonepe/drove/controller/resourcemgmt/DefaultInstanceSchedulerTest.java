@@ -30,8 +30,10 @@ import com.phonepe.drove.models.application.placement.policies.CompositePlacemen
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MatchTagPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPolicy;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -642,6 +644,72 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         assertTrue(result.getErrors().isEmpty());
     }
 
+    @Test
+    void testNoCoreReuseOnOneExecutor() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
+                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
+                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(List.of(gpuExecutorNodeWithCount("EXECUTOR_1", "H100", 4)));
+        val spec = ControllerTestUtils.withGPU(appSpec(), 1, new GpuType(GpuVendor.NVIDIA, "H100"));
+        val result = sched.checkPlacement(spec, null, 5, true);
+        //5 cores and 4 GPUs on the executor; the GPUs limit the count
+        assertEquals(4, result.getPlaced());
+        val placements = result.getPlacements();
+        val coreIds = placements.stream()
+                .flatMap(node -> node.getCpu().getCores().values().stream())
+                .flatMap(Set::stream)
+                .toList();
+        assertEquals(coreIds.size(), Set.copyOf(coreIds).size());
+        val gpuIds = placements.stream()
+                .flatMap(node -> node.getGpu().getGpuIds().stream())
+                .toList();
+        assertEquals(4, gpuIds.size());
+        assertEquals(4, Set.copyOf(gpuIds).size());
+    }
+
+    @Test
+    void testCheckPlacementNeedsCoresOnOneNumaNode() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
+                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
+                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        //4 free cores in total, but only 2 on each NUMA node
+        rdb.update(List.of(executorNodeWithMemory("EXECUTOR_1",
+                                                  Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
+                                                  Map.of(0, 1024L * 1024, 1, 1024L * 1024))));
+        val spec = appSpec().withResources(new ArrayList<>(List.of(new CPURequirement(3),
+                                                                   new MemoryRequirement(512))));
+        val result = sched.checkPlacement(spec, 1);
+        assertEquals(0, result.getPlaced());
+        assertFalse(result.fits());
+        assertTrue(result.getErrors().stream().anyMatch(error -> error.contains("Max free: 2")),
+                   () -> "Errors: " + result.getErrors());
+    }
+
+    @Test
+    void testCheckPlacementDoesNotChangeResourceDBState() {
+        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
+                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
+                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val sched = createDefaultInstanceScheduler(rdb).getValue();
+        rdb.update(List.of(gpuExecutorNodeWithCount("EXECUTOR_1", "H100", 2),
+                           gpuExecutorNodeWithCount("EXECUTOR_2", "H100", 2)));
+        val before = rdb.currentSnapshot(false)
+                .stream()
+                .map(ExecutorHostInfo::deepCopy)
+                .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, hostInfo -> hostInfo));
+        val spec = ControllerTestUtils.withGPU(appSpec(), 1, new GpuType(GpuVendor.NVIDIA, "H100"));
+        assertEquals(4, sched.checkPlacement(spec, null, 4, true).getPlaced());
+        val after = rdb.currentSnapshot(false)
+                .stream()
+                .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, hostInfo -> hostInfo));
+        assertEquals(before, after);
+        //The real scheduler can still use all GPUs
+        IntStream.rangeClosed(1, 4)
+                .forEach(i -> assertNotNull(sched.schedule("SCHED_ID_1", "I" + i, spec).orElse(null)));
+    }
+
     private static ExecutorNodeData gpuExecutorNode(String executorId, String gpuModel) {
         return executorNode(executorId,
                             Map.of(0, Set.of(0, 1, 2, 3, 4)),
@@ -776,7 +844,6 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val nodes = rdb.selectNodes(appSpec().getResources(),
                                     EnumSet.of(ExecutorState.ACTIVE),
                                     filterContext -> true,
-                                    true,
                                     false,
                                     instanceIds,
                                     (instanceId, node) -> {

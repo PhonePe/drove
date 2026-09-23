@@ -29,6 +29,7 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.Value;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
@@ -90,18 +91,27 @@ public abstract class ClusterResourcesDB {
 
     public abstract void update(ExecutorResourceSnapshot snapshot);
 
+    /**
+     * Makes a copy of the current resource state. Changes to the copy do not
+     * change this DB. Use the copy for placement simulation.
+     */
+    public abstract ClusterResourcesDB copy();
+
+    /**
+     * Selects a node for a single instance. The FilterContext instance id is
+     * null. Callers that need the instance id in the filter must use the
+     * batched overload with an explicit instance id.
+     */
     public Optional<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
             Set<ExecutorState> allowedExecutorState,
             Predicate<FilterContext> filter,
-            boolean readOnly,
             boolean shouldShuffle) {
         return selectNodes(requirements,
                            allowedExecutorState,
                            filter,
-                           readOnly,
                            shouldShuffle,
-                           List.of(""),
+                           Collections.singletonList(null),
                            null)
                 .stream()
                 .findFirst();
@@ -118,11 +128,9 @@ public abstract class ClusterResourcesDB {
             List<ResourceRequirement> requirements,
             Set<ExecutorState> allowedExecutorState,
             Predicate<FilterContext> filter,
-            boolean readOnly,
             boolean shouldShuffle,
             List<String> instanceIds,
             BiConsumer<String, AllocatedExecutorNode> onAllocation);
-
 
     public abstract void deselectNode(String executorId,
                                              CPUAllocation cpuAllocation,

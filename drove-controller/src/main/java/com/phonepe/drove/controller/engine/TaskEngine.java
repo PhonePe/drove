@@ -25,14 +25,12 @@ import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
-import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.jobexecutor.JobExecutor;
 import com.phonepe.drove.models.operation.ClusterOpSpec;
 import com.phonepe.drove.models.operation.TaskOperation;
 import com.phonepe.drove.models.operation.TaskOperationVisitor;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
 import com.phonepe.drove.models.operation.taskops.TaskKillOperation;
-import com.phonepe.drove.models.application.requirements.ResourceType;
 import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
@@ -45,7 +43,9 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.checkMultipleGpuRequirements;
 import static com.phonepe.drove.controller.utils.ControllerUtils.checkSecurityPolicy;
+import static com.phonepe.drove.controller.utils.ControllerUtils.hasLocalPolicy;
 
 import java.time.Duration;
 import java.util.*;
@@ -192,19 +192,16 @@ public class TaskEngine {
     private ArrayList<String> validateTaskSpec(TaskSpec taskSpec) {
         val errors = new ArrayList<String>();
         errors.addAll(checkSecurityPolicy(taskSpec, securityPolicyEnforcer));
-        if (taskSpec.getResources().stream().filter(req -> req.getType() == ResourceType.GPU).count() > 1) {
-            errors.add("Multiple GPU requirements specified in resource requirements. "
-                               + "This is currently not supported.");
-        }
-        if (errors.stream().noneMatch(message -> message.startsWith("Multiple GPU requirements"))) {
+        val gpuError = checkMultipleGpuRequirements(taskSpec.getResources());
+        gpuError.ifPresent(errors::add);
+        if (gpuError.isEmpty()) { //Scheduler can't handle multiple gpu reqs in same spec
             errors.addAll(resourceCheck(taskSpec));
         }
-        if (ControllerUtils.hasLocalPolicy(taskSpec.getPlacementPolicy())) {
+        if(hasLocalPolicy(taskSpec.getPlacementPolicy())) {
             errors.add("Local service placement is not allowed for tasks");
         }
         return errors;
     }
-
 
     public TaskRunner registerTaskRunner(String sourceAppName, String taskId) {
         val runTaskId = genRunTaskId(sourceAppName, taskId);

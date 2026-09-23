@@ -29,6 +29,11 @@ import com.phonepe.drove.models.application.checks.HTTPCheckModeSpec;
 import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.LocalPlacementPolicy;
+import com.phonepe.drove.models.application.requirements.CPURequirement;
+import com.phonepe.drove.models.application.requirements.GPURequirement;
+import com.phonepe.drove.models.application.requirements.GpuType;
+import com.phonepe.drove.models.application.requirements.GpuVendor;
+import com.phonepe.drove.models.application.requirements.MemoryRequirement;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstancePort;
@@ -165,6 +170,20 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         ensureSuccess(res);
     }
 
+
+    @Test
+    void testCreateMultipleGpuRequirements() {
+        val validator = createValidator();
+        val spec = ControllerTestUtils.localServiceSpec(1)
+                .withResources(List.of(new CPURequirement(1),
+                                       new MemoryRequirement(512),
+                                       new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "H100")),
+                                       new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "A100"))));
+        val res = validator.validateOperation(engine, new LocalServiceCreateOperation(spec, 1));
+        ensureFailure(res,
+                      "GPU resources are not supported for local services",
+                      ControllerUtils.MULTIPLE_GPU_REQUIREMENTS_ERROR);
+    }
 
     @Test
     void testCreateNoLocalServiceId() {

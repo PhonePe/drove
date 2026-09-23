@@ -483,15 +483,15 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                    .placed(0)
                                    .errors(List.of(
                                            "Cluster can place only 0 of 1 requested instances for SomeAppId",
-                                           "Required cores exceeds the maximum cores available on a single "
-                                                   + "NUMA node in the cluster. Required: 6 Max: 5"))
+                                           "Required cores exceed the maximum free cores on a single "
+                                                   + "NUMA node in the cluster. Required: 6 Max free: 5"))
                                    .build());
 
         ensureFailure(validator.validateOperation(
                               engine, new ApplicationStartInstancesOperation(appId, 1, ClusterOpSpec.DEFAULT)),
                       "Cluster can place only 0 of 1 requested instances for SomeAppId",
-                      "Required cores exceeds the maximum cores available on a single "
-                              + "NUMA node in the cluster. Required: 6 Max: 5");
+                      "Required cores exceed the maximum free cores on a single "
+                              + "NUMA node in the cluster. Required: 6 Max free: 5");
     }
 
     @Test

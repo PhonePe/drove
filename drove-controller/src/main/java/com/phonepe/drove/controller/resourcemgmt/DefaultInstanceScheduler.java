@@ -16,7 +16,9 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -24,9 +26,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,6 +54,7 @@ import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPol
 import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceType;
+import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
@@ -83,6 +88,8 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Slf4j
 public class DefaultInstanceScheduler implements InstanceScheduler {
+    private static final int MAX_REPORTED_EXECUTORS = 10;
+
     private static final Set<InstanceState> RESOURCE_CONSUMING_INSTANCE_STATES = EnumSet.of(InstanceState.PENDING,
                                                                                             InstanceState.PROVISIONING,
                                                                                             InstanceState.STARTING,
@@ -132,13 +139,6 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
     }
 
     @Override
-    public synchronized Optional<AllocatedExecutorNode> schedule(
-            String schedulingSessionId, String instanceId, DeploymentSpec deploymentSpec) {
-        var placementPolicy = ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec);
-        return schedule(schedulingSessionId, instanceId, deploymentSpec, placementPolicy);
-    }
-
-    @Override
     @MonitoredFunction
     public synchronized Optional<AllocatedExecutorNode> schedule(
             @NonNull final String schedulingSessionId,
@@ -146,42 +146,55 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             final DeploymentSpec deploymentSpec,
             final PlacementPolicy placementPolicy,
             final Set<ExecutorState> allowedStates) {
+        return place(clusterResourcesDB,
+                     schedulingSessionId,
+                     List.of(instanceId),
+                     deploymentSpec,
+                     placementPolicy,
+                     allowedStates,
+                     schedulingSessionData,
+                     true)
+            .stream()
+            .findAny();
+    }
 
-        val sessionData = schedulingSessionData.computeIfAbsent(
-                schedulingSessionId,
-                id -> {
-                    log.info("CREATE::SID: {}", schedulingSessionId);
-                    return clusterSnapshot(deploymentSpec);
-                });
-        val selectedNode = clusterResourcesDB.selectNodes(
-                deploymentSpec.getResources(),
-                allowedStates,
-                filterContext -> validateNode(
-                    filterContext,
-                    schedulingSessionId,
-                    instanceId,
-                    placementPolicy,
-                    sessionData,
-                    deploymentSpec));
-        //If a node is found, add it to the list of allocated nodes for this session
-        //Next time a request for this session comes, this will ensure that allocations done in current session
-        //Are taken into consideration
-        selectedNode.ifPresent(allocatedExecutorNode -> schedulingSessionData.computeIfPresent(
-                schedulingSessionId,
-                (sid, executorAllocations) -> {
-                    val executorId = allocatedExecutorNode.getExecutorId();
-                    val currentAllocations = executorAllocations.computeIfAbsent(executorId, eId -> new HashMap<>());
-                    currentAllocations.put(instanceId,
-                                           new InstanceResourceAllocation(executorId,
-                                                                          instanceId,
-                                                                          allocatedExecutorNode.getCpu(),
-                                                                          allocatedExecutorNode.getMemory(),
-                                                                          allocatedExecutorNode.getGpu()));
-                    log.info("POST_ALLOC::SID: {} exec id: {} count: {}",
-                             sid, executorId, currentAllocations.size());
-                    return executorAllocations;
-                }));
-        return selectedNode;
+    /**
+     * Simulates the placement on a deep copy of the cluster resources DB. The
+     * simulation does not change the real DB. The result is only a hint. The
+     * cluster state can change before the real scheduling starts.
+     */
+    @Override
+    @MonitoredFunction
+    public PlacementCheckResult checkPlacement(final DeploymentSpec deploymentSpec,
+                                               final PlacementPolicy requiredPlacementPolicy,
+                                               final int numInstances,
+                                               final boolean detail) {
+        val placementPolicy = effectivePolicy(deploymentSpec, requiredPlacementPolicy);
+
+        val schedulingSessionId = UUID.randomUUID().toString();
+        //Read the existing allocations directly before the copy, so that the two data sets are close in time
+        val localSessionData = new ConcurrentHashMap<>(Map.of(schedulingSessionId, clusterSnapshot(deploymentSpec)));
+        val simulationDB = clusterResourcesDB.copy();
+        val instanceIds = IntStream.rangeClosed(1, numInstances)
+                .mapToObj(i -> "%s-simulation-instance-%d".formatted(deploymentSpec.getType().name().toLowerCase(), i))
+                .toList();
+        //Count needs the full placement run; expose placements only when detail is set
+        val placements = place(simulationDB,
+                               schedulingSessionId,
+                               instanceIds,
+                               deploymentSpec,
+                               placementPolicy,
+                               EnumSet.of(ExecutorState.ACTIVE),
+                               localSessionData,
+                               false);
+        return PlacementCheckResult.builder()
+                .requested(numInstances)
+                .placed(placements.size())
+                .errors(placements.size() == numInstances
+                        ? List.of()
+                        : placementErrors(simulationDB, deploymentSpec, numInstances, placements.size()))
+                .placements(detail ? placements : List.of())
+                .build();
     }
 
     @Override
@@ -239,6 +252,82 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                        .map(InstanceResourceAllocation::getExecutorId)
                        .findAny()
                        .orElse(null);
+    }
+
+    private static InstanceResourceAllocation allocation(
+            final String executorId,
+            final String instanceId,
+            final AllocatedExecutorNode allocatedExecutorNode) {
+        return new InstanceResourceAllocation(executorId,
+                                              instanceId,
+                                              allocatedExecutorNode.getCpu(),
+                                              allocatedExecutorNode.getMemory(),
+                                              allocatedExecutorNode.getGpu());
+    }
+
+    private List<AllocatedExecutorNode> place(
+            final ClusterResourcesDB resourcesDB,
+            @NonNull final String schedulingSessionId,
+            final List<String> instanceIds,
+            final DeploymentSpec deploymentSpec,
+            final PlacementPolicy placementPolicy,
+            final Set<ExecutorState> allowedStates,
+            final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> providedSessionData,
+            final boolean shouldShuffle) {
+        val sessionData = providedSessionData.computeIfAbsent(
+                schedulingSessionId,
+                id -> {
+                    log.info("CREATE::SID: {}", schedulingSessionId);
+                    return clusterSnapshot(deploymentSpec);
+                });
+        return resourcesDB.selectNodes(
+                deploymentSpec.getResources(),
+                allowedStates,
+                filterContext -> validateNode(filterContext,
+                                              schedulingSessionId,
+                                              filterContext.getInstanceId(),
+                                              placementPolicy,
+                                              sessionData,
+                                              deploymentSpec),
+                shouldShuffle,
+                instanceIds,
+                (instanceId, allocatedExecutorNode) -> recordAllocation(providedSessionData,
+                                                                        schedulingSessionId,
+                                                                        instanceId,
+                                                                        allocatedExecutorNode));
+    }
+
+    private PlacementPolicy effectivePolicy(final DeploymentSpec deploymentSpec,
+                                            final PlacementPolicy override) {
+        if (null == override) {
+            return ControllerUtils.computeEffectivePlacementPolicy(deploymentSpec);
+        }
+        if (deploymentSpec instanceof LocalServiceSpec
+                || ControllerUtils.shouldAllowCombiningOfPolicy(override)) {
+            return override;
+        }
+        return new CompositePlacementPolicy(List.of(override, new NoTagPlacementPolicy()),
+                                            CompositePlacementPolicy.CombinerType.AND);
+
+    }
+
+    private void recordAllocation(final Map<String, Map<String, Map<String, InstanceResourceAllocation>>> providedSessionData,
+                                  final String schedulingSessionId,
+                                  final String instanceId,
+                                  final AllocatedExecutorNode allocatedExecutorNode) {
+        //If a node is found, add it to the list of allocated nodes for this session
+        //Next time a request for this session comes, this will ensure that allocations done in current session
+        //Are taken into consideration
+        providedSessionData.computeIfPresent(
+            schedulingSessionId,
+            (sid, executorAllocations) -> {
+                val executorId = allocatedExecutorNode.getExecutorId();
+                val currentAllocations = executorAllocations.computeIfAbsent(executorId,
+                                                                             eId -> new HashMap<>());
+                currentAllocations.put(instanceId, allocation(executorId, instanceId, allocatedExecutorNode));
+                log.debug("POST_ALLOC::SID: {} exec id: {} count: {}", sid, executorId, currentAllocations.size());
+                return executorAllocations;
+            });
     }
 
     private Map<String, Map<String, InstanceResourceAllocation>> clusterSnapshot(DeploymentSpec deploymentSpec) {
@@ -328,6 +417,76 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
         });
     }
 
+    private List<String> placementErrors(final ClusterResourcesDB resourcesDB,
+                                         final DeploymentSpec deploymentSpec,
+                                         final int numInstances,
+                                         final int placed) {
+        val errors = new ArrayList<String>();
+        val appName = ControllerUtils.deployableObjectId(deploymentSpec);
+        errors.add("Cluster can place only " + placed + " of " + numInstances
+                + " requested instances for " + appName);
+        val requirements = deploymentSpec.getResources();
+        val requiredCores = ControllerUtils.extractCpuRequirement(requirements);
+        val requiredMem = ControllerUtils.extractMemoryRequirement(requirements);
+        errors.add("Required per instance: " + requiredCores + " cores, " + requiredMem + " MB memory");
+        val snapshot = resourcesDB.currentSnapshot(true);
+        val maxFreeCoresPerNumaNode = snapshot.stream()
+                .map(ExecutorHostInfo::getNodes)
+                .filter(Objects::nonNull)
+                .flatMap(numaNodes -> numaNodes.values().stream())
+                .mapToInt(numaNode -> (int) numaNode.getCores()
+                        .values()
+                        .stream()
+                        .filter(ExecutorHostInfo.CoreState.FREE::equals)
+                        .count())
+                .max()
+                .orElse(Integer.MAX_VALUE);
+        if (maxFreeCoresPerNumaNode < requiredCores) {
+            errors.add("Required cores exceed the maximum free cores on a single "
+                    + "NUMA node in the cluster. Required: " + requiredCores
+                    + " Max free: " + maxFreeCoresPerNumaNode);
+        }
+        ControllerUtils.findGpuRequirement(requirements).ifPresent(gpuRequirement -> {
+            val gpuType = gpuRequirement.getGpuType();
+            val requiredGpusPerInstance = gpuRequirement.getCount();
+            val totalFreeGpus = snapshot.stream()
+                    .mapToInt(executor -> ControllerUtils.freeGpus(executor, gpuType))
+                    .sum();
+            val maxFreeGpusPerExecutor = snapshot.stream()
+                    .mapToInt(executor -> ControllerUtils.freeGpus(executor, gpuType))
+                    .max()
+                    .orElse(Integer.MAX_VALUE);
+
+
+            if (maxFreeGpusPerExecutor < requiredGpusPerInstance) {
+                errors.add("Required GPU count exceeds the maximum GPU count available on a single "
+                        + "executor in the cluster. Required: " + requiredGpusPerInstance
+                        + " Max: " + maxFreeGpusPerExecutor);
+            }
+            if (totalFreeGpus < requiredGpusPerInstance * numInstances) {
+                errors.add("Cluster does not have enough GPUs of required type " + gpuType
+                        + ". Required: " + (requiredGpusPerInstance * numInstances)
+                        + " Available: " + totalFreeGpus);
+            }
+        });
+        val executorCapacities = snapshot
+                .stream()
+                .sorted(Comparator.comparingLong(ControllerUtils::freeCores).reversed())
+                .map(executor -> executor.getExecutorId()
+                        + "[cores: " + ControllerUtils.freeCores(executor)
+                        + ", memory: " + ControllerUtils.freeMemory(executor) + " MB]")
+                .collect(Collectors.toList());
+        errors.add("Per executor free capacity: "
+                + String.join(", ", executorCapacities.subList(0, Math.min(executorCapacities.size(), MAX_REPORTED_EXECUTORS)))
+                + (executorCapacities.size() > MAX_REPORTED_EXECUTORS
+                        ? String.format(" ... and %d more executors",
+                                        executorCapacities.size() - MAX_REPORTED_EXECUTORS)
+                        : ""));
+
+
+        return errors;
+    }
+
     private boolean validateNode(
             final ClusterResourcesDB.FilterContext filterContext,
             final String sessionId,
@@ -361,8 +520,9 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
             @Override
             public Boolean visit(NoTagPlacementPolicy noTag) {
                 //Return false if node has any tag other than hostname
-                return Sets.difference(Objects.requireNonNullElse(filterContext.getAllocatedExecutorNodeData().getTags(), Set.of()),
-                                       Set.of(filterContext.getAllocatedExecutorNodeData().getHostname())).isEmpty();
+                val allocatedNode = filterContext.getAllocatedExecutorNodeData();
+                return Sets.difference(Objects.requireNonNullElse(allocatedNode.getTags(), Set.of()),
+                                       Set.of(allocatedNode.getHostname())).isEmpty();
             }
 
             @Override
@@ -373,7 +533,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                                                          ExecutorHostInfo::getNodeData));
                 val context = NodeSelectionContext.builder()
                     .session(NodeSelectionContext.SchedulingSession.builder()
-                           .sessionId(sessionId)
+                            .sessionId(sessionId)
                             .existingAllocations(sessionLevelData)
                             .build())
                     .environment(NodeSelectionContext.SchedulingEnvironment.builder()
@@ -399,9 +559,8 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
 
             @Override
             public Boolean visit(CompositePlacementPolicy compositePlacementPolicy) {
-                val combiner
-                        = Objects.requireNonNullElse(compositePlacementPolicy.getCombiner(),
-                                                     CompositePlacementPolicy.CombinerType.AND);
+                val combiner = Objects.requireNonNullElse(compositePlacementPolicy.getCombiner(),
+                                                          CompositePlacementPolicy.CombinerType.AND);
                 val policiesStream = compositePlacementPolicy
                         .getPolicies()
                         .stream();

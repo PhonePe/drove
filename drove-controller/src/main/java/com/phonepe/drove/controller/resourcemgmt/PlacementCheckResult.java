@@ -41,7 +41,7 @@ public class PlacementCheckResult {
     public PlacementCheckResult(int requested, int placed, List<String> errors, List<AllocatedExecutorNode> placements) {
         this.requested = requested;
         this.placed = placed;
-        this.errors = List.copyOf(errors);
+        this.errors = null == errors ? List.of() : List.copyOf(errors);
         this.placements = null == placements ? List.of() : List.copyOf(placements);
     }
 

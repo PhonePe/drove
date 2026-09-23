@@ -120,6 +120,11 @@ public class LocalServiceCommandValidator implements CommandValidator<LocalServi
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
+        if(reqs.containsKey(ResourceType.GPU)) {
+            errs.add("GPU resources are not supported for local services");
+        }
+        checkMultipleGpuRequirements(spec.getResources())
+            .ifPresent(errs::add);
         errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
         if (!hasLocalPolicy(spec.getPlacementPolicy())) {
             errs.add("Only local placement is allowed for local services");

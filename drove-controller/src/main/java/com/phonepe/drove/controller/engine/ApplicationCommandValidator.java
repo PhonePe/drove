@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.engine;
 
+import static com.phonepe.drove.controller.utils.ControllerUtils.checkMultipleGpuRequirements;
 import static com.phonepe.drove.controller.utils.ControllerUtils.checkSecurityPolicy;
 import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjectId;
 import static com.phonepe.drove.controller.utils.ControllerUtils.hasLocalPolicy;
@@ -136,10 +137,8 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         if (!reqs.containsKey(ResourceType.MEMORY)) {
             errs.add("Memory requirements are mandatory");
         }
-        if (reqs.getOrDefault(ResourceType.GPU, 0L) > 1) {
-            errs.add("Multiple GPU requirements specified in resource requirements. "
-                              + "This is currently not supported.");
-        }
+        checkMultipleGpuRequirements(spec.getResources())
+            .ifPresent(errs::add);
         errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
         errs.addAll(validateExposureSpec(spec, ports));
         if(hasLocalPolicy(spec.getPlacementPolicy())) {

@@ -578,7 +578,7 @@ class TaskEngineTest extends ControllerTestBase {
         val r = te.handleTaskOp(new TaskCreateOperation(taskSpec, ControllerTestUtils.DEFAULT_CLUSTER_OP));
         assertEquals(ValidationStatus.FAILURE, r.getStatus());
         assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Cluster can place only 0 of 1")));
-        assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Required cores exceeds the maximum cores available on a single")));
+        assertTrue(r.getMessages().stream().anyMatch(m -> m.contains("Required cores exceed the maximum free cores on a single")));
     }
 
     @NotNull

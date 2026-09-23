@@ -43,7 +43,6 @@ import java.util.function.LongBinaryOperator;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-
 /**
  *
  */
@@ -60,6 +59,8 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         this.selector = selector;
     }
 
+
+    //Used by copy() and by tests
     @VisibleForTesting
     InMemoryClusterResourcesDB(ExecutorSelector selector, Map<String, ExecutorHostInfo> nodes) {
         this.selector = selector;
@@ -234,18 +235,35 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
         }
     }
 
+    /**
+     * Makes a deep copy of the live nodes under the read lock. The copy has its
+     * own lock. It does not keep removed nodes and does not share listeners.
+     */
+    @Override
+    @MonitoredFunction
+    public ClusterResourcesDB copy() {
+        val stamp = lock.readLock();
+        try {
+            val nodesCopy = new HashMap<String, ExecutorHostInfo>();
+            nodes.forEach((executorId, hostInfo) -> nodesCopy.put(executorId, hostInfo.shallowCopy()));
+            return new InMemoryClusterResourcesDB(selector, nodesCopy);
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
+
     @Override
     @MonitoredFunction
     public List<AllocatedExecutorNode> selectNodes(
             List<ResourceRequirement> requirements,
             Set<ExecutorState> allowedExecutorState,
             Predicate<FilterContext> filter,
-            boolean readOnly,
             boolean shouldShuffle,
             List<String> instanceIds,
             BiConsumer<String, AllocatedExecutorNode> onAllocation) {
 
-        val stamp = readOnly ? lock.readLock() : lock.writeLock();
+        val stamp = lock.writeLock();
         try {
             val rawNodes = new ArrayList<>(nodes.values());
             if(shouldShuffle) {
@@ -267,9 +285,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                     break;
                 }
                 val allocatedExecutorNode = selectedNode.get();
-                if(!readOnly) {
-                    softLockResources(allocatedExecutorNode);
-                }
+                softLockResources(allocatedExecutorNode);
                 selectedNodes.add(allocatedExecutorNode);
                 if (null != onAllocation) {
                     onAllocation.accept(instanceId, allocatedExecutorNode);
@@ -278,7 +294,7 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
             return selectedNodes;
         }
         finally {
-            lock.unlock(stamp);
+            lock.unlockWrite(stamp);
         }
     }
 

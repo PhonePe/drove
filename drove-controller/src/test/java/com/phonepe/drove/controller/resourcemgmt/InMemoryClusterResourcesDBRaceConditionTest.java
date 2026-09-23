@@ -116,7 +116,6 @@ class InMemoryClusterResourcesDBRaceConditionTest {
                 List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
-                false,
                 false
             ));
             allocationLatch.countDown();
@@ -128,7 +127,6 @@ class InMemoryClusterResourcesDBRaceConditionTest {
                 List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                 EnumSet.of(ExecutorState.ACTIVE),
                 node -> true,
-                false,
                 false
             ));
             allocationLatch.countDown();
@@ -239,7 +237,6 @@ class InMemoryClusterResourcesDBRaceConditionTest {
                         List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                         EnumSet.of(ExecutorState.ACTIVE),
                         node -> true,
-                        false,
                         false
                     );
                     if (result.isPresent()) {
@@ -295,7 +292,6 @@ class InMemoryClusterResourcesDBRaceConditionTest {
                     List.of(new CPURequirement(1), new MemoryRequirement(128), new GPURequirement(1, new GpuType(GpuVendor.NVIDIA, "h100"))),
                     EnumSet.of(ExecutorState.ACTIVE),
                     node -> true,
-                    false,
                     false
                 ));
             } catch (Exception e) {
