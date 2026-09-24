@@ -697,7 +697,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                            gpuExecutorNodeWithCount("EXECUTOR_2", "H100", 2)));
         val before = rdb.currentSnapshot(false)
                 .stream()
-                .map(ExecutorHostInfo::deepCopy)
+                .map(ExecutorHostInfo::shallowCopy)
                 .collect(Collectors.toMap(ExecutorHostInfo::getExecutorId, hostInfo -> hostInfo));
         val spec = ControllerTestUtils.withGPU(appSpec(), 1, new GpuType(GpuVendor.NVIDIA, "H100"));
         assertEquals(4, sched.checkPlacement(spec, null, 4, true).getPlaced());

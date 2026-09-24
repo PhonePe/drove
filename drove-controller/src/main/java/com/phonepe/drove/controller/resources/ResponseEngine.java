@@ -45,6 +45,7 @@ import com.phonepe.drove.controller.managed.BlacklistingManager;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
@@ -113,6 +114,7 @@ public class ResponseEngine {
     private final BlacklistingManager blacklistingManager;
     private final DashboardDataSource dashboardDataSource;
     private final InstanceScheduler instanceScheduler;
+    private final PlacementRuleEvaluator ruleEvaluator;
 
     @Inject
     public ResponseEngine(
@@ -130,7 +132,8 @@ public class ResponseEngine {
             DroveEventBus eventBus,
             BlacklistingManager blacklistingAppMovementManager,
             DashboardDataSource dashboardDataSource,
-            InstanceScheduler instanceScheduler) {
+            InstanceScheduler instanceScheduler,
+            PlacementRuleEvaluator ruleEvaluator) {
         this.leadershipObserver = leadershipObserver;
         this.applicationEngine = applicationEngine;
         this.applicationStateDB = applicationStateDB;
@@ -147,6 +150,7 @@ public class ResponseEngine {
         this.blacklistingManager = blacklistingAppMovementManager;
         this.dashboardDataSource = dashboardDataSource;
         this.instanceScheduler = instanceScheduler;
+        this.ruleEvaluator = ruleEvaluator;
     }
 
     public ApiResponse<DashboardData> dashboardData() {
@@ -260,6 +264,14 @@ public class ResponseEngine {
     public ApiResponse<PlacementSimulationResponse> simulatePlacement(
             final PlacementSimulationRequest simulationRequest,
             final boolean detail) {
+        val policyErrors = ControllerUtils.validatePlacementPolicyRules(simulationRequest.getPlacementPolicy(), ruleEvaluator);
+        if (!policyErrors.isEmpty()) {
+            return ApiResponse.failure(PlacementSimulationResponse.builder()
+                                                       .errors(List.copyOf(policyErrors))
+                                                       .placements(List.of())
+                                                       .build(),
+                                       "Placement policy validation failed");
+        }
         val checkResult = instanceScheduler.checkPlacement(
                 simulationRequest.getSpec(),
                 simulationRequest.getPlacementPolicy(),

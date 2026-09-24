@@ -22,6 +22,7 @@ import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ClusterStateDB;
 import com.phonepe.drove.controller.statedb.TaskDB;
@@ -46,6 +47,7 @@ import javax.inject.Singleton;
 import static com.phonepe.drove.controller.utils.ControllerUtils.checkMultipleGpuRequirements;
 import static com.phonepe.drove.controller.utils.ControllerUtils.checkSecurityPolicy;
 import static com.phonepe.drove.controller.utils.ControllerUtils.hasLocalPolicy;
+import static com.phonepe.drove.controller.utils.ControllerUtils.validatePlacementPolicyRules;
 
 import java.time.Duration;
 import java.util.*;
@@ -69,6 +71,7 @@ public class TaskEngine {
     private final ControllerRetrySpecFactory retrySpecFactory;
     private final InstanceIdGenerator instanceIdGenerator;
     private final SecurityPolicyEnforcer securityPolicyEnforcer;
+    private final PlacementRuleEvaluator ruleEvaluator;
     private final ThreadFactory threadFactory;
     private final ExecutorService executorService;
     private final JobExecutor<Boolean> jobExecutor;
@@ -92,6 +95,7 @@ public class TaskEngine {
             ControllerRetrySpecFactory retrySpecFactory,
             InstanceIdGenerator instanceIdGenerator,
             SecurityPolicyEnforcer securityPolicyEnforcer,
+            PlacementRuleEvaluator ruleEvaluator,
             @Named("JobLevelThreadFactory") ThreadFactory threadFactory,
             @Named("TaskThreadPool") ExecutorService executorService,
             JobExecutor<Boolean> jobExecutor,
@@ -106,6 +110,7 @@ public class TaskEngine {
         this.retrySpecFactory = retrySpecFactory;
         this.instanceIdGenerator = instanceIdGenerator;
         this.securityPolicyEnforcer = securityPolicyEnforcer;
+        this.ruleEvaluator = ruleEvaluator;
         this.threadFactory = threadFactory;
         this.executorService = executorService;
         this.jobExecutor = jobExecutor;
@@ -197,6 +202,7 @@ public class TaskEngine {
         if (gpuError.isEmpty()) { //Scheduler can't handle multiple gpu reqs in same spec
             errors.addAll(resourceCheck(taskSpec));
         }
+        errors.addAll(validatePlacementPolicyRules(taskSpec.getPlacementPolicy(), ruleEvaluator));
         if(hasLocalPolicy(taskSpec.getPlacementPolicy())) {
             errors.add("Local service placement is not allowed for tasks");
         }

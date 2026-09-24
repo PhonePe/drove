@@ -52,6 +52,7 @@ import io.dropwizard.util.Duration;
 import lombok.val;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,6 +62,7 @@ import java.util.Set;
 
 import static com.phonepe.drove.models.common.HTTPVerb.GET;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -204,6 +206,26 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
 
     @Test
+    void testCreateFailsForBrokenPlacementRule() {
+        val validator = createValidator();
+        val spec = ControllerTestUtils.appSpec(1)
+                .withPlacementPolicy(new RuleBasedPlacementPolicy("(true &&"));
+        val res = validator.validateSpec(spec);
+        assertEquals(ValidationStatus.FAILURE, res.getStatus());
+        assertEquals(1, res.getMessages().size());
+        assertTrue(res.getMessages().get(0).startsWith("Placement rule failed to compile: (true && - "));
+    }
+
+    @Test
+    void testCreatePassesForValidPlacementRule() {
+        val validator = createValidator();
+        val spec = ControllerTestUtils.appSpec(1)
+                .withPlacementPolicy(new RuleBasedPlacementPolicy("ctx.allocation.node.executorId == 'Ex1'"));
+        val res = validator.validateSpec(spec);
+        assertEquals(ValidationStatus.SUCCESS, res.getStatus(), () -> "Messages: " + res.getMessages());
+    }
+
+    @Test
     void testCreateNoAppId() {
         val validator = createValidator();
         val res = validator.validateOperation(engine,
@@ -320,7 +342,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
 
     @Test
     void testCreateWrongPortInMultipleExposureSpecs() {
-        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT), instanceScheduler);
+        val validator = new ApplicationCommandValidator(asDB, crDB, aiDB, new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT), instanceScheduler,
+                                                                           ControllerTestUtils.placementRuleEvaluator(MAPPER));
         val spec = ControllerTestUtils.appSpec(1)
                 .withExposureSpec(List.of(new ExposureSpec("valid.appform.io", "main", ExposureMode.ALL),
                                           new ExposureSpec("wrong1.appform.io", "Invalid1", ExposureMode.ALL),
@@ -343,7 +366,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                         aiDB,
                                                         new SecurityPolicyEnforcer(List.of(),
                                                                                    controllerOptions),
-                                                        instanceScheduler);
+                                                        instanceScheduler,
+                                                        ControllerTestUtils.placementRuleEvaluator(MAPPER));
         {
             val spec = ControllerTestUtils.appSpec(1)
                     .withVolumes(List.of(new MountedVolume("/var/log",
@@ -378,7 +402,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                     .withDisableCmdlArgs(true);
             val validator = new ApplicationCommandValidator(asDB, crDB, aiDB,
                                                             new SecurityPolicyEnforcer(List.of(), controllerOptions),
-                                                            instanceScheduler);
+                                                            instanceScheduler,
+                                                            ControllerTestUtils.placementRuleEvaluator(MAPPER));
             val spec = ControllerTestUtils.appSpec(1)
                     .withArgs(List.of("random"));
             val res = validator.validateOperation(engine,
@@ -730,7 +755,8 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
                                                crDB,
                                                aiDB,
                                                new SecurityPolicyEnforcer(List.of(), ControllerOptions.DEFAULT),
-                                               instanceScheduler);
+                                               instanceScheduler,
+                                               ControllerTestUtils.placementRuleEvaluator(MAPPER));
     }
 
     @Test
@@ -800,7 +826,7 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
     private ApplicationCommandValidator createValidatorWithEnforcer(
             SecurityPolicyEnforcer enforcer) {
-        return new ApplicationCommandValidator(asDB, crDB, aiDB, enforcer, instanceScheduler);
+        return new ApplicationCommandValidator(asDB, crDB, aiDB, enforcer, instanceScheduler, ControllerTestUtils.placementRuleEvaluator(MAPPER));
     }
 
     private SecurityPolicyEnforcer enforcerWithPolicy(
@@ -814,3 +840,4 @@ class ApplicationCommandValidatorTest extends ControllerTestBase {
     }
 
 }
+

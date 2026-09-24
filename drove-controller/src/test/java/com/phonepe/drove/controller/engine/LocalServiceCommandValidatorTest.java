@@ -182,7 +182,7 @@ class LocalServiceCommandValidatorTest extends ControllerTestBase {
         val res = validator.validateOperation(engine, new LocalServiceCreateOperation(spec, 1));
         ensureFailure(res,
                       "GPU resources are not supported for local services",
-                      ControllerUtils.MULTIPLE_GPU_REQUIREMENTS_ERROR);
+                      "Multiple GPU requirements specified in resource requirements. This is currently not supported.");
     }
 
     @Test

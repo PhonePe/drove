@@ -14,17 +14,26 @@ package com.phonepe.drove.controller.rule;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.cel.CelEngine;
+import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.application.placement.PlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.CompositePlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import lombok.val;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 class RuleTest extends ControllerTestBase {
     private static final NodeSelectionContext schedulingInfoBasic = NodeSelectionContext.builder()
             .session(NodeSelectionContext.SchedulingSession.builder()
@@ -104,6 +113,42 @@ class RuleTest extends ControllerTestBase {
                         RuleCallStatus.FAILURE,
                         false
                 )
+        );
+    }
+
+    @ParameterizedTest(name = "validatePolicyRules: {0}")
+    @MethodSource("validatePolicyRulesCases")
+    void validatePolicyRulesReturnsExpectedResult(String name, PlacementPolicy policy, int expectedErrorCount, String expectedErrorPrefix) {
+        val errors = ControllerUtils.validatePlacementPolicyRules(policy, ruleEvaluator);
+        assertEquals(expectedErrorCount, errors.size(), () -> name + ": " + errors);
+        if (expectedErrorCount > 0) {
+            assertTrue(errors.get(0).startsWith(expectedErrorPrefix), () -> name + ": " + errors);
+        }
+    }
+
+    private static Stream<Arguments> validatePolicyRulesCases() {
+        return Stream.of(
+                Arguments.of("valid rule",
+                        RuleBasedPlacementPolicy.builder()
+                                .rule("ctx.allocation.node.executorId == 'Ex1'")
+                                .build(),
+                        0, null),
+                Arguments.of("broken rule",
+                        RuleBasedPlacementPolicy.builder()
+                                .rule("(true &&")
+                                .build(),
+                        1, "Placement rule failed to compile: (true && - Rule compilation error: ERROR: <input>:1:9: mismatched input"),
+                Arguments.of("composite policy with broken rule",
+                        CompositePlacementPolicy.builder()
+                                .combiner(CompositePlacementPolicy.CombinerType.AND)
+                                .policies(List.of(
+                                        RuleBasedPlacementPolicy.builder().rule("true").build(),
+                                        RuleBasedPlacementPolicy.builder().rule("abc def ghi").build()))
+                                .build(),
+                        1, "Placement rule failed to compile: abc def ghi - Rule compilation error: ERROR: <input>:1:5: mismatched input"),
+                Arguments.of("null policy",
+                        null,
+                        0, null)
         );
     }
 

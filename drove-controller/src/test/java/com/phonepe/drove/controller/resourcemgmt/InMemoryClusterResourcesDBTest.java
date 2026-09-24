@@ -630,7 +630,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         val db = getDb();
         db.update(List.of(ControllerTestUtils.generateExecutorNode(1)));
         val original = db.currentSnapshot(executorId(1)).orElseThrow();
-        val copy = original.deepCopy();
+        val copy = original.shallowCopy();
         assertSame(original.getNodeData(), copy.getNodeData());
         assertEquals(original.getNodes().get(0).getCores(), copy.getNodes().get(0).getCores());
 

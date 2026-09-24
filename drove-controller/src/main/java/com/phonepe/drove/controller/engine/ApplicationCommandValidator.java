@@ -22,6 +22,7 @@ import static com.phonepe.drove.controller.utils.ControllerUtils.deployableObjec
 import static com.phonepe.drove.controller.utils.ControllerUtils.hasLocalPolicy;
 import static com.phonepe.drove.controller.utils.ControllerUtils.validateCheckSpec;
 import static com.phonepe.drove.controller.utils.ControllerUtils.validateExposureSpec;
+import static com.phonepe.drove.controller.utils.ControllerUtils.validatePlacementPolicyRules;
 import static com.phonepe.drove.models.application.ApplicationState.DESTROYED;
 import static com.phonepe.drove.models.application.ApplicationState.DESTROY_REQUESTED;
 import static com.phonepe.drove.models.application.ApplicationState.FAILED;
@@ -62,6 +63,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.statedb.ApplicationInstanceInfoDB;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
@@ -121,6 +123,8 @@ public class ApplicationCommandValidator implements CommandValidator<Application
     private final ApplicationInstanceInfoDB instanceInfoStore;
     private final SecurityPolicyEnforcer securityPolicyEnforcer;
     private final InstanceScheduler instanceScheduler;
+    private final PlacementRuleEvaluator ruleEvaluator;
+
     @Override
     public ValidationResult validateSpec(ApplicationSpec spec)  {
         val errs = new ArrayList<String>();
@@ -140,6 +144,7 @@ public class ApplicationCommandValidator implements CommandValidator<Application
         checkMultipleGpuRequirements(spec.getResources())
             .ifPresent(errs::add);
         errs.addAll(checkSecurityPolicy(spec, securityPolicyEnforcer));
+        errs.addAll(validatePlacementPolicyRules(spec.getPlacementPolicy(), ruleEvaluator));
         errs.addAll(validateExposureSpec(spec, ports));
         if(hasLocalPolicy(spec.getPlacementPolicy())) {
             errs.add("Local service placement is not allowed for apps");

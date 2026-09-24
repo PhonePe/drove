@@ -25,6 +25,7 @@ import com.phonepe.drove.common.net.HttpCaller;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
 import com.phonepe.drove.controller.engine.ControllerRetrySpecFactory;
 import com.phonepe.drove.controller.engine.LocalServiceLifecycleManagementEngine;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB.ClusterResourcesSummary;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
@@ -85,6 +86,7 @@ import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.localservice.LocalServiceState;
 import com.phonepe.drove.models.operation.*;
+import com.phonepe.drove.models.operation.rule.RuleCallStatus;
 import com.phonepe.drove.models.operation.localserviceops.*;
 import com.phonepe.drove.models.operation.ops.*;
 import com.phonepe.drove.models.operation.taskops.TaskCreateOperation;
@@ -715,6 +717,64 @@ public class ControllerUtils {
                 return false;
             }
         });
+    }
+
+    public static List<String> validatePlacementPolicyRules(
+            final PlacementPolicy policy,
+            final PlacementRuleEvaluator ruleEvaluator) {
+        if (null == policy) {
+            return List.of();
+        }
+        val errors = new ArrayList<String>();
+        policy.accept(new PlacementPolicyVisitor<Void>() {
+            @Override
+            public Void visit(OnePerHostPlacementPolicy onePerHost) {
+                return null;
+            }
+
+            @Override
+            public Void visit(MaxNPerHostPlacementPolicy maxNPerHost) {
+                return null;
+            }
+
+            @Override
+            public Void visit(MatchTagPlacementPolicy matchTag) {
+                return null;
+            }
+
+            @Override
+            public Void visit(NoTagPlacementPolicy noTag) {
+                return null;
+            }
+
+            @Override
+            public Void visit(RuleBasedPlacementPolicy ruleBased) {
+                val checkResponse = ruleEvaluator.check(ruleBased);
+                if (RuleCallStatus.FAILURE == checkResponse.getStatus()) {
+                    errors.add("Placement rule failed to compile: " + ruleBased.getRule()
+                            + " - " + checkResponse.getError());
+                }
+                return null;
+            }
+
+            @Override
+            public Void visit(AnyPlacementPolicy anyPlacementPolicy) {
+                return null;
+            }
+
+            @Override
+            public Void visit(CompositePlacementPolicy compositePlacementPolicy) {
+                compositePlacementPolicy.getPolicies()
+                        .forEach(child -> child.accept(this));
+                return null;
+            }
+
+            @Override
+            public Void visit(LocalPlacementPolicy localPlacementPolicy) {
+                return null;
+            }
+        });
+        return errors;
     }
 
     public static boolean hasLocalPolicy(final PlacementPolicy policy) {

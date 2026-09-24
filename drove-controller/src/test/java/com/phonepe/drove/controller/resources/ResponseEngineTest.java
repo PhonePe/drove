@@ -34,9 +34,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 
 import java.security.SecureRandom;
 import java.util.Date;
@@ -55,6 +57,8 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.google.common.collect.Maps;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.controller.ControllerTestUtils;
+import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.controller.engine.ApplicationLifecycleManagementEngine;
@@ -90,6 +94,7 @@ import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.api.ExposedAppInfo;
 import com.phonepe.drove.models.api.PlacementSimulationRequest;
 import com.phonepe.drove.models.application.placement.policies.AnyPlacementPolicy;
+import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.events.events.DroveClusterMaintenanceModeSetEvent;
@@ -133,6 +138,7 @@ class ResponseEngineTest {
     private final BlacklistingManager blacklistingManager = mock(BlacklistingManager.class);
     private final DashboardDataSource dashboardDataSource = mock(DashboardDataSource.class);
     private final InstanceScheduler scheduler = mock(InstanceScheduler.class);
+    private final PlacementRuleEvaluator ruleEvaluator = ControllerTestUtils.placementRuleEvaluator(new ObjectMapper());
     private final ResponseEngine re = new ResponseEngine(leadershipObserver,
                                                          appEngine,
                                                          applicationStateDB,
@@ -148,7 +154,8 @@ class ResponseEngineTest {
                                                          eventBus,
                                                          blacklistingManager,
                                                          dashboardDataSource,
-                                                         scheduler);
+                                                         scheduler,
+                                                         ruleEvaluator);
 
     @AfterEach
     void resetMocks() {
@@ -660,7 +667,8 @@ class ResponseEngineTest {
                                     eventBus,
                                     blacklistingManager,
                                     dashboardDataSource,
-                                    scheduler);
+                                    scheduler,
+                                    ruleEvaluator);
 
         val r = re.events(0, 10);
         assertEquals(SUCCESS, r.getStatus());
@@ -897,6 +905,39 @@ class ResponseEngineTest {
         verify(scheduler).checkPlacement(eq(spec), any(AnyPlacementPolicy.class), anyInt(), eq(false));
     }
 
+    @Test
+    void testSimulatePlacementRejectsBrokenOverridePolicy() {
+        val spec = appSpec();
+        val request = PlacementSimulationRequest.builder()
+                .spec(spec)
+                .placementPolicy(new RuleBasedPlacementPolicy("(true &&"))
+                .numInstances(1)
+                .build();
+        val res = re.simulatePlacement(request, true);
+        assertEquals(FAILED, res.getStatus());
+        assertEquals("Placement policy validation failed", res.getMessage());
+        assertTrue(res.getData().getErrors().stream()
+                           .anyMatch(e -> e.startsWith("Placement rule failed to compile: (true && - ")));
+        verify(scheduler, never()).checkPlacement(any(), any(), anyInt(), anyBoolean());
+    }
 
-
+    @Test
+    void testSimulatePlacementAcceptsValidOverridePolicy() {
+        val spec = appSpec();
+        when(scheduler.checkPlacement(eq(spec), any(RuleBasedPlacementPolicy.class), anyInt(), eq(false)))
+                .thenReturn(PlacementCheckResult.builder()
+                                       .requested(1)
+                                       .placed(1)
+                                       .errors(List.of())
+                                       .placements(List.of())
+                                       .build());
+        val request = PlacementSimulationRequest.builder()
+                .spec(spec)
+                .placementPolicy(new RuleBasedPlacementPolicy("ctx.allocation.node.executorId != 'excluded'"))
+                .numInstances(1)
+                .build();
+        val res = re.simulatePlacement(request, false);
+        assertEquals(SUCCESS, res.getStatus());
+        verify(scheduler).checkPlacement(eq(spec), any(RuleBasedPlacementPolicy.class), anyInt(), eq(false));
+    }
 }
