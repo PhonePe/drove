@@ -54,7 +54,6 @@ import com.phonepe.drove.models.application.placement.policies.NoTagPlacementPol
 import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.application.requirements.ResourceType;
-import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.NodeSelectionContext;
 import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
@@ -87,6 +86,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Singleton
 @Slf4j
+@SuppressWarnings("java:S107")
 public class DefaultInstanceScheduler implements InstanceScheduler {
     private static final int MAX_REPORTED_EXECUTORS = 10;
 
