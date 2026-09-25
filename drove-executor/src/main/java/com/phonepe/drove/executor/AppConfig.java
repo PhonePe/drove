@@ -19,6 +19,7 @@ package com.phonepe.drove.executor;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
 import com.phonepe.drove.executor.discovery.ControllerConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
@@ -35,6 +36,7 @@ import lombok.ToString;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@JsonIgnoreProperties("zookeeper")
 public class AppConfig extends Configuration {
     @NotNull
     @Valid
