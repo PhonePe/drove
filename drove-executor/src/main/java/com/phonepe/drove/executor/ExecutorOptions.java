@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.executor;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import io.dropwizard.util.DataSize;
 import io.dropwizard.util.DataSizeUnit;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
  *
  */
 @Value
+@JsonIgnoreProperties("remoteUpdateMode")
 @Jacksonized
 @Builder
 @AllArgsConstructor
