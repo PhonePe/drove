@@ -270,8 +270,8 @@ public class InMemoryClusterResourcesDB extends ClusterResourcesDB {
                 Collections.shuffle(rawNodes);
             }
             val selectedNodes = new ArrayList<AllocatedExecutorNode>();
+            val liveAllNodesSnapshots = currentSnapshotUnsafe(true);
             for (val instanceId : instanceIds) {
-                val liveAllNodesSnapshots = currentSnapshotUnsafe(true);
                 val allocatedNodePredicate = (Predicate<AllocatedExecutorNode>) allocatedNode ->
                         makeFilterContextUnsafe(allocatedNode, liveAllNodesSnapshots, instanceId)
                                 .map(filterContext -> filter.test(filterContext))
