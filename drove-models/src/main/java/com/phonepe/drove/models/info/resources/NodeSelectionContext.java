@@ -57,12 +57,14 @@ public class NodeSelectionContext {
         /**
          * The list of live executors in the cluster.
          */
-        Map<String, ExecutorNodeData> liveExecutors;
+        @Builder.Default
+        Map<String, ExecutorNodeData> liveExecutors = Map.of();
 
         /**
          * Available environment variable as passed into the session.
          */
-        Map<String, String> variables;
+        @Builder.Default
+        Map<String, String> variables = Map.of();
     }
 
     @Value

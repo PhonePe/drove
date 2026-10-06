@@ -538,7 +538,7 @@ public class DefaultInstanceScheduler implements InstanceScheduler {
                             .build())
                     .environment(NodeSelectionContext.SchedulingEnvironment.builder()
                             .liveExecutors(clusterSnapshot)
-                            .variables(Map.copyOf(deploymentSpec.getEnv()))
+                            .variables(Map.copyOf(Objects.requireNonNullElse(deploymentSpec.getEnv(), Map.of())))
                             .build())
                     .allocation(NodeSelectionContext.NodeAllocation.builder()
                             .spec(deploymentSpec)
