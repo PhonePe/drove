@@ -125,8 +125,6 @@ public class CommonUtils {
         return UUID.nameUUIDFromBytes((seededHostname + ":" + port).getBytes()).toString();
     }
 
-    @IgnoreInJacocoGeneratedReport
-
     public static <T> List<T> sublist(final List<T> list, int start, int size) {
         if (list == null || list.isEmpty()) {
             return Collections.emptyList();

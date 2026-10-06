@@ -53,11 +53,7 @@ public class RemoteNodeDataStore implements NodeDataStore {
             @Override
             public Boolean visit(ExecutorNodeData executorData) {
                 try {
-                    val remoteMessageSent = sendRemoteMessage(executorData);
-                    if (!remoteMessageSent) {
-                        log.error("RPC based update failed. Reverting to store based state update.");
-                    }
-                    return remoteMessageSent;
+                    return sendRemoteMessage(executorData);
                 }
                 catch (Throwable t) {
                     log.error("Could not update node state: {}", t.getMessage(), t);
