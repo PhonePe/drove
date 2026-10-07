@@ -37,7 +37,11 @@ import java.util.Map;
 /**
  *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+              include = JsonTypeInfo.As.EXISTING_PROPERTY,
+              property = "type",
+              visible = true,
+              defaultImpl = TaskSpec.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "SERVICE", value = ApplicationSpec.class),
         @JsonSubTypes.Type(name = "COMPUTATION", value = TaskSpec.class),

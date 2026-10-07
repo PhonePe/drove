@@ -855,11 +855,12 @@ class ApisTest {
             }
         }
 
-        { //Force a failure empty data
+        { //Empty body parses as a TaskSpec because "type" is optional for
+          //backward compatibility. Bean validation then rejects it.
             try (val r = EXT.target("/v1/tasks/validate/spec")
                     .request()
                     .post(Entity.json(Map.of()))) {
-                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
+                assertEquals(HttpStatus.UNPROCESSABLE_ENTITY_422, r.getStatus());
             }
         }
         { //Force a app level failure

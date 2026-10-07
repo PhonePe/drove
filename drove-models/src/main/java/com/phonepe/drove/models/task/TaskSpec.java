@@ -106,9 +106,4 @@ public class TaskSpec implements DeploymentSpec {
     public <T> T accept(DeploymentSpecVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
-    @Override
-    public JobType getType() {
-        return JobType.COMPUTATION;
-    }
 }
