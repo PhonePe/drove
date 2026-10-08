@@ -886,7 +886,7 @@ public class ControllerUtils {
                             return cpu.getCores()
                                 .values()
                                 .stream()
-                                .mapToLong(cores -> cores.size())
+                                .mapToLong(Collection::size)
                                 .sum();
                         }
 
