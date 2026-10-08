@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Backwards compat test
@@ -130,6 +131,21 @@ class ApplicationSpecSerdeTest extends ControllerTestBase {
         // Deserialization: verify the field is not null and has expected size
         assertNotNull(spec.getExposureSpec());
         assertEquals(expectedCount, spec.getExposureSpec().size());
+
+        // Serialization: verify the 1.33.x wire format is kept for old clients
+        val root = MAPPER.readTree(MAPPER.writeValueAsString(spec));
+        val exposureSpecNode = root.get("exposureSpec");
+        assertNotNull(exposureSpecNode, "exposureSpec must stay present as JSON null for old clients");
+        if (expectedCount == 0) {
+            assertTrue(exposureSpecNode.isNull(), "empty exposureSpec must serialize as JSON null");
+        }
+        else if (expectedCount == 1) {
+            assertTrue(exposureSpecNode.isObject(), "single exposureSpec must serialize as a JSON object");
+        }
+        else {
+            assertTrue(exposureSpecNode.isArray(), "multiple exposureSpecs must serialize as a JSON array");
+            assertEquals(expectedCount, exposureSpecNode.size());
+        }
 
         // Round-trip: serialize then deserialize, verify exposureSpec survives
         val serialized = MAPPER.writeValueAsString(spec);

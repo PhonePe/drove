@@ -73,6 +73,7 @@ import com.phonepe.drove.models.application.devices.DetailedDeviceSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpecVisitor;
 import com.phonepe.drove.models.application.devices.DirectDeviceSpec;
+import com.phonepe.drove.models.application.exposure.ExposureSpec;
 import com.phonepe.drove.models.application.executable.DockerCoordinates;
 import com.phonepe.drove.models.application.executable.ExecutableTypeVisitor;
 import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
@@ -339,7 +340,7 @@ public class DockerUtils {
                             port.getValue().getHostPort(),
                             port.getValue().getPortType()))
                         .toList(),
-                    deploymentUnitSpec.getExposureSpec(),
+                    Objects.requireNonNullElseGet(deploymentUnitSpec.getExposureSpec(), List::<ExposureSpec>of),
                     volumes),
                 new InjectedEnvironmentInfo.Runtime(
                         userSpec.map(UserSpec::getUser).orElse(null),

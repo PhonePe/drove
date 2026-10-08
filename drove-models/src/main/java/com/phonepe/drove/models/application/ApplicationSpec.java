@@ -19,6 +19,7 @@ package com.phonepe.drove.models.application;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.phonepe.drove.models.application.checks.CheckSpec;
 import com.phonepe.drove.models.application.devices.DeviceSpec;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
@@ -119,6 +120,7 @@ public class ApplicationSpec implements DeploymentSpec {
 
     @Valid
     @Schema(description = "Exposure specification for external access and load balancing", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @JsonSerialize(using = ExposureSpecListSerializer.class)
     @JsonSetter(nulls = Nulls.AS_EMPTY)
     @JsonFormat(with = {
         JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY,

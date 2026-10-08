@@ -204,4 +204,43 @@ class DeploymentSpecDeserializationTest extends AbstractTestBase {
         assertEquals(jobType, reDeserialized.getType(),
                       "Round-trip must preserve the JobType for type=" + jobType);
     }
+
+    /**
+     * TaskSpec payloads did not send the "type" discriminator.
+     * Such payloads must deserialize as TaskSpec via defaultImpl.
+     * Or things like epoch etc will break. This can be removed at
+     * a later point in time.
+     */
+    @Test
+    @SneakyThrows
+    void testTaskSpecWithoutTypeResolvesToTaskSpec() {
+        val json = """
+                {
+                  "sourceAppName": "test-app",
+                  "taskId": "test-task-001",
+                  "executable": {
+                    "type": "DOCKER",
+                    "url": "test-image:latest",
+                    "dockerPullTimeout": "60 seconds"
+                  },
+                  "resources": [
+                    {
+                      "type": "CPU",
+                      "count": 1
+                    },
+                    {
+                      "type": "MEMORY",
+                      "sizeInMB": 256
+                    }
+                  ]
+                }
+                """;
+
+        val spec = MAPPER.readValue(json, DeploymentSpec.class);
+
+        assertEquals(TaskSpec.class, spec.getClass(),
+                      "Payloads without a type field must deserialize as TaskSpec");
+        assertEquals(JobType.COMPUTATION, spec.getType(),
+                      "TaskSpec type must default to COMPUTATION");
+    }
 }
