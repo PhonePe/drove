@@ -2,7 +2,7 @@ openapi: "3.0.3"
 info:
   title: "Drove Controller API"
   description: "REST API for Drove Container Orchestrator Controller"
-  version: "1.33.3"
+  version: "1.34.0"
   contact:
     name: "PhonePe"
   license:
