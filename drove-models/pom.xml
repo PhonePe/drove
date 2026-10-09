@@ -43,7 +43,7 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-annotations</artifactId>
-            <version>2.2.28</version>
+            <version>${swagger.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

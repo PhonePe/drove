@@ -31,7 +31,6 @@
         <handlebars.version>4.3.1</handlebars.version>
         <cel.version>0.13.1</cel.version>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <swagger.version>2.2.44</swagger.version>
     </properties>
 
     <dependencies>
