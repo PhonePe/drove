@@ -49,11 +49,6 @@
             <version>${commons-io.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java</artifactId>
             <version>${docker-java.version}</version>

@@ -212,17 +212,6 @@
                 <version>${findbugs.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-annotations</artifactId>
-                <version>${swagger.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.jetbrains</groupId>
-                <artifactId>annotations</artifactId>
-                <version>24.0.1</version>
-            </dependency>
-            <dependency>
                 <groupId>commons-beanutils</groupId>
                 <artifactId>commons-beanutils</artifactId>
                 <version>${commons-beanutils.version}</version>
@@ -307,7 +296,7 @@
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${bcprov-jdk18on.version}</version>
             </dependency>
-       </dependencies>
+        </dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -315,6 +304,14 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- OpenAPI annotations - provided scope; needed by modules compiling against
+             drove-models classes annotated with @Schema to avoid unknown-enum-constant warnings -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
