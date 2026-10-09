@@ -167,7 +167,7 @@ class DroveIgniteTcpDiscoveryTest {
         val attrs = new HashMap<String, Object>();
         attrs.put("test1", "val1");
         attrs.put("DroveIgniteTcpCommunication.comm.tcp.addrs", "commTest");
-        val ver = new IgniteProductVersion();
+        val ver = IgniteProductVersion.fromString("2.17.0-1739108840-d53d4540b64bb4a25f1a5a1003c4338727628c9f");
         droveTcpDiscovery.setNodeAttributes(attrs, ver);
 
         Assertions.assertEquals(2, attrs.size());
