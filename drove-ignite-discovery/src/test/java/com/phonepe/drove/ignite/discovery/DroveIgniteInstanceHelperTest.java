@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.google.common.base.Stopwatch;
 import com.phonepe.drove.client.DroveClient;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.ignite.discovery.config.DroveIgniteConfig;
@@ -50,7 +51,6 @@ import static com.phonepe.drove.ignite.discovery.DiscoveryTestUtils.createStubFo
 import static com.phonepe.drove.ignite.discovery.DiscoveryTestUtils.createStubForNoPeer;
 import static com.phonepe.drove.ignite.discovery.DiscoveryTestUtils.createStubForSingleMemberDiscovery;
 import static com.phonepe.drove.ignite.discovery.DiscoveryTestUtils.createStubIOErrorr;
-import static org.apache.curator.shaded.com.google.common.base.Stopwatch.createStarted;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest
@@ -147,7 +147,7 @@ class DroveIgniteInstanceHelperTest {
                 .droveEndpoint(endpoint())
                 .useAppNameForDiscovery(false)
                 .build();
-        val stopwatch = createStarted();
+        val stopwatch = Stopwatch.createStarted();
         try (val instanceHelper =  new DroveIgniteInstanceHelper(igniteConfig)) {
             val response = instanceHelper.findCurrentInstances(new DroveClient.BasicResponseHandler());
             Assertions.assertNull(response);
@@ -166,7 +166,7 @@ class DroveIgniteInstanceHelperTest {
                 .useAppNameForDiscovery(false)
                 .leaderElectionMaxRetryDuration(Duration.ofSeconds(2))
                 .build();
-        val stopwatch = createStarted();
+        val stopwatch = Stopwatch.createStarted();
         try (val instanceHelper =  new DroveIgniteInstanceHelper(igniteConfig)) {
             val response = instanceHelper.findCurrentInstances(new DroveClient.BasicResponseHandler());
             Assertions.assertNull(response);
