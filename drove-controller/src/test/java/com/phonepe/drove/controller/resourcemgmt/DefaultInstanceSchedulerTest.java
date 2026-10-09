@@ -159,9 +159,8 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val schedId = "SCHED_ID_1";
         val instanceId = "I1";
         int nodeToBeSelected = 2;
-        val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy("'/allocation/node/metadata/envvar1' == \"val"
-                                                                                         + nodeToBeSelected + "\"",
-                                                                                 RuleBasedPlacementPolicy.RuleType.HOPE));
+        val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy(
+                "ctx.allocation.node.metadata[\"envvar1\"] == \"val" + nodeToBeSelected + "\""));
         var node = sched.schedule(schedId, instanceId, spec).orElse(null);
         assertEquals("EXECUTOR_" + nodeToBeSelected, node.getExecutorId(), "Specific selected node as per ENV variable");
         sched.discardAllocation(schedId, instanceId, node);
@@ -183,8 +182,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
         val schedId = "SCHED_ID_1";
         val instanceId = "I1";
         val spec = originalSpec.withPlacementPolicy(new RuleBasedPlacementPolicy(
-                "allocation.node.metadata.containsKey(\"specialNode\")",
-                RuleBasedPlacementPolicy.RuleType.MVEL));
+                "ctx.allocation.node.metadata[\"specialNode\"] == \"yes\""));
         var node = sched.schedule(schedId, instanceId, spec).orElse(null);
         Map<String, String> result = Map.of("EXECUTOR_4", "EXECUTOR_4", "EXECUTOR_5", "EXECUTOR_5");
         assertNotNull(node, "Special node selected as per ENV variable");
@@ -453,8 +451,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                                                                                                           new MaxGpuNumaLocalAllocation())));
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new RuleBasedPlacementPolicy(
-                "'/allocation/node/metadata/envvar1' == \"val1\"",
-                RuleBasedPlacementPolicy.RuleType.HOPE));
+                "ctx.allocation.node.metadata[\"envvar1\"] == \"val1\""));
         rdb.update(IntStream.rangeClosed(1, 3)
             .mapToObj(i -> ControllerTestUtils.generateExecutorNode(i, Set.of(), false, Map.of("envvar1", "val" + i)))
             .toList());
@@ -746,7 +743,9 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                 new AvailableCPU(freeCores, Map.of()),
                 new AvailableMemory(freeMemory, usedMemory),
                 new AvailableGPU(List.copyOf(gpus.keySet()), List.of()),
-                new PhysicalLayout(freeCores, freeMemory, gpus));
+                new PhysicalLayout(freeCores, freeMemory, gpus,
+                                   PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
         return new ExecutorNodeData("host-" + executorId,
                                     8080,
                                     NodeTransportType.HTTP,
@@ -931,7 +930,9 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
                     busyGpus.keySet()
                         .stream()
                         .toList()),
-                new PhysicalLayout(freeCores, freeMemory, gpus));
+                new PhysicalLayout(freeCores, freeMemory, gpus,
+                                   PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR));
         return new ExecutorNodeData("host-" + executorId,
                                     8080,
                                     NodeTransportType.HTTP,

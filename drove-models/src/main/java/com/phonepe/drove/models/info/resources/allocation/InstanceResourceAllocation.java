@@ -27,4 +27,5 @@ public class InstanceResourceAllocation {
     String instanceId;
     CPUAllocation cpu;
     MemoryAllocation memory;
+    GPUAllocation gpu;
 }

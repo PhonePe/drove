@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +46,7 @@ import com.phonepe.drove.executor.engine.TaskInstanceEngine;
 import com.phonepe.drove.executor.managed.ExecutorIdManager;
 import com.phonepe.drove.executor.managed.ExecutorStateManager;
 import com.phonepe.drove.executor.managed.MetadataManager;
+import com.phonepe.drove.executor.resourcemgmt.PerformanceScalingConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceManager;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
@@ -52,15 +55,12 @@ import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeDataVisitor;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.nodedata.NodeType;
-import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
+
 import org.junit.jupiter.api.Test;
 
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
 import lombok.SneakyThrows;
-import lombok.val;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import lombok.val;
 
 /**
@@ -76,7 +76,7 @@ class LocalNodeDataUpdaterTest extends AbstractTestBase {
         val nds = new TestNodeDataStore();
         nds.onNodeDataUpdate().connect(nodeData -> updateCounter.incrementAndGet());
         //when(nds.updateNodeData(any(NodeData.class));
-        val rdb = new ResourceManager();
+        val rdb = new ResourceManager(PerformanceScalingConfig.DEFAULT);
         Map<Integer, ResourceManager.NodeInfo> computeResources = Map.of(0, ResourceManager.NodeInfo.from(IntStream.rangeClosed(0, 20)
                         .boxed()
                         .collect(Collectors.toUnmodifiableSet()),

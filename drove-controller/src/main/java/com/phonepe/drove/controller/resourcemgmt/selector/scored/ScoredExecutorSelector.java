@@ -1,18 +1,20 @@
 package com.phonepe.drove.controller.resourcemgmt.selector.scored;
 
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import javax.inject.Inject;
+
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-import lombok.val;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 
-import javax.inject.Inject;
+import lombok.val;
 
 /**
  * Chooses the feasible executor whose allocation has the most NUMA-local GPUs.

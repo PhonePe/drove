@@ -39,6 +39,8 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
 import com.phonepe.drove.models.localservice.LocalServiceInstanceInfo;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
+
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
@@ -153,6 +155,7 @@ class LocalServiceInstanceEngineTest extends AbstractExecutorEngineEnabledTestBa
                                                 Collections.emptyList(),
                                                 null,
                                                 null,
+                                                DeployableSecuritySpec.DEFAULT,
                                                 Map.of("tag1", "value1"),
                                                 "TestToken");
         val executorAddress = new ExecutorAddress("eid", "localhost", 3000, NodeTransportType.HTTP);

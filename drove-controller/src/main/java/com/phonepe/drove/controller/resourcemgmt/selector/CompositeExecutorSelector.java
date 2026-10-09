@@ -16,17 +16,19 @@
 
 package com.phonepe.drove.controller.resourcemgmt.selector;
 
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
-import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
-import com.phonepe.drove.controller.utils.ControllerUtils;
-import com.phonepe.drove.models.application.requirements.ResourceRequirement;
-import lombok.val;
-
-import javax.inject.Inject;
-import javax.inject.Named;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.utils.ControllerUtils;
+import com.phonepe.drove.models.application.requirements.ResourceRequirement;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
+
+import lombok.val;
 
 /**
  * Composite selector that delegates to the appropriate selector based on resource requirements.

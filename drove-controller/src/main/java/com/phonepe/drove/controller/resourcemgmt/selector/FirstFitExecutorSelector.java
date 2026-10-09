@@ -1,22 +1,22 @@
 package com.phonepe.drove.controller.resourcemgmt.selector;
 
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.CandidateExecutorAllocation;
 import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
-import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.ResourceRequirement;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 
 import lombok.AllArgsConstructor;
 import lombok.val;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Selects the first executor node that satisfies the resource requirements and passes both the node and allocation filters.

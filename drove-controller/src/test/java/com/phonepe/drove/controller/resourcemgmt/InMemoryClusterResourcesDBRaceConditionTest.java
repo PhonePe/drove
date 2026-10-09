@@ -1,5 +1,25 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
 import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
@@ -16,19 +36,14 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import com.phonepe.drove.models.info.resources.PhysicalLayout;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.val;
 
 /**
  * Test case for Race Condition in GPU State Updates in InMemoryClusterResourcesDB.

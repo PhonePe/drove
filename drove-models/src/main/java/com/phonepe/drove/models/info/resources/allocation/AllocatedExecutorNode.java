@@ -34,6 +34,7 @@ public class AllocatedExecutorNode {
     NodeTransportType transportType;
     CPUAllocation cpu;
     MemoryAllocation memory;
+    GPUAllocation gpu;
     Set<String> tags;
     Map<String, String> metadata;
     ExecutorState executorState;

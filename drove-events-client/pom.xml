@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.phonepe.drove</groupId>
         <artifactId>drove</artifactId>
-        <version>1.33.4</version>
+        <version>1.34.0</version>
     </parent>
 
     <artifactId>drove-events-client</artifactId>

@@ -1,6 +1,7 @@
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
+
 import lombok.Value;
 
 /**

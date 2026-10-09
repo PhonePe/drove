@@ -42,7 +42,7 @@ import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -137,7 +137,10 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                         Map.of(0,
                                 4 * 128 * (2L ^ 20),
                                 1,
-                                4 * 128 * (2L ^ 20)), Map.of())));
+                                4 * 128 * (2L ^ 20)),
+                        Map.of(),
+                        PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                        PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)));
         assertTrue(db.currentSnapshot(false).isEmpty());
         val originalNodeData = ControllerTestUtils.generateExecutorNode(1);
         db.update(List.of(originalNodeData));
@@ -334,7 +337,6 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         }
     }
 
-
     @Test
     void testUpdatedSignal() {
         val db = getDb();
@@ -390,7 +392,6 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 .stream()
                 .map(ExecutorHostInfo::getExecutorId)
                 .collect(Collectors.toUnmodifiableSet()));
-
 
         // now we bring the nodes back up and ensure the signal is raised
         currValue.set(changesReceived.get());
@@ -497,7 +498,11 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
                 new AvailableCPU(freeCoresPerNuma, Map.of()),
                 new AvailableMemory(freeMemoryPerNuma, usedMemory),
                 new AvailableGPU(freeGpus, List.of()),
-                new PhysicalLayout(freeCoresPerNuma, freeMemoryPerNuma, physicalGpus)
+                new PhysicalLayout(freeCoresPerNuma,
+                                   freeMemoryPerNuma,
+                                   physicalGpus,
+                                   PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR,
+                                   PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR)
         );
 
         return new ExecutorNodeData(
@@ -624,7 +629,6 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
         ghostIds.forEach(id -> assertFalse(partialResult.containsKey(id)));
     }
 
-    @NotNull
     @Test
     void testDeepCopyDoesNotShareMutableState() {
         val db = getDb();

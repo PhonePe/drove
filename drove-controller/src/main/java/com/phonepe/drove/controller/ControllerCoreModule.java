@@ -43,13 +43,14 @@ import com.phonepe.drove.auth.core.ApplicationInstanceTokenManager;
 import com.phonepe.drove.auth.core.JWTApplicationInstanceTokenManager;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.discovery.NodeDataStore;
-import com.phonepe.drove.common.discovery.ZkNodeDataStore;
+import com.phonepe.drove.controller.discovery.ZkNodeDataStore;
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
-import com.phonepe.drove.common.discovery.leadership.ZkLeadershipObserver;
+import com.phonepe.drove.controller.discovery.leadership.ZkLeadershipObserver;
 import com.phonepe.drove.common.model.ExecutorMessageType;
 import com.phonepe.drove.common.model.executor.ExecutorMessage;
 import com.phonepe.drove.common.net.MessageSender;
-import com.phonepe.drove.common.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.zookeeper.ZkConfig;
+import com.phonepe.drove.controller.zookeeper.ZkUtils;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.config.InstallationMetadata;
 import com.phonepe.drove.controller.config.ViewOptions;
@@ -120,7 +121,7 @@ public class ControllerCoreModule extends AbstractModule {
     @Provides
     @Singleton
     public CuratorFramework curator(ZkConfig config) {
-        return CommonUtils.buildCurator(config);
+        return ZkUtils.buildCurator(config);
     }
 
     @Provides

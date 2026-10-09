@@ -16,6 +16,26 @@
 
 package com.phonepe.drove.executor.engine;
 
+import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
+import static com.phonepe.drove.models.taskinstance.TaskState.LOST;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -49,33 +69,17 @@ import com.phonepe.drove.executor.statemachine.InstanceActionContext;
 import com.phonepe.drove.executor.statemachine.task.TaskAction;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
-import com.phonepe.drove.models.taskinstance.TaskInfo;
 import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import com.phonepe.drove.statemachine.Transition;
-import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
-import lombok.val;
+
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static com.phonepe.drove.common.CommonTestUtils.waitUntil;
-import static com.phonepe.drove.models.taskinstance.TaskState.LOST;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
+import lombok.val;
 
 /**
  * Test to verify exception handling in InstanceEngine.java around line 176-181.
@@ -298,9 +302,9 @@ class TaskInstanceEngineStateMachineErrorTest extends AbstractTestBase {
         });
 
         injector.injectMembers(this);
-        resourceDB.populateResources(Map.of(0, ResourceManager.NodeInfo.from(
+        resourceDB.populateResources(new ResourceManager.ExecutorResources(Map.of(0, ResourceManager.NodeInfo.from(
                 IntStream.rangeClosed(0, 7).boxed().collect(Collectors.toUnmodifiableSet()),
-                16_000_000)));
+                16_000_000)), Set.of()) );
     }
 
     @Test

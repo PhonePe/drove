@@ -15,7 +15,7 @@ import java.util.Set;
 @ToString(callSuper = true)
 @Jacksonized
 @Builder
-public class GPUAllocation extends ResourceAllocation{
+public class GPUAllocation extends ResourceAllocation {
     Set<String> gpuIds;
     GpuType gpuType;
 

@@ -23,6 +23,7 @@ import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorState;
 import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
+import com.phonepe.drove.models.info.resources.allocation.GPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import io.appform.functionmetrics.MonitoredFunction;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
@@ -133,8 +134,9 @@ public abstract class ClusterResourcesDB {
             BiConsumer<String, AllocatedExecutorNode> onAllocation);
 
     public abstract void deselectNode(String executorId,
-                                             CPUAllocation cpuAllocation,
-                                             MemoryAllocation memoryAllocation) ;
+                                      CPUAllocation cpuAllocation,
+                                      MemoryAllocation memoryAllocation,
+                                      GPUAllocation gpuAllocation) ;
 
     public abstract boolean isBlacklisted(String executorId);
 

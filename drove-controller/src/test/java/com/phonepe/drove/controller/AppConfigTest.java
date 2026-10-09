@@ -181,10 +181,26 @@ class AppConfigTest {
                                       .build())
                 .build();
         val appInstanceSpec = new ApplicationInstanceSpec(
-                "app-01", "TestApp", "inst-01",
-                null, List.of(), List.of(), List.of(), List.of(),
-                null, null, null, Map.of(), null, List.of(), null, null,
-                securitySpec, "token");
+                                                          "app-01",
+                                                          "TestApp",
+                                                          "inst-01",
+                                                          null,
+                                                          List.of(),
+                                                          List.of(),
+                                                          List.of(),
+                                                          List.of(),
+                                                          null,
+                                                          null,
+                                                          null,
+                                                          Map.of(),
+                                                          null,
+                                                          List.of(),
+                                                          null,
+                                                          null,
+                                                          securitySpec,
+                                                          Map.of(),
+                                                          List.of(),
+                                                          "token");
 
         val json = MAPPER.writeValueAsString(appInstanceSpec);
         val deserialized = MAPPER.readValue(json, ApplicationInstanceSpec.class);

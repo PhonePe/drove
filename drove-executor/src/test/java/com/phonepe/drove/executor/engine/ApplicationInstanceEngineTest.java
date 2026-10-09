@@ -40,6 +40,8 @@ import com.phonepe.drove.models.info.resources.allocation.CPUAllocation;
 import com.phonepe.drove.models.info.resources.allocation.MemoryAllocation;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
+
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -155,6 +157,7 @@ class ApplicationInstanceEngineTest extends AbstractExecutorEngineEnabledTestBas
                                                Collections.emptyList(),
                                                null,
                                                null,
+                                               DeployableSecuritySpec.DEFAULT,
                                                Map.of("tag1", "value1"),
                                                List.of(),
                                                "TestToken");

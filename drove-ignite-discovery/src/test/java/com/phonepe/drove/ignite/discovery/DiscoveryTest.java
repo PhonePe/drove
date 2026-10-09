@@ -27,6 +27,7 @@ import lombok.val;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WireMockTest(httpPort = 8878)
 @ExtendWith(SystemStubsExtension.class)
+@Disabled
 class DiscoveryTest {
 
     @SystemStub

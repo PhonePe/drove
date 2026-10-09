@@ -199,7 +199,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testStaleTaskDetection() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
 
@@ -252,7 +252,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testStaleTaskDetectionForErrorStates() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
 
@@ -305,7 +305,7 @@ class TaskRunnerTest extends ControllerTestBase {
     @Test
     @SneakyThrows
     void testNoStaleDetectionForTerminalStates() {
-        val cdb = new InMemoryClusterResourcesDB();
+        val cdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val pair = createDefaultInstanceScheduler(cdb);
         cdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
 

@@ -24,6 +24,7 @@ import com.phonepe.drove.models.application.logging.LoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.info.resources.allocation.ResourceAllocation;
+import com.phonepe.drove.models.policies.DeployableSecuritySpec;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ public interface DeploymentUnitSpec {
     List<String> getArgs();
     List<DeviceSpec> getDevices();
     UserSpec getUserSpec();
+    DeployableSecuritySpec getSecuritySpec();
     Map<String, String> getTags();
     List<ExposureSpec> getExposureSpec();
 

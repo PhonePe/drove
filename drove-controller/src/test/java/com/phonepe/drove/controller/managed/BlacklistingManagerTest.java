@@ -52,6 +52,11 @@ import com.phonepe.drove.controller.engine.ValidationResult;
 import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.ApplicationInfo;
@@ -87,7 +92,7 @@ class BlacklistingManagerTest {
         val s = new ConsumingSyncSignal<Boolean>();
         when(le.onLeadershipStateChanged()).thenReturn(s);
         val applicationEngine = mock(ApplicationLifecycleManagementEngine.class);
-        val clusterResourcesDB = new InMemoryClusterResourcesDB();
+        val clusterResourcesDB = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
         val communicator = mock(ControllerCommunicator.class);
         val acceptedCount = new AtomicInteger(0);
         when(communicator.send(any(ExecutorMessage.class)))

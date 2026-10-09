@@ -1,8 +1,8 @@
 package com.phonepe.drove.controller.resourcemgmt.selector;
 
-import com.phonepe.drove.controller.resourcemgmt.AllocatedExecutorNode;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.application.requirements.*;
+import com.phonepe.drove.models.info.resources.allocation.AllocatedExecutorNode;
 
 import java.util.List;
 import java.util.Optional;

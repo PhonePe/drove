@@ -16,8 +16,11 @@
 
 package com.phonepe.drove.executor.utils;
 
+import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
+import com.phonepe.drove.auth.model.ClusterCommHeaders;
 import com.phonepe.drove.common.model.DeploymentUnitSpec;
 import com.phonepe.drove.common.net.HttpCaller;
+import com.phonepe.drove.executor.ExecutorOptions;
 import com.phonepe.drove.executor.checker.Checker;
 import com.phonepe.drove.executor.checker.CmdChecker;
 import com.phonepe.drove.executor.checker.HttpChecker;
@@ -37,6 +40,7 @@ import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
+import com.phonepe.drove.models.info.nodedata.NodeType;
 import com.phonepe.drove.models.instance.InstanceInfo;
 import com.phonepe.drove.models.instance.InstanceState;
 import com.phonepe.drove.models.instance.LocalServiceInstanceState;
@@ -50,10 +54,29 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.protocol.RedirectStrategy;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.HttpsSupport;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -97,7 +120,8 @@ public class ExecutorUtils {
                 new Date());
     }
 
-    public static LocalServiceInstanceInfo convertToLocalServiceInstance(final StateData<LocalServiceInstanceState, ExecutorLocalServiceInstanceInfo> state) {
+    public static LocalServiceInstanceInfo convertToLocalServiceInstance(final StateData<LocalServiceInstanceState,
+            ExecutorLocalServiceInstanceInfo> state) {
         val data = state.getData();
         return convertToLocalServiceInstance(data, state.getState(), state.getError());
     }
@@ -179,26 +203,27 @@ public class ExecutorUtils {
             final TaskResult result) {
         val curr = currState.getData();
         return StateData.create(currState.getState(),
-                new ExecutorTaskInfo(
-                        curr.getTaskId(),
-                        curr.getSourceAppName(),
-                        curr.getInstanceId(),
-                        curr.getExecutorId(),
-                        curr.getHostname(),
-                        curr.getExecutable(),
-                        curr.getResources(),
-                        curr.getVolumes(),
-                        curr.getLoggingSpec(),
-                        curr.getEnv(),
-                        curr.getMetadata(),
-                        result,
-                        curr.getCreated(),
-                        new Date()),
-                currState.getError());
+                                new ExecutorTaskInfo(
+                                        curr.getTaskId(),
+                                        curr.getSourceAppName(),
+                                        curr.getInstanceId(),
+                                        curr.getExecutorId(),
+                                        curr.getHostname(),
+                                        curr.getExecutable(),
+                                        curr.getResources(),
+                                        curr.getVolumes(),
+                                        curr.getLoggingSpec(),
+                                        curr.getEnv(),
+                                        curr.getMetadata(),
+                                        result,
+                                        curr.getCreated(),
+                                        new Date()),
+                                currState.getError());
     }
 
-    public static List<ConfigSpec> translateConfigSpecs(final List<ConfigSpec> configs,
-                                                        final HttpCaller httpCaller) {
+    public static List<ConfigSpec> translateConfigSpecs(
+            final List<ConfigSpec> configs,
+            final HttpCaller httpCaller) {
         return configs.stream()
                 .map(configSpec -> configSpec.accept(new ConfigSpecVisitor<ConfigSpec>() {
                     @Override
@@ -216,7 +241,8 @@ public class ExecutorUtils {
 
                     @Override
                     public ConfigSpec visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
-                        throw new IllegalStateException("Controller http should have been resolved to inline by controller");
+                        throw new IllegalStateException(
+                                "Controller http should have been resolved to inline by controller");
                     }
 
                     @Override
@@ -240,7 +266,73 @@ public class ExecutorUtils {
     public static Map<Integer, Integer> mapCores(Set<Integer> cores) {
         return cores.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                        Function.identity()));
+                                          Function.identity()));
+    }
+
+    public static CloseableHttpClient buildControllerClient(ClusterAuthenticationConfig clusterAuthenticationConfig) {
+        return buildControllerClient(clusterAuthenticationConfig,
+                                     ExecutorOptions.DEFAULT_CONTROLLER_CONNECT_TIMEOUT.toJavaDuration(),
+                                     ExecutorOptions.DEFAULT_CONTROLLER_RESPONSE_TIMEOUT.toJavaDuration());
+    }
+
+    public static CloseableHttpClient buildControllerClient(
+            ClusterAuthenticationConfig clusterAuthenticationConfig,
+            Duration connectTimeout,
+            Duration responseTimeout) {
+        val authSecret = clusterAuthenticationConfig.getSecrets()
+                .stream()
+                .filter(s -> s.getNodeType().equals(NodeType.EXECUTOR))
+                .findAny()
+                .map(ClusterAuthenticationConfig.SecretConfig::getSecret)
+                .orElse(null);
+        val tlsStrategy = ClientTlsStrategyBuilder.create()
+                .setSslContext(SSLContexts.createSystemDefault())
+                .setHostnameVerifier(HttpsSupport.getDefaultHostnameVerifier())
+                .buildClassic();
+        val connManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setTlsSocketStrategy(tlsStrategy)
+                .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+                .setConnPoolPolicy(PoolReusePolicy.LIFO)
+                .setDefaultConnectionConfig(ConnectionConfig.custom()
+                        .setTimeToLive(TimeValue.ofMinutes(5)).build())
+                .build();
+        connManager.setDefaultSocketConfig(SocketConfig.custom()
+                                                   .setTcpNoDelay(true)
+                                                   .setSoTimeout(Timeout.of(responseTimeout))
+                                                   .build());
+        connManager.setDefaultConnectionConfig(ConnectionConfig.custom()
+                                                       .setConnectTimeout(Timeout.of(connectTimeout))
+                                                       .setSocketTimeout(Timeout.of(responseTimeout))
+                                                       .setValidateAfterInactivity(TimeValue.ofSeconds(10))
+                                                       .setTimeToLive(TimeValue.ofHours(1))
+                                                       .build());
+        val rc = RequestConfig.custom()
+                .setResponseTimeout(Timeout.of(responseTimeout))
+                .build();
+        return HttpClients.custom()
+                .addRequestInterceptorFirst((httpRequest, entity, httpContext)
+                                                    -> httpRequest.addHeader(new BasicHeader(ClusterCommHeaders.CLUSTER_AUTHORIZATION,
+                                                                                             authSecret)))
+                .setRedirectStrategy(new RedirectStrategy() {
+                    @Override
+                    public boolean isRedirected(
+                            org.apache.hc.core5.http.HttpRequest request,
+                            HttpResponse response,
+                            HttpContext context) {
+                        return false;
+                    }
+
+                    @Override
+                    public URI getLocationURI(
+                            org.apache.hc.core5.http.HttpRequest request,
+                            HttpResponse response,
+                            HttpContext context) {
+                        return null;
+                    }
+                })
+                .setConnectionManager(connManager)
+                .setDefaultRequestConfig(rc)
+                .build();
     }
 
     public static String envInfoPath(ExecutorOptions executorOptions) {
