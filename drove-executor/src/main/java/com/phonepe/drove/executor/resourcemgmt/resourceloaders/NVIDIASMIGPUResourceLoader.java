@@ -23,7 +23,7 @@ import com.phonepe.drove.models.info.GPUInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -135,12 +135,12 @@ public class NVIDIASMIGPUResourceLoader implements GPUResourceLoader {
         return descriptors;
     }
 
-    @NotNull
+    @Nonnull
     protected String queryNvidiaSMI() throws InterruptedException, IOException {
         return String.join("", parseCommandOutput(NVIDIA_SMI_QUERY_XML_COMMAND, false));
     }
 
-    @NotNull
+    @Nonnull
     protected String queryNvidiaSMITopo() throws InterruptedException, IOException {
         return String.join("\n", parseCommandOutput("nvidia-smi topo -m", false));
     }

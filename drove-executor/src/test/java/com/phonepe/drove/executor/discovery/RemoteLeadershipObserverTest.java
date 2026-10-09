@@ -37,7 +37,7 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.NodeData;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -86,7 +86,7 @@ class RemoteLeadershipObserverTest {
         }
     }
 
-    @NotNull
+    @Nonnull
     private static RemoteLeadershipObserver buildClient() throws MalformedURLException {
         return new RemoteLeadershipObserver(ControllerConfig.builder()
                                                     .endpoints(List.of(URI.create(controller1.baseUrl()).toURL(),

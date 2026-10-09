@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ class NVIDIASMIGPUResourceLoaderTest {
     @Test
     void testNvidiaSMICommandNotFoundReturnsEmptyGPUList() throws IOException, InterruptedException {
         val underTest = new NVIDIASMIGPUResourceLoader() {
-            @NotNull
+            @Nonnull
             @Override
             protected String queryNvidiaSMI() throws InterruptedException, IOException {
                 // Simulate error=2 (ENOENT - No such file or directory)
@@ -43,7 +43,7 @@ class NVIDIASMIGPUResourceLoaderTest {
     @Test
     void testGPUloadOnSystemWithNvidiaSMI() {
         val underTest = new NVIDIASMIGPUResourceLoader() {
-            @NotNull
+            @Nonnull
             @SneakyThrows
             @Override
             protected String queryNvidiaSMI() {
@@ -52,7 +52,7 @@ class NVIDIASMIGPUResourceLoaderTest {
                         StandardCharsets.UTF_8);
             }
 
-            @NotNull
+            @Nonnull
             @SneakyThrows
             @Override
             protected String queryNvidiaSMITopo() {
@@ -141,7 +141,7 @@ class NVIDIASMIGPUResourceLoaderTest {
     @Test
     void testGPULoadFallsBackToNullNumaWhenTopoCommandFails() {
         val underTest = new NVIDIASMIGPUResourceLoader() {
-            @NotNull
+            @Nonnull
             @SneakyThrows
             @Override
             protected String queryNvidiaSMI() {
@@ -150,7 +150,7 @@ class NVIDIASMIGPUResourceLoaderTest {
                         StandardCharsets.UTF_8);
             }
 
-            @NotNull
+            @Nonnull
             @Override
             protected String queryNvidiaSMITopo() throws IOException {
                 throw new IOException("nvidia-smi topo: command not found");
@@ -168,7 +168,7 @@ class NVIDIASMIGPUResourceLoaderTest {
     @Test
     void testGPULoadMapsNumaByMinorNumberNotXmlOrder() {
         val underTest = new NVIDIASMIGPUResourceLoader() {
-            @NotNull
+            @Nonnull
             @Override
             protected String queryNvidiaSMI() {
                 return """
@@ -189,7 +189,7 @@ class NVIDIASMIGPUResourceLoaderTest {
                         """;
             }
 
-            @NotNull
+            @Nonnull
             @Override
             protected String queryNvidiaSMITopo() {
                 return """
@@ -225,7 +225,7 @@ class NVIDIASMIGPUResourceLoaderTest {
     @Test
     void testGPULoadRecognizesMigDevicesWhenMigEnabled() {
         val underTest = new NVIDIASMIGPUResourceLoader() {
-            @NotNull
+            @Nonnull
             @Override
             protected String queryNvidiaSMI() {
                 return """
@@ -254,7 +254,7 @@ class NVIDIASMIGPUResourceLoaderTest {
                         """;
             }
 
-            @NotNull
+            @Nonnull
             @Override
             protected String queryNvidiaSMITopo() {
                 // Single-GPU header: tokens = [GPU0, CPU, Affinity, NUMA, Affinity]
