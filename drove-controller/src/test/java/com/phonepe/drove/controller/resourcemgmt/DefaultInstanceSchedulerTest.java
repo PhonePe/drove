@@ -18,11 +18,6 @@ package com.phonepe.drove.controller.resourcemgmt;
 
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.models.application.placement.policies.RuleBasedPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.OnePerHostPlacementPolicy;
 import com.phonepe.drove.models.application.placement.policies.MaxNPerHostPlacementPolicy;
@@ -77,9 +72,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testScheduling() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
@@ -101,9 +94,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testOnePerHostPlacementPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new OnePerHostPlacementPolicy());
@@ -123,9 +114,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testMaxNPerHostPlacementPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
@@ -145,9 +134,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testRuleBasedPolicyForSpecificNode() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         rdb.update(IntStream.rangeClosed(1, 3)
@@ -168,9 +155,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testRuleBasedPolicyFromSpecialNodes() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         rdb.update(IntStream.rangeClosed(1, 3)
@@ -193,9 +178,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testMatchTagPlacementPolicyNormal() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new MatchTagPlacementPolicy("test"));
@@ -216,9 +199,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testNoTagPlacementPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new NoTagPlacementPolicy());
@@ -239,9 +220,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCompositePlacementPolicyAnd() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec
@@ -265,9 +244,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCompositePlacementPolicyOR() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val originalSpec = appSpec();
         val spec = originalSpec.withPlacementPolicy(new CompositePlacementPolicy(
@@ -293,9 +270,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testMultiSessionAllocation() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
@@ -324,9 +299,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testBlacklistSkipping() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
 
@@ -351,9 +324,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithAnyPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val placements = sched.checkPlacement(appSpec(), new AnyPlacementPolicy(), 10, true).getPlacements();
@@ -366,9 +337,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithOnePerHostPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new OnePerHostPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -379,9 +348,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithMaxNPerHostPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new MaxNPerHostPlacementPolicy(2));
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
@@ -394,9 +361,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithMatchTagPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new MatchTagPlacementPolicy("test"));
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -411,9 +376,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithNoTagPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new NoTagPlacementPolicy());
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -428,9 +391,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithOnePerHostPolicyOverrideExcludesTaggedNodes() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec();
         rdb.update(IntStream.rangeClosed(1, 3).mapToObj(i -> generateExecutorNode(i, Set.of("test"))).toList());
@@ -446,9 +407,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithRuleBasedPolicy() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new RuleBasedPlacementPolicy(
                 "ctx.allocation.node.metadata[\"envvar1\"] == \"val1\""));
@@ -462,9 +421,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithCompositePolicyAnd() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val spec = appSpec().withPlacementPolicy(new CompositePlacementPolicy(
                 List.of(new MatchTagPlacementPolicy("test"), new MaxNPerHostPlacementPolicy(2)),
@@ -480,9 +437,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementDoesNotChangeClusterState() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val usedCoresBefore = usedCores(rdb);
@@ -495,9 +450,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithTaskSpec() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val placements = sched.checkPlacement(taskSpec(), new AnyPlacementPolicy(), 5, true).getPlacements();
@@ -506,9 +459,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementWithLocalServiceSpec() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val placements = sched.checkPlacement(localServiceSpec(), new AnyPlacementPolicy(), 5, true).getPlacements();
@@ -517,9 +468,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSimulatePlacementDoesNotAffectRealScheduling() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val spec = appSpec();
@@ -531,9 +480,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementCapacityBound() {
         //2 executors x 5 free cores each; 15 x 1-core instances can not fit
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 2).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val result = sched.checkPlacement(appSpec(), 15);
@@ -547,9 +494,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementAllFit() {
         //2 executors x 5 free cores each; 10 x 1-core instances fit exactly
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 2).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val result = sched.checkPlacement(appSpec(), 10);
@@ -562,9 +507,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementMultiExecutorPacking() {
         //ANY packs across both executors; ONE_PER_HOST places at most 1 per host
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 2).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val anyResult = sched.checkPlacement(appSpec(), 10);
@@ -581,9 +524,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCheckPlacementDeterministic() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val first = sched.checkPlacement(appSpec(), 12);
@@ -596,9 +537,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementGpuCapacityBound() {
         //2 executors x 1 GPU each; 3 x 1-GPU instances can not fit
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNode("EXECUTOR_1", "H100"),
                            gpuExecutorNode("EXECUTOR_2", "H100")));
@@ -613,9 +552,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementGpuTypeMismatch() {
         //Cluster has A100 only; H100 request places nothing
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNode("EXECUTOR_1", "A100")));
         val spec = ControllerTestUtils.withGPU(appSpec(), 1, new GpuType(GpuVendor.NVIDIA, "H100"));
@@ -628,9 +565,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementGpuAllFit() {
         //2 executors x 1 GPU each; 2 x 1-GPU instances fit exactly
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNode("EXECUTOR_1", "H100"),
                            gpuExecutorNode("EXECUTOR_2", "H100")));
@@ -643,9 +578,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testNoCoreReuseOnOneExecutor() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNodeWithCount("EXECUTOR_1", "H100", 4)));
         val spec = ControllerTestUtils.withGPU(appSpec(), 1, new GpuType(GpuVendor.NVIDIA, "H100"));
@@ -667,9 +600,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCheckPlacementNeedsCoresOnOneNumaNode() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         //4 free cores in total, but only 2 on each NUMA node
         rdb.update(List.of(executorNodeWithMemory("EXECUTOR_1",
@@ -686,9 +617,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCheckPlacementDoesNotChangeResourceDBState() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNodeWithCount("EXECUTOR_1", "H100", 2),
                            gpuExecutorNodeWithCount("EXECUTOR_2", "H100", 2)));
@@ -782,9 +711,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementMemoryBound() {
         //2 executors x 1 core each; memory is the binding resource, cores are not
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val freeCores = Map.of(0, Set.of(0, 1, 2, 3, 4));
         val freeMemory = Map.of(0, 1024L);
@@ -801,9 +728,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementMultiGpuPerInstance() {
         //1 executor with 2 GPUs; 1 instance needs 3 GPUs -> placed 0
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNodeWithCount("EXECUTOR_1", "H100", 2)));
         val spec = ControllerTestUtils.withGPU(appSpec(), 3, new GpuType(GpuVendor.NVIDIA, "H100"));
@@ -816,9 +741,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementMultiGpuPerInstanceAcrossNodes() {
         //2 executors x 2 GPUs each; 2 instances x 2 GPUs fit exactly, 3 instances place 2
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(List.of(gpuExecutorNodeWithCount("EXECUTOR_1", "H100", 2),
                            gpuExecutorNodeWithCount("EXECUTOR_2", "H100", 2)));
@@ -833,9 +756,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testSelectNodesCallbackContract() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val instanceIds = List.of("I1", "I2", "I3", "I4", "I5");
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val seen = new ArrayList<String>();
@@ -856,9 +777,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
 
     @Test
     void testCheckPlacementFiveOnFiveNodeCluster() {
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 5).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val result = sched.checkPlacement(appSpec(), 5);
@@ -870,9 +789,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     @Test
     void testCheckPlacementErrorListCapsExecutorCapacityLine() {
         //12 executors; capacity line must list 10 and report the remaining 2
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         rdb.update(IntStream.rangeClosed(1, 12).mapToObj(ControllerTestUtils::generateExecutorNode).toList());
         val result = sched.checkPlacement(appSpec(), null, 1000, true);
@@ -890,9 +807,7 @@ class DefaultInstanceSchedulerTest extends ControllerTestBase {
     void testCheckPlacementMixedGpuModelsRespectFreeGpuIds() {
         //One executor: 1 free H100 and 1 busy H100 share the same type; count-based
         //checks overestimate, id-based checks must respect the free id only
-        val rdb = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                               new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                          new MaxGpuNumaLocalAllocation())));
+        val rdb = ControllerTestUtils.clusterResourcesDB();
         val sched = createDefaultInstanceScheduler(rdb).getValue();
         val busyGpuId = "GPU-EXECUTOR_1-1";
         val freeGpuId = "GPU-EXECUTOR_1-2";

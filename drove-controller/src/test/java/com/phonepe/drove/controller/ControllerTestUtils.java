@@ -20,6 +20,14 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.common.retry.*;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
+import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
+import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.allocator.ExecutorResourceAllocator;
+import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.ExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
+import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
 import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.*;
@@ -520,6 +528,32 @@ public class ControllerTestUtils {
                             errorMessage,
                             date,
                             date);
+    }
+
+    public static GpuAwareNumaExecutorResourceAllocator gpuAwareAllocator() {
+        return gpuAwareAllocator(ControllerOptions.DEFAULT.getMinScaledCpus(),
+                                 ControllerOptions.DEFAULT.getMinScaledMemoryMB());
+    }
+
+    public static GpuAwareNumaExecutorResourceAllocator gpuAwareAllocator(long minScaledCpus, long minScaledMemoryMB) {
+        return new GpuAwareNumaExecutorResourceAllocator(minScaledCpus, minScaledMemoryMB);
+    }
+
+    public static ExecutorSelector compositeExecutorSelector() {
+        return compositeExecutorSelector(gpuAwareAllocator());
+    }
+
+    public static ExecutorSelector compositeExecutorSelector(ExecutorResourceAllocator allocator) {
+        return new CompositeExecutorSelector(new FirstFitExecutorSelector(allocator),
+                                             new ScoredExecutorSelector(allocator, new MaxGpuNumaLocalAllocation()));
+    }
+
+    public static InMemoryClusterResourcesDB clusterResourcesDB() {
+        return new InMemoryClusterResourcesDB(compositeExecutorSelector());
+    }
+
+    public static InMemoryClusterResourcesDB clusterResourcesDB(ExecutorSelector selector) {
+        return new InMemoryClusterResourcesDB(selector);
     }
 
     public static SecurityPolicyEnforcer defaultEnforcer() {

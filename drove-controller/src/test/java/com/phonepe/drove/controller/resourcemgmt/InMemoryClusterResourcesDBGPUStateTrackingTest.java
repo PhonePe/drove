@@ -1,10 +1,24 @@
 package com.phonepe.drove.controller.resourcemgmt;
 
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.models.application.requirements.CPURequirement;
 import com.phonepe.drove.models.application.requirements.GPURequirement;
 import com.phonepe.drove.models.application.requirements.GpuType;
@@ -19,15 +33,10 @@ import com.phonepe.drove.models.info.resources.PhysicalLayout;
 import com.phonepe.drove.models.info.resources.available.AvailableCPU;
 import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
-import lombok.val;
+
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.val;
 
 /**
  * Test case for GPU State Tracking Inconsistency.
@@ -83,7 +92,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             ExecutorState.ACTIVE
         );
 
-        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val db = ControllerTestUtils.clusterResourcesDB();
         db.update(List.of(nodeData));
         return db;
     }
@@ -436,7 +445,7 @@ class InMemoryClusterResourcesDBGPUStateTrackingTest {
             ExecutorState.ACTIVE
         );
 
-        val db = new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()), new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(), new MaxGpuNumaLocalAllocation())));
+        val db = ControllerTestUtils.clusterResourcesDB();
         db.update(List.of(nodeData));
         return db;
     }

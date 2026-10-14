@@ -20,7 +20,6 @@ import com.google.common.collect.Sets;
 import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.controller.ControllerTestBase;
 import com.phonepe.drove.controller.ControllerTestUtils;
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.selector.*;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
 import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
@@ -450,7 +449,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testCpuMemRequestsUseDefaultSelector() {
-        val allocator = new GpuAwareNumaExecutorResourceAllocator();
+        val allocator = ControllerTestUtils.gpuAwareAllocator(0, 0);
         val recordingDefaultSelector = new RecordingSelector(new FirstFitExecutorSelector(allocator));
         val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator,
                                                                                     new MaxGpuNumaLocalAllocation()));
@@ -472,7 +471,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
 
     @Test
     void testGpuRequestsUseGpuAwareSelector() {
-        val allocator = new GpuAwareNumaExecutorResourceAllocator();
+        val allocator = ControllerTestUtils.gpuAwareAllocator(0, 0);
         val recordingDefaultSelector = new RecordingSelector(new FirstFitExecutorSelector(allocator));
         val recordingGpuSelector = new RecordingSelector(new ScoredExecutorSelector(allocator,
                                                                                     new MaxGpuNumaLocalAllocation()));
@@ -720,9 +719,7 @@ class InMemoryClusterResourcesDBTest extends ControllerTestBase {
     }
 
     private static InMemoryClusterResourcesDB getDb() {
-        return new InMemoryClusterResourcesDB(new CompositeExecutorSelector(new FirstFitExecutorSelector(new GpuAwareNumaExecutorResourceAllocator()),
-                                                                            new ScoredExecutorSelector(new GpuAwareNumaExecutorResourceAllocator(),
-                                                                                                       new MaxGpuNumaLocalAllocation())));
+        return ControllerTestUtils.clusterResourcesDB();
     }
 
 }

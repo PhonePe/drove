@@ -1,17 +1,17 @@
 /*
- *  Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
+ * Copyright (c) 2024 Original Author(s), PhonePe India Pvt. Ltd.
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.phonepe.drove.controller.resourcemgmt.allocator;
@@ -24,13 +24,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.utils.Pair;
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
-import com.phonepe.drove.controller.utils.ControllerUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
+import javax.inject.Inject;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -53,6 +55,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAllocator {
 
+    private final long minScaledCpus;
+    private final long minScaledMemoryMB;
+
+    @Inject
+    public GpuAwareNumaExecutorResourceAllocator(ControllerOptions options) {
+        this(Objects.requireNonNullElse(options.getMinScaledCpus(), ControllerOptions.DEFAULT_MIN_SCALED_CPUS),
+             Objects.requireNonNullElse(options.getMinScaledMemoryMB(), ControllerOptions.DEFAULT_MIN_SCALED_MEMORY_MB));
+    }
+
+    @VisibleForTesting
+    public GpuAwareNumaExecutorResourceAllocator(long minScaledCpus, long minScaledMemoryMB) {
+        this.minScaledCpus = Math.max(minScaledCpus, ControllerOptions.DEFAULT_MIN_SCALED_CPUS);
+        this.minScaledMemoryMB = Math.max(minScaledMemoryMB, ControllerOptions.DEFAULT_MIN_SCALED_MEMORY_MB);
+    }
+
     public Optional<CandidateExecutorAllocation> allocate(
             ExecutorHostInfo hostInfo,
             long requiredCpus,
@@ -72,12 +89,18 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
         Preconditions.checkArgument(requiredGpus == 0 || requiredGpuType != null,
                 "GPU type must be specified when GPU count is greater than 0");
         val physicalLayout = hostInfo.getNodeData().getState().getLayout();
+
         var cpuScaling = physicalLayout.getCpuScalingFactor();
         cpuScaling = CommonUtils.doubleEquals(cpuScaling, 0) ? PhysicalLayout.DEFAULT_CPU_SCALING_FACTOR : cpuScaling;
         var memoryScaling = physicalLayout.getMemoryScalingFactor();
         memoryScaling = CommonUtils.doubleEquals(memoryScaling, 0) ? PhysicalLayout.DEFAULT_MEMORY_SCALING_FACTOR : memoryScaling;
-        val requiredCpus = (long) Math.ceil(actualRequiredCpus / cpuScaling);
-        val requiredMemory = (long) Math.ceil(actualRequiredMemory / memoryScaling);
+        // Apply scaling only when the request is at or above the configured minimum. Below the minimum, use the raw request.
+        var requiredCpus = actualRequiredCpus < minScaledCpus
+                ? actualRequiredCpus
+                : (long) Math.ceil(actualRequiredCpus / cpuScaling);
+        var requiredMemory = actualRequiredMemory < minScaledMemoryMB
+                ? actualRequiredMemory
+                : (long) Math.ceil(actualRequiredMemory / memoryScaling);
         if(requiredCpus != actualRequiredCpus || requiredMemory != actualRequiredMemory) {
             log.info("Scaling resource requirements for executor {}: requested CPUs={} scaled to {}, requested Memory={} scaled to {}",
                     hostInfo.getExecutorId(), actualRequiredCpus, requiredCpus, actualRequiredMemory, requiredMemory);
@@ -134,7 +157,6 @@ public class GpuAwareNumaExecutorResourceAllocator implements ExecutorResourceAl
 
         return Optional.empty();
     }
-
     private List<Integer> candidateNumaNodeIds(
             ExecutorHostInfo hostInfo,
             long requiredCpus,

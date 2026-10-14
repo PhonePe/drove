@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AbstractNumaExecutorResourceAllocatorTest {
 
-    private final GpuAwareNumaExecutorResourceAllocator allocator = new GpuAwareNumaExecutorResourceAllocator();
+    private final GpuAwareNumaExecutorResourceAllocator allocator = ControllerTestUtils.gpuAwareAllocator();
 
     // -------------------------------------------------------------------------
     // CPU allocation

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
@@ -51,8 +52,8 @@ import lombok.val;
 class GpuAwareNumaExecutorResourceAllocatorScalingTest {
 
     private final GpuAwareNumaExecutorResourceAllocator allocator =
-            new GpuAwareNumaExecutorResourceAllocator();
-
+            new GpuAwareNumaExecutorResourceAllocator(ControllerOptions.DEFAULT.getMinScaledCpus(),
+                                                     ControllerOptions.DEFAULT.getMinScaledMemoryMB());
     private static final GpuType NVIDIA_H100 =
             new GpuType(GpuVendor.NVIDIA, "H100");
 
@@ -135,6 +136,7 @@ class GpuAwareNumaExecutorResourceAllocatorScalingTest {
     }
 
     static Stream<Arguments> memoryScalingCases() {
+        // Requests are at or above the 128 MB minimum so memory scaling always applies.
         return Stream.of(
                 Arguments.of("factor 2.0 reduces demand - succeeds",
                              64L, 128L, 2.0, true, 64L),
@@ -145,37 +147,37 @@ class GpuAwareNumaExecutorResourceAllocatorScalingTest {
                 Arguments.of("factor 0.5 increases demand - fails",
                              255L, 128L, 0.5, false, 0L),
                 Arguments.of("factor 1.5 ceiling rounding succeeds",
-                             67L, 100L, 1.5, true, 67L)
+                             86L, 128L, 1.5, true, 86L)
         );
     }
 
     @Test
     void bothScalingFactorsApplyTogether() {
-        // cpu=1.5: ceil(2/1.5)=2 cores; mem=2.0: ceil(100/2.0)=50 MB; host has exactly both.
+        // cpu=1.5: ceil(2/1.5)=2 cores; mem=2.0: ceil(256/2.0)=128 MB; host has exactly both.
         val hostInfo = buildHostInfo(
                 Map.of(0, Set.of(0, 1)),
-                Map.of(0, 50L),
+                Map.of(0, 128L),
                 1.5, 2.0);
 
-        val result = allocator.allocate(hostInfo, 2, 100, 0);
+        val result = allocator.allocate(hostInfo, 2, 256, 0);
 
         assertTrue(result.isPresent());
         val allocated = result.get().getAllocatedNode();
         assertEquals(2, allocated.getCpu().getCores().get(0).size(),
                       "ceil(2/1.5)=2");
-        assertEquals(50L, allocated.getMemory().getMemoryInMB().get(0),
-                      "ceil(100/2.0)=50");
+        assertEquals(128L, allocated.getMemory().getMemoryInMB().get(0),
+                      "ceil(256/2.0)=128");
     }
 
     @Test
     void bothScalingFactorsMayCauseFail() {
-        // 2 free cores satisfy scaled CPU (ceil(2/1.5)=2); 49 MB does not satisfy scaled memory (ceil(100/2.0)=50).
+        // 2 free cores satisfy scaled CPU (ceil(2/1.5)=2); 127 MB does not satisfy scaled memory (ceil(256/2.0)=128).
         val hostInfo = buildHostInfo(
                 Map.of(0, Set.of(0, 1)),
-                Map.of(0, 49L),
+                Map.of(0, 127L),
                 1.5, 2.0);
 
-        val result = allocator.allocate(hostInfo, 2, 100, 0);
+        val result = allocator.allocate(hostInfo, 2, 256, 0);
 
         assertTrue(result.isEmpty());
     }
@@ -264,13 +266,13 @@ class GpuAwareNumaExecutorResourceAllocatorScalingTest {
 
     @Test
     void scalingFailsWhenNoMemoryCapacity() {
-        // Both NUMA nodes have 100 MB; mem=0.5 -> ceil(64/0.5)=128 MB -> no node qualifies.
+        // Both NUMA nodes have 200 MB; mem=0.5 -> ceil(128/0.5)=256 MB -> no node qualifies.
         val hostInfo = buildHostInfo(
                 Map.of(0, Set.of(0, 1), 1, Set.of(2, 3)),
-                Map.of(0, 100L, 1, 100L),
+                Map.of(0, 200L, 1, 200L),
                 1.0, 0.5);
 
-        val result = allocator.allocate(hostInfo, 1, 64, 0);
+        val result = allocator.allocate(hostInfo, 1, 128, 0);
 
         assertTrue(result.isEmpty());
     }

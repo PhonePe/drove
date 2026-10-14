@@ -28,11 +28,6 @@ import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.securityprofile.SecurityPolicyEnforcer;
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
-import com.phonepe.drove.controller.resourcemgmt.selector.CompositeExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.FirstFitExecutorSelector;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.statedb.TaskDB;
 import com.phonepe.drove.controller.testsupport.InMemoryClusterStateDB;
 import com.phonepe.drove.jobexecutor.JobExecutor;
@@ -591,13 +586,7 @@ class TaskEngineTest extends ControllerTestBase {
 
     @NotNull
     private static InMemoryClusterResourcesDB getCdb() {
-        return new InMemoryClusterResourcesDB(
-                new CompositeExecutorSelector(
-                    new FirstFitExecutorSelector(
-                        new GpuAwareNumaExecutorResourceAllocator()), 
-                    new ScoredExecutorSelector(
-                        new GpuAwareNumaExecutorResourceAllocator(), 
-                        new MaxGpuNumaLocalAllocation())));
+        return ControllerTestUtils.clusterResourcesDB();
     }
 
     @Test

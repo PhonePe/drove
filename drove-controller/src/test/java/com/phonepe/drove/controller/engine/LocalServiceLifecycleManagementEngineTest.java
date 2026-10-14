@@ -42,10 +42,7 @@ import com.phonepe.drove.controller.resourcemgmt.ClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.DefaultInstanceScheduler;
 import com.phonepe.drove.controller.resourcemgmt.InMemoryClusterResourcesDB;
 import com.phonepe.drove.controller.resourcemgmt.InstanceScheduler;
-import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
 import com.phonepe.drove.controller.resourcemgmt.selector.*;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.MaxGpuNumaLocalAllocation;
-import com.phonepe.drove.controller.resourcemgmt.selector.scored.ScoredExecutorSelector;
 import com.phonepe.drove.controller.rule.PlacementRuleEvaluator;
 import com.phonepe.drove.controller.cel.CelEngine;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
@@ -82,7 +79,6 @@ import java.time.Duration;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -157,10 +153,7 @@ class LocalServiceLifecycleManagementEngineTest {
             @Provides
             @Singleton
             public ExecutorSelector executorSelector() {
-                val allocator = new GpuAwareNumaExecutorResourceAllocator();
-                return new CompositeExecutorSelector(
-                        new FirstFitExecutorSelector(allocator),
-                        new ScoredExecutorSelector(allocator, new MaxGpuNumaLocalAllocation()));
+                return ControllerTestUtils.compositeExecutorSelector();
             }
 
             @Provides

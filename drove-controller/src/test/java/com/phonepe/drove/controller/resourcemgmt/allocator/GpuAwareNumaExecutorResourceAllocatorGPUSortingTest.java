@@ -1,5 +1,6 @@
 package com.phonepe.drove.controller.resourcemgmt.allocator;
 
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class GpuAwareNumaExecutorResourceAllocatorGPUSortingTest {
     
-    private final GpuAwareNumaExecutorResourceAllocator allocator = new GpuAwareNumaExecutorResourceAllocator();
+    private final GpuAwareNumaExecutorResourceAllocator allocator = ControllerTestUtils.gpuAwareAllocator();
 
     @Test
     void testGPUTypeMismatchShouldFailWithClearFeedback() {

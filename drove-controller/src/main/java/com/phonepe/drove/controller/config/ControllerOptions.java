@@ -57,6 +57,8 @@ public class ControllerOptions {
     public static final int DEFAULT_COMPILED_RULE_CACHE_SIZE = 100;
     public static final Duration DEFAULT_STALE_EXECUTOR_AGE = Duration.seconds(45);
     public static final int DEFAULT_DATA_UPDATE_PARALLELISM = 16;
+    public static final int DEFAULT_MIN_SCALED_CPUS = 2;
+    public static final int DEFAULT_MIN_SCALED_MEMORY_MB = 128;
 
     public static final ControllerOptions DEFAULT = new ControllerOptions(
             DEFAULT_STALE_CHECK_INTERVAL,
@@ -78,7 +80,9 @@ public class ControllerOptions {
             false,
             DEFAULT_COMPILED_RULE_CACHE_SIZE,
             DEFAULT_STALE_EXECUTOR_AGE,
-            DEFAULT_DATA_UPDATE_PARALLELISM
+            DEFAULT_DATA_UPDATE_PARALLELISM,
+            DEFAULT_MIN_SCALED_CPUS,
+            DEFAULT_MIN_SCALED_MEMORY_MB
     );
 
     @MinDuration(value = 1, unit = TimeUnit.MINUTES)
@@ -135,4 +139,11 @@ public class ControllerOptions {
 
     @Range(min = 1, max = 256)
     Integer dataUpdateParallelism;
+
+    @Range(min = 0, max = 4096)
+    Integer minScaledCpus;
+
+    @Range(min = 0)
+    Integer minScaledMemoryMB;
 }
+

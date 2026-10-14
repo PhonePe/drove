@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.controller.resourcemgmt;
 
+import com.phonepe.drove.controller.ControllerTestUtils;
 import com.phonepe.drove.controller.resourcemgmt.allocator.GpuAwareNumaExecutorResourceAllocator;
 import com.phonepe.drove.models.application.requirements.GpuType;
 import com.phonepe.drove.models.application.requirements.GpuVendor;
@@ -41,8 +42,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class GpuAwareNumaExecutorResourceAllocatorTest {
 
-    private GpuAwareNumaExecutorResourceAllocator selector = new GpuAwareNumaExecutorResourceAllocator();
     private static final GpuType NVIDIA_H100 = new GpuType(GpuVendor.NVIDIA, "H100");
+
+    private GpuAwareNumaExecutorResourceAllocator selector = ControllerTestUtils.gpuAwareAllocator();
 
     @Test
     void testSelectNumaNodeWithMostLocalGpus() {
