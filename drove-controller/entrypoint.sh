@@ -49,7 +49,13 @@ if [ "${DROVE_ADMIN_PASSWORD}" = "admin" ] \
       || [ "${DROVE_CONTROLLER_SECRET}" = "ControllerSecret" ] \
       || [ "${DROVE_EXECUTOR_SECRET}" = "ExecutorSecret" ] \
       || [ "${DROVE_INSTANCE_AUTH_SECRET}" = "InstanceAuthSecret" ]; then
-  echo "WARNING: Using default values for at least one security variable."
+  if [ "${ALLOW_DEFAULT_SECRETS}" != "true" ]; then
+    echo "FATAL: Refusing to start with default values for security variables."
+    echo "Set all security variables (ADMIN_PASSWORD, GUEST_PASSWORD, CONTROLLER_SECRET, EXECUTOR_SECRET, INSTANCE_AUTH_SECRET)"
+    echo "or set ALLOW_DEFAULT_SECRETS=true to explicitly acknowledge the risk (dev/test only)."
+    exit 1
+  fi
+  echo "WARNING: Using default values for at least one security variable (ALLOW_DEFAULT_SECRETS=true)."
   echo "It is strongly recommended to override all security related variables."
 fi
 
@@ -74,7 +80,8 @@ DEBUG_ENABLED="${DEBUG-0}"
 if [ "$DEBUG_ENABLED" -ne 0 ]; then
 
   echo "Environment variables:"
-  printenv
+  echo "Environment variables:"
+  printenv | sed -E 's/(^(ADMIN_PASSWORD|GUEST_PASSWORD|CONTROLLER_SECRET|EXECUTOR_SECRET|INSTANCE_AUTH_SECRET|DROVE_ADMIN_PASSWORD|DROVE_GUEST_PASSWORD|DROVE_CONTROLLER_SECRET|DROVE_EXECUTOR_SECRET|DROVE_INSTANCE_AUTH_SECRET)=).*/\1********/'
 
   echo "Java version details:"
   java -version

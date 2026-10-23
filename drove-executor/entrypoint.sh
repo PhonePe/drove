@@ -43,7 +43,13 @@ export DROVE_EXECUTOR_SECRET="${EXECUTOR_SECRET-ExecutorSecret}"
 
 if [ "${DROVE_CONTROLLER_SECRET}" = "ControllerSecret" ] \
       || [ "${DROVE_EXECUTOR_SECRET}" = "ExecutorSecret" ]; then
-  echo "WARNING: Using default values for at least one security variable."
+  if [ "${ALLOW_DEFAULT_SECRETS}" != "true" ]; then
+    echo "FATAL: Refusing to start with default values for security variables."
+    echo "Set all security variables (CONTROLLER_SECRET, EXECUTOR_SECRET)"
+    echo "or set ALLOW_DEFAULT_SECRETS=true to explicitly acknowledge the risk (dev/test only)."
+    exit 1
+  fi
+  echo "WARNING: Using default values for at least one security variable (ALLOW_DEFAULT_SECRETS=true)."
   echo "It is strongly recommended to override all security related variables."
 fi
 
@@ -71,7 +77,7 @@ DEBUG_ENABLED="${DEBUG-0}"
 if [ "$DEBUG_ENABLED" -ne 0 ]; then
 
   echo "Environment variables:"
-  printenv
+  printenv | sed -E 's/(^(CONTROLLER_SECRET|EXECUTOR_SECRET|DROVE_CONTROLLER_SECRET|DROVE_EXECUTOR_SECRET)=).*/\1********/'
 
   echo "Java version details:"
   java -version
