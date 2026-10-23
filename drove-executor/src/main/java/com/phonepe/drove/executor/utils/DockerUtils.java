@@ -442,13 +442,22 @@ public class DockerUtils {
         return runCommandInContainer(containerId, client, command, false);
     }
 
+    /**
+     * Splits a command into the program and its arguments for running without a shell.
+     * Runs of spaces count as one separator, and leading or trailing spaces are ignored,
+     * so no empty argument reaches the container.
+     */
+    static String[] splitCommand(final String command) {
+        return command.trim().split("[ ]+");
+    }
+
     @SneakyThrows
     public static CommandOutput runCommandInContainer(
             final String containerId,
             final DockerClient client,
             final String command,
             final boolean shellDisabled) {
-        String[] cmdWithArgs = shellDisabled ? command.split(" ") : new String[]{"sh", "-c", command};
+        String[] cmdWithArgs = shellDisabled ? splitCommand(command) : new String[]{"sh", "-c", command};
         val execId = client.execCreateCmd(containerId)
                 .withAttachStderr(true)
                 .withAttachStdout(true)
