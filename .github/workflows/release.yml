@@ -11,7 +11,7 @@ on:
       - '*'           # Push events to every tag not containing /
 
 jobs:
-  build-java:
+  deploy-java:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -24,8 +24,8 @@ jobs:
           cache: maven
           distribution: 'temurin'
 
-      - name: Build with Maven
-        run: mvn -B package -DskipTests
+      - name: Deploy with Maven
+        run: mvn -B deploy -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -45,7 +45,7 @@ jobs:
           overwrite: true
 
   deploy-containers:
-    needs: build-java
+    needs: deploy-java
     runs-on: ubuntu-latest
 
     strategy:
@@ -97,22 +97,3 @@ jobs:
           build-args: VERSION=${{ github.ref_name }}
           sbom: true
           provenance: true
-
-  deploy-java:
-    needs: deploy-containers
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.0.0
-        with:
-          java-version: 17
-          cache: maven
-          distribution: 'temurin'
-
-      - name: Deploy with Maven
-        run: mvn -B deploy -DskipTests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
