@@ -82,11 +82,16 @@ jobs:
         with:
           context: ${{ matrix.context }}
           push: false
-          load: true
+          # OCI export is used instead of `load: true` because images with
+          # attestations (sbom/provenance) are manifest lists, which the
+          # docker exporter cannot load.
+          outputs: type=oci,dest=image.tar
           tags: drove-test:${{ matrix.context }}
           build-args: VERSION=0.0.0
           sbom: true
           provenance: true
 
       - name: Smoke test image
-        run: docker image inspect drove-test:${{ matrix.context }} --format '{{ .Id }}'
+        run: |
+          tar -tf image.tar | grep -q '^oci-layout$'
+          echo "OCI image archive OK"
