@@ -18,6 +18,7 @@ package com.phonepe.drove.executor.utils;
 
 import static com.phonepe.drove.executor.ExecutorTestingUtils.DOCKER_CLIENT;
 import static com.phonepe.drove.executor.ExecutorTestingUtils.testTaskInstanceSpec;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -114,6 +115,19 @@ class DockerUtilsTest {
         finally {
             DOCKER_CLIENT.removeContainerCmd(containerId).withForce(true).exec();
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("commandsToSplit")
+    void testSplitCommand(final String command, final String[] expected) {
+        assertArrayEquals(expected, DockerUtils.splitCommand(command));
+    }
+
+    static Stream<Arguments> commandsToSplit() {
+        return Stream.of(
+                Arguments.of("echo hello", new String[]{"echo", "hello"}),
+                Arguments.of("  echo   hello  world ", new String[]{"echo", "hello", "world"}),
+                Arguments.of("echo\thello \t world\n", new String[]{"echo", "hello", "world"}));
     }
 
     @Test

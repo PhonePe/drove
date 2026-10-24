@@ -442,15 +442,6 @@ public class DockerUtils {
         return runCommandInContainer(containerId, client, command, false);
     }
 
-    /**
-     * Splits a command into the program and its arguments for running without a shell.
-     * Runs of spaces count as one separator, and leading or trailing spaces are ignored,
-     * so no empty argument reaches the container.
-     */
-    static String[] splitCommand(final String command) {
-        return command.trim().split("[ ]+");
-    }
-
     @SneakyThrows
     public static CommandOutput runCommandInContainer(
             final String containerId,
@@ -493,6 +484,11 @@ public class DockerUtils {
                 .exec()
                 .getExitCodeLong();
         return new CommandOutput(exitCode, buffer.toString(), errMsg.get());
+    }
+
+    @VisibleForTesting
+    static String[] splitCommand(final String command) {
+        return command.trim().split("\\s+");
     }
 
     private static Optional<UserSpec> userSpec(final DeploymentUnitSpec deploymentUnitSpec,
