@@ -448,7 +448,7 @@ public class DockerUtils {
             final DockerClient client,
             final String command,
             final boolean shellDisabled) {
-        String[] cmdWithArgs = shellDisabled ? command.split(" ") : new String[]{"sh", "-c", command};
+        String[] cmdWithArgs = shellDisabled ? splitCommand(command) : new String[]{"sh", "-c", command};
         val execId = client.execCreateCmd(containerId)
                 .withAttachStderr(true)
                 .withAttachStdout(true)
@@ -484,6 +484,11 @@ public class DockerUtils {
                 .exec()
                 .getExitCodeLong();
         return new CommandOutput(exitCode, buffer.toString(), errMsg.get());
+    }
+
+    @VisibleForTesting
+    static String[] splitCommand(final String command) {
+        return command.trim().split("\\s+");
     }
 
     private static Optional<UserSpec> userSpec(final DeploymentUnitSpec deploymentUnitSpec,
