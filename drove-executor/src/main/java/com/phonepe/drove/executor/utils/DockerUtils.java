@@ -448,8 +448,7 @@ public class DockerUtils {
             final DockerClient client,
             final String command,
             final boolean shellDisabled) {
-        String[] cmdWithArgs = shellDisabled ? command.split(" ") : new String[]{"sh", "-c", command};
-        val execId = client.execCreateCmd(containerId)
+        String[] cmdWithArgs = shellDisabled ? command.trim().split("\\s+") : new String[]{"sh", "-c", command};        val execId = client.execCreateCmd(containerId)
                 .withAttachStderr(true)
                 .withAttachStdout(true)
                 .withCmd(cmdWithArgs)
