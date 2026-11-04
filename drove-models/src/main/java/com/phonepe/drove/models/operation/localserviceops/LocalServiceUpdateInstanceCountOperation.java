@@ -27,7 +27,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 /**
  * Operation to update the number of instances per executor for a local service.

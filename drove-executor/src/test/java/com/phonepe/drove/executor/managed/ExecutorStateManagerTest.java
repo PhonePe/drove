@@ -32,7 +32,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 
 import java.util.List;
 import java.util.Map;

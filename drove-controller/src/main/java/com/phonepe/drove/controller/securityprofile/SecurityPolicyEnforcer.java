@@ -19,7 +19,7 @@ package com.phonepe.drove.controller.securityprofile;
 import java.util.List;
 import java.util.Objects;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.phonepe.drove.common.model.utils.Pair;

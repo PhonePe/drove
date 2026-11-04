@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 import com.google.common.base.Preconditions;
 import com.phonepe.drove.models.application.JobType;

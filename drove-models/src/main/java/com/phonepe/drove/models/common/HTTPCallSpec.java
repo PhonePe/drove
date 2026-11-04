@@ -24,7 +24,7 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.Map;
 import java.util.Set;
 

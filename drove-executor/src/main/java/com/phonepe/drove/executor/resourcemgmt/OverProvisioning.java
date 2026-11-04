@@ -23,8 +23,8 @@ import lombok.NoArgsConstructor;
 import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @Value
 @Builder

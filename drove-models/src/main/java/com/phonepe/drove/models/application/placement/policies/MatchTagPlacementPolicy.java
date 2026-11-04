@@ -26,7 +26,7 @@ import lombok.ToString;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 /**
  * Placement policy that targets hosts with a specific tag

@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.allocator.CandidateExecutorAllocation;

@@ -37,7 +37,7 @@ import com.phonepe.drove.common.CommonTestUtils;
 import com.phonepe.drove.executor.utils.ExecutorUtils;
 import com.phonepe.drove.models.info.nodedata.NodeData;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

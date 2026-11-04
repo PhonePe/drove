@@ -23,7 +23,7 @@ import com.phonepe.drove.controller.event.DroveEventBus;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.NodeData;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.curator.test.TestingCluster;

@@ -23,9 +23,9 @@ import io.dropwizard.auth.basic.BasicCredentials;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 

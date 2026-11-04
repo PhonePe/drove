@@ -18,10 +18,10 @@ package com.phonepe.drove.controller.ui;
 
 import com.github.jknack.handlebars.Helper;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
-import io.dropwizard.Configuration;
-import io.dropwizard.ConfiguredBundle;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.Configuration;
+import io.dropwizard.core.ConfiguredBundle;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

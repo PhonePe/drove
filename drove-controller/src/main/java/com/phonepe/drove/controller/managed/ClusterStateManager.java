@@ -22,7 +22,7 @@ import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  *

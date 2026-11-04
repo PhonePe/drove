@@ -24,19 +24,19 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.spi.DeferredProcessingAware;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.dropwizard.logging.AbstractAppenderFactory;
-import io.dropwizard.logging.FileAppenderFactory;
-import io.dropwizard.logging.async.AsyncAppenderFactory;
-import io.dropwizard.logging.filter.LevelFilterFactory;
-import io.dropwizard.logging.layout.LayoutFactory;
+import io.dropwizard.logging.common.AbstractAppenderFactory;
+import io.dropwizard.logging.common.FileAppenderFactory;
+import io.dropwizard.logging.common.async.AsyncAppenderFactory;
+import io.dropwizard.logging.common.filter.LevelFilterFactory;
+import io.dropwizard.logging.common.layout.LayoutFactory;
 import io.dropwizard.util.DataSize;
 import io.dropwizard.validation.MinDataSize;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
 
-import javax.annotation.Nullable;
-import javax.validation.constraints.Min;
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.Min;
 
 /**
  *

@@ -26,9 +26,9 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.jar.Manifest;
 
-import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -100,7 +100,7 @@ import com.phonepe.drove.statemachine.ActionFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.SneakyThrows;
 import lombok.val;

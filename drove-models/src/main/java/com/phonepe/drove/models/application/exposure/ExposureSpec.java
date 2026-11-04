@@ -19,7 +19,7 @@ package com.phonepe.drove.models.application.exposure;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 /**
  * Specification for exposing application to load balancer

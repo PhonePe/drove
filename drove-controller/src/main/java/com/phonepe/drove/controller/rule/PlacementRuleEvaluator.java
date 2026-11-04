@@ -20,8 +20,8 @@ import com.phonepe.drove.models.operation.rule.RuleEvalResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 /**
  * Evaluates rule-based placement policies using the shared {@link CelEngine}.

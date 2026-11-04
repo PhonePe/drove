@@ -17,7 +17,7 @@ server:
   requestLog:
     appenders:
       - type: console
-        timeZone: IST
+        timeZone: "Asia/Kolkata"
   gzip:
     syncFlush: true
 
@@ -29,7 +29,7 @@ logging:
   appenders:
     - type: console
       threshold: TRACE
-      timeZone: IST
+      timeZone: "Asia/Kolkata"
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{instanceLogId}] %message%n"
 
     - type: drove
@@ -37,7 +37,7 @@ logging:
       archivedLogFileSuffix: "%d"
       archivedFileCount: 3
       threshold: INFO
-      timeZone: IST
+      timeZone: "Asia/Kolkata"
       logFormat: "%(%-5level) | %-23date | %-30logger{0} | %message%n"
       archive: true
 
@@ -90,7 +90,7 @@ clusterAuth:
 #  reportOnStop: true
 #  reporters:
 #    - type: console
-#      timeZone: IST
+#      timeZone: "Asia/Kolkata"
 #      output: stdout
 
 controllers:

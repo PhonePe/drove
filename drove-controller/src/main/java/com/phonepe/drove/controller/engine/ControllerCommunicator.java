@@ -27,8 +27,8 @@ import com.phonepe.drove.common.net.ThreadedCommunicator;
 import com.phonepe.drove.controller.managed.LeadershipEnsurer;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 /**
  *

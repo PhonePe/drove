@@ -42,7 +42,7 @@ import com.phonepe.drove.models.info.resources.available.AvailableGPU;
 import com.phonepe.drove.models.info.resources.available.AvailableMemory;
 import lombok.val;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;

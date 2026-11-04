@@ -25,8 +25,8 @@ import lombok.extern.jackson.Jacksonized;
 
 import io.dropwizard.validation.ValidationMethod;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.Collections;
 import java.util.Set;
 

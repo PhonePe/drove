@@ -16,8 +16,8 @@
 
 package com.phonepe.drove.executor;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.phonepe.drove.auth.config.ClusterAuthenticationConfig;
@@ -25,7 +25,7 @@ import com.phonepe.drove.executor.discovery.ControllerConfig;
 import com.phonepe.drove.executor.dockerauth.DockerAuthConfig;
 import com.phonepe.drove.executor.resourcemgmt.ResourceConfig;
 
-import io.dropwizard.Configuration;
+import io.dropwizard.core.Configuration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

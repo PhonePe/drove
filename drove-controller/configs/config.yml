@@ -17,7 +17,7 @@ server:
     appenders: []
 #     appenders:
 #       - type: console
-#         timeZone: IST
+#         timeZone: "Asia/Kolkata"
 
 logging:
   level: INFO
@@ -28,7 +28,7 @@ logging:
   appenders:
     - type: console
       threshold: TRACE
-      timeZone: IST
+      timeZone: "Asia/Kolkata"
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{appId}] %message%n"
 
 zookeeper:

@@ -22,8 +22,8 @@ import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import org.apache.curator.framework.CuratorFramework;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.Optional;
 

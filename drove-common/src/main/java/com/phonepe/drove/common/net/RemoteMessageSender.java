@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static com.phonepe.drove.auth.core.AuthConstants.NODE_ID_HEADER;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 /**
  *

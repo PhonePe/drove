@@ -22,7 +22,7 @@ import com.phonepe.drove.models.interfaces.DeploymentSpecVisitor;
 import com.phonepe.drove.models.localservice.LocalServiceSpec;
 import com.phonepe.drove.models.task.TaskSpec;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.util.UUID;
 
 /**

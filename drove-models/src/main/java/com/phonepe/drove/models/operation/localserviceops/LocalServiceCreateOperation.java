@@ -28,8 +28,8 @@ import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Operation to create and start a local service on all executor nodes.

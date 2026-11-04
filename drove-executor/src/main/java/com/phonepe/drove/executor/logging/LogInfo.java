@@ -18,7 +18,7 @@ package com.phonepe.drove.executor.logging;
 
 import com.google.common.base.Strings;
 import com.phonepe.drove.executor.AppConfig;
-import io.dropwizard.logging.DefaultLoggingFactory;
+import io.dropwizard.logging.common.DefaultLoggingFactory;
 import lombok.*;
 
 import java.util.Objects;

@@ -31,7 +31,7 @@ import lombok.extern.jackson.Jacksonized;
 import org.hibernate.validator.constraints.Length;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 import java.util.concurrent.TimeUnit;
 
 /**

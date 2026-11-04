@@ -22,7 +22,7 @@ import com.phonepe.drove.executor.model.ExecutorTaskInfo;
 import com.phonepe.drove.executor.statemachine.common.actions.CommonExecutableFetchAction;
 import com.phonepe.drove.models.taskinstance.TaskState;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 /**
  *

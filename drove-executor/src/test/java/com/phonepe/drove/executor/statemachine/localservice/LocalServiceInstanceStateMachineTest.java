@@ -35,7 +35,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.junit.jupiter.api.Test;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.util.*;
 import java.util.Optional;
 import java.util.concurrent.Executors;

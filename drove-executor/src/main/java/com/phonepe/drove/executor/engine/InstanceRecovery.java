@@ -34,14 +34,14 @@ import com.phonepe.drove.models.taskinstance.TaskState;
 import com.phonepe.drove.statemachine.StateData;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.ServerLifecycleListener;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.eclipse.jetty.server.Server;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;

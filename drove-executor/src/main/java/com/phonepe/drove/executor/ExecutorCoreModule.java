@@ -20,9 +20,9 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.SynchronousQueue;
 
-import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,7 +71,7 @@ import com.phonepe.drove.executor.utils.ExecutorUtils;
 
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import io.dropwizard.util.Duration;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

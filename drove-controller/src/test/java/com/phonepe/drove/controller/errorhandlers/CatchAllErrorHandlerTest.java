@@ -19,7 +19,7 @@ package com.phonepe.drove.controller.errorhandlers;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

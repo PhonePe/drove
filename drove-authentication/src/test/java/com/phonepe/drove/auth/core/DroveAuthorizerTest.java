@@ -34,18 +34,18 @@ class DroveAuthorizerTest {
     void test() {
         val da = new DroveProxyAuthorizer<>(new DroveAuthorizer(), false);
         assertFalse(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
-                     DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE));
+                     DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE, null));
         assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
-                     DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE));
+                     DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE, null));
     }
 
     @Test
     void testDisableReadAuth() {
         val da = new DroveProxyAuthorizer<>(new DroveAuthorizer(), true);
         assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
-                     DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE));
+                     DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE, null));
         assertTrue(da.authorize(new DroveClusterNode("Test", NodeType.CONTROLLER),
-                     DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE));
+                     DroveUserRole.Values.DROVE_CLUSTER_NODE_ROLE, null));
     }
 
 }

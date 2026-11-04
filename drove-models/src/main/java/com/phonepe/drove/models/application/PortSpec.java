@@ -19,7 +19,7 @@ package com.phonepe.drove.models.application;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 /**
  * Specification for a port exposed by the container

@@ -19,6 +19,7 @@ package com.phonepe.drove.auth.core;
 import com.phonepe.drove.auth.model.DroveUser;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import io.dropwizard.auth.Authorizer;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,15 +36,14 @@ public class DroveProxyAuthorizer<T extends DroveUser> implements Authorizer<T> 
         this.coreAuthorizer = coreAuthorizer;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public boolean authorize(T droveUser, String role) {
+    public boolean authorize(T droveUser, String role, ContainerRequestContext requestContext) {
         //If the role requested is for read only (not r/w), then if disableReadAuth is set, just allow everyone in
         if (role.equals(DroveUserRole.Values.DROVE_EXTERNAL_READ_ONLY_ROLE) && disableReadAuth) {
             log.trace("Allowed in user {} for read-only role as read auth enforcement is turned off",
                       droveUser.getId());
             return true;
         }
-        return coreAuthorizer.authorize(droveUser, role);
+        return coreAuthorizer.authorize(droveUser, role, requestContext);
     }
 }
