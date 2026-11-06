@@ -81,6 +81,7 @@
         <module>drove-events-client</module>
         <module>drove-ignite-discovery</module>
         <module>drove-bom</module>
+        <module>drove-reporting</module>
     </modules>
 
     <distributionManagement>
@@ -132,7 +133,7 @@
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.language>java</sonar.language>
         <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
-        <sonar.coverage.jacoco.xmlReportPaths>drove-bom/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.jacoco.xmlReportPaths>${maven.multiModuleProjectDirectory}/drove-reporting/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <guava.version>33.5.0-jre</guava.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <json-path.version>2.9.0</json-path.version>
