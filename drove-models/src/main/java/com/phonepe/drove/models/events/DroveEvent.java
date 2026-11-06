@@ -16,13 +16,12 @@
 
 package com.phonepe.drove.models.events;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.phonepe.drove.models.events.events.*;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.Date;
@@ -33,7 +32,6 @@ import java.util.UUID;
  * Base class for all Drove events
  */
 @Data
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(name = "APP_STATE_CHANGE", value = DroveAppStateChangeEvent.class),
@@ -94,6 +92,12 @@ public abstract class DroveEvent<T extends Enum<T>> {
 
     public static<T> MapBuilder<T, Object> metadataBuilder() {
         return new MapBuilder<>();
+    }
+
+    @JsonCreator(mode = JsonCreator.Mode.DISABLED)
+    protected DroveEvent(final DroveEventType type, final Map<T, Object> metadata) {
+        this.type = type;
+        this.metadata = metadata;
     }
 
     public abstract <U> U accept(final DroveEventVisitor<U> visitor);

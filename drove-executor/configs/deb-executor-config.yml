@@ -9,7 +9,7 @@ server:
   requestLog:
     appenders:
       - type: file
-        timeZone: IST
+        timeZone: "Asia/Kolkata"
         currentLogFilename: {{{path.logDirectory}}}/drove-executor.log
         archivedLogFilenamePattern: {{{path.logDirectory}}}/drove-executor.log-%d
 
@@ -24,7 +24,7 @@ logging:
       archivedLogFileSuffix: "%d"
       archivedFileCount: 3
       threshold: TRACE
-      timeZone: IST
+      timeZone: "Asia/Kolkata"
       logFormat: "%(%-5level) [%date] [%logger{0}] %message%n"
 
 zookeeper:

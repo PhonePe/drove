@@ -30,9 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import dev.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import java.time.Duration;
 import java.util.Optional;
 

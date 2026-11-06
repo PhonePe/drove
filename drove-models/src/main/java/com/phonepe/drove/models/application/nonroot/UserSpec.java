@@ -18,7 +18,7 @@ package com.phonepe.drove.models.application.nonroot;
 
 import lombok.Value;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 /**
  * UserSpec is used to specify the user and group under which the container should run.

@@ -18,9 +18,9 @@ package com.phonepe.drove.executor.logging;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.LoggingEvent;
-import io.dropwizard.logging.async.AsyncLoggingEventAppenderFactory;
-import io.dropwizard.logging.filter.ThresholdLevelFilterFactory;
-import io.dropwizard.logging.layout.DropwizardLayoutFactory;
+import io.dropwizard.logging.common.async.AsyncLoggingEventAppenderFactory;
+import io.dropwizard.logging.common.filter.ThresholdLevelFilterFactory;
+import io.dropwizard.logging.common.layout.DropwizardLayoutFactory;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;

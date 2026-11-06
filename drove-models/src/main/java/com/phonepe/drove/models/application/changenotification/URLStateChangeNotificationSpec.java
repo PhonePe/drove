@@ -21,7 +21,7 @@ import lombok.ToString;
 import lombok.Value;
 import org.hibernate.validator.constraints.URL;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 
 /**
  *

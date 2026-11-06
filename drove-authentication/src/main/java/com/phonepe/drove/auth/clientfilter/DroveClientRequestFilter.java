@@ -19,8 +19,8 @@ package com.phonepe.drove.auth.clientfilter;
 import com.phonepe.drove.auth.core.AuthConstants;
 import com.phonepe.drove.auth.model.ClusterCommHeaders;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

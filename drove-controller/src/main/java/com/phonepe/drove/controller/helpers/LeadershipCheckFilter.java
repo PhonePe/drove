@@ -23,15 +23,15 @@ import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.info.nodedata.NodeTransportType;
 import lombok.val;
 
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 
 /**

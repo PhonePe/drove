@@ -18,8 +18,8 @@ package com.phonepe.drove.executor.engine;
 
 import java.util.Set;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import com.phonepe.drove.common.CommonUtils;
 import com.phonepe.drove.common.model.MessageDeliveryStatus;

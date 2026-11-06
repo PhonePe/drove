@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.slf4j.MDC;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;

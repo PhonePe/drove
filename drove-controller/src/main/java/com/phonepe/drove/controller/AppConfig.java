@@ -23,15 +23,15 @@ import com.phonepe.drove.controller.zookeeper.ZkConfig;
 import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.config.ViewOptions;
 import com.phonepe.drove.controller.securityprofile.ContainerSecurityPolicyConfig;
-import io.dropwizard.Configuration;
+import io.dropwizard.core.Configuration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.List;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 /**
  *

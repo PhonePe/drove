@@ -27,8 +27,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.phonepe.drove.common.coverageutils.IgnoreInJacocoGeneratedReport;
-import io.dropwizard.views.View;
-import io.dropwizard.views.ViewRenderer;
+import io.dropwizard.views.common.View;
+import io.dropwizard.views.common.ViewRenderer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;

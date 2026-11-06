@@ -23,7 +23,7 @@ import com.phonepe.drove.models.info.GPUInfo;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 

@@ -30,7 +30,7 @@ import com.phonepe.drove.models.application.ApplicationInfo;
 import com.phonepe.drove.models.application.ApplicationState;
 import io.appform.signals.signals.ScheduledSignal;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.junit.jupiter.api.Test;

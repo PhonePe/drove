@@ -21,7 +21,7 @@ import io.dropwizard.util.Duration;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Value;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**

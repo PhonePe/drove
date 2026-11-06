@@ -3,7 +3,7 @@ package com.phonepe.drove.executor.resourcemgmt.resourceloaders;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

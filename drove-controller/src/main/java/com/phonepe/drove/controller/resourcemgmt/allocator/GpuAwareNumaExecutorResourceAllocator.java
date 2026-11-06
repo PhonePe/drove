@@ -32,7 +32,7 @@ import com.phonepe.drove.controller.config.ControllerOptions;
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.resourcemgmt.GPUUtils;
 import com.phonepe.drove.models.application.requirements.GpuType;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;

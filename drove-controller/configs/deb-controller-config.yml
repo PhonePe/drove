@@ -9,7 +9,7 @@ server:
   requestLog:
     appenders:
       - type: file
-        timeZone: IST
+        timeZone: "Asia/Kolkata"
         currentLogFilename: {{{path.logDirectory}}}/drove-controller.log
         archivedLogFilenamePattern: {{{path.logDirectory}}}/drove-controller.log-%d
 
@@ -22,11 +22,11 @@ logging:
   appenders:
     - type: console
       threshold: TRACE
-      timeZone: IST
+      timeZone: "Asia/Kolkata"
       logFormat: "%(%-5level) [%date] [%logger{0} - %X{appId}] %message%n"
     - type: file
       threshold: TRACE
-      timeZone: IST
+      timeZone: "Asia/Kolkata"
       currentLogFilename: {{{path.logDirectory}}}/drove-controller.log
       archivedLogFilenamePattern: {{{path.logDirectory}}}/drove-controller.log-%d
       archivedFileCount: 3

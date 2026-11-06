@@ -22,9 +22,9 @@ import com.phonepe.drove.models.common.ClusterStateData;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;

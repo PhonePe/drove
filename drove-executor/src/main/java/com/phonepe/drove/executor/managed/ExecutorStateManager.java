@@ -32,13 +32,13 @@ import dev.failsafe.RetryPolicy;
 import io.appform.signals.signals.ConsumingFireForgetSignal;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.ServerLifecycleListener;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

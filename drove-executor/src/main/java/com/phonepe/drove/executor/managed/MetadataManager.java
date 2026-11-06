@@ -31,7 +31,7 @@ import lombok.val;
 import org.reflections.Reflections;
 import ru.vyarus.dropwizard.guice.module.installer.order.Order;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;

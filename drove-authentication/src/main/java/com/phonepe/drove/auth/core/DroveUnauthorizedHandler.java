@@ -18,7 +18,7 @@ package com.phonepe.drove.auth.core;
 
 import io.dropwizard.auth.UnauthorizedHandler;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 /**
  *

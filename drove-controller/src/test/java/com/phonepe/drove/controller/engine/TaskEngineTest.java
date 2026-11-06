@@ -65,7 +65,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import static com.phonepe.drove.common.CommonTestUtils.httpCaller;
 import static com.phonepe.drove.controller.ControllerTestUtils.taskSpec;

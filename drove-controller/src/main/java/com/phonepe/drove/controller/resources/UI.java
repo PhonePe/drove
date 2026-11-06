@@ -32,11 +32,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.vyarus.guicey.gsp.views.template.Template;
 
-import javax.annotation.security.PermitAll;
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.security.PermitAll;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.EnumSet;
 import java.util.Objects;

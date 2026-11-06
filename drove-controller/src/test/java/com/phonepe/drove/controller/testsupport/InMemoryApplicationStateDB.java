@@ -19,7 +19,7 @@ package com.phonepe.drove.controller.testsupport;
 import com.phonepe.drove.controller.statedb.ApplicationStateDB;
 import com.phonepe.drove.models.application.ApplicationInfo;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

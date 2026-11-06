@@ -20,7 +20,7 @@ import com.phonepe.drove.auth.model.DroveExternalUserInfo;
 import com.phonepe.drove.auth.model.DroveUserRole;
 import lombok.Value;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 /**

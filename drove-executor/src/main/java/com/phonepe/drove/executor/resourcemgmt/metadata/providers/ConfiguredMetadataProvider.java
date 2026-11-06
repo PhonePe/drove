@@ -21,7 +21,7 @@ import com.phonepe.drove.executor.resourcemgmt.metadata.config.ConfiguredMetadat
 import com.phonepe.drove.executor.resourcemgmt.metadata.config.MetadataProviderType;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Map;
 
 @Slf4j

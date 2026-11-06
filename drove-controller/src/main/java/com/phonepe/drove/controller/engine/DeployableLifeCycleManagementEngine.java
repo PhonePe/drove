@@ -25,7 +25,7 @@ import io.appform.signals.signals.ConsumingFireForgetSignal;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;

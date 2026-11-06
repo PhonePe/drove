@@ -22,7 +22,7 @@ import com.phonepe.drove.models.taskinstance.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;

@@ -22,7 +22,7 @@ import lombok.Data;
 import lombok.Singular;
 import lombok.extern.jackson.Jacksonized;
 
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 import java.time.Duration;
 import java.util.List;
 

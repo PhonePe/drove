@@ -39,7 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import ru.vyarus.guicey.gsp.views.template.TemplateContext;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 import java.util.Date;
 import java.util.Optional;
 

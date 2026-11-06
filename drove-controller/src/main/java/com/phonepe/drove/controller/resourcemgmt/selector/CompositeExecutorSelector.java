@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import com.phonepe.drove.controller.resourcemgmt.ExecutorHostInfo;
 import com.phonepe.drove.controller.utils.ControllerUtils;
