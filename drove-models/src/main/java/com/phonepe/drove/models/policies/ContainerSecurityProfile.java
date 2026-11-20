@@ -65,6 +65,8 @@ public class ContainerSecurityProfile {
     public static final Capabilities DEFAULT_CAPABILITIES = Capabilities.DEFAULT;
     public static final long DEFAULT_MAX_OPEN_FILES = 470_000;
     public static final String DEFAULT_SECCOMP_PROFILE = "";
+    public static final Set<String> DEFAULT_ALLOWED_EXECUTOR_ENV_VARS = Set.of();
+    public static final List<String> DEFAULT_ALLOWED_CONFIG_HOST_DIRS = List.of("/tmp/drove");
 
     public static final ContainerSecurityProfile DEFAULT = ContainerSecurityProfile.builder()
             .policyName(DEFAULT_POLICY_NAME)
@@ -75,6 +77,8 @@ public class ContainerSecurityProfile {
             .capabilities(Capabilities.DEFAULT)
             .maxOpenFiles(DEFAULT_MAX_OPEN_FILES)
             .seccompProfile(DEFAULT_SECCOMP_PROFILE)
+            .allowedExecutorEnvVars(DEFAULT_ALLOWED_EXECUTOR_ENV_VARS)
+            .allowedConfigHostDirs(DEFAULT_ALLOWED_CONFIG_HOST_DIRS)
             .build();
 
     @NonNull
@@ -133,4 +137,20 @@ public class ContainerSecurityProfile {
      */
     @Builder.Default
     String seccompProfile = DEFAULT_SECCOMP_PROFILE;
+
+    /**
+     * Environment variable names that an empty-valued env entry in a deployable
+     * spec may resolve from the executor process environment.
+     * If not specified, no variable is resolved and empty values are ignored.
+     */
+    @Builder.Default
+    Set<String> allowedExecutorEnvVars = DEFAULT_ALLOWED_EXECUTOR_ENV_VARS;
+
+    /**
+     * Host directories an EXECUTOR_LOCAL_FILE config may read from.
+     * A path is allowed only when it resolves strictly below one of these
+     * directories. If not specified, EXECUTOR_LOCAL_FILE configs are rejected.
+     */
+    @Builder.Default
+    List<String> allowedConfigHostDirs = DEFAULT_ALLOWED_CONFIG_HOST_DIRS;
 }

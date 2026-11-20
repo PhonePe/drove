@@ -31,6 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import com.phonepe.drove.common.discovery.leadership.LeadershipObserver;
 import com.phonepe.drove.controller.ControllerTestUtils;
@@ -77,6 +79,9 @@ import com.phonepe.drove.models.common.ClusterState;
 import com.phonepe.drove.models.common.ClusterStateData;
 import com.phonepe.drove.models.common.HTTPVerb;
 import com.phonepe.drove.models.common.Protocol;
+import com.phonepe.drove.models.config.ConfigSpec;
+import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
+import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.ExecutorResourceSnapshot;
 import com.phonepe.drove.models.info.GPUInfo;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
@@ -97,6 +102,9 @@ import com.phonepe.drove.models.task.TaskSpec;
 import com.phonepe.drove.models.taskinstance.TaskState;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import dev.failsafe.RetryPolicy;
 import io.dropwizard.util.Duration;
@@ -628,6 +636,36 @@ class ControllerUtilsTest {
         assertTrue(errors.isEmpty());
     }
 
+    @ParameterizedTest(name = "[{index}] path={0} allowed={1} => violations={2}")
+    @MethodSource("configHostDirArgs")
+    void testAllowedConfigHostDirs(String hostPath, List<String> allowedDirs,
+                                   int expectedViolations) {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("test")
+                .allowedConfigHostDirs(allowedDirs)
+                .build();
+        val configs = List.of((ConfigSpec) new ExecutorLocalFileConfigSpec(
+                "/files/config.txt", hostPath));
+        val errors = ControllerUtils.ensureAllowedConfigHostDirs(configs, profile);
+
+        assertEquals(expectedViolations, errors.size());
+        if (expectedViolations > 0) {
+            assertTrue(errors.get(0).contains(hostPath));
+        }
+    }
+
+    @Test
+    void testAllowedConfigHostDirsIgnoresNonLocalConfigs() {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("test")
+                .allowedConfigHostDirs(List.of())
+                .build();
+        val configs = List.of((ConfigSpec) new InlineConfigSpec(
+                "/files/drove.txt", "Drove Test".getBytes(StandardCharsets.UTF_8)));
+        assertTrue(ControllerUtils.ensureAllowedConfigHostDirs(configs, profile).isEmpty());
+        assertTrue(ControllerUtils.ensureAllowedConfigHostDirs(null, profile).isEmpty());
+    }
+
     @Test
     void testExposureOk() {
         val ports = Map.of("main", new PortSpec("main", 8000, PortType.HTTP));
@@ -739,6 +777,23 @@ class ControllerUtilsTest {
         val summary = ControllerUtils.summarizeResources(List.of(executor));
         assertEquals(0, summary.getTotalGpus(), "Should have 0 total GPUs");
         assertTrue(summary.getGpuVendorCounts().isEmpty(), "GPU vendor counts should be empty");
+    }
+
+
+    private static Stream<Arguments> configHostDirArgs() {
+        return Stream.of(
+                // Path inside default whitelisted dir
+                Arguments.of("/tmp/drove/app.conf", List.of("/tmp/drove"), 0),
+                // Path outside whitelist
+                Arguments.of("/etc/passwd", List.of("/tmp/drove"), 1),
+                // Whitelist must be component-wise, not prefix-wise
+                Arguments.of("/tmp/drove-evil/app.conf", List.of("/tmp/drove"), 1),
+                // Multiple allowed dirs, path matches the second
+                Arguments.of("/var/lib/app/app.conf", List.of("/tmp/drove", "/var/lib"), 0),
+                // Normalization prevents traversal escape
+                Arguments.of("/tmp/drove/../etc/passwd", List.of("/tmp/drove"), 1),
+                // Traversal that stays inside the allowed dir
+                Arguments.of("/tmp/drove/sub/../app.conf", List.of("/tmp/drove"), 0));
     }
 
     private ExecutorHostInfo buildExecutorWithGpu(String executorId, Map<String, String> gpuModels) {

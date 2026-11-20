@@ -65,6 +65,7 @@ import com.phonepe.drove.models.common.HTTPCallSpec;
 import com.phonepe.drove.models.config.ConfigSpec;
 import com.phonepe.drove.models.config.ConfigSpecVisitorAdapter;
 import com.phonepe.drove.models.config.impl.ControllerHttpFetchConfigSpec;
+import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.nodedata.ControllerNodeData;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -104,6 +105,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import jakarta.ws.rs.core.Response;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -638,6 +640,7 @@ public class ControllerUtils {
         error.addAll(ensureWhitelistedVolumes(deploymentSpec.getVolumes(), profile));
         error.addAll(ensureCmdlArgs(deploymentSpec.getArgs(), profile));
         error.addAll(checkDeviceDisabled(deploymentSpec.getDevices(), profile));
+        error.addAll(ensureAllowedConfigHostDirs(deploymentSpec.getConfigs(), profile));
         return error;
     }
 
@@ -1487,7 +1490,7 @@ public class ControllerUtils {
     }
 
     public static List<String> checkDeviceDisabled(
-            List<DeviceSpec> devices, 
+            List<DeviceSpec> devices,
             ContainerSecurityProfile securityProfile) {
         val deviceEnabled = securityProfile.getEnableRawDeviceAccess();
         if (!deviceEnabled && null != devices && !devices.isEmpty()) {
@@ -1495,5 +1498,36 @@ public class ControllerUtils {
                                    "To enable, set enableRawDeviceAccess: true in controller options.");
         }
         return List.of();
+    }
+
+    public static List<String> ensureAllowedConfigHostDirs(
+            List<ConfigSpec> configs, ContainerSecurityProfile securityProfile) {
+        val allowedDirs = Objects.requireNonNullElse(securityProfile.getAllowedConfigHostDirs(),
+                                                    List.<String>of());
+        val configList = Objects.requireNonNullElse(configs, List.<ConfigSpec>of());
+        val localFiles = configList.stream()
+                .map(configSpec -> configSpec.accept(new ConfigSpecVisitorAdapter<String>() {
+                    @Override
+                    public String visit(ExecutorLocalFileConfigSpec executorLocalFileConfig) {
+                        return executorLocalFileConfig.getFilePathOnHost();
+                    }
+                }))
+                .filter(Objects::nonNull)
+                .toList();
+        if (localFiles.isEmpty()) {
+            return List.of();
+        }
+        return localFiles.stream()
+                .filter(path -> !isWithinAllowedDir(path, allowedDirs))
+                .map(path -> "Config host dir access requested on non whitelisted host path: "
+                        + path + ". Allowed directories: " + allowedDirs)
+                .toList();
+    }
+
+    static boolean isWithinAllowedDir(String path, List<String> allowedDirs) {
+        val normalized = Paths.get(path).normalize();
+        return allowedDirs.stream()
+                .map(dir -> Paths.get(dir).normalize())
+                .anyMatch(allowedDir -> normalized.startsWith(allowedDir));
     }
 }

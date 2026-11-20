@@ -18,6 +18,9 @@ package com.phonepe.drove.models.policies;
 
 import com.phonepe.drove.models.policies.ContainerSecurityProfile.Capabilities;
 
+import java.util.List;
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.Value;
 import lombok.With;
@@ -31,12 +34,14 @@ public class DeployableSecuritySpec {
             ContainerSecurityProfile.DEFAULT_ENABLE_PRIVILEGED_MODE,
             Capabilities.DEFAULT,
             ContainerSecurityProfile.DEFAULT_SECCOMP_PROFILE,
-            ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES
+            ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES,
+            ContainerSecurityProfile.DEFAULT_ALLOWED_EXECUTOR_ENV_VARS,
+            ContainerSecurityProfile.DEFAULT_ALLOWED_CONFIG_HOST_DIRS
     );
 
     @Builder.Default
     Boolean enablePrivilegedMode = ContainerSecurityProfile.DEFAULT_ENABLE_PRIVILEGED_MODE;
-    
+
     @Builder.Default
     Capabilities capabilities = Capabilities.DEFAULT;
 
@@ -46,12 +51,30 @@ public class DeployableSecuritySpec {
     @Builder.Default
     long maxOpenFiles = ContainerSecurityProfile.DEFAULT_MAX_OPEN_FILES;
 
+    /**
+     * Environment variable names an empty-valued env entry may resolve from
+     * the executor process environment. Entries not on this list and without
+     * a supplied value are ignored.
+     */
+    @Builder.Default
+    Set<String> allowedExecutorEnvVars = ContainerSecurityProfile.DEFAULT_ALLOWED_EXECUTOR_ENV_VARS;
+
+    /**
+     * Host directories an EXECUTOR_LOCAL_FILE config may read from.
+     * A path is allowed only when it resolves strictly below one of these
+     * directories. Empty list means EXECUTOR_LOCAL_FILE configs are rejected.
+     */
+    @Builder.Default
+    List<String> allowedConfigHostDirs = ContainerSecurityProfile.DEFAULT_ALLOWED_CONFIG_HOST_DIRS;
+
     public static DeployableSecuritySpec from(final ContainerSecurityProfile containerSecurityProfile) {
         return DeployableSecuritySpec.builder()
                 .enablePrivilegedMode(containerSecurityProfile.getEnablePrivilegedMode())
                 .capabilities(containerSecurityProfile.getCapabilities())
                 .seccompProfile(containerSecurityProfile.getSeccompProfile())
                 .maxOpenFiles(containerSecurityProfile.getMaxOpenFiles())
+                .allowedExecutorEnvVars(containerSecurityProfile.getAllowedExecutorEnvVars())
+                .allowedConfigHostDirs(containerSecurityProfile.getAllowedConfigHostDirs())
                 .build();
     }
 }

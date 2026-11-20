@@ -21,6 +21,8 @@ import static com.phonepe.drove.models.application.requirements.GpuVendor.NVIDIA
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,6 +82,10 @@ import com.phonepe.drove.models.application.logging.LocalLoggingSpec;
 import com.phonepe.drove.models.application.logging.LoggingSpecVisitor;
 import com.phonepe.drove.models.application.logging.RsyslogLoggingSpec;
 import com.phonepe.drove.models.application.nonroot.UserSpec;
+import com.phonepe.drove.models.config.ConfigSpecVisitor;
+import com.phonepe.drove.models.config.impl.ControllerHttpFetchConfigSpec;
+import com.phonepe.drove.models.config.impl.ExecutorHttpFetchConfigSpec;
+import com.phonepe.drove.models.config.impl.ExecutorLocalFileConfigSpec;
 import com.phonepe.drove.models.config.impl.InlineConfigSpec;
 import com.phonepe.drove.models.info.InjectedEnvironmentInfo;
 import com.phonepe.drove.models.info.nodedata.ExecutorNodeData;
@@ -393,20 +399,61 @@ public class DockerUtils {
                 containerId,
                 client,
                 tos -> configSpecs
-                            .stream()
-                            .map(InlineConfigSpec.class::cast)
-                            .forEach(configSpec -> {
-                                try {
-                                    val entry = new TarArchiveEntry(configSpec.getLocalFilename());
-                                    entry.setSize(configSpec.getData().length);
+                            .forEach(configSpec -> configSpec.accept(new ConfigSpecVisitor<Void>() {
+                                @Override
+                                @SneakyThrows
+                                public Void visit(InlineConfigSpec inlineConfig) {
+                                    val entry = new TarArchiveEntry(inlineConfig.getLocalFilename());
+                                    entry.setSize(inlineConfig.getData().length);
                                     tos.putArchiveEntry(entry);
-                                    tos.write(configSpec.getData());
+                                    tos.write(inlineConfig.getData());
                                     tos.closeArchiveEntry();
+                                    return null;
                                 }
-                                catch (Exception e) {
-                                    throw new RuntimeException(e);
+
+                                @Override
+                                @SneakyThrows
+                                public Void visit(ExecutorLocalFileConfigSpec executorFileConfig) {
+                                    streamLocalFile(executorFileConfig, tos);
+                                    return null;
                                 }
-                            }));
+
+                                @Override
+                                public Void visit(ControllerHttpFetchConfigSpec controllerHttpFetchConfig) {
+                                    log.warn("Controller http should have been resolved to inline by controller");
+                                    return null;
+                                }
+
+                                @Override
+                                public Void visit(ExecutorHttpFetchConfigSpec executorHttpFetchConfig) {
+                                    log.warn("Executor http should have been resolved to inline by executor");
+                                    return null;
+                                }
+                            })));
+    }
+
+    /**
+     * Streams a host file into the container tar with a bounded buffer.
+     * Path validation is done by the controller at submission time.
+     * The executor only executes.
+     */
+    @VisibleForTesting
+    @SneakyThrows
+    public static void streamLocalFile(
+            final ExecutorLocalFileConfigSpec executorFileConfig,
+            final TarArchiveOutputStream tos) {
+        val path = Paths.get(executorFileConfig.getFilePathOnHost());
+        try (val fis = Files.newInputStream(path)) {
+            val entry = new TarArchiveEntry(executorFileConfig.getLocalFilename());
+            entry.setSize(Files.size(path));
+            tos.putArchiveEntry(entry);
+            val buffer = new byte[64 * 1024];
+            int read;
+            while ((read = fis.read(buffer)) >= 0) {
+                tos.write(buffer, 0, read);
+            }
+            tos.closeArchiveEntry();
+        }
     }
 
     @SneakyThrows
@@ -626,12 +673,24 @@ public class DockerUtils {
     }
 
     private static void addEnvironmentVariables(DeploymentUnitSpec deploymentUnitSpec, ArrayList<String> env) {
-        //Add all env with values
+        //Resolve the allowed executor env vars from the security spec.
+        //An empty env value may only be resolved from the executor process
+        //environment when its key is whitelisted. Anything else is ignored.
+        val securitySpec = deploymentUnitSpec.getSecuritySpec();
+        val allowedEnvVars = null == securitySpec || null == securitySpec.getAllowedExecutorEnvVars()
+                             ? Set.<String>of()
+                             : securitySpec.getAllowedExecutorEnvVars();
         env.addAll(Objects.requireNonNullElse(deploymentUnitSpec.getEnv(), Map.<String, String>of())
                            .entrySet()
                            .stream()
                            .map(e -> {
                                if (Strings.isNullOrEmpty(e.getValue())) {
+                                   if (!allowedEnvVars.contains(e.getKey())) {
+                                       log.warn("Variable: {} is empty and not allowed to be resolved "
+                                                        + "from executor environment. Nothing will be set.",
+                                                e.getKey());
+                                       return null;
+                                   }
                                    val value = System.getenv(e.getKey());
                                    if (Strings.isNullOrEmpty(value)) {
                                        log.warn("No local value found for empty variable: {}. Nothing will be set.",

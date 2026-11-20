@@ -177,7 +177,9 @@ class ApplicationInstanceRunActionTest extends AbstractTestBase {
                 Collections.emptyList(),
                 null,
                 null,
-                DeployableSecuritySpec.DEFAULT,
+                DeployableSecuritySpec.builder()
+                        .allowedExecutorEnvVars(Set.of("TEST_ENV_READ"))
+                        .build(),
                 Map.of("TEST_TAG", "TestValue"),
                 List.of(new ExposureSpec("test-host", "test-host", ExposureMode.ALL)),
                 "TestToken");

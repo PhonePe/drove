@@ -232,11 +232,8 @@ public class ExecutorUtils {
                     }
 
                     @Override
-                    @SneakyThrows
                     public ConfigSpec visit(ExecutorLocalFileConfigSpec executorFileConfig) {
-                        return new InlineConfigSpec(
-                                executorFileConfig.getLocalFilename(),
-                                Files.readAllBytes(Paths.get(executorFileConfig.getFilePathOnHost())));
+                        return executorFileConfig;
                     }
 
                     @Override
