@@ -82,6 +82,8 @@ public class HTTPCallSpec {
     /**
      * Any payload to be sent for post/put
      */
+    @Mask
+    @ToString.Exclude
     @Schema(description = "Request body payload for POST/PUT requests")
     String payload;
 
@@ -106,6 +108,7 @@ public class HTTPCallSpec {
     @Schema(description = "Pre-formatted Authorization header value", accessMode = Schema.AccessMode.WRITE_ONLY)
     String authHeader;
 
+    @Mask
     @Schema(description = "Additional HTTP headers to include in the request")
     Map<String, String> headers;
 

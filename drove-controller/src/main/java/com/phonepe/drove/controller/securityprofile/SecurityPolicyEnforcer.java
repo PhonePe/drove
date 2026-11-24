@@ -65,6 +65,8 @@ public class SecurityPolicyEnforcer {
                 .policyName(ContainerSecurityProfile.DEFAULT_POLICY_NAME)
                 .allowedMountDirs(Objects.requireNonNullElse(controllerOptions.getAllowedMountDirs(),
                                                              ContainerSecurityProfile.DEFAULT_ALLOWED_MOUNT_DIRS))
+                .defaultBlockHostMounts(Objects.requireNonNullElse(controllerOptions.getDefaultBlockHostMounts(),
+                                                                   ContainerSecurityProfile.DEFAULT_BLOCK_HOST_MOUNTS))
                 .disableCmdlArgs(Objects.requireNonNullElse(controllerOptions.getDisableCmdlArgs(),
                                                             ContainerSecurityProfile.DEFAULT_DISABLE_CMDL_ARGS))
                 .enableRawDeviceAccess(Objects.requireNonNullElse(controllerOptions.getEnableRawDeviceAccess(),

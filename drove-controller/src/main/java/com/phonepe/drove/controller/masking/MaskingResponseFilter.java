@@ -16,8 +16,10 @@
 
 package com.phonepe.drove.controller.masking;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phonepe.drove.models.api.ApiResponse;
 import com.phonepe.drove.models.common.Mask;
+import com.phonepe.drove.models.common.MaskValues;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -45,6 +47,8 @@ import java.util.Objects;
 @SuppressWarnings("java:S3011")
 public class MaskingResponseFilter implements ContainerResponseFilter {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     @Override
     public void filter(
             ContainerRequestContext requestContext,
@@ -52,9 +56,21 @@ public class MaskingResponseFilter implements ContainerResponseFilter {
         val type = responseContext.getEntityClass();
         if (type.equals(ApiResponse.class)) {
             val response = (ApiResponse<?>) responseContext.getEntity();
-            mask(response.getData(), Object.class);
-            responseContext.setEntity(response);
+            //The entity may be the live object from the state DB. Masking writes
+            //to fields, so mask a deep copy and never the original object.
+            val masked = maskCopy(response.getData());
+            responseContext.setEntity(ApiResponse.success(masked));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T maskCopy(T data) throws IOException {
+        if (null == data) {
+            return null;
+        }
+        val copy = (T) MAPPER.readValue(MAPPER.writeValueAsBytes(data), data.getClass());
+        mask(copy, Object.class);
+        return copy;
     }
 
     private <T> void mask(T object, Class<?> callingType) {
@@ -74,6 +90,10 @@ public class MaskingResponseFilter implements ContainerResponseFilter {
         if (Objects.nonNull(field.getDeclaredAnnotation(Mask.class))) {
             log.trace("Found masked field: {}", field.getName());
             maskStringOrArrayField(object, field);
+        }
+        else if (Objects.nonNull(field.getDeclaredAnnotation(MaskValues.class))) {
+            log.trace("Found masked values field: {}", field.getName());
+            maskMapValuesField(object, field);
         }
         else {
             if (ClassUtils.isPrimitiveOrWrapper(field.getType())
@@ -136,17 +156,40 @@ public class MaskingResponseFilter implements ContainerResponseFilter {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> void maskMapValuesField(T object, Field field) {
+        try {
+            if (Map.class.isAssignableFrom(field.getType())) {
+                field.setAccessible(true);
+                val map = (Map<String, String>) field.get(object);
+                if (null != map && !map.isEmpty()) {
+                    field.set(object, map.entrySet()
+                            .stream()
+                            .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey,
+                                                                        entry -> "***",
+                                                                        (a, b) -> a,
+                                                                        java.util.LinkedHashMap::new)));
+                }
+            }
+        }
+        catch (IllegalAccessException e) {
+            log.error("Could not mask map values for field: {}", field.getName());
+        }
+    }
+
     private static <T> void maskStringOrArrayField(T object, Field field) {
         try {
             if (field.getType() == String.class) {
                 field.setAccessible(true);
                 field.set(object, "***");
             }
-            else {
-                if (field.getType().isArray()) {
-                    field.setAccessible(true);
-                    field.set(object, Array.newInstance(field.getType().getComponentType(), 0));
-                }
+            else if (field.getType().isArray()) {
+                field.setAccessible(true);
+                field.set(object, Array.newInstance(field.getType().getComponentType(), 0));
+            }
+            else if (Map.class.isAssignableFrom(field.getType())) {
+                //Masked map field: keep the keys visible, hide every value.
+                maskMapValuesField(object, field);
             }
         }
         catch (IllegalAccessException e) {

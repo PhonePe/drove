@@ -229,21 +229,16 @@ class LogFileStreamTest {
             assertEquals(10, logLines.getOffset());
             assertEquals("file", logLines.getData());
         }
-        { //Length without offset is bad request
-            try (val r = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
+        { //Length without offset reads from the start of the file
+            val logLines = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
                     .queryParam("length", "10")
                     .request()
                     .header(NODE_ID_HEADER, NodeType.CONTROLLER.name())
                     .header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, "DefaultControllerSecret")
-                    .get()) {
-                assertEquals(HttpStatus.BAD_REQUEST_400, r.getStatus());
-                val files = r.readEntity(new GenericType<Map<String, String>>() {
-                });
-                assertTrue(files.containsKey("error"));
-                assertEquals(
-                        "Error reading file src/test/resources/logtest/test_app/test_instance/output.1.log: Negative seek offset",
-                        files.get("error"));
-            }
+                    .get(new GenericType<LogFileStream.LogBuffer>() {
+                    });
+            assertEquals(0, logLines.getOffset());
+            assertEquals("First log ", logLines.getData());
         }
         { //Invalid filenames means bad request
             try (val r = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.wrong.log")
@@ -259,6 +254,57 @@ class LogFileStreamTest {
                         "Could not read log file: src/test/resources/logtest/test_app/test_instance/output.wrong.log",
                         files.get("error"));
             }
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testFileReadLengthIsCapped() {
+        //A file larger than the max read length proves the cap works.
+        val dir = Files.createTempDirectory("logtest");
+        val content = "a".repeat(1024 * 1024 + 100); //1MB + 100 bytes
+        Files.writeString(dir.resolve("output.1.log"), content);
+        when(logInfo.isDroveLogging()).thenReturn(true);
+        when(logInfo.logPathFor(anyString(), anyString()))
+                .thenReturn(dir.toAbsolutePath().toString());
+        when(logInfo.getLogPrefix()).thenReturn(dir.getParent().toString());
+        {
+            //Default length reads the 32_768 default, not the whole file.
+            val logLines = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
+                    .queryParam("offset", "0")
+                    .request()
+                    .header(NODE_ID_HEADER, NodeType.CONTROLLER.name())
+                    .header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, "DefaultControllerSecret")
+                    .get(new GenericType<LogFileStream.LogBuffer>() {
+                    });
+            assertEquals(0, logLines.getOffset());
+            assertEquals(32_768, logLines.getData().length());
+        }
+        {
+            //A huge requested length must not exceed the 1MB cap.
+            val logLines = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
+                    .queryParam("offset", "0")
+                    .queryParam("length", String.valueOf(1024 * 1024 * 100))
+                    .request()
+                    .header(NODE_ID_HEADER, NodeType.CONTROLLER.name())
+                    .header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, "DefaultControllerSecret")
+                    .get(new GenericType<LogFileStream.LogBuffer>() {
+                    });
+            assertEquals(0, logLines.getOffset());
+            assertEquals(1024 * 1024, logLines.getData().length());
+        }
+        {
+            //Reads near the end must not read past the file end.
+            val logLines = EXT.target("/v1/logs/filestream/test_app/test_instance/read/output.1.log")
+                    .queryParam("offset", String.valueOf(1024 * 1024))
+                    .queryParam("length", "1000")
+                    .request()
+                    .header(NODE_ID_HEADER, NodeType.CONTROLLER.name())
+                    .header(ClusterCommHeaders.CLUSTER_AUTHORIZATION, "DefaultControllerSecret")
+                    .get(new GenericType<LogFileStream.LogBuffer>() {
+                    });
+            assertEquals(1024 * 1024, logLines.getOffset());
+            assertEquals(100, logLines.getData().length());
         }
     }
 

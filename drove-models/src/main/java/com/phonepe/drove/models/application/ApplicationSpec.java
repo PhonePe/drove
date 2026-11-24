@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.application;
 
+import com.phonepe.drove.models.common.MaskValues;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
@@ -108,6 +109,7 @@ public class ApplicationSpec implements DeploymentSpec {
     @Schema(description = "Custom tags/labels for the application as key-value pairs", example = "{\"team\": \"platform\", \"environment\": \"production\"}")
     Map<String, String> tags;
 
+    @MaskValues
     @Schema(description = "Environment variables to set in the container as key-value pairs", example = "{\"LOG_LEVEL\": \"INFO\"}")
     Map<String, String> env;
 

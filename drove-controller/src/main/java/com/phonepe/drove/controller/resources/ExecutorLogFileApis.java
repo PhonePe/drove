@@ -49,11 +49,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import java.io.OutputStream;
 import java.net.URLConnection;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -81,6 +78,7 @@ public class ExecutorLogFileApis {
 
     private static final String OFFSET_PARAM = "offset";
     private static final String LENGTH_PARAM = "length";
+    private static final long MAX_ALLOWED_LENGTH = 1048576L;
 
     private final ApplicationInstanceInfoDB instanceInfoDB;
     private final TaskDB taskDB;
@@ -132,7 +130,7 @@ public class ExecutorLogFileApis {
                                   @PathParam("instanceId") @NotEmpty final String instanceId,
                                   @PathParam("fileName") @NotEmpty final String fileName,
                                   @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
-                                  @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+                                  @QueryParam(LENGTH_PARAM) @Min(-1) @Max(MAX_ALLOWED_LENGTH) @DefaultValue("-1") final int length) {
         return callUpstreamForAppLogs(appId,
                                       instanceId,
                                       READ_API_PATH + fileName,
@@ -180,7 +178,7 @@ public class ExecutorLogFileApis {
                                    @PathParam("taskId") @NotEmpty final String taskId,
                                    @PathParam("fileName") @NotEmpty final String fileName,
                                    @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
-                                   @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+                                   @QueryParam(LENGTH_PARAM) @Min(-1) @Max(MAX_ALLOWED_LENGTH) @DefaultValue("-1") final int length) {
         return callUpstreamForTaskLogs(sourceAppName,
                                        taskId,
                                        READ_API_PATH + fileName,
@@ -225,7 +223,7 @@ public class ExecutorLogFileApis {
                                            @PathParam("instanceId") @NotEmpty final String instanceId,
                                            @PathParam("fileName") @NotEmpty final String fileName,
                                            @QueryParam(OFFSET_PARAM) @Min(-1) @DefaultValue("-1") final long offset,
-                                           @QueryParam(LENGTH_PARAM) @Min(-1) @Max(Long.MAX_VALUE) @DefaultValue("-1") final int length) {
+                                           @QueryParam(LENGTH_PARAM) @Min(-1) @Max(MAX_ALLOWED_LENGTH) @DefaultValue("-1") final int length) {
         return callUpstreamForLocalServiceLogs(serviceId,
                                                instanceId,
                                                READ_API_PATH + fileName,

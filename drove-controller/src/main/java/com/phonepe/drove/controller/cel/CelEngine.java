@@ -88,6 +88,17 @@ public class CelEngine {
     public static final int MAX_EXPRESSION_CODE_POINTS = 1000;
     public static final int MAX_PARSE_RECURSION_DEPTH = 32;
 
+    /**
+     * Replaces control characters in a user-supplied rule so that the rule
+     * text cannot forge log lines when it is written to the log.
+     */
+    static String sanitizeForLog(String rule) {
+        if (null == rule) {
+            return "null";
+        }
+        return rule.replaceAll("\\p{Cntrl}", "_");
+    }
+
     private static final CelOptions CEL_OPTIONS = CelOptions.newBuilder()
             .comprehensionMaxIterations(MAX_COMPREHENSION_ITERATIONS)
             .maxRegexProgramSize(MAX_REGEX_PROGRAM_SIZE)
@@ -142,11 +153,11 @@ public class CelEngine {
                 .build(rule -> {
                     val compiled = compile(rule);
                     if (compiled.getFirst().getStatus() == RuleCallStatus.SUCCESS) {
-                        log.debug("Loaded compiled program for rule: {}", rule);
+                        log.debug("Loaded compiled program for rule: {}", sanitizeForLog(rule));
                         return compiled.getSecond();
                     }
                     log.error("Could not compile rule {} as there were compilation failures: {}",
-                              rule, compiled.getFirst().getError());
+                              sanitizeForLog(rule), compiled.getFirst().getError());
                     return null;
                 });
     }
@@ -189,7 +200,7 @@ public class CelEngine {
                     runtime.createProgram(ast));
         }
         catch (Exception e) {
-            log.warn("Failed to compile rule: {}, exception: {}", expression, e.getMessage());
+            log.warn("Failed to compile rule: {}, exception: {}", sanitizeForLog(expression), e.getMessage());
             return new Pair<>(
                     RuleCheckResponse.builder()
                             .status(RuleCallStatus.FAILURE)
@@ -238,7 +249,7 @@ public class CelEngine {
                     .build();
         }
         catch (Exception e) {
-            log.error("Failed to evaluate rule: {}, exception: {}", expression, e.getMessage());
+            log.error("Failed to evaluate rule: {}, exception: {}", sanitizeForLog(expression), e.getMessage());
             return RuleEvalResponse.builder()
                     .status(RuleCallStatus.FAILURE)
                     .result(false)

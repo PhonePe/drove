@@ -629,6 +629,31 @@ class ControllerUtilsTest {
         assertTrue(errors.isEmpty());
     }
 
+    @ParameterizedTest(name = "[{index}] volume={0} allowed={1} block={2} => violations={3}")
+    @MethodSource("whitelistedVolumeArgs")
+    void testWhitelistedVolumes(String hostPath, List<String> allowedDirs,
+                                boolean blockHostMounts, int expectedViolations) {
+        val profile = ContainerSecurityProfile.builder()
+                .policyName("test")
+                .allowedMountDirs(allowedDirs)
+                .defaultBlockHostMounts(blockHostMounts)
+                .build();
+        val volumes = List.of(
+                new MountedVolume("/container/mount", hostPath,
+                        MountedVolume.MountMode.READ_ONLY));
+        val errors = ControllerUtils.ensureWhitelistedVolumes(volumes, profile);
+        assertEquals(expectedViolations, errors.size());
+        if (expectedViolations > 0) {
+            assertTrue(errors.get(0).contains(hostPath));
+        }
+    }
+
+    @ParameterizedTest(name = "[{index}] path={0} valid={1}")
+    @MethodSource("httpCheckPathArgs")
+    void testValidateHttpCheckPath(String path, boolean valid) {
+        assertEquals(valid, ControllerUtils.validateHttpCheckPath(path).isEmpty());
+    }
+
     @Test
     void testCmdlArgsNull() {
         val profile = ContainerSecurityProfile.DEFAULT;
@@ -777,6 +802,40 @@ class ControllerUtilsTest {
         val summary = ControllerUtils.summarizeResources(List.of(executor));
         assertEquals(0, summary.getTotalGpus(), "Should have 0 total GPUs");
         assertTrue(summary.getGpuVendorCounts().isEmpty(), "GPU vendor counts should be empty");
+    }
+
+    private static Stream<Arguments> whitelistedVolumeArgs() {
+        return Stream.of(
+                // Inside allowed dir
+                Arguments.of("/srv/workloads/app", List.of("/srv/workloads"), false, 0),
+                // Sibling prefix must not pass (component-wise check)
+                Arguments.of("/srv/workloads-private/app", List.of("/srv/workloads"), false, 1),
+                // Outside allowed dir
+                Arguments.of("/etc/passwd", List.of("/srv/workloads"), false, 1),
+                // Traversal that escapes the allowed dir
+                Arguments.of("/srv/workloads/../etc", List.of("/srv/workloads"), false, 1),
+                // Traversal that stays inside the allowed dir
+                Arguments.of("/srv/workloads/a/../app", List.of("/srv/workloads"), false, 0),
+                // Empty allowlist, block disabled: legacy allow-all behavior
+                Arguments.of("/var/run/docker.sock", List.of(), false, 0),
+                // Empty allowlist, block enabled: deny all host mounts
+                Arguments.of("/var/run/docker.sock", List.of(), true, 1));
+    }
+
+    private static Stream<Arguments> httpCheckPathArgs() {
+        return Stream.of(
+                Arguments.of("/health", true),
+                Arguments.of("/a/b?x=1", true),
+                // Does not start with /
+                Arguments.of("health", false),
+                Arguments.of("", false),
+                Arguments.of(null, false),
+                // Authority/credential injection
+                Arguments.of("/health@127.0.0.1:9000", false),
+                // Scheme injection
+                Arguments.of("/x://evil", false),
+                // Backslash tricks
+                Arguments.of("/x\\y", false));
     }
 
 

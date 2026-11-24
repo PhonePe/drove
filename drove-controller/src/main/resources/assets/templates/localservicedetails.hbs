@@ -95,10 +95,10 @@
     //Preload config as it won't change
     $.get('/apis/v1/localservices/{{serviceId}}/spec', function(data) {
         if(data.status === 'SUCCESS') {
-            $('#serviceJson').html(JSON.stringify(data.data, null, 4));
+            $('#serviceJson').text(JSON.stringify(data.data, null, 4));
         }
         else {
-            $('#serviceJson').html('Could not load config');
+            $('#serviceJson').text('Could not load config');
         }
     });
 

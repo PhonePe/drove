@@ -98,10 +98,10 @@
     //Preload config as it won't change
     $.get(`/apis/v1/applications/{{appId}}/spec`, function(data) {
         if(data.status === `SUCCESS`) {
-            $(`#appSpecJson`).html(JSON.stringify(data.data, null, 4));
+            $(`#appSpecJson`).text(JSON.stringify(data.data, null, 4));
         }
         else {
-            $(`#appSpecJson`).html(`Could not load config`);
+            $(`#appSpecJson`).text(`Could not load config`);
         }
     });
 

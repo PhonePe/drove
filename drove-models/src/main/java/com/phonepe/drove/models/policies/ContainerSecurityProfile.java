@@ -67,6 +67,7 @@ public class ContainerSecurityProfile {
     public static final String DEFAULT_SECCOMP_PROFILE = "";
     public static final Set<String> DEFAULT_ALLOWED_EXECUTOR_ENV_VARS = Set.of();
     public static final List<String> DEFAULT_ALLOWED_CONFIG_HOST_DIRS = List.of("/tmp/drove");
+    public static final Boolean DEFAULT_BLOCK_HOST_MOUNTS = false;
 
     public static final ContainerSecurityProfile DEFAULT = ContainerSecurityProfile.builder()
             .policyName(DEFAULT_POLICY_NAME)
@@ -79,6 +80,7 @@ public class ContainerSecurityProfile {
             .seccompProfile(DEFAULT_SECCOMP_PROFILE)
             .allowedExecutorEnvVars(DEFAULT_ALLOWED_EXECUTOR_ENV_VARS)
             .allowedConfigHostDirs(DEFAULT_ALLOWED_CONFIG_HOST_DIRS)
+            .defaultBlockHostMounts(DEFAULT_BLOCK_HOST_MOUNTS)
             .build();
 
     @NonNull
@@ -153,4 +155,12 @@ public class ContainerSecurityProfile {
      */
     @Builder.Default
     List<String> allowedConfigHostDirs = DEFAULT_ALLOWED_CONFIG_HOST_DIRS;
+
+    /**
+     * When true, host volume mounts are rejected unless allowedMountDirs
+     * contains the mount path. When false and allowedMountDirs is empty,
+     * any host mount is allowed. Default is false.
+     */
+    @Builder.Default
+    Boolean defaultBlockHostMounts = DEFAULT_BLOCK_HOST_MOUNTS;
 }

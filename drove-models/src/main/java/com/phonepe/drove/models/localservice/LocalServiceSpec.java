@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.localservice;
 
+import com.phonepe.drove.models.common.MaskValues;
 import com.phonepe.drove.models.application.JobType;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.PortSpec;
@@ -106,6 +107,7 @@ public class LocalServiceSpec implements DeploymentSpec {
     @Schema(description = "Custom tags/labels for the service as key-value pairs", example = "{\"team\": \"platform\"}")
     Map<String, String> tags;
 
+    @MaskValues
     @Schema(description = "Environment variables to set in the container as key-value pairs", example = "{\"LOG_LEVEL\": \"INFO\"}")
     Map<String, String> env;
 

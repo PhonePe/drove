@@ -27,10 +27,11 @@ import com.phonepe.drove.models.instance.InstancePort;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.net.URIBuilder;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
@@ -40,8 +41,6 @@ import java.util.concurrent.CancellationException;
  */
 @Slf4j
 public class HttpChecker implements Checker {
-    private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = 8192;
-
     private final CloseableHttpClient httpClient;
     private final HTTPCheckModeSpec httpSpec;
     private final URI uri;
@@ -70,10 +69,17 @@ public class HttpChecker implements Checker {
             }
         });
         Objects.requireNonNull(portSpec, "Invalid port spec. No port of name '" + httpSpec.getPortName() + "' exists");
-        this.uri = URI.create(String.format("%s://localhost:%d%s",
-                                       httpSpec.getProtocol().urlPrefix(),
-                                       portSpec.getHostPort(),
-                                       httpSpec.getPath()));
+        try {
+            this.uri = new URIBuilder()
+                    .setScheme(httpSpec.getProtocol().urlPrefix())
+                    .setHost("localhost")
+                    .setPort(portSpec.getHostPort())
+                    .setPath(httpSpec.getPath())
+                    .build();
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid health check path: " + httpSpec.getPath(), e);
+        }
         log.debug("URI for healthcheck: {}", uri);
     }
 
@@ -85,17 +91,16 @@ public class HttpChecker implements Checker {
         try {
             return httpClient.execute(request, response -> {
                 val statusCode = response.getCode();
-                val responseBody = null != response.getEntity()
-                                   ? EntityUtils.toString(response.getEntity(), MAX_READABLE_OUTPUT_SIZE_BYTES)
-                                   : "";
                 if (httpSpec.getSuccessCodes().contains(statusCode)) {
                     return CheckResult.healthy();
                 }
-                log.error("HTTP check unhealthy. Status code: {} response: {}", statusCode, responseBody);
-                return CheckResult.unhealthy(String.format("Response from %S: [%d] %s",
+                //Do not include the response body in the message. It may hold data
+                //from executor-internal services that callers must not see.
+                log.error("HTTP check unhealthy. Status code: {}", statusCode);
+                return CheckResult.unhealthy(String.format("Response from %S: [%d]",
                                                            uri,
-                                                           statusCode,
-                                                           responseBody));                });
+                                                           statusCode));
+            });
 
         }
         catch (IOException e) {

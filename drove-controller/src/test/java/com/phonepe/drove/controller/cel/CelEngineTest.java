@@ -224,6 +224,27 @@ class CelEngineTest {
     }
 
     @Test
+    void testSanitizeForLogReplacesControlCharacters() {
+        //Every control character becomes an underscore, so rules cannot forge log lines.
+        assertEquals("_", CelEngine.sanitizeForLog("\n"));
+        assertEquals("_", CelEngine.sanitizeForLog("\r"));
+        assertEquals("_", CelEngine.sanitizeForLog("\t"));
+        assertEquals("_", CelEngine.sanitizeForLog("\0"));
+        assertEquals("a_b_c_", CelEngine.sanitizeForLog("a\nb\rc\0"));
+        //ANSI escape: only the ESC byte is a control char; the rest stays.
+        assertEquals("_[0m", CelEngine.sanitizeForLog("\u001b[0m"));
+    }
+
+    @Test
+    void testSanitizeForLogKeepsNormalTextUnchanged() {
+        //Printable text passes through unchanged.
+        assertEquals("ctx.allocation.node.executorId == 'Ex1'",
+                     CelEngine.sanitizeForLog("ctx.allocation.node.executorId == 'Ex1'"));
+        assertEquals("", CelEngine.sanitizeForLog(""));
+        assertEquals("null", CelEngine.sanitizeForLog(null));
+    }
+
+    @Test
     void testNullDataReturnsFailure() {
         val rs = ControllerTestUtils.celEngine(MAPPER, 0);
         val result = rs.evaluate("ctx.allocation.node.executorId == 'Ex1'", null);

@@ -1060,10 +1060,11 @@ public class ControllerUtils {
                 .accept(new CheckModeSpecVisitor<>() {
                     @Override
                     public Optional<String> visit(HTTPCheckModeSpec httpCheck) {
-                        return ports.containsKey(httpCheck.getPortName())
-                               ? Optional.empty()
-                               : Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
+                        if (!ports.containsKey(httpCheck.getPortName())) {
+                            return Optional.of("Invalid port name for health check: " + httpCheck.getPortName()
                                                      + ". Available ports: " + ports.keySet());
+                        }
+                        return validateHttpCheckPath(httpCheck.getPath());
                     }
 
                     @Override
@@ -1071,6 +1072,20 @@ public class ControllerUtils {
                         return Optional.empty();
                     }
                 });
+    }
+
+    public static Optional<String> validateHttpCheckPath(String path) {
+        if (Strings.isNullOrEmpty(path) || !path.startsWith("/")) {
+            return Optional.of("Health check path must start with '/': " + path);
+        }
+        //A path with these characters can change the URI authority or scheme
+        //when it is appended to the host. Reject them outright.
+        for (val forbidden : new char[]{'@', '\\', ':'}) {
+            if (path.indexOf(forbidden) >= 0) {
+                return Optional.of("Health check path contains forbidden character '" + forbidden + "': " + path);
+            }
+        }
+        return Optional.empty();
     }
 
     public static List<String> validateExposureSpec(final ApplicationSpec spec,
@@ -1464,16 +1479,27 @@ public class ControllerUtils {
 
     public static List<String> ensureWhitelistedVolumes(
             Collection<MountedVolume> volumes, ContainerSecurityProfile securityProfile) {
-        val whitelistedDirs = securityProfile.getAllowedMountDirs();
-        if (null != volumes && !whitelistedDirs.isEmpty()) {
-            return volumes.stream()
-                    .filter(volume -> whitelistedDirs.stream()
-                            .noneMatch(dir -> volume.getPathOnHost().startsWith(dir)))
-                    .map(volume -> "Volume mount requested on non whitelisted host directory: "
-                            + volume.getPathOnHost())
-                    .toList();
+        if (null == volumes || volumes.isEmpty()) {
+            return List.of();
         }
-        return List.of();
+        val whitelistedDirs = Objects.requireNonNullElse(securityProfile.getAllowedMountDirs(),
+                                                         List.<String>of());
+        val blockHostMounts = Objects.requireNonNullElse(securityProfile.getDefaultBlockHostMounts(),
+                                                         Boolean.FALSE);
+        if (whitelistedDirs.isEmpty()) {
+            if (blockHostMounts) {
+                return volumes.stream()
+                        .map(volume -> "Volume mount requested on non whitelisted host directory: "
+                                + volume.getPathOnHost())
+                        .toList();
+            }
+            return List.of();
+        }
+        return volumes.stream()
+                .filter(volume -> !isWithinAllowedDir(volume.getPathOnHost(), whitelistedDirs))
+                .map(volume -> "Volume mount requested on non whitelisted host directory: "
+                        + volume.getPathOnHost())
+                .toList();
     }
 
     public static List<String> ensureCmdlArgs(

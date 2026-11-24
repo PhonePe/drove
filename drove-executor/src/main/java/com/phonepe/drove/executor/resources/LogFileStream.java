@@ -55,6 +55,8 @@ public class LogFileStream {
 
     private static final String ERROR_FIELD = "error";
     private static final int DEFAULT_BUFFER_SIZE = 8192;
+    private static final int DEFAULT_READ_LENGTH = 32_768;
+    private static final int MAX_READ_LENGTH = 1024 * 1024;
 
     @Value
     public static class LogLines {
@@ -128,13 +130,19 @@ public class LogFileStream {
                     if (offset == -1 && length == -1) {
                         return Response.ok(new LogBuffer("", logFile.length())).build();
                     }
-                    val actualLength = length == -1 ? 32_768 : length;
+                    //Never allocate more than the max chunk or the bytes that
+                    //remain in the file, whatever the caller asked for.
+                    val fileLength = logFile.length();
+                    val startOffset = offset < 0 ? 0 : offset;
+                    val remaining = Math.max(0, fileLength - startOffset);
+                    val requested = length == -1 ? DEFAULT_READ_LENGTH : length;
+                    val actualLength = (int) Math.min(Math.min(Math.max(requested, 0), MAX_READ_LENGTH), remaining);
                     try (val rf = new RandomAccessFile(logFile, "r")) {
-                        rf.seek(offset);
+                        rf.seek(startOffset);
                         var buf = new byte[actualLength];
                         val bytesRead = rf.read(buf);
                         return Response.ok(
-                                        new LogBuffer(bytesRead > 0 ? new String(buf, 0, bytesRead) : "", offset))
+                                        new LogBuffer(bytesRead > 0 ? new String(buf, 0, bytesRead) : "", startOffset))
                                 .build();
                     }
                     catch (IOException e) {

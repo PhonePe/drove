@@ -47,7 +47,7 @@
             </tr>
             <tr>
                 <th scope="row">Error Message</th>
-                <td>${errorMessage}</td>
+                <td>${escapeHtml(errorMessage)}</td>
             </tr>
             </tbody>
         </table>
@@ -93,7 +93,7 @@
                     created: new Date(data.created).toLocaleString(),
                     age: ageInWords(data.created),
                     updated: new Date(data.updated).toLocaleString(),
-                    errorMessage: data.errorMessage,
+                    errorMessage: escapeHtml(data.errorMessage),
                 }],
                 '#instanceDetailsContainer');
             }

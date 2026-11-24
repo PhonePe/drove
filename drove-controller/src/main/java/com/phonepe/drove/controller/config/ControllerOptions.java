@@ -78,6 +78,7 @@ public class ControllerOptions {
             false,
             false,
             false,
+            false,
             DEFAULT_COMPILED_RULE_CACHE_SIZE,
             DEFAULT_STALE_EXECUTOR_AGE,
             DEFAULT_DATA_UPDATE_PARALLELISM,
@@ -130,6 +131,9 @@ public class ControllerOptions {
     Boolean disableCmdlArgs;
 
     Boolean enableRawDeviceAccess;
+
+    @Builder.Default
+    Boolean defaultBlockHostMounts = false;
 
     @Range(min = 0, max = 1000)
     Integer compiledRuleCacheCount;

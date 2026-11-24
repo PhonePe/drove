@@ -32,6 +32,7 @@ import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -79,7 +80,9 @@ class HttpCheckerTest {
 
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
-            assertTrue(r.getMessage().endsWith("Server Kaput!!"));
+            //The response body must not leak into the check result message.
+            assertFalse(r.getMessage().contains("Server Kaput!!"));
+            assertTrue(r.getMessage().contains("500"));
         }
     }
 
@@ -119,7 +122,9 @@ class HttpCheckerTest {
 
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
-            assertTrue(r.getMessage().endsWith("Server Kaput!!"));
+            //The response body must not leak into the check result message.
+            assertFalse(r.getMessage().contains("Server Kaput!!"));
+            assertTrue(r.getMessage().contains("500"));
         }
     }
 
@@ -156,7 +161,9 @@ class HttpCheckerTest {
         try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
             val r = checker.call();
             assertEquals(CheckResult.Status.UNHEALTHY, r.getStatus());
-            assertTrue(r.getMessage().endsWith("Server Kaput!!"));
+            //The response body must not leak into the check result message.
+            assertFalse(r.getMessage().contains("Server Kaput!!"));
+            assertTrue(r.getMessage().contains("500"));
         }
     }
 
@@ -225,5 +232,29 @@ class HttpCheckerTest {
             //Nothing to do here
         }
         fail("Should have thrown NPE and failed");
+    }
+
+    @Test
+    @SneakyThrows
+    void testAuthorityInjectionPathStaysOnLocalhost(WireMockRuntimeInfo wm) {
+        //No stub: the checker must talk to the local wiremock port only.
+        //If the path could change the URI authority, this call would fail
+        //to connect instead of returning an HTTP status based result.
+        stubFor(get(urlMatching("/.*")).willReturn(ok()));
+        val info = ExecutorTestingUtils.createExecutorAppInstanceInfo(wm);
+        val httpSpec = new HTTPCheckModeSpec(Protocol.HTTP,
+                                             "main",
+                                             "//evil.com:8080/health",
+                                             HTTPVerb.GET,
+                                             Set.of(200),
+                                             null,
+                                             Duration.seconds(1),
+                                             false);
+        val spec = checkSpec(httpSpec);
+        try (val checker = new HttpChecker(spec, (HTTPCheckModeSpec) spec.getMode(), info)) {
+            val r = checker.call();
+            //The request went to localhost and got 200 from the local stub.
+            assertEquals(CheckResult.Status.HEALTHY, r.getStatus());
+        }
     }
 }

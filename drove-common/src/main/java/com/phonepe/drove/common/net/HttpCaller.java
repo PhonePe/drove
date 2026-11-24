@@ -27,6 +27,7 @@ import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicHeader;
+import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.Timeout;
 
 import jakarta.inject.Inject;
@@ -34,6 +35,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
@@ -42,13 +44,13 @@ import java.util.Objects;
 import static com.phonepe.drove.common.CommonUtils.buildRequest;
 
 /**
- *
+ * Makes HTTP calls described by a {@link HTTPCallSpec}.
  */
 @Slf4j
 @Singleton
 @RequiredArgsConstructor(onConstructor_ = {@Inject})
 public class HttpCaller {
-    private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = (2 ^ 20); //1MB
+    private static final int MAX_READABLE_OUTPUT_SIZE_BYTES = 1024 * 1024; //1MB
 
     private final CloseableHttpClient httpClient;
     private final @Named("insecure") CloseableHttpClient insecureHttpClient;
@@ -128,9 +130,16 @@ public class HttpCaller {
                        case HTTPS -> 443;
                    };
         val path = Objects.requireNonNullElse(httpSpec.getPath(), HTTPCallSpec.DEFAULT_PATH);
-        return URI.create(String.format("%s://localhost:%d%s",
-                                        httpSpec.getProtocol().name().toLowerCase(),
-                                        port,
-                                        path));
+        try {
+            return new URIBuilder()
+                    .setScheme(httpSpec.getProtocol().name().toLowerCase())
+                    .setHost("localhost")
+                    .setPort(port)
+                    .setPath(path)
+                    .build();
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalStateException("Invalid path in HTTP call spec: " + path, e);
+        }
     }
 }

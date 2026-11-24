@@ -16,6 +16,7 @@
 
 package com.phonepe.drove.models.taskinstance;
 
+import com.phonepe.drove.models.common.MaskValues;
 import com.phonepe.drove.models.application.MountedVolume;
 import com.phonepe.drove.models.application.executable.ExecutableCoordinates;
 import com.phonepe.drove.models.application.logging.LoggingSpec;
@@ -62,6 +63,7 @@ public class TaskInfo implements DeployedInstanceInfo {
     @Schema(description = "Logging configuration")
     LoggingSpec loggingSpec;
 
+    @MaskValues
     @Schema(description = "Environment variables for the task")
     Map<String, String> env;
 
